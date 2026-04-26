@@ -422,9 +422,7 @@ class ModerationLabelService {
       if (targetAddressableId != null) {
         _labelsByAddressableId
             .putIfAbsent(targetAddressableId, () => [])
-            .add(
-              label,
-            );
+            .add(label);
       }
       if (targetPubkey != null) {
         _labelsByPubkey.putIfAbsent(targetPubkey, () => []).add(label);
@@ -559,10 +557,7 @@ class ModerationLabelService {
       final resolved = await Nip05Validor.getPubkey(divineModerationNip05);
       if (resolved != null && resolved.isNotEmpty) {
         await prefs.setString(_resolvedPubkeyKey, resolved);
-        await prefs.setString(
-          _resolvedAtKey,
-          DateTime.now().toIso8601String(),
-        );
+        await prefs.setString(_resolvedAtKey, DateTime.now().toIso8601String());
         Log.info(
           'Resolved moderation pubkey via NIP-05: $resolved',
           name: 'ModerationLabelService',
@@ -619,11 +614,7 @@ class ModerationLabelService {
 
 /// Parsed metadata from the 4th element of an `l` tag.
 class _LabelMetadata {
-  const _LabelMetadata({
-    this.confidence,
-    this.source,
-    this.isVerified = false,
-  });
+  const _LabelMetadata({this.confidence, this.source, this.isVerified = false});
 
   final double? confidence;
   final String? source;

@@ -14,11 +14,9 @@ class _MockVideoPlayerController extends Mock
 
 class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
     implements VideoPlayerController {
-  _FakeVideoPlayerController({
-    required Size videoSize,
-    this.playError,
-  }) : _videoSize = videoSize,
-       super(const VideoPlayerValue(duration: Duration.zero));
+  _FakeVideoPlayerController({required Size videoSize, this.playError})
+    : _videoSize = videoSize,
+      super(const VideoPlayerValue(duration: Duration.zero));
 
   final Size _videoSize;
   final Exception? playError;

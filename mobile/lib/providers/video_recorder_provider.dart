@@ -818,9 +818,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       if (clip.processingCompleter != null) {
         unawaited(
           clip.processingCompleter!.future.then((_) {
-            DivineVideoPlayerController.preload(
-              [VideoClip.file(videoPath)],
-            );
+            DivineVideoPlayerController.preload([VideoClip.file(videoPath)]);
           }),
         );
       } else {
@@ -1075,9 +1073,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
-    final navigation = context.pushNamed(
-      LibraryScreen.clipsNoSoundRouteName,
-    );
+    final navigation = context.pushNamed(LibraryScreen.clipsNoSoundRouteName);
 
     // Wait for the push animation to finish before disposing the camera.
     // Disposing immediately would flash the camera-init screen behind the
@@ -1144,14 +1140,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     ref
         .read(clipManagerProvider.notifier)
-        .clearAll(
-          keepAutosavedDraft: keepAutosavedDraft,
-        );
+        .clearAll(keepAutosavedDraft: keepAutosavedDraft);
     ref
         .read(videoEditorProvider.notifier)
-        .reset(
-          keepAutosavedDraft: keepAutosavedDraft,
-        );
+        .reset(keepAutosavedDraft: keepAutosavedDraft);
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',
@@ -1186,9 +1178,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   /// Toggle whether the last clip overlay (ghost frame) is shown.
   void toggleShowLastClipOverlay() {
-    state = state.copyWith(
-      showLastClipOverlay: !state.showLastClipOverlay,
-    );
+    state = state.copyWith(showLastClipOverlay: !state.showLastClipOverlay);
   }
 
   /// Toggle the rule-of-thirds grid overlay on the camera preview.

@@ -101,22 +101,15 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     final uri = Uri(
       scheme: 'mailto',
       path: supportEmail,
-      queryParameters: {
-        'subject': context.l10n.authInviteAccessHelp,
-      },
+      queryParameters: {'subject': context.l10n.authInviteAccessHelp},
     );
 
-    final launched = await launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
 
     if (!launched && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            context.l10n.authCouldNotOpenEmail(supportEmail),
-          ),
+          content: Text(context.l10n.authCouldNotOpenEmail(supportEmail)),
           backgroundColor: VineTheme.error,
         ),
       );
@@ -534,9 +527,7 @@ class _InviteSheetPage extends StatelessWidget {
                     alignment: const Alignment(0, -0.2),
                     decoration: const BoxDecoration(
                       border: Border(
-                        bottom: BorderSide(
-                          color: VineTheme.outlineDisabled,
-                        ),
+                        bottom: BorderSide(color: VineTheme.outlineDisabled),
                       ),
                     ),
                     child: Container(
@@ -549,12 +540,7 @@ class _InviteSheetPage extends StatelessWidget {
                     ),
                   ),
                   Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      32,
-                      16,
-                      16 + safeBottom,
-                    ),
+                    padding: EdgeInsets.fromLTRB(16, 32, 16, 16 + safeBottom),
                     child: Column(
                       children: [
                         SvgPicture.asset(
@@ -666,9 +652,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
       Uri(
         scheme: 'mailto',
         path: widget.supportEmail,
-        queryParameters: {
-          'subject': context.l10n.authInviteAccessHelp,
-        },
+        queryParameters: {'subject': context.l10n.authInviteAccessHelp},
       ),
       mode: LaunchMode.externalApplication,
     );

@@ -20,10 +20,7 @@ void main() {
   final now = DateTime.now();
   final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
 
-  UserProfile createTestProfile({
-    String? displayName,
-    String? name,
-  }) {
+  UserProfile createTestProfile({String? displayName, String? name}) {
     return UserProfile(
       pubkey: otherPubkey,
       displayName: displayName,
@@ -60,9 +57,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              fetchUserProfileProvider(otherPubkey).overrideWith(
-                (ref) async => testProfile,
-              ),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -85,9 +82,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              fetchUserProfileProvider(otherPubkey).overrideWith(
-                (ref) async => testProfile,
-              ),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -113,9 +110,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              fetchUserProfileProvider(otherPubkey).overrideWith(
-                (ref) async => testProfile,
-              ),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -131,40 +128,39 @@ void main() {
         expect(find.text('Hey, how are you?'), findsOneWidget);
       });
 
-      testWidgets(
-        'renders unread indicator when conversation is unread',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Alice');
-          final testConversation = createTestConversation(isRead: false);
+      testWidgets('renders unread indicator when conversation is unread', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation(isRead: false);
 
-          await tester.pumpWidget(
-            testMaterialApp(
-              additionalOverrides: [
-                fetchUserProfileProvider(otherPubkey).overrideWith(
-                  (ref) async => testProfile,
-                ),
-              ],
-              home: Scaffold(
-                body: ConversationTile(
-                  conversation: testConversation,
-                  currentUserPubkey: currentPubkey,
-                  onTap: () {},
-                ),
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
               ),
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          // The unread dot is an 8x8 Container with BoxShape.circle
-          final dotFinder = find.byWidgetPredicate(
-            (widget) =>
-                widget is Container &&
-                widget.constraints?.maxWidth == 8 &&
-                widget.constraints?.maxHeight == 8,
-          );
-          expect(dotFinder, findsOneWidget);
-        },
-      );
+        // The unread dot is an 8x8 Container with BoxShape.circle
+        final dotFinder = find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.constraints?.maxWidth == 8 &&
+              widget.constraints?.maxHeight == 8,
+        );
+        expect(dotFinder, findsOneWidget);
+      });
 
       testWidgets(
         'does not render unread indicator when conversation is read',
@@ -175,9 +171,9 @@ void main() {
           await tester.pumpWidget(
             testMaterialApp(
               additionalOverrides: [
-                fetchUserProfileProvider(otherPubkey).overrideWith(
-                  (ref) async => testProfile,
-                ),
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
               ],
               home: Scaffold(
                 body: ConversationTile(
@@ -211,9 +207,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              fetchUserProfileProvider(otherPubkey).overrideWith(
-                (ref) async => testProfile,
-              ),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -240,9 +236,9 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             additionalOverrides: [
-              fetchUserProfileProvider(otherPubkey).overrideWith(
-                (ref) async => testProfile,
-              ),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
             ],
             home: Scaffold(
               body: ConversationTile(
@@ -273,9 +269,9 @@ void main() {
           await tester.pumpWidget(
             testMaterialApp(
               additionalOverrides: [
-                fetchUserProfileProvider(otherPubkey).overrideWith(
-                  (ref) async => testProfile,
-                ),
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => testProfile),
               ],
               home: Scaffold(
                 body: ConversationTile(
@@ -302,42 +298,41 @@ void main() {
         },
       );
 
-      testWidgets(
-        'has no background color when not highlighted',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Alice');
-          final testConversation = createTestConversation();
+      testWidgets('has no background color when not highlighted', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Alice');
+        final testConversation = createTestConversation();
 
-          await tester.pumpWidget(
-            testMaterialApp(
-              additionalOverrides: [
-                fetchUserProfileProvider(otherPubkey).overrideWith(
-                  (ref) async => testProfile,
-                ),
-              ],
-              home: Scaffold(
-                body: ConversationTile(
-                  conversation: testConversation,
-                  currentUserPubkey: currentPubkey,
-                  onTap: () {},
-                ),
+        await tester.pumpWidget(
+          testMaterialApp(
+            additionalOverrides: [
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => testProfile),
+            ],
+            home: Scaffold(
+              body: ConversationTile(
+                conversation: testConversation,
+                currentUserPubkey: currentPubkey,
+                onTap: () {},
               ),
             ),
-          );
-          await tester.pumpAndSettle();
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          final decoratedBox = tester.widget<DecoratedBox>(
-            find
-                .descendant(
-                  of: find.byType(ConversationTile),
-                  matching: find.byType(DecoratedBox),
-                )
-                .first,
-          );
-          final decoration = decoratedBox.decoration as BoxDecoration;
-          expect(decoration.color, isNull);
-        },
-      );
+        final decoratedBox = tester.widget<DecoratedBox>(
+          find
+              .descendant(
+                of: find.byType(ConversationTile),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final decoration = decoratedBox.decoration as BoxDecoration;
+        expect(decoration.color, isNull);
+      });
     });
   });
 }

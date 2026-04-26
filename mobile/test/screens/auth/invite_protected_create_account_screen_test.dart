@@ -71,9 +71,7 @@ void main() {
       ],
     );
     final client = inviteApiClient ?? mockInviteApiClient;
-    final inviteGateBloc = InviteGateBloc(
-      inviteApiClient: client,
-    );
+    final inviteGateBloc = InviteGateBloc(inviteApiClient: client);
 
     if (hasAccessGrant) {
       inviteGateBloc.add(
@@ -128,9 +126,7 @@ void main() {
     testWidgets('redirects to invite gate without access grant', (
       tester,
     ) async {
-      when(
-        () => mockInviteApiClient.getClientConfig(),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
           supportEmail: 'support@divine.video',
@@ -180,9 +176,7 @@ void main() {
     testWidgets('shows create-account flow when access grant exists', (
       tester,
     ) async {
-      when(
-        () => mockInviteApiClient.getClientConfig(),
-      ).thenAnswer(
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
           supportEmail: 'support@divine.video',

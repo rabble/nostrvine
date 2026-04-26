@@ -51,9 +51,7 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
       when(() => mockVideoEventService.isSubscribed(any())).thenReturn(false);
-      when(
-        () => mockVideoEventService.filterVideoList(any()),
-      ).thenAnswer(
+      when(() => mockVideoEventService.filterVideoList(any())).thenAnswer(
         (invocation) =>
             invocation.positionalArguments.first as List<VideoEvent>,
       );

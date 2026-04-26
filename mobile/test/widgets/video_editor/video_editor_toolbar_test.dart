@@ -27,9 +27,7 @@ void main() {
     }
 
     testWidgets('renders close and done semantics', (tester) async {
-      await tester.pumpWidget(
-        buildWidget(onClose: () {}, onDone: () {}),
-      );
+      await tester.pumpWidget(buildWidget(onClose: () {}, onDone: () {}));
 
       expect(find.bySemanticsLabel('Close'), findsOneWidget);
       expect(find.bySemanticsLabel('Done'), findsOneWidget);
@@ -39,10 +37,7 @@ void main() {
       var closeTapped = false;
 
       await tester.pumpWidget(
-        buildWidget(
-          onClose: () => closeTapped = true,
-          onDone: () {},
-        ),
+        buildWidget(onClose: () => closeTapped = true, onDone: () {}),
       );
 
       await tester.tap(find.bySemanticsLabel('Close'));
@@ -55,10 +50,7 @@ void main() {
       var doneTapped = false;
 
       await tester.pumpWidget(
-        buildWidget(
-          onClose: () {},
-          onDone: () => doneTapped = true,
-        ),
+        buildWidget(onClose: () {}, onDone: () => doneTapped = true),
       );
 
       await tester.tap(find.bySemanticsLabel('Done'));

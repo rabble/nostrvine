@@ -104,10 +104,7 @@ class ClassicVinerSeedPreloadService {
         final avatarBytes = await _assetBundle.load(profileSeed.avatarAsset!);
         final extension = path
             .extension(profileSeed.avatarAsset!)
-            .replaceFirst(
-              '.',
-              '',
-            );
+            .replaceFirst('.', '');
 
         await cacheWriter(
           cacheKey: profileSeed.pictureUrl!,
@@ -250,11 +247,7 @@ class _ClassicVinerSeedProfile {
 }
 
 class _ArchivedStats {
-  const _ArchivedStats({
-    this.videoCount,
-    this.totalViews,
-    this.totalLikes,
-  });
+  const _ArchivedStats({this.videoCount, this.totalViews, this.totalLikes});
 
   factory _ArchivedStats.fromJson(Map<String, dynamic> json) {
     return _ArchivedStats(

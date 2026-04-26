@@ -118,9 +118,7 @@ class _ProfileCommentsGridState extends State<ProfileCommentsGrid>
                     if (index >= state.videoReplies.length) {
                       return const SizedBox.shrink();
                     }
-                    return _VideoReplyTile(
-                      comment: state.videoReplies[index],
-                    );
+                    return _VideoReplyTile(comment: state.videoReplies[index]);
                   }, childCount: state.videoReplies.length),
                 ),
               ),

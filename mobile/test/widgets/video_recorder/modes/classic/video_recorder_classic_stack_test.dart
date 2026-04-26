@@ -49,9 +49,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderClassicStack(),
-          ),
+          home: Scaffold(body: VideoRecorderClassicStack()),
         ),
       );
     }
@@ -85,16 +83,11 @@ void main() {
         expect(find.byType(VideoRecorderClassicActionsTop), findsOneWidget);
       });
 
-      testWidgets('renders $VideoRecorderClassicActionsBottom', (
-        tester,
-      ) async {
+      testWidgets('renders $VideoRecorderClassicActionsBottom', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(VideoRecorderClassicActionsBottom),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoRecorderClassicActionsBottom), findsOneWidget);
       });
     });
 
@@ -121,10 +114,7 @@ void main() {
         final aspectRatioWidgets = tester.widgetList<AspectRatio>(
           find.byType(AspectRatio),
         );
-        expect(
-          aspectRatioWidgets.any((w) => w.aspectRatio == 1.0),
-          isTrue,
-        );
+        expect(aspectRatioWidgets.any((w) => w.aspectRatio == 1.0), isTrue);
       });
     });
 

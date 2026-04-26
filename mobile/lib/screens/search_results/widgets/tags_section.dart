@@ -62,16 +62,13 @@ class _TagsPaginationTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = context.select(
-      (HashtagSearchBloc b) => b.state.hasMore,
-    );
+    final hasMore = context.select((HashtagSearchBloc b) => b.state.hasMore);
     final isLoadingMore = context.select(
       (HashtagSearchBloc b) => b.state.isLoadingMore,
     );
     return SliverPaginationTrigger(
-      onLoadMore: () => context.read<HashtagSearchBloc>().add(
-        const HashtagSearchLoadMore(),
-      ),
+      onLoadMore: () =>
+          context.read<HashtagSearchBloc>().add(const HashtagSearchLoadMore()),
       hasMore: hasMore,
       isLoadingMore: isLoadingMore,
     );
@@ -91,9 +88,7 @@ class _TagsContent extends StatelessWidget {
     final results = context.select(
       (HashtagSearchBloc bloc) => bloc.state.results,
     );
-    final query = context.select(
-      (HashtagSearchBloc bloc) => bloc.state.query,
-    );
+    final query = context.select((HashtagSearchBloc bloc) => bloc.state.query);
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _TagsSkeletonLoader();

@@ -25,9 +25,7 @@ class MissingSandboxAppScreen extends StatelessWidget {
             'Integrated Apps tab so Divine can '
             'apply the right access policy.',
             textAlign: TextAlign.center,
-            style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
         ),
       ),

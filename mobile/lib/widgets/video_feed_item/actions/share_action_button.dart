@@ -47,11 +47,7 @@ part 'share_with_section.dart';
 /// - "More actions" horizontal row (Save, download, Add to List, Copy,
 ///   Share via, Report, debug tools)
 class ShareActionButton extends StatelessWidget {
-  const ShareActionButton({
-    required this.video,
-    this.onInteracted,
-    super.key,
-  });
+  const ShareActionButton({required this.video, this.onInteracted, super.key});
 
   final VideoEvent video;
   final VoidCallback? onInteracted;

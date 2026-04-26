@@ -217,9 +217,7 @@ class OthersFollowersBloc
     if (state.status != OthersFollowersStatus.success) return;
 
     emit(
-      state.copyWith(
-        followersPubkeys: _filterPubkeys(_rawFollowersPubkeys),
-      ),
+      state.copyWith(followersPubkeys: _filterPubkeys(_rawFollowersPubkeys)),
     );
   }
 }

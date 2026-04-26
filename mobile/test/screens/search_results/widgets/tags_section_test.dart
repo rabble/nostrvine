@@ -34,68 +34,63 @@ void main() {
         home: Scaffold(
           body: BlocProvider<HashtagSearchBloc>.value(
             value: mockBloc,
-            child: CustomScrollView(
-              slivers: [TagsSection(showAll: showAll)],
-            ),
+            child: CustomScrollView(slivers: [TagsSection(showAll: showAll)]),
           ),
         ),
       );
     }
 
     group('showAll: false (All tab preview)', () {
-      testWidgets(
-        'hides entirely when success with empty results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const HashtagSearchState(
-              status: HashtagSearchStatus.success,
-              query: 'test',
-            ),
-          );
+      testWidgets('hides entirely when success with empty results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsNothing);
-          expect(find.byType(SearchSectionEmptyState), findsNothing);
-        },
-      );
+        expect(find.byType(SectionHeader), findsNothing);
+        expect(find.byType(SearchSectionEmptyState), findsNothing);
+      });
 
-      testWidgets(
-        'renders header and content when success with results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const HashtagSearchState(
-              status: HashtagSearchStatus.success,
-              query: 'test',
-              results: ['flutter', 'dart'],
-            ),
-          );
+      testWidgets('renders header and content when success with results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'test',
+            results: ['flutter', 'dart'],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsOneWidget);
-          expect(
-            find.text(AppLocalizationsEn().searchTagsSectionHeader),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byType(SectionHeader), findsOneWidget);
+        expect(
+          find.text(AppLocalizationsEn().searchTagsSectionHeader),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const HashtagSearchState(
-              status: HashtagSearchStatus.failure,
-              query: 'test',
-            ),
-          );
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.failure,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
     });
 
     group('showAll: true (dedicated tab)', () {
@@ -115,21 +110,20 @@ void main() {
         },
       );
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const HashtagSearchState(
-              status: HashtagSearchStatus.failure,
-              query: 'test',
-            ),
-          );
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.failure,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject(showAll: true));
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
     });
 
     testWidgets(
@@ -153,23 +147,22 @@ void main() {
     );
 
     group('loading more indicator', () {
-      testWidgets(
-        'shows loading indicator when showAll and isLoadingMore',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const HashtagSearchState(
-              status: HashtagSearchStatus.success,
-              results: ['flutter'],
-              hasMore: true,
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('shows loading indicator when showAll and isLoadingMore', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            results: ['flutter'],
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject(showAll: true));
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
       testWidgets(
         'hides loading indicator when showAll and not isLoadingMore',
@@ -187,22 +180,21 @@ void main() {
         },
       );
 
-      testWidgets(
-        'does not show loading indicator when not showAll',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const HashtagSearchState(
-              status: HashtagSearchStatus.success,
-              results: ['flutter'],
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('does not show loading indicator when not showAll', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            results: ['flutter'],
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(CircularProgressIndicator), findsNothing);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
     });
   });
 }

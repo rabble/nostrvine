@@ -60,9 +60,7 @@ void main() {
     blocTest<InviteGateBloc, InviteGateState>(
       'grants access after a valid invite validation',
       setUp: () {
-        when(
-          () => mockInviteApiClient.validateCode('AB12-EF34'),
-        ).thenAnswer(
+        when(() => mockInviteApiClient.validateCode('AB12-EF34')).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: true,
             used: false,
@@ -94,9 +92,7 @@ void main() {
     blocTest<InviteGateBloc, InviteGateState>(
       'stores creator metadata when reusable creator invite validates',
       setUp: () {
-        when(
-          () => mockInviteApiClient.validateCode('LELE-PONS'),
-        ).thenAnswer(
+        when(() => mockInviteApiClient.validateCode('LELE-PONS')).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: true,
             used: true,
@@ -140,9 +136,7 @@ void main() {
     blocTest<InviteGateBloc, InviteGateState>(
       'maps used invite validations to invite code error state',
       setUp: () {
-        when(
-          () => mockInviteApiClient.validateCode('USED-0003'),
-        ).thenAnswer(
+        when(() => mockInviteApiClient.validateCode('USED-0003')).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: false,
             used: true,
@@ -163,9 +157,7 @@ void main() {
     blocTest<InviteGateBloc, InviteGateState>(
       'maps unavailable creator codes to waitlist-friendly general error',
       setUp: () {
-        when(
-          () => mockInviteApiClient.validateCode('LELE-PONS'),
-        ).thenAnswer(
+        when(() => mockInviteApiClient.validateCode('LELE-PONS')).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: false,
             used: false,
@@ -188,9 +180,7 @@ void main() {
     blocTest<InviteGateBloc, InviteGateState>(
       'keeps invalid invite codes editable',
       setUp: () {
-        when(
-          () => mockInviteApiClient.validateCode('NOPE-CODE'),
-        ).thenAnswer(
+        when(() => mockInviteApiClient.validateCode('NOPE-CODE')).thenAnswer(
           (_) async => const InviteValidationResult(
             valid: false,
             used: false,
@@ -215,9 +205,7 @@ void main() {
       setUp: () {
         when(
           () => mockInviteApiClient.validateCode('AB12-EF34'),
-        ).thenThrow(
-          const InviteApiException('Invite service unavailable'),
-        );
+        ).thenThrow(const InviteApiException('Invite service unavailable'));
       },
       build: buildBloc,
       act: (bloc) => bloc.add(const InviteGateCodeSubmitted('ab12ef34')),

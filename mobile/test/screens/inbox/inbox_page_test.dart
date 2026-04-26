@@ -104,14 +104,10 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream.empty());
 
-      when(
-        () => mockBlocklistRepository.isBlocked(any()),
-      ).thenReturn(false);
+      when(() => mockBlocklistRepository.isBlocked(any())).thenReturn(false);
 
       when(() => mockDmRepository.startListening()).thenAnswer((_) async {});
-      when(
-        () => mockDmRepository.stopListening(),
-      ).thenAnswer((_) async {});
+      when(() => mockDmRepository.stopListening()).thenAnswer((_) async {});
     });
 
     test('has correct route constants', () {

@@ -4,11 +4,7 @@ import 'package:flutter/material.dart';
 /// Hashtag chip used in both the Tags preview section and the full hashtag
 /// search list. Renders a `#` prefix in vine green followed by the tag name.
 class SearchTagChip extends StatelessWidget {
-  const SearchTagChip({
-    required this.tag,
-    required this.onTap,
-    super.key,
-  });
+  const SearchTagChip({required this.tag, required this.onTap, super.key});
 
   final String tag;
   final VoidCallback onTap;
@@ -34,10 +30,7 @@ class SearchTagChip extends StatelessWidget {
                 '#',
                 style: VineTheme.bodyLargeFont(color: VineTheme.vineGreen),
               ),
-              Text(
-                tag,
-                style: VineTheme.titleSmallFont(),
-              ),
+              Text(tag, style: VineTheme.titleSmallFont()),
             ],
           ),
         ),

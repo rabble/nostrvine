@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Scinder",
     "videoEditorSplitSelectedClipSemanticLabel": "Scinder le clip sélectionné",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminer l'édition de la timeline",
-    "videoEditorSortNewest": "Plus récents",
-    "videoEditorSortLongest": "Plus longs",
-    "videoEditorSortShortest": "Plus courts",
-    "videoEditorSortBySemanticLabel": "Trier par {option}. Appuyez pour changer l'ordre de tri",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Lire l'aperçu",
     "videoEditorAudioPausePreviewSemanticLabel": "Mettre l'aperçu en pause",
     "videoEditorAudioUntitledSound": "Son sans titre",
-    "videoEditorAudioSelectSoundSemanticLabel": "Sélectionner un son",
     "videoEditorAudioUntitled": "Sans titre",
     "videoEditorAudioAddAudio": "Ajouter de l'audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Aucun son disponible",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Les sons apparaîtront ici lorsque des créateurs partageront de l'audio",
-    "videoEditorAudioNoSoundsFoundTitle": "Aucun son trouvé",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Essayez un autre terme de recherche",
     "videoEditorAudioFailedToLoadTitle": "Échec du chargement des sons",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Communauté",
     "videoEditorDrawToolArrowSemanticLabel": "Outil flèche",
     "videoEditorDrawToolEraserSemanticLabel": "Outil gomme",
     "videoEditorDrawToolMarkerSemanticLabel": "Outil marqueur",

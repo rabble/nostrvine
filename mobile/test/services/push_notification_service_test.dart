@@ -77,9 +77,7 @@ void main() {
     tokenRefreshController.close();
   });
 
-  PushNotificationService buildService({
-    String? token = testToken,
-  }) {
+  PushNotificationService buildService({String? token = testToken}) {
     return PushNotificationService(
       authService: mockAuthService,
       nostrClient: mockNostrClient,
@@ -177,10 +175,7 @@ void main() {
           orElse: () => [],
         );
         expect(appTag, hasLength(greaterThanOrEqualTo(2)));
-        expect(
-          appTag[1],
-          equals(PushNotificationService.pushAppIdentifier),
-        );
+        expect(appTag[1], equals(PushNotificationService.pushAppIdentifier));
 
         final expirationTag = capturedTags!.firstWhere(
           (t) => t.isNotEmpty && t[0] == 'expiration',
@@ -191,9 +186,7 @@ void main() {
         expect(expirationValue, isNotNull);
         expect(
           expirationValue,
-          greaterThan(
-            DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
+          greaterThan(DateTime.now().millisecondsSinceEpoch ~/ 1000),
         );
 
         service.dispose();
@@ -203,9 +196,7 @@ void main() {
         final service = buildService(token: null);
         await service.register(testPubkey);
 
-        verifyNever(
-          () => mockNostrSigner.nip44Encrypt(any(), any()),
-        );
+        verifyNever(() => mockNostrSigner.nip44Encrypt(any(), any()));
         verifyNever(
           () => mockAuthService.createAndSignEvent(
             kind: any(named: 'kind'),

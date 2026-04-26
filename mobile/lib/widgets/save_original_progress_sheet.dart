@@ -106,16 +106,11 @@ class _SaveOriginalProgressSheetState
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                _stageLabel(l10n),
-                style: VineTheme.titleMediumFont(),
-              ),
+              Text(_stageLabel(l10n), style: VineTheme.titleMediumFont()),
               const SizedBox(height: 8),
               Text(
                 _stageDescription(l10n),
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.secondaryText,
-                ),
+                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
               ),
             ] else if (_result is WatermarkDownloadSuccess) ...[
               const Icon(
@@ -166,9 +161,7 @@ class _SaveOriginalProgressSheetState
               const SizedBox(height: 8),
               Text(
                 l10n.saveOriginalPhotosAccessMessage,
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.secondaryText,
-                ),
+                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
@@ -195,11 +188,7 @@ class _SaveOriginalProgressSheetState
                 ),
               ),
             ] else if (_result is WatermarkDownloadFailure) ...[
-              const Icon(
-                Icons.error_outline,
-                color: VineTheme.error,
-                size: 48,
-              ),
+              const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
               const SizedBox(height: 16),
               Text(
                 l10n.saveOriginalDownloadFailed,
@@ -208,9 +197,7 @@ class _SaveOriginalProgressSheetState
               const SizedBox(height: 8),
               Text(
                 (_result! as WatermarkDownloadFailure).reason,
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.secondaryText,
-                ),
+                style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),

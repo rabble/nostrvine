@@ -107,9 +107,9 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('en'),
     Locale('ar'),
     Locale('de'),
-    Locale('en'),
     Locale('es'),
     Locale('fr'),
     Locale('id'),
@@ -5573,13 +5573,13 @@ abstract class AppLocalizations {
   /// No description provided for @shareMenuAddCollaborator.
   ///
   /// In en, this message translates to:
-  /// **'Add collaborator'**
+  /// **'Invite collaborator'**
   String get shareMenuAddCollaborator;
 
   /// No description provided for @shareMenuMutualFollowRequired.
   ///
   /// In en, this message translates to:
-  /// **'You need to mutually follow {name} to add them as a collaborator.'**
+  /// **'You need to mutually follow {name} to invite them as a collaborator.'**
   String shareMenuMutualFollowRequired(String name);
 
   /// No description provided for @shareMenuLoading.
@@ -9482,30 +9482,6 @@ abstract class AppLocalizations {
   /// **'Finish timeline editing'**
   String get videoEditorFinishTimelineEditingSemanticLabel;
 
-  /// No description provided for @videoEditorSortNewest.
-  ///
-  /// In en, this message translates to:
-  /// **'Newest'**
-  String get videoEditorSortNewest;
-
-  /// No description provided for @videoEditorSortLongest.
-  ///
-  /// In en, this message translates to:
-  /// **'Longest'**
-  String get videoEditorSortLongest;
-
-  /// No description provided for @videoEditorSortShortest.
-  ///
-  /// In en, this message translates to:
-  /// **'Shortest'**
-  String get videoEditorSortShortest;
-
-  /// No description provided for @videoEditorSortBySemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Sort by {option}. Tap to change sort order'**
-  String videoEditorSortBySemanticLabel(String option);
-
   /// No description provided for @videoEditorAudioPlayPreviewSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -9523,12 +9499,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Untitled sound'**
   String get videoEditorAudioUntitledSound;
-
-  /// No description provided for @videoEditorAudioSelectSoundSemanticLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select sound'**
-  String get videoEditorAudioSelectSoundSemanticLabel;
 
   /// No description provided for @videoEditorAudioUntitled.
   ///
@@ -9554,18 +9524,6 @@ abstract class AppLocalizations {
   /// **'Sounds will appear here when creators share audio'**
   String get videoEditorAudioNoSoundsAvailableSubtitle;
 
-  /// No description provided for @videoEditorAudioNoSoundsFoundTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'No sounds found'**
-  String get videoEditorAudioNoSoundsFoundTitle;
-
-  /// No description provided for @videoEditorAudioNoSoundsFoundSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Try a different search term'**
-  String get videoEditorAudioNoSoundsFoundSubtitle;
-
   /// No description provided for @videoEditorAudioFailedToLoadTitle.
   ///
   /// In en, this message translates to:
@@ -9577,6 +9535,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select the audio segment for your video'**
   String get videoEditorAudioSegmentInstruction;
+
+  /// No description provided for @videoEditorAudioCategoryDivine.
+  ///
+  /// In en, this message translates to:
+  /// **'diVine'**
+  String get videoEditorAudioCategoryDivine;
+
+  /// No description provided for @videoEditorAudioCategoryCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get videoEditorAudioCategoryCommunity;
 
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
@@ -9903,7 +9873,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataAddCollaboratorSemanticLabel.
   ///
   /// In en, this message translates to:
-  /// **'Add collaborator'**
+  /// **'Invite collaborator'**
   String get videoMetadataAddCollaboratorSemanticLabel;
 
   /// No description provided for @videoMetadataCollaboratorsHelpTooltip.
@@ -9927,7 +9897,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataCollaboratorsHelpMessage.
   ///
   /// In en, this message translates to:
-  /// **'Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.'**
+  /// **'Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.'**
   String get videoMetadataCollaboratorsHelpMessage;
 
   /// No description provided for @videoMetadataMutualFollowersSearchText.
@@ -9939,7 +9909,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataMustMutuallyFollowSnackbar.
   ///
   /// In en, this message translates to:
-  /// **'You need to mutually follow {name} to add them as a collaborator.'**
+  /// **'You need to mutually follow {name} to invite them as a collaborator.'**
   String videoMetadataMustMutuallyFollowSnackbar(String name);
 
   /// No description provided for @videoMetadataInspiredByLabel.

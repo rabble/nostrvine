@@ -424,10 +424,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             category: LogCategory.auth,
           );
           try {
-            await _keyStorage.storeIdentityKeyContainer(
-              localNpub,
-              localKey,
-            );
+            await _keyStorage.storeIdentityKeyContainer(localNpub, localKey);
           } catch (e) {
             Log.warning(
               'initialize: failed to archive stale local key: $e',
@@ -1765,10 +1762,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             );
             _hasExpiredOAuthSession = true;
             _setRpcCapability(AuthRpcCapability.upgrading);
-            await _setupUserSession(
-              localKey,
-              AuthenticationSource.divineOAuth,
-            );
+            await _setupUserSession(localKey, AuthenticationSource.divineOAuth);
             unawaited(_upgradeDivineRpcInBackground(session));
           } else {
             Log.warning(

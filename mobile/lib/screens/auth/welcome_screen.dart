@@ -56,9 +56,7 @@ class WelcomeScreen extends ConsumerWidget {
     String? error,
     String? sourceSlug,
   }) {
-    final queryParameters = <String, String>{
-      'code': code,
-    };
+    final queryParameters = <String, String>{'code': code};
 
     if (error != null && error.isNotEmpty) {
       queryParameters['error'] = error;
@@ -94,9 +92,7 @@ class WelcomeScreen extends ConsumerWidget {
             userProfilesDao: db.userProfilesDao,
             authService: authService,
           )..add(
-            WelcomeStarted(
-              initialSelectedPubkeyHex: initialSelectedPubkeyHex,
-            ),
+            WelcomeStarted(initialSelectedPubkeyHex: initialSelectedPubkeyHex),
           ),
       child: _WelcomeView(
         isAuthLoading: isAuthLoading,
@@ -333,10 +329,7 @@ class _ReturningUserLayout extends StatelessWidget {
 /// Displays the returning user's avatar, display name, identifier, and auth
 /// source badge.
 class _ReturningUserProfile extends StatelessWidget {
-  const _ReturningUserProfile({
-    required this.pubkeyHex,
-    required this.profile,
-  });
+  const _ReturningUserProfile({required this.pubkeyHex, required this.profile});
 
   final String pubkeyHex;
   final UserProfile? profile;
@@ -387,11 +380,7 @@ class _AvatarWithSwitchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return UserAvatar(
-      imageUrl: imageUrl,
-      name: displayName,
-      size: _avatarSize,
-    );
+    return UserAvatar(imageUrl: imageUrl, name: displayName, size: _avatarSize);
   }
 }
 
@@ -448,9 +437,7 @@ class _TermsNoticeState extends State<_TermsNotice> {
       text: TextSpan(
         style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
         children: [
-          TextSpan(
-            text: context.l10n.authTermsPrefix,
-          ),
+          TextSpan(text: context.l10n.authTermsPrefix),
           TextSpan(
             text: context.l10n.authTermsOfService,
             style: linkStyle,

@@ -113,9 +113,7 @@ void main() {
         buildSubject(
           state: const CategoriesState(
             categoriesStatus: CategoriesStatus.loaded,
-            categories: [
-              VideoCategory(name: 'animals', videoCount: 1500),
-            ],
+            categories: [VideoCategory(name: 'animals', videoCount: 1500)],
           ),
           onCategoryTap: (category) => tappedCategory = category,
         ),

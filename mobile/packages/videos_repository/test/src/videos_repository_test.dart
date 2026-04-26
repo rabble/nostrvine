@@ -4024,79 +4024,16 @@ void main() {
     });
 
     group('getCollabVideos', () {
-      test('returns videos from relay fallback when no Funnelcake', () async {
-        final event = _createVideoEvent(
-          id: 'collab-video-1',
-          pubkey: 'author-pubkey',
-          videoUrl: 'https://example.com/collab.mp4',
-          createdAt: 1704067200,
-        );
-
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => [event]);
-
-        final result = await repository.getCollabVideos(
-          taggedPubkey: 'collab-pubkey',
-        );
-
-        expect(result, hasLength(1));
-        expect(result.first.id, equals('collab-video-1'));
-
-        final captured = verify(
-          () => mockNostrClient.queryEvents(captureAny()),
-        ).captured;
-        final filters = captured.first as List<Filter>;
-        expect(filters.first.kinds, contains(EventKind.videoVertical));
-        expect(filters.first.p, equals(['collab-pubkey']));
-      });
-
-      test('passes limit and until to relay query', () async {
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => <Event>[]);
-
-        await repository.getCollabVideos(
-          taggedPubkey: 'collab-pubkey',
-          limit: 10,
-          until: 1704067200,
-        );
-
-        final captured = verify(
-          () => mockNostrClient.queryEvents(captureAny()),
-        ).captured;
-        final filters = captured.first as List<Filter>;
-        expect(filters.first.limit, equals(10));
-        expect(filters.first.until, equals(1704067200));
-      });
-
-      test('uses default limit of 5', () async {
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => <Event>[]);
-
-        await repository.getCollabVideos(taggedPubkey: 'collab-pubkey');
-
-        final captured = verify(
-          () => mockNostrClient.queryEvents(captureAny()),
-        ).captured;
-        final filters = captured.first as List<Filter>;
-        expect(filters.first.limit, equals(5));
-      });
-
-      test('returns empty list when no events found', () async {
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => <Event>[]);
-
+      test('returns empty list when Funnelcake is not configured', () async {
         final result = await repository.getCollabVideos(
           taggedPubkey: 'collab-pubkey',
         );
 
         expect(result, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
-      group('Funnelcake API first', () {
+      group('Funnelcake confirmed collabs', () {
         late MockFunnelcakeApiClient mockFunnelcakeClient;
 
         setUp(() {
@@ -4218,40 +4155,31 @@ void main() {
           ).called(1);
         });
 
-        test('falls back to relay when Funnelcake throws', () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getCollabVideos(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenThrow(const FunnelcakeException('Server error'));
+        test(
+          'does not fall back to raw relay p-tags when Funnelcake throws',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getCollabVideos(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenThrow(const FunnelcakeException('Server error'));
 
-          final event = _createVideoEvent(
-            id: 'relay-collab-1',
-            pubkey: 'author-pubkey',
-            videoUrl: 'https://example.com/relay-collab.mp4',
-            createdAt: 1704067200,
-          );
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
 
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async => [event]);
+            await expectLater(
+              repositoryWithApi.getCollabVideos(taggedPubkey: 'collab-pubkey'),
+              throwsA(isA<FunnelcakeException>()),
+            );
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
-
-          final result = await repositoryWithApi.getCollabVideos(
-            taggedPubkey: 'collab-pubkey',
-          );
-
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('relay-collab-1'));
-          verify(() => mockNostrClient.queryEvents(any())).called(1);
-        });
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
 
         test(
           'trusts empty Funnelcake collab results without relay fallback',
@@ -4279,12 +4207,8 @@ void main() {
           },
         );
 
-        test('falls back to relay when Funnelcake not available', () async {
+        test('returns empty list when Funnelcake is not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
-
-          when(
-            () => mockNostrClient.queryEvents(any()),
-          ).thenAnswer((_) async => <Event>[]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -4302,7 +4226,30 @@ void main() {
               before: any(named: 'before'),
             ),
           );
-          verify(() => mockNostrClient.queryEvents(any())).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test('treats missing confirmed collabs as empty', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(FunnelcakeNotFoundException(resource: 'Collab videos'));
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+          );
+
+          expect(result, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
         test('filters blocked pubkeys from API results', () async {

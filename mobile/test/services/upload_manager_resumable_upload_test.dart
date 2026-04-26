@@ -44,9 +44,9 @@ void main() {
         ..writeAsBytesSync(List<int>.generate(32, (index) => index));
 
       mockBlossomService = _MockBlossomUploadService();
-      when(() => mockBlossomService.isBlossomEnabled()).thenAnswer(
-        (_) async => false,
-      );
+      when(
+        () => mockBlossomService.isBlossomEnabled(),
+      ).thenAnswer((_) async => false);
 
       uploadManager = UploadManager(blossomService: mockBlossomService);
       await uploadManager.initialize();
@@ -92,9 +92,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
             resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(
-              named: 'onResumableSessionUpdated',
-            ),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer((invocation) async {
@@ -108,9 +106,7 @@ void main() {
           expect(session?.uploadId, equals('up_123'));
           expect(session?.nextOffset, equals(16));
 
-          onResumableSessionUpdated?.call(
-            session!.copyWith(nextOffset: 32),
-          );
+          onResumableSessionUpdated?.call(session!.copyWith(nextOffset: 32));
           resumeStarted.complete();
 
           return const BlossomUploadResult(
@@ -176,9 +172,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
             resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(
-              named: 'onResumableSessionUpdated',
-            ),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer((_) async {
@@ -234,9 +228,7 @@ void main() {
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
             resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(
-              named: 'onResumableSessionUpdated',
-            ),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer((invocation) async {
@@ -348,64 +340,57 @@ void main() {
             hashtags: any(named: 'hashtags'),
             proofManifestJson: any(named: 'proofManifestJson'),
             resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(
-              named: 'onResumableSessionUpdated',
-            ),
+            onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
             onProgress: any(named: 'onProgress'),
           ),
         );
       },
     );
 
-    test(
-      'initialize does not auto-resume interrupted uploads',
-      () async {
-        final upload =
-            PendingUpload.create(
-              localVideoPath: videoFile.path,
-              nostrPubkey: 'test-pubkey',
-              title: 'Interrupted video',
-            ).copyWith(
-              status: UploadStatus.uploading,
-              uploadProgress: 0.3,
-              resumableSession: const BlossomResumableUploadSession(
-                uploadId: 'up_789',
-                uploadUrl: 'https://upload.divine.video/sessions/up_789',
-                chunkSize: 8,
-                nextOffset: 8,
-              ),
-            );
-
-        final box = Hive.box<PendingUpload>('pending_uploads');
-        await box.put(upload.id, upload);
-        uploadManager.dispose();
-
-        uploadManager = UploadManager(blossomService: mockBlossomService);
-        await uploadManager.initialize();
-
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-
-        final current = uploadManager.getUpload(upload.id);
-        expect(current, isNotNull);
-        expect(current!.status, equals(UploadStatus.uploading));
-
-        verifyNever(
-          () => mockBlossomService.uploadVideo(
-            videoFile: any(named: 'videoFile'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            title: any(named: 'title'),
-            description: any(named: 'description'),
-            hashtags: any(named: 'hashtags'),
-            proofManifestJson: any(named: 'proofManifestJson'),
-            resumableSession: any(named: 'resumableSession'),
-            onResumableSessionUpdated: any(
-              named: 'onResumableSessionUpdated',
+    test('initialize does not auto-resume interrupted uploads', () async {
+      final upload =
+          PendingUpload.create(
+            localVideoPath: videoFile.path,
+            nostrPubkey: 'test-pubkey',
+            title: 'Interrupted video',
+          ).copyWith(
+            status: UploadStatus.uploading,
+            uploadProgress: 0.3,
+            resumableSession: const BlossomResumableUploadSession(
+              uploadId: 'up_789',
+              uploadUrl: 'https://upload.divine.video/sessions/up_789',
+              chunkSize: 8,
+              nextOffset: 8,
             ),
-            onProgress: any(named: 'onProgress'),
-          ),
-        );
-      },
-    );
+          );
+
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(upload.id, upload);
+      uploadManager.dispose();
+
+      uploadManager = UploadManager(blossomService: mockBlossomService);
+      await uploadManager.initialize();
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      final current = uploadManager.getUpload(upload.id);
+      expect(current, isNotNull);
+      expect(current!.status, equals(UploadStatus.uploading));
+
+      verifyNever(
+        () => mockBlossomService.uploadVideo(
+          videoFile: any(named: 'videoFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          title: any(named: 'title'),
+          description: any(named: 'description'),
+          hashtags: any(named: 'hashtags'),
+          proofManifestJson: any(named: 'proofManifestJson'),
+          resumableSession: any(named: 'resumableSession'),
+          onResumableSessionUpdated: any(named: 'onResumableSessionUpdated'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      );
+    });
   });
 
   group('UploadManager findReusableUpload', () {
@@ -425,9 +410,9 @@ void main() {
         ..writeAsBytesSync(List<int>.generate(32, (index) => index));
 
       mockBlossomService = _MockBlossomUploadService();
-      when(() => mockBlossomService.isBlossomEnabled()).thenAnswer(
-        (_) async => false,
-      );
+      when(
+        () => mockBlossomService.isBlossomEnabled(),
+      ).thenAnswer((_) async => false);
 
       uploadManager = UploadManager(blossomService: mockBlossomService);
       await uploadManager.initialize();
@@ -441,50 +426,44 @@ void main() {
       }
     });
 
-    test(
-      'returns upload in uploading status with matching path',
-      () async {
-        final upload =
-            PendingUpload.create(
-              localVideoPath: videoFile.path,
-              nostrPubkey: 'test-pubkey',
-              title: 'Uploading video',
-            ).copyWith(
-              status: UploadStatus.uploading,
-              resumableSession: const BlossomResumableUploadSession(
-                uploadId: 'up_1',
-                uploadUrl: 'https://upload.divine.video/sessions/up_1',
-                chunkSize: 8,
-                nextOffset: 8,
-              ),
-            );
+    test('returns upload in uploading status with matching path', () async {
+      final upload =
+          PendingUpload.create(
+            localVideoPath: videoFile.path,
+            nostrPubkey: 'test-pubkey',
+            title: 'Uploading video',
+          ).copyWith(
+            status: UploadStatus.uploading,
+            resumableSession: const BlossomResumableUploadSession(
+              uploadId: 'up_1',
+              uploadUrl: 'https://upload.divine.video/sessions/up_1',
+              chunkSize: 8,
+              nextOffset: 8,
+            ),
+          );
 
-        final box = Hive.box<PendingUpload>('pending_uploads');
-        await box.put(upload.id, upload);
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(upload.id, upload);
 
-        final result = uploadManager.findReusableUpload(videoFile.path);
-        expect(result, isNotNull);
-        expect(result!.id, equals(upload.id));
-      },
-    );
+      final result = uploadManager.findReusableUpload(videoFile.path);
+      expect(result, isNotNull);
+      expect(result!.id, equals(upload.id));
+    });
 
-    test(
-      'returns upload in readyToPublish status',
-      () async {
-        final upload = PendingUpload.create(
-          localVideoPath: videoFile.path,
-          nostrPubkey: 'test-pubkey',
-          title: 'Ready video',
-        ).copyWith(status: UploadStatus.readyToPublish);
+    test('returns upload in readyToPublish status', () async {
+      final upload = PendingUpload.create(
+        localVideoPath: videoFile.path,
+        nostrPubkey: 'test-pubkey',
+        title: 'Ready video',
+      ).copyWith(status: UploadStatus.readyToPublish);
 
-        final box = Hive.box<PendingUpload>('pending_uploads');
-        await box.put(upload.id, upload);
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(upload.id, upload);
 
-        final result = uploadManager.findReusableUpload(videoFile.path);
-        expect(result, isNotNull);
-        expect(result!.status, equals(UploadStatus.readyToPublish));
-      },
-    );
+      final result = uploadManager.findReusableUpload(videoFile.path);
+      expect(result, isNotNull);
+      expect(result!.status, equals(UploadStatus.readyToPublish));
+    });
 
     test(
       'returns failed upload only when it has a resumable session',
@@ -513,61 +492,52 @@ void main() {
       },
     );
 
-    test(
-      'skips failed upload without resumable session',
-      () async {
-        final failedNoSession = PendingUpload.create(
+    test('skips failed upload without resumable session', () async {
+      final failedNoSession = PendingUpload.create(
+        localVideoPath: videoFile.path,
+        nostrPubkey: 'test-pubkey',
+        title: 'Failed without session',
+      ).copyWith(status: UploadStatus.failed);
+
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(failedNoSession.id, failedNoSession);
+
+      final result = uploadManager.findReusableUpload(videoFile.path);
+      expect(result, isNull);
+    });
+
+    test('skips published, pending, and paused uploads', () async {
+      final box = Hive.box<PendingUpload>('pending_uploads');
+
+      for (final status in [
+        UploadStatus.published,
+        UploadStatus.pending,
+        UploadStatus.paused,
+      ]) {
+        final upload = PendingUpload.create(
           localVideoPath: videoFile.path,
           nostrPubkey: 'test-pubkey',
-          title: 'Failed without session',
-        ).copyWith(status: UploadStatus.failed);
-
-        final box = Hive.box<PendingUpload>('pending_uploads');
-        await box.put(failedNoSession.id, failedNoSession);
-
-        final result = uploadManager.findReusableUpload(videoFile.path);
-        expect(result, isNull);
-      },
-    );
-
-    test(
-      'skips published, pending, and paused uploads',
-      () async {
-        final box = Hive.box<PendingUpload>('pending_uploads');
-
-        for (final status in [
-          UploadStatus.published,
-          UploadStatus.pending,
-          UploadStatus.paused,
-        ]) {
-          final upload = PendingUpload.create(
-            localVideoPath: videoFile.path,
-            nostrPubkey: 'test-pubkey',
-            title: 'Skip $status',
-          ).copyWith(status: status);
-          await box.put(upload.id, upload);
-        }
-
-        final result = uploadManager.findReusableUpload(videoFile.path);
-        expect(result, isNull);
-      },
-    );
-
-    test(
-      'returns null when no uploads match the path',
-      () async {
-        final upload = PendingUpload.create(
-          localVideoPath: '/some/other/path.mp4',
-          nostrPubkey: 'test-pubkey',
-          title: 'Other video',
-        ).copyWith(status: UploadStatus.uploading);
-
-        final box = Hive.box<PendingUpload>('pending_uploads');
+          title: 'Skip $status',
+        ).copyWith(status: status);
         await box.put(upload.id, upload);
+      }
 
-        final result = uploadManager.findReusableUpload(videoFile.path);
-        expect(result, isNull);
-      },
-    );
+      final result = uploadManager.findReusableUpload(videoFile.path);
+      expect(result, isNull);
+    });
+
+    test('returns null when no uploads match the path', () async {
+      final upload = PendingUpload.create(
+        localVideoPath: '/some/other/path.mp4',
+        nostrPubkey: 'test-pubkey',
+        title: 'Other video',
+      ).copyWith(status: UploadStatus.uploading);
+
+      final box = Hive.box<PendingUpload>('pending_uploads');
+      await box.put(upload.id, upload);
+
+      final result = uploadManager.findReusableUpload(videoFile.path);
+      expect(result, isNull);
+    });
   });
 }

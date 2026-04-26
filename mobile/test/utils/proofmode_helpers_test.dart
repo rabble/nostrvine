@@ -244,10 +244,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'verified original vine',
         timestamp: DateTime.now(),
-        rawTags: const {
-          'verification': 'verified_mobile',
-          'platform': 'vine',
-        },
+        rawTags: const {'verification': 'verified_mobile', 'platform': 'vine'},
         originalLoops: 500000,
       );
 
@@ -300,31 +297,28 @@ void main() {
       expect(video.shouldShowVineBadge, isFalse);
     });
 
-    test(
-      'shows Vine badge even with manifest and fingerprint proof tags',
-      () {
-        final video = VideoEvent(
-          id: 'combo5',
-          pubkey: 'pubkey5',
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          content: 'vine with all proof tags',
-          timestamp: DateTime.now(),
-          rawTags: const {
-            'verification': 'verified_mobile',
-            'proofmode': '{"test": "data"}',
-            'pgp_fingerprint': 'ABC123',
-            'device_attestation': 'ATTEST',
-            'platform': 'vine',
-          },
-          originalLoops: 42000,
-        );
+    test('shows Vine badge even with manifest and fingerprint proof tags', () {
+      final video = VideoEvent(
+        id: 'combo5',
+        pubkey: 'pubkey5',
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        content: 'vine with all proof tags',
+        timestamp: DateTime.now(),
+        rawTags: const {
+          'verification': 'verified_mobile',
+          'proofmode': '{"test": "data"}',
+          'pgp_fingerprint': 'ABC123',
+          'device_attestation': 'ATTEST',
+          'platform': 'vine',
+        },
+        originalLoops: 42000,
+      );
 
-        // Original vine always gets Vine badge, never ProofMode
-        expect(video.shouldShowVineBadge, isTrue);
-        expect(video.shouldShowProofModeBadge, isFalse);
-        expect(video.hasProofMode, isTrue);
-        expect(video.isOriginalVine, isTrue);
-      },
-    );
+      // Original vine always gets Vine badge, never ProofMode
+      expect(video.shouldShowVineBadge, isTrue);
+      expect(video.shouldShowProofModeBadge, isFalse);
+      expect(video.hasProofMode, isTrue);
+      expect(video.isOriginalVine, isTrue);
+    });
   });
 }

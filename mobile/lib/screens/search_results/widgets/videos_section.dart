@@ -36,12 +36,8 @@ class VideosSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (VideoSearchBloc bloc) => bloc.state.status,
-    );
-    final videos = context.select(
-      (VideoSearchBloc bloc) => bloc.state.videos,
-    );
+    final status = context.select((VideoSearchBloc bloc) => bloc.state.status);
+    final videos = context.select((VideoSearchBloc bloc) => bloc.state.videos);
 
     // In the All tab, hide entire section when results are empty and loaded.
     if (!showAll && status == VideoSearchStatus.success && videos.isEmpty) {
@@ -69,16 +65,13 @@ class _VideosPaginationTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = context.select(
-      (VideoSearchBloc b) => b.state.hasMore,
-    );
+    final hasMore = context.select((VideoSearchBloc b) => b.state.hasMore);
     final isLoadingMore = context.select(
       (VideoSearchBloc b) => b.state.isLoadingMore,
     );
     return SliverPaginationTrigger(
-      onLoadMore: () => context.read<VideoSearchBloc>().add(
-        const VideoSearchLoadMore(),
-      ),
+      onLoadMore: () =>
+          context.read<VideoSearchBloc>().add(const VideoSearchLoadMore()),
       hasMore: hasMore,
       isLoadingMore: isLoadingMore,
     );
@@ -165,9 +158,8 @@ class _VideosGrid extends StatelessWidget {
 
     if (status == VideoSearchStatus.failure) {
       return SearchSectionErrorState(
-        onRetry: () => context.read<VideoSearchBloc>().add(
-          VideoSearchQueryChanged(query),
-        ),
+        onRetry: () =>
+            context.read<VideoSearchBloc>().add(VideoSearchQueryChanged(query)),
       );
     }
 

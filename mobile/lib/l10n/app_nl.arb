@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Splitsen",
     "videoEditorSplitSelectedClipSemanticLabel": "Geselecteerde clip splitsen",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
-    "videoEditorSortNewest": "Nieuwste",
-    "videoEditorSortLongest": "Langste",
-    "videoEditorSortShortest": "Kortste",
-    "videoEditorSortBySemanticLabel": "Sorteren op {option}. Tik om sorteervolgorde te wijzigen",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
     "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",
     "videoEditorAudioUntitledSound": "Naamloos geluid",
-    "videoEditorAudioSelectSoundSemanticLabel": "Geluid selecteren",
     "videoEditorAudioUntitled": "Naamloos",
     "videoEditorAudioAddAudio": "Audio toevoegen",
     "videoEditorAudioNoSoundsAvailableTitle": "Geen geluiden beschikbaar",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Geluiden verschijnen hier wanneer creators audio delen",
-    "videoEditorAudioNoSoundsFoundTitle": "Geen geluiden gevonden",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Probeer een andere zoekterm",
     "videoEditorAudioFailedToLoadTitle": "Geluiden laden mislukt",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Gemeenschap",
     "videoEditorDrawToolArrowSemanticLabel": "Pijlgereedschap",
     "videoEditorDrawToolEraserSemanticLabel": "Gumgereedschap",
     "videoEditorDrawToolMarkerSemanticLabel": "Markeergereedschap",

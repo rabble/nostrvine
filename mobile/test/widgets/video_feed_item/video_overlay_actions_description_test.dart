@@ -16,9 +16,8 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
-AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
-  tester.element(find.byType(Scaffold).first),
-);
+AppLocalizations _l10n(WidgetTester tester) =>
+    AppLocalizations.of(tester.element(find.byType(Scaffold).first));
 
 class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
@@ -132,9 +131,7 @@ void main() {
 
   testWidgets(
     'does not render a dedicated captions button in the action rail',
-    (
-      tester,
-    ) async {
+    (tester) async {
       final subtitleVideo = testVideo.copyWith(
         textTrackRef: '39307:${testVideo.pubkey}:subtitles:${testVideo.id}',
       );

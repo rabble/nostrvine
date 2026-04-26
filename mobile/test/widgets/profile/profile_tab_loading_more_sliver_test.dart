@@ -12,9 +12,7 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         home: const Scaffold(
-          body: CustomScrollView(
-            slivers: [ProfileTabLoadingMoreSliver()],
-          ),
+          body: CustomScrollView(slivers: [ProfileTabLoadingMoreSliver()]),
         ),
       );
     }

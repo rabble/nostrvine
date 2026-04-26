@@ -81,18 +81,14 @@ class FeedAutoAdvanceCubit extends Cubit<FeedAutoAdvanceState> {
   void suppressForInteraction() {
     if (!state.enabled || state.suppressed) return;
 
-    emit(
-      state.copyWith(suppressed: true, pendingPaginationAdvance: false),
-    );
+    emit(state.copyWith(suppressed: true, pendingPaginationAdvance: false));
   }
 
   /// Resume Auto after the user performs a manual swipe.
   void resumeAfterSwipe() {
     if (!state.enabled || !state.suppressed) return;
 
-    emit(
-      state.copyWith(suppressed: false, pendingPaginationAdvance: false),
-    );
+    emit(state.copyWith(suppressed: false, pendingPaginationAdvance: false));
   }
 
   /// Mark that the feed needs to advance once the next page lands.

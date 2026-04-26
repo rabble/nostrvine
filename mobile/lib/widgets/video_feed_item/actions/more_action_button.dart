@@ -18,11 +18,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// 24 icon + 8 px gap + label/small caption layout, and Figma-spec drop
 /// shadows with the other buttons in the column.
 class MoreActionButton extends StatelessWidget {
-  const MoreActionButton({
-    required this.video,
-    this.onInteracted,
-    super.key,
-  });
+  const MoreActionButton({required this.video, this.onInteracted, super.key});
 
   final VideoEvent video;
   final VoidCallback? onInteracted;

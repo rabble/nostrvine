@@ -88,12 +88,10 @@ class _VideoEditorAudioAdjustSheetState
               DivineIconButton(
                 icon: .check,
                 size: .small,
-                onPressed: () => context.pop(
-                  (
-                    recordedVolume: _recordedVolume.value,
-                    customVolume: _customVolume.value,
-                  ),
-                ),
+                onPressed: () => context.pop((
+                  recordedVolume: _recordedVolume.value,
+                  customVolume: _customVolume.value,
+                )),
               ),
             ],
           ),
@@ -120,10 +118,7 @@ class _VideoEditorAudioAdjustSheetState
 }
 
 class _ControlBar extends StatelessWidget {
-  const _ControlBar({
-    required this.label,
-    required this.volume,
-  });
+  const _ControlBar({required this.label, required this.volume});
 
   final String label;
   final ValueNotifier<double> volume;
@@ -139,17 +134,13 @@ class _ControlBar extends StatelessWidget {
         children: [
           ValueListenableBuilder<double>(
             valueListenable: volume,
-            builder: (_, value, _) => _VolumeRow(
-              label: label,
-              value: '${(value * 100).round()}%',
-            ),
+            builder: (_, value, _) =>
+                _VolumeRow(label: label, value: '${(value * 100).round()}%'),
           ),
           ValueListenableBuilder<double>(
             valueListenable: volume,
-            builder: (_, value, _) => DivineSlider(
-              value: value,
-              onChanged: (v) => volume.value = v,
-            ),
+            builder: (_, value, _) =>
+                DivineSlider(value: value, onChanged: (v) => volume.value = v),
           ),
         ],
       ),
@@ -168,12 +159,8 @@ class _VolumeRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: .spaceBetween,
       children: [
-        Flexible(
-          child: Text(label, style: VineTheme.labelLargeFont()),
-        ),
-        Flexible(
-          child: Text(value, style: VineTheme.labelLargeFont()),
-        ),
+        Flexible(child: Text(label, style: VineTheme.labelLargeFont())),
+        Flexible(child: Text(value, style: VineTheme.labelLargeFont())),
       ],
     );
   }

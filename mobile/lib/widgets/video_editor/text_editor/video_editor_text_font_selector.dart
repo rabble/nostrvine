@@ -32,9 +32,7 @@ class VideoEditorTextFontSelector extends StatelessWidget {
         return SizedBox(
           height: min(380, constraints.maxHeight),
           child: ListView.builder(
-            padding: .only(
-              bottom: MediaQuery.viewPaddingOf(context).bottom,
-            ),
+            padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
             itemCount: VideoEditorConstants.textFonts.length,
             itemBuilder: (context, index) {
               final font = VideoEditorConstants.textFonts[index];

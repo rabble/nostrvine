@@ -24,9 +24,7 @@ void main() {
 
     test('classifies Divine media host lookup failures as recoverable', () {
       const details = FlutterErrorDetails(
-        exception: SocketException(
-          "Failed host lookup: 'media.divine.video'",
-        ),
+        exception: SocketException("Failed host lookup: 'media.divine.video'"),
         library: 'dart:_http',
       );
 

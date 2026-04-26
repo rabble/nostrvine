@@ -17,9 +17,9 @@ class VideoEditorMainBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.25,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.25);
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),

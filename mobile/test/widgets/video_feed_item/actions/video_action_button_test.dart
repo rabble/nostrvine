@@ -55,9 +55,7 @@ void main() {
       });
 
       testWidgets('$DivineIcon with specified color', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(iconColor: Colors.red),
-        );
+        await tester.pumpWidget(buildSubject(iconColor: Colors.red));
 
         final divineIcon = tester
             .widgetList<DivineIcon>(find.byType(DivineIcon))
@@ -104,38 +102,33 @@ void main() {
         expect(find.text('Auto'), findsOneWidget);
       });
 
-      testWidgets(
-        'renders labelWhenZero as a placeholder when count is 0',
-        (tester) async {
-          await tester.pumpWidget(buildSubject(labelWhenZero: 'Like'));
+      testWidgets('renders labelWhenZero as a placeholder when count is 0', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(labelWhenZero: 'Like'));
 
-          expect(find.text('Like'), findsOneWidget);
-        },
-      );
+        expect(find.text('Like'), findsOneWidget);
+      });
 
-      testWidgets(
-        'hides labelWhenZero once count goes above 0',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(count: 12, labelWhenZero: 'Like'),
-          );
+      testWidgets('hides labelWhenZero once count goes above 0', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject(count: 12, labelWhenZero: 'Like'));
 
-          expect(find.text('12'), findsOneWidget);
-          expect(find.text('Like'), findsNothing);
-        },
-      );
+        expect(find.text('12'), findsOneWidget);
+        expect(find.text('Like'), findsNothing);
+      });
 
-      testWidgets(
-        'caption takes precedence over labelWhenZero',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(caption: 'Auto', labelWhenZero: 'Like'),
-          );
+      testWidgets('caption takes precedence over labelWhenZero', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(caption: 'Auto', labelWhenZero: 'Like'),
+        );
 
-          expect(find.text('Auto'), findsOneWidget);
-          expect(find.text('Like'), findsNothing);
-        },
-      );
+        expect(find.text('Auto'), findsOneWidget);
+        expect(find.text('Like'), findsNothing);
+      });
     });
 
     group('loading state', () {
@@ -176,9 +169,7 @@ void main() {
     group('interactions', () {
       testWidgets('calls onPressed when tapped', (tester) async {
         var tapped = false;
-        await tester.pumpWidget(
-          buildSubject(onPressed: () => tapped = true),
-        );
+        await tester.pumpWidget(buildSubject(onPressed: () => tapped = true));
 
         await tester.tap(find.byType(GestureDetector));
         expect(tapped, isTrue);
@@ -191,23 +182,19 @@ void main() {
         // No assertion needed — just verifying no exception is thrown
       });
 
-      testWidgets(
-        'captures taps on the caption area, not just the icon',
-        (tester) async {
-          var tapped = false;
-          await tester.pumpWidget(
-            buildSubject(
-              labelWhenZero: 'Like',
-              onPressed: () => tapped = true,
-            ),
-          );
+      testWidgets('captures taps on the caption area, not just the icon', (
+        tester,
+      ) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          buildSubject(labelWhenZero: 'Like', onPressed: () => tapped = true),
+        );
 
-          // The caption sits in the lower half of the 48x48 box. Tapping
-          // on it should still fire the action.
-          await tester.tap(find.text('Like'));
-          expect(tapped, isTrue);
-        },
-      );
+        // The caption sits in the lower half of the 48x48 box. Tapping
+        // on it should still fire the action.
+        await tester.tap(find.text('Like'));
+        expect(tapped, isTrue);
+      });
     });
 
     group('accessibility', () {
@@ -225,9 +212,7 @@ void main() {
       });
 
       testWidgets('has correct semantics label', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(semanticLabel: 'Like video'),
-        );
+        await tester.pumpWidget(buildSubject(semanticLabel: 'Like video'));
 
         final semantics = tester.widget<Semantics>(
           find.byWidgetPredicate(

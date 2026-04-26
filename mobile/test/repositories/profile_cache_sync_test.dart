@@ -33,9 +33,7 @@ void main() {
         () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockProfileRepository.getCachedProfile(
-          pubkey: 'test-pubkey-123',
-        ),
+        () => mockProfileRepository.getCachedProfile(pubkey: 'test-pubkey-123'),
       ).thenAnswer((_) async => testProfile);
 
       // ACT: Add to cache
@@ -76,9 +74,7 @@ void main() {
 
       var callCount = 0;
       when(
-        () => mockProfileRepository.getCachedProfile(
-          pubkey: 'test-pubkey-456',
-        ),
+        () => mockProfileRepository.getCachedProfile(pubkey: 'test-pubkey-456'),
       ).thenAnswer((_) async {
         callCount++;
         return callCount == 1 ? profile1 : profile2;
@@ -127,9 +123,7 @@ void main() {
         () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
       when(
-        () => mockProfileRepository.getCachedProfile(
-          pubkey: 'user-pubkey-789',
-        ),
+        () => mockProfileRepository.getCachedProfile(pubkey: 'user-pubkey-789'),
       ).thenAnswer((_) async => newProfile);
 
       // STEP 2: Profile is published to Nostr

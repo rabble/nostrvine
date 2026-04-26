@@ -225,9 +225,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               onChanged: _onSearchChanged,
               onSubmitted: _onSearchChanged,
               cursorColor: VineTheme.vineGreen,
-              style: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurface,
-              ),
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: VineTheme.bodyLargeFont(
@@ -429,9 +427,7 @@ class _EmptyHint extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userPickerTypeNameToSearch,
-          style: VineTheme.bodyMediumFont(
-            color: VineTheme.onSurfaceMuted,
-          ),
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
         ),
       ),
     );
@@ -448,9 +444,7 @@ class _ProfileRepoUnavailable extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userPickerUnavailable,
-          style: VineTheme.bodyMediumFont(
-            color: VineTheme.onSurfaceMuted,
-          ),
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           textAlign: TextAlign.center,
         ),
       ),
@@ -468,9 +462,7 @@ class _ErrorState extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userPickerSearchFailedTryAgain,
-          style: VineTheme.bodyMediumFont(
-            color: VineTheme.onSurfaceMuted,
-          ),
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
         ),
       ),
     );
@@ -487,9 +479,7 @@ class _NoResults extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Text(
           context.l10n.userSearchNoResults,
-          style: VineTheme.bodyMediumFont(
-            color: VineTheme.onSurfaceMuted,
-          ),
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
         ),
       ),
     );

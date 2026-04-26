@@ -54,9 +54,7 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
     final isSet = warnings.isNotEmpty;
     final displayText = isSet
         ? warnings
-              .map(
-                (label) => localizedContentLabelName(context.l10n, label),
-              )
+              .map((label) => localizedContentLabelName(context.l10n, label))
               .join(', ')
         : context.l10n.contentWarningNone;
 
@@ -152,9 +150,7 @@ class _ContentWarningMultiSelectState
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               context.l10n.videoMetadataContentWarningSelectAllThatApply,
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.secondaryText,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
             ),
           ),
           Expanded(
@@ -168,10 +164,7 @@ class _ContentWarningMultiSelectState
                   value: isChecked,
                   onChanged: (_) => _toggle(label),
                   title: Text(
-                    localizedContentLabelName(
-                      context.l10n,
-                      label,
-                    ),
+                    localizedContentLabelName(context.l10n, label),
                     style: VineTheme.bodyLargeFont(),
                   ),
                   activeColor: VineTheme.vineGreen,

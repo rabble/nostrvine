@@ -98,10 +98,7 @@ class _ListDescription extends StatelessWidget {
 /// Renders up to [_avatarSlotCount] avatars. Slots without a resolved
 /// avatar URL show a coloured placeholder.
 class _AvatarCollage extends StatelessWidget {
-  const _AvatarCollage({
-    required this.pubkeys,
-    required this.memberCount,
-  });
+  const _AvatarCollage({required this.pubkeys, required this.memberCount});
 
   final List<String> pubkeys;
   final int memberCount;

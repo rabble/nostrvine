@@ -89,9 +89,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                 subtitle: 'Toggle feature flags that may hiccup.',
                 onTap: () => Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const FeatureFlagScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const FeatureFlagScreen()),
                 ),
               ),
 

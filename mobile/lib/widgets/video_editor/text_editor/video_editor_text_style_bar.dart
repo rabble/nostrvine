@@ -161,10 +161,7 @@ class _ColorSwatchButton extends StatelessWidget {
             child: Container(
               width: 20,
               height: 20,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
           ),
         ),
@@ -187,9 +184,9 @@ class _FontSelectorButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.2,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.2);
     final display = fontName == 'Unknown'
         ? context.l10n.videoEditorFontUnknown
         : fontName;

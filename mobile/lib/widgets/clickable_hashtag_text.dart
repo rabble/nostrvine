@@ -269,9 +269,7 @@ class ClickableHashtagText extends ConsumerWidget {
 
   Future<void> _launchUrl(String rawUrl) async {
     final normalizedUrl =
-        rawUrl.startsWith(
-          RegExp('https?://', caseSensitive: false),
-        )
+        rawUrl.startsWith(RegExp('https?://', caseSensitive: false))
         ? rawUrl
         : 'https://$rawUrl';
     final uri = Uri.tryParse(normalizedUrl);

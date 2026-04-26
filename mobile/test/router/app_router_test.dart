@@ -42,12 +42,12 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWith((ref) {
               final authService = _MockAuthService();
-              when(() => authService.authStateStream).thenAnswer(
-                (_) => authStateController.stream,
-              );
-              when(() => authService.authState).thenAnswer(
-                (_) => authStateBus.state,
-              );
+              when(
+                () => authService.authStateStream,
+              ).thenAnswer((_) => authStateController.stream);
+              when(
+                () => authService.authState,
+              ).thenAnswer((_) => authStateBus.state);
               when(() => authService.hasExpiredOAuthSession).thenReturn(false);
               return authService;
             }),

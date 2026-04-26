@@ -21,20 +21,19 @@ DivineVideoClip _createTestClip() => DivineVideoClip(
 
 /// Creates a minimal draft with no edits (only clips, defaults for everything
 /// else). This is the baseline: [hasBeenEdited] should be false.
-DivineVideoDraft _minimalDraft({
-  List<DivineVideoClip>? clips,
-}) => DivineVideoDraft(
-  id: 'draft_1',
-  clips: clips ?? [_createTestClip()],
-  title: '',
-  description: '',
-  hashtags: const {},
-  selectedApproach: 'camera',
-  createdAt: DateTime(2025),
-  lastModified: DateTime(2025),
-  publishStatus: PublishStatus.draft,
-  publishAttempts: 0,
-);
+DivineVideoDraft _minimalDraft({List<DivineVideoClip>? clips}) =>
+    DivineVideoDraft(
+      id: 'draft_1',
+      clips: clips ?? [_createTestClip()],
+      title: '',
+      description: '',
+      hashtags: const {},
+      selectedApproach: 'camera',
+      createdAt: DateTime(2025),
+      lastModified: DateTime(2025),
+      publishStatus: PublishStatus.draft,
+      publishAttempts: 0,
+    );
 
 void main() {
   group(DivineVideoDraft, () {

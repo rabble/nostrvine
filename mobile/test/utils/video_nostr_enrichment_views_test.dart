@@ -31,10 +31,7 @@ VideoEvent _restVideo({
     // trigger in enrichVideosWithNostrTags — `rawTags.length < 4` — fires on
     // every test. Each test adds `views`, `title`, etc. via [extraTags].
     // Callers must keep `extraTags.length <= 2` to stay under the threshold.
-    rawTags: {
-      'd': id,
-      ...extraTags,
-    },
+    rawTags: {'d': id, ...extraTags},
   );
 }
 
@@ -77,10 +74,9 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => [nostrEvent]);
 
-        final enriched = await enrichVideosWithNostrTags(
-          [restVideo],
-          nostrService: mockNostrClient,
-        );
+        final enriched = await enrichVideosWithNostrTags([
+          restVideo,
+        ], nostrService: mockNostrClient);
 
         expect(enriched, hasLength(1));
         expect(enriched.single.rawTags['views'], equals('34'));
@@ -89,43 +85,36 @@ void main() {
       },
     );
 
-    test(
-      'Nostr-supplied tags override REST tags on key collision',
-      () async {
-        const pubkey =
-            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
-        final nostrEvent = Event(
-          pubkey,
-          34236,
-          [
-            ['d', 'video-2'],
-            ['url', 'https://example.com/video-2.mp4'],
-            ['title', 'Nostr Title Wins'],
-            ['m', 'video/mp4'],
-          ],
-          'Nostr content',
-          createdAt: 1704067200,
-        );
-        final restVideo = _restVideo(
-          id: nostrEvent.id,
-          extraTags: const {
-            'views': '7',
-            'title': 'REST Title (stale)',
-          },
-        );
+    test('Nostr-supplied tags override REST tags on key collision', () async {
+      const pubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final nostrEvent = Event(
+        pubkey,
+        34236,
+        [
+          ['d', 'video-2'],
+          ['url', 'https://example.com/video-2.mp4'],
+          ['title', 'Nostr Title Wins'],
+          ['m', 'video/mp4'],
+        ],
+        'Nostr content',
+        createdAt: 1704067200,
+      );
+      final restVideo = _restVideo(
+        id: nostrEvent.id,
+        extraTags: const {'views': '7', 'title': 'REST Title (stale)'},
+      );
 
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => [nostrEvent]);
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => [nostrEvent]);
 
-        final enriched = await enrichVideosWithNostrTags(
-          [restVideo],
-          nostrService: mockNostrClient,
-        );
+      final enriched = await enrichVideosWithNostrTags([
+        restVideo,
+      ], nostrService: mockNostrClient);
 
-        expect(enriched.single.rawTags['title'], equals('Nostr Title Wins'));
-        expect(enriched.single.rawTags['views'], equals('7'));
-      },
-    );
+      expect(enriched.single.rawTags['title'], equals('Nostr Title Wins'));
+      expect(enriched.single.rawTags['views'], equals('7'));
+    });
   });
 }

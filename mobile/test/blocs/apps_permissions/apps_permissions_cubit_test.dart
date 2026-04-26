@@ -15,9 +15,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
-      grantStore = NostrAppGrantStore(
-        sharedPreferences: prefs,
-      );
+      grantStore = NostrAppGrantStore(sharedPreferences: prefs);
     });
 
     test('initial state is correct', () {
@@ -25,10 +23,7 @@ void main() {
         grantStore: grantStore,
         currentUserPubkey: pubkey,
       );
-      expect(
-        cubit.state.status,
-        AppsPermissionsStatus.initial,
-      );
+      expect(cubit.state.status, AppsPermissionsStatus.initial);
       expect(cubit.state.grants, isEmpty);
     });
 
@@ -48,37 +43,21 @@ void main() {
       ),
       act: (cubit) => cubit.loadGrants(),
       expect: () => [
-        const AppsPermissionsState(
-          status: AppsPermissionsStatus.loading,
-        ),
+        const AppsPermissionsState(status: AppsPermissionsStatus.loading),
         isA<AppsPermissionsState>()
-            .having(
-              (s) => s.status,
-              'status',
-              AppsPermissionsStatus.loaded,
-            )
-            .having(
-              (s) => s.grants.length,
-              'grants.length',
-              1,
-            ),
+            .having((s) => s.status, 'status', AppsPermissionsStatus.loaded)
+            .having((s) => s.grants.length, 'grants.length', 1),
       ],
     );
 
     blocTest<AppsPermissionsCubit, AppsPermissionsState>(
       'emits empty grants when currentUserPubkey is null',
-      build: () => AppsPermissionsCubit(
-        grantStore: grantStore,
-        currentUserPubkey: null,
-      ),
+      build: () =>
+          AppsPermissionsCubit(grantStore: grantStore, currentUserPubkey: null),
       act: (cubit) => cubit.loadGrants(),
       expect: () => [
-        const AppsPermissionsState(
-          status: AppsPermissionsStatus.loading,
-        ),
-        const AppsPermissionsState(
-          status: AppsPermissionsStatus.loaded,
-        ),
+        const AppsPermissionsState(status: AppsPermissionsStatus.loading),
+        const AppsPermissionsState(status: AppsPermissionsStatus.loaded),
       ],
     );
 
@@ -102,23 +81,11 @@ void main() {
         await cubit.revokeGrant(grant);
       },
       expect: () => [
-        const AppsPermissionsState(
-          status: AppsPermissionsStatus.loading,
-        ),
+        const AppsPermissionsState(status: AppsPermissionsStatus.loading),
         isA<AppsPermissionsState>()
-            .having(
-              (s) => s.status,
-              'status',
-              AppsPermissionsStatus.loaded,
-            )
-            .having(
-              (s) => s.grants.length,
-              'grants.length',
-              1,
-            ),
-        const AppsPermissionsState(
-          status: AppsPermissionsStatus.loaded,
-        ),
+            .having((s) => s.status, 'status', AppsPermissionsStatus.loaded)
+            .having((s) => s.grants.length, 'grants.length', 1),
+        const AppsPermissionsState(status: AppsPermissionsStatus.loaded),
       ],
     );
   });

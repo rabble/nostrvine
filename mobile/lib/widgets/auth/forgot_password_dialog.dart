@@ -88,9 +88,7 @@ class _ForgotPasswordSheetContentState
                 prefixIcon: const Icon(Icons.email_outlined),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: VineTheme.outlineVariant,
-                  ),
+                  borderSide: const BorderSide(color: VineTheme.outlineVariant),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),

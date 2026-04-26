@@ -36,18 +36,14 @@ void main() {
       mockClipBloc = _MockClipEditorBloc();
       playheadPosition = ValueNotifier(Duration.zero);
 
-      when(() => mockMainBloc.state).thenReturn(
-        const VideoEditorMainState(),
-      );
-      when(() => mockMainBloc.stream).thenAnswer(
-        (_) => const Stream<VideoEditorMainState>.empty(),
-      );
-      when(() => mockClipBloc.state).thenReturn(
-        const ClipEditorState(),
-      );
-      when(() => mockClipBloc.stream).thenAnswer(
-        (_) => const Stream<ClipEditorState>.empty(),
-      );
+      when(() => mockMainBloc.state).thenReturn(const VideoEditorMainState());
+      when(
+        () => mockMainBloc.stream,
+      ).thenAnswer((_) => const Stream<VideoEditorMainState>.empty());
+      when(() => mockClipBloc.state).thenReturn(const ClipEditorState());
+      when(
+        () => mockClipBloc.stream,
+      ).thenAnswer((_) => const Stream<ClipEditorState>.empty());
     });
 
     tearDown(() {
@@ -103,10 +99,7 @@ void main() {
       testWidgets('renders $VideoEditorTimelineHeader', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(
-          find.byType(VideoEditorTimelineHeader),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoEditorTimelineHeader), findsOneWidget);
       });
 
       testWidgets('renders play/pause button', (tester) async {
@@ -158,9 +151,7 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockMainBloc.add(
-            const VideoEditorPlaybackToggleRequested(),
-          ),
+          () => mockMainBloc.add(const VideoEditorPlaybackToggleRequested()),
         ).called(1);
       });
     });
@@ -298,10 +289,7 @@ void main() {
   });
 }
 
-DivineVideoClip _createTestClip({
-  required String id,
-  int seconds = 2,
-}) {
+DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('/tmp/test_$id.mp4'),

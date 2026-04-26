@@ -142,10 +142,7 @@ class ScreenAnalyticsService {
   }
 
   /// Mark when screen data is fully loaded (async data fetched)
-  void markDataLoaded(
-    String screenName, {
-    Map<String, dynamic>? dataMetrics,
-  }) {
+  void markDataLoaded(String screenName, {Map<String, dynamic>? dataMetrics}) {
     final session = _activeSessions[screenName];
     if (session == null) return;
 

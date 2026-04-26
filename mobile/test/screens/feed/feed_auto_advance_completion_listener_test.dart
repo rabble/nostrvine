@@ -83,10 +83,7 @@ void main() {
       'fires onCompleted when player crosses loop boundary after arming',
       (tester) async {
         await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            onCompleted: () => completions++,
-          ),
+          _subject(player: harness.player, onCompleted: () => completions++),
         );
 
         // Normal forward progress — not near end yet, not armed.
@@ -112,218 +109,173 @@ void main() {
       },
     );
 
-    testWidgets(
-      'does not fire onCompleted when disabled',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            isEnabled: false,
-            onCompleted: () => completions++,
-          ),
-        );
+    testWidgets('does not fire onCompleted when disabled', (tester) async {
+      await tester.pumpWidget(
+        _subject(
+          player: harness.player,
+          isEnabled: false,
+          onCompleted: () => completions++,
+        ),
+      );
 
-        // No subscription was installed while disabled, so these ticks
-        // are irrelevant — assert the stream has no listener.
-        expect(harness._positions.hasListener, isFalse);
+      // No subscription was installed while disabled, so these ticks
+      // are irrelevant — assert the stream has no listener.
+      expect(harness._positions.hasListener, isFalse);
 
-        // Even if we push values, the listener is not attached.
-        harness.emit(const Duration(milliseconds: 4500));
-        harness.emit(const Duration(milliseconds: 200));
-        await _flush(tester);
-        expect(completions, equals(0));
-      },
-    );
+      // Even if we push values, the listener is not attached.
+      harness.emit(const Duration(milliseconds: 4500));
+      harness.emit(const Duration(milliseconds: 200));
+      await _flush(tester);
+      expect(completions, equals(0));
+    });
 
-    testWidgets(
-      'does not fire onCompleted on a forward seek without arming',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            onCompleted: () => completions++,
-          ),
-        );
+    testWidgets('does not fire onCompleted on a forward seek without arming', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _subject(player: harness.player, onCompleted: () => completions++),
+      );
 
-        // Jump back to start without ever crossing the end threshold.
-        harness.emit(const Duration(seconds: 2));
-        harness.emit(const Duration(milliseconds: 100));
-        await _flush(tester);
-        expect(completions, equals(0));
-      },
-    );
+      // Jump back to start without ever crossing the end threshold.
+      harness.emit(const Duration(seconds: 2));
+      harness.emit(const Duration(milliseconds: 100));
+      await _flush(tester);
+      expect(completions, equals(0));
+    });
 
-    testWidgets(
-      'does not fire onCompleted when player has zero duration',
-      (tester) async {
-        final zeroHarness = _PlayerHarness(duration: Duration.zero);
-        addTearDown(zeroHarness.dispose);
+    testWidgets('does not fire onCompleted when player has zero duration', (
+      tester,
+    ) async {
+      final zeroHarness = _PlayerHarness(duration: Duration.zero);
+      addTearDown(zeroHarness.dispose);
 
-        await tester.pumpWidget(
-          _subject(
-            player: zeroHarness.player,
-            onCompleted: () => completions++,
-          ),
-        );
+      await tester.pumpWidget(
+        _subject(player: zeroHarness.player, onCompleted: () => completions++),
+      );
 
-        zeroHarness.emit(const Duration(milliseconds: 100));
-        zeroHarness.emit(Duration.zero);
-        await _flush(tester);
-        expect(completions, equals(0));
-      },
-    );
+      zeroHarness.emit(const Duration(milliseconds: 100));
+      zeroHarness.emit(Duration.zero);
+      await _flush(tester);
+      expect(completions, equals(0));
+    });
 
-    testWidgets(
-      're-subscribes when the player reference changes',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            onCompleted: () => completions++,
-          ),
-        );
+    testWidgets('re-subscribes when the player reference changes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _subject(player: harness.player, onCompleted: () => completions++),
+      );
 
-        expect(harness._positions.hasListener, isTrue);
+      expect(harness._positions.hasListener, isTrue);
 
-        final replacement = _PlayerHarness();
-        addTearDown(replacement.dispose);
+      final replacement = _PlayerHarness();
+      addTearDown(replacement.dispose);
 
-        await tester.pumpWidget(
-          _subject(
-            player: replacement.player,
-            onCompleted: () => completions++,
-          ),
-        );
+      await tester.pumpWidget(
+        _subject(player: replacement.player, onCompleted: () => completions++),
+      );
 
-        expect(harness._positions.hasListener, isFalse);
-        expect(replacement._positions.hasListener, isTrue);
+      expect(harness._positions.hasListener, isFalse);
+      expect(replacement._positions.hasListener, isTrue);
 
-        // The new player completes — fires from the new subscription.
-        replacement.emit(const Duration(milliseconds: 4500));
-        replacement.emit(const Duration(milliseconds: 200));
-        await _flush(tester);
-        expect(completions, equals(1));
-      },
-    );
+      // The new player completes — fires from the new subscription.
+      replacement.emit(const Duration(milliseconds: 4500));
+      replacement.emit(const Duration(milliseconds: 200));
+      await _flush(tester);
+      expect(completions, equals(1));
+    });
 
-    testWidgets(
-      'cancels the subscription when disabled after being enabled',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            onCompleted: () => completions++,
-          ),
-        );
-        expect(harness._positions.hasListener, isTrue);
+    testWidgets('cancels the subscription when disabled after being enabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _subject(player: harness.player, onCompleted: () => completions++),
+      );
+      expect(harness._positions.hasListener, isTrue);
 
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            isEnabled: false,
-            onCompleted: () => completions++,
-          ),
-        );
-        expect(harness._positions.hasListener, isFalse);
-      },
-    );
+      await tester.pumpWidget(
+        _subject(
+          player: harness.player,
+          isEnabled: false,
+          onCompleted: () => completions++,
+        ),
+      );
+      expect(harness._positions.hasListener, isFalse);
+    });
 
-    testWidgets(
-      'clears arming when the player reference changes mid-flight',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            onCompleted: () => completions++,
-          ),
-        );
+    testWidgets('clears arming when the player reference changes mid-flight', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _subject(player: harness.player, onCompleted: () => completions++),
+      );
 
-        // Arm via old player.
-        harness.emit(const Duration(milliseconds: 4500));
-        await _flush(tester);
+      // Arm via old player.
+      harness.emit(const Duration(milliseconds: 4500));
+      await _flush(tester);
 
-        final replacement = _PlayerHarness();
-        addTearDown(replacement.dispose);
+      final replacement = _PlayerHarness();
+      addTearDown(replacement.dispose);
 
-        await tester.pumpWidget(
-          _subject(
-            player: replacement.player,
-            onCompleted: () => completions++,
-          ),
-        );
+      await tester.pumpWidget(
+        _subject(player: replacement.player, onCompleted: () => completions++),
+      );
 
-        // A start-near position on the new player should NOT fire, because
-        // arming was reset on re-subscription.
-        replacement.emit(const Duration(milliseconds: 200));
-        await _flush(tester);
-        expect(completions, equals(0));
-      },
-    );
+      // A start-near position on the new player should NOT fire, because
+      // arming was reset on re-subscription.
+      replacement.emit(const Duration(milliseconds: 200));
+      await _flush(tester);
+      expect(completions, equals(0));
+    });
 
-    testWidgets(
-      'cancels the subscription on dispose',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: harness.player,
-            onCompleted: () => completions++,
-          ),
-        );
-        expect(harness._positions.hasListener, isTrue);
+    testWidgets('cancels the subscription on dispose', (tester) async {
+      await tester.pumpWidget(
+        _subject(player: harness.player, onCompleted: () => completions++),
+      );
+      expect(harness._positions.hasListener, isTrue);
 
-        await tester.pumpWidget(const SizedBox.shrink());
-        expect(harness._positions.hasListener, isFalse);
-      },
-    );
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(harness._positions.hasListener, isFalse);
+    });
 
-    testWidgets(
-      'tolerates player.state access throwing on initial sync',
-      (tester) async {
-        final throwingPlayer = _MockPlayer();
-        final throwingState = _MockPlayerState();
-        final throwingStream = _MockPlayerStream();
-        final positions = StreamController<Duration>.broadcast();
-        addTearDown(positions.close);
+    testWidgets('tolerates player.state access throwing on initial sync', (
+      tester,
+    ) async {
+      final throwingPlayer = _MockPlayer();
+      final throwingState = _MockPlayerState();
+      final throwingStream = _MockPlayerStream();
+      final positions = StreamController<Duration>.broadcast();
+      addTearDown(positions.close);
 
-        when(() => throwingPlayer.stream).thenReturn(throwingStream);
-        when(() => throwingPlayer.state).thenReturn(throwingState);
-        when(() => throwingStream.position).thenAnswer((_) => positions.stream);
-        when(() => throwingState.position).thenThrow(StateError('boom'));
-        when(
-          () => throwingState.duration,
-        ).thenReturn(const Duration(seconds: 5));
+      when(() => throwingPlayer.stream).thenReturn(throwingStream);
+      when(() => throwingPlayer.state).thenReturn(throwingState);
+      when(() => throwingStream.position).thenAnswer((_) => positions.stream);
+      when(() => throwingState.position).thenThrow(StateError('boom'));
+      when(() => throwingState.duration).thenReturn(const Duration(seconds: 5));
 
-        await tester.pumpWidget(
-          _subject(
-            player: throwingPlayer,
-            onCompleted: () => completions++,
-          ),
-        );
+      await tester.pumpWidget(
+        _subject(player: throwingPlayer, onCompleted: () => completions++),
+      );
 
-        // Subscription still installed; should behave like a fresh player.
-        expect(positions.hasListener, isTrue);
+      // Subscription still installed; should behave like a fresh player.
+      expect(positions.hasListener, isTrue);
 
-        positions.add(const Duration(milliseconds: 4500));
-        positions.add(const Duration(milliseconds: 200));
-        await _flush(tester);
-        expect(completions, equals(1));
-      },
-    );
+      positions.add(const Duration(milliseconds: 4500));
+      positions.add(const Duration(milliseconds: 200));
+      await _flush(tester);
+      expect(completions, equals(1));
+    });
 
-    testWidgets(
-      'does not fire onCompleted when player is null',
-      (tester) async {
-        await tester.pumpWidget(
-          _subject(
-            player: null,
-            onCompleted: () => completions++,
-          ),
-        );
+    testWidgets('does not fire onCompleted when player is null', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _subject(player: null, onCompleted: () => completions++),
+      );
 
-        // No ticks possible without a player — verify the listener is
-        // inert rather than crashing.
-        expect(completions, equals(0));
-      },
-    );
+      // No ticks possible without a player — verify the listener is
+      // inert rather than crashing.
+      expect(completions, equals(0));
+    });
   });
 }

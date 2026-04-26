@@ -168,10 +168,7 @@ void main() {
       expect(await db.nostrEventsDao.getEventCount(), equals(1));
       final row = await db.nostrEventsDao.getEventById(id);
       expect(row, isNotNull);
-      expect(
-        row!.tags,
-        anyElement(equals(['author', 'ig; phaxn'])),
-      );
+      expect(row!.tags, anyElement(equals(['author', 'ig; phaxn'])));
     });
 
     test('round-trips content with single quotes', () async {

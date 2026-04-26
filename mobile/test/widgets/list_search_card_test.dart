@@ -28,10 +28,7 @@ void main() {
     );
   }
 
-  Widget buildSubject({
-    required CuratedList curatedList,
-    VoidCallback? onTap,
-  }) {
+  Widget buildSubject({required CuratedList curatedList, VoidCallback? onTap}) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
@@ -57,9 +54,7 @@ void main() {
     group('renders', () {
       testWidgets('title', (tester) async {
         await tester.pumpWidget(
-          buildSubject(
-            curatedList: createList(name: 'Dance Moves'),
-          ),
+          buildSubject(curatedList: createList(name: 'Dance Moves')),
         );
 
         expect(find.text('Dance Moves'), findsOneWidget);
@@ -67,18 +62,14 @@ void main() {
 
       testWidgets('description when present', (tester) async {
         await tester.pumpWidget(
-          buildSubject(
-            curatedList: createList(description: 'Great videos'),
-          ),
+          buildSubject(curatedList: createList(description: 'Great videos')),
         );
 
         expect(find.text('Great videos'), findsOneWidget);
       });
 
       testWidgets('no description when null', (tester) async {
-        await tester.pumpWidget(
-          buildSubject(curatedList: createList()),
-        );
+        await tester.pumpWidget(buildSubject(curatedList: createList()));
 
         // Only title should be present, no extra Text widgets for description.
         expect(find.text('Test List'), findsOneWidget);
@@ -86,9 +77,7 @@ void main() {
 
       testWidgets('no description when empty', (tester) async {
         await tester.pumpWidget(
-          buildSubject(
-            curatedList: createList(description: ''),
-          ),
+          buildSubject(curatedList: createList(description: '')),
         );
 
         expect(find.text('Test List'), findsOneWidget);
@@ -121,47 +110,39 @@ void main() {
       testWidgets(
         'renders 5 card slots with no images when thumbnailUrls is empty',
         (tester) async {
-          await tester.pumpWidget(
-            buildSubject(curatedList: createList()),
-          );
+          await tester.pumpWidget(buildSubject(curatedList: createList()));
 
           expect(find.byType(DecoratedBox), findsNWidgets(6));
           expect(find.byType(VineCachedImage), findsNothing);
         },
       );
 
-      testWidgets(
-        'renders $VineCachedImage for each thumbnail URL '
-        'while keeping all 5 card slots',
-        (tester) async {
-          await tester.pumpWidget(
-            buildSubject(
-              curatedList: createList(
-                thumbnailUrls: [
-                  'https://example.com/thumb1.jpg',
-                  'https://example.com/thumb2.jpg',
-                ],
-                videoEventIds: ['v1', 'v2', 'v3'],
-              ),
+      testWidgets('renders $VineCachedImage for each thumbnail URL '
+          'while keeping all 5 card slots', (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            curatedList: createList(
+              thumbnailUrls: [
+                'https://example.com/thumb1.jpg',
+                'https://example.com/thumb2.jpg',
+              ],
+              videoEventIds: ['v1', 'v2', 'v3'],
             ),
-          );
+          ),
+        );
 
-          expect(find.byType(VineCachedImage), findsNWidgets(2));
-          // 5 card slots + 1 count badge remain regardless of how many
-          // thumbnails are supplied.
-          expect(find.byType(DecoratedBox), findsAtLeastNWidgets(6));
-        },
-      );
+        expect(find.byType(VineCachedImage), findsNWidgets(2));
+        // 5 card slots + 1 count badge remain regardless of how many
+        // thumbnails are supplied.
+        expect(find.byType(DecoratedBox), findsAtLeastNWidgets(6));
+      });
     });
 
     group('interactions', () {
       testWidgets('calls onTap when tapped', (tester) async {
         var tapped = false;
         await tester.pumpWidget(
-          buildSubject(
-            curatedList: createList(),
-            onTap: () => tapped = true,
-          ),
+          buildSubject(curatedList: createList(), onTap: () => tapped = true),
         );
 
         await tester.tap(find.text('Test List'));
@@ -174,14 +155,10 @@ void main() {
     group('semantics', () {
       testWidgets('has semantic label from list name', (tester) async {
         await tester.pumpWidget(
-          buildSubject(
-            curatedList: createList(name: 'My Playlist'),
-          ),
+          buildSubject(curatedList: createList(name: 'My Playlist')),
         );
 
-        final semantics = tester.widgetList<Semantics>(
-          find.byType(Semantics),
-        );
+        final semantics = tester.widgetList<Semantics>(find.byType(Semantics));
         final cardSemantics = semantics.where(
           (s) => s.properties.label == 'My Playlist',
         );

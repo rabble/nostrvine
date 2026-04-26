@@ -97,9 +97,7 @@ void main() {
             ),
           ),
           videoEditorProvider.overrideWith(
-            () => _TestVideoEditorNotifier(
-              selectedSound: selectedSound,
-            ),
+            () => _TestVideoEditorNotifier(selectedSound: selectedSound),
           ),
           clipManagerProvider.overrideWith(
             () => _TestClipManagerNotifier(
@@ -367,9 +365,7 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
 
   @override
   VideoRecorderProviderState build() {
-    return VideoRecorderProviderState(
-      recordingState: recordingState,
-    );
+    return VideoRecorderProviderState(recordingState: recordingState);
   }
 }
 

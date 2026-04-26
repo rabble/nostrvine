@@ -31,12 +31,8 @@ class PeopleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (UserSearchBloc bloc) => bloc.state.status,
-    );
-    final results = context.select(
-      (UserSearchBloc bloc) => bloc.state.results,
-    );
+    final status = context.select((UserSearchBloc bloc) => bloc.state.status);
+    final results = context.select((UserSearchBloc bloc) => bloc.state.results);
 
     // In the All tab, hide entire section when results are empty and loaded.
     if (!showAll && status == .success && results.isEmpty) {
@@ -64,16 +60,13 @@ class _PeoplePaginationTrigger extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = context.select(
-      (UserSearchBloc b) => b.state.hasMore,
-    );
+    final hasMore = context.select((UserSearchBloc b) => b.state.hasMore);
     final isLoadingMore = context.select(
       (UserSearchBloc b) => b.state.isLoadingMore,
     );
     return SliverPaginationTrigger(
-      onLoadMore: () => context.read<UserSearchBloc>().add(
-        const UserSearchLoadMore(),
-      ),
+      onLoadMore: () =>
+          context.read<UserSearchBloc>().add(const UserSearchLoadMore()),
       hasMore: hasMore,
       isLoadingMore: isLoadingMore,
     );
@@ -87,15 +80,9 @@ class _PeopleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = context.select(
-      (UserSearchBloc bloc) => bloc.state.status,
-    );
-    final results = context.select(
-      (UserSearchBloc bloc) => bloc.state.results,
-    );
-    final query = context.select(
-      (UserSearchBloc bloc) => bloc.state.query,
-    );
+    final status = context.select((UserSearchBloc bloc) => bloc.state.status);
+    final results = context.select((UserSearchBloc bloc) => bloc.state.results);
+    final query = context.select((UserSearchBloc bloc) => bloc.state.query);
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _PeopleSkeletonLoader();
@@ -103,9 +90,8 @@ class _PeopleContent extends StatelessWidget {
 
     if (status == .failure) {
       return SearchSectionErrorState(
-        onRetry: () => context.read<UserSearchBloc>().add(
-          UserSearchQueryChanged(query),
-        ),
+        onRetry: () =>
+            context.read<UserSearchBloc>().add(UserSearchQueryChanged(query)),
       );
     }
 

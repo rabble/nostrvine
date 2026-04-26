@@ -53,10 +53,7 @@ class EmptyLibraryState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              title,
-              style: VineTheme.headlineSmallFont(),
-            ),
+            Text(title, style: VineTheme.headlineSmallFont()),
             const SizedBox(height: 8),
             Text(
               subtitle,

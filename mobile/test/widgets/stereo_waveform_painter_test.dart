@@ -78,22 +78,15 @@ void main() {
 
       test('returns true when activeColor changes', () {
         final left = Float32List.fromList([0.5]);
-        final painter = createPainter(
-          leftChannel: left,
-        );
-        final other = createPainter(
-          leftChannel: left,
-          activeColor: Colors.red,
-        );
+        final painter = createPainter(leftChannel: left);
+        final other = createPainter(leftChannel: left, activeColor: Colors.red);
 
         expect(painter.shouldRepaint(other), isTrue);
       });
 
       test('returns true when inactiveColor changes', () {
         final left = Float32List.fromList([0.5]);
-        final painter = createPainter(
-          leftChannel: left,
-        );
+        final painter = createPainter(leftChannel: left);
         final other = createPainter(
           leftChannel: left,
           inactiveColor: Colors.white,
@@ -103,12 +96,8 @@ void main() {
       });
 
       test('returns true when leftChannel changes', () {
-        final painter = createPainter(
-          leftChannel: Float32List.fromList([0.5]),
-        );
-        final other = createPainter(
-          leftChannel: Float32List.fromList([0.8]),
-        );
+        final painter = createPainter(leftChannel: Float32List.fromList([0.5]));
+        final other = createPainter(leftChannel: Float32List.fromList([0.8]));
 
         expect(painter.shouldRepaint(other), isTrue);
       });
@@ -129,9 +118,7 @@ void main() {
 
       test('returns true when audioDuration changes', () {
         final left = Float32List.fromList([0.5]);
-        final painter = createPainter(
-          leftChannel: left,
-        );
+        final painter = createPainter(leftChannel: left);
         final other = createPainter(
           leftChannel: left,
           audioDuration: const Duration(seconds: 20),
@@ -142,9 +129,7 @@ void main() {
 
       test('returns true when maxDuration changes', () {
         final left = Float32List.fromList([0.5]);
-        final painter = createPainter(
-          leftChannel: left,
-        );
+        final painter = createPainter(leftChannel: left);
         final other = createPainter(
           leftChannel: left,
           maxDuration: const Duration(seconds: 5),
@@ -228,9 +213,7 @@ void main() {
 
       test('does not throw with startOffset', () {
         final painter = createPainter(
-          leftChannel: Float32List.fromList(
-            List.generate(100, (i) => i / 100),
-          ),
+          leftChannel: Float32List.fromList(List.generate(100, (i) => i / 100)),
           audioDuration: const Duration(seconds: 30),
           startOffset: const Duration(seconds: 5),
         );
@@ -289,10 +272,7 @@ void main() {
         final left = Float32List.fromList([0.5, 0.3, 0.8]);
 
         for (final progress in [0.0, 1.0]) {
-          final painter = createPainter(
-            leftChannel: left,
-            progress: progress,
-          );
+          final painter = createPainter(leftChannel: left, progress: progress);
           final recorder = PictureRecorder();
           final canvas = Canvas(recorder);
 
@@ -310,10 +290,7 @@ void main() {
         final recorder = PictureRecorder();
         final canvas = Canvas(recorder);
 
-        expect(
-          () => painter.paint(canvas, Size.zero),
-          returnsNormally,
-        );
+        expect(() => painter.paint(canvas, Size.zero), returnsNormally);
       });
 
       test('does not throw with startOffset exceeding audioDuration', () {
@@ -345,10 +322,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: CustomPaint(
-                size: const Size(200, 72),
-                painter: painter,
-              ),
+              body: CustomPaint(size: const Size(200, 72), painter: painter),
             ),
           ),
         );

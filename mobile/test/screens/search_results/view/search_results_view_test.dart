@@ -92,22 +92,10 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
       await tester.pumpWidget(buildSubject());
 
-      expect(
-        find.byType(PeopleSection, skipOffstage: false),
-        findsOneWidget,
-      );
-      expect(
-        find.byType(ListsSection, skipOffstage: false),
-        findsOneWidget,
-      );
-      expect(
-        find.byType(TagsSection, skipOffstage: false),
-        findsOneWidget,
-      );
-      expect(
-        find.byType(VideosSection, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.byType(PeopleSection, skipOffstage: false), findsOneWidget);
+      expect(find.byType(ListsSection, skipOffstage: false), findsOneWidget);
+      expect(find.byType(TagsSection, skipOffstage: false), findsOneWidget);
+      expect(find.byType(VideosSection, skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('renders only $PeopleSection when filter is people', (
@@ -116,10 +104,7 @@ void main() {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.people);
       await tester.pumpWidget(buildSubject());
 
-      expect(
-        find.byType(PeopleSection, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.byType(PeopleSection, skipOffstage: false), findsOneWidget);
       expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
       expect(find.byType(ListsSection, skipOffstage: false), findsNothing);
       expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
@@ -146,10 +131,7 @@ void main() {
       expect(find.byType(PeopleSection, skipOffstage: false), findsNothing);
       expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
       expect(find.byType(ListsSection, skipOffstage: false), findsNothing);
-      expect(
-        find.byType(VideosSection, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.byType(VideosSection, skipOffstage: false), findsOneWidget);
     });
 
     testWidgets('renders only $ListsSection when filter is lists', (
@@ -160,10 +142,7 @@ void main() {
 
       expect(find.byType(PeopleSection, skipOffstage: false), findsNothing);
       expect(find.byType(TagsSection, skipOffstage: false), findsNothing);
-      expect(
-        find.byType(ListsSection, skipOffstage: false),
-        findsOneWidget,
-      );
+      expect(find.byType(ListsSection, skipOffstage: false), findsOneWidget);
       expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
     });
 

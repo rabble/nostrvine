@@ -60,9 +60,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     final isCurrentUser =
         currentUserPubkey.isNotEmpty &&
         currentUserPubkey == widget.comment.authorPubkey;
-    final textScaler = MediaQuery.textScalerOf(context).clamp(
-      maxScaleFactor: 1.5,
-    );
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.5);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: GestureDetector(
@@ -605,9 +605,7 @@ class _ReplyIndicator extends ConsumerWidget {
           alignment: Alignment.center,
           child: Text(
             'Re:',
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.tabIndicatorGreen,
-            ),
+            style: VineTheme.bodyMediumFont(color: VineTheme.tabIndicatorGreen),
           ),
         ),
         const SizedBox(width: 8),

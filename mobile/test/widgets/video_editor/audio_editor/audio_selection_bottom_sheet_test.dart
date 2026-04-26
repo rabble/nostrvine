@@ -1,6 +1,6 @@
 // ABOUTME: Tests for AudioSelectionBottomSheet widget
-// ABOUTME: Validates rendering states, sorting, empty/error states,
-// ABOUTME: and sound selection behavior with mocked providers.
+// ABOUTME: Validates rendering of category bar, sounds, loading and
+// ABOUTME: error states with mocked sound providers.
 
 import 'dart:async';
 
@@ -13,11 +13,10 @@ import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
-import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
 
-/// Helper to create test AudioEvent instances.
 AudioEvent _createTestAudioEvent({
   String id = 'test-sound-id',
   String pubkey = 'test-pubkey',
@@ -38,14 +37,6 @@ AudioEvent _createTestAudioEvent({
   );
 }
 
-/// Creates a SoundLibraryService with pre-loaded sounds for testing.
-SoundLibraryService _createLoadedService(List<VineSound> sounds) {
-  final service = SoundLibraryService();
-  // SoundLibraryService uses internal lists; for testing we rely on the
-  // provider override to deliver sounds via AsyncValue.data directly.
-  return service;
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -60,24 +51,12 @@ void main() {
       scrollController.dispose();
     });
 
-    /// Builds the widget wrapped in ProviderScope with configurable overrides.
-    Widget buildWidget({
-      AsyncValue<SoundLibraryService>? soundLibraryAsync,
-      AsyncValue<List<AudioEvent>>? trendingSoundsAsync,
-      Completer<SoundLibraryService>? soundLibraryCompleter,
-    }) {
+    Widget buildWidget({AsyncValue<List<AudioEvent>>? trendingSoundsAsync}) {
       return ProviderScope(
         overrides: [
-          if (soundLibraryAsync != null)
-            soundLibraryServiceProvider.overrideWith(
-              (_) => soundLibraryAsync.when(
-                data: Future.value,
-                loading: () =>
-                    (soundLibraryCompleter ?? Completer<SoundLibraryService>())
-                        .future,
-                error: Future.error,
-              ),
-            ),
+          soundLibraryServiceProvider.overrideWith(
+            (_) => SoundLibraryService(),
+          ),
           if (trendingSoundsAsync != null)
             trendingSoundsProvider.overrideWith(
               () => _FakeTrendingSounds(trendingSoundsAsync),
@@ -87,147 +66,83 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: AudioSelectionBottomSheet(
-              scrollController: scrollController,
-            ),
+            body: AudioSelectionBottomSheet(scrollController: scrollController),
           ),
         ),
       );
     }
 
     final testSounds = [
-      _createTestAudioEvent(
-        id: 'sound-1',
-        title: 'Alpha Track',
-        duration: 3.0,
-      ),
-      _createTestAudioEvent(
-        id: 'sound-2',
-        title: 'Beta Song',
-        createdAt: 1704153600,
-        duration: 6.0,
-      ),
-      _createTestAudioEvent(
-        id: 'sound-3',
-        title: 'Gamma Beat',
-        createdAt: 1704240000,
-        duration: 1.5,
-      ),
+      _createTestAudioEvent(id: 'sound-1', title: 'Alpha Track'),
+      _createTestAudioEvent(id: 'sound-2', title: 'Beta Song'),
+      _createTestAudioEvent(id: 'sound-3', title: 'Gamma Beat'),
     ];
 
     group('Rendering', () {
       testWidgets('renders $AudioSelectionBottomSheet', (tester) async {
         await tester.pumpWidget(
-          buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-            trendingSoundsAsync: AsyncValue.data(testSounds),
-          ),
+          buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
         );
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(AudioSelectionBottomSheet),
-          findsOneWidget,
-        );
+        expect(find.byType(AudioSelectionBottomSheet), findsOneWidget);
       });
 
-      testWidgets('renders $AudioListTile for each sound', (tester) async {
+      testWidgets('renders $AudioCategoryBar with both category chips', (
+        tester,
+      ) async {
         await tester.pumpWidget(
-          buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-            trendingSoundsAsync: AsyncValue.data(testSounds),
-          ),
+          buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(AudioListTile), findsNWidgets(3));
-      });
-
-      testWidgets('renders sound titles', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-            trendingSoundsAsync: AsyncValue.data(testSounds),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Alpha Track'), findsOneWidget);
-        expect(find.text('Beta Song'), findsOneWidget);
-        expect(find.text('Gamma Beat'), findsOneWidget);
-      });
-
-      testWidgets('renders $AudioSortDropdown', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-            trendingSoundsAsync: AsyncValue.data(testSounds),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AudioSortDropdown), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.byType(AudioCategoryBar), findsOneWidget);
+        expect(find.text(l10n.videoEditorAudioCategoryDivine), findsWidgets);
+        expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsWidgets);
       });
     });
 
     group('Loading state', () {
-      testWidgets(
-        'renders $BrandedLoadingIndicator when loading with no bundled sounds',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(
-              soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-              trendingSoundsAsync: const AsyncValue.loading(),
-            ),
-          );
-          await tester.pump();
-
-          expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
-        },
-      );
-    });
-
-    group('Empty state', () {
-      testWidgets('renders empty state when no sounds available', (
+      testWidgets('renders $BrandedLoadingIndicator on community tab', (
         tester,
       ) async {
         await tester.pumpWidget(
-          buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-            trendingSoundsAsync: const AsyncValue.data([]),
-          ),
+          buildWidget(trendingSoundsAsync: const AsyncValue.loading()),
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('No sounds available'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+      });
+    });
+
+    group('Empty state', () {
+      testWidgets('renders empty state when no bundled sounds available', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text(l10n.videoEditorAudioNoSoundsAvailableTitle),
+          findsOneWidget,
+        );
         expect(find.byIcon(Icons.music_off), findsOneWidget);
       });
     });
 
     group('Error state', () {
-      testWidgets(
-        'renders error state when loading fails with no bundled sounds',
-        (tester) async {
-          await tester.pumpWidget(
-            buildWidget(
-              soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-              trendingSoundsAsync: AsyncValue.error(
-                Exception('network error'),
-                StackTrace.current,
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          expect(find.text('Failed to load sounds'), findsOneWidget);
-          expect(find.byIcon(Icons.error_outline), findsOneWidget);
-        },
-      );
-
-      testWidgets('renders retry button on error state', (tester) async {
+      testWidgets('renders error state when community fails', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
             trendingSoundsAsync: AsyncValue.error(
               Exception('network error'),
               StackTrace.current,
@@ -236,29 +151,47 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Retry'), findsOneWidget);
-        expect(find.byType(ElevatedButton), findsOneWidget);
-      });
-    });
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
 
-    group('Sorting', () {
-      testWidgets('default sort is newest first', (tester) async {
+        expect(
+          find.text(l10n.videoEditorAudioFailedToLoadTitle),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+      });
+
+      testWidgets('renders retry button on error state', (tester) async {
         await tester.pumpWidget(
           buildWidget(
-            soundLibraryAsync: AsyncValue.data(_createLoadedService([])),
-            trendingSoundsAsync: AsyncValue.data(testSounds),
+            trendingSoundsAsync: AsyncValue.error(
+              Exception('network error'),
+              StackTrace.current,
+            ),
           ),
         );
         await tester.pumpAndSettle();
 
-        // Find all AudioListTile widgets and check their order
-        final tiles = tester.widgetList<AudioListTile>(
-          find.byType(AudioListTile),
-        );
-        final titles = tiles.map((t) => t.audio.title).toList();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+        await tester.pumpAndSettle();
 
-        // Newest first: Gamma (1704240000) > Beta (1704153600) > Alpha
-        expect(titles, equals(['Gamma Beat', 'Beta Song', 'Alpha Track']));
+        expect(find.text(l10n.commonRetry), findsOneWidget);
+        expect(find.byType(ElevatedButton), findsOneWidget);
+      });
+    });
+
+    group('Initial state', () {
+      testWidgets('renders no $AudioListTile while no sounds are loaded', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AudioListTile), findsNothing);
       });
     });
   });
@@ -271,9 +204,9 @@ class _FakeTrendingSounds extends TrendingSounds {
   final AsyncValue<List<AudioEvent>> _initialValue;
 
   @override
-  Future<List<AudioEvent>> build() async {
+  Future<List<AudioEvent>> build() {
     return _initialValue.when(
-      data: (data) => data,
+      data: Future.value,
       loading: () => Completer<List<AudioEvent>>().future,
       error: Future.error,
     );

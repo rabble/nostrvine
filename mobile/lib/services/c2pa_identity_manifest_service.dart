@@ -103,9 +103,7 @@ class C2paIdentityManifestService {
         'entries': <String, dynamic>{
           'cawg.ai_training': <String, String>{'use': 'notAllowed'},
           'cawg.ai_inference': <String, String>{'use': 'notAllowed'},
-          'cawg.ai_generative_training': <String, String>{
-            'use': 'notAllowed',
-          },
+          'cawg.ai_generative_training': <String, String>{'use': 'notAllowed'},
           'cawg.data_mining': <String, String>{'use': 'notAllowed'},
         },
       },

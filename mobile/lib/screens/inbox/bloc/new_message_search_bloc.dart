@@ -51,10 +51,7 @@ class NewMessageSearchBloc
       );
 
     emit(
-      state.copyWith(
-        status: NewMessageSearchStatus.idle,
-        contacts: profiles,
-      ),
+      state.copyWith(status: NewMessageSearchStatus.idle, contacts: profiles),
     );
   }
 

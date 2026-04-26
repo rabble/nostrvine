@@ -153,9 +153,7 @@ class NotificationListItem extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _getIconBackgroundColor(),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    width: 2,
-                  ),
+                  border: Border.all(width: 2),
                 ),
                 child: Center(
                   child: Text(
@@ -199,9 +197,7 @@ class NotificationListItem extends StatelessWidget {
               text: actorName,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            TextSpan(
-              text: message.substring(actorName!.length),
-            ),
+            TextSpan(text: message.substring(actorName!.length)),
           ],
         ),
       );
@@ -269,10 +265,7 @@ class NotificationListItem extends StatelessWidget {
       ),
       child: Text(
         content,
-        style: const TextStyle(
-          fontSize: 13,
-          color: VineTheme.secondaryText,
-        ),
+        style: const TextStyle(fontSize: 13, color: VineTheme.secondaryText),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
       ),
@@ -313,10 +306,7 @@ class NotificationListItem extends StatelessWidget {
             width: 64,
             height: 64,
             color: VineTheme.cardBackground,
-            child: const Icon(
-              Icons.video_library,
-              color: VineTheme.lightText,
-            ),
+            child: const Icon(Icons.video_library, color: VineTheme.lightText),
           );
         },
       ),

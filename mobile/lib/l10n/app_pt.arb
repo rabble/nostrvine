@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Dividir",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividir clipe selecionado",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizar edição da linha do tempo",
-    "videoEditorSortNewest": "Mais recentes",
-    "videoEditorSortLongest": "Mais longos",
-    "videoEditorSortShortest": "Mais curtos",
-    "videoEditorSortBySemanticLabel": "Ordenar por {option}. Toque para alterar a ordem",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproduzir prévia",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausar prévia",
     "videoEditorAudioUntitledSound": "Som sem título",
-    "videoEditorAudioSelectSoundSemanticLabel": "Selecionar som",
     "videoEditorAudioUntitled": "Sem título",
     "videoEditorAudioAddAudio": "Adicionar áudio",
     "videoEditorAudioNoSoundsAvailableTitle": "Nenhum som disponível",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Os sons aparecerão aqui quando criadores compartilharem áudio",
-    "videoEditorAudioNoSoundsFoundTitle": "Nenhum som encontrado",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Tente outro termo de busca",
     "videoEditorAudioFailedToLoadTitle": "Falha ao carregar sons",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Comunidade",
     "videoEditorDrawToolArrowSemanticLabel": "Ferramenta seta",
     "videoEditorDrawToolEraserSemanticLabel": "Ferramenta borracha",
     "videoEditorDrawToolMarkerSemanticLabel": "Ferramenta marcador",

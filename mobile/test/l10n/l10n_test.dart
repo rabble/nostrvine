@@ -46,9 +46,7 @@ void main() {
       expect(l10n.settingsTitle, equals('Ajustes'));
     });
 
-    testWidgets('falls back to English for unsupported locale', (
-      tester,
-    ) async {
+    testWidgets('falls back to English for unsupported locale', (tester) async {
       late AppLocalizations l10n;
 
       // Chinese is not a supported locale. We force the resolution
@@ -160,10 +158,7 @@ void main() {
         ),
       );
 
-      expect(
-        l10n.contentPreferencesDoneCount(2),
-        equals('Done (2 selected)'),
-      );
+      expect(l10n.contentPreferencesDoneCount(2), equals('Done (2 selected)'));
     });
   });
 }

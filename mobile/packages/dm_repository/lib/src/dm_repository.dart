@@ -535,6 +535,7 @@ class DmRepository {
           messageKind: rumorEvent.kind,
           replyToId: replyToId,
           subject: subject,
+          tagsJson: jsonEncode(rumorEvent.tags),
           fileType: fileMetadata?.fileType,
           encryptionAlgorithm: fileMetadata?.encryptionAlgorithm,
           decryptionKey: fileMetadata?.decryptionKey,
@@ -770,6 +771,7 @@ class DmRepository {
     required String recipientPubkey,
     required String content,
     String? replyToId,
+    List<List<String>> additionalTags = const [],
   }) async {
     _assertInitialized();
     validatePubkey(recipientPubkey);
@@ -777,14 +779,15 @@ class DmRepository {
       throw ArgumentError.value(content, 'content', 'must not be empty');
     }
 
-    final additionalTags = <List<String>>[
+    final rumorTags = <List<String>>[
+      ...additionalTags,
       if (replyToId != null) ['e', replyToId],
     ];
 
     final result = await _messageService!.sendPrivateMessage(
       recipientPubkey: recipientPubkey,
       content: content,
-      additionalTags: additionalTags,
+      additionalTags: rumorTags,
     );
 
     if (result.success) {
@@ -806,6 +809,7 @@ class DmRepository {
             createdAt: now,
             giftWrapId: result.messageEventId!,
             replyToId: replyToId,
+            tagsJson: rumorTags.isEmpty ? null : jsonEncode(rumorTags),
             ownerPubkey: _userPubkey,
           );
 
@@ -916,6 +920,10 @@ class DmRepository {
       final conversationId = computeConversationId(participants);
       final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       final firstSuccess = results.firstWhere((r) => r.success);
+      final localTags = <List<String>>[
+        for (final pk in recipientPubkeys) ['p', pk],
+        if (replyToId != null) ['e', replyToId],
+      ];
 
       await _conversationsDao.runInTransaction(() async {
         await _directMessagesDao.insertMessage(
@@ -926,6 +934,7 @@ class DmRepository {
           createdAt: now,
           giftWrapId: firstSuccess.messageEventId!,
           replyToId: replyToId,
+          tagsJson: localTags.isEmpty ? null : jsonEncode(localTags),
           ownerPubkey: _userPubkey,
         );
 
@@ -1178,6 +1187,7 @@ class DmRepository {
           dimensions: fileMetadata.dimensions,
           blurhash: fileMetadata.blurhash,
           thumbnailUrl: fileMetadata.thumbnailUrl,
+          tagsJson: jsonEncode(additionalTags),
           ownerPubkey: _userPubkey,
         );
 
@@ -1837,8 +1847,25 @@ class DmRepository {
       messageKind: row.messageKind,
       replyToId: row.replyToId,
       subject: row.subject,
+      tags: _parseTagsJson(row.tagsJson),
       fileMetadata: fileMetadata,
     );
+  }
+
+  List<List<String>> _parseTagsJson(String? tagsJson) {
+    if (tagsJson == null || tagsJson.isEmpty) return const [];
+    try {
+      final decoded = jsonDecode(tagsJson);
+      if (decoded is! List) return const [];
+      final tags = <List<String>>[];
+      for (final tag in decoded) {
+        if (tag is! List) continue;
+        tags.add(tag.whereType<String>().toList());
+      }
+      return tags;
+    } on FormatException {
+      return const [];
+    }
   }
 
   static final _hexPattern = RegExp(r'^[0-9a-fA-F]{64}$');

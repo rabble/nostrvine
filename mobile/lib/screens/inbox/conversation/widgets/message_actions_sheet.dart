@@ -50,10 +50,7 @@ class MessageActionsSheet {
         ),
     ];
 
-    await VineBottomSheetActionMenu.show(
-      context: context,
-      options: options,
-    );
+    await VineBottomSheetActionMenu.show(context: context, options: options);
 
     return result;
   }

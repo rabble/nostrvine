@@ -21,14 +21,12 @@ class TimelineControlsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedOverlayItem = context.select(
-      (TimelineOverlayBloc b) {
-        final state = b.state;
-        final selectedId = state.selectedItemId;
-        if (selectedId == null) return null;
-        return state.items.where((i) => i.id == selectedId).firstOrNull;
-      },
-    );
+    final selectedOverlayItem = context.select((TimelineOverlayBloc b) {
+      final state = b.state;
+      final selectedId = state.selectedItemId;
+      if (selectedId == null) return null;
+      return state.items.where((i) => i.id == selectedId).firstOrNull;
+    });
 
     final showControls = isEditing || selectedOverlayItem != null;
     final controlsChild = switch ((showControls, isEditing)) {

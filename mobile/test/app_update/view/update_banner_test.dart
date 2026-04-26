@@ -30,11 +30,9 @@ void main() {
     }
 
     testWidgets('renders nothing when urgency is none', (tester) async {
-      when(() => bloc.state).thenReturn(
-        const AppUpdateState(
-          status: AppUpdateStatus.resolved,
-        ),
-      );
+      when(
+        () => bloc.state,
+      ).thenReturn(const AppUpdateState(status: AppUpdateStatus.resolved));
 
       await tester.pumpWidget(buildSubject());
 

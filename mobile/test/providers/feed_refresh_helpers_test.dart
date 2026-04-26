@@ -25,10 +25,7 @@ void main() {
       final oldVideos = [video('old')];
       final freshVideos = [video('fresh')];
 
-      final oldState = VideoFeedState(
-        videos: oldVideos,
-        hasMoreContent: true,
-      );
+      final oldState = VideoFeedState(videos: oldVideos, hasMoreContent: true);
 
       final states = <AsyncValue<VideoFeedState>>[];
 
@@ -36,10 +33,8 @@ void main() {
         getCurrentState: () => AsyncData(oldState),
         isMounted: () => true,
         setState: states.add,
-        fetchFresh: () async => VideoFeedState(
-          videos: freshVideos,
-          hasMoreContent: false,
-        ),
+        fetchFresh: () async =>
+            VideoFeedState(videos: freshVideos, hasMoreContent: false),
       );
 
       expect(states, hasLength(2));
@@ -129,10 +124,8 @@ void main() {
           // Simulate unmount after the refreshing emit
           mounted = false;
         },
-        fetchFresh: () async => VideoFeedState(
-          videos: [video('fresh')],
-          hasMoreContent: false,
-        ),
+        fetchFresh: () async =>
+            VideoFeedState(videos: [video('fresh')], hasMoreContent: false),
       );
 
       // Only the refreshing emit should occur; the fresh state is skipped
@@ -146,10 +139,7 @@ void main() {
 
       await staleWhileRevalidate(
         getCurrentState: () => AsyncData(
-          VideoFeedState(
-            videos: [video('old')],
-            hasMoreContent: true,
-          ),
+          VideoFeedState(videos: [video('old')], hasMoreContent: true),
         ),
         isMounted: () => mounted,
         setState: (state) {
@@ -210,10 +200,7 @@ void main() {
     test('returns unchanged list when enriched is empty', () {
       final existing = [video('a'), video('b')];
 
-      final result = mergeEnrichedVideos(
-        existing: existing,
-        enriched: [],
-      );
+      final result = mergeEnrichedVideos(existing: existing, enriched: []);
 
       expect(result, existing);
     });

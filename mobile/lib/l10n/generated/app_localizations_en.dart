@@ -3167,11 +3167,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuCollaborators => 'Collaborators';
 
   @override
-  String get shareMenuAddCollaborator => 'Add collaborator';
+  String get shareMenuAddCollaborator => 'Invite collaborator';
 
   @override
   String shareMenuMutualFollowRequired(String name) {
-    return 'You need to mutually follow $name to add them as a collaborator.';
+    return 'You need to mutually follow $name to invite them as a collaborator.';
   }
 
   @override
@@ -5347,20 +5347,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Finish timeline editing';
 
   @override
-  String get videoEditorSortNewest => 'Newest';
-
-  @override
-  String get videoEditorSortLongest => 'Longest';
-
-  @override
-  String get videoEditorSortShortest => 'Shortest';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return 'Sort by $option. Tap to change sort order';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => 'Play preview';
 
   @override
@@ -5368,9 +5354,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => 'Untitled sound';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => 'Select sound';
 
   @override
   String get videoEditorAudioUntitled => 'Untitled';
@@ -5386,18 +5369,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sounds will appear here when creators share audio';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => 'No sounds found';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle =>
-      'Try a different search term';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => 'Failed to load sounds';
 
   @override
   String get videoEditorAudioSegmentInstruction =>
       'Select the audio segment for your video';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => 'Community';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
@@ -5587,7 +5569,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataCollaboratorsLabel => 'Collaborators';
 
   @override
-  String get videoMetadataAddCollaboratorSemanticLabel => 'Add collaborator';
+  String get videoMetadataAddCollaboratorSemanticLabel => 'Invite collaborator';
 
   @override
   String get videoMetadataCollaboratorsHelpTooltip => 'How collaborators work';
@@ -5603,14 +5585,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoMetadataCollaboratorsHelpMessage =>
-      'Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.';
+      'Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.';
 
   @override
   String get videoMetadataMutualFollowersSearchText => 'Mutual followers';
 
   @override
   String videoMetadataMustMutuallyFollowSnackbar(String name) {
-    return 'You need to mutually follow $name to add them as a collaborator.';
+    return 'You need to mutually follow $name to invite them as a collaborator.';
   }
 
   @override

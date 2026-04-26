@@ -58,27 +58,17 @@ void main() {
     testWidgets('warning has correct background color', (tester) async {
       await tester.pumpWidget(buildWidget(metadataLimitReached: true));
 
-      final container = tester.widget<Container>(
-        find.byType(Container).first,
-      );
+      final container = tester.widget<Container>(find.byType(Container).first);
       final decoration = container.decoration! as BoxDecoration;
-      expect(
-        decoration.color,
-        equals(VineTheme.contentWarningBackground),
-      );
+      expect(decoration.color, equals(VineTheme.contentWarningBackground));
     });
 
     testWidgets('warning has rounded corners', (tester) async {
       await tester.pumpWidget(buildWidget(metadataLimitReached: true));
 
-      final container = tester.widget<Container>(
-        find.byType(Container).first,
-      );
+      final container = tester.widget<Container>(find.byType(Container).first);
       final decoration = container.decoration! as BoxDecoration;
-      expect(
-        decoration.borderRadius,
-        equals(BorderRadius.circular(16)),
-      );
+      expect(decoration.borderRadius, equals(BorderRadius.circular(16)));
     });
   });
 }

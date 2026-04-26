@@ -67,10 +67,7 @@ void main() {
     ) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(
-        find.byType(VideoMetadataClassicPreviewThumbnail),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoMetadataClassicPreviewThumbnail), findsOneWidget);
     });
 
     testWidgets('renders $VideoMetadataFormFields', (tester) async {
@@ -98,21 +95,20 @@ void main() {
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
 
-    testWidgets(
-      '$VideoMetadataFormFields disables optional sections',
-      (tester) async {
-        await tester.pumpWidget(buildWidget());
+    testWidgets('$VideoMetadataFormFields disables optional sections', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildWidget());
 
-        final formFields = tester.widget<VideoMetadataFormFields>(
-          find.byType(VideoMetadataFormFields),
-        );
-        expect(formFields.enableTags, isFalse);
-        expect(formFields.enableExpiration, isFalse);
-        expect(formFields.enableContentWarning, isFalse);
-        expect(formFields.enableCollaborators, isFalse);
-        expect(formFields.enableInspiredBy, isFalse);
-      },
-    );
+      final formFields = tester.widget<VideoMetadataFormFields>(
+        find.byType(VideoMetadataFormFields),
+      );
+      expect(formFields.enableTags, isFalse);
+      expect(formFields.enableExpiration, isFalse);
+      expect(formFields.enableContentWarning, isFalse);
+      expect(formFields.enableCollaborators, isFalse);
+      expect(formFields.enableInspiredBy, isFalse);
+    });
   });
 }
 

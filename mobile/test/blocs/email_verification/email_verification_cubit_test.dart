@@ -130,10 +130,8 @@ void main() {
             session: any(named: 'session'),
           ),
         ).thenAnswer(
-          (_) async => const InviteConsumeResult(
-            message: 'Welcome',
-            codesAllocated: 5,
-          ),
+          (_) async =>
+              const InviteConsumeResult(message: 'Welcome', codesAllocated: 5),
         );
         when(
           () => mockAuthService.signInWithDivineOAuth(any()),
@@ -152,10 +150,8 @@ void main() {
 
           expect(cubit.state.status, EmailVerificationStatus.success);
           verifyInOrder([
-            () => mockOAuth.exchangeCode(
-              code: testCode,
-              verifier: testVerifier,
-            ),
+            () =>
+                mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
             () => mockInviteApiClient.consumeInviteWithSession(
               code: 'AB12-EF34',
               oauthConfig: any(named: 'oauthConfig'),
@@ -193,9 +189,7 @@ void main() {
             oauthConfig: any(named: 'oauthConfig'),
             session: any(named: 'session'),
           ),
-        ).thenThrow(
-          const InviteApiException('Invite activation failed'),
-        );
+        ).thenThrow(const InviteApiException('Invite activation failed'));
 
         fakeAsync((fake) {
           final cubit = buildCubit();
@@ -209,10 +203,7 @@ void main() {
           fake.elapse(const Duration(seconds: 4));
 
           expect(cubit.state.status, EmailVerificationStatus.failure);
-          expect(
-            cubit.state.errorCode,
-            EmailVerificationError.inviteUnknown,
-          );
+          expect(cubit.state.errorCode, EmailVerificationError.inviteUnknown);
           expect(cubit.state.showInviteGateRecovery, isTrue);
           expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
           verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
@@ -457,9 +448,9 @@ void main() {
 
             // Polling should still be running — guard must NOT have fired
             expect(cubit.state.status, EmailVerificationStatus.polling);
-            verify(() => mockOAuth.pollForCode(testDeviceCode)).called(
-              greaterThanOrEqualTo(2),
-            );
+            verify(
+              () => mockOAuth.pollForCode(testDeviceCode),
+            ).called(greaterThanOrEqualTo(2));
 
             // Cancel timers before fakeAsync exits
             cubit.close();

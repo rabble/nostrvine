@@ -85,9 +85,7 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
       // Use a short 3s timeout so the probe doesn't block startup
       await client
           .getRecentVideos(limit: 1)
-          .timeout(
-            const Duration(seconds: 3),
-          );
+          .timeout(const Duration(seconds: 3));
       Log.info(
         '✅ Funnelcake: API available',
         name: 'FunnelcakeAvailable',

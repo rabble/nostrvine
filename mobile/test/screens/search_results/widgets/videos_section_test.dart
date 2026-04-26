@@ -58,59 +58,56 @@ void main() {
     }
 
     group('showAll: false (All tab preview)', () {
-      testWidgets(
-        'hides entirely when success with empty results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const VideoSearchState(
-              status: VideoSearchStatus.success,
-              query: 'test',
-            ),
-          );
+      testWidgets('hides entirely when success with empty results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoSearchState(
+            status: VideoSearchStatus.success,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsNothing);
-          expect(find.byType(SearchSectionEmptyState), findsNothing);
-        },
-      );
+        expect(find.byType(SectionHeader), findsNothing);
+        expect(find.byType(SearchSectionEmptyState), findsNothing);
+      });
 
-      testWidgets(
-        'renders header and content when success with results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            VideoSearchState(
-              status: VideoSearchStatus.success,
-              query: 'test',
-              videos: [testVideo],
-            ),
-          );
+      testWidgets('renders header and content when success with results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          VideoSearchState(
+            status: VideoSearchStatus.success,
+            query: 'test',
+            videos: [testVideo],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsOneWidget);
-          expect(
-            find.text(AppLocalizationsEn().searchVideosSectionHeader),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byType(SectionHeader), findsOneWidget);
+        expect(
+          find.text(AppLocalizationsEn().searchVideosSectionHeader),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const VideoSearchState(
-              status: VideoSearchStatus.failure,
-              query: 'test',
-            ),
-          );
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoSearchState(
+            status: VideoSearchStatus.failure,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
     });
 
     group('showAll: true (dedicated tab)', () {
@@ -130,21 +127,20 @@ void main() {
         },
       );
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const VideoSearchState(
-              status: VideoSearchStatus.failure,
-              query: 'test',
-            ),
-          );
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoSearchState(
+            status: VideoSearchStatus.failure,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject(showAll: true));
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
     });
 
     testWidgets(
@@ -168,23 +164,22 @@ void main() {
     );
 
     group('loading more indicator', () {
-      testWidgets(
-        'shows loading indicator when showAll and isLoadingMore',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            VideoSearchState(
-              status: VideoSearchStatus.success,
-              videos: [testVideo],
-              hasMore: true,
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('shows loading indicator when showAll and isLoadingMore', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          VideoSearchState(
+            status: VideoSearchStatus.success,
+            videos: [testVideo],
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject(showAll: true));
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
       testWidgets(
         'hides loading indicator when showAll and not isLoadingMore',
@@ -202,24 +197,23 @@ void main() {
         },
       );
 
-      testWidgets(
-        'does not show loading indicator when not showAll',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            VideoSearchState(
-              status: VideoSearchStatus.success,
-              videos: [testVideo],
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('does not show loading indicator when not showAll', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          VideoSearchState(
+            status: VideoSearchStatus.success,
+            videos: [testVideo],
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          // The initial loading spinner is hidden because we have results,
-          // and the loading-more indicator is only added when showAll.
-          expect(find.byType(CircularProgressIndicator), findsNothing);
-        },
-      );
+        // The initial loading spinner is hidden because we have results,
+        // and the loading-more indicator is only added when showAll.
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
     });
   });
 }

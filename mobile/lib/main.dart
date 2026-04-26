@@ -60,6 +60,7 @@ import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/corrupted_video_repair_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
@@ -1555,6 +1556,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
         draftService: ref.read(draftStorageServiceProvider),
+        collaboratorInviteService: CollaboratorInviteService(
+          dmRepository: ref.read(dmRepositoryProvider),
+        ),
         onProgressChanged:
             ({required String draftId, required double progress}) {
               onProgress(draftId: draftId, progress: progress);

@@ -73,10 +73,7 @@ void main() {
 
         // Should show some form of display name (generated from pubkey)
         // Both header and body contain "Original sound" text
-        expect(
-          find.textContaining('Original sound'),
-          findsAtLeastNWidgets(1),
-        );
+        expect(find.textContaining('Original sound'), findsAtLeastNWidgets(1));
       });
     });
 

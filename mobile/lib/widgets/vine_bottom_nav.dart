@@ -314,10 +314,7 @@ class _ProfileTabButton extends ConsumerWidget {
           height: 48,
           child: Center(
             child: hasAvatar
-                ? _ProfileAvatarBox(
-                    imageUrl: imageUrl,
-                    isSelected: isSelected,
-                  )
+                ? _ProfileAvatarBox(imageUrl: imageUrl, isSelected: isSelected)
                 // No signed-in avatar: render the same icon-tab treatment
                 // (opacity dim / shadow) as Home / Search / Inbox so the
                 // nav bar still feels uniform until the profile loads.
@@ -340,10 +337,7 @@ class _ProfileTabButton extends ConsumerWidget {
 /// variants differ only in the outer border — 1 px `onSurfaceDisabled`
 /// when unselected, 2 px white when selected.
 class _ProfileAvatarBox extends StatelessWidget {
-  const _ProfileAvatarBox({
-    required this.imageUrl,
-    required this.isSelected,
-  });
+  const _ProfileAvatarBox({required this.imageUrl, required this.isSelected});
 
   final String imageUrl;
   final bool isSelected;
@@ -366,11 +360,7 @@ class _ProfileAvatarBox extends StatelessWidget {
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: VineCachedImage(
-                imageUrl: imageUrl,
-                width: 24,
-                height: 24,
-              ),
+              child: VineCachedImage(imageUrl: imageUrl, width: 24, height: 24),
             ),
           ),
           // Border on top — 1 px `onSurfaceDisabled` when unselected,

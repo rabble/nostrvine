@@ -79,9 +79,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
           scaffoldMessenger.showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.webAuthNotSupportedSecureMode,
-              ),
+              content: Text(context.l10n.webAuthNotSupportedSecureMode),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -96,9 +94,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                context.l10n.webAuthIntegrationFailed('$e'),
-              ),
+              content: Text(context.l10n.webAuthIntegrationFailed('$e')),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -555,9 +551,7 @@ class _NostrHelpBox extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               context.l10n.webAuthNostrHelp,
-              style: VineTheme.bodySmallFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
             ),
           ],
         ),

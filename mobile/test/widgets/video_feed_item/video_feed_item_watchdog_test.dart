@@ -159,30 +159,27 @@ void main() {
   });
 
   group('Playback watchdog', () {
-    test(
-      'auto-resumes when native player pauses unexpectedly',
-      () {
-        controller.simulateInitialized(isPlaying: true);
+    test('auto-resumes when native player pauses unexpectedly', () {
+      controller.simulateInitialized(isPlaying: true);
 
-        var resumeCount = 0;
-        _installTestWatchdog(
-          controller,
-          onResume: () => resumeCount++,
-          shouldResume: () => true,
-        );
+      var resumeCount = 0;
+      _installTestWatchdog(
+        controller,
+        onResume: () => resumeCount++,
+        shouldResume: () => true,
+      );
 
-        // Simulate native player stopping unexpectedly
-        controller.simulateNativePause();
+      // Simulate native player stopping unexpectedly
+      controller.simulateNativePause();
 
-        expect(
-          resumeCount,
-          equals(1),
-          reason:
-              'Watchdog should trigger resume when native '
-              'player stops unexpectedly',
-        );
-      },
-    );
+      expect(
+        resumeCount,
+        equals(1),
+        reason:
+            'Watchdog should trigger resume when native '
+            'player stops unexpectedly',
+      );
+    });
 
     test('does not resume when shouldResume returns false', () {
       controller.simulateInitialized(isPlaying: true);
@@ -259,9 +256,7 @@ void main() {
       );
 
       // Trigger a listener notification while uninitialized
-      controller.value = const VideoPlayerValue(
-        duration: Duration.zero,
-      );
+      controller.value = const VideoPlayerValue(duration: Duration.zero);
 
       expect(
         resumeCount,
@@ -360,9 +355,7 @@ void main() {
         onResume: () {
           resumeCount++;
           // Simulate the resume restoring isPlaying
-          controller.value = controller.value.copyWith(
-            isPlaying: true,
-          );
+          controller.value = controller.value.copyWith(isPlaying: true);
         },
         shouldResume: () => true,
       );

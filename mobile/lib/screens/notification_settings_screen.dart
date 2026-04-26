@@ -134,9 +134,8 @@ class _NotificationSettingsScreenState
               title: context.l10n.notificationSettingsLikes,
               subtitle: context.l10n.notificationSettingsLikesSubtitle,
               value: _preferences.likesEnabled,
-              onChanged: (value) => _applyPreferences(
-                _preferences.copyWith(likesEnabled: value),
-              ),
+              onChanged: (value) =>
+                  _applyPreferences(_preferences.copyWith(likesEnabled: value)),
             ),
             _buildNotificationCard(
               icon: Icons.chat_bubble,

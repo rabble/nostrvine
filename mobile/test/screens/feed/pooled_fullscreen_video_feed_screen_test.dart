@@ -822,9 +822,7 @@ void main() {
             home: MultiBlocProvider(
               providers: [
                 BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
-                BlocProvider<VideoVolumeCubit>.value(
-                  value: videoVolumeCubit,
-                ),
+                BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
                 BlocProvider<VideoPlaybackStatusCubit>(
                   create: (_) => VideoPlaybackStatusCubit(),
                 ),
@@ -869,9 +867,7 @@ void main() {
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
-                  BlocProvider<VideoVolumeCubit>.value(
-                    value: videoVolumeCubit,
-                  ),
+                  BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
                   BlocProvider<VideoPlaybackStatusCubit>(
                     create: (_) => VideoPlaybackStatusCubit(),
                   ),
@@ -909,9 +905,7 @@ void main() {
               home: MultiBlocProvider(
                 providers: [
                   BlocProvider<FullscreenFeedBloc>.value(value: mockBloc),
-                  BlocProvider<VideoVolumeCubit>.value(
-                    value: videoVolumeCubit,
-                  ),
+                  BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
                   BlocProvider<VideoPlaybackStatusCubit>(
                     create: (_) => VideoPlaybackStatusCubit(),
                   ),

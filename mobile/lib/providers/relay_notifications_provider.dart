@@ -381,9 +381,10 @@ class RelayNotifications extends _$RelayNotifications {
       // Merge and consolidate follows across batches — keep earliest per actor.
       // This handles the case where batch 1 had follow_X at T2 (latest Kind 3)
       // and batch 2 has follow_X at T1 (original follow).
-      final allNotifications = _consolidateFollowModels(
-        [...currentState.notifications, ...rawNew],
-      );
+      final allNotifications = _consolidateFollowModels([
+        ...currentState.notifications,
+        ...rawNew,
+      ]);
 
       Log.info(
         'RelayNotifications: Loaded ${rawNew.length} more notifications '
@@ -547,9 +548,10 @@ class RelayNotifications extends _$RelayNotifications {
         return true;
       }).toList();
 
-      final merged = _consolidateFollowModels(
-        [...rawNotifications, ...webSocketOnly],
-      );
+      final merged = _consolidateFollowModels([
+        ...rawNotifications,
+        ...webSocketOnly,
+      ]);
 
       Log.info(
         'RelayNotifications: Refreshed with '

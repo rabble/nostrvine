@@ -13,10 +13,7 @@ import 'package:pro_image_editor/core/models/layers/layer.dart';
 /// Controls shown when an overlay item is selected.
 /// Adapts buttons based on the overlay type (layer vs filter).
 class TimelineOverlayControls extends StatelessWidget {
-  const TimelineOverlayControls({
-    required this.item,
-    super.key,
-  });
+  const TimelineOverlayControls({required this.item, super.key});
 
   final TimelineOverlayItem item;
 
@@ -79,9 +76,7 @@ class _LayerOverlayControls extends StatelessWidget {
     if (editor == null) return;
     final originalLayer = layer;
 
-    final updatedLayer = await scope.onAddEditTextLayer(
-      originalLayer,
-    );
+    final updatedLayer = await scope.onAddEditTextLayer(originalLayer);
     if (updatedLayer == null) return;
 
     editor.applyTextLayerChanges(layer, updatedLayer);
@@ -102,9 +97,7 @@ class _FilterOverlayControls extends StatelessWidget {
     );
   }
 
-  void _removeFilter({
-    required BuildContext context,
-  }) {
+  void _removeFilter({required BuildContext context}) {
     final editor = VideoEditorScope.of(context).editor;
     if (editor == null) return;
 

@@ -369,10 +369,7 @@ class _ClipContainer extends StatelessWidget {
     // and long clips keep thumbnailWidth fixed so each image represents the
     // correct time span instead of stretching to fill the whole tile.
     final slotWidth = contentWidth < displayWidth
-        ? math.max(
-            TimelineConstants.thumbnailWidth,
-            displayWidth / count,
-          )
+        ? math.max(TimelineConstants.thumbnailWidth, displayWidth / count)
         : TimelineConstants.thumbnailWidth;
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -392,10 +389,7 @@ class _ClipContainer extends StatelessWidget {
 }
 
 class _ThumbnailImage extends StatelessWidget {
-  const _ThumbnailImage({
-    required this.thumbnailPath,
-    this.stripThumbnailPath,
-  });
+  const _ThumbnailImage({required this.thumbnailPath, this.stripThumbnailPath});
 
   final String? thumbnailPath;
   final String? stripThumbnailPath;

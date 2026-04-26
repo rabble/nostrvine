@@ -43,70 +43,63 @@ void main() {
         home: Scaffold(
           body: BlocProvider<UserSearchBloc>.value(
             value: mockBloc,
-            child: CustomScrollView(
-              slivers: [PeopleSection(showAll: showAll)],
-            ),
+            child: CustomScrollView(slivers: [PeopleSection(showAll: showAll)]),
           ),
         ),
       );
     }
 
     group('showAll: false (All tab preview)', () {
-      testWidgets(
-        'hides entirely when success with empty results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const UserSearchState(
-              status: UserSearchStatus.success,
-              query: 'test',
-            ),
-          );
+      testWidgets('hides entirely when success with empty results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const UserSearchState(
+            status: UserSearchStatus.success,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsNothing);
-          expect(find.byType(SearchSectionEmptyState), findsNothing);
-        },
-      );
+        expect(find.byType(SectionHeader), findsNothing);
+        expect(find.byType(SearchSectionEmptyState), findsNothing);
+      });
 
-      testWidgets(
-        'renders header and content when success with results',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            UserSearchState(
-              status: UserSearchStatus.success,
-              query: 'test',
-              results: [testProfile],
-            ),
-          );
+      testWidgets('renders header and content when success with results', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          UserSearchState(
+            status: UserSearchStatus.success,
+            query: 'test',
+            results: [testProfile],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SectionHeader), findsOneWidget);
-          expect(
-            find.text(
-              AppLocalizationsEn().searchPeopleSectionHeader,
-            ),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byType(SectionHeader), findsOneWidget);
+        expect(
+          find.text(AppLocalizationsEn().searchPeopleSectionHeader),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const UserSearchState(
-              status: UserSearchStatus.failure,
-              query: 'test',
-            ),
-          );
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const UserSearchState(
+            status: UserSearchStatus.failure,
+            query: 'test',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
     });
 
     group('showAll: true (dedicated tab)', () {
@@ -126,61 +119,58 @@ void main() {
         },
       );
 
-      testWidgets(
-        'renders $SearchSectionErrorState on failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const UserSearchState(
-              status: UserSearchStatus.failure,
-              query: 'test',
-            ),
-          );
-
-          await tester.pumpWidget(buildSubject(showAll: true));
-
-          expect(find.byType(SearchSectionErrorState), findsOneWidget);
-        },
-      );
-    });
-
-    testWidgets(
-      'retry dispatches $UserSearchQueryChanged with current query',
-      (tester) async {
+      testWidgets('renders $SearchSectionErrorState on failure', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           const UserSearchState(
             status: UserSearchStatus.failure,
-            query: 'retry-test',
+            query: 'test',
           ),
         );
 
-        await tester.pumpWidget(buildSubject());
-        await tester.tap(find.text('Try again'));
-        await tester.pumpAndSettle();
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-        verify(
-          () => mockBloc.add(const UserSearchQueryChanged('retry-test')),
-        ).called(1);
-      },
-    );
+        expect(find.byType(SearchSectionErrorState), findsOneWidget);
+      });
+    });
+
+    testWidgets('retry dispatches $UserSearchQueryChanged with current query', (
+      tester,
+    ) async {
+      when(() => mockBloc.state).thenReturn(
+        const UserSearchState(
+          status: UserSearchStatus.failure,
+          query: 'retry-test',
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.text('Try again'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockBloc.add(const UserSearchQueryChanged('retry-test')),
+      ).called(1);
+    });
 
     group('loading more indicator', () {
-      testWidgets(
-        'shows loading indicator when showAll and isLoadingMore',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            UserSearchState(
-              status: UserSearchStatus.success,
-              results: [testProfile],
-              hasMore: true,
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('shows loading indicator when showAll and isLoadingMore', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          UserSearchState(
+            status: UserSearchStatus.success,
+            results: [testProfile],
+            hasMore: true,
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject(showAll: true));
+        await tester.pumpWidget(buildSubject(showAll: true));
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
       testWidgets(
         'hides loading indicator when showAll and not isLoadingMore',
@@ -198,22 +188,21 @@ void main() {
         },
       );
 
-      testWidgets(
-        'does not show loading indicator when not showAll',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            UserSearchState(
-              status: UserSearchStatus.success,
-              results: [testProfile],
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('does not show loading indicator when not showAll', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          UserSearchState(
+            status: UserSearchStatus.success,
+            results: [testProfile],
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.byType(CircularProgressIndicator), findsNothing);
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
     });
   });
 }

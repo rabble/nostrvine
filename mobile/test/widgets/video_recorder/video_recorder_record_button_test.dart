@@ -49,9 +49,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Center(child: RecordButton()),
-          ),
+          home: Scaffold(body: Center(child: RecordButton())),
         ),
       );
     }
@@ -99,9 +97,7 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
-        final semantics = tester.getSemantics(
-          find.byType(RecordButton),
-        );
+        final semantics = tester.getSemantics(find.byType(RecordButton));
         expect(semantics.tooltip, equals('Start recording'));
       });
     });
@@ -122,20 +118,14 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final semantics = tester.getSemantics(
-          find.byType(RecordButton),
-        );
+        final semantics = tester.getSemantics(find.byType(RecordButton));
         expect(semantics.tooltip, equals('Stop recording'));
       });
     });
 
     group('disabled state', () {
-      testWidgets('is disabled when camera is not initialized', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildWidget(isCameraInitialized: false),
-        );
+      testWidgets('is disabled when camera is not initialized', (tester) async {
+        await tester.pumpWidget(buildWidget(isCameraInitialized: false));
         await tester.pumpAndSettle();
 
         // AnimatedOpacity should have reduced opacity
@@ -146,9 +136,7 @@ void main() {
       });
 
       testWidgets('is disabled when canRecord is false', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(canRecord: false),
-        );
+        await tester.pumpWidget(buildWidget(canRecord: false));
         await tester.pumpAndSettle();
 
         final opacity = tester.widget<AnimatedOpacity>(

@@ -184,9 +184,7 @@ class _MessagesContent extends ConsumerWidget {
           PositionedDirectional(
             end: 16,
             bottom: 16,
-            child: InboxFab(
-              onPressed: () => _onNewConversation(context, ref),
-            ),
+            child: InboxFab(onPressed: () => _onNewConversation(context, ref)),
           ),
         ],
       ),
@@ -216,18 +214,17 @@ class _MessagesContent extends ConsumerWidget {
     final currentPubkey = authService.currentPublicKeyHex;
     if (currentPubkey == null) return;
 
-    final conversationId = DmRepository.computeConversationId(
-      [currentPubkey, selectedUser.pubkey],
-    );
+    final conversationId = DmRepository.computeConversationId([
+      currentPubkey,
+      selectedUser.pubkey,
+    ]);
     _pushConversation(context, conversationId, [selectedUser.pubkey]);
   }
 }
 
 /// Switches between loading, error, empty, and conversation list states.
 class _ConversationListContent extends StatelessWidget {
-  const _ConversationListContent({
-    required this.currentUserPubkey,
-  });
+  const _ConversationListContent({required this.currentUserPubkey});
 
   final String currentUserPubkey;
 
@@ -251,9 +248,7 @@ class _ConversationListContent extends StatelessWidget {
 }
 
 class _ConversationList extends ConsumerStatefulWidget {
-  const _ConversationList({
-    required this.currentUserPubkey,
-  });
+  const _ConversationList({required this.currentUserPubkey});
 
   final String currentUserPubkey;
 
@@ -281,9 +276,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
 
   @override
   FutureOr<void> onLoadMore() {
-    context.read<ConversationListBloc>().add(
-      const ConversationListLoadMore(),
-    );
+    context.read<ConversationListBloc>().add(const ConversationListLoadMore());
   }
 
   @override
@@ -367,11 +360,8 @@ class _ConversationListState extends ConsumerState<_ConversationList>
           currentUserPubkey: widget.currentUserPubkey,
           highlighted: conversation.id == _highlightedConversationId,
           onTap: () => _onConversationTapped(context, conversation),
-          onLongPress: () => _onConversationLongPressed(
-            context,
-            ref,
-            conversation,
-          ),
+          onLongPress: () =>
+              _onConversationLongPressed(context, ref, conversation),
         );
       },
     );
@@ -483,9 +473,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
             );
             if (context.mounted && removed) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(context.l10n.inboxRemovedConversation),
-                ),
+                SnackBar(content: Text(context.l10n.inboxRemovedConversation)),
               );
             }
           }
@@ -497,10 +485,7 @@ class _ConversationListState extends ConsumerState<_ConversationList>
     }
   }
 
-  Future<bool> _confirmRemove(
-    BuildContext context,
-    String displayName,
-  ) async {
+  Future<bool> _confirmRemove(BuildContext context, String displayName) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

@@ -56,9 +56,7 @@ void main() {
         expect(find.byType(ColoredBox), findsWidgets);
       });
 
-      testWidgets('renders two GestureDetectors for handles', (
-        tester,
-      ) async {
+      testWidgets('renders two GestureDetectors for handles', (tester) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.byType(GestureDetector), findsNWidgets(2));
@@ -73,10 +71,7 @@ void main() {
         );
         final decoration = decorated.decoration as BoxDecoration;
         expect(decoration.border, isNotNull);
-        expect(
-          (decoration.border! as Border).top.color,
-          equals(color),
-        );
+        expect((decoration.border! as Border).top.color, equals(color));
       });
 
       testWidgets('uses configured height', (tester) async {
@@ -104,9 +99,7 @@ void main() {
     group('left handle drag', () {
       testWidgets('calls onDragStart on drag begin', (tester) async {
         var started = false;
-        await tester.pumpWidget(
-          buildWidget(onDragStart: () => started = true),
-        );
+        await tester.pumpWidget(buildWidget(onDragStart: () => started = true));
 
         final origin = handleOrigin(tester);
         final box = tester.renderObject<RenderBox>(
@@ -122,9 +115,7 @@ void main() {
 
       testWidgets('calls onLeftDragUpdate with dx', (tester) async {
         final deltas = <double>[];
-        await tester.pumpWidget(
-          buildWidget(onLeftDragUpdate: deltas.add),
-        );
+        await tester.pumpWidget(buildWidget(onLeftDragUpdate: deltas.add));
 
         final origin = handleOrigin(tester);
         final box = tester.renderObject<RenderBox>(
@@ -140,9 +131,7 @@ void main() {
 
       testWidgets('calls onDragEnd on drag end', (tester) async {
         var ended = false;
-        await tester.pumpWidget(
-          buildWidget(onDragEnd: () => ended = true),
-        );
+        await tester.pumpWidget(buildWidget(onDragEnd: () => ended = true));
 
         final origin = handleOrigin(tester);
         final box = tester.renderObject<RenderBox>(
@@ -160,9 +149,7 @@ void main() {
     group('right handle drag', () {
       testWidgets('calls onRightDragUpdate with dx', (tester) async {
         final deltas = <double>[];
-        await tester.pumpWidget(
-          buildWidget(onRightDragUpdate: deltas.add),
-        );
+        await tester.pumpWidget(buildWidget(onRightDragUpdate: deltas.add));
 
         final origin = handleOrigin(tester);
         final box = tester.renderObject<RenderBox>(
@@ -176,13 +163,9 @@ void main() {
         expect(deltas, isNotEmpty);
       });
 
-      testWidgets('calls onDragStart on right handle drag', (
-        tester,
-      ) async {
+      testWidgets('calls onDragStart on right handle drag', (tester) async {
         var started = false;
-        await tester.pumpWidget(
-          buildWidget(onDragStart: () => started = true),
-        );
+        await tester.pumpWidget(buildWidget(onDragStart: () => started = true));
 
         final origin = handleOrigin(tester);
         final box = tester.renderObject<RenderBox>(

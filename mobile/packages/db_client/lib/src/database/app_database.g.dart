@@ -8182,6 +8182,17 @@ class $DirectMessagesTable extends DirectMessages
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _tagsJsonMeta = const VerificationMeta(
+    'tagsJson',
+  );
+  @override
+  late final GeneratedColumn<String> tagsJson = GeneratedColumn<String>(
+    'tags_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _messageKindMeta = const VerificationMeta(
     'messageKind',
   );
@@ -8340,6 +8351,7 @@ class $DirectMessagesTable extends DirectMessages
     replyToId,
     giftWrapId,
     subject,
+    tagsJson,
     messageKind,
     fileType,
     encryptionAlgorithm,
@@ -8430,6 +8442,12 @@ class $DirectMessagesTable extends DirectMessages
       context.handle(
         _subjectMeta,
         subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
+      );
+    }
+    if (data.containsKey('tags_json')) {
+      context.handle(
+        _tagsJsonMeta,
+        tagsJson.isAcceptableOrUnknown(data['tags_json']!, _tagsJsonMeta),
       );
     }
     if (data.containsKey('message_kind')) {
@@ -8572,6 +8590,10 @@ class $DirectMessagesTable extends DirectMessages
         DriftSqlType.string,
         data['${effectivePrefix}subject'],
       ),
+      tagsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags_json'],
+      ),
       messageKind: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}message_kind'],
@@ -8661,6 +8683,9 @@ class DirectMessageRow extends DataClass
   /// Optional conversation subject/title (from `subject` tag).
   final String? subject;
 
+  /// JSON-encoded tags from the decrypted NIP-17 rumor event.
+  final String? tagsJson;
+
   /// The inner event kind: 14 (text) or 15 (file). Defaults to 14.
   final int messageKind;
 
@@ -8713,6 +8738,7 @@ class DirectMessageRow extends DataClass
     this.replyToId,
     required this.giftWrapId,
     this.subject,
+    this.tagsJson,
     required this.messageKind,
     this.fileType,
     this.encryptionAlgorithm,
@@ -8741,6 +8767,9 @@ class DirectMessageRow extends DataClass
     map['gift_wrap_id'] = Variable<String>(giftWrapId);
     if (!nullToAbsent || subject != null) {
       map['subject'] = Variable<String>(subject);
+    }
+    if (!nullToAbsent || tagsJson != null) {
+      map['tags_json'] = Variable<String>(tagsJson);
     }
     map['message_kind'] = Variable<int>(messageKind);
     if (!nullToAbsent || fileType != null) {
@@ -8794,6 +8823,9 @@ class DirectMessageRow extends DataClass
       subject: subject == null && nullToAbsent
           ? const Value.absent()
           : Value(subject),
+      tagsJson: tagsJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tagsJson),
       messageKind: Value(messageKind),
       fileType: fileType == null && nullToAbsent
           ? const Value.absent()
@@ -8846,6 +8878,7 @@ class DirectMessageRow extends DataClass
       replyToId: serializer.fromJson<String?>(json['replyToId']),
       giftWrapId: serializer.fromJson<String>(json['giftWrapId']),
       subject: serializer.fromJson<String?>(json['subject']),
+      tagsJson: serializer.fromJson<String?>(json['tagsJson']),
       messageKind: serializer.fromJson<int>(json['messageKind']),
       fileType: serializer.fromJson<String?>(json['fileType']),
       encryptionAlgorithm: serializer.fromJson<String?>(
@@ -8875,6 +8908,7 @@ class DirectMessageRow extends DataClass
       'replyToId': serializer.toJson<String?>(replyToId),
       'giftWrapId': serializer.toJson<String>(giftWrapId),
       'subject': serializer.toJson<String?>(subject),
+      'tagsJson': serializer.toJson<String?>(tagsJson),
       'messageKind': serializer.toJson<int>(messageKind),
       'fileType': serializer.toJson<String?>(fileType),
       'encryptionAlgorithm': serializer.toJson<String?>(encryptionAlgorithm),
@@ -8900,6 +8934,7 @@ class DirectMessageRow extends DataClass
     Value<String?> replyToId = const Value.absent(),
     String? giftWrapId,
     Value<String?> subject = const Value.absent(),
+    Value<String?> tagsJson = const Value.absent(),
     int? messageKind,
     Value<String?> fileType = const Value.absent(),
     Value<String?> encryptionAlgorithm = const Value.absent(),
@@ -8922,6 +8957,7 @@ class DirectMessageRow extends DataClass
     replyToId: replyToId.present ? replyToId.value : this.replyToId,
     giftWrapId: giftWrapId ?? this.giftWrapId,
     subject: subject.present ? subject.value : this.subject,
+    tagsJson: tagsJson.present ? tagsJson.value : this.tagsJson,
     messageKind: messageKind ?? this.messageKind,
     fileType: fileType.present ? fileType.value : this.fileType,
     encryptionAlgorithm: encryptionAlgorithm.present
@@ -8960,6 +8996,7 @@ class DirectMessageRow extends DataClass
           ? data.giftWrapId.value
           : this.giftWrapId,
       subject: data.subject.present ? data.subject.value : this.subject,
+      tagsJson: data.tagsJson.present ? data.tagsJson.value : this.tagsJson,
       messageKind: data.messageKind.present
           ? data.messageKind.value
           : this.messageKind,
@@ -9003,6 +9040,7 @@ class DirectMessageRow extends DataClass
           ..write('replyToId: $replyToId, ')
           ..write('giftWrapId: $giftWrapId, ')
           ..write('subject: $subject, ')
+          ..write('tagsJson: $tagsJson, ')
           ..write('messageKind: $messageKind, ')
           ..write('fileType: $fileType, ')
           ..write('encryptionAlgorithm: $encryptionAlgorithm, ')
@@ -9030,6 +9068,7 @@ class DirectMessageRow extends DataClass
     replyToId,
     giftWrapId,
     subject,
+    tagsJson,
     messageKind,
     fileType,
     encryptionAlgorithm,
@@ -9056,6 +9095,7 @@ class DirectMessageRow extends DataClass
           other.replyToId == this.replyToId &&
           other.giftWrapId == this.giftWrapId &&
           other.subject == this.subject &&
+          other.tagsJson == this.tagsJson &&
           other.messageKind == this.messageKind &&
           other.fileType == this.fileType &&
           other.encryptionAlgorithm == this.encryptionAlgorithm &&
@@ -9080,6 +9120,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
   final Value<String?> replyToId;
   final Value<String> giftWrapId;
   final Value<String?> subject;
+  final Value<String?> tagsJson;
   final Value<int> messageKind;
   final Value<String?> fileType;
   final Value<String?> encryptionAlgorithm;
@@ -9103,6 +9144,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.replyToId = const Value.absent(),
     this.giftWrapId = const Value.absent(),
     this.subject = const Value.absent(),
+    this.tagsJson = const Value.absent(),
     this.messageKind = const Value.absent(),
     this.fileType = const Value.absent(),
     this.encryptionAlgorithm = const Value.absent(),
@@ -9127,6 +9169,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     this.replyToId = const Value.absent(),
     required String giftWrapId,
     this.subject = const Value.absent(),
+    this.tagsJson = const Value.absent(),
     this.messageKind = const Value.absent(),
     this.fileType = const Value.absent(),
     this.encryptionAlgorithm = const Value.absent(),
@@ -9156,6 +9199,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Expression<String>? replyToId,
     Expression<String>? giftWrapId,
     Expression<String>? subject,
+    Expression<String>? tagsJson,
     Expression<int>? messageKind,
     Expression<String>? fileType,
     Expression<String>? encryptionAlgorithm,
@@ -9180,6 +9224,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       if (replyToId != null) 'reply_to_id': replyToId,
       if (giftWrapId != null) 'gift_wrap_id': giftWrapId,
       if (subject != null) 'subject': subject,
+      if (tagsJson != null) 'tags_json': tagsJson,
       if (messageKind != null) 'message_kind': messageKind,
       if (fileType != null) 'file_type': fileType,
       if (encryptionAlgorithm != null)
@@ -9207,6 +9252,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     Value<String?>? replyToId,
     Value<String>? giftWrapId,
     Value<String?>? subject,
+    Value<String?>? tagsJson,
     Value<int>? messageKind,
     Value<String?>? fileType,
     Value<String?>? encryptionAlgorithm,
@@ -9231,6 +9277,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
       replyToId: replyToId ?? this.replyToId,
       giftWrapId: giftWrapId ?? this.giftWrapId,
       subject: subject ?? this.subject,
+      tagsJson: tagsJson ?? this.tagsJson,
       messageKind: messageKind ?? this.messageKind,
       fileType: fileType ?? this.fileType,
       encryptionAlgorithm: encryptionAlgorithm ?? this.encryptionAlgorithm,
@@ -9274,6 +9321,9 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
     }
     if (subject.present) {
       map['subject'] = Variable<String>(subject.value);
+    }
+    if (tagsJson.present) {
+      map['tags_json'] = Variable<String>(tagsJson.value);
     }
     if (messageKind.present) {
       map['message_kind'] = Variable<int>(messageKind.value);
@@ -9331,6 +9381,7 @@ class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
           ..write('replyToId: $replyToId, ')
           ..write('giftWrapId: $giftWrapId, ')
           ..write('subject: $subject, ')
+          ..write('tagsJson: $tagsJson, ')
           ..write('messageKind: $messageKind, ')
           ..write('fileType: $fileType, ')
           ..write('encryptionAlgorithm: $encryptionAlgorithm, ')
@@ -14131,6 +14182,7 @@ typedef $$DirectMessagesTableCreateCompanionBuilder =
       Value<String?> replyToId,
       required String giftWrapId,
       Value<String?> subject,
+      Value<String?> tagsJson,
       Value<int> messageKind,
       Value<String?> fileType,
       Value<String?> encryptionAlgorithm,
@@ -14156,6 +14208,7 @@ typedef $$DirectMessagesTableUpdateCompanionBuilder =
       Value<String?> replyToId,
       Value<String> giftWrapId,
       Value<String?> subject,
+      Value<String?> tagsJson,
       Value<int> messageKind,
       Value<String?> fileType,
       Value<String?> encryptionAlgorithm,
@@ -14218,6 +14271,11 @@ class $$DirectMessagesTableFilterComposer
 
   ColumnFilters<String> get subject => $composableBuilder(
     column: $table.subject,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14336,6 +14394,11 @@ class $$DirectMessagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get tagsJson => $composableBuilder(
+    column: $table.tagsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get messageKind => $composableBuilder(
     column: $table.messageKind,
     builder: (column) => ColumnOrderings(column),
@@ -14441,6 +14504,9 @@ class $$DirectMessagesTableAnnotationComposer
   GeneratedColumn<String> get subject =>
       $composableBuilder(column: $table.subject, builder: (column) => column);
 
+  GeneratedColumn<String> get tagsJson =>
+      $composableBuilder(column: $table.tagsJson, builder: (column) => column);
+
   GeneratedColumn<int> get messageKind => $composableBuilder(
     column: $table.messageKind,
     builder: (column) => column,
@@ -14542,6 +14608,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> replyToId = const Value.absent(),
                 Value<String> giftWrapId = const Value.absent(),
                 Value<String?> subject = const Value.absent(),
+                Value<String?> tagsJson = const Value.absent(),
                 Value<int> messageKind = const Value.absent(),
                 Value<String?> fileType = const Value.absent(),
                 Value<String?> encryptionAlgorithm = const Value.absent(),
@@ -14565,6 +14632,7 @@ class $$DirectMessagesTableTableManager
                 replyToId: replyToId,
                 giftWrapId: giftWrapId,
                 subject: subject,
+                tagsJson: tagsJson,
                 messageKind: messageKind,
                 fileType: fileType,
                 encryptionAlgorithm: encryptionAlgorithm,
@@ -14590,6 +14658,7 @@ class $$DirectMessagesTableTableManager
                 Value<String?> replyToId = const Value.absent(),
                 required String giftWrapId,
                 Value<String?> subject = const Value.absent(),
+                Value<String?> tagsJson = const Value.absent(),
                 Value<int> messageKind = const Value.absent(),
                 Value<String?> fileType = const Value.absent(),
                 Value<String?> encryptionAlgorithm = const Value.absent(),
@@ -14613,6 +14682,7 @@ class $$DirectMessagesTableTableManager
                 replyToId: replyToId,
                 giftWrapId: giftWrapId,
                 subject: subject,
+                tagsJson: tagsJson,
                 messageKind: messageKind,
                 fileType: fileType,
                 encryptionAlgorithm: encryptionAlgorithm,

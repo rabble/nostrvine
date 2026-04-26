@@ -29,10 +29,7 @@ void main() {
     );
 
     test('supports value equality', () {
-      expect(
-        const ClipsLibraryState(),
-        equals(const ClipsLibraryState()),
-      );
+      expect(const ClipsLibraryState(), equals(const ClipsLibraryState()));
     });
 
     test('initial state has correct defaults', () {

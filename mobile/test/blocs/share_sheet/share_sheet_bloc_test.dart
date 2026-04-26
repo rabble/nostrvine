@@ -769,9 +769,7 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits $ShareSheetShareViaTriggered with shareUrl and thumbnailPath',
         setUp: () {
-          when(
-            () => mockSharingService.generateShareData(any()),
-          ).thenReturn((
+          when(() => mockSharingService.generateShareData(any())).thenReturn((
             shareUrl: 'https://divine.video/video/test-id',
             title: 'Test Video',
             thumbnailUrl: 'https://example.com/thumb.jpg',
@@ -815,9 +813,7 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits with null thumbnailPath when thumbnail download fails',
         setUp: () {
-          when(
-            () => mockSharingService.generateShareData(any()),
-          ).thenReturn((
+          when(() => mockSharingService.generateShareData(any())).thenReturn((
             shareUrl: 'https://divine.video/video/test-id',
             title: 'Test Video',
             thumbnailUrl: 'https://example.com/thumb.jpg',
@@ -838,11 +834,7 @@ void main() {
                   'shareUrl',
                   'https://divine.video/video/test-id',
                 )
-                .having(
-                  (r) => r.thumbnailPath,
-                  'thumbnailPath',
-                  isNull,
-                ),
+                .having((r) => r.thumbnailPath, 'thumbnailPath', isNull),
           ),
         ],
       );
@@ -850,9 +842,7 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits with null thumbnailPath when no thumbnailUrl available',
         setUp: () {
-          when(
-            () => mockSharingService.generateShareData(any()),
-          ).thenReturn((
+          when(() => mockSharingService.generateShareData(any())).thenReturn((
             shareUrl: 'https://divine.video/video/test-id',
             title: null,
             thumbnailUrl: null,
@@ -865,11 +855,7 @@ void main() {
             (s) => s.actionResult,
             'actionResult',
             isA<ShareSheetShareViaTriggered>()
-                .having(
-                  (r) => r.thumbnailPath,
-                  'thumbnailPath',
-                  isNull,
-                )
+                .having((r) => r.thumbnailPath, 'thumbnailPath', isNull)
                 .having((r) => r.title, 'title', isNull),
           ),
         ],
@@ -878,9 +864,7 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits with null thumbnailPath when no cache manager provided',
         setUp: () {
-          when(
-            () => mockSharingService.generateShareData(any()),
-          ).thenReturn((
+          when(() => mockSharingService.generateShareData(any())).thenReturn((
             shareUrl: 'https://divine.video/video/test-id',
             title: 'Test Video',
             thumbnailUrl: 'https://example.com/thumb.jpg',

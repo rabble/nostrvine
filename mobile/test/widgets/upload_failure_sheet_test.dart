@@ -131,9 +131,7 @@ void main() {
         expect(find.text('Try Again'), findsOneWidget);
       });
 
-      testWidgets('$DivineButton with Save to Drafts label', (
-        tester,
-      ) async {
+      testWidgets('$DivineButton with Save to Drafts label', (tester) async {
         final upload = BackgroundUpload(
           draft: mockDraft,
           progress: 1,
@@ -222,9 +220,7 @@ void main() {
 
           // Bloc received vanish event
           verify(
-            () => mockBloc.add(
-              BackgroundPublishVanished(draftId: 'draft-1'),
-            ),
+            () => mockBloc.add(BackgroundPublishVanished(draftId: 'draft-1')),
           ).called(1);
         },
       );

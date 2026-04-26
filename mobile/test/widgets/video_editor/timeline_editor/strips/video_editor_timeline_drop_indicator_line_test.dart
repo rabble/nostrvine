@@ -14,11 +14,7 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Stack(
-              children: [
-                TimelineDropIndicatorLine(lineY: 24),
-              ],
-            ),
+            body: Stack(children: [TimelineDropIndicatorLine(lineY: 24)]),
           ),
         ),
       );

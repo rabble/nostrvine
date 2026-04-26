@@ -318,10 +318,7 @@ class _VerificationDialog extends ConsumerWidget {
               const Text(
                 'Click the link in your email to complete registration. '
                 'You can continue using the app in the meantime.',
-                style: TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
               ),
               const SizedBox(height: 16),
               const Row(

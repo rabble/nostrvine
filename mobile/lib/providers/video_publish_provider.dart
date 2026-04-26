@@ -1,6 +1,7 @@
 // ABOUTME: Riverpod provider for managing video publish screen state
 // ABOUTME: Controls playback, mute state, and position tracking
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -19,8 +20,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
@@ -60,9 +63,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       ];
     }
 
-    return const <VerifierRequiredMethod>[
-      VerifierRequiredMethod.publicProof,
-    ];
+    return const <VerifierRequiredMethod>[VerifierRequiredMethod.publicProof];
   }
 
   /// Fetches optional verifier-issued identity metadata without blocking
@@ -112,6 +113,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
+      collaboratorInviteService: CollaboratorInviteService(
+        dmRepository: ref.read(dmRepositoryProvider),
+      ),
       languagePreferenceService: ref.read(languagePreferenceServiceProvider),
       onProgressChanged: ({required String draftId, required double progress}) {
         setUploadProgress(draftId: draftId, progress: progress);
@@ -262,6 +266,14 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Clears any error state.
   void clearError() {
     state = state.copyWith(publishState: .idle, errorMessage: '');
+  }
+
+  @visibleForTesting
+  String collaboratorInviteWarningMessage(int failedCount) {
+    final noun = failedCount == 1
+        ? '1 collaborator invite did'
+        : '$failedCount collaborator invites did';
+    return 'Video posted, but $noun not send.';
   }
 
   /// Publishes the video with ProofMode attestation and navigates to
@@ -422,6 +434,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             name: 'VideoPublishNotifier',
             category: .video,
           );
+          if (result.hasInviteWarnings) {
+            _showCollaboratorInviteWarning(
+              publishService: publishService,
+              warnings: result.inviteWarnings,
+            );
+          }
 
         case PublishError(:final userMessage):
           setError(userMessage);
@@ -446,6 +464,57 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
     }
+  }
+
+  void _showCollaboratorInviteWarning({
+    required VideoPublishService publishService,
+    required List<CollaboratorInviteWarning> warnings,
+  }) {
+    final targetContext = NavigatorKeys.root.currentContext;
+    if (targetContext == null || !targetContext.mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(targetContext);
+    if (messenger == null) return;
+
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(collaboratorInviteWarningMessage(warnings.length)),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 8),
+        action: SnackBarAction(
+          label: 'Retry',
+          onPressed: () {
+            unawaited(
+              _retryCollaboratorInvites(
+                messenger: messenger,
+                publishService: publishService,
+                warnings: warnings,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _retryCollaboratorInvites({
+    required ScaffoldMessengerState messenger,
+    required VideoPublishService publishService,
+    required List<CollaboratorInviteWarning> warnings,
+  }) async {
+    final results = await Future.wait(
+      warnings.map(publishService.retryCollaboratorInvite),
+    );
+    final failures = results.where((result) => !result.success).length;
+    final message = failures == 0
+        ? 'Collaborator invites sent.'
+        : collaboratorInviteWarningMessage(failures);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<String?> _refreshProofWithCreatorIdentity({
@@ -524,9 +593,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }) async {
     try {
       final hardBindingValue =
-          await NativeProofModeService.generateSha256FileHash(
-            filePath,
-          );
+          await NativeProofModeService.generateSha256FileHash(filePath);
       return await ref
           .read(nostrCreatorBindingServiceProvider)
           .createAssertion(
@@ -556,10 +623,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     String? nip05,
     String? website,
   }) {
-    return CreatorBindingClaims(
-      nip05: nip05,
-      website: website,
-    );
+    return CreatorBindingClaims(nip05: nip05, website: website);
   }
 
   VerifierClaimRequest _buildVerifierClaimRequest({

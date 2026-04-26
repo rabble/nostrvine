@@ -113,9 +113,9 @@ void main() {
         () => mockModerationLabelService.isDivineLabelerSubscribed,
       ).thenReturn(true);
       when(() => mockModerationLabelService.customLabelers).thenReturn({});
-      when(() => mockModerationLabelService.subscribedLabelers).thenReturn({
-        ModerationLabelService.fallbackModerationPubkeyHex,
-      });
+      when(
+        () => mockModerationLabelService.subscribedLabelers,
+      ).thenReturn({ModerationLabelService.fallbackModerationPubkeyHex});
       when(
         () => mockModerationLabelService.isFollowingModerationEnabled,
       ).thenReturn(false);
@@ -138,10 +138,9 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      when(() => mockFollowRepository.followingPubkeys).thenReturn([
-        'followed_pubkey_1',
-        'followed_pubkey_2',
-      ]);
+      when(
+        () => mockFollowRepository.followingPubkeys,
+      ).thenReturn(['followed_pubkey_1', 'followed_pubkey_2']);
       when(
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => const Stream<List<String>>.empty());

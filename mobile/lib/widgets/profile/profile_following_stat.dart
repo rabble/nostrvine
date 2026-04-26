@@ -68,9 +68,7 @@ class _MyFollowingStatView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(blocklistVersionProvider, (_, _) {
-      context.read<MyFollowingBloc>().add(
-        const MyFollowingBlocklistChanged(),
-      );
+      context.read<MyFollowingBloc>().add(const MyFollowingBlocklistChanged());
     });
 
     return BlocBuilder<MyFollowingBloc, MyFollowingState>(

@@ -31,9 +31,7 @@ void main() {
     }
 
     test('maps unknown relay type to like using source kind fallback', () {
-      final relay = makeRelayNotification(
-        notificationType: 'notification',
-      );
+      final relay = makeRelayNotification(notificationType: 'notification');
 
       final model = notificationModelFromRelayApi(relay, actorName: 'Alice');
 
@@ -179,9 +177,7 @@ void main() {
         // When API returns a notification without an id field, the model
         // should have an empty id (not fall back to sourceEventId) so that
         // markAsRead can detect it and skip the API call.
-        final relayWithEmptyId = makeRelayNotification(
-          id: '',
-        );
+        final relayWithEmptyId = makeRelayNotification(id: '');
 
         final model = notificationModelFromRelayApi(
           relayWithEmptyId,
@@ -194,21 +190,16 @@ void main() {
       },
     );
 
-    test(
-      'uses relay.id when provided by API',
-      () {
-        final relayWithId = makeRelayNotification(
-          id: 'real-notification-id-123',
-        );
+    test('uses relay.id when provided by API', () {
+      final relayWithId = makeRelayNotification(id: 'real-notification-id-123');
 
-        final model = notificationModelFromRelayApi(
-          relayWithId,
-          actorName: 'Alice',
-        );
+      final model = notificationModelFromRelayApi(
+        relayWithId,
+        actorName: 'Alice',
+      );
 
-        // Model.id should be the actual notification ID from the API
-        expect(model.id, 'real-notification-id-123');
-      },
-    );
+      // Model.id should be the actual notification ID from the API
+      expect(model.id, 'real-notification-id-123');
+    });
   });
 }

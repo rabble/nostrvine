@@ -14,10 +14,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(
-              body: MessageRequestsBanner(
-                requestCount: 5,
-                onTap: () {},
-              ),
+              body: MessageRequestsBanner(requestCount: 5, onTap: () {}),
             ),
           ),
         );
@@ -29,10 +26,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(
-              body: MessageRequestsBanner(
-                requestCount: 42,
-                onTap: () {},
-              ),
+              body: MessageRequestsBanner(requestCount: 42, onTap: () {}),
             ),
           ),
         );
@@ -44,10 +38,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(
-              body: MessageRequestsBanner(
-                requestCount: 0,
-                onTap: () {},
-              ),
+              body: MessageRequestsBanner(requestCount: 0, onTap: () {}),
             ),
           ),
         );
@@ -60,10 +51,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(
-              body: MessageRequestsBanner(
-                requestCount: 150,
-                onTap: () {},
-              ),
+              body: MessageRequestsBanner(requestCount: 150, onTap: () {}),
             ),
           ),
         );

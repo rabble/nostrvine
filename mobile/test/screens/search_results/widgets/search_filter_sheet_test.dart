@@ -82,9 +82,7 @@ void main() {
       expect(find.byIcon(Icons.check), findsOneWidget);
     });
 
-    testWidgets('calls filterChanged when option is selected', (
-      tester,
-    ) async {
+    testWidgets('calls filterChanged when option is selected', (tester) async {
       await tester.pumpWidget(
         buildSubject(
           child: Builder(
@@ -107,9 +105,7 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('does not call filterChanged when dismissed', (
-      tester,
-    ) async {
+    testWidgets('does not call filterChanged when dismissed', (tester) async {
       await tester.pumpWidget(
         buildSubject(
           child: Builder(

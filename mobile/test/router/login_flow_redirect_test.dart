@@ -87,21 +87,18 @@ void main() {
         );
       });
 
-      test(
-        'unauthenticated user can access ${WelcomeScreen.inviteGatePath}',
-        () {
-          final redirect = testRedirectLogic(
-            location: WelcomeScreen.inviteGatePath,
-            authState: AuthState.unauthenticated,
-          );
-          expect(
-            redirect,
-            isNull,
-            reason:
-                '${WelcomeScreen.inviteGatePath} is an auth route, should not redirect',
-          );
-        },
-      );
+      test('unauthenticated user can access ${WelcomeScreen.inviteGatePath}', () {
+        final redirect = testRedirectLogic(
+          location: WelcomeScreen.inviteGatePath,
+          authState: AuthState.unauthenticated,
+        );
+        expect(
+          redirect,
+          isNull,
+          reason:
+              '${WelcomeScreen.inviteGatePath} is an auth route, should not redirect',
+        );
+      });
 
       test(
         'unauthenticated user can access ${WelcomeScreen.loginOptionsPath}',
@@ -357,27 +354,24 @@ void main() {
         },
       );
 
-      test(
-        'expired-session user on ${WelcomeScreen.loginOptionsPath} '
-        'should NOT be bounced to home (the original bug)',
-        () {
-          // This test reproduces the bug: authenticated users with an
-          // expired OAuth session were redirected away from loginOptionsPath,
-          // making the "Sign in" button on the Session Expired banner useless.
-          final redirect = testRedirectLogic(
-            location: WelcomeScreen.loginOptionsPath,
-            authState: AuthState.authenticated,
-            hasExpiredOAuthSession: true,
-          );
-          expect(
-            redirect,
-            isNull,
-            reason:
-                'Expired-session user must reach login options to '
-                're-authenticate, not be bounced to home',
-          );
-        },
-      );
+      test('expired-session user on ${WelcomeScreen.loginOptionsPath} '
+          'should NOT be bounced to home (the original bug)', () {
+        // This test reproduces the bug: authenticated users with an
+        // expired OAuth session were redirected away from loginOptionsPath,
+        // making the "Sign in" button on the Session Expired banner useless.
+        final redirect = testRedirectLogic(
+          location: WelcomeScreen.loginOptionsPath,
+          authState: AuthState.authenticated,
+          hasExpiredOAuthSession: true,
+        );
+        expect(
+          redirect,
+          isNull,
+          reason:
+              'Expired-session user must reach login options to '
+              're-authenticate, not be bounced to home',
+        );
+      });
 
       test(
         'expired-session user on ${WelcomeScreen.path} still redirects to home',

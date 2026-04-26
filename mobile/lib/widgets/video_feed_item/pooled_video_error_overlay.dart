@@ -86,11 +86,7 @@ class PooledVideoErrorOverlay extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: 16,
               children: [
-                DivineIcon(
-                  icon: icon,
-                  color: VineTheme.whiteText,
-                  size: 48,
-                ),
+                DivineIcon(icon: icon, color: VineTheme.whiteText, size: 48),
                 Text(
                   message,
                   style: VineTheme.bodyMediumFont(),

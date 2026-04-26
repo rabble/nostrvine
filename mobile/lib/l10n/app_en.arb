@@ -1616,8 +1616,8 @@
   "shareMenuAddContentLabels": "Add content labels",
   "shareMenuClearAll": "Clear all",
   "shareMenuCollaborators": "Collaborators",
-  "shareMenuAddCollaborator": "Add collaborator",
-  "shareMenuMutualFollowRequired": "You need to mutually follow {name} to add them as a collaborator.",
+  "shareMenuAddCollaborator": "Invite collaborator",
+  "shareMenuMutualFollowRequired": "You need to mutually follow {name} to invite them as a collaborator.",
   "@shareMenuMutualFollowRequired": {
     "placeholders": {
       "name": {
@@ -2780,29 +2780,17 @@
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
-  "videoEditorSortNewest": "Newest",
-  "videoEditorSortLongest": "Longest",
-  "videoEditorSortShortest": "Shortest",
-  "videoEditorSortBySemanticLabel": "Sort by {option}. Tap to change sort order",
-  "@videoEditorSortBySemanticLabel": {
-    "placeholders": {
-      "option": {
-        "type": "String"
-      }
-    }
-  },
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",
   "videoEditorAudioUntitledSound": "Untitled sound",
-  "videoEditorAudioSelectSoundSemanticLabel": "Select sound",
   "videoEditorAudioUntitled": "Untitled",
   "videoEditorAudioAddAudio": "Add audio",
   "videoEditorAudioNoSoundsAvailableTitle": "No sounds available",
   "videoEditorAudioNoSoundsAvailableSubtitle": "Sounds will appear here when creators share audio",
-  "videoEditorAudioNoSoundsFoundTitle": "No sounds found",
-  "videoEditorAudioNoSoundsFoundSubtitle": "Try a different search term",
   "videoEditorAudioFailedToLoadTitle": "Failed to load sounds",
   "videoEditorAudioSegmentInstruction": "Select the audio segment for your video",
+  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryCommunity": "Community",
   "videoEditorDrawToolArrowSemanticLabel": "Arrow tool",
   "videoEditorDrawToolEraserSemanticLabel": "Eraser tool",
   "videoEditorDrawToolMarkerSemanticLabel": "Marker tool",
@@ -2917,7 +2905,7 @@
   "videoMetadataContentWarningSelectAllThatApply": "Select all that apply to your content",
   "videoMetadataContentWarningDoneButton": "Done",
   "videoMetadataCollaboratorsLabel": "Collaborators",
-  "videoMetadataAddCollaboratorSemanticLabel": "Add collaborator",
+  "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",
   "videoMetadataCollaboratorsCount": "{count}/{max} Collaborators",
   "@videoMetadataCollaboratorsCount": {
@@ -2931,9 +2919,9 @@
     }
   },
   "videoMetadataRemoveCollaboratorSemanticLabel": "Remove collaborator",
-  "videoMetadataCollaboratorsHelpMessage": "Collaborators are tagged as co-creators on this post. You can only add people you mutually follow, and they appear in the post metadata when published.",
+  "videoMetadataCollaboratorsHelpMessage": "Collaborators are invited as co-creators on this post. You can only invite people you mutually follow, and they appear as collaborators after they confirm.",
   "videoMetadataMutualFollowersSearchText": "Mutual followers",
-  "videoMetadataMustMutuallyFollowSnackbar": "You need to mutually follow {name} to add them as a collaborator.",
+  "videoMetadataMustMutuallyFollowSnackbar": "You need to mutually follow {name} to invite them as a collaborator.",
   "@videoMetadataMustMutuallyFollowSnackbar": {
     "placeholders": {
       "name": {

@@ -40,10 +40,7 @@ void main() {
     registerFallbackValue(const CommentsLoadRequested());
   });
 
-  Widget buildTestWidget(
-    String content,
-    _MockCommentsBloc mockCommentsBloc,
-  ) {
+  Widget buildTestWidget(String content, _MockCommentsBloc mockCommentsBloc) {
     final comment = CommentBuilder()
         .withAuthorPubkey(_testHexPubkey)
         .withRootEventId(_testRootEventId)

@@ -5,9 +5,7 @@ import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';
 
 void main() {
   group('NostrAppPermissionPromptSheet', () {
-    testWidgets('renders the requested app permission details', (
-      tester,
-    ) async {
+    testWidgets('renders the requested app permission details', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

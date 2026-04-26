@@ -19,13 +19,9 @@ void main() {
       mockGoRouter = MockGoRouter();
     });
 
-    Widget buildSubject({
-      required ValueChanged<RequestBulkAction?> onResult,
-    }) {
+    Widget buildSubject({required ValueChanged<RequestBulkAction?> onResult}) {
       return testMaterialApp(
-        additionalOverrides: [
-          goRouterProvider.overrideWithValue(mockGoRouter),
-        ],
+        additionalOverrides: [goRouterProvider.overrideWithValue(mockGoRouter)],
         home: MockGoRouterProvider(
           goRouter: mockGoRouter,
           child: Builder(
@@ -61,9 +57,7 @@ void main() {
         // The value is passed as positional arg to GoRouter.pop
       });
 
-      await tester.pumpWidget(
-        buildSubject(onResult: (_) {}),
-      );
+      await tester.pumpWidget(buildSubject(onResult: (_) {}));
 
       await tester.tap(find.text('Show sheet'));
       await tester.pumpAndSettle();
@@ -71,17 +65,13 @@ void main() {
       await tester.tap(find.text('Mark all requests as read'));
       await tester.pumpAndSettle();
 
-      verify(
-        () => mockGoRouter.pop(RequestBulkAction.markAllRead),
-      ).called(1);
+      verify(() => mockGoRouter.pop(RequestBulkAction.markAllRead)).called(1);
     });
 
     testWidgets('returns removeAll when second tile tapped', (tester) async {
       when(() => mockGoRouter.pop(any())).thenAnswer((invocation) async {});
 
-      await tester.pumpWidget(
-        buildSubject(onResult: (_) {}),
-      );
+      await tester.pumpWidget(buildSubject(onResult: (_) {}));
 
       await tester.tap(find.text('Show sheet'));
       await tester.pumpAndSettle();
@@ -89,9 +79,7 @@ void main() {
       await tester.tap(find.text('Remove all requests'));
       await tester.pumpAndSettle();
 
-      verify(
-        () => mockGoRouter.pop(RequestBulkAction.removeAll),
-      ).called(1);
+      verify(() => mockGoRouter.pop(RequestBulkAction.removeAll)).called(1);
     });
   });
 }

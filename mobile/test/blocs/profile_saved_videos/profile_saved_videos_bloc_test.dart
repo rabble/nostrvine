@@ -128,10 +128,10 @@ void main() {
           expect(bloc.state.savedEventIds, equals(['video-1', 'video-2']));
           expect(bloc.state.hasMoreContent, isFalse);
           verify(
-            () => mockVideosRepository.getVideosByIds(
-              ['video-1', 'video-2'],
-              cacheResults: true,
-            ),
+            () => mockVideosRepository.getVideosByIds([
+              'video-1',
+              'video-2',
+            ], cacheResults: true),
           ).called(1);
         },
       );
@@ -139,9 +139,9 @@ void main() {
       blocTest<ProfileSavedVideosBloc, ProfileSavedVideosState>(
         'emits failure when fetching videos throws',
         setUp: () {
-          when(() => mockBookmarkService.globalBookmarks).thenReturn(const [
-            BookmarkItem(type: 'e', id: 'video-1'),
-          ]);
+          when(
+            () => mockBookmarkService.globalBookmarks,
+          ).thenReturn(const [BookmarkItem(type: 'e', id: 'video-1')]);
           when(
             () => mockVideosRepository.getVideosByIds(
               any(),

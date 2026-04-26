@@ -119,12 +119,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     if (state.status == CommentsStatus.loading) return;
 
     _isInitialBackfillComplete = false;
-    emit(
-      state.copyWith(
-        status: CommentsStatus.loading,
-        newCommentCount: 0,
-      ),
-    );
+    emit(state.copyWith(status: CommentsStatus.loading, newCommentCount: 0));
     _startWatchingComments();
 
     try {
@@ -162,11 +157,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
       if (state.commentsById.isNotEmpty) {
-        emit(
-          state.copyWith(
-            status: CommentsStatus.success,
-          ),
-        );
+        emit(state.copyWith(status: CommentsStatus.success));
         return;
       }
       emit(

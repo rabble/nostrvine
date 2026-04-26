@@ -43,52 +43,45 @@ void main() {
       video_platform.VideoPlayerPlatform.instance = originalPlatform;
     });
 
-    testWidgets(
-      'renders Auto action in the home web overlay',
-      (tester) async {
-        final video = createTestVideoEvent(
-          id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
-          pubkey:
-              'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
-          videoUrl: 'https://example.com/video1.mp4',
-        );
-        final state = VideoFeedState(
-          status: VideoFeedStatus.success,
-          videos: [video],
-        );
-        when(() => mockBloc.state).thenReturn(state);
+    testWidgets('renders Auto action in the home web overlay', (tester) async {
+      final video = createTestVideoEvent(
+        id: 'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234',
+        pubkey:
+            'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3',
+        videoUrl: 'https://example.com/video1.mp4',
+      );
+      final state = VideoFeedState(
+        status: VideoFeedStatus.success,
+        videos: [video],
+      );
+      when(() => mockBloc.state).thenReturn(state);
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            additionalOverrides: [
-              routerLocationStreamProvider.overrideWith(
-                (ref) => Stream.value('/home'),
+      await tester.pumpWidget(
+        testMaterialApp(
+          additionalOverrides: [
+            routerLocationStreamProvider.overrideWith(
+              (ref) => Stream.value('/home'),
+            ),
+          ],
+          mockProfileRepository: mockProfileRepository,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<VideoFeedBloc>.value(value: mockBloc),
+              BlocProvider<VideoPlaybackStatusCubit>(
+                create: (_) => VideoPlaybackStatusCubit(),
               ),
             ],
-            mockProfileRepository: mockProfileRepository,
-            home: MultiBlocProvider(
-              providers: [
-                BlocProvider<VideoFeedBloc>.value(value: mockBloc),
-                BlocProvider<VideoPlaybackStatusCubit>(
-                  create: (_) => VideoPlaybackStatusCubit(),
-                ),
-              ],
-              child: VideoFeedView(
-                webControllerFactory:
-                    ({
-                      required url,
-                      required headers,
-                    }) => webController,
-              ),
+            child: VideoFeedView(
+              webControllerFactory: ({required url, required headers}) =>
+                  webController,
             ),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        expect(find.byType(WebVideoFeed), findsOneWidget);
-        expect(find.byType(AutoActionButton), findsOneWidget);
-      },
-      skip: !kIsWeb,
-    );
+      expect(find.byType(WebVideoFeed), findsOneWidget);
+      expect(find.byType(AutoActionButton), findsOneWidget);
+    }, skip: !kIsWeb);
   });
 }

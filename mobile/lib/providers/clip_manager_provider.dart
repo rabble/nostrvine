@@ -284,9 +284,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
         // skip the update entirely.
         final current = getClipById(clip.id);
         if (current == null) return;
-        refreshClip(
-          current.copyWith(proofManifestJson: jsonEncode(proofData)),
-        );
+        refreshClip(current.copyWith(proofManifestJson: jsonEncode(proofData)));
         _triggerAutosave();
 
         Log.info(
@@ -497,9 +495,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   }) {
     final index = _clips.indexWhere((c) => c.id == clipId);
     if (index != -1) {
-      _clips[index] = _clips[index].copyWith(
-        ghostFramePath: ghostFramePath,
-      );
+      _clips[index] = _clips[index].copyWith(ghostFramePath: ghostFramePath);
       state = state.copyWith(clips: List.unmodifiable(_clips));
       Log.debug(
         '👻 Updated ghost frame for clip: $clipId',

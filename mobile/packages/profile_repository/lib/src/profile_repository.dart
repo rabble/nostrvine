@@ -106,11 +106,16 @@ class ProfileRepository {
                 (profile.about?.toLowerCase().contains(queryLower) ?? false);
           }).toList();
 
-    if (limit != null && filtered.length > limit) {
-      return filtered.sublist(0, limit);
+    final blockFilter = _blockFilter;
+    final unblocked = blockFilter == null
+        ? filtered
+        : filtered.where((p) => !blockFilter(p.pubkey)).toList();
+
+    if (limit != null && unblocked.length > limit) {
+      return unblocked.sublist(0, limit);
     }
 
-    return filtered;
+    return unblocked;
   }
 
   /// Counts cached profiles matching [query] without performing remote search.
@@ -230,15 +235,20 @@ class ProfileRepository {
 
     if (social == null && stats == null && engagement == null) return;
 
+    int? publicViewCount;
+    if (engagement != null) {
+      publicViewCount = engagement.totalViews > 0
+          ? engagement.totalViews
+          : engagement.totalLoops.round();
+    }
+
     await dao.upsertStats(
       pubkey: pubkey,
       followerCount: social?.followerCount,
       followingCount: social?.followingCount,
       videoCount: stats?.videoCount,
       totalLikes: engagement?.totalReactions,
-      // total_loops can be fractional due to a backend aggregation issue;
-      // round to the nearest integer.
-      totalViews: engagement?.totalLoops.round(),
+      totalViews: publicViewCount,
     );
   }
 
@@ -274,6 +284,8 @@ class ProfileRepository {
   }
 
   Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
+    if (_blockFilter?.call(pubkey) ?? false) return null;
+
     // Step 1: Try Funnelcake REST API (fast, broad coverage).
     if (_funnelcakeApiClient?.isAvailable ?? false) {
       try {
@@ -1160,6 +1172,11 @@ class ProfileRepository {
     // single-profile fetches skip the relay/indexer cascade.
     if (remaining.isNotEmpty) {
       _confirmedMissing.addAll(remaining);
+    }
+
+    final blockFilter = _blockFilter;
+    if (blockFilter != null) {
+      results.removeWhere((pubkey, _) => blockFilter(pubkey));
     }
 
     developer.log(

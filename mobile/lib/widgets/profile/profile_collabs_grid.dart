@@ -1,6 +1,5 @@
 // ABOUTME: Grid widget displaying user's collab videos on profile page
-// ABOUTME: Shows 3-column grid with thumbnails for videos where user
-// ABOUTME: is tagged as a collaborator
+// ABOUTME: Shows 3-column grid with thumbnails for confirmed collaborator videos
 
 import 'dart:async';
 

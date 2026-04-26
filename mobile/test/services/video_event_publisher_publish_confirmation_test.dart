@@ -130,26 +130,23 @@ void main() {
   }
 
   group('VideoEventPublisher direct publish', () {
-    test(
-      'succeeds when relay accepts the event',
-      () async {
-        final signedEvent = createSignedEvent();
-        stubSigning(signedEvent);
-        stubPublish(signedEvent);
+    test('succeeds when relay accepts the event', () async {
+      final signedEvent = createSignedEvent();
+      stubSigning(signedEvent);
+      stubPublish(signedEvent);
 
-        final result = await publisher.publishDirectUpload(createUpload());
+      final result = await publisher.publishDirectUpload(createUpload());
 
-        expect(result, isTrue);
-        verify(
-          () => mockUploadManager.updateUploadStatus(
-            'test-upload-id',
-            UploadStatus.published,
-            nostrEventId: signedEvent.id,
-          ),
-        ).called(1);
-        verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
-      },
-    );
+      expect(result, isTrue);
+      verify(
+        () => mockUploadManager.updateUploadStatus(
+          'test-upload-id',
+          UploadStatus.published,
+          nostrEventId: signedEvent.id,
+        ),
+      ).called(1);
+      verify(() => mockVideoEventService.addVideoEvent(any())).called(1);
+    });
 
     test(
       'returns false when relay rejects the event on all attempts',
@@ -177,9 +174,7 @@ void main() {
 
     test('reuses a cached signed event when retrying publish', () async {
       final signedEvent = createSignedEvent();
-      final retryUpload = createUpload().copyWith(
-        nostrEventId: signedEvent.id,
-      );
+      final retryUpload = createUpload().copyWith(nostrEventId: signedEvent.id);
 
       when(
         () => mockPersonalEventCache.getEventById(signedEvent.id),

@@ -20,9 +20,7 @@ void main() {
       return ProviderScope(
         overrides: [
           videoEditorProvider.overrideWith(
-            () => _MockVideoEditorNotifier(
-              state ?? VideoEditorProviderState(),
-            ),
+            () => _MockVideoEditorNotifier(state ?? VideoEditorProviderState()),
           ),
         ],
         child: MaterialApp(
@@ -77,22 +75,16 @@ void main() {
     testWidgets('updates title via provider on text change', (tester) async {
       late _MockVideoEditorNotifier mockNotifier;
 
-      mockNotifier = _MockVideoEditorNotifier(
-        VideoEditorProviderState(),
-      );
+      mockNotifier = _MockVideoEditorNotifier(VideoEditorProviderState());
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(() => mockNotifier),
-          ],
+          overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: VideoMetadataFormFields(),
-              ),
+              body: SingleChildScrollView(child: VideoMetadataFormFields()),
             ),
           ),
         ),
@@ -113,22 +105,16 @@ void main() {
     ) async {
       late _MockVideoEditorNotifier mockNotifier;
 
-      mockNotifier = _MockVideoEditorNotifier(
-        VideoEditorProviderState(),
-      );
+      mockNotifier = _MockVideoEditorNotifier(VideoEditorProviderState());
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(() => mockNotifier),
-          ],
+          overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: VideoMetadataFormFields(),
-              ),
+              body: SingleChildScrollView(child: VideoMetadataFormFields()),
             ),
           ),
         ),
@@ -144,9 +130,7 @@ void main() {
       expect(mockNotifier.lastDescription, equals('A description'));
     });
 
-    testWidgets('hides tags section when enableTags is false', (
-      tester,
-    ) async {
+    testWidgets('hides tags section when enableTags is false', (tester) async {
       await tester.pumpWidget(buildWidget(enableTags: false));
       await tester.pumpAndSettle();
 

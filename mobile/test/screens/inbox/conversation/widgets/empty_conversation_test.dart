@@ -13,10 +13,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(
-                displayName: 'Bob',
-                onViewProfile: () {},
-              ),
+              body: EmptyConversation(displayName: 'Bob', onViewProfile: () {}),
             ),
           ),
         );
@@ -30,10 +27,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(
-                displayName: 'Bob',
-                onViewProfile: () {},
-              ),
+              body: EmptyConversation(displayName: 'Bob', onViewProfile: () {}),
             ),
           ),
         );
@@ -65,10 +59,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(
-                displayName: 'Bob',
-                onViewProfile: () {},
-              ),
+              body: EmptyConversation(displayName: 'Bob', onViewProfile: () {}),
             ),
           ),
         );
@@ -83,10 +74,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(
-                displayName: 'Bob',
-                onViewProfile: () {},
-              ),
+              body: EmptyConversation(displayName: 'Bob', onViewProfile: () {}),
             ),
           ),
         );

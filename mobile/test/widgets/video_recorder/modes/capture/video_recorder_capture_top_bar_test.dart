@@ -51,9 +51,7 @@ void main() {
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: VideoRecorderCaptureTopBar(fromEditor: false),
-          ),
+          home: Scaffold(body: VideoRecorderCaptureTopBar(fromEditor: false)),
         ),
       );
     }
@@ -91,9 +89,7 @@ void main() {
         expect(find.bySemanticsLabel('Close'), findsOneWidget);
       });
 
-      testWidgets('next button is hidden when no clips exist', (
-        tester,
-      ) async {
+      testWidgets('next button is hidden when no clips exist', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
@@ -102,10 +98,7 @@ void main() {
             .widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity))
             .toList();
         // Find the one with opacity 0 (no clips -> next is hidden)
-        expect(
-          opacities.any((o) => o.opacity == 0),
-          isTrue,
-        );
+        expect(opacities.any((o) => o.opacity == 0), isTrue);
       });
 
       testWidgets('next button is visible when clips exist', (tester) async {
@@ -127,10 +120,7 @@ void main() {
         final opacities = tester
             .widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity))
             .toList();
-        expect(
-          opacities.any((o) => o.opacity == 1),
-          isTrue,
-        );
+        expect(opacities.any((o) => o.opacity == 1), isTrue);
       });
     });
 

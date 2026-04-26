@@ -22,30 +22,18 @@ class AppsPermissionsCubit extends Cubit<AppsPermissionsState> {
 
   /// Loads grants for the current user.
   Future<void> loadGrants() async {
-    emit(
-      state.copyWith(
-        status: AppsPermissionsStatus.loading,
-      ),
-    );
+    emit(state.copyWith(status: AppsPermissionsStatus.loading));
 
     final pubkey = _currentUserPubkey;
     if (pubkey == null || pubkey.isEmpty) {
       emit(
-        state.copyWith(
-          status: AppsPermissionsStatus.loaded,
-          grants: const [],
-        ),
+        state.copyWith(status: AppsPermissionsStatus.loaded, grants: const []),
       );
       return;
     }
 
     final grants = _grantStore.listGrants(userPubkey: pubkey);
-    emit(
-      state.copyWith(
-        status: AppsPermissionsStatus.loaded,
-        grants: grants,
-      ),
-    );
+    emit(state.copyWith(status: AppsPermissionsStatus.loaded, grants: grants));
   }
 
   /// Revokes a single grant and reloads the list.
@@ -61,11 +49,6 @@ class AppsPermissionsCubit extends Cubit<AppsPermissionsState> {
     );
 
     final grants = _grantStore.listGrants(userPubkey: pubkey);
-    emit(
-      state.copyWith(
-        status: AppsPermissionsStatus.loaded,
-        grants: grants,
-      ),
-    );
+    emit(state.copyWith(status: AppsPermissionsStatus.loaded, grants: grants));
   }
 }

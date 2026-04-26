@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Dividi",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividi clip selezionato",
     "videoEditorFinishTimelineEditingSemanticLabel": "Termina modifica timeline",
-    "videoEditorSortNewest": "Più recenti",
-    "videoEditorSortLongest": "Più lunghi",
-    "videoEditorSortShortest": "Più corti",
-    "videoEditorSortBySemanticLabel": "Ordina per {option}. Tocca per cambiare l'ordine",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Riproduci anteprima",
     "videoEditorAudioPausePreviewSemanticLabel": "Metti in pausa anteprima",
     "videoEditorAudioUntitledSound": "Suono senza titolo",
-    "videoEditorAudioSelectSoundSemanticLabel": "Seleziona suono",
     "videoEditorAudioUntitled": "Senza titolo",
     "videoEditorAudioAddAudio": "Aggiungi audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Nessun suono disponibile",
     "videoEditorAudioNoSoundsAvailableSubtitle": "I suoni appariranno qui quando i creator condivideranno audio",
-    "videoEditorAudioNoSoundsFoundTitle": "Nessun suono trovato",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Prova con un termine di ricerca diverso",
     "videoEditorAudioFailedToLoadTitle": "Impossibile caricare i suoni",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Comunità",
     "videoEditorDrawToolArrowSemanticLabel": "Strumento freccia",
     "videoEditorDrawToolEraserSemanticLabel": "Strumento gomma",
     "videoEditorDrawToolMarkerSemanticLabel": "Strumento evidenziatore",

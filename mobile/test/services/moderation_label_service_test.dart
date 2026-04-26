@@ -65,9 +65,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         final warnings = service.getContentWarnings('target_event_id_abc');
         expect(warnings, hasLength(1));
@@ -94,9 +92,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         final warnings = service.getContentWarnings('event_123');
         expect(warnings, hasLength(1));
@@ -120,9 +116,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         final warnings = service.getContentWarnings('event_456');
         expect(warnings, hasLength(1));
@@ -148,13 +142,9 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
-        final result = service.getAIDetectionByHash(
-          'sha256_hash_of_content',
-        );
+        final result = service.getAIDetectionByHash('sha256_hash_of_content');
         expect(result, isNotNull);
         expect(result!.score, equals(0.12));
         expect(result.source, equals('hiveai'));
@@ -180,9 +170,7 @@ void main() {
             ],
           );
 
-          await service.subscribeToLabeler(
-            service.divineModerationPubkeyHex,
-          );
+          await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
           final labels = service.getContentWarningsByAddressableId(
             addressableId,
@@ -208,9 +196,7 @@ void main() {
             ],
           );
 
-          await service.subscribeToLabeler(
-            service.divineModerationPubkeyHex,
-          );
+          await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
           final labels = service.getContentWarningsByHash(
             'sha256_content_warning_hash',
@@ -234,9 +220,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         final labels = service.getLabelsForPubkey('target_pubkey_xyz');
         expect(labels, hasLength(1));
@@ -257,9 +241,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         expect(service.hasContentWarning('ignored_event'), isFalse);
       });
@@ -281,9 +263,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         final result = service.getAIDetectionResult('ai_event_1');
         expect(result, isNotNull);
@@ -305,9 +285,7 @@ void main() {
           ],
         );
 
-        await service.subscribeToLabeler(
-          service.divineModerationPubkeyHex,
-        );
+        await service.subscribeToLabeler(service.divineModerationPubkeyHex);
 
         final result = service.getAIDetectionResult('non_ai_event');
         expect(result, isNull);

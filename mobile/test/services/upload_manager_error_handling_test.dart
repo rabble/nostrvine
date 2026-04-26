@@ -23,9 +23,7 @@ void main() {
 
   /// Mock the connectivity plugin to return [result].
   void mockConnectivity(String result) {
-    const channel = MethodChannel(
-      'dev.fluttercommunity.plus/connectivity',
-    );
+    const channel = MethodChannel('dev.fluttercommunity.plus/connectivity');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           if (call.method == 'check') return [result];
@@ -215,9 +213,7 @@ void main() {
 
     group('BlossomUploadFailureException without statusCode', () {
       test('falls back to string matching for timeout', () {
-        const error = BlossomUploadFailureException(
-          'Connection timeout',
-        );
+        const error = BlossomUploadFailureException('Connection timeout');
 
         expect(uploadManager.isRetriableError(error), isTrue);
       });
@@ -456,28 +452,19 @@ void main() {
       test('returns DNS_ERROR for host lookup failures', () async {
         final error = Exception('Failed to lookup host');
 
-        expect(
-          await uploadManager.categorizeError(error),
-          equals('DNS_ERROR'),
-        );
+        expect(await uploadManager.categorizeError(error), equals('DNS_ERROR'));
       });
 
       test('returns DNS_ERROR for DNS resolution failures', () async {
         final error = Exception('DNS resolution failed');
 
-        expect(
-          await uploadManager.categorizeError(error),
-          equals('DNS_ERROR'),
-        );
+        expect(await uploadManager.categorizeError(error), equals('DNS_ERROR'));
       });
 
       test('returns TIMEOUT for timeout errors', () async {
         final error = Exception('Connection timeout');
 
-        expect(
-          await uploadManager.categorizeError(error),
-          equals('TIMEOUT'),
-        );
+        expect(await uploadManager.categorizeError(error), equals('TIMEOUT'));
       });
 
       test('returns SLOW_CONNECTION for timeout on cellular', () async {
@@ -530,10 +517,7 @@ void main() {
       test('returns UNKNOWN for unrecognized errors', () async {
         final error = Exception('Something completely unexpected');
 
-        expect(
-          await uploadManager.categorizeError(error),
-          equals('UNKNOWN'),
-        );
+        expect(await uploadManager.categorizeError(error), equals('UNKNOWN'));
       });
     });
   });

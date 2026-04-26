@@ -91,9 +91,7 @@ Future<AudioEvent?> soundById(Ref ref, String eventId) async {
   const bundledPrefix = '${AudioEvent.bundledMarker}_';
   if (eventId.startsWith(bundledPrefix)) {
     final soundId = eventId.substring(bundledPrefix.length);
-    final soundService = await ref.watch(
-      soundLibraryServiceProvider.future,
-    );
+    final soundService = await ref.watch(soundLibraryServiceProvider.future);
     final vineSound = soundService.getSoundById(soundId);
     if (vineSound != null) {
       return AudioEvent.fromBundledSound(vineSound);

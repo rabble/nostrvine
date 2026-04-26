@@ -379,9 +379,7 @@ void main() {
             ),
           ];
 
-          final mockNotifier = _MockRelayNotifications(
-            notifications,
-          );
+          final mockNotifier = _MockRelayNotifications(notifications);
           await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
           await tester.pumpAndSettle();
 

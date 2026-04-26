@@ -224,10 +224,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(
-          isSending: false,
-          actionResult: ShareSheetSendFailure(),
-        ),
+        state.copyWith(isSending: false, actionResult: ShareSheetSendFailure()),
       );
     }
   }
@@ -280,10 +277,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(
-          isSending: false,
-          actionResult: ShareSheetSendFailure(),
-        ),
+        state.copyWith(isSending: false, actionResult: ShareSheetSendFailure()),
       );
     }
   }
@@ -304,9 +298,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(
-          actionResult: ShareSheetSaveResult(succeeded: false),
-        ),
+        state.copyWith(actionResult: ShareSheetSaveResult(succeeded: false)),
       );
       return;
     }
@@ -327,9 +319,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(
-          actionResult: ShareSheetSaveResult(succeeded: false),
-        ),
+        state.copyWith(actionResult: ShareSheetSaveResult(succeeded: false)),
       );
     }
   }
@@ -380,9 +370,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
               .getSingleFile(thumbUrl)
               .timeout(const Duration(seconds: 5));
           final tmpDir = Directory.systemTemp;
-          final tmpFile = File(
-            '${tmpDir.path}/divine_share_thumb.jpg',
-          );
+          final tmpFile = File('${tmpDir.path}/divine_share_thumb.jpg');
           await file.copy(tmpFile.path);
           thumbnailPath = tmpFile.path;
         } catch (e) {

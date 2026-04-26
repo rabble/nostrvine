@@ -404,10 +404,7 @@ class _VideoEditorTimelineClipStripState
       });
   }
 
-  static bool _sameOrder(
-    List<DivineVideoClip> a,
-    List<DivineVideoClip> b,
-  ) {
+  static bool _sameOrder(List<DivineVideoClip> a, List<DivineVideoClip> b) {
     if (a.length != b.length) return false;
     for (var i = 0; i < a.length; i++) {
       if (a[i].id != b[i].id) return false;

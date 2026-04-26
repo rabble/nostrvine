@@ -16,9 +16,7 @@ void main() {
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: MessageInputBar(onSend: (_) {}),
-            ),
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
           ),
         );
 
@@ -26,80 +24,67 @@ void main() {
         expect(find.text('Say something...'), findsOneWidget);
       });
 
-      testWidgets(
-        'does not render send button when text is empty',
-        (tester) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageInputBar(onSend: (_) {}),
-              ),
-            ),
-          );
+      testWidgets('does not render send button when text is empty', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+          ),
+        );
 
-          expect(find.byType(DivineIcon), findsNothing);
-        },
-      );
+        expect(find.byType(DivineIcon), findsNothing);
+      });
 
-      testWidgets(
-        'renders send button after text is entered',
-        (tester) async {
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageInputBar(onSend: (_) {}),
-              ),
-            ),
-          );
+      testWidgets('renders send button after text is entered', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
+          ),
+        );
 
-          await tester.enterText(find.byType(TextField), 'Hello');
-          await tester.pump();
+        await tester.enterText(find.byType(TextField), 'Hello');
+        await tester.pump();
 
-          expect(find.byType(DivineIcon), findsOneWidget);
-        },
-      );
+        expect(find.byType(DivineIcon), findsOneWidget);
+      });
     });
 
     group('interactions', () {
-      testWidgets(
-        'calls onSend with trimmed text when send button is tapped',
-        (tester) async {
-          String? sentText;
+      testWidgets('calls onSend with trimmed text when send button is tapped', (
+        tester,
+      ) async {
+        String? sentText;
 
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageInputBar(
-                  onSend: (text) => sentText = text,
-                ),
-              ),
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (text) => sentText = text),
             ),
-          );
+          ),
+        );
 
-          await tester.enterText(find.byType(TextField), '  Hello  ');
-          await tester.pump();
+        await tester.enterText(find.byType(TextField), '  Hello  ');
+        await tester.pump();
 
-          await tester.tap(find.byType(DivineIcon));
-          await tester.pump();
+        await tester.tap(find.byType(DivineIcon));
+        await tester.pump();
 
-          expect(sentText, equals('Hello'));
-        },
-      );
+        expect(sentText, equals('Hello'));
+      });
 
       testWidgets('clears text field after sending', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: MessageInputBar(onSend: (_) {}),
-            ),
+            home: Scaffold(body: MessageInputBar(onSend: (_) {})),
           ),
         );
 
@@ -114,31 +99,28 @@ void main() {
         expect(textField.controller!.text, equals(''));
       });
 
-      testWidgets(
-        'does not call onSend when text is whitespace only',
-        (tester) async {
-          var sendCalled = false;
+      testWidgets('does not call onSend when text is whitespace only', (
+        tester,
+      ) async {
+        var sendCalled = false;
 
-          await tester.pumpWidget(
-            MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: MessageInputBar(
-                  onSend: (_) => sendCalled = true,
-                ),
-              ),
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: MessageInputBar(onSend: (_) => sendCalled = true),
             ),
-          );
+          ),
+        );
 
-          await tester.enterText(find.byType(TextField), '   ');
-          await tester.pump();
+        await tester.enterText(find.byType(TextField), '   ');
+        await tester.pump();
 
-          // Send button should not appear for whitespace-only input.
-          expect(find.byType(DivineIcon), findsNothing);
-          expect(sendCalled, isFalse);
-        },
-      );
+        // Send button should not appear for whitespace-only input.
+        expect(find.byType(DivineIcon), findsNothing);
+        expect(sendCalled, isFalse);
+      });
     });
   });
 }

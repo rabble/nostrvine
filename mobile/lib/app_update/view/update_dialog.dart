@@ -61,14 +61,12 @@ class _UpdateDialog extends StatelessWidget {
 
     return AlertDialog(
       backgroundColor: VineTheme.surfaceBackground,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
         isUrgent ? UpdateCopy.urgentTitle : UpdateCopy.moderateTitle,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: VineTheme.primaryText,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(color: VineTheme.primaryText),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -114,24 +112,17 @@ class _UpdateDialog extends StatelessWidget {
           },
           child: Text(
             UpdateCopy.notNow,
-            style: TextStyle(
-              color: VineTheme.lightText.withValues(alpha: 0.6),
-            ),
+            style: TextStyle(color: VineTheme.lightText.withValues(alpha: 0.6)),
           ),
         ),
         FilledButton(
           onPressed: () async {
             final uri = Uri.tryParse(downloadUrl);
             if (uri != null) {
-              await launchUrl(
-                uri,
-                mode: LaunchMode.externalApplication,
-              );
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           },
-          style: FilledButton.styleFrom(
-            backgroundColor: VineTheme.vineGreen,
-          ),
+          style: FilledButton.styleFrom(backgroundColor: VineTheme.vineGreen),
           child: const Text(UpdateCopy.update),
         ),
       ],

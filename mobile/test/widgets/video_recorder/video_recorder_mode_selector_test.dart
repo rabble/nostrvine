@@ -15,9 +15,7 @@ void main() {
       modeChanges = [];
     });
 
-    Widget buildWidget({
-      VideoRecorderMode? mode,
-    }) {
+    Widget buildWidget({VideoRecorderMode? mode}) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -46,27 +44,17 @@ void main() {
       });
 
       testWidgets('renders with capture mode selected', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(mode: VideoRecorderMode.capture),
-        );
+        await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.capture));
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(VideoRecorderModeSelectorWheel),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoRecorderModeSelectorWheel), findsOneWidget);
       });
 
       testWidgets('renders with classic mode selected', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(mode: VideoRecorderMode.classic),
-        );
+        await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.classic));
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(VideoRecorderModeSelectorWheel),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoRecorderModeSelectorWheel), findsOneWidget);
       });
 
       testWidgets('renders pill background', (tester) async {
@@ -91,9 +79,7 @@ void main() {
               .setMockMethodCallHandler(SystemChannels.platform, null);
         });
 
-        await tester.pumpWidget(
-          buildWidget(mode: VideoRecorderMode.capture),
-        );
+        await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.capture));
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Classic'));
@@ -125,10 +111,7 @@ void main() {
 
         // Each mode should have a Text widget with the mode label
         for (final mode in VideoRecorderMode.values) {
-          expect(
-            find.text(mode.label),
-            findsOneWidget,
-          );
+          expect(find.text(mode.label), findsOneWidget);
         }
       });
     });
@@ -137,20 +120,13 @@ void main() {
       testWidgets('updates selection when mode changes externally', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          buildWidget(mode: VideoRecorderMode.capture),
-        );
+        await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.capture));
         await tester.pumpAndSettle();
 
-        await tester.pumpWidget(
-          buildWidget(mode: VideoRecorderMode.classic),
-        );
+        await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.classic));
         await tester.pumpAndSettle();
 
-        expect(
-          find.byType(VideoRecorderModeSelectorWheel),
-          findsOneWidget,
-        );
+        expect(find.byType(VideoRecorderModeSelectorWheel), findsOneWidget);
       });
     });
   });

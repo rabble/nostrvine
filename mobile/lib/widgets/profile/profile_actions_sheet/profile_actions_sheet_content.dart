@@ -21,10 +21,8 @@ class ProfileActionsSheetContent extends StatefulWidget {
   /// Creates a [ProfileActionsSheetContent].
   ///
   /// [actions] must contain at least one element.
-  const ProfileActionsSheetContent({
-    required this.actions,
-    super.key,
-  }) : assert(actions.length > 0, 'actions must not be empty');
+  const ProfileActionsSheetContent({required this.actions, super.key})
+    : assert(actions.length > 0, 'actions must not be empty');
 
   /// Ordered list of actions to present. The first action is shown
   /// immediately; subsequent ones appear after "Maybe Later".
@@ -137,9 +135,7 @@ class _ActionPrompt extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),

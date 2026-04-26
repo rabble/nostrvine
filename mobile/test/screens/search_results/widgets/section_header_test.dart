@@ -87,9 +87,7 @@ void main() {
     });
 
     testWidgets('is a button node when onTap is provided', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(title: 'Videos', onTap: () {}),
-      );
+      await tester.pumpWidget(buildSubject(title: 'Videos', onTap: () {}));
 
       final semantics = tester.getSemantics(find.byType(SectionHeader));
       expect(semantics.flagsCollection.isButton, isTrue);

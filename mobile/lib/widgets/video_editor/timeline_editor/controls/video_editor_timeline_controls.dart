@@ -119,10 +119,7 @@ class _ControlButton extends StatelessWidget {
           type: type,
           size: .small,
         ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(),
-        ),
+        Text(label, style: VineTheme.bodySmallFont()),
       ],
     );
   }

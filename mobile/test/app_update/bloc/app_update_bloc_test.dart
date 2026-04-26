@@ -61,9 +61,7 @@ void main() {
         act: (bloc) => bloc.add(const AppUpdateCheckRequested()),
         expect: () => [
           const AppUpdateState(status: AppUpdateStatus.checking),
-          const AppUpdateState(
-            status: AppUpdateStatus.resolved,
-          ),
+          const AppUpdateState(status: AppUpdateStatus.resolved),
         ],
       );
 

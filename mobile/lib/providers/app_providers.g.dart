@@ -3318,7 +3318,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'f15391d96765ac093341600f23de69a7b5d6782e';
+String _$profileRepositoryHash() => r'150346c88eeee57501b7dfac4c5e5904d99f0e56';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -4693,7 +4693,7 @@ final class CommentsRepositoryProvider
 }
 
 String _$commentsRepositoryHash() =>
-    r'aac5ae89576a1ec2fb282db45374990a3b253594';
+    r'c93d13851e0a4299c19edc87d439f767237ecc72';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
@@ -4844,7 +4844,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'c7d1b97d331002634db0433623f914ba602abd61';
+String _$videosRepositoryHash() => r'df96f93c2d45bdd1ee6371d24172844f7139f176';
 
 /// Provider for LikesRepository instance
 ///

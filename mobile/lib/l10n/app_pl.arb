@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Podziel",
     "videoEditorSplitSelectedClipSemanticLabel": "Podziel wybrany klip",
     "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
-    "videoEditorSortNewest": "Najnowsze",
-    "videoEditorSortLongest": "Najdłuższe",
-    "videoEditorSortShortest": "Najkrótsze",
-    "videoEditorSortBySemanticLabel": "Sortuj według {option}. Dotknij, aby zmienić kolejność sortowania",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",
     "videoEditorAudioPausePreviewSemanticLabel": "Wstrzymaj podgląd",
     "videoEditorAudioUntitledSound": "Nienazwany dźwięk",
-    "videoEditorAudioSelectSoundSemanticLabel": "Wybierz dźwięk",
     "videoEditorAudioUntitled": "Bez tytułu",
     "videoEditorAudioAddAudio": "Dodaj audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Brak dostępnych dźwięków",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Dźwięki pojawią się tutaj, gdy twórcy udostępnią audio",
-    "videoEditorAudioNoSoundsFoundTitle": "Nie znaleziono dźwięków",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Spróbuj innego wyszukiwania",
     "videoEditorAudioFailedToLoadTitle": "Nie udało się wczytać dźwięków",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Społeczność",
     "videoEditorDrawToolArrowSemanticLabel": "Narzędzie strzałki",
     "videoEditorDrawToolEraserSemanticLabel": "Narzędzie gumki",
     "videoEditorDrawToolMarkerSemanticLabel": "Narzędzie markera",

@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Teilen",
     "videoEditorSplitSelectedClipSemanticLabel": "Ausgewählten Clip teilen",
     "videoEditorFinishTimelineEditingSemanticLabel": "Timeline-Bearbeitung abschließen",
-    "videoEditorSortNewest": "Neueste",
-    "videoEditorSortLongest": "Längste",
-    "videoEditorSortShortest": "Kürzeste",
-    "videoEditorSortBySemanticLabel": "Sortieren nach {option}. Tippe, um die Sortierreihenfolge zu ändern",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Vorschau abspielen",
     "videoEditorAudioPausePreviewSemanticLabel": "Vorschau pausieren",
     "videoEditorAudioUntitledSound": "Unbenannter Sound",
-    "videoEditorAudioSelectSoundSemanticLabel": "Sound auswählen",
     "videoEditorAudioUntitled": "Unbenannt",
     "videoEditorAudioAddAudio": "Audio hinzufügen",
     "videoEditorAudioNoSoundsAvailableTitle": "Keine Sounds verfügbar",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Sounds erscheinen hier, wenn Creator Audio teilen",
-    "videoEditorAudioNoSoundsFoundTitle": "Keine Sounds gefunden",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Versuche einen anderen Suchbegriff",
     "videoEditorAudioFailedToLoadTitle": "Sounds konnten nicht geladen werden",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Community",
     "videoEditorDrawToolArrowSemanticLabel": "Pfeil-Werkzeug",
     "videoEditorDrawToolEraserSemanticLabel": "Radiergummi-Werkzeug",
     "videoEditorDrawToolMarkerSemanticLabel": "Marker-Werkzeug",

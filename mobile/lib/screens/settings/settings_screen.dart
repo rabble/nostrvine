@@ -472,26 +472,18 @@ class _AccountHeaderProfile extends ConsumerWidget {
 
     return Column(
       children: [
-        UserAvatar(
-          imageUrl: profile?.picture,
-          name: displayName,
-          size: 96,
-        ),
+        UserAvatar(imageUrl: profile?.picture, name: displayName, size: 96),
         const SizedBox(height: 16),
         Text(
           displayName,
-          style: VineTheme.headlineSmallFont(
-            color: VineTheme.onSurface,
-          ),
+          style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
         Text(
           uniqueIdentifier,
-          style: VineTheme.bodyMediumFont(
-            color: VineTheme.onSurfaceVariant,
-          ),
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -600,9 +592,7 @@ class _AppLanguageTile extends StatelessWidget {
                   PlatformDispatcher.instance.locale.languageCode,
                 ),
               )
-            : LocalePreferenceService.nativeNameFor(
-                locale.languageCode,
-              );
+            : LocalePreferenceService.nativeNameFor(locale.languageCode);
 
         return _SettingsTile(
           title: context.l10n.settingsAppLanguage,

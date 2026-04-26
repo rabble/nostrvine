@@ -92,9 +92,7 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
     return Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(
-            color: VideoEditorConstants.textEditorBackground,
-          ),
+          child: ColoredBox(color: VideoEditorConstants.textEditorBackground),
         ),
         Positioned.fill(
           child: VideoTextEditorScope(
@@ -162,10 +160,7 @@ class _BottomPanel extends StatelessWidget {
             padding: .symmetric(vertical: 16),
             child: VideoEditorTextStyleBar(),
           ),
-          const Divider(
-            height: 2,
-            color: VineTheme.outlinedDisabled,
-          ),
+          const Divider(height: 2, color: VineTheme.outlinedDisabled),
           _KeyboardHeightPanel(
             showBottomPanel: showBottomPanel,
             backgroundColor: VineTheme.surfaceBackground,
@@ -193,10 +188,7 @@ class _BottomPanel extends StatelessWidget {
 }
 
 class _TextEditor extends StatelessWidget {
-  const _TextEditor({
-    required this.editorKey,
-    this.layer,
-  });
+  const _TextEditor({required this.editorKey, this.layer});
 
   final GlobalKey<TextEditorState> editorKey;
   final TextLayer? layer;
@@ -264,18 +256,12 @@ class _TextEditor extends StatelessWidget {
           ),
         ),
         configs: ProImageEditorConfigs(
-          i18n: const I18n(
-            textEditor: I18nTextEditor(inputHintText: ''),
-          ),
+          i18n: const I18n(textEditor: I18nTextEditor(inputHintText: '')),
           textEditor: TextEditorConfigs(
             style: const TextEditorStyle(
               background: Colors.transparent,
               inputCursorColor: VineTheme.whiteText,
-              inputTextFieldPadding: .only(
-                top: 96,
-                left: 16,
-                right: 48,
-              ),
+              inputTextFieldPadding: .only(top: 96, left: 16, right: 48),
             ),
             safeArea: const EditorSafeArea.none(),
             enableAutocorrect: false,

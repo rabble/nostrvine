@@ -95,22 +95,15 @@ void main() {
       'returns after cached events without waiting for batch profile hydration',
       () async {
         await videoEventService
-            .subscribeToVideoFeed(
-              subscriptionType: SubscriptionType.discovery,
-            )
+            .subscribeToVideoFeed(subscriptionType: SubscriptionType.discovery)
             .timeout(const Duration(milliseconds: 100));
 
         expect(videoEventService.discoveryVideos, isNotEmpty);
         verify(
-          () => mockProfileRepository.fetchBatchProfiles(
-            pubkeys: ['a' * 64],
-          ),
+          () => mockProfileRepository.fetchBatchProfiles(pubkeys: ['a' * 64]),
         ).called(1);
         verify(
-          () => mockNostrService.subscribe(
-            any(),
-            onEose: any(named: 'onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
       },
     );

@@ -58,10 +58,7 @@ class CommentActionButton extends ConsumerWidget {
             // Pause video before navigating to comments
             if (video.videoUrl != null) {
               try {
-                final controllerParams = videoControllerParamsFor(
-                  ref,
-                  video,
-                );
+                final controllerParams = videoControllerParamsFor(ref, video);
                 final controller = ref.read(
                   individualVideoControllerProvider(controllerParams),
                 );
@@ -91,9 +88,7 @@ class CommentActionButton extends ConsumerWidget {
                   : (count) {
                       if (!interactionsBloc.isClosed) {
                         interactionsBloc.add(
-                          VideoInteractionsCommentCountUpdated(
-                            count,
-                          ),
+                          VideoInteractionsCommentCountUpdated(count),
                         );
                       }
                     },

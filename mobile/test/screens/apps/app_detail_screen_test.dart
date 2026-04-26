@@ -27,10 +27,7 @@ void main() {
       (tester) async {
         final mockGoRouter = MockGoRouter();
         when(
-          () => mockGoRouter.push(
-            any(),
-            extra: any(named: 'extra'),
-          ),
+          () => mockGoRouter.push(any(), extra: any(named: 'extra')),
         ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(
@@ -62,39 +59,18 @@ void main() {
           ),
           findsOneWidget,
         );
-        expect(
-          find.text('Primary origin'),
-          findsOneWidget,
-        );
-        expect(
-          find.text('https://primal.net'),
-          findsWidgets,
-        );
-        expect(
-          find.text('https://primal.net/app'),
-          findsNothing,
-        );
-        expect(
-          find.text('Approved origins'),
-          findsOneWidget,
-        );
+        expect(find.text('Primary origin'), findsOneWidget);
+        expect(find.text('https://primal.net'), findsWidgets);
+        expect(find.text('https://primal.net/app'), findsNothing);
+        expect(find.text('Approved origins'), findsOneWidget);
         await tester.scrollUntilVisible(
           find.text('Available capabilities'),
           300,
         );
-        expect(
-          find.text('Available capabilities'),
-          findsOneWidget,
-        );
+        expect(find.text('Available capabilities'), findsOneWidget);
         expect(find.text('Ask before'), findsOneWidget);
-        await tester.scrollUntilVisible(
-          find.text('Open Integration'),
-          300,
-        );
-        expect(
-          find.text('Open Integration'),
-          findsOneWidget,
-        );
+        await tester.scrollUntilVisible(find.text('Open Integration'), 300);
+        expect(find.text('Open Integration'), findsOneWidget);
         await tester.tap(find.byType(DivineButton));
         await tester.pumpAndSettle();
 

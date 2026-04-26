@@ -5145,20 +5145,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';
 
   @override
-  String get videoEditorSortNewest => '최신순';
-
-  @override
-  String get videoEditorSortLongest => '긴 순';
-
-  @override
-  String get videoEditorSortShortest => '짧은 순';
-
-  @override
-  String videoEditorSortBySemanticLabel(String option) {
-    return '$option 기준 정렬. 탭하여 정렬 순서 변경';
-  }
-
-  @override
   String get videoEditorAudioPlayPreviewSemanticLabel => '미리보기 재생';
 
   @override
@@ -5166,9 +5152,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorAudioUntitledSound => '제목 없는 사운드';
-
-  @override
-  String get videoEditorAudioSelectSoundSemanticLabel => '사운드 선택';
 
   @override
   String get videoEditorAudioUntitled => '제목 없음';
@@ -5184,16 +5167,16 @@ class AppLocalizationsKo extends AppLocalizations {
       '크리에이터가 오디오를 공유하면 여기에 표시됩니다';
 
   @override
-  String get videoEditorAudioNoSoundsFoundTitle => '사운드를 찾을 수 없음';
-
-  @override
-  String get videoEditorAudioNoSoundsFoundSubtitle => '다른 검색어를 시도해 보세요';
-
-  @override
   String get videoEditorAudioFailedToLoadTitle => '사운드 로드 실패';
 
   @override
   String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
+
+  @override
+  String get videoEditorAudioCategoryDivine => 'diVine';
+
+  @override
+  String get videoEditorAudioCategoryCommunity => '커뮤니티';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';

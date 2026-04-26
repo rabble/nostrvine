@@ -11,10 +11,9 @@ part 'app_update_state.dart';
 /// to [AppUpdateRepository].
 class AppUpdateBloc extends Bloc<AppUpdateEvent, AppUpdateState> {
   /// Creates an [AppUpdateBloc].
-  AppUpdateBloc({
-    required AppUpdateRepository repository,
-  }) : _repository = repository,
-       super(const AppUpdateState()) {
+  AppUpdateBloc({required AppUpdateRepository repository})
+    : _repository = repository,
+      super(const AppUpdateState()) {
     on<AppUpdateCheckRequested>(_onCheckRequested);
     on<AppUpdateDismissed>(_onDismissed);
   }

@@ -2616,14 +2616,13 @@
     "videoEditorAdjustVolumeTitle": "Ses seviyesini ayarla",
     "videoEditorAudioAddAudio": "Ses ekle",
     "videoEditorAudioFailedToLoadTitle": "Sesler yüklenemedi",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Topluluk",
     "videoEditorAudioLabel": "Ses",
     "videoEditorAudioNoSoundsAvailableSubtitle": "İçerik üreticileri ses paylaştığında burada görünür",
     "videoEditorAudioNoSoundsAvailableTitle": "Kullanılabilir ses yok",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Farklı bir arama terimi deneyin",
-    "videoEditorAudioNoSoundsFoundTitle": "Ses bulunamadı",
     "videoEditorAudioPausePreviewSemanticLabel": "Önizlemeyi duraklat",
     "videoEditorAudioPlayPreviewSemanticLabel": "Önizlemeyi oynat",
-    "videoEditorAudioSelectSoundSemanticLabel": "Ses seç",
     "videoEditorAudioUntitled": "Başlıksız",
     "videoEditorAudioUntitledSound": "Başlıksız ses",
     "videoEditorCannotSplitProcessing": "Klip işlenirken bölünemez. Lütfen bekleyin.",
@@ -2716,17 +2715,6 @@
     "videoEditorSaveSelectedClip": "Seçili klibi kaydet",
     "videoEditorSelectFontSemanticLabel": "Yazı tipi seç",
     "videoEditorShowTimelineSemanticLabel": "Zaman çizelgesini göster",
-    "videoEditorSortBySemanticLabel": "{option} ile sırala. Sıralama düzenini değiştirmek için dokun",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
-    "videoEditorSortLongest": "En uzun",
-    "videoEditorSortNewest": "En yeni",
-    "videoEditorSortShortest": "En kısa",
     "videoEditorSplitClip": "Klibi böl",
     "videoEditorSplitLabel": "Böl",
     "videoEditorSplitPlayheadOutsideClip": "Bölmek için oynatma kafası seçili klip içinde olmalıdır.",

@@ -29,9 +29,7 @@ void main() {
       expect(find.text('Done'), findsOneWidget);
     });
 
-    testWidgets('button is disabled when metadata is invalid', (
-      tester,
-    ) async {
+    testWidgets('button is disabled when metadata is invalid', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -101,9 +99,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [
-            videoEditorProvider.overrideWith(() => mockNotifier),
-          ],
+          overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -118,35 +114,29 @@ void main() {
       expect(postVideoCalled, isTrue);
     });
 
-    testWidgets(
-      'button has correct semantics identifier',
-      (tester) async {
-        await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(body: VideoMetadataClassicBottomBar()),
-            ),
+    testWidgets('button has correct semantics identifier', (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataClassicBottomBar()),
           ),
-        );
+        ),
+      );
 
-        final semantics = tester.widget<Semantics>(
-          find.byWidgetPredicate(
-            (w) => w is Semantics && w.properties.identifier == 'post_button',
-          ),
-        );
-        expect(semantics.properties.label, equals('Open post preview screen'));
-      },
-    );
+      final semantics = tester.widget<Semantics>(
+        find.byWidgetPredicate(
+          (w) => w is Semantics && w.properties.identifier == 'post_button',
+        ),
+      );
+      expect(semantics.properties.label, equals('Open post preview screen'));
+    });
   });
 }
 
 class _MockVideoEditorNotifier extends VideoEditorNotifier {
-  _MockVideoEditorNotifier(
-    this._state, {
-    this.onPostVideo,
-  });
+  _MockVideoEditorNotifier(this._state, {this.onPostVideo});
 
   final VideoEditorProviderState _state;
   final VoidCallback? onPostVideo;

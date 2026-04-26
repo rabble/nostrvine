@@ -205,12 +205,8 @@ class DivineVideoClip {
         documentsPath,
         useOriginalPath: useOriginalPath,
       ),
-      trimStart: Duration(
-        milliseconds: (json['trimStartMs'] as int?) ?? 0,
-      ),
-      trimEnd: Duration(
-        milliseconds: (json['trimEndMs'] as int?) ?? 0,
-      ),
+      trimStart: Duration(milliseconds: (json['trimStartMs'] as int?) ?? 0),
+      trimEnd: Duration(milliseconds: (json['trimEndMs'] as int?) ?? 0),
       volume: (json['volume'] as num?)?.toDouble() ?? 1,
       proofManifestJson: json['proofManifestJson'] as String?,
     );

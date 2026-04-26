@@ -86,10 +86,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Original Vine Archive'), findsOneWidget);
-        expect(
-          find.textContaining('original Vine recovered'),
-          findsOneWidget,
-        );
+        expect(find.textContaining('original Vine recovered'), findsOneWidget);
         expect(find.textContaining('1000000 loops'), findsOneWidget);
       });
 
@@ -179,14 +176,10 @@ void main() {
         );
       });
 
-      testWidgets('shows AI detection results when available', (
-        tester,
-      ) async {
+      testWidgets('shows AI detection results when available', (tester) async {
         when(
           () => mockLabelService.getAIDetectionResult('ai_proof_id'),
-        ).thenReturn(
-          const AIDetectionResult(score: 0.15, source: 'hiveai'),
-        );
+        ).thenReturn(const AIDetectionResult(score: 0.15, source: 'hiveai'));
 
         final video = VideoEvent(
           id: 'ai_proof_id',
@@ -242,9 +235,7 @@ void main() {
         expect(find.text('Verified by human moderator'), findsOneWidget);
       });
 
-      testWidgets('falls back to hash lookup for AI detection', (
-        tester,
-      ) async {
+      testWidgets('falls back to hash lookup for AI detection', (tester) async {
         const sha256 =
             'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
         when(
@@ -252,9 +243,7 @@ void main() {
         ).thenReturn(null);
         when(
           () => mockLabelService.getAIDetectionByHash(sha256),
-        ).thenReturn(
-          const AIDetectionResult(score: 0.05, source: 'hiveai'),
-        );
+        ).thenReturn(const AIDetectionResult(score: 0.05, source: 'hiveai'));
 
         final video = VideoEvent(
           id: 'hash_fallback_id',
@@ -284,23 +273,21 @@ void main() {
         var lookupCount = 0;
         when(
           () => mockVideoModerationStatusService.fetchStatus(sha256),
-        ).thenAnswer(
-          (_) async {
-            lookupCount += 1;
-            if (lookupCount == 1) {
-              return null;
-            }
-            return const VideoModerationStatus(
-              moderated: false,
-              blocked: false,
-              quarantined: false,
-              ageRestricted: false,
-              needsReview: false,
-              aiGenerated: false,
-              aiScore: 0.12,
-            );
-          },
-        );
+        ).thenAnswer((_) async {
+          lookupCount += 1;
+          if (lookupCount == 1) {
+            return null;
+          }
+          return const VideoModerationStatus(
+            moderated: false,
+            blocked: false,
+            quarantined: false,
+            ageRestricted: false,
+            needsReview: false,
+            aiGenerated: false,
+            aiScore: 0.12,
+          );
+        });
 
         final video = VideoEvent(
           id: 'modal_check_id',

@@ -10,9 +10,7 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Service provider for moderation status lookups.
 final videoModerationStatusServiceProvider =
-    Provider<VideoModerationStatusService>((
-      ref,
-    ) {
+    Provider<VideoModerationStatusService>((ref) {
       final service = VideoModerationStatusService();
       ref.onDispose(service.dispose);
       return service;
@@ -137,10 +135,7 @@ class VideoModerationStatus {
 }
 
 class _CachedModerationStatus {
-  const _CachedModerationStatus({
-    required this.status,
-    required this.cachedAt,
-  });
+  const _CachedModerationStatus({required this.status, required this.cachedAt});
 
   final VideoModerationStatus? status;
   final DateTime cachedAt;
@@ -268,10 +263,7 @@ class VideoModerationStatusService {
     return null;
   }
 
-  static String? resolveSha256({
-    String? explicitSha256,
-    String? videoUrl,
-  }) {
+  static String? resolveSha256({String? explicitSha256, String? videoUrl}) {
     return normalizeSha256(explicitSha256) ??
         extractSha256FromVideoUrl(videoUrl);
   }

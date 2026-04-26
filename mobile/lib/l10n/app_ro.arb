@@ -2713,28 +2713,16 @@
     "videoEditorSplitLabel": "Împarte",
     "videoEditorSplitSelectedClipSemanticLabel": "Împarte clipul selectat",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
-    "videoEditorSortNewest": "Cele mai noi",
-    "videoEditorSortLongest": "Cele mai lungi",
-    "videoEditorSortShortest": "Cele mai scurte",
-    "videoEditorSortBySemanticLabel": "Sortează după {option}. Atinge pentru a schimba ordinea de sortare",
-    "@videoEditorSortBySemanticLabel": {
-        "placeholders": {
-            "option": {
-                "type": "String"
-            }
-        }
-    },
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",
     "videoEditorAudioPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
     "videoEditorAudioUntitledSound": "Sunet fără titlu",
-    "videoEditorAudioSelectSoundSemanticLabel": "Selectează sunetul",
     "videoEditorAudioUntitled": "Fără titlu",
     "videoEditorAudioAddAudio": "Adaugă audio",
     "videoEditorAudioNoSoundsAvailableTitle": "Nu sunt sunete disponibile",
     "videoEditorAudioNoSoundsAvailableSubtitle": "Sunetele vor apărea aici când creatorii vor partaja audio",
-    "videoEditorAudioNoSoundsFoundTitle": "Nu au fost găsite sunete",
-    "videoEditorAudioNoSoundsFoundSubtitle": "Încearcă un alt termen de căutare",
     "videoEditorAudioFailedToLoadTitle": "Nu s-au putut încărca sunetele",
+    "videoEditorAudioCategoryDivine": "diVine",
+    "videoEditorAudioCategoryCommunity": "Comunitate",
     "videoEditorDrawToolArrowSemanticLabel": "Instrument săgeată",
     "videoEditorDrawToolEraserSemanticLabel": "Instrument radieră",
     "videoEditorDrawToolMarkerSemanticLabel": "Instrument marker",
