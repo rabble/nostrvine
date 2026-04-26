@@ -258,7 +258,31 @@ class RepostsRepository {
       throw AlreadyRepostedException(addressableId);
     }
 
-    // Check if offline and queue if needed
+    // Snapshot for rollback if the network publish fails
+    final previousCount = _localCountCache[addressableId];
+
+    // 1. Optimistic-first: write to memory + local storage and tick the
+    // watchRepostedAddressableIds stream BEFORE any network I/O. The UI
+    // flips here. Mirrors LikesRepository.likeEvent's order-of-operations
+    // so reposts match the Follow pattern — local DB first, network confirms.
+    // Storage write is awaited so the placeholder survives an app crash
+    // before sync; PendingActionService (offline) and executeRepostAction
+    // (sync) reconcile the placeholder ID with the real repost event ID.
+    final placeholderId = 'pending_repost_$addressableId';
+    final placeholder = RepostRecord(
+      addressableId: addressableId,
+      repostEventId: placeholderId,
+      originalAuthorPubkey: originalAuthorPubkey,
+      createdAt: DateTime.now(),
+    );
+    _repostRecords[addressableId] = placeholder;
+    await _localStorage?.saveRepostRecord(placeholder);
+    if (previousCount != null) {
+      _cacheRepostCount(addressableId, previousCount + 1);
+    }
+    _emitRepostedIds();
+
+    // 2. Offline → leave the optimistic state in place; queue replays later
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
       await _queueOfflineAction(
         isRepost: true,
@@ -266,48 +290,44 @@ class RepostsRepository {
         originalAuthorPubkey: originalAuthorPubkey,
         eventId: eventId,
       );
-
-      // Create optimistic local record with placeholder ID
-      final placeholderId = 'pending_repost_$addressableId';
-      final record = RepostRecord(
-        addressableId: addressableId,
-        repostEventId: placeholderId,
-        originalAuthorPubkey: originalAuthorPubkey,
-        createdAt: DateTime.now(),
-      );
-
-      _repostRecords[addressableId] = record;
-      await _localStorage?.saveRepostRecord(record);
-      _emitRepostedIds();
-
       return placeholderId;
     }
 
-    // Create and publish Kind 16 generic repost event
-    final sentEvent = await _nostrClient.sendGenericRepost(
-      addressableId: addressableId,
-      targetKind: EventKind.videoVertical,
-      authorPubkey: originalAuthorPubkey,
-      eventId: eventId,
-    );
+    // 3. Online → publish kind 16; on success swap placeholder for real id,
+    // on failure roll back memory + DB + count + stream.
+    try {
+      final sentEvent = await _nostrClient.sendGenericRepost(
+        addressableId: addressableId,
+        targetKind: EventKind.videoVertical,
+        authorPubkey: originalAuthorPubkey,
+        eventId: eventId,
+      );
 
-    if (sentEvent == null) {
-      throw const RepostFailedException('Failed to publish repost to relays');
+      if (sentEvent == null) {
+        throw const RepostFailedException(
+          'Failed to publish repost to relays',
+        );
+      }
+
+      final confirmed = RepostRecord(
+        addressableId: addressableId,
+        repostEventId: sentEvent.id,
+        originalAuthorPubkey: originalAuthorPubkey,
+        createdAt: placeholder.createdAt,
+      );
+      _repostRecords[addressableId] = confirmed;
+      await _localStorage?.saveRepostRecord(confirmed);
+
+      return sentEvent.id;
+    } catch (_) {
+      _repostRecords.remove(addressableId);
+      await _localStorage?.deleteRepostRecord(addressableId);
+      if (previousCount != null) {
+        _cacheRepostCount(addressableId, previousCount);
+      }
+      _emitRepostedIds();
+      rethrow;
     }
-
-    // Create and store the repost record
-    final record = RepostRecord(
-      addressableId: addressableId,
-      repostEventId: sentEvent.id,
-      originalAuthorPubkey: originalAuthorPubkey,
-      createdAt: DateTime.now(),
-    );
-
-    _repostRecords[addressableId] = record;
-    await _localStorage?.saveRepostRecord(record);
-    _emitRepostedIds();
-
-    return sentEvent.id;
   }
 
   /// Execute a repost action directly (for use by sync service).
@@ -361,7 +381,8 @@ class RepostsRepository {
   Future<void> unrepostVideo(String addressableId) async {
     await _ensureInitialized();
 
-    // Try in-memory cache first, then fall back to database
+    // Try in-memory cache first, then fall back to database.
+    // This handles the case where the cache hasn't been populated yet.
     var record = _repostRecords[addressableId];
     if (record == null && _localStorage != null) {
       record = await _localStorage.getRepostRecord(addressableId);
@@ -371,40 +392,55 @@ class RepostsRepository {
       throw NotRepostedException(addressableId);
     }
 
-    // Check if offline and queue if needed
+    // Snapshot for rollback if the network publish fails
+    final snapshotRecord = record;
+    final previousCount = _localCountCache[addressableId];
+
+    // 1. Optimistic-first: remove from memory + local storage and tick the
+    // watchRepostedAddressableIds stream BEFORE any network I/O (mirror of
+    // repostVideo).
+    _repostRecords.remove(addressableId);
+    await _localStorage?.deleteRepostRecord(addressableId);
+    if (previousCount != null) {
+      _cacheRepostCount(addressableId, previousCount - 1);
+    }
+    _emitRepostedIds();
+
+    // 2. Offline → leave the optimistic state in place; queue replays later
     if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
       await _queueOfflineAction(
         isRepost: false,
         addressableId: addressableId,
-        originalAuthorPubkey: record.originalAuthorPubkey,
+        originalAuthorPubkey: snapshotRecord.originalAuthorPubkey,
       );
-
-      // Remove from cache and storage optimistically
-      _repostRecords.remove(addressableId);
-      await _localStorage?.deleteRepostRecord(addressableId);
-      _emitRepostedIds();
-
       return;
     }
 
-    // Skip publishing deletion if this was a pending repost that never synced
-    if (!record.repostEventId.startsWith('pending_')) {
-      // Publish Kind 5 deletion event via NostrClient
-      final deletionEvent = await _nostrClient.deleteEvent(
-        record.repostEventId,
-      );
+    // 3. Online → publish kind 5 (skipped for never-synced placeholders);
+    // on failure roll back memory + DB + count + stream.
+    if (snapshotRecord.repostEventId.startsWith('pending_')) {
+      // Pending repost never reached the relay; nothing to delete on the wire.
+      return;
+    }
 
+    try {
+      final deletionEvent = await _nostrClient.deleteEvent(
+        snapshotRecord.repostEventId,
+      );
       if (deletionEvent == null) {
         throw const UnrepostFailedException(
           'Failed to publish unrepost deletion',
         );
       }
+    } catch (_) {
+      _repostRecords[addressableId] = snapshotRecord;
+      await _localStorage?.saveRepostRecord(snapshotRecord);
+      if (previousCount != null) {
+        _cacheRepostCount(addressableId, previousCount);
+      }
+      _emitRepostedIds();
+      rethrow;
     }
-
-    // Remove from cache and storage
-    _repostRecords.remove(addressableId);
-    await _localStorage?.deleteRepostRecord(addressableId);
-    _emitRepostedIds();
   }
 
   /// Execute an unrepost action directly (for use by sync service).
@@ -458,18 +494,15 @@ class RepostsRepository {
   /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
   /// - [originalAuthorPubkey]: The pubkey of the video's author
   /// - [eventId]: Optional event ID for better relay compatibility
-  /// - [currentCount]: The current repost count displayed in the UI. When
-  ///   provided, the repository caches the adjusted count (incremented or
-  ///   decremented) so that future [getRepostCount] calls return the correct
-  ///   value instead of a stale NIP-45 COUNT from relays.
   ///
   /// This is a convenience method that combines [isReposted], [repostVideo],
-  /// and [unrepostVideo].
+  /// and [unrepostVideo]. Local count cache is maintained inside those
+  /// methods, so the displayed count survives BLoC recreation without the
+  /// caller needing to thread it through.
   Future<bool> toggleRepost({
     required String addressableId,
     required String originalAuthorPubkey,
     String? eventId,
-    int? currentCount,
   }) async {
     await _ensureInitialized();
 
@@ -481,9 +514,6 @@ class RepostsRepository {
 
     if (isCurrentlyReposted) {
       await unrepostVideo(addressableId);
-      if (currentCount != null) {
-        _cacheRepostCount(addressableId, currentCount - 1);
-      }
       return false;
     } else {
       await repostVideo(
@@ -491,9 +521,6 @@ class RepostsRepository {
         originalAuthorPubkey: originalAuthorPubkey,
         eventId: eventId,
       );
-      if (currentCount != null) {
-        _cacheRepostCount(addressableId, currentCount + 1);
-      }
       return true;
     }
   }

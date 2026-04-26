@@ -78,7 +78,6 @@ void main() {
       expect(bloc.state.isReposted, isFalse);
       expect(bloc.state.repostCount, isNull);
       expect(bloc.state.commentCount, isNull);
-      expect(bloc.state.isRepostInProgress, isFalse);
       expect(bloc.state.error, isNull);
       bloc.close();
     });
@@ -508,7 +507,7 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'emits error when toggle fails with generic exception',
+        'emits optimistic flip then rollback when toggle throws',
         setUp: () {
           when(
             () => mockLikesRepository.toggleLike(
@@ -523,9 +522,87 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
+          // Optimistic flip lands first so the heart updates immediately.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+          ),
+          // Rollback after the publish failure restores the pre-tap heart
+          // state and surfaces the error.
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             error: VideoInteractionsError.likeFailed,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'rolls back like + count to baseline when toggle throws',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 10,
+            error: VideoInteractionsError.likeFailed,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'subscription stream tick during toggle does not double-emit',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenAnswer((_) async {
+            // Repository ticks the stream BEFORE returning, mirroring
+            // LikesRepository.likeEvent's optimistic-first ordering. The
+            // bloc's optimistic emit has already set state.isLiked=true,
+            // so the subscription handler's early-return absorbs this.
+            likedIdsController.add([testEventId]);
+            await Future<void>.delayed(Duration.zero);
+            return true;
+          });
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          bloc.add(const VideoInteractionsLikeToggled());
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          // Exactly one emit: optimistic flip with both fields. The
+          // stream tick that follows is absorbed by the subscription
+          // handler's early-return guard.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
           ),
         ],
       );
@@ -540,7 +617,6 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
-              currentCount: 5,
             ),
           ).thenAnswer((_) async => true);
         },
@@ -551,11 +627,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            repostCount: 5,
-            isRepostInProgress: true,
-          ),
+          // Single optimistic emit: icon + count flip together.
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isReposted: true,
@@ -572,7 +644,6 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
-              currentCount: 5,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -584,12 +655,6 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isReposted: true,
-            repostCount: 5,
-            isRepostInProgress: true,
-          ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             repostCount: 4,
@@ -605,7 +670,6 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
-              currentCount: 0,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -619,26 +683,9 @@ void main() {
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isReposted: true,
-            repostCount: 0,
-            isRepostInProgress: true,
-          ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
             repostCount: 0,
           ),
         ],
-      );
-
-      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'does not toggle when operation already in progress',
-        build: () => createBloc(addressableId: testAddressableId),
-        seed: () => const VideoInteractionsState(
-          status: VideoInteractionsStatus.success,
-          isRepostInProgress: true,
-        ),
-        act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
-        expect: () => <VideoInteractionsState>[],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -657,14 +704,13 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'handles AlreadyRepostedException by updating state to reposted',
+        'handles AlreadyRepostedException by leaving state reposted',
         setUp: () {
           when(
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
-              currentCount: 0,
             ),
           ).thenThrow(const AlreadyRepostedException(testAddressableId));
         },
@@ -674,10 +720,8 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isRepostInProgress: true,
-          ),
+          // Optimistic flip stands; the rollback emit produces the same
+          // state and is deduped by Equatable.
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isReposted: true,
@@ -686,14 +730,13 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'handles NotRepostedException by updating state to not reposted',
+        'handles NotRepostedException by leaving state not-reposted',
         setUp: () {
           when(
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
-              currentCount: 0,
             ),
           ).thenThrow(const NotRepostedException(testAddressableId));
         },
@@ -704,40 +747,75 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isReposted: true,
-            isRepostInProgress: true,
-          ),
           const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'emits error when toggle fails with generic exception',
+        'emits optimistic flip then rollback when toggle throws',
         setUp: () {
           when(
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
-              currentCount: 0,
             ),
           ).thenThrow(Exception('Network error'));
         },
         build: () => createBloc(addressableId: testAddressableId),
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
+          repostCount: 5,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isRepostInProgress: true,
+            isReposted: true,
+            repostCount: 6,
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
+            repostCount: 5,
             error: VideoInteractionsError.repostFailed,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'subscription stream tick during toggle does not double-emit',
+        setUp: () {
+          when(
+            () => mockRepostsRepository.toggleRepost(
+              addressableId: testAddressableId,
+              originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
+            ),
+          ).thenAnswer((_) async {
+            // Repository ticks the stream BEFORE returning. The bloc's
+            // optimistic emit already set state.isReposted=true, so the
+            // subscription handler's early-return absorbs the tick.
+            repostedIdsController.add({testAddressableId});
+            await Future<void>.delayed(Duration.zero);
+            return true;
+          });
+        },
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          repostCount: 5,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          bloc.add(const VideoInteractionsRepostToggled());
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isReposted: true,
+            repostCount: 6,
           ),
         ],
       );
