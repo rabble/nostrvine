@@ -8,6 +8,8 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
+import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -89,7 +91,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: context.l10n.safetySettingsTitle,
+        title: 'Content & Safety',
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -100,9 +102,28 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
             )
           : ListView(
               children: [
+                _buildSectionHeader('WHAT YOU SEE'),
+                ListTile(
+                  leading: const Icon(
+                    Icons.filter_list,
+                    color: VineTheme.vineGreen,
+                  ),
+                  title: Text(
+                    context.l10n.contentPreferencesContentFilters,
+                    style: const TextStyle(color: VineTheme.whiteText),
+                  ),
+                  subtitle: Text(
+                    context.l10n.contentPreferencesContentFiltersSubtitle,
+                    style: const TextStyle(color: VineTheme.secondaryText),
+                  ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                    color: VineTheme.lightText,
+                  ),
+                  onTap: () => context.push(ContentFiltersScreen.path),
+                ),
                 _buildAgeVerificationSection(),
                 const SizedBox(height: 8),
-                _buildSectionHeader(context.l10n.safetySettingsLabel),
                 SwitchListTile(
                   value: _showDivineHostedOnly,
                   onChanged: _setShowDivineHostedOnly,
@@ -124,6 +145,8 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                 _buildModerationProvidersSection(),
                 _buildSectionHeader(context.l10n.safetySettingsBlockedUsers),
                 _buildBlockedUsersSection(),
+                _buildSectionHeader('WHAT YOU PUBLISH'),
+                const AccountContentLabelsTile(),
               ],
             ),
     );

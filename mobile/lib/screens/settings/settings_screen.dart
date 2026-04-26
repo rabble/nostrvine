@@ -2,7 +2,6 @@
 // ABOUTME: Central entry point for all app settings, accessed via gear icon on profile
 
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
-import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/blocs/settings_account/settings_account_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -31,15 +29,12 @@ import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/screens/settings/app_language_screen.dart';
-import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
-import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/locale_preference_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -173,9 +168,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final authService = ref.watch(authServiceProvider);
     final authState = ref.watch(currentAuthStateProvider);
     final isAuthenticated = authState == AuthState.authenticated;
-    final showBluesky = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
-    );
     final accountSwitchingEnabled = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.accountSwitching),
     );
@@ -234,23 +226,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => context.push(NotificationSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: context.l10n.settingsContentPreferences,
+                  title: 'General Settings',
                   divineIcon: DivineIconName.globe,
-                  onTap: () => context.push(ContentPreferencesScreen.path),
+                  onTap: () => context.push(GeneralSettingsScreen.path),
                 ),
-                const _AppLanguageTile(),
                 _SettingsTile(
-                  title: context.l10n.settingsModerationControls,
+                  title: 'Content & Safety',
                   divineIcon: DivineIconName.faders,
                   onTap: () => context.push(SafetySettingsScreen.path),
                 ),
-                if (showBluesky)
-                  _SettingsTile(
-                    icon: Icons.cloud_upload,
-                    title: context.l10n.settingsBlueskyPublishing,
-                    subtitle: context.l10n.settingsBlueskyPublishingSubtitle,
-                    onTap: () => context.push(BlueskySettingsScreen.path),
-                  ),
                 _SettingsTile(
                   title: context.l10n.settingsNostrSettings,
                   divineIcon: DivineIconName.graph,
@@ -574,33 +558,6 @@ class _VersionTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _AppLanguageTile extends StatelessWidget {
-  const _AppLanguageTile();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<LocaleCubit, LocaleState>(
-      builder: (context, state) {
-        final locale = state.locale;
-        final subtitle = locale == null
-            ? context.l10n.settingsAppLanguageDeviceDefault(
-                LocalePreferenceService.nativeNameFor(
-                  PlatformDispatcher.instance.locale.languageCode,
-                ),
-              )
-            : LocalePreferenceService.nativeNameFor(locale.languageCode);
-
-        return _SettingsTile(
-          title: context.l10n.settingsAppLanguage,
-          icon: Icons.language,
-          subtitle: subtitle,
-          onTap: () => context.push(AppLanguageScreen.path),
-        );
-      },
     );
   }
 }
