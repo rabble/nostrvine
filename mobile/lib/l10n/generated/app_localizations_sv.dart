@@ -5694,5 +5694,5 @@ class AppLocalizationsSv extends AppLocalizations {
       'Undertexter inaktiverade för alla videor';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'Video borttagen';
 }

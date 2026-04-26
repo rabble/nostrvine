@@ -5681,5 +5681,5 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tüm videolar için altyazılar devre dışı';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'Video kaldırıldı';
 }

@@ -5676,5 +5676,5 @@ class AppLocalizationsId extends AppLocalizations {
       'Teks dinonaktifkan untuk semua video';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'Video dihapus';
 }

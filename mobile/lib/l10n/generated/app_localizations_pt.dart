@@ -5738,5 +5738,5 @@ class AppLocalizationsPt extends AppLocalizations {
       'Legendas desativadas para todos os vídeos';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'Vídeo removido';
 }

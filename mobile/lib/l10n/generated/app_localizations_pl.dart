@@ -5841,5 +5841,5 @@ class AppLocalizationsPl extends AppLocalizations {
       'Napisy wyłączone dla wszystkich filmów';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'Film usunięty';
 }

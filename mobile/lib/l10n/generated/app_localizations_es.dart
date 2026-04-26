@@ -5767,5 +5767,5 @@ class AppLocalizationsEs extends AppLocalizations {
       'Subtítulos desactivados para todos los vídeos';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'Video eliminado';
 }

@@ -5640,5 +5640,5 @@ class AppLocalizationsAr extends AppLocalizations {
       'التسميات التوضيحية معطّلة لجميع مقاطع الفيديو';
 
   @override
-  String get fullscreenFeedRemovedMessage => 'Video removed';
+  String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
 }
