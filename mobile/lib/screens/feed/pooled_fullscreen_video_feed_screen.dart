@@ -295,7 +295,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
 }
 
 class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
-    with RouteAware {
+    with RouteAware, WidgetsBindingObserver {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
@@ -321,17 +321,27 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
     _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     _controller?.dispose();
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (ModalRoute.of(context)?.isCurrent ?? false) {
+      _controller?.setActive(active: true);
+    }
   }
 
   // RouteAware callbacks: pause when another route is pushed on top,
@@ -391,13 +401,11 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = nextVideos;
   }
 
-  /// Whether auto-advance is available on this build, determined from the
-  /// feature flag and reduced-motion preference. Read at invocation time so
-  /// an accessibility opt-out overrides the in-app toggle.
+  /// Whether auto-advance is available on this build. Reduced-motion users
+  /// keep the control and runtime disabled regardless of in-app toggle state.
   bool _isAutoAdvanceAvailable() {
     if (!mounted) return false;
-    if (MediaQuery.disableAnimationsOf(context)) return false;
-    return ref.read(isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance));
+    return !MediaQuery.disableAnimationsOf(context);
   }
 
   void _toggleAutoAdvance() {
@@ -731,12 +739,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
             final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
-            // Gate the rail + runtime on both the feature flag and the
-            // user's reduced-motion preference. When Auto is unavailable,
+            // Gate the rail + runtime on the user's reduced-motion
+            // preference. When Auto is unavailable,
             // force it "off" at the view layer regardless of cubit state.
-            final autoAdvanceAvailable =
-                featureFlagService.isEnabled(FeatureFlag.feedAutoAdvance) &&
-                !MediaQuery.disableAnimationsOf(context);
+            final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
+              context,
+            );
             final effectiveAutoEnabled =
                 autoAdvanceAvailable && autoState.enabled;
             final effectiveAutoActive =
@@ -1105,7 +1113,7 @@ class _PooledFullscreenItemContentState
 
     final bloc = context.read<VideoInteractionsBloc>();
     final state = bloc.state;
-    if (!state.isLiked && !state.isLikeInProgress) {
+    if (!state.isLiked) {
       bloc.add(const VideoInteractionsLikeToggled());
     }
 
