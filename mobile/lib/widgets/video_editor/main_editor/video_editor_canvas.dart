@@ -118,8 +118,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Processed as a trailing seek once the current seek completes.
   Duration? _pendingSeekPosition;
 
+  /// Monotonically increasing seek generation. Bumped on every composition
+  /// swap so in-flight seeks from the previous composition are discarded.
+  int _seekEpoch = 0;
+
   /// Cached documents directory path — resolved once in [initState].
   late final Future<String> _documentsPath;
+
+  bool _isTrimmingLayer = false;
+  bool _isTrimmingClip = false;
+  bool _isDraggingLayer = false;
+
+  /// Most recent live-preview seek target captured while a layer trim
+  /// handle is being dragged. Used at gesture end to sync the
+  /// VideoEditorMainBloc's currentPosition (and thus the UI timeline
+  /// scrubber) to the release point in a single dispatch — doing it
+  /// inside the seek loop would let the scrubber jump mid-drag.
+  Duration? _lastLayerTrimPosition;
+
+  /// Same as [_lastLayerTrimPosition] but for layer item drag
+  /// (move-along-timeline) gestures. Captures the dragged item's
+  /// startTime during the drag and is dispatched once on release.
+  Duration? _lastLayerDragPosition;
+
+  /// Most recent in-progress clip trim. Captured while the gesture is
+  /// active so that, once it ends and the multi-clip composite is
+  /// restored, we can seek to the composite-timeline position that
+  /// matches where the user released the trim handle.
+  String? _lastTrimClipId;
+  Duration? _lastTrimPositionInClip;
 
   @override
   void initState() {
@@ -201,6 +228,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   ///
   /// This relies on both Android and iOS returning from seekTo only
   /// after the frame is actually decoded and rendered.
+  ///
+  /// Returns the composite-timeline position of the most recent
+  /// in-progress clip trim (and clears the captured values), so that
+  /// after a trim drag ends and the multi-clip composite is restored,
+  /// playback stays on the frame the user released. Returns `null`
+  /// when no trim was in progress, the trimmed clip is no longer in
+  /// the list, or the captured position falls outside the clip's
+  /// trimmed range.
+  Duration? _consumeTrimEndStartPosition(List<DivineVideoClip> clips) {
+    final clipId = _lastTrimClipId;
+    final positionInClip = _lastTrimPositionInClip;
+    _lastTrimClipId = null;
+    _lastTrimPositionInClip = null;
+    if (clipId == null || positionInClip == null) return null;
+
+    var precedingDuration = Duration.zero;
+    for (final clip in clips) {
+      if (clip.id == clipId) {
+        final relative = positionInClip - clip.trimStart;
+        if (relative < Duration.zero || relative > clip.trimmedDuration) {
+          return null;
+        }
+        return precedingDuration + relative;
+      }
+      precedingDuration += clip.trimmedDuration;
+    }
+    return null;
+  }
+
   Future<void> _onSeekRequested(Duration position) async {
     if (!_isPlayerReadyNotifier.value) return;
 
@@ -212,16 +268,30 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     }
 
     _isSeeking = true;
-    await _videoPlayer?.seekTo(position);
+    final epoch = _seekEpoch;
+    try {
+      await _videoPlayer?.seekTo(position);
+      if (_seekEpoch != epoch) {
+        _pendingSeekPosition = null;
+        return;
+      }
 
-    // Process trailing seek if one arrived while we were busy.
-    while (_pendingSeekPosition != null && mounted) {
-      final pending = _pendingSeekPosition!;
-      _pendingSeekPosition = null;
-      await _videoPlayer?.seekTo(pending);
+      // Process trailing seek if one arrived while we were busy.
+      while (_pendingSeekPosition != null && mounted) {
+        final pending = _pendingSeekPosition!;
+        _pendingSeekPosition = null;
+        await _videoPlayer?.seekTo(pending);
+        if (_seekEpoch != epoch) {
+          _pendingSeekPosition = null;
+          break;
+        }
+      }
+    } finally {
+      // Only reset under the current epoch; a composition swap takes over ownership.
+      if (_seekEpoch == epoch) {
+        _isSeeking = false;
+      }
     }
-
-    _isSeeking = false;
   }
 
   /// Dispatches playback state changes to the BLoC.
@@ -238,7 +308,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       bloc.add(VideoEditorPlaybackChanged(isPlaying: isPlaying));
     }
 
-    if (playerState.position != _lastReportedPosition) {
+    if (!_isTrimmingLayer &&
+        !_isTrimmingClip &&
+        !_isDraggingLayer &&
+        _pendingSeekPosition == null &&
+        playerState.position != _lastReportedPosition) {
       _lastReportedPosition = playerState.position;
       bloc.add(VideoEditorPositionChanged(playerState.position));
       _proVideoController.setPlayTime(playerState.position);
@@ -708,6 +782,98 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // Listen for playback control requests from BLoC
     return MultiBlocListener(
       listeners: [
+        BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+          listenWhen: (previous, current) {
+            _isTrimmingLayer = previous.trimmingItemId != null;
+            return previous.trimPosition != current.trimPosition &&
+                _isTrimmingLayer;
+          },
+          listener: (context, state) {
+            // trimPosition is null on the release emit — skip to preserve
+            // _lastLayerTrimPosition for the end-listener below.
+            final position = state.trimPosition;
+            if (position == null) return;
+            _lastLayerTrimPosition = position;
+            _onSeekRequested(position);
+          },
+        ),
+        // Sync scrubber once at gesture end (not mid-drag) to avoid
+        // premature scrubber jumps while the seek is still in flight.
+        BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+          listenWhen: (previous, current) =>
+              previous.trimmingItemId != null && current.trimmingItemId == null,
+          listener: (context, _) {
+            final position = _lastLayerTrimPosition;
+            _lastLayerTrimPosition = null;
+            if (position == null) return;
+            _lastReportedPosition = position;
+            context.read<VideoEditorMainBloc>().add(
+              VideoEditorPositionChanged(position),
+            );
+          },
+        ),
+        // Live seek while a layer item is dragged: follow its startTime.
+        BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+          listenWhen: (previous, current) {
+            _isDraggingLayer = current.draggingItemId != null;
+            return previous.dragPosition != current.dragPosition &&
+                current.dragPosition != null;
+          },
+          listener: (context, state) {
+            final position = state.dragPosition;
+            if (position == null) return;
+            _lastLayerDragPosition = position;
+            _onSeekRequested(position);
+          },
+        ),
+        // Sync scrubber once at drag end (not mid-drag).
+        BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
+          listenWhen: (previous, current) =>
+              previous.draggingItemId != null && current.draggingItemId == null,
+          listener: (context, _) {
+            final position = _lastLayerDragPosition;
+            _lastLayerDragPosition = null;
+            if (position == null) return;
+            _lastReportedPosition = position;
+            context.read<VideoEditorMainBloc>().add(
+              VideoEditorPositionChanged(position),
+            );
+          },
+        ),
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          // Swap to single-clip (untrimmed) view on trim start so
+          // trimPosition seeks the correct frame.
+          listenWhen: (previous, current) =>
+              previous.trimmingClipId != current.trimmingClipId,
+          listener: (context, state) {
+            _isTrimmingClip = state.trimmingClipId != null;
+            if (state.trimmingClipId == null) return;
+            final clip = state.clips.firstWhere(
+              (c) => c.id == state.trimmingClipId,
+            );
+            final path = clip.video.file?.path;
+            if (path == null) return;
+            // Composition swap: invalidate in-flight seeks and release _isSeeking.
+            _seekEpoch++;
+            _pendingSeekPosition = null;
+            _isSeeking = false;
+            _videoPlayer?.setClips([
+              VideoClip(uri: path, end: clip.duration),
+            ]);
+          },
+        ),
+        BlocListener<ClipEditorBloc, ClipEditorState>(
+          // Live preview seek while a clip trim handle is dragged.
+          listenWhen: (previous, current) =>
+              current.trimmingClipId != null &&
+              previous.trimPosition != current.trimPosition &&
+              current.trimPosition != null,
+          listener: (context, state) {
+            _lastTrimClipId = state.trimmingClipId;
+            _lastTrimPositionInClip = state.trimPosition;
+            _onSeekRequested(state.trimPosition!);
+          },
+        ),
         // Re-export state history when an overlay item drag or trim
         // ends so the updated positions are persisted for ProofMode.
         BlocListener<TimelineOverlayBloc, TimelineOverlayState>(
@@ -767,19 +933,49 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             // See note on the trim-times listener above: skip empty
             // clip lists to avoid crashing the iOS native player.
             if (state.clips.isEmpty) return;
-            final currentPosition = context
-                .read<VideoEditorMainBloc>()
-                .state
-                .currentPosition;
-            _videoPlayer?.setClips([
-              for (final clip in state.clips)
-                if (clip.video.file?.path case final path?)
-                  VideoClip(
-                    uri: path,
-                    start: clip.trimStart,
-                    end: clip.duration - clip.trimEnd,
-                  ),
-            ], startPosition: currentPosition);
+
+            // Seek to the trim handle's release point when restoring the composite.
+            final trimEndPosition = _consumeTrimEndStartPosition(state.clips);
+            final mainBloc = context.read<VideoEditorMainBloc>();
+            final startPosition =
+                trimEndPosition ?? mainBloc.state.currentPosition;
+            // Sync so subsequent re-emits read the post-seek position.
+            if (trimEndPosition != null) {
+              mainBloc.add(VideoEditorPositionChanged(trimEndPosition));
+            }
+            // Composition swap back — invalidate in-flight single-clip seeks.
+            _seekEpoch++;
+            _pendingSeekPosition = null;
+            // Claim _isSeeking under the new epoch; try/finally ensures
+            // release even if setClips throws.
+            _isSeeking = true;
+            final ownerEpoch = _seekEpoch;
+            unawaited(() async {
+              try {
+                await _videoPlayer?.setClips([
+                  for (final clip in state.clips)
+                    if (clip.video.file?.path case final path?)
+                      VideoClip(
+                        uri: path,
+                        start: clip.trimStart,
+                        end: clip.duration - clip.trimEnd,
+                      ),
+                ], startPosition: startPosition);
+              } catch (e, s) {
+                Log.error(
+                  'setClips failed on trim release: $e',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                  error: e,
+                  stackTrace: s,
+                );
+              } finally {
+                _lastReportedPosition = startPosition;
+                if (_seekEpoch == ownerEpoch) {
+                  _isSeeking = false;
+                }
+              }
+            }());
           },
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(

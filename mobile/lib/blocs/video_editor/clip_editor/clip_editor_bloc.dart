@@ -359,7 +359,21 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       trimEnd: clampedEnd,
     );
 
-    emit(state.copyWith(clips: List.unmodifiable(newClips)));
+    // Position of the dragged handle within the clip's *untrimmed*
+    // timeline (0..clip.duration). The preview player is switched to
+    // a single-clip view of [event.clipId] for the duration of the
+    // gesture, so seeking to this position lands on the correct frame.
+    final trimPosition = event.isStart
+        ? clampedStart
+        : clip.duration - clampedEnd;
+
+    emit(
+      state.copyWith(
+        clips: List.unmodifiable(newClips),
+        trimPosition: trimPosition,
+        trimmingClipId: event.clipId,
+      ),
+    );
   }
 
   void _onTrimDragStarted(
@@ -373,6 +387,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ClipEditorTrimDragEnded event,
     Emitter<ClipEditorState> emit,
   ) {
-    emit(state.copyWith(isTrimDragging: false));
+    emit(
+      state.copyWith(
+        isTrimDragging: false,
+        clearTrimPosition: true,
+        clearTrimmingClipId: true,
+      ),
+    );
   }
 }

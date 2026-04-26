@@ -233,6 +233,7 @@ void main() {
                 row: 1,
               ),
             ],
+            trimPosition: const Duration(seconds: 4),
           ),
         ],
       );
@@ -330,6 +331,93 @@ void main() {
           const TimelineOverlayState(),
         ],
       );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'TimelineOverlayDragMoved sets dragPosition while dragging',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) {
+          bloc
+            ..add(const TimelineOverlayDragStarted('x'))
+            ..add(
+              const TimelineOverlayDragMoved(Duration(milliseconds: 750)),
+            );
+        },
+        expect: () => [
+          const TimelineOverlayState(draggingItemId: 'x'),
+          const TimelineOverlayState(
+            draggingItemId: 'x',
+            dragPosition: Duration(milliseconds: 750),
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'TimelineOverlayDragMoved is ignored when no drag is active',
+        build: TimelineOverlayBloc.new,
+        act: (bloc) => bloc.add(
+          const TimelineOverlayDragMoved(Duration(milliseconds: 500)),
+        ),
+        expect: () => <TimelineOverlayState>[],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'TimelineOverlayDragEnded clears dragPosition',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          draggingItemId: 'x',
+          dragPosition: Duration(milliseconds: 500),
+        ),
+        act: (bloc) => bloc.add(const TimelineOverlayDragEnded()),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having((s) => s.draggingItemId, 'draggingItemId', isNull)
+              .having((s) => s.dragPosition, 'dragPosition', isNull),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'TimelineOverlayItemTrimmed exposes trimPosition for the dragged handle',
+        build: TimelineOverlayBloc.new,
+        seed: () => TimelineOverlayState(
+          items: [
+            _item(
+              id: 'a',
+              type: TimelineOverlayType.layer,
+              start: Duration.zero,
+              end: const Duration(seconds: 2),
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          const TimelineOverlayItemTrimmed(
+            itemId: 'a',
+            isStart: false,
+            endTime: Duration(seconds: 4),
+          ),
+        ),
+        expect: () => [
+          isA<TimelineOverlayState>().having(
+            (s) => s.trimPosition,
+            'trimPosition',
+            const Duration(seconds: 4),
+          ),
+        ],
+      );
+
+      blocTest<TimelineOverlayBloc, TimelineOverlayState>(
+        'TimelineOverlayTrimEnded clears trimPosition',
+        build: TimelineOverlayBloc.new,
+        seed: () => const TimelineOverlayState(
+          trimmingItemId: 'x',
+          trimPosition: Duration(seconds: 1),
+        ),
+        act: (bloc) => bloc.add(const TimelineOverlayTrimEnded()),
+        expect: () => [
+          isA<TimelineOverlayState>()
+              .having((s) => s.trimmingItemId, 'trimmingItemId', isNull)
+              .having((s) => s.trimPosition, 'trimPosition', isNull),
+        ],
+      );
     });
 
     group(TimelineOverlayCollapseToggled, () {
@@ -404,6 +492,21 @@ void main() {
       expect(cleared.selectedItemId, isNull);
       expect(cleared.draggingItemId, isNull);
       expect(cleared.trimmingItemId, isNull);
+    });
+
+    test('copyWith clear flags reset dragPosition and trimPosition', () {
+      const state = TimelineOverlayState(
+        dragPosition: Duration(milliseconds: 500),
+        trimPosition: Duration(seconds: 2),
+      );
+
+      final cleared = state.copyWith(
+        clearDragPosition: true,
+        clearTrimPosition: true,
+      );
+
+      expect(cleared.dragPosition, isNull);
+      expect(cleared.trimPosition, isNull);
     });
   });
 

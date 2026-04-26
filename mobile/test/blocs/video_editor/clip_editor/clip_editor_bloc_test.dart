@@ -720,6 +720,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(milliseconds: 500),
             trimEnd: Duration(milliseconds: 300),
           ),
@@ -746,6 +747,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'unknown',
+            isStart: true,
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
           ),
@@ -760,6 +762,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(milliseconds: 500),
             trimEnd: Duration.zero,
           ),
@@ -782,6 +785,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
           ),
@@ -790,6 +794,53 @@ void main() {
           expect(bloc.state.clips.last.trimStart, equals(Duration.zero));
           expect(bloc.state.clips.last.trimEnd, equals(Duration.zero));
         },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'sets trimmingClipId and trimPosition to clampedStart when isStart',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorTrimUpdated(
+            clipId: 'a',
+            isStart: true,
+            trimStart: Duration(milliseconds: 500),
+            trimEnd: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.trimmingClipId, 'trimmingClipId', 'a')
+              .having(
+                (s) => s.trimPosition,
+                'trimPosition',
+                const Duration(milliseconds: 500),
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'sets trimPosition to clip.duration - clampedEnd when !isStart',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          // Clip 'a' has duration 2s; trimEnd 500ms → trimPosition 1.5s
+          const ClipEditorTrimUpdated(
+            clipId: 'a',
+            isStart: false,
+            trimStart: Duration.zero,
+            trimEnd: Duration(milliseconds: 500),
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.trimmingClipId, 'trimmingClipId', 'a')
+              .having(
+                (s) => s.trimPosition,
+                'trimPosition',
+                const Duration(milliseconds: 1500),
+              ),
+        ],
       );
     });
 
@@ -820,6 +871,22 @@ void main() {
             'isTrimDragging',
             isFalse,
           ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clears trimPosition and trimmingClipId',
+        build: buildBloc,
+        seed: () => const ClipEditorState(
+          isTrimDragging: true,
+          trimmingClipId: 'a',
+          trimPosition: Duration(milliseconds: 500),
+        ),
+        act: (bloc) => bloc.add(const ClipEditorTrimDragEnded()),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.trimmingClipId, 'trimmingClipId', isNull)
+              .having((s) => s.trimPosition, 'trimPosition', isNull),
         ],
       );
     });
@@ -905,12 +972,14 @@ void main() {
         expect(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
           ),
           equals(
             const ClipEditorTrimUpdated(
               clipId: 'a',
+              isStart: true,
               trimStart: Duration(seconds: 1),
               trimEnd: Duration.zero,
             ),

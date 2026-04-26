@@ -21,6 +21,7 @@ part 'video_editor_timeline_clip_strip_tiles.dart';
 typedef ClipTrimCallback =
     void Function({
       required String clipId,
+      required bool isStart,
       required Duration trimStart,
       required Duration trimEnd,
     });

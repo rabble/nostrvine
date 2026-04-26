@@ -91,6 +91,19 @@ class TimelineOverlayDragStarted extends TimelineOverlayEvent {
   List<Object?> get props => [itemId];
 }
 
+/// Live position update during a drag gesture.
+///
+/// Emitted on every frame while the user moves an item along the
+/// timeline so the canvas can mirror the seek preview.
+class TimelineOverlayDragMoved extends TimelineOverlayEvent {
+  const TimelineOverlayDragMoved(this.position);
+
+  final Duration position;
+
+  @override
+  List<Object?> get props => [position];
+}
+
 /// Signal that the current drag gesture ended.
 class TimelineOverlayDragEnded extends TimelineOverlayEvent {
   const TimelineOverlayDragEnded();

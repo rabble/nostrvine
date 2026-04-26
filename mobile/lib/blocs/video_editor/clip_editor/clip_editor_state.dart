@@ -15,6 +15,8 @@ class ClipEditorState extends Equatable {
     this.isEditing = false,
     this.isTrimDragging = false,
     this.lastSplit,
+    this.trimPosition,
+    this.trimmingClipId,
   });
 
   /// Local copy of clips managed by this editor session.
@@ -41,6 +43,19 @@ class ClipEditorState extends Equatable {
   /// fresh signal even when fields happen to repeat.
   final ClipSplitEvent? lastSplit;
 
+  /// The live absolute timeline position of the trim handle being dragged.
+  ///
+  /// Set while a trim gesture is active; `null` when no trim is in progress.
+  final Duration? trimPosition;
+
+  /// The ID of the clip currently being trimmed.
+  ///
+  /// Non-`null` while a trim gesture is active. Allows the preview
+  /// player to switch to a single-clip view of the trimmed clip so
+  /// [trimPosition] (which is relative to that clip's untrimmed
+  /// timeline) seeks to the correct frame.
+  final String? trimmingClipId;
+
   /// Total duration of all clips (respecting trim).
   Duration get totalDuration =>
       clips.fold(Duration.zero, (sum, clip) => sum + clip.trimmedDuration);
@@ -53,6 +68,10 @@ class ClipEditorState extends Equatable {
     bool? isEditing,
     bool? isTrimDragging,
     ClipSplitEvent? lastSplit,
+    Duration? trimPosition,
+    bool clearTrimPosition = false,
+    String? trimmingClipId,
+    bool clearTrimmingClipId = false,
   }) {
     return ClipEditorState(
       clips: clips ?? this.clips,
@@ -61,6 +80,12 @@ class ClipEditorState extends Equatable {
       isEditing: isEditing ?? this.isEditing,
       isTrimDragging: isTrimDragging ?? this.isTrimDragging,
       lastSplit: lastSplit ?? this.lastSplit,
+      trimPosition: clearTrimPosition
+          ? null
+          : (trimPosition ?? this.trimPosition),
+      trimmingClipId: clearTrimmingClipId
+          ? null
+          : (trimmingClipId ?? this.trimmingClipId),
     );
   }
 
@@ -73,6 +98,8 @@ class ClipEditorState extends Equatable {
     isTrimDragging,
     // Identity-only: each ClipSplitEvent is a fresh instance per split.
     identityHashCode(lastSplit),
+    trimPosition,
+    trimmingClipId,
   ];
 }
 
