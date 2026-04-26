@@ -409,11 +409,14 @@ class PlayerPool {
     _players.clear();
     _lruOrder.clear();
 
+    final disposals = <Future<void>>[];
     for (final player in players) {
       if (!player.isDisposed) {
-        await player.dispose();
+        disposals.add(player.dispose());
       }
     }
+
+    await Future.wait(disposals);
   }
 
   /// Dispose all players and clear the pool.
