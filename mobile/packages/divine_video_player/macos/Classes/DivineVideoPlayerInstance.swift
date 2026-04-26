@@ -433,6 +433,16 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     // MARK: - State broadcasting
 
     private func sendStateUpdate() {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in
+                self?.sendStateUpdate()
+            }
+            return
+        }
+        sendStateUpdateOnMain()
+    }
+
+    private func sendStateUpdateOnMain() {
         guard let player, let sink = eventSink else { return }
 
         let currentTime = CMTimeGetSeconds(player.currentTime())
@@ -611,4 +621,3 @@ private extension CGSize {
         width.isFinite && height.isFinite && width > 0 && height > 0
     }
 }
-
