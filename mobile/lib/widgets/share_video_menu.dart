@@ -743,9 +743,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'People lists',
-            style: TextStyle(
+          Text(
+            context.l10n.shareMenuFollowSets,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -754,8 +754,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           const SizedBox(height: 12),
           _buildActionTile(
             icon: Icons.playlist_add,
-            title: 'Add to list',
-            subtitle: 'Put this creator in one of your lists',
+            title: context.l10n.peopleListsAddToList,
+            subtitle: context.l10n.peopleListsAddToListSubtitle,
             onTap: _showAddToPeopleListsSheet,
           ),
         ],

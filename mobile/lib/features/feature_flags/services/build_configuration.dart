@@ -32,7 +32,10 @@ class BuildConfiguration {
       case FeatureFlag.classicsHashtags:
         return const bool.fromEnvironment('FF_CLASSICS_HASHTAGS');
       case FeatureFlag.curatedLists:
-        return const bool.fromEnvironment('FF_CURATED_LISTS');
+        return const bool.fromEnvironment(
+          'FF_CURATED_LISTS',
+          defaultValue: true,
+        );
       case FeatureFlag.blueskyPublishing:
         return const bool.fromEnvironment('FF_BLUESKY_PUBLISHING');
       case FeatureFlag.integratedApps:

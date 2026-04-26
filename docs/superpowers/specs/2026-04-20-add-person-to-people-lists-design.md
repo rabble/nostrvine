@@ -354,9 +354,9 @@ All copy under `people_lists.*` in `AppLocalizations`. Keys include sheet title,
 
 ## Rollout
 
-1. Land the whole feature behind `FF_CURATED_LISTS=false` (current default). No user-facing change.
-2. Internal dogfood on staging builds with `--dart-define=FF_CURATED_LISTS=true`.
-3. Separate small PR flips the default in `build_configuration.dart:35` once we're confident. That same flip lights up the dark video add-to-list feature that's been behind the same flag since February — confirm product wants both live together; if not, introduce `FF_PEOPLE_LISTS` at that point, not before.
+1. Ship the whole feature with `FF_CURATED_LISTS=true` by default so the profile, share, search, followers, and following entry points are visible without custom dart defines.
+2. Keep `--dart-define=FF_CURATED_LISTS=false` available as the rollback path if product needs to hide both video add-to-list and people add-to-list together.
+3. If product needs to split video add-to-list from people add-to-list later, introduce `FF_PEOPLE_LISTS` at that point, not before.
 
 ---
 

@@ -88,6 +88,12 @@ void main() {
       expect(config.getDefault(FeatureFlag.integratedApps), isFalse);
     });
 
+    test('curatedLists should default to true', () {
+      const config = BuildConfiguration();
+
+      expect(config.getDefault(FeatureFlag.curatedLists), isTrue);
+    });
+
     test('integratedApps should map to FF_INTEGRATED_APPS env var', () {
       const config = BuildConfiguration();
 
