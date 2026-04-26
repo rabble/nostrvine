@@ -2245,7 +2245,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoActionAutoLabel.
   ///
   /// In en, this message translates to:
-  /// **'Auto'**
+  /// **'Compilation'**
   String get videoActionAutoLabel;
 
   /// No description provided for @videoActionLikeLabel.
