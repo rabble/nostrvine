@@ -43,8 +43,19 @@ class VideoInteractionsBloc
        _addressableId = addressableId,
        super(VideoInteractionsState(likeCount: initialLikeCount)) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
+    // Toggle handlers fire-and-forget the publish (see _onLikeToggled),
+    // so they return in microseconds and do not benefit from a
+    // droppable transformer. Rapid double-taps on the same video are
+    // intentionally allowed to flip-flip — end state is correct via
+    // the repository's per-event-id guards
+    // (AlreadyLikedException / AlreadyRepostedException) which
+    // surface as no-op settle events here. Different videos already
+    // use different bloc instances, so cross-video parallelism is
+    // unaffected.
     on<VideoInteractionsLikeToggled>(_onLikeToggled);
     on<VideoInteractionsRepostToggled>(_onRepostToggled);
+    on<_VideoInteractionsLikeSettled>(_onLikeSettled);
+    on<_VideoInteractionsRepostSettled>(_onRepostSettled);
     on<VideoInteractionsSubscriptionRequested>(_onSubscriptionRequested);
     on<VideoInteractionsCommentCountUpdated>(_onCommentCountUpdated);
   }
@@ -181,13 +192,15 @@ class VideoInteractionsBloc
   /// Handle like toggle request.
   ///
   /// Emits the optimistic state (flipped [isLiked] + adjusted [likeCount])
-  /// BEFORE awaiting the repository, so the heart and counter flip in the
-  /// same frame. The repository's stream tick fires during the await; the
-  /// subscription handler at [_onSubscriptionRequested] no-ops because
-  /// state.isLiked already matches, guaranteeing a single emit per tap.
+  /// and returns immediately — the publish itself runs fire-and-forget via
+  /// [_publishLike]. The handler intentionally does not await the publish
+  /// so that a slow network on this video never blocks taps on subsequent
+  /// videos (different videos use different bloc instances; this just keeps
+  /// each instance's event queue free of long-running work).
   ///
-  /// Exception paths revert both fields to the pre-tap baseline so the UI
-  /// returns to its original state if the publish fails.
+  /// When the publish settles, [_publishLike] dispatches a
+  /// [_VideoInteractionsLikeSettled] event and reconciliation happens in
+  /// [_onLikeSettled] with a fresh [Emitter].
   Future<void> _onLikeToggled(
     VideoInteractionsLikeToggled event,
     Emitter<VideoInteractionsState> emit,
@@ -206,6 +219,21 @@ class VideoInteractionsBloc
       ),
     );
 
+    unawaited(
+      _publishLike(
+        optimisticLiked: optimisticLiked,
+        wasLiked: wasLiked,
+        wasCount: wasCount,
+      ),
+    );
+  }
+
+  Future<void> _publishLike({
+    required bool optimisticLiked,
+    required bool wasLiked,
+    required int? wasCount,
+  }) async {
+    _LikeSettleOutcome outcome;
     try {
       // Pass addressable ID and target kind for proper a-tag tagging
       final isNowLiked = await _likesRepository.toggleLike(
@@ -216,37 +244,56 @@ class VideoInteractionsBloc
             ? NIP71VideoKinds.addressableShortVideo
             : null,
       );
-
-      if (isNowLiked != optimisticLiked) {
-        // Out-of-band toggle (e.g. another device flipped it mid-tap).
-        // Reconcile from the pre-tap baseline rather than current state.
-        emit(
-          state.copyWith(
-            isLiked: isNowLiked,
-            likeCount: _adjustCount(wasCount, increment: isNowLiked),
-          ),
-        );
-      }
+      outcome = isNowLiked == optimisticLiked
+          ? const _LikeSettleConfirmed()
+          : _LikeSettleOutOfBand(actualIsLiked: isNowLiked);
     } on AlreadyLikedException {
-      // Reality says we were already liked — revert to pre-tap baseline
-      // since no real transition occurred.
-      emit(state.copyWith(isLiked: true, likeCount: wasCount));
+      outcome = const _LikeSettleAlready();
     } on NotLikedException {
-      emit(state.copyWith(isLiked: false, likeCount: wasCount));
-    } catch (e) {
+      outcome = const _LikeSettleNotLiked();
+    } catch (e, stackTrace) {
       Log.error(
         'VideoInteractionsBloc: Like toggle failed for $_eventId - $e',
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
+      addError(e, stackTrace);
+      outcome = _LikeSettleFailed(wasLiked: wasLiked);
+    }
 
-      emit(
-        state.copyWith(
-          isLiked: wasLiked,
-          likeCount: wasCount,
-          error: VideoInteractionsError.likeFailed,
-        ),
-      );
+    if (isClosed) return;
+    add(_VideoInteractionsLikeSettled(outcome: outcome, wasCount: wasCount));
+  }
+
+  void _onLikeSettled(
+    _VideoInteractionsLikeSettled event,
+    Emitter<VideoInteractionsState> emit,
+  ) {
+    switch (event.outcome) {
+      case _LikeSettleConfirmed():
+        // Optimistic emit already matches the publish result; no-op.
+        return;
+      case _LikeSettleOutOfBand(:final actualIsLiked):
+        // Another device flipped it mid-tap. Reconcile from the pre-tap
+        // baseline so the count doesn't double-adjust.
+        emit(
+          state.copyWith(
+            isLiked: actualIsLiked,
+            likeCount: _adjustCount(event.wasCount, increment: actualIsLiked),
+          ),
+        );
+      case _LikeSettleAlready():
+        emit(state.copyWith(isLiked: true, likeCount: event.wasCount));
+      case _LikeSettleNotLiked():
+        emit(state.copyWith(isLiked: false, likeCount: event.wasCount));
+      case _LikeSettleFailed(:final wasLiked):
+        emit(
+          state.copyWith(
+            isLiked: wasLiked,
+            likeCount: event.wasCount,
+            error: VideoInteractionsError.likeFailed,
+          ),
+        );
     }
   }
 
@@ -262,11 +309,11 @@ class VideoInteractionsBloc
 
   /// Handle repost toggle request.
   ///
-  /// Mirrors [_onLikeToggled]: the repository now writes the optimistic
-  /// record + ticks [RepostsRepository.watchRepostedAddressableIds] before
-  /// the kind-16 publish, and this handler emits the optimistic state
-  /// before awaiting, so the icon and counter flip in the same frame. The
-  /// subscription handler's early-return absorbs the follow-up stream tick.
+  /// Mirrors [_onLikeToggled]: emits the optimistic state and returns
+  /// immediately, scheduling the publish via [_publishRepost]. When the
+  /// publish settles, [_publishRepost] dispatches a
+  /// [_VideoInteractionsRepostSettled] event for reconciliation in
+  /// [_onRepostSettled].
   Future<void> _onRepostToggled(
     VideoInteractionsRepostToggled event,
     Emitter<VideoInteractionsState> emit,
@@ -296,40 +343,79 @@ class VideoInteractionsBloc
       ),
     );
 
+    unawaited(
+      _publishRepost(
+        addressableId: addressableId,
+        optimisticReposted: optimisticReposted,
+        wasReposted: wasReposted,
+        wasCount: wasCount,
+      ),
+    );
+  }
+
+  Future<void> _publishRepost({
+    required String addressableId,
+    required bool optimisticReposted,
+    required bool wasReposted,
+    required int? wasCount,
+  }) async {
+    _RepostSettleOutcome outcome;
     try {
       final isNowReposted = await _repostsRepository.toggleRepost(
         addressableId: addressableId,
         originalAuthorPubkey: _authorPubkey,
         eventId: _eventId,
       );
-
-      if (isNowReposted != optimisticReposted) {
-        // Out-of-band toggle. Reconcile from the pre-tap baseline.
-        emit(
-          state.copyWith(
-            isReposted: isNowReposted,
-            repostCount: _adjustCount(wasCount, increment: isNowReposted),
-          ),
-        );
-      }
+      outcome = isNowReposted == optimisticReposted
+          ? const _RepostSettleConfirmed()
+          : _RepostSettleOutOfBand(actualIsReposted: isNowReposted);
     } on AlreadyRepostedException {
-      emit(state.copyWith(isReposted: true, repostCount: wasCount));
+      outcome = const _RepostSettleAlready();
     } on NotRepostedException {
-      emit(state.copyWith(isReposted: false, repostCount: wasCount));
-    } catch (e) {
+      outcome = const _RepostSettleNotReposted();
+    } catch (e, stackTrace) {
       Log.error(
         'VideoInteractionsBloc: Repost toggle failed for $_eventId - $e',
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
+      addError(e, stackTrace);
+      outcome = _RepostSettleFailed(wasReposted: wasReposted);
+    }
 
-      emit(
-        state.copyWith(
-          isReposted: wasReposted,
-          repostCount: wasCount,
-          error: VideoInteractionsError.repostFailed,
-        ),
-      );
+    if (isClosed) return;
+    add(_VideoInteractionsRepostSettled(outcome: outcome, wasCount: wasCount));
+  }
+
+  void _onRepostSettled(
+    _VideoInteractionsRepostSettled event,
+    Emitter<VideoInteractionsState> emit,
+  ) {
+    switch (event.outcome) {
+      case _RepostSettleConfirmed():
+        return;
+      case _RepostSettleOutOfBand(:final actualIsReposted):
+        emit(
+          state.copyWith(
+            isReposted: actualIsReposted,
+            repostCount: _adjustCount(
+              event.wasCount,
+              increment: actualIsReposted,
+            ),
+          ),
+        );
+      case _RepostSettleAlready():
+        emit(state.copyWith(isReposted: true, repostCount: event.wasCount));
+      case _RepostSettleNotReposted():
+        emit(state.copyWith(isReposted: false, repostCount: event.wasCount));
+      case _RepostSettleFailed(:final wasReposted):
+        emit(
+          state.copyWith(
+            isReposted: wasReposted,
+            repostCount: event.wasCount,
+            error: VideoInteractionsError.repostFailed,
+          ),
+        );
     }
   }
 

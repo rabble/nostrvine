@@ -606,6 +606,226 @@ void main() {
           ),
         ],
       );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'optimistic emit lands before publish settles (fire-and-forget)',
+        setUp: () {
+          // Hold toggleLike open on a Completer so the publish never
+          // settles within the test window. The bloc handler must still
+          // emit the optimistic state and return — proving that the
+          // network publish does not block the bloc's event queue.
+          final completer = Completer<bool>();
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenAnswer((_) => completer.future);
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+          ),
+        ],
+        verify: (bloc) {
+          // Settle event has not been dispatched (publish still pending),
+          // but state already reflects the optimistic flip.
+          expect(bloc.state.isLiked, isTrue);
+          expect(bloc.state.likeCount, 11);
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'out-of-band toggle reconciles count from pre-tap baseline',
+        setUp: () {
+          // User taps to like (optimistic: isLiked=true, count=11), but
+          // the repository ends up with isLiked=false (e.g., another
+          // device unliked mid-tap). Reconciliation in [_onLikeSettled]
+          // applies _adjustCount to the pre-tap baseline (wasCount=10),
+          // not the already-incremented current count (11). With
+          // currentCount we would emit (false, 10) — incorrect because
+          // another transition was missed. With wasCount we emit
+          // (false, 9), reflecting the canonical decrement from the
+          // baseline.
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenAnswer((_) async => false);
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+          ),
+          // Anchored on wasCount=10, not the optimistic 11.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 9,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'closed bloc does not dispatch settle event after publish resolves',
+        setUp: () {
+          // Simulates scroll-away: user taps, immediately the feed item
+          // disposes its bloc, and the publish settles afterward. The
+          // unawaited future must check isClosed before dispatching a
+          // _VideoInteractionsLikeSettled event — otherwise add() on a
+          // closed bloc throws StateError.
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+            return true;
+          });
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 10,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsLikeToggled());
+          // Close before the publish has had a chance to resolve.
+          await bloc.close();
+        },
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          // Only the optimistic emit. The settle event would be a no-op
+          // on a closed bloc, but we must guard against it being
+          // dispatched at all (StateError on add to closed bloc).
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+          ),
+        ],
+      );
+
+      test('two blocs run in parallel — neither blocks the other', () async {
+        // The architectural invariant rabble called out: a slow publish
+        // on video A must not block tapping like on video B. Different
+        // videos use different bloc instances; this test pins the
+        // contract by keeping both publishes pending and asserting that
+        // both blocs emit their optimistic state independently.
+        final completerA = Completer<bool>();
+        final completerB = Completer<bool>();
+        final mockLikesA = _MockLikesRepository();
+        final mockLikesB = _MockLikesRepository();
+        final mockCommentsA = _MockCommentsRepository();
+        final mockCommentsB = _MockCommentsRepository();
+        final mockRepostsA = _MockRepostsRepository();
+        final mockRepostsB = _MockRepostsRepository();
+        final likedStreamA = StreamController<List<String>>.broadcast();
+        final likedStreamB = StreamController<List<String>>.broadcast();
+        final repostedStreamA = StreamController<Set<String>>.broadcast();
+        final repostedStreamB = StreamController<Set<String>>.broadcast();
+        addTearDown(() async {
+          await likedStreamA.close();
+          await likedStreamB.close();
+          await repostedStreamA.close();
+          await repostedStreamB.close();
+        });
+
+        // ignore_for_file: unnecessary_lambdas
+        // The closures below cannot be tear-offs because thenAnswer
+        // requires a Function(Invocation), but the captured locals are
+        // variable references that the analyzer cannot prove constant.
+        when(
+          () => mockLikesA.watchLikedEventIds(),
+        ).thenAnswer((_) => likedStreamA.stream);
+        when(
+          () => mockLikesB.watchLikedEventIds(),
+        ).thenAnswer((_) => likedStreamB.stream);
+        when(
+          () => mockRepostsA.watchRepostedAddressableIds(),
+        ).thenAnswer((_) => repostedStreamA.stream);
+        when(
+          () => mockRepostsB.watchRepostedAddressableIds(),
+        ).thenAnswer((_) => repostedStreamB.stream);
+
+        when(
+          () => mockLikesA.toggleLike(
+            eventId: 'event-a',
+            authorPubkey: testAuthorPubkey,
+          ),
+        ).thenAnswer((_) => completerA.future);
+        when(
+          () => mockLikesB.toggleLike(
+            eventId: 'event-b',
+            authorPubkey: testAuthorPubkey,
+          ),
+        ).thenAnswer((_) => completerB.future);
+
+        final blocA = VideoInteractionsBloc(
+          eventId: 'event-a',
+          authorPubkey: testAuthorPubkey,
+          likesRepository: mockLikesA,
+          commentsRepository: mockCommentsA,
+          repostsRepository: mockRepostsA,
+        );
+        final blocB = VideoInteractionsBloc(
+          eventId: 'event-b',
+          authorPubkey: testAuthorPubkey,
+          likesRepository: mockLikesB,
+          commentsRepository: mockCommentsB,
+          repostsRepository: mockRepostsB,
+        );
+        addTearDown(() async {
+          await blocA.close();
+          await blocB.close();
+        });
+
+        // Tap like on A (publish never resolves), then on B.
+        blocA.add(const VideoInteractionsLikeToggled());
+        blocB.add(const VideoInteractionsLikeToggled());
+
+        // Allow both event loops to drain.
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // Both blocs already reflect the optimistic flip even though
+        // neither publish has settled.
+        expect(blocA.state.isLiked, isTrue, reason: 'bloc A should flip');
+        expect(blocB.state.isLiked, isTrue, reason: 'bloc B should flip');
+        expect(completerA.isCompleted, isFalse);
+        expect(completerB.isCompleted, isFalse);
+
+        // Both repositories were called — neither call queued behind the
+        // other.
+        verify(
+          () => mockLikesA.toggleLike(
+            eventId: 'event-a',
+            authorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+        verify(
+          () => mockLikesB.toggleLike(
+            eventId: 'event-b',
+            authorPubkey: testAuthorPubkey,
+          ),
+        ).called(1);
+      });
     });
 
     group('VideoInteractionsRepostToggled', () {
@@ -818,6 +1038,37 @@ void main() {
             repostCount: 6,
           ),
         ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'optimistic emit lands before publish settles (fire-and-forget)',
+        setUp: () {
+          final completer = Completer<bool>();
+          when(
+            () => mockRepostsRepository.toggleRepost(
+              addressableId: testAddressableId,
+              originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
+            ),
+          ).thenAnswer((_) => completer.future);
+        },
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          repostCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isReposted: true,
+            repostCount: 6,
+          ),
+        ],
+        verify: (bloc) {
+          expect(bloc.state.isReposted, isTrue);
+          expect(bloc.state.repostCount, 6);
+        },
       );
     });
 
