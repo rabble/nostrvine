@@ -1181,6 +1181,9 @@ class _CanvasFitter extends ConsumerWidget {
     );
     if (clip == null) return const SizedBox.shrink();
     final scope = VideoEditorScope.of(context);
+    final isSubEditorOpen = context.select(
+      (VideoEditorMainBloc bloc) => bloc.state.isSubEditorOpen,
+    );
 
     return LayoutBuilder(
       builder: (_, constraints) {
@@ -1226,6 +1229,7 @@ class _CanvasFitter extends ConsumerWidget {
         return _OverlayCutArea(
           child: HitTestExpander(
             visibleSize: targetSize,
+            enabled: !isSubEditorOpen,
             child: Center(
               child: SizedBox.fromSize(
                 size: targetSize,
@@ -1288,51 +1292,60 @@ class _OverlayCutArea extends ConsumerWidget {
           children: [
             child,
 
-            IgnorePointer(
-              child: Stack(
-                fit: StackFit.expand,
-                clipBehavior: .none,
-                children: [
-                  // Top bar — extends up into the safe area so there
-                  // is no uncovered strip above the scrim when the
-                  // canvas is padded below the status bar.
-                  if (verticalGap > 0 || safeArea.top > 0)
-                    Positioned(
-                      top: -safeArea.top,
-                      left: 0,
-                      right: 0,
-                      height: verticalGap + safeArea.top,
-                      child: ColoredBox(color: overlayColor),
+            BlocSelector<VideoEditorMainBloc, VideoEditorMainState, bool>(
+              selector: (state) => state.isLayerInteractionActive,
+              builder: (context, isLayerInteractionActive) {
+                return IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: isLayerInteractionActive ? 0 : 1,
+                    duration: const Duration(milliseconds: 200),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      clipBehavior: .none,
+                      children: [
+                        // Top bar — extends up into the safe area so there
+                        // is no uncovered strip above the scrim when the
+                        // canvas is padded below the status bar.
+                        if (verticalGap > 0 || safeArea.top > 0)
+                          Positioned(
+                            top: -safeArea.top,
+                            left: 0,
+                            right: 0,
+                            height: verticalGap + safeArea.top,
+                            child: ColoredBox(color: overlayColor),
+                          ),
+                        // Bottom bar
+                        if (verticalGap > 0)
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: verticalGap,
+                            child: ColoredBox(color: overlayColor),
+                          ),
+                        // Left bar
+                        if (horizontalGap > 0)
+                          Positioned(
+                            top: 0,
+                            bottom: 0,
+                            left: 0,
+                            width: horizontalGap,
+                            child: ColoredBox(color: overlayColor),
+                          ),
+                        // Right bar
+                        if (horizontalGap > 0)
+                          Positioned(
+                            top: 0,
+                            bottom: 0,
+                            right: 0,
+                            width: horizontalGap,
+                            child: ColoredBox(color: overlayColor),
+                          ),
+                      ],
                     ),
-                  // Bottom bar
-                  if (verticalGap > 0)
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: verticalGap,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                  // Left bar
-                  if (horizontalGap > 0)
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      left: 0,
-                      width: horizontalGap,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                  // Right bar
-                  if (horizontalGap > 0)
-                    Positioned(
-                      top: 0,
-                      bottom: 0,
-                      right: 0,
-                      width: horizontalGap,
-                      child: ColoredBox(color: overlayColor),
-                    ),
-                ],
-              ),
+                  ),
+                );
+              },
             ),
           ],
         );
@@ -1361,6 +1374,7 @@ class HitTestExpander extends SingleChildRenderObjectWidget {
   const HitTestExpander({
     required this.visibleSize,
     required Widget super.child,
+    this.enabled = true,
     super.key,
   });
 
@@ -1369,12 +1383,15 @@ class HitTestExpander extends SingleChildRenderObjectWidget {
   /// onto its nearest edge before being forwarded.
   final Size visibleSize;
 
+  /// Whether hits outside [visibleSize] should be clamped into the child.
+  final bool enabled;
+
   // The render object is a true implementation detail; the widget is
   // only public for `@visibleForTesting`.
   @override
   // ignore: library_private_types_in_public_api
   _RenderHitTestExpander createRenderObject(BuildContext context) {
-    return _RenderHitTestExpander(visibleSize: visibleSize);
+    return _RenderHitTestExpander(visibleSize: visibleSize, enabled: enabled);
   }
 
   @override
@@ -1383,13 +1400,16 @@ class HitTestExpander extends SingleChildRenderObjectWidget {
     // ignore: library_private_types_in_public_api
     _RenderHitTestExpander renderObject,
   ) {
-    renderObject.visibleSize = visibleSize;
+    renderObject
+      ..visibleSize = visibleSize
+      ..enabled = enabled;
   }
 }
 
 class _RenderHitTestExpander extends RenderProxyBox {
-  _RenderHitTestExpander({required Size visibleSize})
-    : _visibleSize = visibleSize;
+  _RenderHitTestExpander({required Size visibleSize, required bool enabled})
+    : _visibleSize = visibleSize,
+      _enabled = enabled;
 
   /// Symmetric 1 px inset applied when clamping a hit position onto
   /// the visible rect. Required because downstream transforms
@@ -1408,8 +1428,15 @@ class _RenderHitTestExpander extends RenderProxyBox {
     // [visibleSize] — only [hitTest] does, and that runs per-event.
   }
 
+  bool _enabled;
+  set enabled(bool value) {
+    if (value == _enabled) return;
+    _enabled = value;
+  }
+
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (!_enabled) return super.hitTest(result, position: position);
     final c = child;
     if (c == null) return false;
     final left = (size.width - _visibleSize.width) / 2;
