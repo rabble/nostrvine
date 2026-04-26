@@ -1255,11 +1255,6 @@ class _OverlayCutArea extends ConsumerWidget {
 
   final Widget child;
 
-  /// Opacity applied to the letterbox scrim while a layer is being
-  /// dragged or transformed — dimmed but not hidden, so the canvas
-  /// boundary stays visible.
-  static const double _scrimDimmedOpacity = 0.4;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final targetAspectRatio = ref.watch(
@@ -1267,91 +1262,79 @@ class _OverlayCutArea extends ConsumerWidget {
     );
     if (targetAspectRatio == null) return const SizedBox.shrink();
 
-    return BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
-      buildWhen: (previous, current) =>
-          previous.isLayerInteractionActive != current.isLayerInteractionActive,
-      builder: (context, state) {
-        final hideOverlay = state.isLayerInteractionActive;
+    final overlayColor = VineTheme.backgroundCamera.withAlpha(166);
+    final safeArea = MediaQuery.paddingOf(context);
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final boxSize = constraints.biggest;
-            // Compute the visible child size: largest rect with
-            // targetAspectRatio that fits inside boxSize (BoxFit.contain).
-            final double childWidth;
-            final double childHeight;
-            if (boxSize.width / boxSize.height > targetAspectRatio.value) {
-              childHeight = boxSize.height;
-              childWidth = boxSize.height * targetAspectRatio.value;
-            } else {
-              childWidth = boxSize.width;
-              childHeight = boxSize.width / targetAspectRatio.value;
-            }
-            final verticalGap = (boxSize.height - childHeight) / 2;
-            final horizontalGap = (boxSize.width - childWidth) / 2;
-            final safeArea = MediaQuery.paddingOf(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final boxSize = constraints.biggest;
+        // Compute the visible child size: largest rect with
+        // targetAspectRatio that fits inside boxSize (BoxFit.contain).
+        final double childWidth;
+        final double childHeight;
+        if (boxSize.width / boxSize.height > targetAspectRatio.value) {
+          childHeight = boxSize.height;
+          childWidth = boxSize.height * targetAspectRatio.value;
+        } else {
+          childWidth = boxSize.width;
+          childHeight = boxSize.width / targetAspectRatio.value;
+        }
+        final verticalGap = (boxSize.height - childHeight) / 2;
+        final horizontalGap = (boxSize.width - childWidth) / 2;
 
-            return Stack(
-              fit: StackFit.expand,
-              clipBehavior: .none,
-              children: [
-                child,
-                IgnorePointer(
-                  child: AnimatedOpacity(
-                    // Dim (don't fully hide) the scrim during layer
-                    // interactions so the user still sees the canvas
-                    // boundary while dragging a layer.
-                    opacity: hideOverlay ? _scrimDimmedOpacity : 1,
-                    duration: const Duration(milliseconds: 200),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      clipBehavior: .none,
-                      children: [
-                        // Top bar — extends up into the safe area so there
-                        // is no uncovered strip above the scrim when the
-                        // canvas is padded below the status bar.
-                        if (verticalGap > 0 || safeArea.top > 0)
-                          Positioned(
-                            top: -safeArea.top,
-                            left: 0,
-                            right: 0,
-                            height: verticalGap + safeArea.top,
-                            child: const ColoredBox(color: VineTheme.scrim65),
-                          ),
-                        // Bottom bar
-                        if (verticalGap > 0)
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            height: verticalGap,
-                            child: const ColoredBox(color: VineTheme.scrim65),
-                          ),
-                        // Left bar
-                        if (horizontalGap > 0)
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            left: 0,
-                            width: horizontalGap,
-                            child: const ColoredBox(color: VineTheme.scrim65),
-                          ),
-                        // Right bar
-                        if (horizontalGap > 0)
-                          Positioned(
-                            top: 0,
-                            bottom: 0,
-                            right: 0,
-                            width: horizontalGap,
-                            child: const ColoredBox(color: VineTheme.scrim65),
-                          ),
-                      ],
+        return Stack(
+          fit: StackFit.expand,
+          clipBehavior: .none,
+          children: [
+            child,
+
+            IgnorePointer(
+              child: Stack(
+                fit: StackFit.expand,
+                clipBehavior: .none,
+                children: [
+                  // Top bar — extends up into the safe area so there
+                  // is no uncovered strip above the scrim when the
+                  // canvas is padded below the status bar.
+                  if (verticalGap > 0 || safeArea.top > 0)
+                    Positioned(
+                      top: -safeArea.top,
+                      left: 0,
+                      right: 0,
+                      height: verticalGap + safeArea.top,
+                      child: ColoredBox(color: overlayColor),
                     ),
-                  ),
-                ),
-              ],
-            );
-          },
+                  // Bottom bar
+                  if (verticalGap > 0)
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: verticalGap,
+                      child: ColoredBox(color: overlayColor),
+                    ),
+                  // Left bar
+                  if (horizontalGap > 0)
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: 0,
+                      width: horizontalGap,
+                      child: ColoredBox(color: overlayColor),
+                    ),
+                  // Right bar
+                  if (horizontalGap > 0)
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: horizontalGap,
+                      child: ColoredBox(color: overlayColor),
+                    ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
