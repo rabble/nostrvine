@@ -393,6 +393,7 @@ class DirectoryRenderer(unittest.TestCase):
         self.assertIn("PR #10", body)
         self.assertIn("PR #11", body)
         self.assertIn("Updated", body)
+        self.assertIn(lib.DIRECTORY_MARKER_PREFIX.strip(), body)
 
 
 class CodemagicPayload(unittest.TestCase):

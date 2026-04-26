@@ -20,6 +20,7 @@ from typing import Any, Iterable, Optional, Sequence
 
 STATE_MARKER_PREFIX = "<!-- divine-ios-qa-build:v1 "
 STATE_MARKER_SUFFIX = " -->"
+DIRECTORY_MARKER_PREFIX = "<!-- divine-ios-qa-directory:v1 "
 NEEDS_QA_LABEL = "needs-ios-qa"
 LABEL_BUILDING = "ios-qa:building"
 LABEL_READY = "ios-qa:ready"
@@ -271,6 +272,12 @@ def render_directory(
         lines.append(
             f"| `{slot}` | {status} | PR #{pr_number} | `{sha}` | {install} | {cm} |",
         )
+    lines.append("")
+    lines.append(
+        DIRECTORY_MARKER_PREFIX
+        + json.dumps({"updated_at": updated_at}, sort_keys=True)
+        + STATE_MARKER_SUFFIX,
+    )
     return "\n".join(lines) + "\n"
 
 
