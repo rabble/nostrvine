@@ -88,7 +88,8 @@ class PooledVideoFeed extends StatefulWidget {
 }
 
 /// State for [PooledVideoFeed].
-class PooledVideoFeedState extends State<PooledVideoFeed> {
+class PooledVideoFeedState extends State<PooledVideoFeed>
+    with WidgetsBindingObserver {
   late VideoFeedController _controller;
   late PageController _pageController;
   late PlayerPool _effectivePool;
@@ -113,6 +114,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
     _pageController.addListener(_onScrollChanged);
@@ -143,6 +145,22 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         _controller.play();
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        _controller.setActive(active: false);
+
+      case AppLifecycleState.resumed:
+      case AppLifecycleState.inactive:
+        break;
+    }
   }
 
   void _onScrollChanged() {
@@ -242,6 +260,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onControllerChanged);
     _pageController
       ..removeListener(_onScrollChanged)

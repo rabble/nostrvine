@@ -848,6 +848,28 @@ void main() {
         );
 
         test(
+          'full deactivation clears native player pool to release file locks',
+          () async {
+            final controller = VideoFeedController(
+              videos: createTestVideos(),
+              pool: pool,
+              preloadBehind: 0,
+            );
+
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            expect(pool.playerCount, equals(3));
+
+            controller.setActive(active: false);
+            await Future<void>.delayed(Duration.zero);
+
+            expect(pool.playerCount, equals(0));
+
+            addTearDown(controller.dispose);
+          },
+        );
+
+        test(
           'retainCurrentPlayer defaults to false (releases all)',
           () async {
             final controller = VideoFeedController(

@@ -873,20 +873,28 @@ class VideoFeedController extends ChangeNotifier {
   /// When `active: true`, resumes playback. If players were retained, playback
   /// resumes instantly. Otherwise, the preload window is reloaded.
   void setActive({required bool active, bool retainCurrentPlayer = false}) {
-    if (_isActive == active) return;
+    if (_isActive == active) {
+      if (!active && !retainCurrentPlayer) {
+        _releaseAllPlayers(releaseFromPool: true);
+      }
+      return;
+    }
     _isActive = active;
 
     if (!active) {
       _pauseVideo(_currentIndex);
       if (retainCurrentPlayer) {
         // Only pause current, release other players outside current index
+        final currentUrl = _videoUrlAt(_currentIndex);
         _loadedPlayers.keys
-            .where((idx) => idx != _currentIndex)
+            .where(
+              (idx) => idx != _currentIndex && _videoUrlAt(idx) != currentUrl,
+            )
             .toList()
-            .forEach(_releasePlayer);
+            .forEach((idx) => _releasePlayer(idx, releaseFromPool: true));
       } else {
         // Release all players to free memory
-        _releaseAllPlayers();
+        _releaseAllPlayers(releaseFromPool: true);
       }
     } else {
       // Clear any manual pause so playback resumes with audio
@@ -903,8 +911,14 @@ class VideoFeedController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _releaseAllPlayers() {
+  String? _videoUrlAt(int index) =>
+      index >= 0 && index < _videos.length ? _videos[index].url : null;
+
+  void _releaseAllPlayers({bool releaseFromPool = false}) {
     _loadedPlayers.keys.toList().forEach(_releasePlayer);
+    if (releaseFromPool) {
+      unawaited(pool.releaseAll());
+    }
   }
 
   /// Play the current video (user-initiated resume).
@@ -2192,7 +2206,9 @@ class VideoFeedController extends ChangeNotifier {
     _positionTimers.remove(index);
   }
 
-  void _releasePlayer(int index) {
+  void _releasePlayer(int index, {bool releaseFromPool = false}) {
+    final url = _videoUrlAt(index);
+
     // Unblock any pending preload wait for this index.
     _completeReady(index);
 
@@ -2235,6 +2251,10 @@ class VideoFeedController extends ChangeNotifier {
     // skip the force-seek-zero and reproduce the original bug.
     _userVisitedIndices.remove(index);
     _notifyIndex(index);
+
+    if (releaseFromPool && url != null) {
+      unawaited(pool.release(url));
+    }
   }
 
   /// Emits a one-line summary of diagnostic counters and the final source

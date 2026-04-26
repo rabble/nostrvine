@@ -376,6 +376,35 @@ void main() {
         expect(find.byType(PooledVideoFeed), findsOneWidget);
       });
 
+      testWidgets('resumes playback when app resumes on current route', (
+        tester,
+      ) async {
+        final videos = createTestVideos();
+
+        await tester.pumpWidget(
+          buildSubject(
+            state: FullscreenFeedState(
+              status: FullscreenFeedStatus.ready,
+              videos: videos,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
+        await tester.pump();
+        clearInteractions(defaultController);
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
+        verify(() => defaultController.setActive(active: true)).called(1);
+      });
+
       testWidgets(
         'shows the category title in the fullscreen app bar when provided',
         (tester) async {

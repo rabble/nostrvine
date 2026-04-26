@@ -400,11 +400,11 @@ class PlayerPool {
     }
   }
 
-  /// Dispose all players and clear the pool.
-  Future<void> dispose() async {
-    if (_isDisposed) return;
-    _isDisposed = true;
-
+  /// Release all cached players while keeping the pool reusable.
+  ///
+  /// Used when the app fully deactivates so native media resources do not
+  /// remain open while iOS is suspending the process.
+  Future<void> releaseAll() async {
     final players = _players.values.toList();
     _players.clear();
     _lruOrder.clear();
@@ -414,6 +414,14 @@ class PlayerPool {
         await player.dispose();
       }
     }
+  }
+
+  /// Dispose all players and clear the pool.
+  Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+
+    await releaseAll();
   }
 
   /// Creates a new [PooledPlayer] for [url].

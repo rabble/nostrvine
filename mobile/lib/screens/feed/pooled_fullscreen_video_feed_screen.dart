@@ -280,7 +280,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
 }
 
 class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
-    with RouteAware {
+    with RouteAware, WidgetsBindingObserver {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
   late final ValueNotifier<double> _pagePosition;
@@ -306,17 +306,27 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
     _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     routeObserver.unsubscribe(this);
     _controller?.dispose();
     _pagePosition.dispose();
     unawaited(_autoAdvanceCubit.close());
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    if (ModalRoute.of(context)?.isCurrent ?? false) {
+      _controller?.setActive(active: true);
+    }
   }
 
   // RouteAware callbacks: pause when another route is pushed on top,

@@ -193,6 +193,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+      _syncControllerPlaybackState(resumeIfHome: true);
     }
   }
 

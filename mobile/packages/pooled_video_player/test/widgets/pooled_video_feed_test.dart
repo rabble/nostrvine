@@ -129,6 +129,22 @@ void main() {
 
         controller.dispose();
       });
+
+      testWidgets('deactivates controller when app backgrounds', (
+        tester,
+      ) async {
+        final controller = createMockVideoFeedController();
+
+        await tester.pumpWidget(buildFeed(controller: controller));
+        clearInteractions(controller);
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
+        await tester.pump();
+
+        verify(() => controller.setActive(active: false)).called(1);
+      });
     });
 
     group('PageView', () {
