@@ -2676,13 +2676,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareSheetSaveVideo => 'Enregistrer la vidéo';
 
   @override
-  String get shareSheetAddToClips => 'Add to clips';
+  String get shareSheetAddToClips => 'Ajouter aux clips';
 
   @override
-  String get shareSheetAddedToClips => 'Added to clips';
+  String get shareSheetAddedToClips => 'Ajouté aux clips';
 
   @override
-  String get shareSheetAddToClipsFailed => 'Couldn\'t add to clips';
+  String get shareSheetAddToClipsFailed => 'Impossible d\'ajouter aux clips';
 
   @override
   String get shareSheetAddToList => 'Ajouter à une liste';

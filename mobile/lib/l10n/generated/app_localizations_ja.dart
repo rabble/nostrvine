@@ -2496,13 +2496,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareSheetSaveVideo => '動画を保存';
 
   @override
-  String get shareSheetAddToClips => 'Add to clips';
+  String get shareSheetAddToClips => 'クリップに追加';
 
   @override
-  String get shareSheetAddedToClips => 'Added to clips';
+  String get shareSheetAddedToClips => 'クリップに追加しました';
 
   @override
-  String get shareSheetAddToClipsFailed => 'Couldn\'t add to clips';
+  String get shareSheetAddToClipsFailed => 'クリップに追加できませんでした';
 
   @override
   String get shareSheetAddToList => 'リストに追加';
