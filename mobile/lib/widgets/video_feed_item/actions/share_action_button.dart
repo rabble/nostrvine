@@ -202,6 +202,16 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             error: !succeeded,
           ),
         );
+      case ShareSheetClassicVineClipImportResult(:final succeeded):
+        _safePop(context);
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            succeeded
+                ? context.l10n.videoMetadataSavedToLibrarySnackbar
+                : context.l10n.shareActionFailed,
+            error: !succeeded,
+          ),
+        );
       case ShareSheetCopiedToClipboard(:final label, :final text):
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);

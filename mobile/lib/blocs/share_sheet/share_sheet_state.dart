@@ -49,6 +49,12 @@ class ShareSheetSaveResult extends ShareSheetActionResult {
   final bool succeeded;
 }
 
+class ShareSheetClassicVineClipImportResult extends ShareSheetActionResult {
+  ShareSheetClassicVineClipImportResult({required this.succeeded});
+
+  final bool succeeded;
+}
+
 /// Generic failure for utility actions (copy link, share via, etc.).
 /// Error details are logged by the BLoC; the UI shows a generic message.
 class ShareSheetActionFailure extends ShareSheetActionResult {

@@ -58,6 +58,11 @@ class ShareSheetSaveRequested extends ShareSheetEvent {
   const ShareSheetSaveRequested();
 }
 
+/// Add a classic Vine to the local clip library.
+class ShareSheetAddClassicVineToClipsRequested extends ShareSheetEvent {
+  const ShareSheetAddClassicVineToClipsRequested();
+}
+
 /// Copy share link to clipboard.
 class ShareSheetCopyLinkRequested extends ShareSheetEvent {
   const ShareSheetCopyLinkRequested();
