@@ -212,6 +212,7 @@ dependencies:
   # Follow Repository - Follow relationship management
   follow_repository:
 
+  # Followed Hashtags Repository - Followed hashtags management
   followed_hashtags_repository:
 
   # Hashtag Repository - Hashtag search data layer
