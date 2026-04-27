@@ -15,6 +15,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     private var timeObserver: Any?
     private var statusObservation: NSKeyValueObservation?
+    /// One-shot KVO that defers a preroll request until the AVPlayer's
+    /// own `status` becomes `.readyToPlay`. Calling `preroll(atRate:)`
+    /// before that throws `NSInvalidArgumentException`.
+    private var pendingPrerollObservation: NSKeyValueObservation?
 
     // MARK: - Texture rendering
 
@@ -69,6 +73,24 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             guard let self, !self.firstFrameRendered else { return }
             self.firstFrameRendered = true
             self.sendStateUpdate()
+        }
+        // Recovery for compositor dead zones: if copyPixelBuffer returns
+        // nil for the full 600 ms force window, the seek landed on a time
+        // with no renderable frame (e.g. exact millisecond boundary between
+        // two composition segments). Retry with a small tolerance so
+        // AVFoundation picks the nearest actual decodable frame.
+        output.onSeekStuck = { [weak self] stuckTime in
+            guard let self else { return }
+            self.player?.seek(
+                to: stuckTime,
+                toleranceBefore: CMTime(value: 1, timescale: 10),
+                toleranceAfter: CMTime(value: 1, timescale: 10)
+            ) { [weak self] _ in
+                guard let self else { return }
+                let actualTime = self.player?.currentTime() ?? stuckTime
+                self.textureOutput?.forceRefresh(for: actualTime)
+                self.safePreroll(at: actualTime)
+            }
         }
         textureOutput = output
         return output.textureId
@@ -152,6 +174,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 if let existing = self.player {
                     existing.replaceCurrentItem(with: playerItem)
                     await existing.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                    self.textureOutput?.forceRefresh(for: startTime)
                 } else {
                     let newPlayer = AVPlayer(playerItem: playerItem)
                     self.player = newPlayer
@@ -161,7 +184,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     if startPositionMs > 0 {
                         await newPlayer.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
                     }
+                    self.textureOutput?.forceRefresh(for: startTime)
                 }
+
+                // Preroll the composition output so the texture has a real
+                // frame at startTime even while the player is paused.
+                // Deferred via safePreroll — preroll throws if called
+                // before AVPlayer.status reaches .readyToPlay.
+                self.safePreroll(at: startTime)
 
                 self.observeEnd(for: self.player!.currentItem!)
                 self.currentStatus = "ready"
@@ -278,7 +308,18 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
         let time = CMTime(value: Int64(positionMs), timescale: 1000)
         player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.syncAudioOverlays()
+            guard let self else {
+                result(nil)
+                return
+            }
+            self.textureOutput?.forceRefresh(for: time)
+            self.syncAudioOverlays()
+            // Preroll primes the AVPlayer output pipeline at the new seek
+            // position. Without this, a paused player near a clip boundary
+            // will keep returning the pre-seek pixel buffer from
+            // copyPixelBuffer, leaving the texture frozen until play() is
+            // pressed. safePreroll defers if status is not yet ready.
+            self.safePreroll(at: time)
             result(nil)
         }
     }
@@ -410,6 +451,34 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         ) { [weak self] _ in
             self?.syncAudioOverlays()
             self?.sendStateUpdate()
+        }
+    }
+
+    /// Calls `AVPlayer.preroll(atRate:)` only when the player is in a
+    /// state that legally accepts it. If `player.status` is not yet
+    /// `.readyToPlay`, defers the call via a one-shot KVO. No-op when
+    /// `player.rate != 0` (preroll is only useful for paused playback).
+    private func safePreroll(at time: CMTime) {
+        guard let player = self.player else { return }
+        guard player.rate == 0 else { return }
+        if player.status == .readyToPlay {
+            player.preroll(atRate: 1.0) { [weak self] prerolled in
+                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+            }
+            return
+        }
+        pendingPrerollObservation?.invalidate()
+        pendingPrerollObservation = player.observe(
+            \.status,
+            options: [.new]
+        ) { [weak self] obsPlayer, _ in
+            guard obsPlayer.status == .readyToPlay else { return }
+            self?.pendingPrerollObservation?.invalidate()
+            self?.pendingPrerollObservation = nil
+            guard obsPlayer.rate == 0 else { return }
+            obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
+                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+            }
         }
     }
 
@@ -615,6 +684,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
         statusObservation?.invalidate()
         statusObservation = nil
+        pendingPrerollObservation?.invalidate()
+        pendingPrerollObservation = nil
         NotificationCenter.default.removeObserver(self)
         textureOutput?.dispose()
         textureOutput = nil
