@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
+import 'package:openvine/features/app/startup/startup_metrics.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 
 void main() {
@@ -283,38 +284,22 @@ void main() {
       await initFuture;
     });
 
-    test('should calculate initialization bottlenecks', () async {
-      // Create services with different durations
-      coordinator.registerService(
-        name: 'QuickService1',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 10));
+    test('should calculate initialization bottlenecks', () {
+      final startTime = DateTime.utc(2026);
+      final metrics = StartupMetrics(
+        startTime: startTime,
+        endTime: startTime.add(const Duration(milliseconds: 530)),
+        serviceTimings: const {
+          'QuickService1': Duration(milliseconds: 10),
+          'SlowService': Duration(milliseconds: 500),
+          'QuickService2': Duration(milliseconds: 20),
         },
+        detailedMetrics: const <String, ServiceMetrics>{},
+        errors: const <StartupError>[],
       );
 
-      coordinator.registerService(
-        name: 'SlowService',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-      );
-
-      coordinator.registerService(
-        name: 'QuickService2',
-        phase: StartupPhase.critical,
-        initialize: () async {
-          await Future.delayed(const Duration(milliseconds: 20));
-        },
-      );
-
-      await coordinator.initialize();
-
-      final bottlenecks = coordinator.metrics.getBottlenecks();
-      expect(bottlenecks, contains('SlowService'));
-      expect(bottlenecks, isNot(contains('QuickService1')));
-      expect(bottlenecks, isNot(contains('QuickService2')));
+      final bottlenecks = metrics.getBottlenecks();
+      expect(bottlenecks, equals(['SlowService']));
     });
   });
 }
