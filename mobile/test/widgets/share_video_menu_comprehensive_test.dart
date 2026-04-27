@@ -11,8 +11,11 @@ import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vine_clip_import_provider.dart';
 import 'package:openvine/services/bookmark_service.dart';
+import 'package:openvine/services/classic_vine_clip_import_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
@@ -28,7 +31,12 @@ class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
+class _MockClassicVineClipImportService extends Mock
+    implements ClassicVineClipImportService {}
+
 class _FakeVideoEvent extends Fake implements VideoEvent {}
+
+class _FakeDivineVideoClip extends Fake implements DivineVideoClip {}
 
 /// Fake notifier that provides test data for curatedListsStateProvider.
 ///
@@ -44,11 +52,32 @@ class _FakeCuratedListsState extends CuratedListsState {
   Future<List<CuratedList>> build() async => fakeLists;
 }
 
+VideoEvent _testVideo({
+  String id =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+  Map<String, String> rawTags = const {},
+  String? vineId,
+  String title = 'Test Video Title',
+}) {
+  return VideoEvent(
+    id: id,
+    pubkey: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+    createdAt: 1757385263,
+    content: 'Test video content',
+    timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+    videoUrl: 'https://example.com/video.mp4',
+    title: title,
+    rawTags: rawTags,
+    vineId: vineId,
+  );
+}
+
 void main() {
   late VideoEvent testVideo;
   late _MockBookmarkService mockBookmarkService;
   late _MockVideoSharingService mockVideoSharingService;
   late _MockProfileRepository mockProfileRepository;
+  late _MockClassicVineClipImportService mockClassicVineClipImportService;
 
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
@@ -65,21 +94,18 @@ void main() {
           mockProfileRepository.fetchFreshProfile(pubkey: any(named: 'pubkey')),
     ).thenAnswer((_) async => null);
 
-    testVideo = VideoEvent(
-      id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-      pubkey:
-          'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
-      createdAt: 1757385263,
-      content: 'Test video content',
-      timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
-      videoUrl: 'https://example.com/video.mp4',
-      title: 'Test Video Title',
-    );
+    testVideo = _testVideo();
 
     mockBookmarkService = _MockBookmarkService();
     mockVideoSharingService = _MockVideoSharingService();
+    mockClassicVineClipImportService = _MockClassicVineClipImportService();
     _FakeCuratedListsState.fakeLists = [];
 
+    when(
+      () => mockClassicVineClipImportService.importToLibrary(any()),
+    ).thenAnswer(
+      (_) async => ClassicVineClipImportSuccess(_FakeDivineVideoClip()),
+    );
     when(
       () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
     ).thenAnswer((_) async => true);
@@ -96,12 +122,16 @@ void main() {
     Widget buildSubject({
       bool curatedListsEnabled = true,
       bool debugToolsEnabled = true,
+      VideoEvent? video,
     }) => testProviderScope(
       additionalOverrides: [
         profileRepositoryProvider.overrideWithValue(mockProfileRepository),
         bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
+        ),
+        classicVineClipImportServiceProvider.overrideWithValue(
+          mockClassicVineClipImportService,
         ),
         curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
         isFeatureEnabledProvider(
@@ -114,7 +144,7 @@ void main() {
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: ShareActionButton(video: testVideo)),
+        home: Scaffold(body: ShareActionButton(video: video ?? testVideo)),
       ),
     );
 
@@ -176,6 +206,50 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Report'), findsOneWidget);
+    });
+
+    testWidgets('More actions row shows Add to clips for classic Vines', (
+      tester,
+    ) async {
+      final classicVideo = _testVideo(
+        rawTags: const {'platform': 'vine'},
+        vineId: 'classic-vine-id',
+      );
+
+      await tester.pumpWidget(buildSubject(video: classicVideo));
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add to clips'), findsOneWidget);
+    });
+
+    testWidgets('More actions row hides Add to clips for non-classic videos', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Add to clips'), findsNothing);
+    });
+
+    testWidgets('tapping Add to clips shows success snackbar', (tester) async {
+      final classicVideo = _testVideo(
+        rawTags: const {'platform': 'vine'},
+        vineId: 'classic-vine-id',
+      );
+
+      await tester.pumpWidget(buildSubject(video: classicVideo));
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Add to clips'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Added to clips'), findsOneWidget);
+      verify(
+        () => mockClassicVineClipImportService.importToLibrary(classicVideo),
+      ).called(1);
     });
 
     testWidgets('tapping Save shows success snackbar', (tester) async {

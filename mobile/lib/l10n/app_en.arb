@@ -1339,6 +1339,18 @@
   "shareSheetSaveToGallery": "Save to Gallery",
   "shareSheetSaveWithWatermark": "Save with Watermark",
   "shareSheetSaveVideo": "Save Video",
+  "shareSheetAddToClips": "Add to clips",
+  "@shareSheetAddToClips": {
+    "description": "Share sheet action label for importing a classic Vine into the clip library"
+  },
+  "shareSheetAddedToClips": "Added to clips",
+  "@shareSheetAddedToClips": {
+    "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
+  },
+  "shareSheetAddToClipsFailed": "Couldn't add to clips",
+  "@shareSheetAddToClipsFailed": {
+    "description": "Snackbar shown when importing a classic Vine into the clip library fails"
+  },
   "shareSheetAddToList": "Add to List",
   "shareSheetCopy": "Copy",
   "shareSheetShareVia": "Share via",

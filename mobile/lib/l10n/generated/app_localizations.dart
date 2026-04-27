@@ -4664,6 +4664,24 @@ abstract class AppLocalizations {
   /// **'Save Video'**
   String get shareSheetSaveVideo;
 
+  /// Share sheet action label for importing a classic Vine into the clip library
+  ///
+  /// In en, this message translates to:
+  /// **'Add to clips'**
+  String get shareSheetAddToClips;
+
+  /// Snackbar shown after successfully importing a classic Vine into the clip library
+  ///
+  /// In en, this message translates to:
+  /// **'Added to clips'**
+  String get shareSheetAddedToClips;
+
+  /// Snackbar shown when importing a classic Vine into the clip library fails
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t add to clips'**
+  String get shareSheetAddToClipsFailed;
+
   /// No description provided for @shareSheetAddToList.
   ///
   /// In en, this message translates to:
