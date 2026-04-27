@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_bottom.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_actions_top.dart';
@@ -12,6 +13,31 @@ class VideoRecorderClassicStack extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(
+      videoRecorderProvider.select(
+        (p) => (
+          isRecording: p.isRecording,
+          canRecord: p.canRecord,
+          isCameraInitialized: p.isCameraInitialized,
+          recorderMode: p.recorderMode,
+        ),
+      ),
+    );
+
+    final hasRemainingDuration = ref.watch(
+      clipManagerProvider.select(
+        (p) => p.remainingDuration > const Duration(milliseconds: 30),
+      ),
+    );
+
+    final notifier = ref.read(videoRecorderProvider.notifier);
+
+    final isEnabled =
+        (state.canRecord &&
+            state.isCameraInitialized &&
+            (hasRemainingDuration || !state.recorderMode.hasRecordingLimit)) ||
+        state.isRecording;
+
     return SafeArea(
       bottom: false,
       child: Column(
@@ -33,17 +59,16 @@ class VideoRecorderClassicStack extends ConsumerWidget {
                     child: Semantics(
                       button: true,
                       liveRegion: true,
-                      label:
-                          ref.watch(
-                            videoRecorderProvider.select((s) => s.isRecording),
-                          )
+                      label: state.isRecording
                           ? context.l10n.videoRecorderRecordingTapToStopLabel
                           : context.l10n.videoRecorderTapToStartLabel,
                       child: GestureDetector(
                         behavior: .opaque,
-                        onTap: ref
-                            .read(videoRecorderProvider.notifier)
-                            .toggleRecording,
+                        onTap: isEnabled ? notifier.toggleRecording : null,
+                        onLongPressStart: isEnabled
+                            ? (_) => notifier.startRecording()
+                            : null,
+                        onLongPressUp: notifier.stopRecording,
                         child: const IgnorePointer(
                           child: VideoRecorderCameraPreview(
                             enableTapToFocus: false,
