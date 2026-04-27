@@ -71,10 +71,39 @@ void main() {
         // One GestureDetector wraps the whole tap target.
         expect(find.byType(GestureDetector), findsOneWidget);
 
-        // Tap target is exactly 48x48 regardless of child content.
+        // No-caption state collapses to the 48x48 minimum.
         final size = tester.getSize(find.byType(GestureDetector));
         expect(size, equals(const Size(48, 48)));
       });
+
+      testWidgets(
+        '$GestureDetector grows past 48 without overflow when a caption renders',
+        (tester) async {
+          // Caption-rendered case: Inter's intrinsic line box pushes the
+          // column ~2 px past the 48 px Figma spec; minHeight: 48 lets the
+          // column grow instead of overflowing. Width stays clamped to 48.
+          await tester.pumpWidget(buildSubject(count: 14));
+
+          expect(tester.takeException(), isNull);
+
+          final size = tester.getSize(find.byType(GestureDetector));
+          expect(size.width, equals(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        },
+      );
+
+      testWidgets(
+        '$GestureDetector grows past 48 without overflow when [labelWhenZero] renders',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(labelWhenZero: 'Like'));
+
+          expect(tester.takeException(), isNull);
+
+          final size = tester.getSize(find.byType(GestureDetector));
+          expect(size.width, equals(48));
+          expect(size.height, greaterThanOrEqualTo(48));
+        },
+      );
     });
 
     group('count display', () {
