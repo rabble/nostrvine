@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -27,7 +29,7 @@ void main() {
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     });
 
-    Widget buildSubject() {
+    Widget buildSubject({bool advancedRelaySettingsEnabled = false}) {
       return ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
@@ -36,6 +38,9 @@ void main() {
             (ref) => AuthState.authenticated,
           ),
           isDeveloperModeEnabledProvider.overrideWithValue(false),
+          isFeatureEnabledProvider(
+            FeatureFlag.advancedRelaySettings,
+          ).overrideWith((ref) => advancedRelaySettingsEnabled),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -57,6 +62,24 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(FeatureFlagScreen), findsOneWidget);
+    });
+
+    testWidgets('hides Relays and Relay Diagnostics tiles when '
+        'advancedRelaySettings flag is off', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Relays'), findsNothing);
+      expect(find.text('Relay Diagnostics'), findsNothing);
+    });
+
+    testWidgets('shows Relays and Relay Diagnostics tiles when '
+        'advancedRelaySettings flag is on', (tester) async {
+      await tester.pumpWidget(buildSubject(advancedRelaySettingsEnabled: true));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Relays'), findsOneWidget);
+      expect(find.text('Relay Diagnostics'), findsOneWidget);
     });
   });
 }
