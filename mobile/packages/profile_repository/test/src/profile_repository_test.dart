@@ -3,6 +3,7 @@ import 'dart:convert';
 
 // Hide Drift table class to avoid collision with ProfileStats domain model.
 import 'package:db_client/db_client.dart' hide Filter, ProfileStats;
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
@@ -3290,6 +3291,56 @@ void main() {
           ),
         );
       });
+
+      test('returns UsernameClaimError when the POST exceeds the timeout', () {
+        fakeAsync((async) {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) async {
+            // Simulates an unresponsive name server: never resolves within
+            // the repository's _nameServerHttpTimeout (10s).
+            await Future<void>.delayed(const Duration(minutes: 5));
+            return Response('unused', 200);
+          });
+
+          UsernameClaimResult? result;
+          unawaited(
+            profileRepository
+                .claimUsername(username: 'username')
+                .then((r) => result = r),
+          );
+
+          // Below the 10s repository timeout — call still pending.
+          async
+            ..elapse(const Duration(seconds: 9))
+            ..flushMicrotasks();
+          expect(result, isNull);
+
+          // Crosses the 10s repository timeout.
+          async
+            ..elapse(const Duration(seconds: 2))
+            ..flushMicrotasks();
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              contains('TimeoutException'),
+            ),
+          );
+        });
+      });
     });
 
     group('UsernameClaimResult', () {
@@ -3686,6 +3737,50 @@ void main() {
 
         expect(result, equals(const UsernameTaken()));
       });
+
+      test(
+        'returns UsernameCheckError when the GET exceeds the timeout',
+        () {
+          fakeAsync((async) {
+            when(
+              () => mockHttpClient.get(
+                Uri.parse(
+                  'https://names.divine.video/api/username/check/testuser',
+                ),
+              ),
+            ).thenAnswer((_) async {
+              // Simulates an unresponsive name server: never resolves within
+              // the repository's _nameServerHttpTimeout (10s).
+              await Future<void>.delayed(const Duration(minutes: 5));
+              return Response('unused', 200);
+            });
+
+            UsernameAvailabilityResult? result;
+            unawaited(
+              profileRepository
+                  .checkUsernameAvailability(username: 'testuser')
+                  .then((r) => result = r),
+            );
+
+            async
+              ..elapse(const Duration(seconds: 9))
+              ..flushMicrotasks();
+            expect(result, isNull);
+
+            async
+              ..elapse(const Duration(seconds: 2))
+              ..flushMicrotasks();
+            expect(
+              result,
+              isA<UsernameCheckError>().having(
+                (e) => e.message,
+                'message',
+                contains('TimeoutException'),
+              ),
+            );
+          });
+        },
+      );
     });
 
     group('UsernameAvailabilityResult', () {

@@ -21,6 +21,11 @@ const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
+// Caps name-server HTTP calls so a slow or unreachable endpoint surfaces a
+// fast UsernameClaimError / UsernameCheckError instead of waiting on the
+// platform's TCP timeout (~20s on Android).
+const _nameServerHttpTimeout = Duration(seconds: 10);
+
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
@@ -549,14 +554,16 @@ class ProfileRepository {
 
     final Response response;
     try {
-      response = await _httpClient.post(
-        Uri.parse(_usernameClaimUrl),
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        },
-        body: payload,
-      );
+      response = await _httpClient
+          .post(
+            Uri.parse(_usernameClaimUrl),
+            headers: {
+              'Authorization': authHeader,
+              'Content-Type': 'application/json',
+            },
+            body: payload,
+          )
+          .timeout(_nameServerHttpTimeout);
 
       // Parse server error message if available
       String? serverError;
@@ -625,9 +632,9 @@ class ProfileRepository {
     // Server-side check using the name-server API which validates format
     // and checks availability in one call.
     try {
-      final response = await _httpClient.get(
-        Uri.parse('$_usernameCheckUrl/$normalizedUsername'),
-      );
+      final response = await _httpClient
+          .get(Uri.parse('$_usernameCheckUrl/$normalizedUsername'))
+          .timeout(_nameServerHttpTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -639,9 +646,9 @@ class ProfileRepository {
           // Also check keycast (login.divine.video) — username must be
           // available on both the name server and the login server.
           try {
-            final keycastResponse = await _httpClient.get(
-              Uri.parse('$_keycastNip05Url?name=$normalizedUsername'),
-            );
+            final keycastResponse = await _httpClient
+                .get(Uri.parse('$_keycastNip05Url?name=$normalizedUsername'))
+                .timeout(_nameServerHttpTimeout);
             if (keycastResponse.statusCode == 200) {
               final keycastData =
                   jsonDecode(keycastResponse.body) as Map<String, dynamic>;
