@@ -3939,6 +3939,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alege un motiv pentru raportarea acestui conținut';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
   String get reportReasonSpam => 'Spam sau conținut nedorit';
 
   @override

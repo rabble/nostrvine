@@ -3657,6 +3657,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportSelectReason => '이 콘텐츠를 신고하는 이유를 선택해 주세요';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
 
   @override

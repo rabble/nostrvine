@@ -135,6 +135,16 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       );
       return;
     }
+    if (_selectedReason == ContentFilterReason.other &&
+        _detailsController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.reportOtherRequiresDetails),
+          backgroundColor: VineTheme.error,
+        ),
+      );
+      return;
+    }
     _submitReport();
   }
 

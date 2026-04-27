@@ -3933,6 +3933,10 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reportSelectReason => 'Wybierz powód zgłoszenia tej treści';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
   String get reportReasonSpam => 'Spam lub niechciana treść';
 
   @override

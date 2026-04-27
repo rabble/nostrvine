@@ -3822,6 +3822,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj en anledning för att rapportera det här innehållet';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
   String get reportReasonSpam => 'Skräppost eller ovälkommet innehåll';
 
   @override

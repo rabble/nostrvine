@@ -3813,6 +3813,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Lütfen bu içeriği bildirmek için bir sebep seç';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';
 
   @override

@@ -181,6 +181,31 @@ void main() {
       },
     );
 
+    testWidgets(
+      'Submit button shows error when Other selected without details',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // Select "Other"
+        await tester.tap(find.text('Other Policy Violation'));
+        await tester.pumpAndSettle();
+
+        // Tap Report without entering details
+        final reportButton = find.widgetWithText(TextButton, 'Report');
+        await tester.tap(reportButton);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Please describe the issue when selecting Other'),
+          findsOneWidget,
+          reason: 'Should require details when Other is selected',
+        );
+      },
+    );
+
     testWidgets('Block user checkbox is visible and can be toggled', (
       tester,
     ) async {
