@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -292,8 +293,17 @@ class _TimelineOutsideAreaPainter extends CustomPainter {
     canvas.clipRect(Offset.zero & size);
     canvas.transform(_stripeTransformStorage);
 
-    final drawHeight = (size.height * 3).ceilToDouble();
-    final drawWidth = (size.width * 3).ceilToDouble();
+    // After rotation the visible rect's bounding box in rotated coords is
+    // bounded by its diagonal, regardless of which side is longer. Use the
+    // diagonal for both extents so stripes fully cover the rect even when
+    // the widget becomes very narrow (zoom-in) or very tall.
+    final diagonal = math
+        .sqrt(
+          size.width * size.width + size.height * size.height,
+        )
+        .ceilToDouble();
+    final drawHeight = diagonal;
+    final drawWidth = diagonal;
     final startX = -drawWidth - ((-drawWidth) % _stripeGap);
     for (var x = startX; x <= drawWidth; x += _stripeGap) {
       canvas.drawLine(
