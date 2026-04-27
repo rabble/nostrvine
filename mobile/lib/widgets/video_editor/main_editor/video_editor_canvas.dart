@@ -280,11 +280,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       while (_pendingSeekPosition != null && mounted) {
         final pending = _pendingSeekPosition!;
         _pendingSeekPosition = null;
-        await _videoPlayer?.seekTo(pending);
         if (_seekEpoch != epoch) {
           _pendingSeekPosition = null;
           break;
         }
+        await _videoPlayer?.seekTo(pending);
       }
     } finally {
       // Only reset under the current epoch; a composition swap takes over ownership.
@@ -929,7 +929,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             }
             return false;
           },
-          listener: (context, state) {
+          listener: (context, state) async {
             // See note on the trim-times listener above: skip empty
             // clip lists to avoid crashing the iOS native player.
             if (state.clips.isEmpty) return;
@@ -950,32 +950,35 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             // release even if setClips throws.
             _isSeeking = true;
             final ownerEpoch = _seekEpoch;
-            unawaited(() async {
-              try {
-                await _videoPlayer?.setClips([
-                  for (final clip in state.clips)
-                    if (clip.video.file?.path case final path?)
-                      VideoClip(
-                        uri: path,
-                        start: clip.trimStart,
-                        end: clip.duration - clip.trimEnd,
-                      ),
-                ], startPosition: startPosition);
-              } catch (e, s) {
-                Log.error(
-                  'setClips failed on trim release: $e',
-                  name: 'VideoEditorCanvas',
-                  category: LogCategory.video,
-                  error: e,
-                  stackTrace: s,
-                );
-              } finally {
-                _lastReportedPosition = startPosition;
-                if (_seekEpoch == ownerEpoch) {
-                  _isSeeking = false;
-                }
+
+            try {
+              await _videoPlayer?.setClips([
+                for (final clip in state.clips)
+                  if (clip.video.file?.path case final path?)
+                    VideoClip(
+                      uri: path,
+                      start: clip.trimStart,
+                      end: clip.duration - clip.trimEnd,
+                    ),
+              ], startPosition: startPosition);
+              if (mounted) {
+                bloc.add(VideoEditorPositionChanged(startPosition));
+                _proVideoController.setPlayTime(startPosition);
               }
-            }());
+            } catch (e, s) {
+              Log.error(
+                'setClips failed on trim release: $e',
+                name: 'VideoEditorCanvas',
+                category: LogCategory.video,
+                error: e,
+                stackTrace: s,
+              );
+            } finally {
+              _lastReportedPosition = startPosition;
+              if (_seekEpoch == ownerEpoch) {
+                _isSeeking = false;
+              }
+            }
           },
         ),
         BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
