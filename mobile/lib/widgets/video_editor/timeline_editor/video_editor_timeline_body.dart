@@ -293,22 +293,17 @@ class _TimelineOutsideAreaPainter extends CustomPainter {
     canvas.clipRect(Offset.zero & size);
     canvas.transform(_stripeTransformStorage);
 
-    // After rotation the visible rect's bounding box in rotated coords is
-    // bounded by its diagonal, regardless of which side is longer. Use the
-    // diagonal for both extents so stripes fully cover the rect even when
-    // the widget becomes very narrow (zoom-in) or very tall.
-    final diagonal = math
+    // Diagonal covers the rotated bounding box for any aspect ratio.
+    final extent = math
         .sqrt(
           size.width * size.width + size.height * size.height,
         )
         .ceilToDouble();
-    final drawHeight = diagonal;
-    final drawWidth = diagonal;
-    final startX = -drawWidth - ((-drawWidth) % _stripeGap);
-    for (var x = startX; x <= drawWidth; x += _stripeGap) {
+    final startX = -extent - ((-extent) % _stripeGap);
+    for (var x = startX; x <= extent; x += _stripeGap) {
       canvas.drawLine(
-        Offset(x, -drawHeight),
-        Offset(x, drawHeight),
+        Offset(x, -extent),
+        Offset(x, extent),
         stripePaint,
       );
     }
