@@ -149,7 +149,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
-      add(const CommentVoteCountsFetchRequested());
+      if (!isClosed) {
+        add(const CommentVoteCountsFetchRequested());
+      }
     } catch (e) {
       Log.error(
         'Error loading comments: $e',
@@ -229,7 +231,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
-      add(const CommentVoteCountsFetchRequested());
+      if (!isClosed) {
+        add(const CommentVoteCountsFetchRequested());
+      }
 
       Log.info(
         'Loaded ${thread.comments.length} more comments '
@@ -978,7 +982,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         stream,
         maxPerSecond: _maxCommentsPerSecond,
         onData: (comment) {
-          add(NewCommentReceived(comment));
+          if (!isClosed) {
+            add(NewCommentReceived(comment));
+          }
         },
         onError: (Object e) {
           Log.warning(

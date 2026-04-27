@@ -16,6 +16,7 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
@@ -355,6 +356,54 @@ void main() {
 
           await streamController.close();
           await bloc.close();
+        },
+      );
+
+      test(
+        'does not log "Cannot add new events after calling close" '
+        'when bloc closes before loadComments completes',
+        () async {
+          final loadCompleter = Completer<CommentThread>();
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => loadCompleter.future);
+
+          await LogCaptureService().clearAllLogs();
+
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+
+          // Let the handler reach the await point.
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+
+          // User dismisses the comments sheet — bloc closes before
+          // loadComments resolves.
+          await bloc.close();
+
+          // Now resolve the load. The handler resumes against a closed bloc
+          // and the follow-up CommentVoteCountsFetchRequested dispatch
+          // must be guarded by isClosed.
+          loadCompleter.complete(CommentThread.empty(validId('root')));
+
+          // Yield so the resumed continuation runs.
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+
+          final hasCloseError = LogCaptureService()
+              .getRecentLogs(minLevel: LogLevel.error)
+              .any(
+                (entry) =>
+                    entry.name == 'CommentsBloc' &&
+                    entry.message.contains(
+                      'Cannot add new events after calling close',
+                    ),
+              );
+          expect(hasCloseError, isFalse);
+          expect(bloc.isClosed, isTrue);
         },
       );
     });
@@ -2968,6 +3017,56 @@ void main() {
         await streamController.close();
         await bloc.close();
       });
+
+      test(
+        'does not throw if a streamed comment arrives after close',
+        () async {
+          final streamController = StreamController<Comment>.broadcast();
+
+          when(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          await bloc.close();
+
+          // A late event from the relay arrives after the user dismissed
+          // the sheet. The throttled listener may still deliver it briefly
+          // depending on cancel timing — the bloc must drop it without
+          // throwing "Cannot add new events after calling close".
+          streamController.add(
+            Comment(
+              id: validId('late'),
+              content: 'Late comment',
+              authorPubkey: validId('lateAuthor'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+
+          expect(bloc.isClosed, isTrue);
+          await streamController.close();
+        },
+      );
 
       test('throttles comments exceeding rate limit', () async {
         final streamController = StreamController<Comment>.broadcast();
