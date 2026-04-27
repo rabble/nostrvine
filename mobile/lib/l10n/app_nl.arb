@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Hashtag opslaan",
     "hashtagFavoriteRemoveTooltip": "Verwijderen uit opgeslagen hashtags",
     "hashtagOptionsMoreTooltip": "Hashtag-opties",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 video} other{{count} video's}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Opslaan op profiel",
     "hashtagOptionRemoveFromProfile": "Verwijderen uit opgeslagen tags",
     "hashtagSavedToProfileSnackbar": "Opgeslagen op je profiel",
@@ -2512,7 +2520,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Lijsten",
-    "searchListsLoadingLabel": "Lijstresultaten laden",
+  "searchListsLoadingLabel": "Lijstresultaten laden",
+  "searchResultsCategoryAll": "Alles",
+  "searchResultsCategoryPeople": "Mensen",
+  "searchResultsCategoryLists": "Lijsten",
+  "searchResultsCategoryTags": "Tags",
+  "searchResultsCategoryVideos": "Video's",
+  "searchResultsFilterSemantic": "Filter: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "Geen resultaten voor \"{query}\"",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Probeer een andere zoekterm",
+  "searchResultsTagsLoadingSemantic": "Tagresultaten laden",
+  "hashtagFeedLoadingMessage": "Video's over #{hashtag} laden...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "Dit kan even duren",
+  "hashtagFeedEmptyTitle": "Geen video's voor #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Wees de eerste die een video met deze hashtag plaatst!",
     "searchForLists": "Zoek naar lijsten",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

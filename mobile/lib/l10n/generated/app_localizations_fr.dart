@@ -591,8 +591,8 @@ class AppLocalizationsFr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '1 video',
+      other: '$count vidéos',
+      one: '1 vidéo',
     );
     return '$_temp0';
   }
@@ -6258,52 +6258,55 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchListsLoadingLabel => 'Chargement des résultats de listes';
 
   @override
-  String get searchResultsCategoryAll => 'All';
+  String get searchResultsCategoryAll => 'Tout';
 
   @override
-  String get searchResultsCategoryPeople => 'People';
+  String get searchResultsCategoryPeople => 'Personnes';
 
   @override
-  String get searchResultsCategoryLists => 'Lists';
+  String get searchResultsCategoryLists => 'Listes';
 
   @override
   String get searchResultsCategoryTags => 'Tags';
 
   @override
-  String get searchResultsCategoryVideos => 'Videos';
+  String get searchResultsCategoryVideos => 'Vidéos';
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Filter: $category';
+    return 'Filtre : $category';
   }
 
   @override
   String searchResultsNoMatchesForQuery(String query) {
-    return 'No results found for \"$query\"';
+    return 'Aucun résultat pour « $query »';
   }
 
   @override
-  String get searchResultsTryDifferentTerm => 'Try a different search term';
+  String get searchResultsTryDifferentTerm =>
+      'Essayez un autre terme de recherche';
 
   @override
-  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+  String get searchResultsTagsLoadingSemantic =>
+      'Chargement des résultats de tags';
 
   @override
   String hashtagFeedLoadingMessage(String hashtag) {
-    return 'Loading videos about #$hashtag...';
+    return 'Chargement des vidéos sur #$hashtag...';
   }
 
   @override
-  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+  String get hashtagFeedLoadingSubtitle =>
+      'Cela peut prendre quelques instants';
 
   @override
   String hashtagFeedEmptyTitle(String hashtag) {
-    return 'No videos found for #$hashtag';
+    return 'Aucune vidéo pour #$hashtag';
   }
 
   @override
   String get hashtagFeedEmptySubtitle =>
-      'Be the first to post a video with this hashtag!';
+      'Soyez le premier à publier une vidéo avec ce hashtag !';
 
   @override
   String get cameraAgeRestriction =>

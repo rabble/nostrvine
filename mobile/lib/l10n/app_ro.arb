@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Salvează eticheta",
     "hashtagFavoriteRemoveTooltip": "Elimină din etichetele salvate",
     "hashtagOptionsMoreTooltip": "Opțiuni etichetă",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 videoclip} other{{count} videoclipuri}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Salvează eticheta în profil",
     "hashtagOptionRemoveFromProfile": "Elimină din etichetele salvate",
     "hashtagSavedToProfileSnackbar": "Salvat în profil",
@@ -2512,7 +2520,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Liste",
-    "searchListsLoadingLabel": "Se încarcă rezultatele listelor",
+  "searchListsLoadingLabel": "Se încarcă rezultatele listelor",
+  "searchResultsCategoryAll": "Tot",
+  "searchResultsCategoryPeople": "Persoane",
+  "searchResultsCategoryLists": "Liste",
+  "searchResultsCategoryTags": "Etichete",
+  "searchResultsCategoryVideos": "Videoclipuri",
+  "searchResultsFilterSemantic": "Filtru: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "Niciun rezultat pentru „{query}”",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Încearcă un alt termen de căutare",
+  "searchResultsTagsLoadingSemantic": "Se încarcă rezultatele pentru etichete",
+  "hashtagFeedLoadingMessage": "Se încarcă videoclipuri despre #{hashtag}...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "Poate dura câteva momente",
+  "hashtagFeedEmptyTitle": "Niciun videoclip pentru #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Fii primul care publică un videoclip cu acest hashtag!",
     "searchForLists": "Caută liste",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

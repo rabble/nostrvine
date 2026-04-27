@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Etiketi kaydet",
     "hashtagFavoriteRemoveTooltip": "Kayıtlı etiketlerden kaldır",
     "hashtagOptionsMoreTooltip": "Hashtag seçenekleri",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 video} other{{count} video}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Profile kaydet",
     "hashtagOptionRemoveFromProfile": "Kayıtlı etiketlerden kaldır",
     "hashtagSavedToProfileSnackbar": "Profiline kaydedildi",
@@ -2511,7 +2519,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listeler",
-    "searchListsLoadingLabel": "Liste sonuçları yükleniyor",
+  "searchListsLoadingLabel": "Liste sonuçları yükleniyor",
+  "searchResultsCategoryAll": "Tümü",
+  "searchResultsCategoryPeople": "Kişiler",
+  "searchResultsCategoryLists": "Listeler",
+  "searchResultsCategoryTags": "Etiketler",
+  "searchResultsCategoryVideos": "Videolar",
+  "searchResultsFilterSemantic": "Filtre: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "“{query}” için sonuç yok",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Farklı bir arama terimi dene",
+  "searchResultsTagsLoadingSemantic": "Etiket sonuçları yükleniyor",
+  "hashtagFeedLoadingMessage": "#{hashtag} hakkındaki videolar yükleniyor...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "Bu birkaç saniye sürebilir",
+  "hashtagFeedEmptyTitle": "#{hashtag} için video yok",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Bu etiketle ilk videoyu sen paylaş!",
     "searchForLists": "Liste ara",
     "commentReplyToPrefix": "Yan:",
     "commentHideKeyboard": "Hide keyboard",

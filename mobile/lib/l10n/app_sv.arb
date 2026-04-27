@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Spara hashtag",
     "hashtagFavoriteRemoveTooltip": "Ta bort från sparade hashtags",
     "hashtagOptionsMoreTooltip": "Hashtag-alternativ",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 video} other{{count} videor}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Spara på profilen",
     "hashtagOptionRemoveFromProfile": "Ta bort från sparade taggar",
     "hashtagSavedToProfileSnackbar": "Sparat på din profil",
@@ -2512,7 +2520,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listor",
-    "searchListsLoadingLabel": "Laddar listresultat",
+  "searchListsLoadingLabel": "Laddar listresultat",
+  "searchResultsCategoryAll": "Allt",
+  "searchResultsCategoryPeople": "Personer",
+  "searchResultsCategoryLists": "Listor",
+  "searchResultsCategoryTags": "Taggar",
+  "searchResultsCategoryVideos": "Videor",
+  "searchResultsFilterSemantic": "Filter: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "Inga resultat för \"{query}\"",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Prova ett annat sökord",
+  "searchResultsTagsLoadingSemantic": "Laddar tagresultat",
+  "hashtagFeedLoadingMessage": "Laddar videor om #{hashtag}...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "Det kan ta några ögonblick",
+  "hashtagFeedEmptyTitle": "Inga videor för #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Bli den första som publicerar en video med den här hashtagen!",
     "searchForLists": "Sök efter listor",
     "commentReplyToPrefix": "Sv:",
     "commentHideKeyboard": "Hide keyboard",

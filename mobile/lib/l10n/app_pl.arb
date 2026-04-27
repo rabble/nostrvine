@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Zapisz hashtag",
     "hashtagFavoriteRemoveTooltip": "Usuń z zapisanych hashtagów",
     "hashtagOptionsMoreTooltip": "Opcje hashtagu",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 film} other{{count} filmów}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Zapisz w profilu",
     "hashtagOptionRemoveFromProfile": "Usuń z zapisanych tagów",
     "hashtagSavedToProfileSnackbar": "Zapisane w profilu",
@@ -2512,7 +2520,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listy",
-    "searchListsLoadingLabel": "Ładowanie wyników list",
+  "searchListsLoadingLabel": "Ładowanie wyników list",
+  "searchResultsCategoryAll": "Wszystko",
+  "searchResultsCategoryPeople": "Ludzie",
+  "searchResultsCategoryLists": "Listy",
+  "searchResultsCategoryTags": "Tagi",
+  "searchResultsCategoryVideos": "Filmy",
+  "searchResultsFilterSemantic": "Filtr: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "Brak wyników dla „{query}”",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Spróbuj innego wyszukiwania",
+  "searchResultsTagsLoadingSemantic": "Ładowanie wyników tagów",
+  "hashtagFeedLoadingMessage": "Ładowanie filmów o #{hashtag}...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "To może chwilę potrwać",
+  "hashtagFeedEmptyTitle": "Brak filmów dla #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Bądź pierwszy i opublikuj film z tym hashtagiem!",
     "searchForLists": "Szukaj list",
     "commentReplyToPrefix": "Odp.:",
     "commentHideKeyboard": "Hide keyboard",

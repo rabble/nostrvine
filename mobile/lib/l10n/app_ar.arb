@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "حفظ الوسم",
     "hashtagFavoriteRemoveTooltip": "إزالة من الوسوم المحفوظة",
     "hashtagOptionsMoreTooltip": "خيارات الوسم",
+    "hashtagMenuVideoCount": "{count, plural, =1{فيديو واحد} other{{count} فيديوهات}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "حفظ في الملف الشخصي",
     "hashtagOptionRemoveFromProfile": "إزالة من الوسوم المحفوظة",
     "hashtagSavedToProfileSnackbar": "تم الحفظ في ملفك الشخصي",
@@ -2504,7 +2512,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "القوائم",
-    "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
+  "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
+  "searchResultsCategoryAll": "الكل",
+  "searchResultsCategoryPeople": "الأشخاص",
+  "searchResultsCategoryLists": "القوائم",
+  "searchResultsCategoryTags": "الوسوم",
+  "searchResultsCategoryVideos": "الفيديوهات",
+  "searchResultsFilterSemantic": "تصفية: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "لا توجد نتائج لـ «{query}»",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "جرّب عبارة بحث أخرى",
+  "searchResultsTagsLoadingSemantic": "جارٍ تحميل نتائج الوسوم",
+  "hashtagFeedLoadingMessage": "جارٍ تحميل فيديوهات عن #{hashtag}...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "قد يستغرق هذا لحظات",
+  "hashtagFeedEmptyTitle": "لا توجد فيديوهات لـ #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "كن أول من ينشر فيديو بهذا الوسم!",
     "searchForLists": "البحث عن قوائم",
     "commentReplyToPrefix": "رد:",
     "commentHideKeyboard": "Hide keyboard",

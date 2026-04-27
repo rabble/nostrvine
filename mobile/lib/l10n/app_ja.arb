@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "ハッシュタグを保存",
     "hashtagFavoriteRemoveTooltip": "保存済みから削除",
     "hashtagOptionsMoreTooltip": "ハッシュタグのオプション",
+    "hashtagMenuVideoCount": "{count, plural, =1{1本の動画} other{{count}本の動画}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "プロフィールに保存",
     "hashtagOptionRemoveFromProfile": "保存済みタグから削除",
     "hashtagSavedToProfileSnackbar": "プロフィールに保存しました",
@@ -2504,7 +2512,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "リスト",
-    "searchListsLoadingLabel": "リスト結果を読み込み中",
+  "searchListsLoadingLabel": "リスト結果を読み込み中",
+  "searchResultsCategoryAll": "すべて",
+  "searchResultsCategoryPeople": "ユーザー",
+  "searchResultsCategoryLists": "リスト",
+  "searchResultsCategoryTags": "タグ",
+  "searchResultsCategoryVideos": "動画",
+  "searchResultsFilterSemantic": "フィルター: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "「{query}」の結果はありません",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "別のキーワードを試してください",
+  "searchResultsTagsLoadingSemantic": "タグの結果を読み込み中",
+  "hashtagFeedLoadingMessage": "#{hashtag}の動画を読み込み中…",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "しばらくかかることがあります",
+  "hashtagFeedEmptyTitle": "#{hashtag}の動画はありません",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "このハッシュタグで最初の動画を投稿しよう！",
     "searchForLists": "リストを検索",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

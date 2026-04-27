@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Salvar hashtag",
     "hashtagFavoriteRemoveTooltip": "Remover das hashtags salvas",
     "hashtagOptionsMoreTooltip": "Opções da hashtag",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 vídeo} other{{count} vídeos}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Salvar no perfil",
     "hashtagOptionRemoveFromProfile": "Remover das tags salvas",
     "hashtagSavedToProfileSnackbar": "Salvo no seu perfil",
@@ -2512,7 +2520,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listas",
-    "searchListsLoadingLabel": "Carregando resultados de listas",
+  "searchListsLoadingLabel": "Carregando resultados de listas",
+  "searchResultsCategoryAll": "Tudo",
+  "searchResultsCategoryPeople": "Pessoas",
+  "searchResultsCategoryLists": "Listas",
+  "searchResultsCategoryTags": "Tags",
+  "searchResultsCategoryVideos": "Vídeos",
+  "searchResultsFilterSemantic": "Filtro: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "Nenhum resultado para \"{query}\"",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Tente outro termo de busca",
+  "searchResultsTagsLoadingSemantic": "Carregando resultados de tags",
+  "hashtagFeedLoadingMessage": "Carregando vídeos sobre #{hashtag}...",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "Isso pode levar alguns instantes",
+  "hashtagFeedEmptyTitle": "Nenhum vídeo para #{hashtag}",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Seja o primeiro a publicar um vídeo com esta hashtag!",
     "searchForLists": "Buscar listas",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

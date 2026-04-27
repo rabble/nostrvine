@@ -271,6 +271,14 @@
     "hashtagFavoriteSaveTooltip": "Hashtag speichern",
     "hashtagFavoriteRemoveTooltip": "Aus gespeicherten Hashtags entfernen",
     "hashtagOptionsMoreTooltip": "Hashtag-Optionen",
+    "hashtagMenuVideoCount": "{count, plural, =1{1 Video} other{{count} Videos}}",
+    "@hashtagMenuVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "hashtagOptionSaveToProfile": "Im Profil speichern",
     "hashtagOptionRemoveFromProfile": "Aus gespeicherten Tags entfernen",
     "hashtagSavedToProfileSnackbar": "In deinem Profil gespeichert",
@@ -2512,7 +2520,48 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listen",
-    "searchListsLoadingLabel": "Listenergebnisse werden geladen",
+  "searchListsLoadingLabel": "Listenergebnisse werden geladen",
+  "searchResultsCategoryAll": "Alle",
+  "searchResultsCategoryPeople": "Personen",
+  "searchResultsCategoryLists": "Listen",
+  "searchResultsCategoryTags": "Tags",
+  "searchResultsCategoryVideos": "Videos",
+  "searchResultsFilterSemantic": "Filter: {category}",
+  "@searchResultsFilterSemantic": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsNoMatchesForQuery": "Keine Ergebnisse für „{query}“",
+  "@searchResultsNoMatchesForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "searchResultsTryDifferentTerm": "Probiere einen anderen Suchbegriff",
+  "searchResultsTagsLoadingSemantic": "Tag-Ergebnisse werden geladen",
+  "hashtagFeedLoadingMessage": "Videos zu #{hashtag} werden geladen…",
+  "@hashtagFeedLoadingMessage": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedLoadingSubtitle": "Das kann einen Moment dauern",
+  "hashtagFeedEmptyTitle": "Keine Videos zu #{hashtag} gefunden",
+  "@hashtagFeedEmptyTitle": {
+    "placeholders": {
+      "hashtag": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagFeedEmptySubtitle": "Sei der Erste, der ein Video mit diesem Hashtag postet!",
     "searchForLists": "Nach Listen suchen",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

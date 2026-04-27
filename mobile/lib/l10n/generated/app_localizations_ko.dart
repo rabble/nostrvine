@@ -533,8 +533,8 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '1 video',
+      other: '동영상 $count개',
+      one: '동영상 1개',
     );
     return '$_temp0';
   }
@@ -5933,52 +5933,51 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchListsLoadingLabel => '목록 결과 불러오는 중';
 
   @override
-  String get searchResultsCategoryAll => 'All';
+  String get searchResultsCategoryAll => '전체';
 
   @override
-  String get searchResultsCategoryPeople => 'People';
+  String get searchResultsCategoryPeople => '사람';
 
   @override
-  String get searchResultsCategoryLists => 'Lists';
+  String get searchResultsCategoryLists => '리스트';
 
   @override
-  String get searchResultsCategoryTags => 'Tags';
+  String get searchResultsCategoryTags => '태그';
 
   @override
-  String get searchResultsCategoryVideos => 'Videos';
+  String get searchResultsCategoryVideos => '동영상';
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Filter: $category';
+    return '필터: $category';
   }
 
   @override
   String searchResultsNoMatchesForQuery(String query) {
-    return 'No results found for \"$query\"';
+    return '‘$query’에 대한 결과가 없어요';
   }
 
   @override
-  String get searchResultsTryDifferentTerm => 'Try a different search term';
+  String get searchResultsTryDifferentTerm => '다른 검색어를 써 보세요';
 
   @override
-  String get searchResultsTagsLoadingSemantic => 'Loading tag results';
+  String get searchResultsTagsLoadingSemantic => '태그 결과 불러오는 중';
 
   @override
   String hashtagFeedLoadingMessage(String hashtag) {
-    return 'Loading videos about #$hashtag...';
+    return '#$hashtag 동영상 불러오는 중…';
   }
 
   @override
-  String get hashtagFeedLoadingSubtitle => 'This may take a few moments';
+  String get hashtagFeedLoadingSubtitle => '잠시만 기다려 주세요';
 
   @override
   String hashtagFeedEmptyTitle(String hashtag) {
-    return 'No videos found for #$hashtag';
+    return '#$hashtag 동영상이 없어요';
   }
 
   @override
-  String get hashtagFeedEmptySubtitle =>
-      'Be the first to post a video with this hashtag!';
+  String get hashtagFeedEmptySubtitle => '이 해시태그로 올리는 첫 동영상이 되어 보세요!';
 
   @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
