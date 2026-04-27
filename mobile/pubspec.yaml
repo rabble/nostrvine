@@ -61,6 +61,7 @@ workspace:
   - packages/reposts_repository
   - packages/sound_service
   - packages/sounds_repository
+  - packages/text_sanitizer
   - packages/time_formatter
   - packages/tv_static_effect
   - packages/unified_logger

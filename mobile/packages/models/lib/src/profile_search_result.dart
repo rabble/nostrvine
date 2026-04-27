@@ -3,6 +3,7 @@
 
 import 'package:meta/meta.dart';
 import 'package:models/src/user_profile.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Profile result from Funnelcake search API.
 ///
@@ -144,7 +145,7 @@ class ProfileSearchResult {
   final int? videoCount;
 
   /// Get the best display name available.
-  String get bestDisplayName => displayName ?? name ?? pubkey;
+  String get bestDisplayName => stripZalgo(displayName ?? name ?? pubkey);
 
   /// Converts this [ProfileSearchResult] to a [UserProfile] for app use.
   ///
