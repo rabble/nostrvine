@@ -10,6 +10,7 @@ import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 part 'video_event.g.dart';
 
@@ -821,6 +822,12 @@ class VideoEvent {
   /// For addressable events (Kind 34236), returns the vineId (d tag).
   /// Falls back to event id for non-addressable events.
   String get stableId => vineId ?? id;
+
+  /// Zalgo-safe video content for display.
+  String get displayContent => stripZalgo(content);
+
+  /// Zalgo-safe video title for display. Returns `null` when no title is set.
+  String? get displayTitle => title != null ? stripZalgo(title!) : null;
 
   /// Total likes combining original Vine likes and live Nostr reactions.
   int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);

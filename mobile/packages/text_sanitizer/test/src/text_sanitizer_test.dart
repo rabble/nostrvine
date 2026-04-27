@@ -56,7 +56,7 @@ void main() {
 
     test('handles multi-character string with mixed content', () {
       // 'é' NFC + zalgo 'S' + plain 'i'
-      final input = '\u00E9S\u0300\u0301\u0302i';
+      const input = '\u00E9S\u0300\u0301\u0302i';
       expect(stripZalgo(input), equals('\u00E9S\u0300\u0301i'));
     });
   });
