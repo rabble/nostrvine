@@ -226,7 +226,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
           // not on every parent setState (drag start / end only).
           ValueListenableBuilder<_DragPos>(
             valueListenable: _dragPosition,
-            builder: (context, _, __) {
+            builder: (context, _, _) {
               final y = _dropIndicatorLineY();
               if (y == null) return const SizedBox.shrink();
               return TimelineDropIndicatorLine(lineY: y);
