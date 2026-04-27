@@ -309,6 +309,25 @@ void main() {
 
         expect(result.bestDisplayName, equals(testPubkey));
       });
+
+      test('strips zalgo combining marks from displayName', () {
+        const result = ProfileSearchResult(
+          pubkey: testPubkey,
+          displayName: 'A\u0300\u0301\u0302\u0303\u0304',
+          name: 'username',
+        );
+
+        expect(result.bestDisplayName, equals('A\u0300\u0301'));
+      });
+
+      test('strips zalgo combining marks from name fallback', () {
+        const result = ProfileSearchResult(
+          pubkey: testPubkey,
+          name: 'B\u0300\u0301\u0302\u0303',
+        );
+
+        expect(result.bestDisplayName, equals('B\u0300\u0301'));
+      });
     });
 
     group('toUserProfile', () {
