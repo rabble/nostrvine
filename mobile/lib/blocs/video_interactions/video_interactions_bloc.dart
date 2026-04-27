@@ -121,6 +121,17 @@ class VideoInteractionsBloc
     if (state.status == VideoInteractionsStatus.success) return;
     if (state.status == VideoInteractionsStatus.loading) return;
 
+    // Snapshot the interactive fields. Fetch and toggle handlers run
+    // concurrently (default transformer). If a tap lands while we await
+    // the relay round-trips below, state.* drifts from the snapshot and
+    // the fetched values are stale relative to the user's intent — pass
+    // null to copyWith for any drifted field so the optimistic flip
+    // survives.
+    final preFetchIsLiked = state.isLiked;
+    final preFetchLikeCount = state.likeCount;
+    final preFetchIsReposted = state.isReposted;
+    final preFetchRepostCount = state.repostCount;
+
     emit(state.copyWith(status: VideoInteractionsStatus.loading));
 
     try {
@@ -163,10 +174,14 @@ class VideoInteractionsBloc
       emit(
         state.copyWith(
           status: VideoInteractionsStatus.success,
-          isLiked: isLiked,
-          likeCount: likeCount,
-          isReposted: isReposted,
-          repostCount: repostCount,
+          isLiked: state.isLiked == preFetchIsLiked ? isLiked : null,
+          likeCount: state.likeCount == preFetchLikeCount ? likeCount : null,
+          isReposted: state.isReposted == preFetchIsReposted
+              ? isReposted
+              : null,
+          repostCount: state.repostCount == preFetchRepostCount
+              ? repostCount
+              : null,
           commentCount: commentCount,
           clearError: true,
         ),

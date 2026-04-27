@@ -345,6 +345,69 @@ void main() {
           verifyNever(() => mockLikesRepository.isLiked(any()));
         },
       );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'preserves optimistic toggle when tap lands mid-fetch',
+        setUp: () {
+          // Pre-fetch repository state: not liked, count from initial seed.
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          // Hold the fetch open via a slow comment count so the tap can
+          // land between the loading emit and the success emit. Without
+          // the pre-fetch snapshot guard in [_onFetchRequested], the
+          // success emit overwrites isLiked + likeCount with stale relay
+          // values and the heart bounces back off.
+          when(
+            () => mockCommentsRepository.getCommentsCount(testEventId),
+          ).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(milliseconds: 30));
+            return 0;
+          });
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenAnswer((_) async => true);
+        },
+        build: () => createBloc(initialLikeCount: 10),
+        act: (bloc) async {
+          bloc.add(const VideoInteractionsFetchRequested());
+          // Let the fetch handler reach its first await on isLiked +
+          // schedule the slow comments query, but not finish.
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          bloc.add(const VideoInteractionsLikeToggled());
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          // Fetch enters loading. Seeded likeCount=10 carries through.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 10,
+          ),
+          // Tap lands while fetch awaits relay round-trips.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            isLiked: true,
+            likeCount: 11,
+          ),
+          // Fetch resolves: isLiked + likeCount drifted from the
+          // pre-fetch baseline (false, 10) to the optimistic values
+          // (true, 11), so the success emit MUST preserve them and only
+          // apply the untouched commentCount + repostCount.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+            repostCount: 0,
+            commentCount: 0,
+          ),
+        ],
+      );
     });
 
     group('VideoInteractionsLikeToggled', () {
