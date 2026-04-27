@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -3066,6 +3067,49 @@ void main() {
           await streamController.close();
         },
       );
+
+      test('cancels throttle refill timer when bloc.close() is called', () {
+        final streamController = StreamController<Comment>.broadcast();
+
+        when(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+        fakeAsync((fake) {
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+          fake.flushMicrotasks();
+
+          // The throttle's per-second refill timer should be running.
+          expect(fake.periodicTimerCount, equals(1));
+
+          // bloc.close() awaits _commentStreamSubscription.cancel() — the
+          // wrapper synchronously cancels the refill timer before delegating
+          // to the inner subscription's cancel.
+          unawaited(bloc.close());
+          fake.flushMicrotasks();
+
+          // No orphan periodic timer left behind.
+          expect(fake.periodicTimerCount, equals(0));
+
+          streamController.close();
+          fake.flushMicrotasks();
+        });
+      });
 
       test('throttles comments exceeding rate limit', () async {
         final streamController = StreamController<Comment>.broadcast();
