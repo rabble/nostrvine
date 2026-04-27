@@ -232,15 +232,8 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
               return TimelineDropIndicatorLine(lineY: y);
             },
           ),
-          // Each item always lives in a ValueListenableBuilder with a
-          // stable key — ValueKey(item.id) — so its element is never
-          // unmounted when _draggingId changes.  Unmounting would kill
-          // the active GestureRecognizer mid-gesture (first long-press
-          // gives haptic but move is swallowed).
-          //
-          // For non-dragged items the builder returns the pre-built
-          // `child` widget.  Flutter detects the identical instance and
-          // skips rebuilding that subtree on every drag-move frame.
+          // Stable ValueKey + child: keeps elements mounted across
+          // drag-state changes and reuses non-dragged subtrees.
           for (final item in sortedItems)
             ValueListenableBuilder<_DragPos>(
               key: ValueKey(item.id),

@@ -87,11 +87,14 @@ class _RulerPainter extends CustomPainter {
 
   /// Laid-out [TextPainter] instances keyed by label string.
   ///
-  /// [_labelStyle] is static and never changes, so cached painters
-  /// are valid for the lifetime of the app. This avoids creating and
-  /// laying out a new [TextPainter] for every visible label on every
-  /// scroll frame (~600–1200 allocations/sec at 60 Hz).
+  /// Safe only while [_labelStyle] is a compile-time-stable constant —
+  /// cached painters become invalid the moment the style changes.
+  /// Avoids creating and laying out a new [TextPainter] for every
+  /// visible label on every scroll frame (~600–1200 allocations/sec
+  /// at 60 Hz). Bounded to [_tpCacheMax] to cap native paragraph
+  /// memory; oldest entries are evicted and disposed.
   static final Map<String, TextPainter> _tpCache = {};
+  static const int _tpCacheMax = 256;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -130,10 +133,16 @@ class _RulerPainter extends CustomPainter {
 
       final tp = _tpCache.putIfAbsent(
         label,
-        () => TextPainter(
-          text: TextSpan(text: label, style: _labelStyle),
-          textDirection: TextDirection.ltr,
-        )..layout(),
+        () {
+          if (_tpCache.length >= _tpCacheMax) {
+            final oldestKey = _tpCache.keys.first;
+            _tpCache.remove(oldestKey)?.dispose();
+          }
+          return TextPainter(
+            text: TextSpan(text: label, style: _labelStyle),
+            textDirection: TextDirection.ltr,
+          )..layout();
+        },
       );
 
       tp.paint(canvas, Offset(x, centerY - tp.height / 2));

@@ -39,6 +39,10 @@ class TimelineSnapController {
   });
 
   final SnapEdgeDirection direction;
+
+  /// Mutable so callers can reuse a single controller across pinch-zoom
+  /// changes instead of allocating a new instance on every zoom step.
+  /// Updating mid-gesture preserves the accumulated drag state.
   double pixelsPerSecond;
 
   // ---------------------------------------------------------------------------
