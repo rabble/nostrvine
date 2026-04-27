@@ -87,7 +87,9 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                 enableInteractiveSelection: true,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: InputDecoration(
-                  labelText: l10n.reportAdditionalDetails,
+                  labelText: _selectedReason == ContentFilterReason.other
+                      ? l10n.reportDetailsRequired
+                      : l10n.reportAdditionalDetails,
                   labelStyle: const TextStyle(color: VineTheme.secondaryText),
                 ),
                 maxLines: 3,

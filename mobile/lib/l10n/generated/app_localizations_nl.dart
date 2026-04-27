@@ -3846,6 +3846,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Please describe the issue when selecting Other';
 
   @override
+  String get reportDetailsRequired => 'Please describe the issue';
+
+  @override
   String get reportReasonSpam => 'Spam of ongewenste inhoud';
 
   @override

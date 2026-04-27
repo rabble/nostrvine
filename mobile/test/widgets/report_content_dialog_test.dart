@@ -553,6 +553,36 @@ void main() {
         ),
       ).called(1);
     });
+
+    testWidgets('Other reason with details submits successfully', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select Other
+      await tester.tap(find.text('Other Policy Violation'));
+      await tester.pumpAndSettle();
+
+      // Enter details
+      await tester.enterText(find.byType(TextField), 'Custom report details');
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: ContentFilterReason.other,
+          details: 'Custom report details',
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(1);
+    });
   });
 
   group('$ReportConfirmationDialog', () {

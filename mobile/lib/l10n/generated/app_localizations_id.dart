@@ -3805,6 +3805,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Please describe the issue when selecting Other';
 
   @override
+  String get reportDetailsRequired => 'Please describe the issue';
+
+  @override
   String get reportReasonSpam => 'Spam atau Konten Tidak Diinginkan';
 
   @override

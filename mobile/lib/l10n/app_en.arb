@@ -1945,6 +1945,7 @@
   "reportSubmit": "Report",
   "reportSelectReason": "Please select a reason for reporting this content",
   "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+  "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "Spam or Unwanted Content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",
   "reportReasonViolence": "Violent or Extremist Content",
