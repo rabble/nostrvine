@@ -8,7 +8,7 @@
       "extensionBundleId": "co.openvine.app.qa01.NotificationServiceExtension",
       "appGroup": "group.co.openvine.app.qa01",
       "displayName": "Divine QA 01",
-      "firebaseAppId": "1:972941478875:ios:qa01placeholder"
+      "firebaseAppId": "1:972941478875:ios:566f61de58d9d45044b5fe"
     },
     {
       "slot": "qa02",
