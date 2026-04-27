@@ -12,8 +12,9 @@ import 'package:flutter/material.dart';
 /// 1. Mix into a [State] subclass.
 /// 2. Assign [headerKey] to the header widget's key.
 /// 3. Call [measureHeaderHeight] in `build()`.
-/// 4. Wrap the scrollable child with
-///    `NotificationListener<ScrollNotification>(onNotification: handleScrollNotification, ...)`.
+/// 4. Wrap the scrollable child with a
+///    [NotificationListener] for [ScrollNotification], passing
+///    [handleScrollNotification] as `onNotification`.
 /// 5. Use [headerOffset], [headerHeight], and [headerFullyHidden] to position
 ///    the header via [AnimatedPositioned].
 mixin ScrollToHideMixin<T extends StatefulWidget> on State<T> {
@@ -37,7 +38,7 @@ mixin ScrollToHideMixin<T extends StatefulWidget> on State<T> {
   /// Call this in `build()` to measure the header after layout.
   ///
   /// Re-runs when the header's intrinsic height changes (e.g. compact vs tall
-  /// tag UI) so the video grid [padding] and hide animation stay in sync.
+  /// tag UI) so the video grid padding and hide animation stay in sync.
   void measureHeaderHeight() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;

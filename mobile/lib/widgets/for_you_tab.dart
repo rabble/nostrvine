@@ -18,7 +18,6 @@ import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
-import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 

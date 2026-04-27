@@ -17,7 +17,6 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/linkified_text/linkified_text_widgets.dart';
-import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
