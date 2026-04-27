@@ -25,7 +25,8 @@ void main() {
     });
 
     test(
-      'seeds following feed from profile when the feed key is absent on first open',
+      'seeds following feed from profile when the feed key '
+      'is absent on first open',
       () async {
         SharedPreferences.setMockInitialValues({
           FollowedHashtagsRepository.preferencesKey: ['alpha', 'beta'],

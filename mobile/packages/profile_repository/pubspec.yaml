@@ -13,7 +13,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mocktail: ^1.0.4
-  very_good_analysis: ^10.0.0
+  very_good_analysis: ^10.2.0
 
 dependencies:
   db_client:

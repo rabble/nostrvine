@@ -1,5 +1,5 @@
 name: divine_camera
-description: "Camera plugin to record videos." 
+description: "Camera plugin to record videos."
 version: 0.0.1
 publish_to: none
 resolution: workspace
@@ -17,7 +17,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  very_good_analysis: ^10.0.0
+  very_good_analysis: ^10.2.0
 
 flutter:
   plugin:
