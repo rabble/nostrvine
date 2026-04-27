@@ -378,20 +378,16 @@ void main() {
 
           final bloc = createBloc()..add(const CommentsLoadRequested());
 
-          // Let the handler reach the await point.
-          await Future<void>.delayed(const Duration(milliseconds: 25));
+          // Drive the handler to its `await loadComments(...)` point.
+          await pumpEventQueue();
 
-          // User dismisses the comments sheet — bloc closes before
-          // loadComments resolves.
+          // User dismisses the sheet before the load resolves.
           await bloc.close();
 
-          // Now resolve the load. The handler resumes against a closed bloc
-          // and the follow-up CommentVoteCountsFetchRequested dispatch
-          // must be guarded by isClosed.
+          // The load now resolves against a closed bloc; the resumed
+          // continuation must be guarded by `if (!isClosed)`.
           loadCompleter.complete(CommentThread.empty(validId('root')));
-
-          // Yield so the resumed continuation runs.
-          await Future<void>.delayed(const Duration(milliseconds: 25));
+          await pumpEventQueue();
 
           final hasCloseError = LogCaptureService()
               .getRecentLogs(minLevel: LogLevel.error)
@@ -3043,7 +3039,10 @@ void main() {
           ).thenAnswer((_) async => CommentThread.empty(validId('root')));
 
           final bloc = createBloc()..add(const CommentsLoadRequested());
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Let _onLoadRequested run, _startWatchingComments() subscribe,
+          // and the awaited loadComments resolve.
+          await pumpEventQueue();
 
           await bloc.close();
 
@@ -3061,7 +3060,7 @@ void main() {
               rootAuthorPubkey: validId('author'),
             ),
           );
-          await Future<void>.delayed(const Duration(milliseconds: 25));
+          await pumpEventQueue();
 
           expect(bloc.isClosed, isTrue);
           await streamController.close();
