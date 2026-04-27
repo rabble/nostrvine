@@ -572,7 +572,8 @@ class MainActivity : FlutterActivity() {
                 override fun onSuccess(response: UploadResponse?) {
                     val token = response?.token
                     if (token != null) {
-                        Log.d(ZENDESK_TAG, "Uploaded $filename - token: $token")
+                        // Do not log uploadToken: short-lived Zendesk secure-download credential.
+                        Log.d(ZENDESK_TAG, "Uploaded $filename successfully")
                         tokens.add(token)
                         uploadNext(index + 1)
                     } else {

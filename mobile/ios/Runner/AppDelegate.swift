@@ -438,7 +438,8 @@ extension FlutterError: @retroactive Error {}
           return
         }
 
-        NSLog("✅ Zendesk: Uploaded \(filename) - token: \(response.uploadToken ?? "nil")")
+        // Do not log uploadToken: short-lived Zendesk secure-download credential.
+        NSLog("✅ Zendesk: Uploaded \(filename) successfully")
         responses.append(response)
         uploadNext(index: index + 1)
       }
