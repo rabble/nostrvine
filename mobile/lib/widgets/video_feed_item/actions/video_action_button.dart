@@ -10,12 +10,8 @@ import 'package:openvine/utils/string_utils.dart';
 /// Base widget for video overlay action buttons (like, comment, repost, share).
 ///
 /// Matches Figma node `15314:53971`: a 48x48 fully tappable container with a
-/// 24 icon centered over an 8 px gap and a label/small caption beneath it.
-/// The 48x48 spec is enforced as a *minimum* size — the whole region captures
-/// the tap, but the column is allowed to grow past 48 px on the main axis
-/// when caption metrics push the natural height higher (Inter's intrinsic
-/// line box edges past the strut by ~2 px) or when system text scaling is
-/// in effect, so the content never clips.
+/// 24 icon over an 8 px gap and a label/small caption. 48x48 is a *minimum* —
+/// the column may grow past it so caption text never clips.
 ///
 /// Example usage:
 /// ```dart
