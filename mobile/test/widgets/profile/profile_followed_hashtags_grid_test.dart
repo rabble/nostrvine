@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
+import 'package:openvine/blocs/profile_saved_hashtags/profile_saved_hashtags_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/profile/profile_followed_hashtags_grid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -18,14 +18,14 @@ void main() {
     await repo.addFollowedHashtag('apple');
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          followedHashtagsRepositoryProvider.overrideWithValue(repo),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ProfileFollowedHashtagsGrid()),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BlocProvider(
+            create: (_) => ProfileSavedHashtagsCubit(repository: repo),
+            child: const ProfileFollowedHashtagsGrid(),
+          ),
         ),
       ),
     );
@@ -44,14 +44,14 @@ void main() {
     final repo = FollowedHashtagsRepository(prefs: prefs);
 
     await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          followedHashtagsRepositoryProvider.overrideWithValue(repo),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ProfileFollowedHashtagsGrid()),
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: BlocProvider(
+            create: (_) => ProfileSavedHashtagsCubit(repository: repo),
+            child: const ProfileFollowedHashtagsGrid(),
+          ),
         ),
       ),
     );

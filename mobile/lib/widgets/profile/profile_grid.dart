@@ -12,6 +12,7 @@ import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.
 import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/blocs/profile_saved_hashtags/profile_saved_hashtags_cubit.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -133,6 +134,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   ProfileRepostedVideosBloc? _repostedVideosBloc;
   ProfileCollabVideosBloc? _collabVideosBloc;
   ProfileSavedVideosBloc? _savedVideosBloc;
+  ProfileSavedHashtagsCubit? _profileSavedHashtagsCubit;
   ProfileCommentsBloc? _commentsBloc;
 
   /// Track the userIdHex the BLoCs were created for.
@@ -269,6 +271,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     _repostedVideosBloc?.close();
     _collabVideosBloc?.close();
     _savedVideosBloc?.close();
+    _profileSavedHashtagsCubit?.close();
     _commentsBloc?.close();
     super.dispose();
   }
@@ -297,6 +300,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _repostedVideosBloc?.close();
       _collabVideosBloc?.close();
       _savedVideosBloc?.close();
+      _profileSavedHashtagsCubit?.close();
       _commentsBloc?.close();
 
       // Reset lazy load flags when switching profiles
@@ -331,6 +335,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           bookmarkService: ref.read(bookmarkServiceProvider.future),
           videosRepository: videosRepository,
         );
+        _profileSavedHashtagsCubit = ProfileSavedHashtagsCubit(
+          repository: ref.read(followedHashtagsRepositoryProvider),
+        );
         _collabVideosBloc = null;
       } else {
         _collabVideosBloc = ProfileCollabVideosBloc(
@@ -338,6 +345,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           targetUserPubkey: widget.userIdHex,
         );
         _savedVideosBloc = null;
+        _profileSavedHashtagsCubit = null;
       }
       // Sync deferred until user views the 4th tab
 
@@ -371,9 +379,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         BlocProvider<ProfileRepostedVideosBloc>.value(
           value: _repostedVideosBloc!,
         ),
-        if (widget.isOwnProfile)
-          BlocProvider<ProfileSavedVideosBloc>.value(value: _savedVideosBloc!)
-        else
+        if (widget.isOwnProfile) ...[
+          BlocProvider<ProfileSavedVideosBloc>.value(value: _savedVideosBloc!),
+          BlocProvider<ProfileSavedHashtagsCubit>.value(
+            value: _profileSavedHashtagsCubit!,
+          ),
+        ] else
           BlocProvider<ProfileCollabVideosBloc>.value(
             value: _collabVideosBloc!,
           ),
