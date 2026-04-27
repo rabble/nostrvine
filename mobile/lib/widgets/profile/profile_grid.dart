@@ -121,13 +121,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
-  int get _tabCount => 5;
+  static const int _tabCount = 5;
 
-  int get _repostsTabIndex => 2;
+  static const int _repostsTabIndex = 2;
 
-  int get _collabsTabIndex => 3;
+  static const int _collabsTabIndex = 3;
 
-  int get _commentsTabIndex => 4;
+  static const int _commentsTabIndex = 4;
 
   /// Direct references to BLoCs for refresh capability.
   ProfileLikedVideosBloc? _likedVideosBloc;

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/trending_hashtag.dart';
+import 'package:models/models.dart';
 
 class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 

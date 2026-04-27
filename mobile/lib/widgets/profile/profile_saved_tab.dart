@@ -30,6 +30,7 @@ class _ProfileOwnSavedTabState extends State<ProfileOwnSavedTab> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
             child: Row(
+              spacing: 8,
               children: [
                 Expanded(
                   child: _SavedFilterChip(
@@ -38,7 +39,6 @@ class _ProfileOwnSavedTabState extends State<ProfileOwnSavedTab> {
                     onSelected: () => setState(() => _index = 0),
                   ),
                 ),
-                const SizedBox(width: 8),
                 Expanded(
                   child: _SavedFilterChip(
                     label: l10n.profileSavedFilterTags,
