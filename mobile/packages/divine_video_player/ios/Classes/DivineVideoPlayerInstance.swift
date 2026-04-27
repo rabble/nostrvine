@@ -15,9 +15,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     private var timeObserver: Any?
     private var statusObservation: NSKeyValueObservation?
-    /// One-shot KVO that defers a preroll request until the AVPlayer's
-    /// own `status` becomes `.readyToPlay`. Calling `preroll(atRate:)`
-    /// before that throws `NSInvalidArgumentException`.
+    /// One-shot KVO that defers `preroll(atRate:)` until `player.status`
+    /// is `.readyToPlay`; calling earlier throws `NSInvalidArgumentException`.
     private var pendingPrerollObservation: NSKeyValueObservation?
 
     // MARK: - Texture rendering
@@ -74,11 +73,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             self.firstFrameRendered = true
             self.sendStateUpdate()
         }
-        // Recovery for compositor dead zones: if copyPixelBuffer returns
-        // nil for the full 600 ms force window, the seek landed on a time
-        // with no renderable frame (e.g. exact millisecond boundary between
-        // two composition segments). Retry with a small tolerance so
-        // AVFoundation picks the nearest actual decodable frame.
+        // Recovery for compositor dead zones: if the 600 ms force window
+        // delivers no frame, the seek landed on a time with no renderable
+        // frame (e.g. exact boundary between composition segments). Retry
+        // with a small tolerance to snap to the nearest decodable frame.
         output.onSeekStuck = { [weak self] stuckTime in
             guard let self else { return }
             self.player?.seek(
@@ -187,10 +185,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     self.textureOutput?.forceRefresh(for: startTime)
                 }
 
-                // Preroll the composition output so the texture has a real
-                // frame at startTime even while the player is paused.
-                // Deferred via safePreroll — preroll throws if called
-                // before AVPlayer.status reaches .readyToPlay.
+                // Preroll so the texture has a real frame at startTime
+                // even while paused. Deferred via safePreroll because
+                // preroll throws before status reaches .readyToPlay.
                 self.safePreroll(at: startTime)
 
                 self.observeEnd(for: self.player!.currentItem!)
@@ -314,11 +311,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             }
             self.textureOutput?.forceRefresh(for: time)
             self.syncAudioOverlays()
-            // Preroll primes the AVPlayer output pipeline at the new seek
-            // position. Without this, a paused player near a clip boundary
-            // will keep returning the pre-seek pixel buffer from
-            // copyPixelBuffer, leaving the texture frozen until play() is
-            // pressed. safePreroll defers if status is not yet ready.
+            // Preroll primes the output pipeline at the new position;
+            // without it a paused player near a clip boundary keeps
+            // returning the pre-seek buffer until play() is pressed.
             self.safePreroll(at: time)
             result(nil)
         }
@@ -454,10 +449,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
     }
 
-    /// Calls `AVPlayer.preroll(atRate:)` only when the player is in a
-    /// state that legally accepts it. If `player.status` is not yet
-    /// `.readyToPlay`, defers the call via a one-shot KVO. No-op when
-    /// `player.rate != 0` (preroll is only useful for paused playback).
+    /// Calls `AVPlayer.preroll(atRate:)` only when the player is ready;
+    /// otherwise defers via a one-shot KVO on `status`. No-op while
+    /// `player.rate != 0` (preroll is only useful when paused).
     private func safePreroll(at time: CMTime) {
         guard let player = self.player else { return }
         guard player.rate == 0 else { return }

@@ -19,33 +19,23 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     private var latestPixelBuffer: CVPixelBuffer?
     private var hasDeliveredFirstFrame = false
     private weak var player: AVPlayer?
-    /// Tracks the item the output is currently attached to so we can
-    /// remove it before attaching to a new item.
+    /// Item the output is currently attached to, so we can detach cleanly.
     private weak var attachedItem: AVPlayerItem?
-    /// The exact CMTime passed to the most recent forceRefresh call.
-    /// Used in outputMediaDataWillChange so we request the frame at the
-    /// precise seek target rather than player.currentTime(), which can
-    /// differ when a new seek is already in flight.
+    /// Exact seek target from the most recent `forceRefresh`; preferred over
+    /// `player.currentTime()` because a newer seek may already be in flight.
     private var pendingSeekTime: CMTime = .invalid
 
-    /// Deadline until which the display link bypasses `hasNewPixelBuffer`
-    /// and calls `copyPixelBuffer` directly on every tick.
-    ///
-    /// AVFoundation must decode all frames from the nearest keyframe
-    /// to the seek target before it can serve a pixel buffer. For clips
-    /// with long GOPs (up to ~2 s keyframe interval), this stall can
-    /// last 300–500 ms. During that window `hasNewPixelBuffer` stays
-    /// false, freezing the Flutter texture. A 600 ms force window covers
-    /// any realistic GOP length at both 60 Hz and 120 Hz (ProMotion).
+    /// Window during which the display link bypasses `hasNewPixelBuffer`
+    /// and tries `copyPixelBuffer` on every tick. Covers the GOP-decode
+    /// stall after an exact seek (up to ~500 ms on long-GOP clips).
     private var forceRefreshDeadline: Date = .distantPast
 
-    /// Number of display-link ticks that failed `copyPixelBuffer` inside
-    /// the current force window. Non-zero when the window expires means
-    /// the compositor is permanently stuck at this seek position.
+    /// Failed `copyPixelBuffer` ticks within the current force window.
+    /// Non-zero at expiry means the compositor is stuck at this time.
     private var forceWindowFailCount = 0
 
-    /// Called when the force window expires without delivering a frame.
-    /// Provides the stuck CMTime so the caller can retry with tolerance.
+    /// Fired when the force window expires without a frame; caller should
+    /// retry the seek with tolerance.
     var onSeekStuck: ((CMTime) -> Void)?
 
     init(
@@ -94,13 +84,9 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         startDisplayLink()
     }
 
-    /// Opens a 600 ms window after a seek during which the display link
-    /// bypasses `hasNewPixelBuffer`. Also fires a delegate notification
-    /// so the frame arrives even when the player is fully paused.
-    ///
-    /// Pass the exact seek target so outputMediaDataWillChange can use
-    /// it directly instead of player.currentTime(), which might already
-    /// reflect a newer seek.
+    /// Opens a 600 ms force window after a seek and requests a delegate
+    /// notification, so the texture updates even while paused. Pass the
+    /// exact seek target — used directly in `outputMediaDataWillChange`.
     func forceRefresh(for seekTime: CMTime) {
         pendingSeekTime = seekTime
         forceRefreshDeadline = Date(timeIntervalSinceNow: 0.6)
@@ -116,17 +102,14 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
             .requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
 
-    /// Called when the compositor has a decoded frame ready.
-    ///
-    /// Fires even when the player is fully paused — it is the most
-    /// reliable path for frames after exact seeks on a paused
-    /// `AVMutableComposition` with `AVVideoComposition`.
+    /// Fires even on a paused player — most reliable frame path after an
+    /// exact seek on an `AVMutableComposition` with `AVVideoComposition`.
     func outputMediaDataWillChange(_ sender: AVPlayerItemOutput) {
         guard let videoOutput = sender as? AVPlayerItemVideoOutput else {
             return
         }
-        // Prefer the stored seek target. Fall back to currentTime only if
-        // we have no pending seek (e.g. notification from outputSequenceWasFlushed).
+        // Prefer the stored seek target; fall back to currentTime only when
+        // there's no pending seek (e.g. notification from a flush).
         let targetTime: CMTime
         if pendingSeekTime.isValid {
             targetTime = pendingSeekTime
