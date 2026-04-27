@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
@@ -27,14 +26,14 @@ const _switchDuration = Duration(milliseconds: 240);
 /// - A main editor area that displays the video with proper aspect ratio
 /// - Overlay controls positioned on top of the video
 /// - A bottom bar for additional controls (e.g., timeline, tools)
-class VideoEditorScaffold extends ConsumerWidget {
+class VideoEditorScaffold extends StatelessWidget {
   /// Creates a [VideoEditorScaffold].
   const VideoEditorScaffold({required this.isLoading, super.key});
 
   final bool isLoading;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyle,
       child: Scaffold(
@@ -203,16 +202,17 @@ class _BottomActions extends StatelessWidget {
   }
 }
 
+/// Decides whether the FAB should be visible. Keeps the visibility check in
+/// a dedicated widget so that [_AddElementFabContent] is only rebuilt when
+/// it actually needs to render — not on every hide/show state change.
 class _AddElementFab extends StatelessWidget {
   const _AddElementFab();
 
   @override
   Widget build(BuildContext context) {
-    final (:isSubEditorOpen, :isTimelineHiddenByUser) = context.select(
-      (VideoEditorMainBloc b) => (
-        isSubEditorOpen: b.state.isSubEditorOpen,
-        isTimelineHiddenByUser: b.state.isTimelineHiddenByUser,
-      ),
+    final shouldHide = context.select(
+      (VideoEditorMainBloc b) =>
+          b.state.isSubEditorOpen || b.state.isTimelineHiddenByUser,
     );
     final hasSelectedOverlay = context.select(
       (TimelineOverlayBloc b) => b.state.selectedItemId != null,
@@ -221,13 +221,19 @@ class _AddElementFab extends StatelessWidget {
       (ClipEditorBloc b) => b.state.isEditing,
     );
 
-    if (isSubEditorOpen ||
-        hasSelectedOverlay ||
-        isClipEditing ||
-        isTimelineHiddenByUser) {
+    if (shouldHide || hasSelectedOverlay || isClipEditing) {
       return const SizedBox.shrink();
     }
 
+    return const _AddElementFabContent();
+  }
+}
+
+class _AddElementFabContent extends StatelessWidget {
+  const _AddElementFabContent();
+
+  @override
+  Widget build(BuildContext context) {
     return Semantics(
       button: true,
       label: context.l10n.videoEditorAddElementSemanticLabel,
