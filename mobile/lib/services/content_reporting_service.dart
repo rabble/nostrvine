@@ -361,6 +361,8 @@ class ContentReportingService {
         ['e', eventId, nip56Type],
         ['p', authorPubkey, nip56Type],
         ['client', 'diVine'],
+        ['L', 'social.nos.ontology'],
+        ['l', 'NS-${reason.name}', 'social.nos.ontology'],
       ];
 
       // Add hashtags as 't' tags
