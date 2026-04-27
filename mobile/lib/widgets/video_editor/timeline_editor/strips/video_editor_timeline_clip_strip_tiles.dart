@@ -379,6 +379,8 @@ class _ClipContainer extends StatelessWidget {
     final slotWidth = contentWidth < displayWidth
         ? math.max(TimelineConstants.thumbnailWidth, displayWidth / count)
         : TimelineConstants.thumbnailWidth;
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheH = (TimelineConstants.thumbnailStripHeight * dpr).round();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -387,6 +389,7 @@ class _ClipContainer extends StatelessWidget {
             width: slotWidth,
             height: TimelineConstants.thumbnailStripHeight,
             child: _ThumbnailImage(
+              cacheHeight: cacheH,
               thumbnailPath: clip.thumbnailPath,
               stripThumbnailPath: _thumbnailForSlot(i, count),
             ),
@@ -397,8 +400,13 @@ class _ClipContainer extends StatelessWidget {
 }
 
 class _ThumbnailImage extends StatelessWidget {
-  const _ThumbnailImage({required this.thumbnailPath, this.stripThumbnailPath});
+  const _ThumbnailImage({
+    required this.cacheHeight,
+    required this.thumbnailPath,
+    this.stripThumbnailPath,
+  });
 
+  final int cacheHeight;
   final String? thumbnailPath;
   final String? stripThumbnailPath;
 
@@ -408,6 +416,7 @@ class _ThumbnailImage extends StatelessWidget {
         ? Image.file(
             File(thumbnailPath!),
             fit: BoxFit.cover,
+            cacheHeight: cacheHeight,
             excludeFromSemantics: true,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.surfaceContainerHigh),
@@ -419,6 +428,7 @@ class _ThumbnailImage extends StatelessWidget {
     return Image.file(
       File(stripThumbnailPath!),
       fit: BoxFit.cover,
+      cacheHeight: cacheHeight,
       gaplessPlayback: true,
       excludeFromSemantics: true,
       errorBuilder: (_, _, _) => fallback,

@@ -10,7 +10,7 @@ import 'package:openvine/widgets/video_editor/timeline_editor/strips/video_edito
 ///
 /// Extracted into its own widget so that overlay state changes only rebuild
 /// the overlay strips — not the clip strip or ruler.
-class TimelineOverlayStrips extends StatelessWidget {
+class TimelineOverlayStrips extends StatefulWidget {
   const TimelineOverlayStrips({
     required this.totalWidth,
     required this.pixelsPerSecond,
@@ -41,19 +41,30 @@ class TimelineOverlayStrips extends StatelessWidget {
   final VoidCallback? onDragEnded;
 
   @override
-  Widget build(BuildContext context) {
-    final (:items, :selectedItemId, :collapsedTypes) = context.select(
-      (TimelineOverlayBloc b) => (
-        items: b.state.items,
-        selectedItemId: b.state.selectedItemId,
-        collapsedTypes: b.state.collapsedTypes,
-      ),
-    );
+  State<TimelineOverlayStrips> createState() => _TimelineOverlayStripsState();
+}
 
+class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
+  // -- cached inputs (change detection) ------------------------------------
+  List<TimelineOverlayItem>? _prevItems;
+  String? _prevSelectedId;
+  List<int>? _prevClipEdgesMs;
+
+  // -- cached bucket-split results -----------------------------------------
+  var _soundItems = const <TimelineOverlayItem>[];
+  var _filterItems = const <TimelineOverlayItem>[];
+  var _layerItems = const <TimelineOverlayItem>[];
+  var _soundRowCount = 0;
+  var _filterRowCount = 0;
+  var _layerRowCount = 0;
+
+  // -- cached snap-point list -----------------------------------------------
+  var _snapPointsMs = const <int>[];
+
+  void _rebuildBuckets(List<TimelineOverlayItem> items) {
     final soundItems = <TimelineOverlayItem>[];
     final filterItems = <TimelineOverlayItem>[];
     final layerItems = <TimelineOverlayItem>[];
-
     var maxSoundRow = -1;
     var maxFilterRow = -1;
     var maxLayerRow = -1;
@@ -72,36 +83,19 @@ class TimelineOverlayStrips extends StatelessWidget {
       }
     }
 
-    final soundRowCount = maxSoundRow + 1;
-    final filterRowCount = maxFilterRow + 1;
-    final layerRowCount = maxLayerRow + 1;
+    _soundItems = soundItems;
+    _filterItems = filterItems;
+    _layerItems = layerItems;
+    _soundRowCount = maxSoundRow + 1;
+    _filterRowCount = maxFilterRow + 1;
+    _layerRowCount = maxLayerRow + 1;
+  }
 
-    final stripConfigs = [
-      (
-        items: soundItems,
-        rowCount: soundRowCount,
-        type: TimelineOverlayType.sound,
-        color: VineTheme.accentVioletBackground,
-        rowHeight: TimelineConstants.soundOverlayRowHeight,
-      ),
-      (
-        items: filterItems,
-        rowCount: filterRowCount,
-        type: TimelineOverlayType.filter,
-        color: VineTheme.success,
-        rowHeight: TimelineConstants.overlayRowHeight,
-      ),
-      (
-        items: layerItems,
-        rowCount: layerRowCount,
-        type: TimelineOverlayType.layer,
-        color: VineTheme.primary,
-        rowHeight: TimelineConstants.overlayRowHeight,
-      ),
-    ];
-
-    // Build snap points from all overlay item edges + clip edges +
-    // playhead, excluding the selected item so it doesn't snap to itself.
+  void _rebuildSnapPoints(
+    List<TimelineOverlayItem> items,
+    String? selectedItemId,
+    List<int> clipEdgesMs,
+  ) {
     final snapSet = <int>{};
     for (final item in items) {
       if (item.id == selectedItemId) continue;
@@ -109,8 +103,59 @@ class TimelineOverlayStrips extends StatelessWidget {
       snapSet.add(item.endTime.inMilliseconds);
     }
     snapSet.addAll(clipEdgesMs);
-    snapSet.add(playheadPosition.value.inMilliseconds);
-    final snapPointsMs = snapSet.toList();
+    snapSet.add(widget.playheadPosition.value.inMilliseconds);
+    _snapPointsMs = snapSet.toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (:items, :selectedItemId, :collapsedTypes) = context.select(
+      (TimelineOverlayBloc b) => (
+        items: b.state.items,
+        selectedItemId: b.state.selectedItemId,
+        collapsedTypes: b.state.collapsedTypes,
+      ),
+    );
+
+    // Rebuild buckets only when the items list changes.
+    final itemsDirty = !identical(items, _prevItems);
+    if (itemsDirty) {
+      _rebuildBuckets(items);
+      _prevItems = items;
+    }
+
+    // Rebuild snap points when items, selection, or clip edges change.
+    if (itemsDirty ||
+        _prevSelectedId != selectedItemId ||
+        !identical(widget.clipEdgesMs, _prevClipEdgesMs)) {
+      _rebuildSnapPoints(items, selectedItemId, widget.clipEdgesMs);
+      _prevSelectedId = selectedItemId;
+      _prevClipEdgesMs = widget.clipEdgesMs;
+    }
+
+    final stripConfigs = [
+      (
+        items: _soundItems,
+        rowCount: _soundRowCount,
+        type: TimelineOverlayType.sound,
+        color: VineTheme.accentVioletBackground,
+        rowHeight: TimelineConstants.soundOverlayRowHeight,
+      ),
+      (
+        items: _filterItems,
+        rowCount: _filterRowCount,
+        type: TimelineOverlayType.filter,
+        color: VineTheme.success,
+        rowHeight: TimelineConstants.overlayRowHeight,
+      ),
+      (
+        items: _layerItems,
+        rowCount: _layerRowCount,
+        type: TimelineOverlayType.layer,
+        color: VineTheme.primary,
+        rowHeight: TimelineConstants.overlayRowHeight,
+      ),
+    ];
 
     return Padding(
       padding: const .only(top: TimelineConstants.overlayStripGap),
@@ -124,21 +169,21 @@ class TimelineOverlayStrips extends StatelessWidget {
               TimelineOverlayStrip(
                 items: config.items,
                 rowCount: config.rowCount,
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                totalDuration: totalDuration,
+                totalWidth: widget.totalWidth,
+                pixelsPerSecond: widget.pixelsPerSecond,
+                totalDuration: widget.totalDuration,
                 color: config.color,
                 rowHeight: config.rowHeight,
                 isCollapsed: collapsedTypes.contains(config.type),
                 selectedItemId: selectedItemId,
-                snapPointsMs: snapPointsMs,
-                onItemTapped: onItemTapped,
-                onItemMoved: onItemMoved,
-                onItemMoving: onItemMoving,
-                onTrimChanged: onItemTrimmed,
-                onTrimDragChanged: onTrimDragChanged,
-                onDragStarted: onDragStarted,
-                onDragEnded: onDragEnded,
+                snapPointsMs: _snapPointsMs,
+                onItemTapped: widget.onItemTapped,
+                onItemMoved: widget.onItemMoved,
+                onItemMoving: widget.onItemMoving,
+                onTrimChanged: widget.onItemTrimmed,
+                onTrimDragChanged: widget.onTrimDragChanged,
+                onDragStarted: widget.onDragStarted,
+                onDragEnded: widget.onDragEnded,
               ),
         ],
       ),

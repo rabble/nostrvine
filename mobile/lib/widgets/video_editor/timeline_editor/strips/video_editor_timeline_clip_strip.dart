@@ -115,6 +115,12 @@ class _VideoEditorTimelineClipStripState
   /// for. Used to ensure each split is processed exactly once.
   ClipSplitEvent? _lastSeededSplit;
 
+  /// Memoized slot-timestamp result — only recomputed when [widget.clips]
+  /// identity or [widget.pixelsPerSecond] changes.
+  List<DivineVideoClip>? _prevSlotClips;
+  double? _prevSlotPps;
+  Map<String, List<Duration>> _cachedSlotTimestamps = const {};
+
   static const double _reorderSize = TimelineConstants.thumbnailStripHeight;
 
   // Auto-scroll state.
@@ -159,10 +165,17 @@ class _VideoEditorTimelineClipStripState
   }
 
   void _syncThumbnails() {
+    final clips = widget.clips;
+    final pps = widget.pixelsPerSecond;
+    if (!identical(_prevSlotClips, clips) || _prevSlotPps != pps) {
+      _prevSlotClips = clips;
+      _prevSlotPps = pps;
+      _cachedSlotTimestamps = _computeSlotTimestamps();
+    }
     _thumbnails.sync(
-      clips: widget.clips,
+      clips: clips,
       devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-      priorityTimestamps: _computeSlotTimestamps(),
+      priorityTimestamps: _cachedSlotTimestamps,
     );
   }
 

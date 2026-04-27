@@ -85,6 +85,14 @@ class _RulerPainter extends CustomPainter {
     color: VineTheme.onSurfaceMuted,
   ).copyWith(fontFeatures: [const FontFeature.tabularFigures()]);
 
+  /// Laid-out [TextPainter] instances keyed by label string.
+  ///
+  /// [_labelStyle] is static and never changes, so cached painters
+  /// are valid for the lifetime of the app. This avoids creating and
+  /// laying out a new [TextPainter] for every visible label on every
+  /// scroll frame (~600–1200 allocations/sec at 60 Hz).
+  static final Map<String, TextPainter> _tpCache = {};
+
   @override
   void paint(Canvas canvas, Size size) {
     final totalSeconds = totalDuration.inMilliseconds / 1000.0;
@@ -120,10 +128,13 @@ class _RulerPainter extends CustomPainter {
       final x = i * stepPx;
       final label = _formatLabel(i * frameStep);
 
-      final tp = TextPainter(
-        text: TextSpan(text: label, style: _labelStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
+      final tp = _tpCache.putIfAbsent(
+        label,
+        () => TextPainter(
+          text: TextSpan(text: label, style: _labelStyle),
+          textDirection: TextDirection.ltr,
+        )..layout(),
+      );
 
       tp.paint(canvas, Offset(x, centerY - tp.height / 2));
     }

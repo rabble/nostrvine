@@ -39,7 +39,7 @@ class TimelineSnapController {
   });
 
   final SnapEdgeDirection direction;
-  final double pixelsPerSecond;
+  double pixelsPerSecond;
 
   // ---------------------------------------------------------------------------
   // State

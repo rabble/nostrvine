@@ -137,11 +137,9 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   /// The item currently being dragged, or `null`.
   String? _draggingId;
 
-  /// Snapped horizontal position (item start ms) returned by the snap controller.
-  int _snappedStartMs = 0;
-
-  /// Accumulated vertical drag offset in pixels.
-  double _dragDeltaY = 0;
+  /// Live drag position — updated every gesture frame via the notifier
+  /// so only the dragged item and drop indicator rebuild, not the full strip.
+  final _dragPosition = ValueNotifier<_DragPos>(_DragPos.zero);
 
   /// The row the item was on when the drag started.
   int _dragStartRow = 0;
@@ -182,11 +180,14 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
   void didUpdateWidget(TimelineOverlayStrip oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pixelsPerSecond != widget.pixelsPerSecond) {
-      _dragSnap = TimelineSnapController(
-        direction: SnapEdgeDirection.positive,
-        pixelsPerSecond: widget.pixelsPerSecond,
-      );
+      _dragSnap.pixelsPerSecond = widget.pixelsPerSecond;
     }
+  }
+
+  @override
+  void dispose() {
+    _dragPosition.dispose();
+    super.dispose();
   }
 
   double get _trimExpansion => widget.selectedItemId != null
@@ -213,7 +214,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     if (widget.items.isEmpty) return const SizedBox.shrink();
 
     final displayRowCount = widget.isCollapsed ? 1 : widget.rowCount;
-    final dropIndicatorLineY = _dropIndicatorLineY();
+    final sortedItems = _sortedItems();
 
     return SizedBox(
       width: widget.totalWidth,
@@ -221,33 +222,76 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       child: Stack(
         clipBehavior: .none,
         children: [
-          // Drop indicator line — only visible during drag.
-          if (dropIndicatorLineY != null)
-            TimelineDropIndicatorLine(lineY: dropIndicatorLineY),
-          // Paint selected item last so its trim handles are never
-          // obscured by adjacent items.
-          for (final item in _sortedItems())
-            TimelineOverlayPositionedItem(
+          // Drop indicator — rebuilt only when drag position changes,
+          // not on every parent setState (drag start / end only).
+          ValueListenableBuilder<_DragPos>(
+            valueListenable: _dragPosition,
+            builder: (context, _, __) {
+              final y = _dropIndicatorLineY();
+              if (y == null) return const SizedBox.shrink();
+              return TimelineDropIndicatorLine(lineY: y);
+            },
+          ),
+          // Each item always lives in a ValueListenableBuilder with a
+          // stable key — ValueKey(item.id) — so its element is never
+          // unmounted when _draggingId changes.  Unmounting would kill
+          // the active GestureRecognizer mid-gesture (first long-press
+          // gives haptic but move is swallowed).
+          //
+          // For non-dragged items the builder returns the pre-built
+          // `child` widget.  Flutter detects the identical instance and
+          // skips rebuilding that subtree on every drag-move frame.
+          for (final item in sortedItems)
+            ValueListenableBuilder<_DragPos>(
               key: ValueKey(item.id),
-              item: item,
-              isDragging: _draggingId == item.id,
-              isSelected: widget.selectedItemId == item.id,
-              snappedStartMs: _snappedStartMs,
-              dragDeltaY: _dragDeltaY,
-              rowHeight: _effectiveRowHeight,
-              pixelsPerSecond: widget.pixelsPerSecond,
-              totalDuration: widget.totalDuration,
-              color: widget.color,
-              isCollapsed: widget.isCollapsed,
-              trimExpansion: _trimExpansion,
-              snapPointsMs: widget.snapPointsMs,
-              onTrimChanged: widget.onTrimChanged,
-              onTrimDragChanged: widget.onTrimDragChanged,
-              onTap: () => widget.onItemTapped?.call(item),
-              onLongPressStart: () => _onLongPressStart(item),
-              onLongPressMoveUpdate: (details) =>
-                  _onLongPressMoveUpdate(details, item, displayRowCount),
-              onLongPressEnd: () => _onLongPressEnd(item),
+              valueListenable: _dragPosition,
+              builder: (context, pos, child) {
+                if (_draggingId == item.id) {
+                  return TimelineOverlayPositionedItem(
+                    item: item,
+                    isDragging: true,
+                    isSelected: widget.selectedItemId == item.id,
+                    snappedStartMs: pos.startMs,
+                    dragDeltaY: pos.deltaY,
+                    rowHeight: _effectiveRowHeight,
+                    pixelsPerSecond: widget.pixelsPerSecond,
+                    totalDuration: widget.totalDuration,
+                    color: widget.color,
+                    isCollapsed: widget.isCollapsed,
+                    trimExpansion: _trimExpansion,
+                    snapPointsMs: widget.snapPointsMs,
+                    onTrimChanged: widget.onTrimChanged,
+                    onTrimDragChanged: widget.onTrimDragChanged,
+                    onTap: () => widget.onItemTapped?.call(item),
+                    onLongPressStart: () => _onLongPressStart(item),
+                    onLongPressMoveUpdate: (details) =>
+                        _onLongPressMoveUpdate(details, item, displayRowCount),
+                    onLongPressEnd: () => _onLongPressEnd(item),
+                  );
+                }
+                return child!;
+              },
+              child: TimelineOverlayPositionedItem(
+                item: item,
+                isDragging: false,
+                isSelected: widget.selectedItemId == item.id,
+                snappedStartMs: 0,
+                dragDeltaY: 0,
+                rowHeight: _effectiveRowHeight,
+                pixelsPerSecond: widget.pixelsPerSecond,
+                totalDuration: widget.totalDuration,
+                color: widget.color,
+                isCollapsed: widget.isCollapsed,
+                trimExpansion: _trimExpansion,
+                snapPointsMs: widget.snapPointsMs,
+                onTrimChanged: widget.onTrimChanged,
+                onTrimDragChanged: widget.onTrimDragChanged,
+                onTap: () => widget.onItemTapped?.call(item),
+                onLongPressStart: () => _onLongPressStart(item),
+                onLongPressMoveUpdate: (details) =>
+                    _onLongPressMoveUpdate(details, item, displayRowCount),
+                onLongPressEnd: () => _onLongPressEnd(item),
+              ),
             ),
         ],
       ),
@@ -261,11 +305,12 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     if (draggedItem.isEmpty) return null;
 
     final item = draggedItem.first;
+    final pos = _dragPosition.value;
 
     final maxStartMs = (widget.totalDuration - item.duration).inMilliseconds;
-    final newStartMs = _snappedStartMs.clamp(0, maxStartMs);
+    final newStartMs = pos.startMs.clamp(0, maxStartMs);
 
-    final rowDelta = (_dragDeltaY / _effectiveRowHeight).round();
+    final rowDelta = (pos.deltaY / _effectiveRowHeight).round();
     final unclampedRow = _dragStartRow + rowDelta;
     final targetRow = math.max(0, unclampedRow);
 
@@ -276,7 +321,7 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     if (unclampedRow < 0) {
       insertAbove = true;
     } else {
-      final subRowOffset = _dragDeltaY / _effectiveRowHeight - rowDelta;
+      final subRowOffset = pos.deltaY / _effectiveRowHeight - rowDelta;
       insertAbove = subRowOffset < 0;
     }
     return (
@@ -332,11 +377,13 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       item.startTime.inMilliseconds,
       initialExcludeMs: item.startTime.inMilliseconds,
     );
+    _dragPosition.value = _DragPos(
+      startMs: item.startTime.inMilliseconds,
+      deltaY: 0,
+    );
     setState(() {
       _draggingId = item.id;
-      _snappedStartMs = item.startTime.inMilliseconds;
       _prevDragOffsetX = 0;
-      _dragDeltaY = 0;
       _scrollCompensationY = 0;
       _dragStartRow = item.row;
     });
@@ -396,10 +443,10 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
       startTime: Duration(milliseconds: clampedStartMs),
     );
 
-    setState(() {
-      _snappedStartMs = clampedStartMs;
-      _dragDeltaY = details.offsetFromOrigin.dy + _scrollCompensationY;
-    });
+    _dragPosition.value = _DragPos(
+      startMs: clampedStartMs,
+      deltaY: details.offsetFromOrigin.dy + _scrollCompensationY,
+    );
   }
 
   void _onLongPressEnd(TimelineOverlayItem item) {
@@ -418,11 +465,10 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     _dragSnap.reset();
     setState(() {
       _draggingId = null;
-      _snappedStartMs = 0;
       _prevDragOffsetX = 0;
-      _dragDeltaY = 0;
       _scrollCompensationY = 0;
     });
+    _dragPosition.value = _DragPos.zero;
     widget.onDragEnded?.call();
   }
 
@@ -500,4 +546,17 @@ class _TimelineOverlayStripState extends State<TimelineOverlayStrip> {
     _dragSnap.compensateScroll(target - before);
     return true;
   }
+}
+
+/// Immutable drag position used by [_TimelineOverlayStripState._dragPosition].
+class _DragPos {
+  const _DragPos({required this.startMs, required this.deltaY});
+
+  static const zero = _DragPos(startMs: 0, deltaY: 0);
+
+  /// Horizontal position: snapped item start in milliseconds.
+  final int startMs;
+
+  /// Vertical position: cumulative drag delta in pixels.
+  final double deltaY;
 }
