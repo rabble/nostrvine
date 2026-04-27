@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/search_results_filter/search_results_filter.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/l10n/search_results_filter_l10n.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_sheet.dart';
 
 /// Green pill button that shows the active search filter label.

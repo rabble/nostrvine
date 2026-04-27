@@ -1,19 +1,29 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 
 /// Filter options for search results.
 ///
 /// Each value corresponds to a content category shown in the search results
 /// screen. [all] shows preview sections for every category; the rest show
 /// a single category in full.
-///
-/// Localized labels: `SearchResultsFilterL10n.categoryLabel` in
-/// `lib/l10n/search_results_filter_l10n.dart`.
 enum SearchResultsFilter {
   all,
   people,
   lists,
   tags,
-  videos,
+  videos
+  ;
+
+  /// Localized title for the filter pill, bottom sheet, and section headers.
+  String categoryLabel(AppLocalizations l10n) {
+    return switch (this) {
+      SearchResultsFilter.all => l10n.searchResultsCategoryAll,
+      SearchResultsFilter.people => l10n.searchResultsCategoryPeople,
+      SearchResultsFilter.lists => l10n.searchResultsCategoryLists,
+      SearchResultsFilter.tags => l10n.searchResultsCategoryTags,
+      SearchResultsFilter.videos => l10n.searchResultsCategoryVideos,
+    };
+  }
 }
 
 /// Cubit that holds the active [SearchResultsFilter].
