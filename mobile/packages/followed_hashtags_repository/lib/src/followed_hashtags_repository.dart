@@ -26,18 +26,16 @@ class FollowedHashtagsRepository {
   ///
   /// Parameters:
   /// - [prefs]: SharedPreferences instance for persistent storage.
-  /// - [storageKey]: **Deprecated.** Use [profileStorageKey] instead.
   /// - [profileStorageKey]: Custom key for profile‑saved hashtags.
   ///   Defaults to [preferencesKey] if not provided.
   /// - [followingFeedStorageKey]: Custom key for following‑feed hashtags.
   ///   Defaults to [followingFeedPreferencesKey] if not provided.
   FollowedHashtagsRepository({
     required SharedPreferences prefs,
-    @Deprecated('Use profileStorageKey') String? storageKey,
     String? profileStorageKey,
     String? followingFeedStorageKey,
   }) : _prefs = prefs,
-       _profileKey = profileStorageKey ?? storageKey ?? preferencesKey,
+       _profileKey = profileStorageKey ?? preferencesKey,
        _feedKey = followingFeedStorageKey ?? followingFeedPreferencesKey,
        _profile = BehaviorSubject<List<String>>.seeded(
          const [],
