@@ -222,15 +222,16 @@ class _VideoEditorTimelineClipStripState
 
     for (final clip in widget.clips) {
       final clipPx = _clipWidth(clip);
-      final durationMs = clip.duration.inMilliseconds;
-      if (clipPx <= 0 || durationMs <= 0) continue;
+      final trimmedMs = clip.trimmedDuration.inMilliseconds;
+      if (clipPx <= 0 || trimmedMs <= 0) continue;
 
       final slotCount = (clipPx / TimelineConstants.thumbnailWidth)
           .ceil()
           .clamp(1, 1000);
       final timestamps = <Duration>[];
       for (var i = 0; i < slotCount; i++) {
-        final centerMs = durationMs * (i + 0.5) / slotCount;
+        final centerMs =
+            clip.trimStart.inMilliseconds + trimmedMs * (i + 0.5) / slotCount;
         timestamps.add(Duration(milliseconds: centerMs.round()));
       }
       result[clip.id] = timestamps;
@@ -577,6 +578,7 @@ class _VideoEditorTimelineClipStripState
                   dragClipWidth: _dragClipWidth,
                   effectiveLocalX: _effectiveLocalX,
                   dragFingerRatio: _dragFingerRatio,
+                  pixelsPerSecond: widget.pixelsPerSecond,
                 ),
             ],
           ),
@@ -717,6 +719,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
                 index: i,
                 total: orderedClips.length,
                 clipWidth: layout.widths[i],
+                pixelsPerSecond: pixelsPerSecond,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
                 onReorder: onReorder,
                 onTap: onClipTapped,
@@ -740,6 +743,7 @@ class _DraggedClipPosition extends StatelessWidget {
     required this.dragClipWidth,
     required this.effectiveLocalX,
     required this.dragFingerRatio,
+    required this.pixelsPerSecond,
   });
 
   final List<DivineVideoClip> orderedClips;
@@ -753,6 +757,7 @@ class _DraggedClipPosition extends StatelessWidget {
   final double dragClipWidth;
   final double effectiveLocalX;
   final double dragFingerRatio;
+  final double pixelsPerSecond;
 
   @override
   Widget build(BuildContext context) {
@@ -769,7 +774,7 @@ class _DraggedClipPosition extends StatelessWidget {
       child: _DraggedClipTile(
         clip: orderedClips[dragIndex!],
         index: dragIndex!,
-        fullWidth: layout.widths[dragIndex!],
+        pixelsPerSecond: pixelsPerSecond,
         thumbnailNotifier: thumbnails[orderedClips[dragIndex!].id],
       ),
     );
