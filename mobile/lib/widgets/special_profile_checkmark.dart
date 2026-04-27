@@ -5,17 +5,20 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 
-const _kirstenSwaseyProfileHost = 'kirstenswasey.divine.video';
+const _specialProfileHosts = {
+  'kirstenswasey.divine.video',
+  'rabble.divine.video',
+};
 
 bool shouldShowSpecialProfileCheckmark(UserProfile? profile) {
   if (profile == null) return false;
-  return _matchesKirstenSwaseyProfile(profile.nip05) ||
-      _matchesKirstenSwaseyProfile(profile.displayNip05);
+  return _matchesSpecialProfile(profile.nip05) ||
+      _matchesSpecialProfile(profile.displayNip05);
 }
 
-bool _matchesKirstenSwaseyProfile(String? identifier) {
+bool _matchesSpecialProfile(String? identifier) {
   final host = _hostFromProfileIdentifier(identifier);
-  return host == _kirstenSwaseyProfileHost;
+  return _specialProfileHosts.contains(host);
 }
 
 String? _hostFromProfileIdentifier(String? identifier) {

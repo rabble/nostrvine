@@ -68,4 +68,12 @@ void main() {
     expect(find.text('Alice'), findsOneWidget);
     expect(find.byIcon(Icons.check), findsOneWidget);
   });
+
+  testWidgets('shows a checkmark for Rabble special profile', (tester) async {
+    await tester.pumpWidget(buildSubject(nip05: '_@rabble.divine.video'));
+    await tester.pump();
+
+    expect(find.text('Alice'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
+  });
 }
