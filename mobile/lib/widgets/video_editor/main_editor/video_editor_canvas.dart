@@ -1624,6 +1624,7 @@ class _RenderHitTestExpander extends RenderProxyBox {
     // [visibleSize] — only [hitTest] does, and that runs per-event.
   }
 
+  // FIXME Test-PR
   bool _enabled;
   set enabled(bool value) {
     if (value == _enabled) return;
