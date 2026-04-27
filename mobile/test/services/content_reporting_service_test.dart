@@ -242,8 +242,7 @@ void main() {
           tags: any(named: 'tags'),
         ),
       ).thenAnswer((invocation) async {
-        final tags =
-            invocation.namedArguments[#tags] as List<List<String>>;
+        final tags = invocation.namedArguments[#tags] as List<List<String>>;
         capturedTags.add(tags);
         return createTestEvent(
           pubkey: testPublicKey,
@@ -258,12 +257,14 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => createTestEvent(
-            pubkey: testPublicKey,
-            kind: 1984,
-            tags: [],
-            content: 'test',
-          ));
+      ).thenAnswer(
+        (_) async => createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [],
+          content: 'test',
+        ),
+      );
 
       for (final reason in ContentFilterReason.values) {
         await service.reportContent(
