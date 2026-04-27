@@ -2925,5 +2925,6 @@
   "videoEditorAudioSegmentInstruction": "Sélectionne le segment audio de ta vidéo",
   "videoEditorClipGalleryInstruction": "Appuie pour modifier. Maintiens appuyé et fais glisser pour réorganiser.",
   "navSearch": "Recherche",
-  "navSearchTooltip": "Rechercher"
+  "navSearchTooltip": "Rechercher",
+  "fullscreenFeedRemovedMessage": "Vidéo supprimée"
 }

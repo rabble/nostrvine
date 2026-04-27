@@ -104,161 +104,121 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         onBackPressed: context.pop,
       ),
       backgroundColor: VineTheme.backgroundColor,
-      body: Column(
-        children: [
-          // Info banner with instructions
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: VineTheme.cardBackground,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SizedBox(
+            width: double.infinity,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline,
-                      color: VineTheme.lightText,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        context.l10n.relaySettingsInfoTitle,
+                // Info banner with instructions
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: VineTheme.cardBackground,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: VineTheme.lightText,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              context.l10n.relaySettingsInfoTitle,
+                              style: const TextStyle(
+                                color: VineTheme.whiteText,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        context.l10n.relaySettingsInfoDescription,
                         style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                          color: VineTheme.lightText,
+                          fontSize: 13,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  context.l10n.relaySettingsInfoDescription,
-                  style: const TextStyle(
-                    color: VineTheme.lightText,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: _launchNostrDocs,
-                  child: Text(
-                    context.l10n.relaySettingsLearnMoreNostr,
-                    style: const TextStyle(
-                      color: VineTheme.vineGreen,
-                      fontSize: 13,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: _launchNostrWatch,
-                  child: Text(
-                    context.l10n.relaySettingsFindPublicRelays,
-                    style: const TextStyle(
-                      color: VineTheme.vineGreen,
-                      fontSize: 13,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Relay list
-          Expanded(
-            child: externalRelays.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: VineTheme.warning,
-                          size: 64,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          context.l10n.relaySettingsAppNotFunctional,
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: _launchNostrDocs,
+                        child: Text(
+                          context.l10n.relaySettingsLearnMoreNostr,
                           style: const TextStyle(
-                            color: VineTheme.whiteText,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            color: VineTheme.vineGreen,
+                            fontSize: 13,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Text(
-                            context.l10n.relaySettingsRequiresRelay,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: VineTheme.secondaryText,
-                              fontSize: 14,
-                            ),
+                      ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: _launchNostrWatch,
+                        child: Text(
+                          context.l10n.relaySettingsFindPublicRelays,
+                          style: const TextStyle(
+                            color: VineTheme.vineGreen,
+                            fontSize: 13,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
-                        const SizedBox(height: 32),
-                        ElevatedButton.icon(
-                          onPressed: _restoreDefaultRelay,
-                          icon: const Icon(
-                            Icons.restore,
-                            color: VineTheme.whiteText,
-                          ),
-                          label: Text(
-                            context.l10n.relaySettingsRestoreDefaultRelay,
-                            style: const TextStyle(color: VineTheme.whiteText),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: VineTheme.vineGreen,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 14,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        ElevatedButton.icon(
-                          onPressed: _showAddRelayDialog,
-                          icon: const Icon(
-                            Icons.add,
-                            color: VineTheme.whiteText,
-                          ),
-                          label: Text(
-                            context.l10n.relaySettingsAddCustomRelay,
-                            style: const TextStyle(color: VineTheme.whiteText),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: VineTheme.cardBackground,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    children: [
-                      // Action buttons at the top
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _showAddRelayDialog,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Relay list
+                Expanded(
+                  child: externalRelays.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: VineTheme.warning,
+                                size: 64,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                context.l10n.relaySettingsAppNotFunctional,
+                                style: const TextStyle(
+                                  color: VineTheme.whiteText,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 32,
+                                ),
+                                child: Text(
+                                  context.l10n.relaySettingsRequiresRelay,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: VineTheme.secondaryText,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              ElevatedButton.icon(
+                                onPressed: _restoreDefaultRelay,
                                 icon: const Icon(
-                                  Icons.add,
+                                  Icons.restore,
                                   color: VineTheme.whiteText,
                                 ),
                                 label: Text(
-                                  context.l10n.relaySettingsAddRelay,
+                                  context.l10n.relaySettingsRestoreDefaultRelay,
                                   style: const TextStyle(
                                     color: VineTheme.whiteText,
                                   ),
@@ -266,22 +226,20 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VineTheme.vineGreen,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
+                                    horizontal: 24,
+                                    vertical: 14,
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: _retryConnection,
+                              const SizedBox(height: 12),
+                              ElevatedButton.icon(
+                                onPressed: _showAddRelayDialog,
                                 icon: const Icon(
-                                  Icons.refresh,
+                                  Icons.add,
                                   color: VineTheme.whiteText,
                                 ),
                                 label: Text(
-                                  context.l10n.relaySettingsRetry,
+                                  context.l10n.relaySettingsAddCustomRelay,
                                   style: const TextStyle(
                                     color: VineTheme.whiteText,
                                   ),
@@ -289,29 +247,87 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VineTheme.cardBackground,
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
+                                    horizontal: 24,
+                                    vertical: 14,
                                   ),
                                 ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            // Action buttons at the top
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: _showAddRelayDialog,
+                                      icon: const Icon(
+                                        Icons.add,
+                                        color: VineTheme.whiteText,
+                                      ),
+                                      label: Text(
+                                        context.l10n.relaySettingsAddRelay,
+                                        style: const TextStyle(
+                                          color: VineTheme.whiteText,
+                                        ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: VineTheme.vineGreen,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton.icon(
+                                      onPressed: _retryConnection,
+                                      icon: const Icon(
+                                        Icons.refresh,
+                                        color: VineTheme.whiteText,
+                                      ),
+                                      label: Text(
+                                        context.l10n.relaySettingsRetry,
+                                        style: const TextStyle(
+                                          color: VineTheme.whiteText,
+                                        ),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            VineTheme.cardBackground,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: externalRelays.length,
+                                itemBuilder: (context, index) {
+                                  final relay = externalRelays[index];
+
+                                  return _buildRelayTile(relay);
+                                },
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: externalRelays.length,
-                          itemBuilder: (context, index) {
-                            final relay = externalRelays[index];
-
-                            return _buildRelayTile(relay);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
+                ),
+              ],
+            ),
           ),
-        ],
+        ),
       ),
     );
   }

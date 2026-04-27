@@ -16,6 +16,7 @@ class AutoActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconColor = isEnabled ? VineTheme.vineGreen : VineTheme.whiteText;
+    final label = context.l10n.videoActionAutoLabel;
 
     return Semantics(
       identifier: 'auto_button',
@@ -25,46 +26,66 @@ class AutoActionButton extends StatelessWidget {
       label: isEnabled
           ? context.l10n.videoActionDisableAutoAdvance
           : context.l10n.videoActionEnableAutoAdvance,
-      child: IconButton(
-        padding: const EdgeInsets.all(8),
-        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-        style: IconButton.styleFrom(
-          highlightColor: VineTheme.transparent,
-          splashFactory: NoSplash.splashFactory,
-        ),
-        onPressed: onPressed,
-        icon: DecoratedBox(
-          decoration: BoxDecoration(
-            boxShadow: [
-              BoxShadow(
-                color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                blurRadius: 15,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: SizedBox(
-            width: 30,
-            height: 20,
-            child: Stack(
-              clipBehavior: Clip.none,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onPressed,
+        child: SizedBox(
+          width: 72,
+          height: 48,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: DivineIcon(
-                    icon: DivineIconName.play,
-                    size: 20,
-                    color: iconColor,
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    boxShadow: [
+                      BoxShadow(
+                        color: VineTheme.backgroundColor.withValues(
+                          alpha: 0.15,
+                        ),
+                        blurRadius: 15,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: SizedBox(
+                    width: 30,
+                    height: 20,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          child: DivineIcon(
+                            icon: DivineIconName.play,
+                            size: 20,
+                            color: iconColor,
+                          ),
+                        ),
+                        Positioned(
+                          left: 10,
+                          top: 0,
+                          child: DivineIcon(
+                            icon: DivineIconName.play,
+                            size: 20,
+                            color: iconColor,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                Positioned(
-                  left: 10,
-                  top: 0,
-                  child: DivineIcon(
-                    icon: DivineIconName.play,
-                    size: 20,
-                    color: iconColor,
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    label,
+                    style: VineTheme.labelSmallFont().copyWith(
+                      shadows: VineTheme.buttonShadows,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

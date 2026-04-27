@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, listEquals;
 import 'package:flutter/material.dart';
 
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
@@ -88,7 +89,8 @@ class PooledVideoFeed extends StatefulWidget {
 }
 
 /// State for [PooledVideoFeed].
-class PooledVideoFeedState extends State<PooledVideoFeed> {
+class PooledVideoFeedState extends State<PooledVideoFeed>
+    with WidgetsBindingObserver {
   late VideoFeedController _controller;
   late PageController _pageController;
   late PlayerPool _effectivePool;
@@ -113,6 +115,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
     _pageController.addListener(_onScrollChanged);
@@ -143,6 +146,35 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         _controller.play();
       }
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (_shouldDeactivateForLifecycleState(state)) {
+      _controller.setActive(active: false);
+    }
+  }
+
+  bool _shouldDeactivateForLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.detached:
+        return true;
+      case AppLifecycleState.inactive:
+        // On mobile, inactive is the first signal before background suspension.
+        return switch (defaultTargetPlatform) {
+          TargetPlatform.android || TargetPlatform.iOS => true,
+          TargetPlatform.fuchsia ||
+          TargetPlatform.linux ||
+          TargetPlatform.macOS ||
+          TargetPlatform.windows => false,
+        };
+      case AppLifecycleState.resumed:
+        return false;
+    }
   }
 
   void _onScrollChanged() {
@@ -242,6 +274,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onControllerChanged);
     _pageController
       ..removeListener(_onScrollChanged)

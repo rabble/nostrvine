@@ -69,6 +69,7 @@ import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/feed_aspect_ratio_preference_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
@@ -143,6 +144,12 @@ final nostrAppGrantStoreProvider = Provider<NostrAppGrantStore>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   return NostrAppGrantStore(sharedPreferences: prefs);
 });
+
+final feedAspectRatioPreferenceServiceProvider =
+    Provider<FeedAspectRatioPreferenceService>((ref) {
+      final prefs = ref.watch(sharedPreferencesProvider);
+      return FeedAspectRatioPreferenceService(prefs);
+    });
 
 final firebaseMessagingProvider = Provider<FirebaseMessaging>(
   (ref) => FirebaseMessaging.instance,
@@ -573,6 +580,9 @@ ContentFilterService contentFilterService(Ref ref) {
 @Riverpod(keepAlive: true)
 int contentFilterVersion(Ref ref) {
   final service = ref.watch(contentFilterServiceProvider);
+  final aspectRatioPreference = ref.watch(
+    feedAspectRatioPreferenceServiceProvider,
+  );
   var version = 0;
   void listener() {
     version++;
@@ -580,7 +590,11 @@ int contentFilterVersion(Ref ref) {
   }
 
   service.addListener(listener);
-  ref.onDispose(() => service.removeListener(listener));
+  aspectRatioPreference.addListener(listener);
+  ref.onDispose(() {
+    service.removeListener(listener);
+    aspectRatioPreference.removeListener(listener);
+  });
   return version;
 }
 
@@ -2343,6 +2357,9 @@ VideosRepository videosRepository(Ref ref) {
   final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+  final feedAspectRatioPreference = ref.watch(
+    feedAspectRatioPreferenceServiceProvider,
+  );
   final flagService = ref.watch(featureFlagServiceProvider);
   final engine = ref.watch(contentPolicyEngineProvider);
 
@@ -2352,10 +2369,7 @@ VideosRepository videosRepository(Ref ref) {
   );
 
   final blockFilter = flagService.isEnabled(FeatureFlag.contentPolicyV2)
-      ? createPolicyEngineFilter(
-          engine,
-          () => blocklistRepository.currentState,
-        )
+      ? createPolicyEngineFilter(engine, () => blocklistRepository.currentState)
       : createBlocklistFilter(blocklistRepository);
 
   return VideosRepository(
@@ -2365,7 +2379,8 @@ VideosRepository videosRepository(Ref ref) {
     contentFilter: (video) =>
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&
-            !video.isFromDivineServer),
+            !video.isFromDivineServer) ||
+        feedAspectRatioPreference.shouldHideVideo(video),
     warningLabelsResolver: createNsfwWarnLabels(
       contentFilterService,
       moderationLabelService: moderationLabelService,

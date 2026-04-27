@@ -2925,5 +2925,6 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "videoEditorAudioSegmentInstruction": "Pilih segmen audio untuk videomu",
-  "videoEditorClipGalleryInstruction": "Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang."
+  "videoEditorClipGalleryInstruction": "Ketuk untuk mengedit. Tekan lama dan seret untuk mengurutkan ulang.",
+  "fullscreenFeedRemovedMessage": "Video dihapus"
 }

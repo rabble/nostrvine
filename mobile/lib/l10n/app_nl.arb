@@ -2925,5 +2925,6 @@
   "videoEditorAudioSegmentInstruction": "Selecteer het audiofragment voor je video",
   "videoEditorClipGalleryInstruction": "Tik om te bewerken. Houd vast en sleep om te herordenen.",
   "navSearch": "Zoeken",
-  "navSearchTooltip": "Zoeken"
+  "navSearchTooltip": "Zoeken",
+  "fullscreenFeedRemovedMessage": "Video verwijderd"
 }

@@ -18,7 +18,6 @@ import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -30,7 +29,6 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
@@ -40,6 +38,7 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
@@ -1545,11 +1544,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                             ),
                                           ),
                                         ),
-                                        // Use actual NIP-05 verification —
-                                        // only show badge when DNS lookup
-                                        // confirms the pubkey owns the claimed
-                                        // identifier (NIP-05 spec).
-                                        _Nip05Badge(pubkey: video.pubkey),
+                                        if (shouldShowSpecialProfileCheckmark(
+                                          profile,
+                                        ))
+                                          const SpecialProfileCheckmark(),
                                       ],
                                     ),
                                     Text(
@@ -1932,39 +1930,6 @@ class VideoRepostHeader extends ConsumerWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// NIP-05 verification badge that watches the actual verification provider.
-///
-/// Only shows the blue checkmark when DNS lookup confirms the pubkey
-/// owns the claimed NIP-05 identifier, per the NIP-05 spec.
-class _Nip05Badge extends ConsumerWidget {
-  const _Nip05Badge({required this.pubkey});
-
-  final String pubkey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final verificationAsync = ref.watch(nip05VerificationProvider(pubkey));
-    final isVerified = switch (verificationAsync) {
-      AsyncData(:final value) => value == Nip05VerificationStatus.verified,
-      _ => false,
-    };
-
-    if (!isVerified) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsetsDirectional.only(start: 4),
-      child: Container(
-        padding: const EdgeInsets.all(2),
-        decoration: const BoxDecoration(
-          color: VineTheme.info,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.check, color: VineTheme.whiteText, size: 10),
       ),
     );
   }

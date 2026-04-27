@@ -19,6 +19,8 @@
 // where ComposableVideoGrid could accept profile data as props instead of
 // fetching via providers, which would allow isolated widget testing.
 
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -165,6 +167,85 @@ void main() {
       await tester.pump();
 
       expect(find.text('No videos available'), findsOneWidget);
+    });
+
+    testWidgets('keeps empty state refreshable when refresh callback is set', (
+      tester,
+    ) async {
+      var refreshCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: const [],
+                onVideoTap: (videos, index) {},
+                onRefresh: () async {
+                  refreshCount++;
+                },
+                emptyBuilder: () => const Text('No videos available'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(find.text('No videos available'), findsOneWidget);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+      expect(find.byType(Scrollable), findsOneWidget);
+
+      final refreshIndicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      await refreshIndicator.onRefresh();
+
+      expect(refreshCount, 1);
+    });
+
+    testWidgets('refreshes empty state from top-edge pointer scroll down', (
+      tester,
+    ) async {
+      var refreshCount = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            brokenVideoTrackerProvider.overrideWith((ref) async => mockTracker),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: ComposableVideoGrid(
+                videos: const [],
+                onVideoTap: (videos, index) {},
+                onRefresh: () async {
+                  refreshCount++;
+                },
+                emptyBuilder: () => const Text('No videos available'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      final pointer = TestPointer(1, PointerDeviceKind.trackpad);
+      pointer.hover(tester.getCenter(find.byType(Scrollable)));
+
+      await tester.sendEventToBinding(pointer.scroll(const Offset(0, -120)));
+      await tester.pumpAndSettle();
+
+      expect(refreshCount, 1);
     });
 
     testWidgets('calls onVideoTap with correct params when tile tapped', (

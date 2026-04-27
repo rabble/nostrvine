@@ -172,6 +172,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         hasMoreStream: _hasMoreStreamController.stream.startWith(
           hasMoreContent,
         ),
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         trafficSource: ViewTrafficSource.profile,
       ),
     );

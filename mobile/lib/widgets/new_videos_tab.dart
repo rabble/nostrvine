@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
@@ -246,6 +247,9 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
             hasMoreStream: _hasMoreStreamController.stream.startWith(
               widget.hasMoreContent,
             ),
+            removedIdsStream: ref
+                .read(videoEventServiceProvider)
+                .removedVideoIds,
             contextTitle: 'New Videos',
             trafficSource: ViewTrafficSource.discoveryNew,
           ),
@@ -256,7 +260,11 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           '🔄 NewVideosTab: Refreshing feed',
           category: LogCategory.video,
         );
-        await popularNowFeedNotifier.refresh();
+        // Rebuild the provider so the tab can re-query and repopulate even
+        // from an empty-state screen. This mirrors other tab-level refresh
+        // patterns in Explore and keeps pull-to-refresh available here.
+        ref.invalidate(popularNowFeedProvider);
+        await ref.read(popularNowFeedProvider.future);
       },
       onLoadMore: () async {
         Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);

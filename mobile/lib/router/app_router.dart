@@ -61,6 +61,7 @@ import 'package:openvine/screens/search_results/view/search_results_page.dart';
 import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
+import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
@@ -553,10 +554,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 builder: (ctx, st) {
                   final token = st.uri.queryParameters['token'];
                   final email = st.uri.queryParameters['email'];
-                  return ResetPasswordScreen(
-                    token: token ?? '',
-                    email: email,
-                  );
+                  return ResetPasswordScreen(token: token ?? '', email: email);
                 },
               ),
             ],
@@ -662,6 +660,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: ContentPreferencesScreen.path,
         name: ContentPreferencesScreen.routeName,
         builder: (_, _) => const ContentPreferencesScreen(),
+      ),
+      GoRoute(
+        path: GeneralSettingsScreen.path,
+        name: GeneralSettingsScreen.routeName,
+        builder: (_, _) => const GeneralSettingsScreen(),
       ),
       GoRoute(
         path: AppLanguageScreen.path,
@@ -982,6 +985,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             initialIndex: args.initialIndex,
             onLoadMore: args.onLoadMore,
             hasMoreStream: args.hasMoreStream,
+            removedIdsStream: args.removedIdsStream,
             contextTitle: args.contextTitle,
             trafficSource: args.trafficSource,
             sourceDetail: args.sourceDetail,

@@ -825,7 +825,7 @@ final class ContentFilterVersionProvider
 }
 
 String _$contentFilterVersionHash() =>
-    r'e8a53f89965296fd1a5009a45f685fbe425bfa2e';
+    r'56673804308df57936c83187968f318735b4869e';
 
 /// Account label service for self-labeling content (NIP-32 Kind 1985).
 
@@ -4844,7 +4844,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'df96f93c2d45bdd1ee6371d24172844f7139f176';
+String _$videosRepositoryHash() => r'5be6c793ce13803c1740fffa7301be0cfca6028d';
 
 /// Provider for LikesRepository instance
 ///

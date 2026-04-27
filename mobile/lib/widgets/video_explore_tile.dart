@@ -6,12 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
+import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -141,19 +140,12 @@ class _CreatorInfo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
+    final profile = profileAsync.value;
 
     final displayName = switch (profileAsync) {
       AsyncData(:final value) when value != null => value.bestDisplayName,
       AsyncData() || AsyncError() => UserProfile.defaultDisplayNameFor(pubkey),
       AsyncLoading() => 'Loading...',
-    };
-
-    // Use actual NIP-05 verification provider — only show badge when DNS
-    // lookup confirms the pubkey owns the claimed identifier (NIP-05 spec).
-    final verificationAsync = ref.watch(nip05VerificationProvider(pubkey));
-    final isNip05Verified = switch (verificationAsync) {
-      AsyncData(:final value) => value == Nip05VerificationStatus.verified,
-      _ => false,
     };
 
     return GestureDetector(
@@ -186,22 +178,8 @@ class _CreatorInfo extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          // Add NIP-05 verification badge if verified
-          if (isNip05Verified) ...[
-            const SizedBox(width: 4),
-            Container(
-              padding: const EdgeInsets.all(1),
-              decoration: const BoxDecoration(
-                color: VineTheme.info,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check,
-                color: VineTheme.whiteText,
-                size: 8,
-              ),
-            ),
-          ],
+          if (shouldShowSpecialProfileCheckmark(profile))
+            const SpecialProfileCheckmark(iconSize: 8, padding: 1),
         ],
       ),
     );

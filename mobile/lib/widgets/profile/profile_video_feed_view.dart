@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -125,6 +126,7 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
                 .loadMore()
           : null,
       hasMoreStream: _hasMoreController.stream.startWith(hasMoreContent),
+      removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
       onPageChanged: widget.onPageChanged,
     );
   }

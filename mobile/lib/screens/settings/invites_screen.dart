@@ -46,21 +46,27 @@ class InvitesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<InviteStatusCubit, InviteStatusState>(
-      builder: (context, state) {
-        return switch (state.status) {
-          InviteStatusLoadingStatus.initial ||
-          InviteStatusLoadingStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-          InviteStatusLoadingStatus.error => _ErrorView(
-            onRetry: () => context.read<InviteStatusCubit>().load(),
-          ),
-          InviteStatusLoadingStatus.loaded => _LoadedView(
-            inviteStatus: state.inviteStatus!,
-          ),
-        };
-      },
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              InviteStatusLoadingStatus.initial ||
+              InviteStatusLoadingStatus.loading => const Center(
+                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              ),
+              InviteStatusLoadingStatus.error => _ErrorView(
+                onRetry: () => context.read<InviteStatusCubit>().load(),
+              ),
+              InviteStatusLoadingStatus.loaded => _LoadedView(
+                inviteStatus: state.inviteStatus!,
+              ),
+            };
+          },
+        ),
+      ),
     );
   }
 }

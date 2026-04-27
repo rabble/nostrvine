@@ -118,9 +118,9 @@ class NotificationModel extends Equatable {
       case NotificationType.like:
       case NotificationType.comment:
       case NotificationType.repost:
+      case NotificationType.mention:
         return targetEventId != null ? 'open_video' : 'open_profile';
       case NotificationType.follow:
-      case NotificationType.mention:
         return 'open_profile';
       case NotificationType.system:
         return 'none';
@@ -133,9 +133,9 @@ class NotificationModel extends Equatable {
       case NotificationType.like:
       case NotificationType.comment:
       case NotificationType.repost:
+      case NotificationType.mention:
         return targetEventId ?? actorPubkey;
       case NotificationType.follow:
-      case NotificationType.mention:
         return actorPubkey;
       case NotificationType.system:
         return null;

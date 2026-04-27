@@ -117,9 +117,9 @@ class _VideoMetadataPreviewScreenState
                   _VideoPreviewContent(
                     clip: widget.clip,
                     controller: _controller,
-                    isPreviewReady: _isPreviewReady,
-                    previewOnly: widget.previewOnly,
                   ),
+                  if (!widget.previewOnly)
+                    _PreviewOverlay(isPreviewReady: _isPreviewReady),
                   const _CloseButton(),
                 ],
               ),
@@ -137,21 +137,16 @@ class _VideoMetadataPreviewScreenState
   }
 }
 
-/// Container widget that wraps the video player and overlay in a hero
-/// transition.
+/// Container widget that wraps the video player in a hero transition.
 class _VideoPreviewContent extends ConsumerWidget {
   /// Creates the video preview content wrapper.
   const _VideoPreviewContent({
     required this.clip,
     required this.controller,
-    required this.isPreviewReady,
-    this.previewOnly = false,
   });
 
   final DivineVideoClip clip;
   final DivineVideoPlayerController? controller;
-  final ValueNotifier<bool> isPreviewReady;
-  final bool previewOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -167,18 +162,9 @@ class _VideoPreviewContent extends ConsumerWidget {
           aspectRatio: aspectRatio,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Video playback layer
-                DivineVideoPlayer(
-                  controller: controller,
-                  placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
-                ),
-                // Metadata overlay layer
-                if (!previewOnly)
-                  _PreviewOverlay(isPreviewReady: isPreviewReady),
-              ],
+            child: DivineVideoPlayer(
+              controller: controller,
+              placeholder: VideoMetadataCapturePreviewThumbnail(clip: clip),
             ),
           ),
         ),
@@ -208,43 +194,40 @@ class _PreviewOverlay extends ConsumerWidget {
       nostrServiceProvider.select((s) => s.publicKey),
     );
 
-    // Non-interactive overlay with reduced opacity
-    return MediaQuery.removeViewPadding(
-      context: context,
-      removeBottom: true,
-      child: IgnorePointer(
-        child: Opacity(
-          opacity: 0.5,
-          child: Material(
-            type: .transparency,
-            child: ValueListenableBuilder(
-              valueListenable: isPreviewReady,
-              builder: (_, isActive, _) {
-                // Show overlay actions in preview mode
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    const FeedModeSwitch(isPreviewMode: true),
-                    VideoOverlayActions(
-                      video: VideoEvent(
-                        id: 'id',
-                        pubkey: publicKey,
-                        timestamp: DateTime.now(),
-                        createdAt: DateTime.now().millisecondsSinceEpoch,
-                        content: metadata.title,
-                        hashtags: metadata.tags.toList(),
-                        originalLikes: 1,
-                        originalComments: 1,
-                        originalReposts: 1,
-                      ),
-                      isVisible: true,
-                      isActive: isActive,
-                      isPreviewMode: true,
+    // Non-interactive overlay with reduced opacity.
+    // Lives in the outer full-screen Stack so it always renders at
+    // phone-screen proportions, independent of the video's aspect ratio.
+    return IgnorePointer(
+      child: Opacity(
+        opacity: 0.5,
+        child: Material(
+          type: .transparency,
+          child: ValueListenableBuilder(
+            valueListenable: isPreviewReady,
+            builder: (_, isActive, _) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  const FeedModeSwitch(isPreviewMode: true),
+                  VideoOverlayActions(
+                    video: VideoEvent(
+                      id: 'id',
+                      pubkey: publicKey,
+                      timestamp: DateTime.now(),
+                      createdAt: DateTime.now().millisecondsSinceEpoch,
+                      content: metadata.title,
+                      hashtags: metadata.tags.toList(),
+                      originalLikes: 1,
+                      originalComments: 1,
+                      originalReposts: 1,
                     ),
-                  ],
-                );
-              },
-            ),
+                    isVisible: true,
+                    isActive: isActive,
+                    isPreviewMode: true,
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

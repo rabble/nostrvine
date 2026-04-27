@@ -148,6 +148,9 @@ void main() {
       ) {
         return invocation.positionalArguments.single as List<VideoEvent>;
       });
+      when(
+        () => mockVideoEventService.isVideoLocallyDeleted(any()),
+      ).thenReturn(false);
     });
 
     ProviderContainer createContainer({bool funnelcakeAvailable = true}) {

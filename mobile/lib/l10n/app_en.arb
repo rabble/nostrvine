@@ -610,7 +610,7 @@
   "shareMessageHint": "Add optional message...",
   "videoActionUnlike": "Unlike video",
   "videoActionLike": "Like video",
-  "videoActionAutoLabel": "Auto",
+  "videoActionAutoLabel": "Compilation",
   "videoActionLikeLabel": "Like",
   "videoActionReplyLabel": "Reply",
   "videoActionRepostLabel": "Repost",
@@ -2975,5 +2975,9 @@
   "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
   "@metadataCaptionsDisabledSemantics": {
     "description": "Screen reader label when the global captions toggle is off"
+  },
+  "fullscreenFeedRemovedMessage": "Video removed",
+  "@fullscreenFeedRemovedMessage": {
+    "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
   }
 }

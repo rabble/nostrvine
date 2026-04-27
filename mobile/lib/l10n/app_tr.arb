@@ -2925,5 +2925,6 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "videoEditorAudioSegmentInstruction": "Videon için ses bölümünü seç",
-  "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle."
+  "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.",
+  "fullscreenFeedRemovedMessage": "Video kaldırıldı"
 }

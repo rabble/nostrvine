@@ -266,6 +266,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: Stream.value([videoForNav]),
         initialIndex: 0,
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,
         autoOpenComments: shouldAutoOpenComments,
       ),

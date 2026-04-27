@@ -2925,5 +2925,6 @@
   "videoEditorAudioSegmentInstruction": "Välj ljudsegmentet för din video",
   "videoEditorClipGalleryInstruction": "Tryck för att redigera. Håll ned och dra för att ändra ordning.",
   "navSearch": "Sök",
-  "navSearchTooltip": "Sök"
+  "navSearchTooltip": "Sök",
+  "fullscreenFeedRemovedMessage": "Video borttagen"
 }

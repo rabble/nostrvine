@@ -60,6 +60,7 @@ class FullscreenFeedBloc
     required Stream<List<VideoEvent>> videosStream,
     required int initialIndex,
     Stream<bool>? hasMoreStream,
+    Stream<String>? removedIdsStream,
     MediaCacheManager? mediaCache,
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
@@ -67,6 +68,7 @@ class FullscreenFeedBloc
     MediaAvailabilityChecker? availabilityChecker,
   }) : _videosStream = videosStream,
        _hasMoreStream = hasMoreStream,
+       _removedIdsStream = removedIdsStream,
        _onLoadMore = onLoadMore,
        _mediaCache = mediaCache,
        _blossomAuthService = blossomAuthService,
@@ -86,17 +88,25 @@ class FullscreenFeedBloc
       _onVideoUnavailable,
       transformer: sequential(),
     );
+    // Sequential: removal mutates videos + currentIndex + removedVideoIds
+    // together; concurrent emits for different ids must not interleave.
+    on<FullscreenFeedVideoRemoved>(
+      _onVideoRemoved,
+      transformer: sequential(),
+    );
     on<FullscreenFeedSkipAcknowledged>(_onSkipAcknowledged);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
   final Stream<bool>? _hasMoreStream;
+  final Stream<String>? _removedIdsStream;
   final VoidCallback? _onLoadMore;
   final MediaCacheManager? _mediaCache;
   final BlossomAuthService? _blossomAuthService;
   final OnRemoveVideo? _onRemoveVideo;
   final MediaAvailabilityChecker _availabilityChecker;
   StreamSubscription<bool>? _hasMoreSubscription;
+  StreamSubscription<String>? _removedIdsSubscription;
 
   /// Queue of video IDs waiting to be cached in the background.
   final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
@@ -124,6 +134,26 @@ class FullscreenFeedBloc
       onError: (Object error, StackTrace stackTrace) {
         Log.error(
           'FullscreenFeedBloc: hasMore stream error - $error',
+          name: 'FullscreenFeedBloc',
+          category: LogCategory.video,
+          error: error,
+          stackTrace: stackTrace,
+        );
+      },
+    );
+
+    // Side-channel: deletion (and future block / mute) emits a removed
+    // id here. The source-list stream may not be alive (the launching
+    // widget may have unmounted on shell-route transition), so the bus
+    // is what guarantees the fullscreen drops a removed video without
+    // waiting for an app restart.
+    _removedIdsSubscription ??= _removedIdsStream?.listen(
+      (videoId) {
+        if (!isClosed) add(FullscreenFeedVideoRemoved(videoId));
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        Log.error(
+          'FullscreenFeedBloc: removedIds stream error - $error',
           name: 'FullscreenFeedBloc',
           category: LogCategory.video,
           error: error,
@@ -409,9 +439,72 @@ class FullscreenFeedBloc
     emit(state.copyWith(clearPendingSkipTarget: true));
   }
 
+  /// Handle a user-initiated removal (deletion, block, mute).
+  ///
+  /// Removes the video from [FullscreenFeedState.videos] directly because
+  /// the upstream source may not be alive to push an updated list — the
+  /// launching widget often unmounts when the fullscreen route is pushed
+  /// outside its shell. When the last video is removed, transitions the
+  /// status to [FullscreenFeedStatus.emptyAfterRemoval] so the screen
+  /// pops the route.
+  ///
+  /// Skips the HEAD-check that [_onVideoUnavailable] performs because the
+  /// server has already confirmed the deletion (or the user explicitly
+  /// asked to hide the content), so a transient-error fallback is wrong.
+  void _onVideoRemoved(
+    FullscreenFeedVideoRemoved event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    final videoId = event.videoId;
+    if (state.removedVideoIds.contains(videoId)) return;
+
+    final index = state.videos.indexWhere((v) => v.id == videoId);
+    final updatedRemoved = {...state.removedVideoIds, videoId};
+
+    if (index < 0) {
+      // Not in the visible list — still record the dedupe so a later
+      // pagination push can't re-introduce it.
+      emit(state.copyWith(removedVideoIds: updatedRemoved));
+      return;
+    }
+
+    final updatedVideos = [...state.videos]..removeAt(index);
+    _onRemoveVideo?.call(videoId);
+
+    if (updatedVideos.isEmpty) {
+      emit(
+        state.copyWith(
+          status: FullscreenFeedStatus.emptyAfterRemoval,
+          videos: const [],
+          removedVideoIds: updatedRemoved,
+          clearPendingSkipTarget: true,
+        ),
+      );
+      return;
+    }
+
+    // Removing an item before the cursor shifts every later item down by
+    // one. Without this shift the visible video would jump from cur to
+    // cur+1 — for user-delete this never happens (the deleted item IS
+    // the cursor), but the bus is the entry point for the upcoming
+    // block / mute sweep where multi-video removals land at any index.
+    final shifted = index < state.currentIndex
+        ? state.currentIndex - 1
+        : state.currentIndex;
+    final clampedIndex = shifted.clamp(0, updatedVideos.length - 1);
+    emit(
+      state.copyWith(
+        videos: updatedVideos,
+        currentIndex: clampedIndex,
+        removedVideoIds: updatedRemoved,
+      ),
+    );
+  }
+
   @override
   Future<void> close() async {
     await _hasMoreSubscription?.cancel();
+    await _removedIdsSubscription?.cancel();
     _cacheQueue.clear();
     return super.close();
   }

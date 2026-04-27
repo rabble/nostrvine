@@ -96,5 +96,12 @@ void main() {
         equals('FF_INTEGRATED_APPS'),
       );
     });
+
+    test('feed auto advance is not feature flagged', () {
+      expect(
+        FeatureFlag.values.map((flag) => flag.name),
+        isNot(contains('feedAutoAdvance')),
+      );
+    });
   });
 }

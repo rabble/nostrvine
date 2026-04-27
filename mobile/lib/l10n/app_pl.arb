@@ -2925,5 +2925,6 @@
   "videoEditorAudioSegmentInstruction": "Wybierz fragment audio dla swojego filmu",
   "videoEditorClipGalleryInstruction": "Dotknij, aby edytować. Przytrzymaj i przeciągnij, aby zmienić kolejność.",
   "navSearch": "Szukaj",
-  "navSearchTooltip": "Szukaj"
+  "navSearchTooltip": "Szukaj",
+  "fullscreenFeedRemovedMessage": "Film usunięty"
 }

@@ -2245,7 +2245,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoActionAutoLabel.
   ///
   /// In en, this message translates to:
-  /// **'Auto'**
+  /// **'Compilation'**
   String get videoActionAutoLabel;
 
   /// No description provided for @videoActionLikeLabel.
@@ -10097,6 +10097,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Captions disabled for all videos'**
   String get metadataCaptionsDisabledSemantics;
+
+  /// Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link).
+  ///
+  /// In en, this message translates to:
+  /// **'Video removed'**
+  String get fullscreenFeedRemovedMessage;
 }
 
 class _AppLocalizationsDelegate

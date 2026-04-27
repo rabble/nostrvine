@@ -5458,4 +5458,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get metadataCaptionsDisabledSemantics => 'すべての動画で字幕が無効になっています';
+
+  @override
+  String get fullscreenFeedRemovedMessage => '動画を削除しました';
 }

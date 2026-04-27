@@ -334,6 +334,26 @@ void main() {
       verify(() => videoFeedController.setActive(active: true)).called(1);
     });
 
+    testWidgets('resumes playback when app resumes on home with no overlay', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      clearInteractions(videoFeedBloc);
+      clearInteractions(videoFeedController);
+
+      tester.binding.handleAppLifecycleStateChanged(
+        AppLifecycleState.resumed,
+      );
+      await tester.pump();
+
+      verify(
+        () => videoFeedBloc.add(const VideoFeedAutoRefreshRequested()),
+      ).called(1);
+      verify(() => videoFeedController.setActive(active: true)).called(1);
+    });
+
     testWidgets('does not resume when videos load while overlay is open', (
       tester,
     ) async {

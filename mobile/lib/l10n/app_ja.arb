@@ -2925,5 +2925,6 @@
     "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
-  "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。"
+  "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
+  "fullscreenFeedRemovedMessage": "動画を削除しました"
 }

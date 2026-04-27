@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -128,6 +129,43 @@ void main() {
         expect(find.text('Video 0 (active)'), findsOneWidget);
 
         controller.dispose();
+      });
+
+      testWidgets('deactivates controller when app backgrounds', (
+        tester,
+      ) async {
+        final controller = createMockVideoFeedController();
+
+        await tester.pumpWidget(buildFeed(controller: controller));
+        clearInteractions(controller);
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.paused,
+        );
+        await tester.pump();
+
+        verify(() => controller.setActive(active: false)).called(1);
+      });
+
+      testWidgets('deactivates controller when iOS app becomes inactive', (
+        tester,
+      ) async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        try {
+          final controller = createMockVideoFeedController();
+
+          await tester.pumpWidget(buildFeed(controller: controller));
+          clearInteractions(controller);
+
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.inactive,
+          );
+          await tester.pump();
+
+          verify(() => controller.setActive(active: false)).called(1);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
       });
     });
 

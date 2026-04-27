@@ -193,6 +193,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+      _syncControllerPlaybackState(resumeIfHome: true);
     }
   }
 
@@ -206,14 +207,11 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     unawaited(feedState.animateToPage(nextIndex));
   }
 
-  /// Whether auto-advance is available on this build, determined from the
-  /// feature flag and reduced-motion preference. Read at build time and
-  /// captured by the rail-control callback so an accessibility opt-out
-  /// overrides the in-app toggle.
+  /// Whether auto-advance is available on this build. Reduced-motion users
+  /// keep the control and runtime disabled regardless of in-app toggle state.
   bool _isAutoAdvanceAvailable() {
     if (!mounted) return false;
-    if (MediaQuery.disableAnimationsOf(context)) return false;
-    return ref.read(isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance));
+    return !MediaQuery.disableAnimationsOf(context);
   }
 
   void _toggleAutoAdvance() {
@@ -591,14 +589,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
               // toggled / suppressed / resumed.
               final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
-              // Gate the rail + runtime on both the feature flag and the
-              // user's reduced-motion preference. When Auto is unavailable,
+              // Gate the rail + runtime on the user's reduced-motion
+              // preference. When Auto is unavailable,
               // force it "off" at the view layer regardless of cubit state.
-              final autoAdvanceAvailable =
-                  ref.watch(
-                    isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance),
-                  ) &&
-                  !MediaQuery.disableAnimationsOf(context);
+              final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
+                context,
+              );
               final effectiveAutoEnabled =
                   autoAdvanceAvailable && autoState.enabled;
               final effectiveAutoActive =

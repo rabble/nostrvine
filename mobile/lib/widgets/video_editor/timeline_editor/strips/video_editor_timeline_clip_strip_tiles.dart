@@ -71,6 +71,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
 
     widget.onTrimChanged?.call(
       clipId: clip.id,
+      isStart: true,
       trimStart: newTrimStart,
       trimEnd: clip.trimEnd,
     );
@@ -102,6 +103,7 @@ class _TrimmableClipTileState extends State<_TrimmableClipTile> {
 
     widget.onTrimChanged?.call(
       clipId: clip.id,
+      isStart: false,
       trimStart: clip.trimStart,
       trimEnd: newTrimEnd,
     );

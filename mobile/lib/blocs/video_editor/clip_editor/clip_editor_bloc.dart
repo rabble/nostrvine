@@ -22,7 +22,7 @@ part 'clip_editor_state.dart';
 /// architecture replaces the Riverpod provider with a [VideoEditorRepository]
 /// injected directly into this BLoC.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
-  ClipEditorBloc({required void Function() this.onFinalClipInvalidated})
+  ClipEditorBloc({required this.onFinalClipInvalidated})
     : super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
@@ -49,7 +49,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
   }
 
-  final void Function()? onFinalClipInvalidated;
+  final void Function() onFinalClipInvalidated;
 
   // === CLIP DATA ===
 
@@ -245,38 +245,67 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     emit(state.copyWith(isEditing: false));
 
     try {
+      // Emit directly from callbacks instead of dispatching events.
+      // Cross-event-type handlers run concurrently in BLoC, which
+      // caused a race where ClipEditorClipUpdated (rendered video
+      // file) was processed before ClipEditorOriginalClipReplaced
+      // had inserted the new clip ids — the index lookup failed and
+      // the clips kept pointing at the original source video.
       await VideoEditorSplitService.splitClip(
         sourceClip: selectedClip,
         splitPosition: splitPosition,
         onClipsCreated: (startClip, endClip) {
-          add(
-            ClipEditorOriginalClipReplaced(
-              sourceClipId: selectedClip.id,
-              startClip: startClip,
-              endClip: endClip,
+          // splitClip's render phase awaits Future.wait on parallel
+          // video renders. If the bloc is closed mid-render (user
+          // navigates away from the editor), the late callbacks fire
+          // on a done emitter — guard each one.
+          if (emit.isDone) return;
+          final clips = state.clips;
+          final index = clips.indexWhere((c) => c.id == selectedClip.id);
+          if (index == -1) return;
+          final newClips = List<DivineVideoClip>.of(clips)
+            ..[index] = startClip
+            ..insert(index + 1, endClip);
+          emit(
+            state.copyWith(
+              clips: List.unmodifiable(newClips),
+              lastSplit: ClipSplitEvent(
+                sourceClipId: selectedClip.id,
+                startClipId: startClip.id,
+                endClipId: endClip.id,
+                absoluteSplitPosition: selectedClip.trimStart + splitPosition,
+                sourceDuration: selectedClip.duration,
+                sourceTrimStart: selectedClip.trimStart,
+                sourceTrimEnd: selectedClip.trimEnd,
+              ),
             ),
+          );
+          Log.debug(
+            '✂️ Replaced ${selectedClip.id} with '
+            '${startClip.id} + ${endClip.id}',
+            name: 'ClipEditorBloc',
+            category: LogCategory.video,
           );
         },
         onThumbnailExtracted: (clip, thumbnailPath) {
-          add(
-            ClipEditorClipUpdated(
-              clipId: clip.id,
-              clip: clip.copyWith(thumbnailPath: thumbnailPath),
-            ),
+          if (emit.isDone) return;
+          final clips = state.clips;
+          final index = clips.indexWhere((c) => c.id == clip.id);
+          if (index == -1) return;
+          final newClips = List<DivineVideoClip>.of(clips);
+          newClips[index] = newClips[index].copyWith(
+            thumbnailPath: thumbnailPath,
           );
+          emit(state.copyWith(clips: List.unmodifiable(newClips)));
         },
         onClipRendered: (clip, video) {
-          // Read the current clip from BLoC state to avoid
-          // overwriting fields updated by earlier callbacks
-          // (e.g. thumbnailPath from onThumbnailExtracted).
-          final current = state.clips.where((c) => c.id == clip.id);
-          final base = current.isNotEmpty ? current.first : clip;
-          add(
-            ClipEditorClipUpdated(
-              clipId: clip.id,
-              clip: base.copyWith(video: video),
-            ),
-          );
+          if (emit.isDone) return;
+          final clips = state.clips;
+          final index = clips.indexWhere((c) => c.id == clip.id);
+          if (index == -1) return;
+          final newClips = List<DivineVideoClip>.of(clips);
+          newClips[index] = newClips[index].copyWith(video: video);
+          emit(state.copyWith(clips: List.unmodifiable(newClips)));
           Log.debug(
             '\u2705 Clip rendered: ${clip.id}',
             name: 'ClipEditorBloc',
@@ -285,7 +314,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         },
       );
 
-      onFinalClipInvalidated?.call();
+      onFinalClipInvalidated.call();
 
       Log.info(
         '✅ Successfully split clip into 2 segments',
@@ -330,7 +359,21 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       trimEnd: clampedEnd,
     );
 
-    emit(state.copyWith(clips: List.unmodifiable(newClips)));
+    // Position of the dragged handle within the clip's *untrimmed*
+    // timeline (0..clip.duration). The preview player is switched to
+    // a single-clip view of [event.clipId] for the duration of the
+    // gesture, so seeking to this position lands on the correct frame.
+    final trimPosition = event.isStart
+        ? clampedStart
+        : clip.duration - clampedEnd;
+
+    emit(
+      state.copyWith(
+        clips: List.unmodifiable(newClips),
+        trimPosition: trimPosition,
+        trimmingClipId: event.clipId,
+      ),
+    );
   }
 
   void _onTrimDragStarted(
@@ -344,6 +387,12 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ClipEditorTrimDragEnded event,
     Emitter<ClipEditorState> emit,
   ) {
-    emit(state.copyWith(isTrimDragging: false));
+    emit(
+      state.copyWith(
+        isTrimDragging: false,
+        clearTrimPosition: true,
+        clearTrimmingClipId: true,
+      ),
+    );
   }
 }

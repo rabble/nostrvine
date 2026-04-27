@@ -6,12 +6,14 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -24,17 +26,17 @@ import 'package:unified_logger/unified_logger.dart';
 /// Grid widget displaying user's collab videos.
 ///
 /// Requires [ProfileCollabVideosBloc] to be provided in the widget tree.
-class ProfileCollabsGrid extends StatefulWidget {
+class ProfileCollabsGrid extends ConsumerStatefulWidget {
   const ProfileCollabsGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
   @override
-  State<ProfileCollabsGrid> createState() => _ProfileCollabsGridState();
+  ConsumerState<ProfileCollabsGrid> createState() => _ProfileCollabsGridState();
 }
 
-class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
+class _ProfileCollabsGridState extends ConsumerState<ProfileCollabsGrid>
     with GridPrefetchMixin, ScrollPaginationMixin {
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
   ScrollController? _primaryScrollController;
@@ -94,6 +96,7 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: Stream.value(allVideos),
         initialIndex: index,
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         trafficSource: ViewTrafficSource.profile,
       ),
     );

@@ -518,6 +518,106 @@ void main() {
           isFalse,
         );
       });
+
+      test(
+        'sets lastSplit with correct ids and position after split',
+        () async {
+          final clip = _createClip(
+            id: 'source-clip',
+            duration: const Duration(seconds: 2),
+          );
+          final bloc = buildBloc()
+            ..emit(
+              ClipEditorState(
+                clips: [clip],
+                isEditing: true,
+                splitPosition: const Duration(seconds: 1),
+              ),
+            );
+
+          bloc.add(const ClipEditorSplitRequested());
+          // First emit: isEditing=false. Second: onClipsCreated with lastSplit.
+          final states = await bloc.stream.take(2).toList();
+          final splitState = states.last;
+
+          expect(splitState.lastSplit, isNotNull);
+          expect(
+            splitState.lastSplit!.sourceClipId,
+            equals('source-clip'),
+          );
+          expect(
+            splitState.lastSplit!.startClipId,
+            equals(splitState.clips.first.id),
+          );
+          expect(
+            splitState.lastSplit!.endClipId,
+            equals(splitState.clips.last.id),
+          );
+
+          await bloc.close();
+        },
+      );
+
+      test(
+        'absoluteSplitPosition equals trimStart + splitPosition',
+        () async {
+          final clip = _createClip(
+            id: 'c',
+            duration: const Duration(seconds: 4),
+          ).copyWith(trimStart: const Duration(milliseconds: 500));
+
+          final bloc = buildBloc()
+            ..emit(
+              ClipEditorState(
+                clips: [clip],
+                isEditing: true,
+                // 1 s into the trimmed view
+                splitPosition: const Duration(seconds: 1),
+              ),
+            );
+
+          bloc.add(const ClipEditorSplitRequested());
+          final states = await bloc.stream.take(2).toList();
+          final split = states.last.lastSplit!;
+
+          expect(
+            split.absoluteSplitPosition,
+            // trimStart(500ms) + splitPosition(1000ms)
+            equals(const Duration(milliseconds: 1500)),
+          );
+
+          await bloc.close();
+        },
+      );
+
+      test('lastSplit captures source trim bounds', () async {
+        final clip =
+            _createClip(
+              id: 'c',
+              duration: const Duration(seconds: 10),
+            ).copyWith(
+              trimStart: const Duration(seconds: 3),
+              trimEnd: const Duration(seconds: 2),
+            );
+
+        final bloc = buildBloc()
+          ..emit(
+            ClipEditorState(
+              clips: [clip],
+              isEditing: true,
+              splitPosition: const Duration(seconds: 2),
+            ),
+          );
+
+        bloc.add(const ClipEditorSplitRequested());
+        final states = await bloc.stream.take(2).toList();
+        final split = states.last.lastSplit!;
+
+        expect(split.sourceTrimStart, equals(const Duration(seconds: 3)));
+        expect(split.sourceTrimEnd, equals(const Duration(seconds: 2)));
+
+        await bloc.close();
+      });
     });
 
     // =========================================================
@@ -560,6 +660,52 @@ void main() {
         // Other fields unchanged
         expect(updated.currentClipIndex, equals(0));
       });
+
+      test('lastSplit defaults to null', () {
+        const state = ClipEditorState();
+        expect(state.lastSplit, isNull);
+      });
+
+      test('copyWith sets lastSplit', () {
+        const state = ClipEditorState();
+        final split = ClipSplitEvent(
+          sourceClipId: 'src',
+          startClipId: 'start',
+          endClipId: 'end',
+          absoluteSplitPosition: const Duration(seconds: 1),
+          sourceDuration: const Duration(seconds: 2),
+        );
+
+        final updated = state.copyWith(lastSplit: split);
+
+        expect(updated.lastSplit, same(split));
+      });
+
+      test(
+        'two ClipSplitEvents with identical fields are treated as distinct',
+        () {
+          final split1 = ClipSplitEvent(
+            sourceClipId: 'src',
+            startClipId: 'start',
+            endClipId: 'end',
+            absoluteSplitPosition: const Duration(seconds: 1),
+            sourceDuration: const Duration(seconds: 2),
+          );
+          final split2 = ClipSplitEvent(
+            sourceClipId: 'src',
+            startClipId: 'start',
+            endClipId: 'end',
+            absoluteSplitPosition: const Duration(seconds: 1),
+            sourceDuration: const Duration(seconds: 2),
+          );
+
+          final state1 = ClipEditorState(lastSplit: split1);
+          final state2 = ClipEditorState(lastSplit: split2);
+
+          // Identity hash differs between instances → props differ → not equal
+          expect(state1, isNot(equals(state2)));
+        },
+      );
     });
 
     // =========================================================
@@ -574,6 +720,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(milliseconds: 500),
             trimEnd: Duration(milliseconds: 300),
           ),
@@ -600,6 +747,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'unknown',
+            isStart: true,
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
           ),
@@ -614,6 +762,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(milliseconds: 500),
             trimEnd: Duration.zero,
           ),
@@ -636,6 +785,7 @@ void main() {
         act: (bloc) => bloc.add(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
           ),
@@ -644,6 +794,53 @@ void main() {
           expect(bloc.state.clips.last.trimStart, equals(Duration.zero));
           expect(bloc.state.clips.last.trimEnd, equals(Duration.zero));
         },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'sets trimmingClipId and trimPosition to clampedStart when isStart',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          const ClipEditorTrimUpdated(
+            clipId: 'a',
+            isStart: true,
+            trimStart: Duration(milliseconds: 500),
+            trimEnd: Duration.zero,
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.trimmingClipId, 'trimmingClipId', 'a')
+              .having(
+                (s) => s.trimPosition,
+                'trimPosition',
+                const Duration(milliseconds: 500),
+              ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'sets trimPosition to clip.duration - clampedEnd when !isStart',
+        build: buildBloc,
+        seed: () => ClipEditorState(clips: twoClips),
+        act: (bloc) => bloc.add(
+          // Clip 'a' has duration 2s; trimEnd 500ms → trimPosition 1.5s
+          const ClipEditorTrimUpdated(
+            clipId: 'a',
+            isStart: false,
+            trimStart: Duration.zero,
+            trimEnd: Duration(milliseconds: 500),
+          ),
+        ),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.trimmingClipId, 'trimmingClipId', 'a')
+              .having(
+                (s) => s.trimPosition,
+                'trimPosition',
+                const Duration(milliseconds: 1500),
+              ),
+        ],
       );
     });
 
@@ -674,6 +871,22 @@ void main() {
             'isTrimDragging',
             isFalse,
           ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'clears trimPosition and trimmingClipId',
+        build: buildBloc,
+        seed: () => const ClipEditorState(
+          isTrimDragging: true,
+          trimmingClipId: 'a',
+          trimPosition: Duration(milliseconds: 500),
+        ),
+        act: (bloc) => bloc.add(const ClipEditorTrimDragEnded()),
+        expect: () => [
+          isA<ClipEditorState>()
+              .having((s) => s.trimmingClipId, 'trimmingClipId', isNull)
+              .having((s) => s.trimPosition, 'trimPosition', isNull),
         ],
       );
     });
@@ -759,12 +972,14 @@ void main() {
         expect(
           const ClipEditorTrimUpdated(
             clipId: 'a',
+            isStart: true,
             trimStart: Duration(seconds: 1),
             trimEnd: Duration.zero,
           ),
           equals(
             const ClipEditorTrimUpdated(
               clipId: 'a',
+              isStart: true,
               trimStart: Duration(seconds: 1),
               trimEnd: Duration.zero,
             ),

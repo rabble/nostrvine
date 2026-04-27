@@ -1066,9 +1066,213 @@ void main() {
         expect(event.props, equals(['abc']));
       });
 
+      test('FullscreenFeedVideoRemoved props contains videoId', () {
+        const event = FullscreenFeedVideoRemoved('abc');
+        expect(event.props, equals(['abc']));
+      });
+
       test('FullscreenFeedSkipAcknowledged props is empty', () {
         const event = FullscreenFeedSkipAcknowledged();
         expect(event.props, isEmpty);
+      });
+    });
+
+    group('FullscreenFeedVideoRemoved', () {
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'removes the video from state.videos and clamps the current index',
+        build: () => createBloc(initialIndex: 1),
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('b'),
+            createTestVideo('c'),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const FullscreenFeedVideoRemoved('b'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos.map((v) => v.id), equals(['a', 'c']));
+          expect(bloc.state.currentIndex, 1);
+          expect(bloc.state.removedVideoIds, contains('b'));
+          expect(
+            bloc.state.status,
+            isNot(FullscreenFeedStatus.emptyAfterRemoval),
+          );
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'transitions to emptyAfterRemoval when the last video is removed',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([createTestVideo('only')]);
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const FullscreenFeedVideoRemoved('only'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos, isEmpty);
+          expect(bloc.state.removedVideoIds, contains('only'));
+          expect(bloc.state.status, FullscreenFeedStatus.emptyAfterRemoval);
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'second removal of the same id is a no-op (dedupe)',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('b'),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const FullscreenFeedVideoRemoved('a'));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const FullscreenFeedVideoRemoved('a'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos.map((v) => v.id), equals(['b']));
+          expect(bloc.state.removedVideoIds, equals({'a'}));
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'records dedupe even when video is not in the visible list',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([createTestVideo('a')]);
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const FullscreenFeedVideoRemoved('not-present'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos.map((v) => v.id), equals(['a']));
+          expect(bloc.state.removedVideoIds, contains('not-present'));
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'shifts currentIndex left when removed item is before the cursor',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('b'),
+            createTestVideo('c'),
+            createTestVideo('d'),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          // Move cursor to 'c' (index 2).
+          bloc.add(const FullscreenFeedIndexChanged(2));
+          await Future<void>.delayed(Duration.zero);
+          // Remove 'a' (index 0, before the cursor).
+          bloc.add(const FullscreenFeedVideoRemoved('a'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos.map((v) => v.id), equals(['b', 'c', 'd']));
+          // Without the shift, currentIndex would stay at 2 → bloc would
+          // surface 'd'. The cursor must follow 'c' to its new position.
+          expect(bloc.state.currentIndex, 1);
+          expect(bloc.state.currentVideo?.id, 'c');
+          expect(bloc.state.removedVideoIds, contains('a'));
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'leaves currentIndex unchanged when removed item is after the cursor',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+          videosController.add([
+            createTestVideo('a'),
+            createTestVideo('b'),
+            createTestVideo('c'),
+          ]);
+          await Future<void>.delayed(Duration.zero);
+          // Cursor on 'a'.
+          bloc.add(const FullscreenFeedIndexChanged(0));
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const FullscreenFeedVideoRemoved('c'));
+          await Future<void>.delayed(Duration.zero);
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos.map((v) => v.id), equals(['a', 'b']));
+          expect(bloc.state.currentIndex, 0);
+          expect(bloc.state.currentVideo?.id, 'a');
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'subscribes to removedIdsStream and dispatches removals',
+        build: () {
+          final removedController = StreamController<String>.broadcast();
+          addTearDown(removedController.close);
+          final bloc = FullscreenFeedBloc(
+            videosStream: videosController.stream,
+            initialIndex: 0,
+            removedIdsStream: removedController.stream,
+            mediaCache: mockMediaCache,
+            blossomAuthService: mockBlossomAuth,
+          );
+          // Schedule the removal AFTER the bloc subscribes inside _onStarted.
+          Future<void>(() async {
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+            videosController.add([
+              createTestVideo('a'),
+              createTestVideo('b'),
+            ]);
+            await Future<void>.delayed(const Duration(milliseconds: 1));
+            removedController.add('a');
+          });
+          return bloc;
+        },
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+        verify: (bloc) {
+          expect(bloc.state.videos.map((v) => v.id), equals(['b']));
+          expect(bloc.state.removedVideoIds, contains('a'));
+        },
+      );
+
+      test('close() cancels the removedIdsStream subscription', () async {
+        final removedController = StreamController<String>.broadcast();
+        addTearDown(removedController.close);
+
+        final bloc = FullscreenFeedBloc(
+          videosStream: videosController.stream,
+          initialIndex: 0,
+          removedIdsStream: removedController.stream,
+          mediaCache: mockMediaCache,
+          blossomAuthService: mockBlossomAuth,
+        );
+        bloc.add(const FullscreenFeedStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+        videosController.add([createTestVideo('a'), createTestVideo('b')]);
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+
+        await bloc.close();
+
+        // Adding to the stream after close must NOT fire any further state
+        // transitions — the bloc has been disposed.
+        removedController.add('a');
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(bloc.isClosed, isTrue);
       });
     });
   });

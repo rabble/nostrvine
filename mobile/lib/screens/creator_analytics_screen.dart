@@ -178,81 +178,89 @@ class _CreatorAnalyticsScreenState
           ),
         ],
       ),
-      body: FutureBuilder<_CreatorAnalyticsData>(
-        future: _analyticsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: FutureBuilder<_CreatorAnalyticsData>(
+            future: _analyticsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          if (snapshot.hasError) {
-            return _ErrorView(error: snapshot.error, onRetry: _refresh);
-          }
+              if (snapshot.hasError) {
+                return _ErrorView(error: snapshot.error, onRetry: _refresh);
+              }
 
-          final data = snapshot.data;
-          if (data == null) {
-            return _ErrorView(
-              error: context.l10n.analyticsUnableToLoad,
-              onRetry: _refresh,
-            );
-          }
+              final data = snapshot.data;
+              if (data == null) {
+                return _ErrorView(
+                  error: context.l10n.analyticsUnableToLoad,
+                  onRetry: _refresh,
+                );
+              }
 
-          final summary = _CreatorAnalyticsSummary.build(
-            data: data,
-            window: _selectedWindow,
-          );
-          final useFixture = ref.watch(useFixtureCreatorAnalyticsProvider);
+              final summary = _CreatorAnalyticsSummary.build(
+                data: data,
+                window: _selectedWindow,
+              );
+              final useFixture = ref.watch(useFixtureCreatorAnalyticsProvider);
 
-          return RefreshIndicator(
-            onRefresh: _refresh,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: EdgeInsets.fromLTRB(
-                16,
-                12,
-                16,
-                // Important on Android to ensure content is not behind the
-                // device navigation bar.
-                24 + MediaQuery.viewPaddingOf(context).bottom,
-              ),
-              children: [
-                _RangeSelector(
-                  selected: _selectedWindow,
-                  onSelected: (window) {
-                    setState(() {
-                      _selectedWindow = window;
-                    });
-                  },
+              return RefreshIndicator(
+                onRefresh: _refresh,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    12,
+                    16,
+                    // Important on Android to ensure content is not behind the
+                    // device navigation bar.
+                    24 + MediaQuery.viewPaddingOf(context).bottom,
+                  ),
+                  children: [
+                    _RangeSelector(
+                      selected: _selectedWindow,
+                      onSelected: (window) {
+                        setState(() {
+                          _selectedWindow = window;
+                        });
+                      },
+                    ),
+                    if (_showDiagnostics) ...[
+                      const SizedBox(height: 16),
+                      _DiagnosticsPanel(
+                        diagnostics: data.diagnostics,
+                        useFixture: useFixture,
+                        onToggleFixture: (enabled) async {
+                          ref
+                                  .read(
+                                    useFixtureCreatorAnalyticsProvider.notifier,
+                                  )
+                                  .state =
+                              enabled;
+                          await _refresh();
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    ..._buildOverviewSection(summary, data),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.l10n.analyticsUpdatedTimestamp(
+                        _formatLastUpdated(context.l10n, data.fetchedAt),
+                      ),
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ],
                 ),
-                if (_showDiagnostics) ...[
-                  const SizedBox(height: 16),
-                  _DiagnosticsPanel(
-                    diagnostics: data.diagnostics,
-                    useFixture: useFixture,
-                    onToggleFixture: (enabled) async {
-                      ref
-                              .read(useFixtureCreatorAnalyticsProvider.notifier)
-                              .state =
-                          enabled;
-                      await _refresh();
-                    },
-                  ),
-                ],
-                const SizedBox(height: 16),
-                ..._buildOverviewSection(summary, data),
-                const SizedBox(height: 12),
-                Text(
-                  context.l10n.analyticsUpdatedTimestamp(
-                    _formatLastUpdated(context.l10n, data.fetchedAt),
-                  ),
-                  style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -428,58 +436,61 @@ class _KpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final cardWidth = math.max((width - 48) / 2, 140.0);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = math.max((constraints.maxWidth - 12) / 2, 140.0);
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _KpiCard(
-          width: cardWidth,
-          label: context.l10n.analyticsVideos,
-          value: StringUtils.formatCompactNumber(summary.videoCount),
-          icon: Icons.video_collection_outlined,
-        ),
-        _KpiCard(
-          width: cardWidth,
-          label: context.l10n.analyticsViews,
-          value: summary.hasViewData
-              ? StringUtils.formatCompactNumber(summary.totalViews)
-              : context.l10n.analyticsNa,
-          icon: Icons.visibility_outlined,
-        ),
-        _KpiCard(
-          width: cardWidth,
-          label: context.l10n.analyticsInteractions,
-          value: StringUtils.formatCompactNumber(summary.totalInteractions),
-          icon: Icons.touch_app_outlined,
-        ),
-        _KpiCard(
-          width: cardWidth,
-          label: context.l10n.analyticsEngagement,
-          value: summary.engagementRate == null
-              ? context.l10n.analyticsNa
-              : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
-          icon: Icons.trending_up,
-        ),
-        _KpiCard(
-          width: cardWidth,
-          label: context.l10n.analyticsFollowers,
-          value: StringUtils.formatCompactNumber(followerCount),
-          icon: Icons.group_outlined,
-        ),
-        _KpiCard(
-          width: cardWidth,
-          label: context.l10n.analyticsAvgPerPost,
-          value: summary.videoCount == 0
-              ? '0'
-              : NumberFormat.decimalPattern().format(
-                  summary.averageInteractionsPerVideo,
-                ),
-          icon: Icons.stacked_bar_chart,
-        ),
-      ],
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _KpiCard(
+              width: cardWidth,
+              label: context.l10n.analyticsVideos,
+              value: StringUtils.formatCompactNumber(summary.videoCount),
+              icon: Icons.video_collection_outlined,
+            ),
+            _KpiCard(
+              width: cardWidth,
+              label: context.l10n.analyticsViews,
+              value: summary.hasViewData
+                  ? StringUtils.formatCompactNumber(summary.totalViews)
+                  : context.l10n.analyticsNa,
+              icon: Icons.visibility_outlined,
+            ),
+            _KpiCard(
+              width: cardWidth,
+              label: context.l10n.analyticsInteractions,
+              value: StringUtils.formatCompactNumber(summary.totalInteractions),
+              icon: Icons.touch_app_outlined,
+            ),
+            _KpiCard(
+              width: cardWidth,
+              label: context.l10n.analyticsEngagement,
+              value: summary.engagementRate == null
+                  ? context.l10n.analyticsNa
+                  : '${NumberFormat.decimalPattern().format(summary.engagementRate! * 100)}%',
+              icon: Icons.trending_up,
+            ),
+            _KpiCard(
+              width: cardWidth,
+              label: context.l10n.analyticsFollowers,
+              value: StringUtils.formatCompactNumber(followerCount),
+              icon: Icons.group_outlined,
+            ),
+            _KpiCard(
+              width: cardWidth,
+              label: context.l10n.analyticsAvgPerPost,
+              value: summary.videoCount == 0
+                  ? '0'
+                  : NumberFormat.decimalPattern().format(
+                      summary.averageInteractionsPerVideo,
+                    ),
+              icon: Icons.stacked_bar_chart,
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -874,89 +885,99 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-        children: [
-          _AnalyticsCard(
-            title: performance.displayTitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            children: [
+              _AnalyticsCard(
+                title: performance.displayTitle,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _MetricPill(
-                      label: context.l10n.analyticsViews,
-                      value: performance.views == null
-                          ? context.l10n.analyticsNa
-                          : StringUtils.formatCompactNumber(performance.views!),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _MetricPill(
+                          label: context.l10n.analyticsViews,
+                          value: performance.views == null
+                              ? context.l10n.analyticsNa
+                              : StringUtils.formatCompactNumber(
+                                  performance.views!,
+                                ),
+                        ),
+                        _MetricPill(
+                          label: context.l10n.analyticsLikes,
+                          value: StringUtils.formatCompactNumber(likes),
+                        ),
+                        _MetricPill(
+                          label: context.l10n.analyticsComments,
+                          value: StringUtils.formatCompactNumber(comments),
+                        ),
+                        _MetricPill(
+                          label: context.l10n.analyticsReposts,
+                          value: StringUtils.formatCompactNumber(reposts),
+                        ),
+                        _MetricPill(
+                          label: context.l10n.analyticsEngagement,
+                          value: performance.engagementRate == null
+                              ? context.l10n.analyticsNa
+                              : '${(performance.engagementRate! * 100).toStringAsFixed(1)}%',
+                        ),
+                      ],
                     ),
-                    _MetricPill(
+                    const SizedBox(height: 14),
+                    _BreakdownRow(
                       label: context.l10n.analyticsLikes,
-                      value: StringUtils.formatCompactNumber(likes),
+                      value: likes,
+                      share: likesShare,
+                      color: const Color(0xFF79C97D),
                     ),
-                    _MetricPill(
+                    const SizedBox(height: 8),
+                    _BreakdownRow(
                       label: context.l10n.analyticsComments,
-                      value: StringUtils.formatCompactNumber(comments),
+                      value: comments,
+                      share: commentsShare,
+                      color: const Color(0xFF64B5F6),
                     ),
-                    _MetricPill(
+                    const SizedBox(height: 8),
+                    _BreakdownRow(
                       label: context.l10n.analyticsReposts,
-                      value: StringUtils.formatCompactNumber(reposts),
+                      value: reposts,
+                      share: repostShare,
+                      color: const Color(0xFFFFB74D),
                     ),
-                    _MetricPill(
-                      label: context.l10n.analyticsEngagement,
-                      value: performance.engagementRate == null
-                          ? context.l10n.analyticsNa
-                          : '${(performance.engagementRate! * 100).toStringAsFixed(1)}%',
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: performance.video.id.isEmpty
+                            ? null
+                            : () {
+                                context.push(
+                                  VideoDetailScreen.pathForId(
+                                    performance.video.id,
+                                  ),
+                                );
+                              },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: VineTheme.whiteText,
+                          side: const BorderSide(color: VineTheme.outlineMuted),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        icon: const Icon(Icons.play_circle_outline),
+                        label: Text(context.l10n.analyticsOpenPost),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-                _BreakdownRow(
-                  label: context.l10n.analyticsLikes,
-                  value: likes,
-                  share: likesShare,
-                  color: const Color(0xFF79C97D),
-                ),
-                const SizedBox(height: 8),
-                _BreakdownRow(
-                  label: context.l10n.analyticsComments,
-                  value: comments,
-                  share: commentsShare,
-                  color: const Color(0xFF64B5F6),
-                ),
-                const SizedBox(height: 8),
-                _BreakdownRow(
-                  label: context.l10n.analyticsReposts,
-                  value: reposts,
-                  share: repostShare,
-                  color: const Color(0xFFFFB74D),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: performance.video.id.isEmpty
-                        ? null
-                        : () {
-                            context.push(
-                              VideoDetailScreen.pathForId(performance.video.id),
-                            );
-                          },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: VineTheme.whiteText,
-                      side: const BorderSide(color: VineTheme.outlineMuted),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.play_circle_outline),
-                    label: Text(context.l10n.analyticsOpenPost),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

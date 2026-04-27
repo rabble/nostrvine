@@ -813,10 +813,19 @@ void main() {
           createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
         ];
 
+        var pushedPath = '';
+        AudioEvent? pushedExtra;
         final mockGoRouter = MockGoRouter();
         when(
-          () => mockGoRouter.push(any(), extra: any(named: 'extra')),
-        ).thenAnswer((_) async => null);
+          () => mockGoRouter.push(
+            captureAny(),
+            extra: captureAny(named: 'extra'),
+          ),
+        ).thenAnswer((invocation) async {
+          pushedPath = invocation.positionalArguments.first as String;
+          pushedExtra = invocation.namedArguments[#extra] as AudioEvent?;
+          return null;
+        });
 
         await tester.pumpWidget(
           ProviderScope(
@@ -840,17 +849,22 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Find and tap the chevron button
-        final chevronButtons = find.byIcon(Icons.chevron_right);
-        expect(chevronButtons, findsWidgets);
-
-        await tester.tap(chevronButtons.first);
+        // Focus the all-sounds list so the expected sound row is definitely in
+        // view before tapping its chevron. The old test grabbed the first
+        // chevron icon in the tree, which became order-dependent under CI.
+        await tester.enterText(find.byType(TextField), 'Cool Beat');
         await tester.pumpAndSettle();
 
-        // Verify GoRouter push was called with correct path
-        verify(
-          () => mockGoRouter.push('/sound/sound1', extra: any(named: 'extra')),
-        ).called(1);
+        final detailButtons = find.bySemanticsLabel(
+          'View details for Cool Beat',
+        );
+        expect(detailButtons, findsOneWidget);
+
+        await tester.tap(detailButtons);
+        await tester.pump();
+
+        expect(pushedPath, equals('/sound/sound1'));
+        expect(pushedExtra?.id, equals('sound1'));
       });
 
       testWidgets(

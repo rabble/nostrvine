@@ -289,12 +289,14 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
 
   void _onClipTrimChange({
     required String clipId,
+    required bool isStart,
     required Duration trimStart,
     required Duration trimEnd,
   }) {
     context.read<ClipEditorBloc>().add(
       ClipEditorTrimUpdated(
         clipId: clipId,
+        isStart: isStart,
         trimStart: trimStart,
         trimEnd: trimEnd,
       ),
@@ -313,12 +315,9 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
         const VideoEditorExternalPauseRequested(isPaused: true),
       );
     } else {
-      final clips = context
-          .read<ClipEditorBloc>()
-          .state
-          .clips
-          .map((e) => e.toJson())
-          .toList();
+      clipEditorBloc.add(const ClipEditorTrimDragEnded());
+
+      final clips = clipEditorBloc.state.clips.map((e) => e.toJson()).toList();
 
       editor.addHistory(
         meta: {
@@ -590,6 +589,13 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
     // Mirror the position live during drag so the canvas updates every frame,
     // just like trim does via setLayerTimeline/setFilterTimeline.
     final editor = VideoEditorScope.of(context).requireEditor;
+
+    // Publish the live drag position to the BLoC so the canvas can
+    // seek the player preview to the new startTime on every frame
+    // (parallel to trimPosition for trim gestures).
+    context.read<TimelineOverlayBloc>().add(
+      TimelineOverlayDragMoved(startTime),
+    );
 
     switch (item.type) {
       case .layer:

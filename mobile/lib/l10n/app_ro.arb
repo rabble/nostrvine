@@ -2925,5 +2925,6 @@
   "videoEditorAudioSegmentInstruction": "Alege segmentul audio pentru videoclipul tău",
   "videoEditorClipGalleryInstruction": "Atinge pentru editare. Ține apăsat și trage pentru reordonare.",
   "navSearch": "Caută",
-  "navSearchTooltip": "Caută"
+  "navSearchTooltip": "Caută",
+  "fullscreenFeedRemovedMessage": "Videoclip eliminat"
 }

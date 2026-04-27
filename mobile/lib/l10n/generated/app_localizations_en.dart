@@ -1248,7 +1248,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoActionLike => 'Like video';
 
   @override
-  String get videoActionAutoLabel => 'Auto';
+  String get videoActionAutoLabel => 'Compilation';
 
   @override
   String get videoActionLikeLabel => 'Like';
@@ -5695,4 +5695,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Captions disabled for all videos';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video removed';
 }

@@ -2925,5 +2925,6 @@
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
   "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
-  "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب."
+  "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
+  "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو"
 }

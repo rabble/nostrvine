@@ -5638,4 +5638,7 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'التسميات التوضيحية معطّلة لجميع مقاطع الفيديو';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
 }

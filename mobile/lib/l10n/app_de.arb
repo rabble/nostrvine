@@ -2925,5 +2925,6 @@
   "videoEditorAudioSegmentInstruction": "Wähle den Audiobereich für dein Video aus",
   "videoEditorClipGalleryInstruction": "Tippen zum Bearbeiten. Halten und ziehen zum Neuordnen.",
   "navSearch": "Suche",
-  "navSearchTooltip": "Suchen"
+  "navSearchTooltip": "Suchen",
+  "fullscreenFeedRemovedMessage": "Video entfernt"
 }

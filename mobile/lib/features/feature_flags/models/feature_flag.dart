@@ -42,11 +42,6 @@ enum FeatureFlag {
     'Account Switching',
     'Enable switching between remembered accounts in Settings',
   ),
-  feedAutoAdvance(
-    'Feed Auto Advance',
-    'Show the Auto rail control and let the feed advance automatically '
-        'after each completed play',
-  ),
   hlsAuthWebPlayer(
     'HLS + NIP-98 Web Player',
     'Route web video playback through hls.js with NIP-98 auth headers so '

@@ -5725,4 +5725,7 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Ondertitels uitgeschakeld voor alle video\'s';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video verwijderd';
 }

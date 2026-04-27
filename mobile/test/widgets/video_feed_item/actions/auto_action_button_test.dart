@@ -26,7 +26,7 @@ void main() {
   }
 
   group(AutoActionButton, () {
-    testWidgets('renders a double-play icon without a visible label', (
+    testWidgets('renders a double-play icon with the Compilation label', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject(isEnabled: false));
@@ -38,6 +38,7 @@ void main() {
       expect(icons, hasLength(2));
       expect(icons.every((icon) => icon.icon == DivineIconName.play), isTrue);
       expect(find.text('Auto'), findsNothing);
+      expect(find.text('Compilation'), findsOneWidget);
     });
 
     testWidgets('uses enable semantics when disabled', (tester) async {
