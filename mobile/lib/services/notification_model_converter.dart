@@ -23,6 +23,15 @@ NotificationModel notificationModelFromRelayApi(
     hasTargetEvent: relay.referencedEventId != null,
   );
 
+  // For mentions, the relay sometimes leaves `referenced_event_id` empty
+  // (e.g. mentions inside a NIP-22 comment). Fall back to the source event so
+  // navigation has a target to resolve — `NotificationTargetResolver` walks
+  // its `E` / `e` tags back to the root video. Without this, mention taps
+  // route to the mentioner's profile (#3168).
+  final targetEventId = type == NotificationType.mention
+      ? (relay.referencedEventId ?? _nonEmpty(relay.sourceEventId))
+      : relay.referencedEventId;
+
   return NotificationModel(
     id: relay.id,
     type: type,
@@ -32,12 +41,14 @@ NotificationModel notificationModelFromRelayApi(
     message: message,
     timestamp: relay.sourceCreatedAt ?? relay.createdAt,
     isRead: relay.read,
-    targetEventId: relay.referencedEventId,
+    targetEventId: targetEventId,
     targetVideoUrl: targetVideoUrl,
     targetVideoThumbnail: targetVideoThumbnail,
     metadata: _buildMetadata(relay, type),
   );
 }
+
+String? _nonEmpty(String value) => value.isEmpty ? null : value;
 
 /// Map relay notification type string to [NotificationType] enum
 NotificationType _mapNotificationType(String relayType, int sourceKind) {

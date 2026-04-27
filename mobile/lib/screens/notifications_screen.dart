@@ -693,7 +693,9 @@ class _NotificationTabContentState
       return;
     }
 
-    final shouldAutoOpenComments = notificationType == NotificationType.comment;
+    final shouldAutoOpenComments =
+        notificationType == NotificationType.comment ||
+        notificationType == NotificationType.mention;
     final videoForNav = video;
 
     // Navigate to video player using the pooled playback path
