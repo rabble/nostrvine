@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 
 // Hide Drift table class to avoid collision with ProfileStats domain model.
 import 'package:db_client/db_client.dart' hide Filter, ProfileStats;
@@ -14,6 +13,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 // TODO(e2e): Add divine-name-server to local_stack Docker dependencies
 // so username check/claim flows can be tested against it in E2E tests.
@@ -328,9 +328,10 @@ class ProfileRepository {
             break;
         }
       } on Exception catch (e) {
-        developer.log(
+        Log.warning(
           'REST API fetch failed (falling back to relay): $e',
           name: 'ProfileRepository.fetchFreshProfile',
+          category: LogCategory.api,
         );
       }
     }
@@ -352,9 +353,10 @@ class ProfileRepository {
 
     // All sources exhausted — mark as confirmed missing.
     _confirmedMissing.add(pubkey);
-    developer.log(
+    Log.debug(
       'No profile found for $pubkey across all sources, marked missing',
       name: 'ProfileRepository.fetchFreshProfile',
+      category: LogCategory.relay,
     );
     return null;
   }
@@ -417,16 +419,18 @@ class ProfileRepository {
       final event = await _nostrClient.fetchProfile(pubkey);
       if (event != null) {
         final profile = UserProfile.fromNostrEvent(event);
-        developer.log(
+        Log.debug(
           'Fetched from relay: ${profile.bestDisplayName}',
           name: 'ProfileRepository.fetchFreshProfile',
+          category: LogCategory.relay,
         );
         return profile;
       }
     } on Exception catch (e) {
-      developer.log(
+      Log.warning(
         'Connected relay fetch failed: $e',
         name: 'ProfileRepository.fetchFreshProfile',
+        category: LogCategory.relay,
       );
     }
     return null;
@@ -453,16 +457,18 @@ class ProfileRepository {
           (a, b) => b.createdAt > a.createdAt ? b : a,
         );
         final profile = UserProfile.fromNostrEvent(newest);
-        developer.log(
+        Log.debug(
           'Fetched from indexer relay: ${profile.bestDisplayName}',
           name: 'ProfileRepository.fetchFreshProfile',
+          category: LogCategory.relay,
         );
         return profile;
       }
     } on Exception catch (e) {
-      developer.log(
+      Log.warning(
         'Indexer relay fetch failed: $e',
         name: 'ProfileRepository.fetchFreshProfile',
+        category: LogCategory.relay,
       );
     }
     return null;
@@ -522,6 +528,12 @@ class ProfileRepository {
     );
 
     if (profileEvent == null) {
+      Log.error(
+        'sendProfile returned null '
+        '(no relays connected or relay rejected the event)',
+        name: 'ProfileRepository.saveProfileEvent',
+        category: LogCategory.relay,
+      );
       throw const ProfilePublishFailedException(
         'Failed to publish profile. Please try again.',
       );
@@ -549,6 +561,12 @@ class ProfileRepository {
     );
 
     if (authHeader == null) {
+      Log.error(
+        'NIP-98 auth header generation returned null '
+        '(username: $normalizedUsername)',
+        name: 'ProfileRepository.claimUsername',
+        category: LogCategory.auth,
+      );
       return const UsernameClaimError('Nip98 authorization failed');
     }
 
@@ -574,9 +592,16 @@ class ProfileRepository {
         } on Exception {
           // Ignore JSON parse failures
         }
+        Log.warning(
+          'claim returned ${response.statusCode}: '
+          '${serverError ?? "(no server error)"} '
+          '(username: $normalizedUsername)',
+          name: 'ProfileRepository.claimUsername',
+          category: LogCategory.api,
+        );
       }
 
-      return switch (response.statusCode) {
+      final result = switch (response.statusCode) {
         200 || 201 => const UsernameClaimSuccess(),
         400 => UsernameClaimError(serverError ?? 'Invalid username format'),
         403 => const UsernameClaimReserved(),
@@ -585,7 +610,22 @@ class ProfileRepository {
           serverError ?? 'Unexpected response: ${response.statusCode}',
         ),
       };
-    } on Exception catch (e) {
+      if (result is UsernameClaimSuccess) {
+        Log.info(
+          'claim succeeded for $normalizedUsername',
+          name: 'ProfileRepository.claimUsername',
+          category: LogCategory.auth,
+        );
+      }
+      return result;
+    } on Exception catch (e, st) {
+      Log.error(
+        'claim network error (username: $normalizedUsername)',
+        name: 'ProfileRepository.claimUsername',
+        category: LogCategory.api,
+        error: e,
+        stackTrace: st,
+      );
       return UsernameClaimError('Network error: $e');
     }
   }
@@ -631,6 +671,11 @@ class ProfileRepository {
 
     // Server-side check using the name-server API which validates format
     // and checks availability in one call.
+    Log.debug(
+      'checking availability for $normalizedUsername',
+      name: 'ProfileRepository.checkUsernameAvailability',
+      category: LogCategory.api,
+    );
     try {
       final response = await _httpClient
           .get(Uri.parse('$_usernameCheckUrl/$normalizedUsername'))
@@ -660,9 +705,10 @@ class ProfileRepository {
             // If keycast returns non-200 or no names entry, treat as available
           } on Exception catch (e) {
             // If keycast is unreachable, don't block — name-server said OK
-            developer.log(
+            Log.warning(
               'Keycast availability check failed (non-blocking): $e',
               name: 'ProfileRepository.checkUsernameAvailability',
+              category: LogCategory.api,
             );
           }
           return const UsernameAvailable();
@@ -678,11 +724,11 @@ class ProfileRepository {
         }
 
         if (code == null) {
-          developer.log(
+          Log.error(
             'Name server response missing required code field '
             '(username: $normalizedUsername, reason: $reason)',
             name: 'ProfileRepository.checkUsernameAvailability',
-            level: 1000,
+            category: LogCategory.api,
           );
           return const UsernameTaken();
         }
@@ -696,11 +742,24 @@ class ProfileRepository {
           _ => const UsernameTaken(),
         };
       } else {
+        Log.warning(
+          'name server returned ${response.statusCode} '
+          '(username: $normalizedUsername)',
+          name: 'ProfileRepository.checkUsernameAvailability',
+          category: LogCategory.api,
+        );
         return UsernameCheckError(
           'Server returned status ${response.statusCode}',
         );
       }
-    } on Exception catch (e) {
+    } on Exception catch (e, st) {
+      Log.error(
+        'name-server network error (username: $normalizedUsername)',
+        name: 'ProfileRepository.checkUsernameAvailability',
+        category: LogCategory.api,
+        error: e,
+        stackTrace: st,
+      );
       return UsernameCheckError('Network error: $e');
     }
   }
@@ -748,15 +807,17 @@ class ProfileRepository {
           resultMap[result.pubkey] = result.toUserProfile();
         }
         final withPic = restResults.where((r) => r.picture != null).length;
-        developer.log(
+        Log.debug(
           'Phase 1 (REST): ${restResults.length} results, '
           '$withPic with picture',
           name: 'ProfileRepository.searchUsers',
+          category: LogCategory.api,
         );
       } on Exception catch (e) {
-        developer.log(
+        Log.warning(
           'Phase 1 (REST) failed: $e',
           name: 'ProfileRepository.searchUsers',
+          category: LogCategory.api,
         );
       }
     }
@@ -773,15 +834,17 @@ class ProfileRepository {
         }
         final wsProfiles = resultMap.values.toList();
         final wsWithPic = wsProfiles.where((p) => p.picture != null).length;
-        developer.log(
+        Log.debug(
           'Phase 2 (WS): ${events.length} events, '
           'merged total: ${wsProfiles.length}, $wsWithPic with picture',
           name: 'ProfileRepository.searchUsers',
+          category: LogCategory.relay,
         );
       } on Object catch (e) {
-        developer.log(
+        Log.warning(
           'Phase 2 (WebSocket NIP-50) failed: $e',
           name: 'ProfileRepository.searchUsers',
+          category: LogCategory.relay,
         );
       }
     }
@@ -877,9 +940,10 @@ class ProfileRepository {
           resultMap[result.pubkey] = result.toUserProfile();
         }
       } on Exception catch (e) {
-        developer.log(
+        Log.warning(
           'REST search failed: $e',
           name: 'ProfileRepository.searchUsersProgressive',
+          category: LogCategory.api,
         );
       }
     }
@@ -911,9 +975,10 @@ class ProfileRepository {
         // Intentionally catches Object: WebSocket failures surface as
         // StateError (an Error, not Exception), unlike the REST phase above.
         // TimeoutException is also caught here when NIP-50 relays are slow.
-        developer.log(
+        Log.warning(
           'NIP-50 search failed: $e',
           name: 'ProfileRepository.searchUsersProgressive',
+          category: LogCategory.relay,
         );
       }
 
@@ -1053,9 +1118,10 @@ class ProfileRepository {
     }
     if (remaining.isEmpty) return results;
 
-    developer.log(
+    Log.debug(
       'Batch fetch: ${cached.length} cached, ${remaining.length} uncached',
       name: 'ProfileRepository.fetchBatchProfiles',
+      category: LogCategory.api,
     );
 
     final toCache = <UserProfile>[];
@@ -1086,9 +1152,10 @@ class ProfileRepository {
           }
         }
       } on Exception catch (e) {
-        developer.log(
+        Log.warning(
           'Batch REST fetch failed: $e',
           name: 'ProfileRepository.fetchBatchProfiles',
+          category: LogCategory.api,
         );
       }
     }
@@ -1102,9 +1169,10 @@ class ProfileRepository {
         remainingList.map(
           (pubkey) => Future.sync(() => _nostrClient.fetchProfile(pubkey))
               .catchError((Object e) {
-                developer.log(
+                Log.warning(
                   'Batch connected relay fetch failed for $pubkey: $e',
                   name: 'ProfileRepository.fetchBatchProfiles',
+                  category: LogCategory.relay,
                 );
                 return null;
               }, test: (_) => true),
@@ -1126,9 +1194,10 @@ class ProfileRepository {
               useCache: false,
             ),
           ).timeout(const Duration(seconds: 5)).catchError((Object e) {
-            developer.log(
+            Log.warning(
               'Batch indexer fetch failed: $e',
               name: 'ProfileRepository.fetchBatchProfiles',
+              category: LogCategory.relay,
             );
             return <Event>[];
           }, test: (_) => true);
@@ -1152,9 +1221,10 @@ class ProfileRepository {
       indexerEvents.forEach(collectEvent);
 
       if (indexerEvents.isNotEmpty) {
-        developer.log(
+        Log.debug(
           'Indexer fallback: found ${indexerEvents.length} profiles',
           name: 'ProfileRepository.fetchBatchProfiles',
+          category: LogCategory.relay,
         );
       }
 
@@ -1186,10 +1256,11 @@ class ProfileRepository {
       results.removeWhere((pubkey, _) => blockFilter(pubkey));
     }
 
-    developer.log(
+    Log.debug(
       'Batch complete: ${results.length}/${pubkeys.length} resolved, '
       '${remaining.length} still missing',
       name: 'ProfileRepository.fetchBatchProfiles',
+      category: LogCategory.api,
     );
 
     return results;
@@ -1214,12 +1285,13 @@ class ProfileRepository {
       final cachedHasPicture = cached.picture != null;
       final willEnrichPicture = !hadPicture && cachedHasPicture;
       if (willEnrichPicture) pictureEnriched++;
-      developer.log(
+      Log.debug(
         'Cache hit for ${profile.bestDisplayName}: '
         'search picture=${profile.picture ?? "null"}, '
         'cached picture=${cached.picture ?? "null"}, '
         'will enrich=$willEnrichPicture',
         name: 'ProfileRepository._enrichFromCache',
+        category: LogCategory.storage,
       );
       enriched.add(
         profile.copyWith(
@@ -1235,10 +1307,11 @@ class ProfileRepository {
         ),
       );
     }
-    developer.log(
+    Log.debug(
       'Enrichment summary: ${profiles.length} profiles, '
       '$cacheHits cache hits, $pictureEnriched pictures enriched',
       name: 'ProfileRepository._enrichFromCache',
+      category: LogCategory.storage,
     );
     return enriched;
   }
