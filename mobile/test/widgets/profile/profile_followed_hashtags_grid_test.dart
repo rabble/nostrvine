@@ -14,8 +14,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final repo = FollowedHashtagsRepository(prefs: prefs);
-    await repo.addFollowedHashtag('zebra');
-    await repo.addFollowedHashtag('apple');
+    await repo.addProfileSavedHashtag('zebra');
+    await repo.addProfileSavedHashtag('apple');
 
     await tester.pumpWidget(
       MaterialApp(

@@ -201,43 +201,6 @@ class FollowedHashtagsRepository {
     _subjectFeed(next);
   }
 
-  // --- Backward compatible with single-list API (Profile only) ---
-
-  /// Legacy stream of followed hashtags (profile‑saved list).
-  ///
-  /// This stream is identical to [profileSavedHashtagsStream] and exists for
-  /// backward compatibility with older code that expects a single “followed”
-  /// list.
-  Stream<List<String>> get followedHashtagsStream => profileSavedHashtagsStream;
-
-  /// Legacy snapshot of followed hashtags (profile‑saved list).
-  ///
-  /// This getter is identical to [profileSavedHashtags] and exists for
-  /// backward compatibility.
-  List<String> get followedHashtags => profileSavedHashtags;
-
-  /// Legacy check for a followed hashtag (profile‑saved list).
-  ///
-  /// This method is identical to [hasProfileSavedHashtag] and exists for
-  /// backward compatibility.
-  bool hasFollowedHashtag(String rawLabel) => hasProfileSavedHashtag(rawLabel);
-
-  /// Legacy addition of a followed hashtag (profile‑saved list).
-  ///
-  /// This method delegates to [addProfileSavedHashtag] and exists for
-  /// backward compatibility.
-  Future<void> addFollowedHashtag(String rawLabel) async {
-    await addProfileSavedHashtag(rawLabel);
-  }
-
-  /// Legacy removal of a followed hashtag (profile‑saved list).
-  ///
-  /// This method delegates to [removeProfileSavedHashtag] and exists for
-  /// backward compatibility.
-  Future<void> removeFollowedHashtag(String rawLabel) async {
-    await removeProfileSavedHashtag(rawLabel);
-  }
-
   /// Forces a reload of both lists from persistent storage.
   ///
   /// Useful when external changes to SharedPreferences are suspected

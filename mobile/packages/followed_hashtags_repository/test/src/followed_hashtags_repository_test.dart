@@ -4,6 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// [FollowedHashtagsRepository] loads from prefs in an async [Future] started
+/// from the constructor; drain the microtask queue before reading state.
+Future<void> _afterRepoOpen() => pumpEventQueue();
+
 void main() {
   group('FollowedHashtagsRepository', () {
     setUp(() {
@@ -13,6 +17,7 @@ void main() {
     test('loads empty when unset', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
 
       expect(repo.profileSavedHashtags, isEmpty);
       expect(repo.followingFeedHashtagLabels, isEmpty);
@@ -20,19 +25,20 @@ void main() {
     });
 
     test(
-      'migrates legacy profile-only data into the feed list on first open',
+      'seeds following feed from profile when the feed key is absent on first open',
       () async {
         SharedPreferences.setMockInitialValues({
           FollowedHashtagsRepository.preferencesKey: ['alpha', 'beta'],
         });
         final prefs = await SharedPreferences.getInstance();
         final repo = FollowedHashtagsRepository(prefs: prefs);
+        await _afterRepoOpen();
 
         expect(repo.profileSavedHashtags, ['alpha', 'beta']);
         expect(
           repo.followingFeedHashtagLabels,
           ['alpha', 'beta'],
-          reason: 'feed key is seeded from profile for upgrade compatibility',
+          reason: 'first write copies profile into the new feed list key',
         );
         expect(
           prefs.getStringList(
@@ -49,6 +55,7 @@ void main() {
       () async {
         final prefs = await SharedPreferences.getInstance();
         final repo = FollowedHashtagsRepository(prefs: prefs);
+        await _afterRepoOpen();
 
         await repo.addProfileSavedHashtag('  #Vine  ');
 
@@ -72,6 +79,7 @@ void main() {
       () async {
         final prefs = await SharedPreferences.getInstance();
         final repo = FollowedHashtagsRepository(prefs: prefs);
+        await _afterRepoOpen();
 
         await repo.addFollowingFeedHashtag('home');
 
@@ -81,21 +89,10 @@ void main() {
       },
     );
 
-    test(
-      'addFollowedHashtag alias only touches profile in separate mode',
-      () async {
-        final prefs = await SharedPreferences.getInstance();
-        final repo = FollowedHashtagsRepository(prefs: prefs);
-        await repo.addFollowedHashtag('alias');
-        expect(repo.profileSavedHashtags, ['alias']);
-        expect(repo.followingFeedHashtagLabels, isEmpty);
-        await repo.dispose();
-      },
-    );
-
     test('add is idempotent for profile', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
 
       await repo.addProfileSavedHashtag('nostr');
       await repo.addProfileSavedHashtag('#nostr');
@@ -107,6 +104,7 @@ void main() {
     test('removeProfileSavedHashtag', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
 
       await repo.addProfileSavedHashtag('a');
       await repo.addProfileSavedHashtag('b');
@@ -119,6 +117,7 @@ void main() {
     test('profileSavedHashtagsStream emits updates', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
 
       final emissions = <List<String>>[];
       final sub = repo.profileSavedHashtagsStream.listen(emissions.add);
@@ -147,6 +146,7 @@ void main() {
       });
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
 
       expect(repo.profileSavedHashtags, ['remote']);
       expect(repo.followingFeedHashtagLabels, ['f']);
@@ -179,6 +179,7 @@ void main() {
         followingFeedStorageKey: 'custom_feed',
       );
       final def = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
 
       expect(custom.profileSavedHashtags, ['c']);
       expect(custom.followingFeedHashtagLabels, ['cf']);
