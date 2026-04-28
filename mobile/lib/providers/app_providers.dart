@@ -4,6 +4,7 @@
 // TODO(#4339): Drop this compatibility barrel once consumers import the
 // feature-domain provider modules directly.
 export 'auth_providers.dart';
+export 'minor_account_review_providers.dart';
 export 'moderation_providers.dart';
 export 'nostr_apps_providers.dart';
 export 'notifications_providers.dart';
