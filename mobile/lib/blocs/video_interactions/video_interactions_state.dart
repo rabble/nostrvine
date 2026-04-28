@@ -42,7 +42,6 @@ class VideoInteractionsState extends Equatable {
     this.repostCount,
     this.commentCount,
     this.isCommentsInProgress = false,
-    this.error,
   });
 
   /// Current status of the bloc.
@@ -69,9 +68,6 @@ class VideoInteractionsState extends Equatable {
   /// Whether a comments operation is currently in progress.
   final bool isCommentsInProgress;
 
-  /// Error that occurred, if any.
-  final VideoInteractionsError? error;
-
   /// Whether interaction counts are still loading.
   bool get isLoading =>
       status == VideoInteractionsStatus.initial ||
@@ -89,8 +85,6 @@ class VideoInteractionsState extends Equatable {
     int? repostCount,
     int? commentCount,
     bool? isCommentsInProgress,
-    VideoInteractionsError? error,
-    bool clearError = false,
   }) {
     return VideoInteractionsState(
       status: status ?? this.status,
@@ -100,7 +94,6 @@ class VideoInteractionsState extends Equatable {
       repostCount: repostCount ?? this.repostCount,
       commentCount: commentCount ?? this.commentCount,
       isCommentsInProgress: isCommentsInProgress ?? this.isCommentsInProgress,
-      error: clearError ? null : (error ?? this.error),
     );
   }
 
@@ -113,18 +106,5 @@ class VideoInteractionsState extends Equatable {
     repostCount,
     commentCount,
     isCommentsInProgress,
-    error,
   ];
-}
-
-/// Errors that can occur in video interactions.
-enum VideoInteractionsError {
-  /// Failed to fetch counts.
-  fetchFailed,
-
-  /// Failed to toggle like.
-  likeFailed,
-
-  /// Failed to toggle repost.
-  repostFailed,
 }
