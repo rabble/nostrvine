@@ -53,6 +53,14 @@ class ProfileFeed extends _$ProfileFeed {
   /// Guard against duplicate listener registration from retained-state path.
   bool _listenersRegistered = false;
 
+  /// Cached [VideoEventService] captured at build() time.
+  ///
+  /// Both [videoEventServiceProvider] and this notifier are keepAlive, so
+  /// the same instance survives the notifier's lifetime — re-resolving on
+  /// the merge/tombstone hot path was unnecessary friction. Reassigned on
+  /// each build() so a test-time provider override still wins.
+  late VideoEventService _videoEventService;
+
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset REST pagination state at start of build to ensure clean state.
@@ -70,8 +78,7 @@ class ProfileFeed extends _$ProfileFeed {
       category: LogCategory.video,
     );
 
-    // Get video event service for Nostr fallback
-    final videoEventService = ref.watch(videoEventServiceProvider);
+    _videoEventService = ref.watch(videoEventServiceProvider);
     List<VideoEvent> authorVideos = [];
 
     // Try REST API first if available (use centralized availability check)
@@ -84,7 +91,7 @@ class ProfileFeed extends _$ProfileFeed {
     final sessionCache = ref.read(profileFeedSessionCacheProvider);
     final retainedState = sessionCache.read(userId);
 
-    _registerRetainedRealtimeListeners(videoEventService);
+    _registerRetainedRealtimeListeners(_videoEventService);
 
     if (retainedState != null && retainedState.videos.isNotEmpty) {
       _usingRestApi = funnelcakeAvailable;
@@ -99,11 +106,11 @@ class ProfileFeed extends _$ProfileFeed {
       );
     }
 
-    authorVideos = _relayVideosSnapshot(videoEventService);
+    authorVideos = _relayVideosSnapshot(_videoEventService);
 
     unawaited(
       Future(() async {
-        await _refreshFromNostrSource(videoEventService);
+        await _refreshFromNostrSource(_videoEventService);
         if (funnelcakeAvailable) {
           await _refreshFromRestApi(clientOverride: funnelcakeClient);
         }
@@ -234,18 +241,14 @@ class ProfileFeed extends _$ProfileFeed {
       _nextOffset = apiVideos.length;
 
       if (apiVideos.isNotEmpty) {
-        final relayVideos = _relayVideosSnapshot(
-          ref.read(videoEventServiceProvider),
-        );
+        final relayVideos = _relayVideosSnapshot(_videoEventService);
         final authorVideos = _mergeVideoLists(
           relayVideos,
           apiVideos.where((v) => !v.isRepost).toList(),
         );
         _cacheVideoMetadata(authorVideos);
 
-        final filteredVideos = ref
-            .read(videoEventServiceProvider)
-            .filterVideoList(authorVideos);
+        final filteredVideos = _videoEventService.filterVideoList(authorVideos);
 
         _usingRestApi = true;
         _mergeSourceVideos(
@@ -263,9 +266,7 @@ class ProfileFeed extends _$ProfileFeed {
           nostrService: ref.read(nostrServiceProvider),
           onEnriched: (enriched) {
             if (!ref.mounted) return;
-            final enrichedVideos = ref
-                .read(videoEventServiceProvider)
-                .filterVideoList(enriched);
+            final enrichedVideos = _videoEventService.filterVideoList(enriched);
             _mergeSourceVideos(
               enrichedVideos,
               hasMoreContent:
@@ -383,8 +384,7 @@ class ProfileFeed extends _$ProfileFeed {
           );
 
           // Apply content filter preferences
-          final videoEventService = ref.read(videoEventServiceProvider);
-          newVideos = videoEventService.filterVideoList(newVideos);
+          newVideos = _videoEventService.filterVideoList(newVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = _mergeVideoLists(currentState.videos, newVideos);
@@ -432,7 +432,6 @@ class ProfileFeed extends _$ProfileFeed {
       }
 
       // Nostr mode - load more from relay
-      final videoEventService = ref.read(videoEventServiceProvider);
 
       // Find the oldest timestamp from current videos to use as cursor
       int? until;
@@ -448,15 +447,15 @@ class ProfileFeed extends _$ProfileFeed {
         );
       }
 
-      final eventCountBefore = videoEventService.authorVideos(userId).length;
+      final eventCountBefore = _videoEventService.authorVideos(userId).length;
 
       // Query for older events from this specific user
-      await videoEventService.queryHistoricalUserVideos(userId, until: until);
+      await _videoEventService.queryHistoricalUserVideos(userId, until: until);
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;
 
-      final eventCountAfter = videoEventService.authorVideos(userId).length;
+      final eventCountAfter = _videoEventService.authorVideos(userId).length;
       final newEventsLoaded = eventCountAfter - eventCountBefore;
 
       Log.info(
@@ -466,7 +465,7 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       // Get updated videos, filtering out reposts (originals only)
-      var updatedVideos = videoEventService
+      var updatedVideos = _videoEventService
           .authorVideos(userId)
           .where((v) => !v.isRepost)
           .toList();
@@ -475,7 +474,7 @@ class ProfileFeed extends _$ProfileFeed {
       updatedVideos = _applyMetadataCache(updatedVideos);
 
       // Apply content filter preferences
-      updatedVideos = videoEventService.filterVideoList(updatedVideos);
+      updatedVideos = _videoEventService.filterVideoList(updatedVideos);
 
       // Update state with new videos
       if (!ref.mounted) return;
@@ -533,9 +532,8 @@ class ProfileFeed extends _$ProfileFeed {
       );
     }
 
-    final videoEventService = ref.read(videoEventServiceProvider);
     final refreshFutures = <Future<void>>[
-      _refreshFromNostrSource(videoEventService),
+      _refreshFromNostrSource(_videoEventService),
       if (funnelcakeAvailable) _refreshFromRestApi(),
     ];
 
@@ -766,7 +764,7 @@ class ProfileFeed extends _$ProfileFeed {
     // Drop any session-tombstoned ids the merge carried forward. The
     // upstream snapshot is already filtered, but `current` may still
     // contain a video that was just deleted before the source caught up.
-    return _withoutTombstones(merged, ref.read(videoEventServiceProvider));
+    return _withoutTombstones(merged, _videoEventService);
   }
 
   VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {
