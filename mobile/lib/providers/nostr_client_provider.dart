@@ -72,29 +72,10 @@ class NostrService extends _$NostrService {
       dbClient: dbClient,
     );
 
-    // Register callback so when NIP-65 discovery completes later, we add those
-    // relays to this client (fixes race where discovery finishes after client build)
-    authService.registerUserRelaysDiscoveredCallback((relayUrls) {
-      if (relayUrls.isEmpty) return;
-      Future.microtask(() async {
-        try {
-          final added = await client.addRelays(relayUrls);
-          if (added > 0) {
-            Log.info(
-              '[NostrService] Added $added discovered relay(s) after NIP-65 discovery',
-              name: 'NostrService',
-              category: LogCategory.system,
-            );
-          }
-        } catch (e) {
-          Log.warning(
-            '[NostrService] Failed to add discovered relays: $e',
-            name: 'NostrService',
-            category: LogCategory.system,
-          );
-        }
-      });
-    });
+    // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
+    authService.registerUserRelaysDiscoveredCallback(
+      _userRelaysDiscoveredCallbackFor(client),
+    );
 
     // Bootstrap kind:10002 publisher — see _bootstrapCallbackFor.
     authService.registerBootstrapRelayListCallback(
@@ -186,28 +167,10 @@ class NostrService extends _$NostrService {
         dbClient: dbClient,
       );
 
-      // Register callback for new client so later discovery adds relays to it
-      authService.registerUserRelaysDiscoveredCallback((relayUrls) {
-        if (relayUrls.isEmpty) return;
-        Future.microtask(() async {
-          try {
-            final added = await newClient.addRelays(relayUrls);
-            if (added > 0) {
-              Log.info(
-                '[NostrService] Added $added discovered relay(s) after NIP-65 discovery',
-                name: 'NostrService',
-                category: LogCategory.system,
-              );
-            }
-          } catch (e) {
-            Log.warning(
-              '[NostrService] Failed to add discovered relays: $e',
-              name: 'NostrService',
-              category: LogCategory.system,
-            );
-          }
-        });
-      });
+      // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
+      authService.registerUserRelaysDiscoveredCallback(
+        _userRelaysDiscoveredCallbackFor(newClient),
+      );
 
       // Bootstrap kind:10002 publisher — see _bootstrapCallbackFor.
       authService.registerBootstrapRelayListCallback(
@@ -224,6 +187,39 @@ class NostrService extends _$NostrService {
       await newClient.initialize();
       state = newClient;
     }
+  }
+
+  /// Builds the NIP-65 discovered-relays callback bound to [client].
+  ///
+  /// Registered with AuthService so when NIP-65 discovery completes later,
+  /// the discovered relays are added to [client] — this fixes the race
+  /// where discovery finishes after the client has been built. Used at
+  /// both initial-build and account-switch sites so the
+  /// add-relays-on-discovery flow stays in one place.
+  static UserRelaysDiscoveredCallback _userRelaysDiscoveredCallbackFor(
+    NostrClient client,
+  ) {
+    return (relayUrls) {
+      if (relayUrls.isEmpty) return;
+      Future.microtask(() async {
+        try {
+          final added = await client.addRelays(relayUrls);
+          if (added > 0) {
+            Log.info(
+              '[NostrService] Added $added discovered relay(s) after NIP-65 discovery',
+              name: 'NostrService',
+              category: LogCategory.system,
+            );
+          }
+        } catch (e) {
+          Log.warning(
+            '[NostrService] Failed to add discovered relays: $e',
+            name: 'NostrService',
+            category: LogCategory.system,
+          );
+        }
+      });
+    };
   }
 
   /// Builds the bootstrap kind:10002 publisher closure bound to [client].
