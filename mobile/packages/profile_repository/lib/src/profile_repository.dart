@@ -175,9 +175,17 @@ class ProfileRepository {
 
   /// Deletes a cached profile from local storage.
   ///
-  /// Returns the number of rows deleted (0 or 1).
-  Future<int> deleteCachedProfile({required String pubkey}) {
-    return _userProfilesDao.deleteProfile(pubkey);
+  /// Returns the number of rows deleted (0 or 1). On a successful delete
+  /// (rows > 0), also removes the pubkey from the in-memory known-cached
+  /// set so [hasProfile] returns `false` for the rest of the session.
+  /// Does not add the pubkey to the confirmed-missing set — a local
+  /// eviction does not prove remote absence.
+  Future<int> deleteCachedProfile({required String pubkey}) async {
+    final rowsAffected = await _userProfilesDao.deleteProfile(pubkey);
+    if (rowsAffected > 0) {
+      _knownCached.remove(pubkey);
+    }
+    return rowsAffected;
   }
 
   /// Returns all cached profiles from local storage.

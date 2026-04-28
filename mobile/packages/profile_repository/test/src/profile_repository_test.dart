@@ -254,6 +254,49 @@ void main() {
 
         expect(result, equals(0));
       });
+
+      test(
+        'removes pubkey from known cached set on successful delete',
+        () async {
+          final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+          await profileRepository.cacheProfile(profile);
+          expect(profileRepository.hasProfile(testPubkey), isTrue);
+
+          when(
+            () => mockUserProfilesDao.deleteProfile(any()),
+          ).thenAnswer((_) async => 1);
+
+          await profileRepository.deleteCachedProfile(pubkey: testPubkey);
+
+          expect(profileRepository.hasProfile(testPubkey), isFalse);
+        },
+      );
+
+      test('keeps pubkey in known cached set when delete is a no-op', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        await profileRepository.cacheProfile(profile);
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+
+        when(
+          () => mockUserProfilesDao.deleteProfile(any()),
+        ).thenAnswer((_) async => 0);
+
+        await profileRepository.deleteCachedProfile(pubkey: testPubkey);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+
+      test('does not mark pubkey as confirmed missing on delete', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        await profileRepository.cacheProfile(profile);
+        when(
+          () => mockUserProfilesDao.deleteProfile(any()),
+        ).thenAnswer((_) async => 1);
+
+        await profileRepository.deleteCachedProfile(pubkey: testPubkey);
+
+        expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
+      });
     });
 
     group('getAllCachedProfiles', () {
