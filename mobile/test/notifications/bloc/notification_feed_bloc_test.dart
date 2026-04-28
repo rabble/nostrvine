@@ -324,6 +324,29 @@ void main() {
           ),
         ],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'marks a tapped grouped notification as read and decrements unread',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAsRead(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_grouped()],
+          unreadCount: 1,
+        ),
+        act: (bloc) =>
+            bloc.add(NotificationFeedItemTapped('group_like_video1')),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_grouped(isRead: true)],
+          ),
+        ],
+      );
     });
 
     group('NotificationFeedMarkAllRead', () {
@@ -337,20 +360,14 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [
-            _single(),
-            _grouped(),
-          ],
+          notifications: [_single(), _grouped()],
           unreadCount: 5,
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [
-              _single(isRead: true),
-              _grouped(isRead: true),
-            ],
+            notifications: [_single(isRead: true), _grouped(isRead: true)],
           ),
         ],
         verify: (bloc) {
@@ -370,6 +387,7 @@ void main() {
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
           notifications: [_single(isRead: true)],
+          unreadCount: 0,
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         expect: () => <NotificationFeedState>[],
@@ -425,46 +443,40 @@ void main() {
     });
 
     group('unreadBadgeCount', () {
-      test(
-        'derives from the consolidated unread list, not the server-reported '
-        'unreadCount inflated by Kind 3 republishes',
-        () {
-          // Repository already consolidated 5 raw follow rows from 2 distinct
-          // pubkeys down to 2 visible items, but the server still reports
-          // unreadCount: 5 (funnelcake#234). The badge must follow the list.
-          final state = NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            notifications: [
-              _single(
-                id: 'follow_a',
-                type: NotificationKind.follow,
-                pubkey: 'follower_a',
-              ),
-              _single(
-                id: 'follow_b',
-                type: NotificationKind.follow,
-                pubkey: 'follower_b',
-              ),
-            ],
-            unreadCount: 5,
-          );
+      test('derives from the consolidated unread list, not the server-reported '
+          'unreadCount inflated by Kind 3 republishes', () {
+        // Repository already consolidated 5 raw follow rows from 2 distinct
+        // pubkeys down to 2 visible items, but the server still reports
+        // unreadCount: 5 (funnelcake#234). The badge must follow the list.
+        final state = NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _single(
+              id: 'follow_a',
+              type: NotificationKind.follow,
+              pubkey: 'follower_a',
+            ),
+            _single(
+              id: 'follow_b',
+              type: NotificationKind.follow,
+              pubkey: 'follower_b',
+            ),
+          ],
+          unreadCount: 5,
+        );
 
-          expect(state.unreadBadgeCount, 2);
-        },
-      );
+        expect(state.unreadBadgeCount, 2);
+      });
 
-      test(
-        'drops to 0 when notifications list is empty even if server reports '
-        'unread items',
-        () {
-          const state = NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            unreadCount: 42,
-          );
+      test('drops to 0 when notifications list is empty even if server reports '
+          'unread items', () {
+        const state = NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          unreadCount: 42,
+        );
 
-          expect(state.unreadBadgeCount, 0);
-        },
-      );
+        expect(state.unreadBadgeCount, 0);
+      });
 
       test('excludes already-read notifications', () {
         final state = NotificationFeedState(
