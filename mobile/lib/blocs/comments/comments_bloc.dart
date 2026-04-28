@@ -69,13 +69,12 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentSubmitted>(_onSubmitted);
     on<CommentErrorCleared>(_onErrorCleared);
     on<CommentDeleteRequested>(_onDeleteRequested);
-    // droppable() prevents same-event-type rapid double-taps from racing.
-    // Per-comment in-progress tracking was removed in favor of the
-    // optimistic-first repo APIs — AlreadyLikedException /
-    // AlreadyDownvotedException short-circuit duplicate publishes for the
-    // same comment, and the optimistic emit handles the visible flash.
-    on<CommentUpvoteToggled>(_onUpvoteToggled, transformer: droppable());
-    on<CommentDownvoteToggled>(_onDownvoteToggled, transformer: droppable());
+    // Single handler with droppable() so rapid taps of any vote — same
+    // comment, same direction OR opposite direction — drop while a
+    // publish is in flight. Splitting the handlers by direction would
+    // let an up-tap and a down-tap run concurrently and interleave
+    // kind-7 / kind-5 publishes on the relay.
+    on<CommentVoteToggled>(_onVoteToggled, transformer: droppable());
     on<CommentVoteCountsFetchRequested>(_onVoteCountsFetchRequested);
     on<CommentsSortModeChanged>(_onSortModeChanged);
     on<CommentReportRequested>(_onReportRequested, transformer: droppable());
@@ -487,36 +486,18 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  Future<void> _onUpvoteToggled(
-    CommentUpvoteToggled event,
+  Future<void> _onVoteToggled(
+    CommentVoteToggled event,
     Emitter<CommentsState> emit,
-  ) async => _onVoteToggled(
-    commentId: event.commentId,
-    authorPubkey: event.authorPubkey,
-    isUpvote: true,
-    emit: emit,
-  );
-
-  Future<void> _onDownvoteToggled(
-    CommentDownvoteToggled event,
-    Emitter<CommentsState> emit,
-  ) async => _onVoteToggled(
-    commentId: event.commentId,
-    authorPubkey: event.authorPubkey,
-    isUpvote: false,
-    emit: emit,
-  );
-
-  Future<void> _onVoteToggled({
-    required String commentId,
-    required String authorPubkey,
-    required bool isUpvote,
-    required Emitter<CommentsState> emit,
-  }) async {
+  ) async {
     if (!_authService.isAuthenticated) {
       emit(state.copyWith(error: CommentsError.notAuthenticated));
       return;
     }
+
+    final commentId = event.commentId;
+    final authorPubkey = event.authorPubkey;
+    final isUpvote = event.vote == Vote.up;
 
     final wasUpvoted = state.upvotedCommentIds.contains(commentId);
     final wasDownvoted = state.downvotedCommentIds.contains(commentId);

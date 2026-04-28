@@ -93,32 +93,37 @@ final class CommentEditSubmitted extends CommentsEvent {
   const CommentEditSubmitted();
 }
 
-/// Toggle upvote on a comment (optimistic update + relay publish)
-final class CommentUpvoteToggled extends CommentsEvent {
-  const CommentUpvoteToggled({
-    required this.commentId,
-    required this.authorPubkey,
-  });
+/// Direction of a comment vote.
+enum Vote {
+  /// Upvote (kind-7 reaction with content "+").
+  up,
 
-  /// The ID of the comment to upvote/un-upvote
-  final String commentId;
-
-  /// The pubkey of the comment author
-  final String authorPubkey;
+  /// Downvote (kind-7 reaction with content "-").
+  down,
 }
 
-/// Toggle downvote on a comment (optimistic update + relay publish)
-final class CommentDownvoteToggled extends CommentsEvent {
-  const CommentDownvoteToggled({
+/// Toggle a vote on a comment (optimistic update + relay publish).
+///
+/// A single event for both upvotes and downvotes so that one
+/// `droppable()` handler serializes all votes — same-comment rapid
+/// up→down (or down→up) within publish-RTT can no longer run two
+/// handlers concurrently and produce interleaved kind-7 / kind-5
+/// publishes on the relay.
+final class CommentVoteToggled extends CommentsEvent {
+  const CommentVoteToggled({
     required this.commentId,
     required this.authorPubkey,
+    required this.vote,
   });
 
-  /// The ID of the comment to downvote/un-downvote
+  /// The ID of the comment being voted on.
   final String commentId;
 
-  /// The pubkey of the comment author
+  /// The pubkey of the comment author.
   final String authorPubkey;
+
+  /// Whether this is an upvote or a downvote tap.
+  final Vote vote;
 }
 
 /// Request to batch-fetch vote counts for all loaded comments

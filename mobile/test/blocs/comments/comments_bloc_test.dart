@@ -1292,7 +1292,7 @@ void main() {
       );
     });
 
-    group('CommentUpvoteToggled', () {
+    group('CommentVoteToggled (upvote)', () {
       blocTest<CommentsBloc, CommentsState>(
         'emits optimistic like update when unliked comment is toggled',
         setUp: () {
@@ -1321,9 +1321,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentUpvoteToggled(
+          CommentVoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.up,
           ),
         ),
         expect: () => [
@@ -1367,9 +1368,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentUpvoteToggled(
+          CommentVoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.up,
           ),
         ),
         expect: () => [
@@ -1416,9 +1418,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentUpvoteToggled(
+          CommentVoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.up,
           ),
         ),
         expect: () => [
@@ -1483,9 +1486,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentUpvoteToggled(
+          CommentVoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.up,
           ),
         ),
         expect: () => [
@@ -1551,9 +1555,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentUpvoteToggled(
+          CommentVoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.up,
           ),
         ),
         expect: () => [
@@ -1566,7 +1571,7 @@ void main() {
       );
     });
 
-    group('CommentDownvoteToggled', () {
+    group('CommentVoteToggled (downvote)', () {
       blocTest<CommentsBloc, CommentsState>(
         'emits optimistic downvote update when unvoted comment is toggled',
         setUp: () {
@@ -1595,9 +1600,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentDownvoteToggled(
+          CommentVoteToggled(
             commentId: validId('downcomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.down,
           ),
         ),
         expect: () => [
@@ -1649,9 +1655,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentDownvoteToggled(
+          CommentVoteToggled(
             commentId: validId('downcomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.down,
           ),
         ),
         expect: () => [
@@ -1723,9 +1730,10 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentDownvoteToggled(
+          CommentVoteToggled(
             commentId: validId('downcomment'),
             authorPubkey: validId('commenter'),
+            vote: Vote.down,
           ),
         ),
         expect: () => [
@@ -1749,6 +1757,330 @@ void main() {
             () => mockLikesRepository.removeDownvote(validId('downcomment')),
           ).called(1);
         },
+      );
+    });
+
+    group('CommentVoteToggled (vote switch)', () {
+      // Manual Test 5b regression: tapping upvote on a downvoted comment must
+      // produce a single optimistic emit that lands the +2 net-score delta
+      // — no revert flash from a NotLikedException on the wrong teardown call.
+      blocTest<CommentsBloc, CommentsState>(
+        'down→up switches in a single emit with a +2 net-score delta',
+        setUp: () {
+          when(
+            () => mockLikesRepository.removeDownvote(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'mock-reaction-id');
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('switchcomment'),
+            content: 'Downvoted comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            commentUpvoteCounts: {comment.id: 0},
+            commentDownvoteCounts: {comment.id: 3},
+            downvotedCommentIds: {comment.id},
+            // Net score before: 0 - 3 = -3
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentVoteToggled(
+            commentId: validId('switchcomment'),
+            authorPubkey: validId('commenter'),
+            vote: Vote.up,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('switchcomment')),
+                'upvoted',
+                true,
+              )
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('switchcomment')),
+                'downvoted',
+                false,
+              )
+              .having(
+                (s) =>
+                    (s.commentUpvoteCounts[validId('switchcomment')] ?? 0) -
+                    (s.commentDownvoteCounts[validId('switchcomment')] ?? 0),
+                'net score after',
+                -1, // 1 upvote − 2 downvotes; delta = +2 from −3.
+              )
+              .having((s) => s.error, 'error', isNull),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'up→down switches in a single emit with a -2 net-score delta',
+        setUp: () {
+          when(
+            () => mockLikesRepository.unlikeEvent(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'mock-reaction-id');
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('switchcomment'),
+            content: 'Upvoted comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            commentUpvoteCounts: {comment.id: 5},
+            commentDownvoteCounts: {comment.id: 0},
+            upvotedCommentIds: {comment.id},
+            // Net score before: 5 - 0 = +5
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentVoteToggled(
+            commentId: validId('switchcomment'),
+            authorPubkey: validId('commenter'),
+            vote: Vote.down,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('switchcomment')),
+                'downvoted',
+                true,
+              )
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('switchcomment')),
+                'upvoted',
+                false,
+              )
+              .having(
+                (s) =>
+                    (s.commentUpvoteCounts[validId('switchcomment')] ?? 0) -
+                    (s.commentDownvoteCounts[validId('switchcomment')] ?? 0),
+                'net score after',
+                3, // 4 upvotes − 1 downvote; delta = −2 from +5.
+              )
+              .having((s) => s.error, 'error', isNull),
+        ],
+      );
+
+      // droppable() on the unified handler closes the cross-type race —
+      // a rapid down-tap fired while the up-publish is still in flight is
+      // dropped before its handler can emit a competing optimistic state
+      // or hit the relay with an interleaved kind-7 / kind-5 publish.
+      blocTest<CommentsBloc, CommentsState>(
+        'rapid up→down on the same comment drops the second tap while in flight',
+        setUp: () {
+          final upInFlight = Completer<String>();
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) => upInFlight.future);
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'mock-reaction-id-down');
+          when(
+            () => mockLikesRepository.unlikeEvent(any()),
+          ).thenAnswer((_) async {});
+          // Settle the in-flight publish on the next microtask so the
+          // upvote handler can complete cleanly after both adds are
+          // queued. The downvote add must reach `add` while the upvote
+          // handler is still awaiting.
+          Future<void>.delayed(const Duration(milliseconds: 50), () {
+            upInFlight.complete('mock-reaction-id-up');
+          });
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('racecomment'),
+            content: 'Race comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+          );
+        },
+        act: (bloc) async {
+          bloc.add(
+            CommentVoteToggled(
+              commentId: validId('racecomment'),
+              authorPubkey: validId('commenter'),
+              vote: Vote.up,
+            ),
+          );
+          // Rapid second tap before the first handler's publish resolves.
+          bloc.add(
+            CommentVoteToggled(
+              commentId: validId('racecomment'),
+              authorPubkey: validId('commenter'),
+              vote: Vote.down,
+            ),
+          );
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          // Only the upvote optimistic emit lands. The downvote tap is
+          // dropped by droppable() because the upvote handler is still
+          // awaiting its publish when the event is queued.
+          isA<CommentsState>()
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('racecomment')),
+                'upvoted',
+                true,
+              )
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('racecomment')),
+                'downvoted',
+                false,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.likeEvent(
+              eventId: validId('racecomment'),
+              authorPubkey: validId('commenter'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
+          // The dropped downvote must never have reached the relay.
+          verifyNever(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          );
+          verifyNever(() => mockLikesRepository.unlikeEvent(any()));
+        },
+      );
+
+      // Repository-driven desync: when downvoteEvent throws
+      // AlreadyDownvotedException, the specific catch handler short-
+      // circuits the generic catch — no voteFailed, no revert. The
+      // sync emit collapses with the optimistic emit via Equatable
+      // dedup since both target "downvoted, not upvoted".
+      blocTest<CommentsBloc, CommentsState>(
+        'AlreadyDownvotedException from downvoteEvent does not surface voteFailed',
+        setUp: () {
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenThrow(AlreadyDownvotedException(validId('synccomment')));
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('synccomment'),
+            content: 'Sync comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentVoteToggled(
+            commentId: validId('synccomment'),
+            authorPubkey: validId('commenter'),
+            vote: Vote.down,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('synccomment')),
+                'downvoted',
+                true,
+              )
+              .having((s) => s.error, 'error', isNot(CommentsError.voteFailed)),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'NotDownvotedException from removeDownvote does not surface voteFailed',
+        setUp: () {
+          when(
+            () => mockLikesRepository.removeDownvote(any()),
+          ).thenThrow(NotDownvotedException(validId('synccomment')));
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('synccomment'),
+            content: 'Sync comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            downvotedCommentIds: {comment.id},
+            commentDownvoteCounts: {comment.id: 1},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentVoteToggled(
+            commentId: validId('synccomment'),
+            authorPubkey: validId('commenter'),
+            vote: Vote.down,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('synccomment')),
+                'downvoted',
+                false,
+              )
+              .having((s) => s.error, 'error', isNot(CommentsError.voteFailed)),
+        ],
       );
     });
 

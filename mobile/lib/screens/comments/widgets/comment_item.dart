@@ -485,9 +485,10 @@ class _CommentVoteButtons extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   context.read<CommentsBloc>().add(
-                    CommentUpvoteToggled(
+                    CommentVoteToggled(
                       commentId: commentId,
                       authorPubkey: authorPubkey,
+                      vote: Vote.up,
                     ),
                   );
                 },
@@ -534,9 +535,10 @@ class _CommentVoteButtons extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   context.read<CommentsBloc>().add(
-                    CommentDownvoteToggled(
+                    CommentVoteToggled(
                       commentId: commentId,
                       authorPubkey: authorPubkey,
+                      vote: Vote.down,
                     ),
                   );
                 },
