@@ -296,19 +296,91 @@ void main() {
         ).called(1);
       });
 
-      test('saves repost record to local storage', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-          localStorage: mockLocalStorage,
-        );
+      test(
+        'saves placeholder then confirmed record to local storage',
+        () async {
+          final captured = <RepostRecord>[];
+          when(
+            () => mockLocalStorage.saveRepostRecord(any()),
+          ).thenAnswer((invocation) async {
+            captured.add(
+              invocation.positionalArguments[0] as RepostRecord,
+            );
+          });
 
-        await repository.repostVideo(
-          addressableId: testAddressableId,
-          originalAuthorPubkey: testAuthorPubkey,
-        );
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
 
-        verify(() => mockLocalStorage.saveRepostRecord(any())).called(1);
-      });
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          // Optimistic-first: placeholder is persisted before publish so the
+          // record survives an app crash mid-publish; confirmed record swaps
+          // the placeholder id for the real reaction id once relays return.
+          expect(captured, hasLength(2));
+          expect(
+            captured[0].repostEventId,
+            startsWith('pending_repost_'),
+          );
+          expect(captured[1].repostEventId, equals(testRepostEventId));
+        },
+      );
+
+      test(
+        'ticks watchRepostedAddressableIds before sendGenericRepost completes',
+        () async {
+          // Make sendGenericRepost block until we tell it to complete, so we
+          // can assert the stream tick races ahead of the network publish.
+          final publishCompleter = Completer<Event?>();
+          when(
+            () => mockNostrClient.sendGenericRepost(
+              addressableId: any(named: 'addressableId'),
+              targetKind: any(named: 'targetKind'),
+              authorPubkey: any(named: 'authorPubkey'),
+              content: any(named: 'content'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) => publishCompleter.future);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+
+          final emitted = <Set<String>>[];
+          final subscription = repository.watchRepostedAddressableIds().listen(
+            emitted.add,
+          );
+
+          final repostFuture = repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          // Yield so the optimistic stream tick is delivered to listeners.
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            emitted.last,
+            contains(testAddressableId),
+            reason: 'stream must tick before publish completes',
+          );
+
+          publishCompleter.complete(
+            createMockEvent(
+              id: testRepostEventId,
+              kind: EventKind.genericRepost,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+          await repostFuture;
+          await subscription.cancel();
+        },
+      );
 
       test('throws AlreadyRepostedException when already reposted', () async {
         final repository = RepostsRepository(
@@ -330,7 +402,7 @@ void main() {
       });
 
       test(
-        'throws RepostFailedException when sendGenericRepost fails',
+        'throws RepostFailedException when sendGenericRepost returns null',
         () async {
           when(
             () => mockNostrClient.sendGenericRepost(
@@ -347,13 +419,101 @@ void main() {
             nostrClient: mockNostrClient,
           );
 
-          expect(
-            () => repository.repostVideo(
+          await expectLater(
+            repository.repostVideo(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
             ),
             throwsA(isA<RepostFailedException>()),
           );
+        },
+      );
+
+      test(
+        'rolls back record + count + stream when publish returns null',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 4),
+          );
+          when(
+            () => mockNostrClient.sendGenericRepost(
+              addressableId: any(named: 'addressableId'),
+              targetKind: any(named: 'targetKind'),
+              authorPubkey: any(named: 'authorPubkey'),
+              content: any(named: 'content'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          // Seed count cache with the relay value so the rollback has
+          // something to restore to.
+          await repository.getRepostCount(testAddressableId);
+
+          await expectLater(
+            repository.repostVideo(
+              addressableId: testAddressableId,
+              originalAuthorPubkey: testAuthorPubkey,
+            ),
+            throwsA(isA<RepostFailedException>()),
+          );
+
+          // Memory + storage: record is gone after rollback.
+          expect(repository.isRepostedSync(testAddressableId), isFalse);
+          verify(
+            () => mockLocalStorage.deleteRepostRecord(testAddressableId),
+          ).called(1);
+
+          // Count cache: restored to pre-tap value (no second relay query).
+          final count = await repository.getRepostCount(testAddressableId);
+          expect(count, equals(4));
+          verify(() => mockNostrClient.countEvents(any())).called(1);
+        },
+      );
+
+      test(
+        'rolls back record + count + stream when publish throws',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 4),
+          );
+          when(
+            () => mockNostrClient.sendGenericRepost(
+              addressableId: any(named: 'addressableId'),
+              targetKind: any(named: 'targetKind'),
+              authorPubkey: any(named: 'authorPubkey'),
+              content: any(named: 'content'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenThrow(Exception('relay unreachable'));
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+          await repository.getRepostCount(testAddressableId);
+
+          await expectLater(
+            repository.repostVideo(
+              addressableId: testAddressableId,
+              originalAuthorPubkey: testAuthorPubkey,
+            ),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(repository.isRepostedSync(testAddressableId), isFalse);
+          final count = await repository.getRepostCount(testAddressableId);
+          expect(count, equals(4));
         },
       );
     });
@@ -451,6 +611,122 @@ void main() {
           throwsA(isA<UnrepostFailedException>()),
         );
       });
+
+      test(
+        'ticks watchRepostedAddressableIds before deleteEvent completes',
+        () async {
+          // Seed a record by reposting first.
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          final deleteCompleter = Completer<Event?>();
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) => deleteCompleter.future);
+
+          final emitted = <Set<String>>[];
+          final subscription = repository.watchRepostedAddressableIds().listen(
+            emitted.add,
+          );
+
+          final unrepostFuture = repository.unrepostVideo(testAddressableId);
+          await Future<void>.delayed(Duration.zero);
+
+          expect(
+            emitted.last,
+            isNot(contains(testAddressableId)),
+            reason: 'stream must tick the removal before deleteEvent completes',
+          );
+
+          deleteCompleter.complete(
+            createMockEvent(
+              id: 'deletion_event_id',
+              kind: EventKind.eventDeletion,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          );
+          await unrepostFuture;
+          await subscription.cancel();
+        },
+      );
+
+      test(
+        'rolls back record + count + stream when deletion returns null',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 7),
+          );
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => null);
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          // Seed a record + count cache so the rollback has something to
+          // restore. countEvents mock returns 7 for the seed; after the
+          // optimistic increment inside repostVideo it becomes 8.
+          await repository.getRepostCount(testAddressableId);
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await expectLater(
+            repository.unrepostVideo(testAddressableId),
+            throwsA(isA<UnrepostFailedException>()),
+          );
+
+          // Memory: record restored after rollback.
+          expect(repository.isRepostedSync(testAddressableId), isTrue);
+          // Count cache: restored to the pre-unrepost value (8 after
+          // the repost increment), no extra relay query.
+          final count = await repository.getRepostCount(testAddressableId);
+          expect(count, equals(8));
+          verify(() => mockNostrClient.countEvents(any())).called(1);
+        },
+      );
+
+      test(
+        'rolls back record + count + stream when deletion throws',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 7),
+          );
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenThrow(Exception('relay unreachable'));
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+          await repository.getRepostCount(testAddressableId);
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await expectLater(
+            repository.unrepostVideo(testAddressableId),
+            throwsA(isA<Exception>()),
+          );
+
+          expect(repository.isRepostedSync(testAddressableId), isTrue);
+          final count = await repository.getRepostCount(testAddressableId);
+          expect(count, equals(8));
+        },
+      );
     });
 
     group('toggleRepost', () {
@@ -547,26 +823,36 @@ void main() {
         expect(count, equals(0));
       });
 
-      test('returns cached count when available after toggleRepost', () async {
+      test('returns cached count incremented after toggleRepost', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 6));
+
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
         );
 
-        // Trigger a repost with currentCount: 6 → caches 6+1=7
+        // Seed cache via relay query so the repost can increment it.
+        await repository.getRepostCount(testAddressableId);
+
+        // toggleRepost → repostVideo bumps cache from 6 → 7.
         await repository.toggleRepost(
           addressableId: testAddressableId,
           originalAuthorPubkey: testAuthorPubkey,
-          currentCount: 6,
         );
 
         final count = await repository.getRepostCount(testAddressableId);
 
         expect(count, equals(7));
-        verifyNever(() => mockNostrClient.countEvents(any()));
+        // Only the seed call hits the relay; the post-toggle read is cached.
+        verify(() => mockNostrClient.countEvents(any())).called(1);
       });
 
       test('cached count clamps to zero for negative values', () async {
-        // Set up a repost record so unrepost succeeds
+        // countEvents returns 0 so the seeded cache starts at 0.
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 0));
         when(
           () => mockNostrClient.deleteEvent(any()),
         ).thenAnswer(
@@ -581,18 +867,18 @@ void main() {
           nostrClient: mockNostrClient,
         );
 
-        // First repost so there's something to unrepost
+        // Create a record (cache stays unseeded until getRepostCount runs).
         await repository.repostVideo(
           addressableId: testAddressableId,
           originalAuthorPubkey: testAuthorPubkey,
         );
 
-        // Trigger an unrepost with currentCount: 0 → caches max(0, 0-1) = 0
-        await repository.toggleRepost(
-          addressableId: testAddressableId,
-          originalAuthorPubkey: testAuthorPubkey,
-          currentCount: 0,
-        );
+        // Seed cache to 0 — this is the pathological state where the
+        // displayed count is already at floor before the unrepost.
+        await repository.getRepostCount(testAddressableId);
+
+        // unrepostVideo: previousCount = 0, would cache max(0, -1) = 0.
+        await repository.unrepostVideo(testAddressableId);
 
         final count = await repository.getRepostCount(testAddressableId);
 
@@ -660,22 +946,22 @@ void main() {
             nostrClient: mockNostrClient,
           );
 
-          // First call hits relay
+          // First call hits relay and seeds the cache at 10.
           final relayCount = await repository.getRepostCount(testAddressableId);
           expect(relayCount, equals(10));
 
-          // Repost with currentCount: 10 → caches 11
+          // toggleRepost → repostVideo bumps the cached count to 11.
           await repository.toggleRepost(
             addressableId: testAddressableId,
             originalAuthorPubkey: testAuthorPubkey,
-            currentCount: 10,
           );
 
-          // Second call uses cache (11 from repost)
+          // Second call uses the cache (11 from the increment).
           final cachedCount = await repository.getRepostCount(
             testAddressableId,
           );
           expect(cachedCount, equals(11));
+          verify(() => mockNostrClient.countEvents(any())).called(1);
         },
       );
 
@@ -690,18 +976,20 @@ void main() {
           nostrClient: mockNostrClient,
         );
 
-        // Repost with currentCount: 4 → caches 5
+        // Seed cache via getRepostCount, then bump it via toggleRepost.
+        await repository.getRepostCount(testAddressableId);
         await repository.toggleRepost(
           addressableId: testAddressableId,
           originalAuthorPubkey: testAuthorPubkey,
-          currentCount: 4,
         );
         await repository.clearCache();
 
+        // Post-clear, the cache is empty so getRepostCount queries relay
+        // again and returns 10.
         final count = await repository.getRepostCount(testAddressableId);
 
         expect(count, equals(10));
-        verify(() => mockNostrClient.countEvents(any())).called(1);
+        verify(() => mockNostrClient.countEvents(any())).called(2);
       });
     });
 

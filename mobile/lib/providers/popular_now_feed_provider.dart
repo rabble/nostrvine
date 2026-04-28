@@ -1,5 +1,5 @@
-// ABOUTME: PopularNow feed provider showing newest videos with REST API + Nostr fallback
-// ABOUTME: Tries Funnelcake REST API first, falls back to Nostr subscription if unavailable
+// ABOUTME: PopularNow feed provider showing what's being watched right now
+// ABOUTME: Tries Funnelcake REST API (sort=watching, 24h view count) first, Nostr fallback
 
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
@@ -91,7 +91,7 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
 
       try {
-        final stats = await client.getRecentVideos();
+        final stats = await client.getWatchingVideos();
         final apiVideos = stats.toVideoEvents();
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
@@ -231,7 +231,7 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
 
         // Use cursor (before parameter) for pagination
-        final stats = await client.getRecentVideos(before: _nextCursor);
+        final stats = await client.getWatchingVideos(before: _nextCursor);
         final apiVideos = stats.toVideoEvents();
 
         if (!ref.mounted) return;
@@ -396,7 +396,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     if (_usingRestApi) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final stats = await client.getRecentVideos();
+        final stats = await client.getWatchingVideos();
         final apiVideos = stats.toVideoEvents();
 
         // Check if provider is still mounted after async gap

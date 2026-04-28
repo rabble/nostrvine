@@ -54,6 +54,12 @@ enum FeatureFlag {
   contentPolicyV2(
     'Content Policy v2',
     'Parse-gated policy engine — filter blocked/muted authors at ingress',
+  ),
+  advancedRelaySettings(
+    'Advanced Relay Settings',
+    'Show Nostr relay configuration and diagnostics in Settings. '
+        'Changing relays can break publishing and discovery — only turn '
+        'this on if you know what you are doing.',
   )
   ;
 

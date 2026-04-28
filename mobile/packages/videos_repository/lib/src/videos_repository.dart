@@ -498,15 +498,19 @@ class VideosRepository {
       if (cached != null) return cached.videos;
     }
 
-    // 1. Try Funnelcake API first (best engagement data)
+    // 1. Try Funnelcake API first (best engagement data).
+    // Popular tab uses sort=watching (24h CDN view count, no age decay):
+    // surfaces what people are looking at right now, including classic
+    // Vines getting current attention — not all-time loop count or
+    // trending engagement score.
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
       try {
-        final videoStats = await _funnelcakeApiClient.getTrendingVideos(
+        final videoStats = await _funnelcakeApiClient.getWatchingVideos(
           limit: limit,
           before: until,
         );
 
-        // Preserve API order (sorted by trending score)
+        // Preserve API order.
         final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
         if (until == null) {
           _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: videos));

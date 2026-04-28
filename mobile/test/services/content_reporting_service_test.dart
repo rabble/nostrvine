@@ -232,6 +232,106 @@ void main() {
       ).called(reasons.length);
     });
 
+    test('reportContent() includes NIP-32 l/L tags for each reason', () async {
+      const expectedNip32Labels = {
+        ContentFilterReason.spam: 'NS-spam',
+        ContentFilterReason.harassment: 'NS-harassment',
+        ContentFilterReason.violence: 'NS-violence',
+        ContentFilterReason.sexualContent: 'NS-sexualContent',
+        ContentFilterReason.copyright: 'NS-copyright',
+        ContentFilterReason.falseInformation: 'NS-falseInformation',
+        ContentFilterReason.csam: 'NS-csam',
+        ContentFilterReason.aiGenerated: 'NS-aiGenerated',
+        ContentFilterReason.other: 'NS-other',
+      };
+
+      final capturedTags = <List<List<String>>>[];
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        final tags = invocation.namedArguments[#tags] as List<List<String>>;
+        capturedTags.add(tags);
+        return createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: tags,
+          content: 'test',
+        );
+      });
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [],
+          content: 'test',
+        ),
+      );
+
+      for (final reason in ContentFilterReason.values) {
+        await service.reportContent(
+          eventId: 'event_${reason.name}',
+          authorPubkey: 'author_${reason.name}',
+          reason: reason,
+          details: 'Test ${reason.name}',
+        );
+      }
+
+      expect(
+        capturedTags,
+        hasLength(ContentFilterReason.values.length),
+        reason: 'Should have captured tags for each reason',
+      );
+
+      for (var i = 0; i < ContentFilterReason.values.length; i++) {
+        final reason = ContentFilterReason.values[i];
+        final tags = capturedTags[i];
+
+        final eTags = tags.where((t) => t[0] == 'e').toList();
+        expect(eTags, hasLength(1), reason: 'Missing e tag for ${reason.name}');
+
+        final pTags = tags.where((t) => t[0] == 'p').toList();
+        expect(pTags, hasLength(1), reason: 'Missing p tag for ${reason.name}');
+
+        final clientTags = tags.where((t) => t[0] == 'client').toList();
+        expect(
+          clientTags,
+          hasLength(1),
+          reason: 'Missing client tag for ${reason.name}',
+        );
+
+        final lNamespaceTags = tags.where((t) => t[0] == 'L').toList();
+        expect(
+          lNamespaceTags,
+          hasLength(1),
+          reason: 'Expected exactly one L tag for ${reason.name}',
+        );
+        expect(lNamespaceTags.single, ['L', 'social.nos.ontology']);
+
+        final lTags = tags.where((t) => t[0] == 'l').toList();
+        expect(
+          lTags,
+          hasLength(1),
+          reason: 'Expected exactly one l tag for ${reason.name}',
+        );
+        expect(lTags.single, [
+          'l',
+          expectedNip32Labels[reason]!,
+          'social.nos.ontology',
+        ], reason: 'Missing or incorrect l tag for ${reason.name}');
+      }
+    });
+
     test('reportContent() specifically tests aiGenerated reason', () async {
       // Arrange
       final reportEvent = createTestEvent(

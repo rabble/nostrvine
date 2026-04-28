@@ -54,3 +54,125 @@ class VideoInteractionsCommentCountUpdated extends VideoInteractionsEvent {
   @override
   List<Object?> get props => [commentCount];
 }
+
+/// Internal event dispatched when a fire-and-forget like publish settles.
+///
+/// `_onLikeToggled` emits the optimistic state and returns immediately,
+/// scheduling the publish via [Future]. When the publish settles, the
+/// publisher dispatches this event so the bloc can reconcile state
+/// inside a normal handler with a real [Emitter].
+class _VideoInteractionsLikeSettled extends VideoInteractionsEvent {
+  const _VideoInteractionsLikeSettled({
+    required this.outcome,
+    required this.wasCount,
+  });
+
+  final _LikeSettleOutcome outcome;
+  final int? wasCount;
+
+  @override
+  List<Object?> get props => [outcome, wasCount];
+}
+
+/// Internal event dispatched when a fire-and-forget repost publish settles.
+class _VideoInteractionsRepostSettled extends VideoInteractionsEvent {
+  const _VideoInteractionsRepostSettled({
+    required this.outcome,
+    required this.wasCount,
+  });
+
+  final _RepostSettleOutcome outcome;
+  final int? wasCount;
+
+  @override
+  List<Object?> get props => [outcome, wasCount];
+}
+
+/// Outcome of a fire-and-forget like publish.
+sealed class _LikeSettleOutcome extends Equatable {
+  const _LikeSettleOutcome();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// Publish succeeded; repository now agrees with the optimistic state.
+class _LikeSettleConfirmed extends _LikeSettleOutcome {
+  const _LikeSettleConfirmed();
+}
+
+/// Publish succeeded but the repository ended up in a different state
+/// (e.g. another device flipped the like mid-tap).
+class _LikeSettleOutOfBand extends _LikeSettleOutcome {
+  const _LikeSettleOutOfBand({required this.actualIsLiked});
+
+  final bool actualIsLiked;
+
+  @override
+  List<Object?> get props => [actualIsLiked];
+}
+
+/// Repository reported the event was already liked — the optimistic flip
+/// to liked is correct, no transition occurred.
+class _LikeSettleAlready extends _LikeSettleOutcome {
+  const _LikeSettleAlready();
+}
+
+/// Repository reported the event was not liked — the optimistic flip to
+/// unliked is correct, no transition occurred.
+class _LikeSettleNotLiked extends _LikeSettleOutcome {
+  const _LikeSettleNotLiked();
+}
+
+/// Publish threw an unexpected error — revert to the pre-tap baseline.
+class _LikeSettleFailed extends _LikeSettleOutcome {
+  const _LikeSettleFailed({required this.wasLiked});
+
+  final bool wasLiked;
+
+  @override
+  List<Object?> get props => [wasLiked];
+}
+
+/// Outcome of a fire-and-forget repost publish.
+sealed class _RepostSettleOutcome extends Equatable {
+  const _RepostSettleOutcome();
+
+  @override
+  List<Object?> get props => const [];
+}
+
+/// Publish succeeded; repository now agrees with the optimistic state.
+class _RepostSettleConfirmed extends _RepostSettleOutcome {
+  const _RepostSettleConfirmed();
+}
+
+/// Publish succeeded but the repository ended up in a different state.
+class _RepostSettleOutOfBand extends _RepostSettleOutcome {
+  const _RepostSettleOutOfBand({required this.actualIsReposted});
+
+  final bool actualIsReposted;
+
+  @override
+  List<Object?> get props => [actualIsReposted];
+}
+
+/// Repository reported the video was already reposted.
+class _RepostSettleAlready extends _RepostSettleOutcome {
+  const _RepostSettleAlready();
+}
+
+/// Repository reported the video was not reposted.
+class _RepostSettleNotReposted extends _RepostSettleOutcome {
+  const _RepostSettleNotReposted();
+}
+
+/// Publish threw an unexpected error — revert to the pre-tap baseline.
+class _RepostSettleFailed extends _RepostSettleOutcome {
+  const _RepostSettleFailed({required this.wasReposted});
+
+  final bool wasReposted;
+
+  @override
+  List<Object?> get props => [wasReposted];
+}

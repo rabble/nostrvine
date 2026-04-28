@@ -45,6 +45,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_PEOPLE_LIST_SEARCH');
       case FeatureFlag.contentPolicyV2:
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
+      case FeatureFlag.advancedRelaySettings:
+        return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
     }
   }
 
@@ -89,6 +91,8 @@ class BuildConfiguration {
         return 'FF_PEOPLE_LIST_SEARCH';
       case FeatureFlag.contentPolicyV2:
         return 'FF_CONTENT_POLICY_V2';
+      case FeatureFlag.advancedRelaySettings:
+        return 'FF_ADVANCED_RELAY_SETTINGS';
     }
   }
 }

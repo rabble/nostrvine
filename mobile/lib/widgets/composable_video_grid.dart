@@ -604,7 +604,8 @@ class _VideoInfoSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasDescription = (video.title ?? video.content).isNotEmpty;
+    final hasDescription =
+        (video.displayTitle ?? video.displayContent).isNotEmpty;
 
     // Always show the info section with username (using bestDisplayName
     // fallback). UserName.fromPubKey handles fallback to truncated npub when
@@ -650,9 +651,10 @@ class _VideoInfoSection extends StatelessWidget {
               identifier: 'video_thumbnail_description_$index',
               container: true,
               explicitChildNodes: true,
-              label: 'Video description: ${video.title ?? video.content}',
+              label:
+                  'Video description: ${video.displayTitle ?? video.displayContent}',
               child: Text(
-                video.title ?? video.content,
+                video.displayTitle ?? video.displayContent,
                 style: VineTheme.bodyMediumFont().copyWith(
                   decoration: TextDecoration.none,
                   shadows: const [

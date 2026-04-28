@@ -13,6 +13,7 @@ import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_cla
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_top_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 import '../../../../mocks/mock_camera_service.dart';
 
@@ -132,9 +133,18 @@ void main() {
         await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
-          find.bySemanticsLabel('Tap anywhere to start recording'),
+          find.bySemanticsLabel(l10n.videoRecorderTapToStartLabel),
           findsOneWidget,
+        );
+        expect(
+          find.bySemanticsLabel(
+            lookupAppLocalizations(
+              const Locale('de'),
+            ).videoRecorderTapToStartLabel,
+          ),
+          findsNothing,
         );
       });
 
@@ -144,10 +154,91 @@ void main() {
         );
         await tester.pumpAndSettle();
 
+        final l10n = lookupAppLocalizations(const Locale('en'));
         expect(
-          find.bySemanticsLabel('Recording. Tap anywhere to stop'),
+          find.bySemanticsLabel(l10n.videoRecorderRecordingTapToStopLabel),
           findsOneWidget,
         );
+        expect(
+          find.bySemanticsLabel(
+            lookupAppLocalizations(
+              const Locale('de'),
+            ).videoRecorderRecordingTapToStopLabel,
+          ),
+          findsNothing,
+        );
+      });
+    });
+
+    group('long press', () {
+      testWidgets('long press on preview calls startRecording', (tester) async {
+        late _TestVideoRecorderNotifier notifier;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoRecorderProvider.overrideWith(() {
+                notifier = _TestVideoRecorderNotifier(mockCamera);
+                return notifier;
+              }),
+              clipManagerProvider.overrideWith(
+                () => _TestClipManagerNotifier(clips: []),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoRecorderClassicStack()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.longPress(
+          find.ancestor(
+            of: find.byType(VideoRecorderCameraPreview),
+            matching: find.byType(GestureDetector),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(notifier.startRecordingCalled, isTrue);
+      });
+
+      testWidgets('long press release on preview calls stopRecording', (
+        tester,
+      ) async {
+        late _TestVideoRecorderNotifier notifier;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoRecorderProvider.overrideWith(() {
+                notifier = _TestVideoRecorderNotifier(mockCamera);
+                return notifier;
+              }),
+              clipManagerProvider.overrideWith(
+                () => _TestClipManagerNotifier(clips: []),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoRecorderClassicStack()),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.longPress(
+          find.ancestor(
+            of: find.byType(VideoRecorderCameraPreview),
+            matching: find.byType(GestureDetector),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(notifier.stopRecordingCalled, isTrue);
       });
     });
   });
@@ -161,6 +252,9 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
 
   final VideoRecorderState recordingState;
 
+  var startRecordingCalled = false;
+  var stopRecordingCalled = false;
+
   @override
   VideoRecorderProviderState build() {
     return VideoRecorderProviderState(
@@ -168,6 +262,16 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
       isCameraInitialized: true,
       canRecord: true,
     );
+  }
+
+  @override
+  Future<void> startRecording() async {
+    startRecordingCalled = true;
+  }
+
+  @override
+  Future<void> stopRecording([EditorVideo? result]) async {
+    stopRecordingCalled = true;
   }
 }
 

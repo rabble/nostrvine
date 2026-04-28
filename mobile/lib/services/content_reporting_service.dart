@@ -87,6 +87,9 @@ class ContentReport {
 /// Service for reporting inappropriate content
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class ContentReportingService {
+  static const String _reportLabelNamespace = 'social.nos.ontology';
+  static const String _reportLabelPrefix = 'NS-';
+
   ContentReportingService({
     required NostrClient nostrService,
     required AuthService authService,
@@ -361,6 +364,10 @@ class ContentReportingService {
         ['e', eventId, nip56Type],
         ['p', authorPubkey, nip56Type],
         ['client', 'diVine'],
+        ['L', _reportLabelNamespace],
+        // These label values are a cross-repo wire contract consumed by
+        // divine-web and divine-relay-manager.
+        ['l', _toNip32ReportLabel(reason), _reportLabelNamespace],
       ];
 
       // Add hashtags as 't' tags
@@ -437,6 +444,23 @@ class ContentReportingService {
       ContentFilterReason.csam => 'illegal',
       ContentFilterReason.aiGenerated => 'other',
       ContentFilterReason.other => 'other',
+    };
+  }
+
+  /// Maps app-level [ContentFilterReason] to the NIP-32 label value used by
+  /// downstream moderation UIs.
+  String _toNip32ReportLabel(ContentFilterReason reason) {
+    return switch (reason) {
+      ContentFilterReason.spam => '${_reportLabelPrefix}spam',
+      ContentFilterReason.harassment => '${_reportLabelPrefix}harassment',
+      ContentFilterReason.violence => '${_reportLabelPrefix}violence',
+      ContentFilterReason.sexualContent => '${_reportLabelPrefix}sexualContent',
+      ContentFilterReason.copyright => '${_reportLabelPrefix}copyright',
+      ContentFilterReason.falseInformation =>
+        '${_reportLabelPrefix}falseInformation',
+      ContentFilterReason.csam => '${_reportLabelPrefix}csam',
+      ContentFilterReason.aiGenerated => '${_reportLabelPrefix}aiGenerated',
+      ContentFilterReason.other => '${_reportLabelPrefix}other',
     };
   }
 

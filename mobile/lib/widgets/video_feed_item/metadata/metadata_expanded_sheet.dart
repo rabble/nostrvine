@@ -174,8 +174,8 @@ class _TitleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = video.title;
-    final description = video.content;
+    final title = video.displayTitle;
+    final description = video.displayContent;
     final hasContent =
         (title != null && title.isNotEmpty) || description.isNotEmpty;
 

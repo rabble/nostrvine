@@ -21,6 +21,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -93,6 +94,18 @@ void main() {
           expect(context.type, RouteType.safetySettings);
         },
       );
+
+      // Regression: /invites used to fall through to RouteType.home, which
+      // caused routeNormalizationProvider to rewrite /invites → /home/0 the
+      // moment the user tapped the "you have N invites to share" notification.
+      test('${InvitesScreen.path} parses to RouteType.invites', () {
+        final context = parseRoute(InvitesScreen.path);
+        expect(context.type, RouteType.invites);
+      });
+
+      test('${InvitesScreen.path} is treated as a non-tab route', () {
+        expect(tabIndexFromLocation(InvitesScreen.path), -1);
+      });
     });
 
     group('Profile editing routes parse to RouteType.editProfile', () {
@@ -364,6 +377,7 @@ void main() {
       'category gallery': CategoryGalleryScreen.locationFor('animals'),
       'settings': SettingsScreen.path,
       'relay settings': RelaySettingsScreen.path,
+      'invites': InvitesScreen.path,
     };
 
     for (final entry in roundTripCases.entries) {
@@ -396,6 +410,7 @@ void main() {
         RouteType.videoEditor: VideoEditorScreen.path,
         RouteType.videoMetadata: VideoMetadataScreen.path,
         RouteType.importKey: KeyImportScreen.path,
+        RouteType.invites: InvitesScreen.path,
         RouteType.settings: SettingsScreen.path,
         RouteType.relaySettings: RelaySettingsScreen.path,
         RouteType.relayDiagnostic: RelayDiagnosticScreen.path,

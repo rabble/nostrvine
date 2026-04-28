@@ -12,6 +12,7 @@ import 'dart:math';
 import 'package:meta/meta.dart';
 import 'package:models/src/user_profile_result.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 import 'package:unique_names_generator/unique_names_generator.dart';
 
 /// Model representing a Nostr user profile from kind 0 events
@@ -171,8 +172,8 @@ class UserProfile {
   /// If [anonymousPlaceholder] is provided, it takes priority over the
   /// generated name when no display name or name is set.
   String betterDisplayName(String? anonymousPlaceholder) {
-    if (displayName?.isNotEmpty ?? false) return displayName!;
-    if (name?.isNotEmpty ?? false) return name!;
+    if (displayName?.isNotEmpty ?? false) return stripZalgo(displayName!);
+    if (name?.isNotEmpty ?? false) return stripZalgo(name!);
     if (anonymousPlaceholder != null) return anonymousPlaceholder;
     return defaultDisplayName;
   }
@@ -223,8 +224,8 @@ class UserProfile {
   ///
   /// Falls back to [defaultDisplayName] when no display name or name is set.
   String get bestDisplayName {
-    if (displayName?.isNotEmpty ?? false) return displayName!;
-    if (name?.isNotEmpty ?? false) return name!;
+    if (displayName?.isNotEmpty ?? false) return stripZalgo(displayName!);
+    if (name?.isNotEmpty ?? false) return stripZalgo(name!);
     return defaultDisplayName;
   }
 

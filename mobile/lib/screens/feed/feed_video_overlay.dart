@@ -346,7 +346,7 @@ class _AuthorInfoSection extends ConsumerWidget {
                   MetadataExpandedSheet.show(context, video);
                 },
                 child: Text(
-                  video.title!.trim(),
+                  video.displayTitle!.trim(),
                   style: VineTheme.labelMediumFont().copyWith(
                     shadows: VineTheme.buttonShadows,
                   ),
@@ -377,7 +377,7 @@ class _AuthorInfoSection extends ConsumerWidget {
                   MetadataExpandedSheet.show(context, video);
                 },
                 child: ClickableHashtagText(
-                  text: video.content.trim(),
+                  text: video.displayContent.trim(),
                   style: VineTheme.bodySmallFont().copyWith(
                     shadows: VineTheme.buttonShadows,
                   ),

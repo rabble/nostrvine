@@ -97,6 +97,35 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Minimize outdated preview comments
+        if: ${{ steps.freshness.outputs.deployable == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const previewComments = comments.filter(
+              (c) => c.body && c.body.includes('## Mobile PR Preview') &&
+                     c.user && c.user.type === 'Bot',
+            );
+
+            for (const comment of previewComments) {
+              await github.graphql(`
+                mutation($id: ID!) {
+                  minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) {
+                    minimizedComment { isMinimized }
+                  }
+                }
+              `, { id: comment.node_id });
+            }
+
+            core.info(`Minimized ${previewComments.length} outdated preview comment(s).`);
+
       - name: Render blocked preview comment
         if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured != 'true' }}
         id: blocked_comment

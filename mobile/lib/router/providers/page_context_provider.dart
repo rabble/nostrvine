@@ -37,6 +37,7 @@ import 'package:openvine/screens/settings/app_language_screen.dart';
 import 'package:openvine/screens/settings/bluesky_settings_screen.dart';
 import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
+import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
@@ -63,6 +64,7 @@ enum RouteType {
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
   importKey,
+  invites, // Invite codes share/list screen
   settings,
   relaySettings, // Relay configuration screen
   relayDiagnostic, // Relay connectivity diagnostics
@@ -291,6 +293,9 @@ RouteContext parseRoute(String path) {
     case 'general-settings':
       return const RouteContext(type: RouteType.generalSettings);
 
+    case 'invites':
+      return const RouteContext(type: RouteType.invites);
+
     case 'app-language':
       return const RouteContext(type: RouteType.appLanguage);
 
@@ -512,6 +517,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.generalSettings:
       return GeneralSettingsScreen.path;
+
+    case RouteType.invites:
+      return InvitesScreen.path;
 
     case RouteType.appLanguage:
       return AppLanguageScreen.path;

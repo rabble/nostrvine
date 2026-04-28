@@ -37,11 +37,10 @@ class RepostActionButton extends StatelessWidget {
     return BlocSelector<
       VideoInteractionsBloc,
       VideoInteractionsState,
-      ({bool isReposted, bool isInProgress, int count})
+      ({bool isReposted, int count})
     >(
       selector: (state) => (
         isReposted: state.isReposted,
-        isInProgress: state.isRepostInProgress,
         count:
             state.repostCount ??
             (video.reposterPubkeys?.length ?? 0) + (video.originalReposts ?? 0),
@@ -49,7 +48,6 @@ class RepostActionButton extends StatelessWidget {
       builder: (context, data) {
         return _ActionButton(
           isReposted: data.isReposted,
-          isRepostInProgress: data.isInProgress,
           totalReposts: data.count,
           onInteracted: onInteracted,
         );
@@ -61,13 +59,11 @@ class RepostActionButton extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     this.isReposted = false,
-    this.isRepostInProgress = false,
     this.totalReposts = 1,
     this.onInteracted,
   });
 
   final bool isReposted;
-  final bool isRepostInProgress;
   final int totalReposts;
   final VoidCallback? onInteracted;
 
@@ -80,7 +76,6 @@ class _ActionButton extends StatelessWidget {
           ? context.l10n.videoActionRemoveRepost
           : context.l10n.videoActionRepost,
       iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
-      isLoading: isRepostInProgress,
       count: totalReposts,
       labelWhenZero: context.l10n.videoActionRepostLabel,
       onPressed: () {

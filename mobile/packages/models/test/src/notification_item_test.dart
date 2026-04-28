@@ -404,6 +404,56 @@ void main() {
 
       expect(a, equals(b));
     });
+
+    test('copyWith updates only the specified fields', () {
+      const originalActors = [
+        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
+      ];
+      const newActors = [
+        ActorInfo(pubkey: _pubkeyBob, displayName: 'bob'),
+        ActorInfo(pubkey: _pubkeyCarol, displayName: 'carol'),
+      ];
+
+      final original = GroupedNotification(
+        id: 'group_1',
+        type: NotificationKind.like,
+        actors: originalActors,
+        totalCount: 1,
+        timestamp: DateTime(2026, 4, 6),
+        targetEventId: _eventId,
+        videoTitle: 'My Video',
+      );
+
+      final updated = original.copyWith(
+        isRead: true,
+        actors: newActors,
+        totalCount: 2,
+      );
+
+      expect(updated.isRead, isTrue);
+      expect(updated.actors, equals(newActors));
+      expect(updated.totalCount, equals(2));
+      // Untouched fields stay the same.
+      expect(updated.id, equals(original.id));
+      expect(updated.type, equals(original.type));
+      expect(updated.timestamp, equals(original.timestamp));
+      expect(updated.targetEventId, equals(original.targetEventId));
+      expect(updated.videoTitle, equals(original.videoTitle));
+    });
+
+    test('copyWith with no arguments returns an equal instance', () {
+      final original = GroupedNotification(
+        id: 'group_1',
+        type: NotificationKind.like,
+        actors: const [
+          ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
+        ],
+        totalCount: 1,
+        timestamp: DateTime(2026, 4, 6),
+      );
+
+      expect(original.copyWith(), equals(original));
+    });
   });
 
   group('pattern matching', () {
