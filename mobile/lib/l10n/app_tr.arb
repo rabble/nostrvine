@@ -317,6 +317,7 @@
     "profileSetupClaimFailed": "Kullanıcı adı alınamadı. Lütfen tekrar dene.",
     "profileSetupPublishFailed": "Profil yayınlanamadı. Lütfen tekrar dene.",
     "profileSetupNoRelaysConnected": "Ağa ulaşılamadı. Bağlantını kontrol et ve tekrar dene.",
+    "profileSetupRetryLabel": "Tekrar dene",
     "profileSetupDisplayNameLabel": "Görünen Ad",
     "profileSetupDisplayNameHint": "Seni nasıl tanısınlar?",
     "profileSetupDisplayNameHelper": "İstediğin herhangi bir ad veya etiket. Benzersiz olması gerekmez.",

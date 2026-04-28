@@ -609,6 +609,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يمكن الوصول إلى الشبكة. تحقق من اتصالك وحاول مرة أخرى.';
 
   @override
+  String get profileSetupRetryLabel => 'إعادة المحاولة';
+
+  @override
   String get profileSetupDisplayNameLabel => 'الاسم المعروض';
 
   @override

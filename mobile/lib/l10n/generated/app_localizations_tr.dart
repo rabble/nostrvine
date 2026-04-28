@@ -615,6 +615,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Ağa ulaşılamadı. Bağlantını kontrol et ve tekrar dene.';
 
   @override
+  String get profileSetupRetryLabel => 'Tekrar dene';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Görünen Ad';
 
   @override

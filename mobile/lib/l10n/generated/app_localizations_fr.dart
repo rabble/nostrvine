@@ -647,6 +647,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d\'accéder au réseau. Vérifie ta connexion et réessaie.';
 
   @override
+  String get profileSetupRetryLabel => 'Réessayer';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Nom affiché';
 
   @override

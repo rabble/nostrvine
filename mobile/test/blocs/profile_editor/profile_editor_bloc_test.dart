@@ -512,6 +512,7 @@ void main() {
                   ProfileEditorError.noRelaysConnected,
                 ),
           ],
+          errors: () => [isA<NoRelaysConnectedException>()],
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(

@@ -617,6 +617,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Kunde inte nå nätverket. Kontrollera din anslutning och försök igen.';
 
   @override
+  String get profileSetupRetryLabel => 'Försök igen';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Visningsnamn';
 
   @override

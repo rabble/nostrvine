@@ -317,6 +317,7 @@
     "profileSetupClaimFailed": "Kunde inte claima användarnamnet. Försök igen.",
     "profileSetupPublishFailed": "Kunde inte publicera profilen. Försök igen.",
     "profileSetupNoRelaysConnected": "Kunde inte nå nätverket. Kontrollera din anslutning och försök igen.",
+    "profileSetupRetryLabel": "Försök igen",
     "profileSetupDisplayNameLabel": "Visningsnamn",
     "profileSetupDisplayNameHint": "Hur ska folk känna dig?",
     "profileSetupDisplayNameHelper": "Vilket namn eller etikett du vill. Behöver inte vara unikt.",

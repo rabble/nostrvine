@@ -637,6 +637,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Netzwerk nicht erreichbar. Überprüfe deine Verbindung und versuch es nochmal.';
 
   @override
+  String get profileSetupRetryLabel => 'Wiederholen';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Anzeigename';
 
   @override

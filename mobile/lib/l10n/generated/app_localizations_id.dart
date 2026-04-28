@@ -616,6 +616,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak dapat menjangkau jaringan. Periksa koneksimu dan coba lagi.';
 
   @override
+  String get profileSetupRetryLabel => 'Coba lagi';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Nama Tampilan';
 
   @override

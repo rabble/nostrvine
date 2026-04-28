@@ -632,6 +632,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t reach the network. Check your connection and try again.';
 
   @override
+  String get profileSetupRetryLabel => 'Retry';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Display Name';
 
   @override

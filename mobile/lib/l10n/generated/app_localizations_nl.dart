@@ -633,6 +633,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kan het netwerk niet bereiken. Controleer je verbinding en probeer het opnieuw.';
 
   @override
+  String get profileSetupRetryLabel => 'Opnieuw';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Weergavenaam';
 
   @override

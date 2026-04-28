@@ -1174,6 +1174,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t reach the network. Check your connection and try again.'**
   String get profileSetupNoRelaysConnected;
 
+  /// No description provided for @profileSetupRetryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get profileSetupRetryLabel;
+
   /// No description provided for @profileSetupDisplayNameLabel.
   ///
   /// In en, this message translates to:

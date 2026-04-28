@@ -641,6 +641,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível acessar a rede. Verifique sua conexão e tente novamente.';
 
   @override
+  String get profileSetupRetryLabel => 'Tentar novamente';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Nome de exibição';
 
   @override

@@ -580,6 +580,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'ネットワークに接続できなかった。接続を確認してもう一回試してみて。';
 
   @override
+  String get profileSetupRetryLabel => '再試行';
+
+  @override
   String get profileSetupDisplayNameLabel => '表示名';
 
   @override
