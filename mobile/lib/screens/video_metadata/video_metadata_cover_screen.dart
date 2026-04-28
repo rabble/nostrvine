@@ -15,6 +15,35 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+abstract final class _VideoMetadataCoverConstants {
+  static const stripHeight = 64.0;
+  static const stripThumbWidth = 48.0;
+  static const stripHorizontalPadding = 32.0;
+  static const minSlotCount = 1;
+  static const maxSlotCount = 100;
+  static const maxSlotCountForRender = 500;
+  static const maxDurationSeconds = 99999;
+  static const maxThumbsPerSecond = 20;
+  static const stripBatchSize = 10;
+  static const squareCornerRadius = 12.0;
+  static const portraitBottomCornerRadius = 32.0;
+  static const playerBaseSize = 1000.0;
+  static const contentSpacing = 8.0;
+  static const topBarSpacing = 16.0;
+  static const topBarPadding = 16.0;
+  static const loadingButtonSize = 40.0;
+  static const loadingSpinnerSize = 20.0;
+  static const loadingSpinnerStrokeWidth = 2.0;
+  static const bottomHorizontalPadding = 16.0;
+  static const bottomPadding = 12.0;
+  static const stripBorderRadius = 4.0;
+  static const cursorBorderWidth = 2.0;
+  static const centerSlotOffset = 0.5;
+  static const oneMinuteSeconds = 60;
+  static const minutePadWidth = 1;
+  static const secondPadWidth = 2;
+}
+
 /// Full-screen cover selector for a recorded video clip.
 ///
 /// The user scrubs through a thumbnail strip at the bottom to pick the frame
@@ -82,16 +111,18 @@ class _VideoMetadataCoverScreenState
     final videoPath = widget.clip.video.file?.path;
     if (videoPath == null) return;
 
-    const stripHeight = 64.0;
-    const thumbWidth = 48.0;
-    const horizontalPadding = 32.0;
     final view = WidgetsBinding.instance.platformDispatcher.views.first;
     final pixelRatio = view.devicePixelRatio;
     final screenWidth = view.physicalSize.width / pixelRatio;
 
-    final slotCount = ((screenWidth - horizontalPadding) / thumbWidth)
-        .ceil()
-        .clamp(1, 100);
+    final slotCount =
+        ((screenWidth - _VideoMetadataCoverConstants.stripHorizontalPadding) /
+                _VideoMetadataCoverConstants.stripThumbWidth)
+            .ceil()
+            .clamp(
+              _VideoMetadataCoverConstants.minSlotCount,
+              _VideoMetadataCoverConstants.maxSlotCount,
+            );
     final durationMs = widget.clip.duration.inMilliseconds;
 
     // One timestamp per slot, evenly distributed across the video duration.
@@ -100,10 +131,15 @@ class _VideoMetadataCoverScreenState
     final slotTimestamps = List<Duration>.generate(
       slotCount,
       (i) => Duration(
-        milliseconds: ((i + 0.5) * durationMs / slotCount).round().clamp(
-          0,
-          durationMs,
-        ),
+        milliseconds:
+            ((i + _VideoMetadataCoverConstants.centerSlotOffset) *
+                    durationMs /
+                    slotCount)
+                .round()
+                .clamp(
+                  0,
+                  durationMs,
+                ),
       ),
     );
 
@@ -111,18 +147,27 @@ class _VideoMetadataCoverScreenState
     // on top of the priority set. Setting it to slotCount / durationSec
     // (minimum 1) keeps the total as close to slotCount as possible,
     // avoiding large numbers of thumbnails that will never be displayed.
-    final durationSec = widget.clip.duration.inSeconds.clamp(1, 99999);
-    final thumbsPerSecond = (slotCount / durationSec).ceil().clamp(1, 20);
+    final durationSec = widget.clip.duration.inSeconds.clamp(
+      _VideoMetadataCoverConstants.minSlotCount,
+      _VideoMetadataCoverConstants.maxDurationSeconds,
+    );
+    final thumbsPerSecond = (slotCount / durationSec).ceil().clamp(
+      _VideoMetadataCoverConstants.minSlotCount,
+      _VideoMetadataCoverConstants.maxThumbsPerSecond,
+    );
 
     _stripSubscription =
         VideoThumbnailService.generateStripThumbnails(
           videoPath: videoPath,
           clipId: widget.clip.id,
           duration: widget.clip.duration,
-          outputSize: Size(thumbWidth * pixelRatio, stripHeight * pixelRatio),
+          outputSize: Size(
+            _VideoMetadataCoverConstants.stripThumbWidth * pixelRatio,
+            _VideoMetadataCoverConstants.stripHeight * pixelRatio,
+          ),
           thumbsPerSecond: thumbsPerSecond,
           priorityTimestamps: slotTimestamps,
-          batchSize: 10,
+          batchSize: _VideoMetadataCoverConstants.stripBatchSize,
         ).listen((thumbnails) {
           if (mounted) {
             setState(() => _stripThumbnails = thumbnails);
@@ -220,7 +265,7 @@ class _VideoMetadataCoverScreenState
             children: [
               Column(
                 crossAxisAlignment: .stretch,
-                spacing: 8,
+                spacing: _VideoMetadataCoverConstants.contentSpacing,
                 children: [
                   Expanded(
                     child: RepaintBoundary(
@@ -302,15 +347,24 @@ class _VideoAreaState extends State<_VideoArea> {
         ? _videoAR
         : widget.clip.targetAspectRatio.value;
     final isSquare = widget.clip.targetAspectRatio.value == 1.0;
-    final player = FittedBox(
-      fit: isSquare ? BoxFit.contain : BoxFit.cover,
-      child: SizedBox(
-        width: 1000 * videoAR,
-        height: 1000,
-        child: DivineVideoPlayer(
-          controller: widget.controller,
-          placeholder: VideoMetadataCapturePreviewThumbnail(
-            clip: widget.clip,
+    final player = ClipRRect(
+      borderRadius: isSquare
+          ? .circular(_VideoMetadataCoverConstants.squareCornerRadius)
+          : const .vertical(
+              bottom: .circular(
+                _VideoMetadataCoverConstants.portraitBottomCornerRadius,
+              ),
+            ),
+      child: FittedBox(
+        fit: isSquare ? BoxFit.contain : BoxFit.cover,
+        child: SizedBox(
+          width: _VideoMetadataCoverConstants.playerBaseSize * videoAR,
+          height: _VideoMetadataCoverConstants.playerBaseSize,
+          child: DivineVideoPlayer(
+            controller: widget.controller,
+            placeholder: VideoMetadataCapturePreviewThumbnail(
+              clip: widget.clip,
+            ),
           ),
         ),
       ),
@@ -320,10 +374,7 @@ class _VideoAreaState extends State<_VideoArea> {
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
       child: AspectRatio(
         aspectRatio: widget.clip.targetAspectRatio.value,
-        child: ClipRRect(
-          borderRadius: const .vertical(bottom: .circular(32)),
-          child: isSquare ? Center(child: player) : player,
-        ),
+        child: isSquare ? Center(child: player) : player,
       ),
     );
   }
@@ -347,9 +398,9 @@ class _TopBar extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const .all(16),
+          padding: const .all(_VideoMetadataCoverConstants.topBarPadding),
           child: Row(
-            spacing: 16,
+            spacing: _VideoMetadataCoverConstants.topBarSpacing,
             children: [
               Semantics(
                 label: context.l10n.videoMetadataEditCoverCloseSemanticLabel,
@@ -373,14 +424,17 @@ class _TopBar extends StatelessWidget {
                 button: true,
                 child: isConfirming
                     ? const SizedBox(
-                        width: 40,
-                        height: 40,
+                        width: _VideoMetadataCoverConstants.loadingButtonSize,
+                        height: _VideoMetadataCoverConstants.loadingButtonSize,
                         child: Center(
                           child: SizedBox(
-                            width: 20,
-                            height: 20,
+                            width:
+                                _VideoMetadataCoverConstants.loadingSpinnerSize,
+                            height:
+                                _VideoMetadataCoverConstants.loadingSpinnerSize,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
+                              strokeWidth: _VideoMetadataCoverConstants
+                                  .loadingSpinnerStrokeWidth,
                               color: VineTheme.primary,
                             ),
                           ),
@@ -416,9 +470,14 @@ class _BottomArea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const .fromLTRB(16, 0, 16, 12),
+      padding: const .fromLTRB(
+        _VideoMetadataCoverConstants.bottomHorizontalPadding,
+        0,
+        _VideoMetadataCoverConstants.bottomHorizontalPadding,
+        _VideoMetadataCoverConstants.bottomPadding,
+      ),
       child: ClipRRect(
-        borderRadius: .circular(4),
+        borderRadius: .circular(_VideoMetadataCoverConstants.stripBorderRadius),
         child: _ThumbnailStrip(
           clip: clip,
           stripThumbnails: stripThumbnails,
@@ -448,8 +507,9 @@ class _ThumbnailStrip extends StatefulWidget {
 }
 
 class _ThumbnailStripState extends State<_ThumbnailStrip> {
-  static const double _stripHeight = 64;
-  static const double _thumbWidth = 48;
+  static const double _stripHeight = _VideoMetadataCoverConstants.stripHeight;
+  static const double _thumbWidth =
+      _VideoMetadataCoverConstants.stripThumbWidth;
   static const double _cursorWidth = 36;
 
   List<StripThumbnail>? _cachedThumbnails;
@@ -526,7 +586,10 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final stripWidth = constraints.maxWidth;
-          final count = (stripWidth / _thumbWidth).ceil().clamp(1, 500);
+          final count = (stripWidth / _thumbWidth).ceil().clamp(
+            _VideoMetadataCoverConstants.minSlotCount,
+            _VideoMetadataCoverConstants.maxSlotCountForRender,
+          );
           _updateSlotCache(count);
           final slotWidth = stripWidth / count;
           final cursorDx = _dxFromPosition(
@@ -577,10 +640,13 @@ class _ThumbnailStripState extends State<_ThumbnailStrip> {
                         decoration: ShapeDecoration(
                           shape: RoundedRectangleBorder(
                             side: const BorderSide(
-                              width: 2,
+                              width: _VideoMetadataCoverConstants
+                                  .cursorBorderWidth,
                               color: VineTheme.onSurface,
                             ),
-                            borderRadius: .circular(4),
+                            borderRadius: .circular(
+                              _VideoMetadataCoverConstants.stripBorderRadius,
+                            ),
                           ),
                         ),
                       ),
@@ -627,7 +693,13 @@ class _SlotImage extends StatelessWidget {
 }
 
 String _formatDuration(Duration d) {
-  final minutes = d.inMinutes.remainder(60).toString().padLeft(1, '0');
-  final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  final minutes = d.inMinutes
+      .remainder(_VideoMetadataCoverConstants.oneMinuteSeconds)
+      .toString()
+      .padLeft(_VideoMetadataCoverConstants.minutePadWidth, '0');
+  final seconds = d.inSeconds
+      .remainder(_VideoMetadataCoverConstants.oneMinuteSeconds)
+      .toString()
+      .padLeft(_VideoMetadataCoverConstants.secondPadWidth, '0');
   return '$minutes:$seconds';
 }
