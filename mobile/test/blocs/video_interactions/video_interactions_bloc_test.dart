@@ -629,6 +629,52 @@ void main() {
         ],
       );
 
+      // Regression for #3503: when the home feed mounts a feed item whose
+      // BlocProvider snapshotted a stale LikesRepository (one wrapping a
+      // Nostr instance with an empty cached public key), every sendLike
+      // surfaces as `StateError('No public key available …')` from
+      // `Nostr.ensurePublicKey`. The bloc must roll back the optimistic
+      // flip and surface `VideoInteractionsError.likeFailed` — not crash
+      // and not leave the heart filled. The fix in
+      // `_PooledVideoFeedItem.build` (video_feed_page.dart) prevents the
+      // stale snapshot in the first place; this test pins the bloc-side
+      // behaviour so a future change to `ensurePublicKey`'s error type
+      // doesn't silently drop the rollback.
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'rolls back when toggle throws StateError from ensurePublicKey',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenThrow(
+            StateError(
+              'No public key available — signer may not be configured',
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 6,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 5,
+            error: VideoInteractionsError.likeFailed,
+          ),
+        ],
+        errors: () => [isA<StateError>()],
+      );
+
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'subscription stream tick during toggle does not double-emit',
         setUp: () {

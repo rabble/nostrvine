@@ -895,14 +895,25 @@ class _PooledVideoFeedItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final likesRepository = ref.read(likesRepositoryProvider);
-    final commentsRepository = ref.read(commentsRepositoryProvider);
-    final repostsRepository = ref.read(repostsRepositoryProvider);
+    // ref.watch + composite ValueKey: when any of these provider instances
+    // is rebuilt (auth flip / sign-out / account switch) the BlocProvider's
+    // key changes, the stale bloc is closed, and the new one's create:
+    // captures the fresh repository chain. See #3503.
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
     final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
+      key: ValueKey(
+        Object.hash(
+          identityHashCode(likesRepository),
+          identityHashCode(commentsRepository),
+          identityHashCode(repostsRepository),
+        ),
+      ),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -964,11 +975,19 @@ class _WebVideoFeedItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final likesRepository = ref.read(likesRepositoryProvider);
-    final commentsRepository = ref.read(commentsRepositoryProvider);
-    final repostsRepository = ref.read(repostsRepositoryProvider);
+    // See _PooledVideoFeedItem.build for the rationale on watch + key. #3503.
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     return BlocProvider<VideoInteractionsBloc>(
+      key: ValueKey(
+        Object.hash(
+          identityHashCode(likesRepository),
+          identityHashCode(commentsRepository),
+          identityHashCode(repostsRepository),
+        ),
+      ),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
