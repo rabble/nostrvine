@@ -1,6 +1,8 @@
 // ABOUTME: Server-backed restriction and case models for parental consent /
 // ABOUTME: minor-account review. Used by router gating and restricted UX.
 
+import 'package:openvine/constants/app_constants.dart';
+
 enum AccountRestrictionStatus {
   active,
   restrictedMinorReview;
@@ -30,8 +32,7 @@ enum MinorReviewCaseState {
       'open_reported' => openReported,
       'under_moderator_review' => underModeratorReview,
       'restricted_pending_user_response' => restrictedPendingUserResponse,
-      'restricted_pending_parental_consent' =>
-        restrictedPendingParentalConsent,
+      'restricted_pending_parental_consent' => restrictedPendingParentalConsent,
       'restricted_pending_support_email' => restrictedPendingSupportEmail,
       'submitted_for_review' => submittedForReview,
       'needs_follow_up' => needsFollowUp,
@@ -75,27 +76,19 @@ enum MinorReviewResolutionType {
 }
 
 class MinorReviewInstructions {
-  const MinorReviewInstructions({
-    required this.title,
-    required this.body,
-  });
+  const MinorReviewInstructions({required this.title, required this.body});
 
   factory MinorReviewInstructions.fromJson(Map<String, dynamic>? json) {
     return MinorReviewInstructions(
-      title: json?['title'] as String? ?? 'Account review required',
-      body:
-          json?['body'] as String? ??
-          'We need to review this account before it can use Divine normally.',
+      title: json?['title'] as String? ?? '',
+      body: json?['body'] as String? ?? '',
     );
   }
 
   final String title;
   final String body;
 
-  MinorReviewInstructions copyWith({
-    String? title,
-    String? body,
-  }) {
+  MinorReviewInstructions copyWith({String? title, String? body}) {
     return MinorReviewInstructions(
       title: title ?? this.title,
       body: body ?? this.body,
@@ -129,7 +122,7 @@ class MinorReviewCase {
         json['instructions'] as Map<String, dynamic>?,
       ),
       supportEmail:
-          json['supportEmail'] as String? ?? 'support@divine.video',
+          json['supportEmail'] as String? ?? AppConstants.supportEmail,
       moderationConversationPubkey:
           json['moderationConversationPubkey'] as String?,
       moderationConversationId: json['moderationConversationId'] as String?,
@@ -197,7 +190,8 @@ class MinorAccountReviewStatus {
   }
 
   factory MinorAccountReviewStatus.fromJson(Map<String, dynamic> json) {
-    final restriction = json['restriction'] as Map<String, dynamic>? ?? const {};
+    final restriction =
+        json['restriction'] as Map<String, dynamic>? ?? const {};
     final currentCaseJson = json['minorReviewCase'] as Map<String, dynamic>?;
 
     return MinorAccountReviewStatus(

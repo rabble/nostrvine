@@ -13410,6 +13410,378 @@ abstract class AppLocalizations {
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
 
+  /// No description provided for @minorAccountReviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Review'**
+  String get minorAccountReviewTitle;
+
+  /// No description provided for @minorAccountReviewCheckingStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking account status...'**
+  String get minorAccountReviewCheckingStatusTitle;
+
+  /// No description provided for @minorAccountReviewCheckingStatusBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Please wait while we confirm this account\'s current review status.'**
+  String get minorAccountReviewCheckingStatusBody;
+
+  /// No description provided for @minorAccountReviewDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account review required'**
+  String get minorAccountReviewDefaultTitle;
+
+  /// No description provided for @minorAccountReviewDefaultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We need to review this account before it can use Divine normally.'**
+  String get minorAccountReviewDefaultBody;
+
+  /// No description provided for @minorAccountReviewCaseId.
+  ///
+  /// In en, this message translates to:
+  /// **'Case ID: {caseId}'**
+  String minorAccountReviewCaseId(String caseId);
+
+  /// No description provided for @minorAccountReviewCaseIdShortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Case ID'**
+  String get minorAccountReviewCaseIdShortLabel;
+
+  /// No description provided for @minorAccountReviewRestrictionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What is restricted right now'**
+  String get minorAccountReviewRestrictionsTitle;
+
+  /// No description provided for @minorAccountReviewRestrictionPosting.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting and publishing are paused'**
+  String get minorAccountReviewRestrictionPosting;
+
+  /// No description provided for @minorAccountReviewRestrictionEngagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Comments, likes, reposts, and follows are paused'**
+  String get minorAccountReviewRestrictionEngagement;
+
+  /// No description provided for @minorAccountReviewRestrictionMessaging.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting or replying to regular messages is paused'**
+  String get minorAccountReviewRestrictionMessaging;
+
+  /// No description provided for @minorAccountReviewRestrictionSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Support and your moderation message remain available'**
+  String get minorAccountReviewRestrictionSupport;
+
+  /// No description provided for @minorAccountReviewOpenSupportCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Support Center'**
+  String get minorAccountReviewOpenSupportCenter;
+
+  /// No description provided for @minorAccountReviewOpenModerationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Moderation Message'**
+  String get minorAccountReviewOpenModerationMessage;
+
+  /// No description provided for @minorAccountReviewCheckAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Check Again'**
+  String get minorAccountReviewCheckAgain;
+
+  /// No description provided for @minorAccountReviewLogOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get minorAccountReviewLogOut;
+
+  /// No description provided for @minorAccountReviewNextStepTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Next step'**
+  String get minorAccountReviewNextStepTitle;
+
+  /// No description provided for @minorAccountReviewNextStepBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the support center or your moderation message if you need help with this review.'**
+  String get minorAccountReviewNextStepBody;
+
+  /// No description provided for @minorAccountReviewInProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Review in progress'**
+  String get minorAccountReviewInProgressTitle;
+
+  /// No description provided for @minorAccountReviewInProgressBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We have what we need for now. Our team is reviewing this case before restoring normal account access.'**
+  String get minorAccountReviewInProgressBody;
+
+  /// No description provided for @minorAccountReviewUnder13Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Under-13 accounts'**
+  String get minorAccountReviewUnder13Title;
+
+  /// No description provided for @minorAccountReviewUnder13Body.
+  ///
+  /// In en, this message translates to:
+  /// **'If this account belongs to someone under 13, a parent or guardian must email {supportEmail} and include the case ID.'**
+  String minorAccountReviewUnder13Body(String supportEmail);
+
+  /// No description provided for @minorAccountReviewTeenBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.'**
+  String get minorAccountReviewTeenBody;
+
+  /// No description provided for @minorAccountReviewParentSupportInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent Support Instructions'**
+  String get minorAccountReviewParentSupportInstructions;
+
+  /// No description provided for @minorAccountReviewContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get minorAccountReviewContinue;
+
+  /// No description provided for @minorAccountReviewErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not load your account review status.'**
+  String get minorAccountReviewErrorTitle;
+
+  /// No description provided for @minorAccountReviewTryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try Again'**
+  String get minorAccountReviewTryAgain;
+
+  /// No description provided for @minorAccountReviewParentContactTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent Contact'**
+  String get minorAccountReviewParentContactTitle;
+
+  /// No description provided for @minorAccountReviewParentContactHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a parent or guardian email'**
+  String get minorAccountReviewParentContactHeading;
+
+  /// No description provided for @minorAccountReviewParentContactBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We will use this address for the parental consent review on case {caseId}.'**
+  String minorAccountReviewParentContactBody(String caseId);
+
+  /// No description provided for @minorAccountReviewParentContactFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent or guardian email'**
+  String get minorAccountReviewParentContactFieldLabel;
+
+  /// No description provided for @minorAccountReviewSubmitting.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitting...'**
+  String get minorAccountReviewSubmitting;
+
+  /// No description provided for @minorAccountReviewSubmitEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Email'**
+  String get minorAccountReviewSubmitEmail;
+
+  /// No description provided for @minorAccountReviewBackToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Account Review'**
+  String get minorAccountReviewBackToReview;
+
+  /// No description provided for @minorAccountReviewSubmissionReceivedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email submitted'**
+  String get minorAccountReviewSubmissionReceivedTitle;
+
+  /// No description provided for @minorAccountReviewSubmissionReceivedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We submitted {email} for review. We\'ll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.'**
+  String minorAccountReviewSubmissionReceivedBody(String email);
+
+  /// No description provided for @minorAccountReviewSubmissionReceivedLocalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We received the parent or guardian contact for this account. Our team will review it before restoring access.'**
+  String get minorAccountReviewSubmissionReceivedLocalBody;
+
+  /// No description provided for @minorAccountReviewMissingCase.
+  ///
+  /// In en, this message translates to:
+  /// **'We could not find an active review case for this account.'**
+  String get minorAccountReviewMissingCase;
+
+  /// No description provided for @minorAccountReviewParentContactError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not submit the parent email. Please try again.'**
+  String get minorAccountReviewParentContactError;
+
+  /// No description provided for @minorAccountReviewUnder13SupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent Support'**
+  String get minorAccountReviewUnder13SupportTitle;
+
+  /// No description provided for @minorAccountReviewUnder13Heading.
+  ///
+  /// In en, this message translates to:
+  /// **'A parent or guardian must contact Divine'**
+  String get minorAccountReviewUnder13Heading;
+
+  /// No description provided for @minorAccountReviewUnder13SupportBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For likely under-13 accounts, the next step is parent or guardian contact by email.'**
+  String get minorAccountReviewUnder13SupportBody;
+
+  /// No description provided for @minorAccountReviewSupportEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Support email'**
+  String get minorAccountReviewSupportEmailLabel;
+
+  /// No description provided for @minorAccountReviewSupportEmailCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Support email copied'**
+  String get minorAccountReviewSupportEmailCopied;
+
+  /// No description provided for @minorAccountReviewCaseIdCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Case ID copied'**
+  String get minorAccountReviewCaseIdCopied;
+
+  /// No description provided for @minorAccountReviewUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get minorAccountReviewUnavailable;
+
+  /// No description provided for @minorAccountReviewUnder13Instructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.'**
+  String get minorAccountReviewUnder13Instructions;
+
+  /// No description provided for @devOptionsMinorReviewSimulationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Minor Account Review Simulation'**
+  String get devOptionsMinorReviewSimulationTitle;
+
+  /// No description provided for @devOptionsMinorReviewCurrentStateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current state'**
+  String get devOptionsMinorReviewCurrentStateLabel;
+
+  /// No description provided for @devOptionsMinorReviewStateRestricted.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted ({state})'**
+  String devOptionsMinorReviewStateRestricted(String state);
+
+  /// No description provided for @devOptionsMinorReviewStateActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get devOptionsMinorReviewStateActive;
+
+  /// No description provided for @devOptionsMinorReviewStateLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading...'**
+  String get devOptionsMinorReviewStateLoading;
+
+  /// No description provided for @devOptionsMinorReviewStateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading state'**
+  String get devOptionsMinorReviewStateError;
+
+  /// No description provided for @devOptionsMinorReviewClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear simulation override'**
+  String get devOptionsMinorReviewClearTitle;
+
+  /// No description provided for @devOptionsMinorReviewClearSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use backend or default active state again'**
+  String get devOptionsMinorReviewClearSubtitle;
+
+  /// No description provided for @devOptionsMinorReviewTeenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate 13-15 review case'**
+  String get devOptionsMinorReviewTeenTitle;
+
+  /// No description provided for @devOptionsMinorReviewTeenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted account with parent contact path'**
+  String get devOptionsMinorReviewTeenSubtitle;
+
+  /// No description provided for @devOptionsMinorReviewUnder13Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulate under-13 support case'**
+  String get devOptionsMinorReviewUnder13Title;
+
+  /// No description provided for @devOptionsMinorReviewUnder13Subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restricted account with parent-email-only instructions'**
+  String get devOptionsMinorReviewUnder13Subtitle;
+
+  /// No description provided for @devOptionsMinorReviewClearedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Minor account review simulation cleared'**
+  String get devOptionsMinorReviewClearedToast;
+
+  /// No description provided for @devOptionsMinorReviewTeenEnabledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated 13-15 review case enabled'**
+  String get devOptionsMinorReviewTeenEnabledToast;
+
+  /// No description provided for @devOptionsMinorReviewUnder13EnabledToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Simulated under-13 support case enabled'**
+  String get devOptionsMinorReviewUnder13EnabledToast;
+
   /// Semantics label for the button that opens the recorder to create a video reply in comments.
   ///
   /// In en, this message translates to:

@@ -1,6 +1,7 @@
 // ABOUTME: Minor-account review Riverpod providers for auth restriction gating
 // ABOUTME: Wires API-backed status, repository, and developer override service
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/auth_providers.dart';
@@ -34,10 +35,14 @@ final currentMinorAccountReviewStatusProvider =
         return MinorAccountReviewStatus.active();
       }
 
-      final overrideService = ref.watch(minorAccountReviewOverrideServiceProvider);
-      final localOverride = overrideService.getOverride();
-      if (localOverride != null) {
-        return localOverride;
+      if (kDebugMode) {
+        final overrideService = ref.watch(
+          minorAccountReviewOverrideServiceProvider,
+        );
+        final localOverride = overrideService.getOverride();
+        if (localOverride != null) {
+          return localOverride;
+        }
       }
 
       final repository = ref.watch(minorAccountReviewRepositoryProvider);

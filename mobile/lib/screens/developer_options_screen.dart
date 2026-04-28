@@ -5,9 +5,11 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
@@ -104,7 +106,9 @@ class _DeveloperOptionsScreenState
   @override
   Widget build(BuildContext context) {
     final currentConfig = ref.watch(currentEnvironmentProvider);
-    final reviewStatusAsync = ref.watch(currentMinorAccountReviewStatusProvider);
+    final reviewStatusAsync = ref.watch(
+      currentMinorAccountReviewStatusProvider,
+    );
 
     // All available environment configurations
     final environments = [
@@ -323,96 +327,104 @@ class _DeveloperOptionsScreenState
                 );
               }),
 
-              const Divider(color: VineTheme.outlineVariant, height: 32),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  'Minor Account Review Simulation',
-                  style: TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+              if (kDebugMode) ...[
+                const Divider(color: VineTheme.outlineVariant, height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    context.l10n.devOptionsMinorReviewSimulationTitle,
+                    style: const TextStyle(
+                      color: VineTheme.vineGreen,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              ListTile(
-                title: const Text(
-                  'Current state',
-                  style: TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsMinorReviewCurrentStateLabel,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  subtitle: Text(
+                    reviewStatusAsync.when(
+                      data: (status) => status.isRestricted
+                          ? context.l10n.devOptionsMinorReviewStateRestricted(
+                              status.currentCase?.state.name ?? 'unknown',
+                            )
+                          : context.l10n.devOptionsMinorReviewStateActive,
+                      loading: () =>
+                          context.l10n.devOptionsMinorReviewStateLoading,
+                      error: (error, stackTrace) =>
+                          context.l10n.devOptionsMinorReviewStateError,
+                    ),
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-                subtitle: Text(
-                  reviewStatusAsync.when(
-                    data: (status) => status.isRestricted
-                        ? 'Restricted (${status.currentCase?.state.name ?? "unknown"})'
-                        : 'Active',
-                    loading: () => 'Loading...',
-                    error: (error, stackTrace) => 'Error loading state',
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsMinorReviewClearTitle,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
+                  subtitle: Text(
+                    context.l10n.devOptionsMinorReviewClearSubtitle,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
                   ),
+                  onTap: _clearMinorReviewOverride,
                 ),
-              ),
-              ListTile(
-                title: const Text(
-                  'Clear simulation override',
-                  style: TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsMinorReviewTeenTitle,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                subtitle: const Text(
-                  'Use backend or default active state again',
-                  style: TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
+                  subtitle: Text(
+                    context.l10n.devOptionsMinorReviewTeenSubtitle,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
                   ),
+                  onTap: _simulateTeenMinorReview,
                 ),
-                onTap: _clearMinorReviewOverride,
-              ),
-              ListTile(
-                title: const Text(
-                  'Simulate 13-15 review case',
-                  style: TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                ListTile(
+                  title: Text(
+                    context.l10n.devOptionsMinorReviewUnder13Title,
+                    style: const TextStyle(
+                      color: VineTheme.primaryText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                subtitle: const Text(
-                  'Restricted account with parent contact path',
-                  style: TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
+                  subtitle: Text(
+                    context.l10n.devOptionsMinorReviewUnder13Subtitle,
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 14,
+                    ),
                   ),
+                  onTap: _simulateUnder13MinorReview,
                 ),
-                onTap: _simulateTeenMinorReview,
-              ),
-              ListTile(
-                title: const Text(
-                  'Simulate under-13 support case',
-                  style: TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                subtitle: const Text(
-                  'Restricted account with parent-email-only instructions',
-                  style: TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
-                  ),
-                ),
-                onTap: _simulateUnder13MinorReview,
-              ),
+              ],
             ],
           ),
         ),
@@ -528,8 +540,8 @@ class _DeveloperOptionsScreenState
     ref.invalidate(currentMinorAccountReviewStatusProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Minor account review simulation cleared'),
+      SnackBar(
+        content: Text(context.l10n.devOptionsMinorReviewClearedToast),
         backgroundColor: VineTheme.vineGreen,
       ),
     );
@@ -537,10 +549,12 @@ class _DeveloperOptionsScreenState
   }
 
   Future<void> _simulateTeenMinorReview() async {
+    final l10n = context.l10n;
     final authService = ref.read(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex;
-    final moderationPubkey =
-        ref.read(moderationLabelServiceProvider).divineModerationPubkeyHex;
+    final moderationPubkey = ref
+        .read(moderationLabelServiceProvider)
+        .divineModerationPubkeyHex;
 
     final override = MinorAccountReviewStatus(
       restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
@@ -549,12 +563,11 @@ class _DeveloperOptionsScreenState
         state: MinorReviewCaseState.restrictedPendingUserResponse,
         suspectedAgeBand: SuspectedAgeBand.age13To15,
         allowedResolution: MinorReviewResolutionType.parentVideoOrEmail,
-        instructions: const MinorReviewInstructions(
-          title: 'Account review required',
-          body:
-              'We need parental consent information before this account can use Divine normally.',
+        instructions: MinorReviewInstructions(
+          title: l10n.minorAccountReviewDefaultTitle,
+          body: l10n.minorAccountReviewDefaultBody,
         ),
-        supportEmail: 'support@divine.video',
+        supportEmail: AppConstants.supportEmail,
         moderationConversationPubkey: moderationPubkey,
         moderationConversationId: currentPubkey == null
             ? null
@@ -571,8 +584,8 @@ class _DeveloperOptionsScreenState
     ref.invalidate(currentMinorAccountReviewStatusProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Simulated 13-15 review case enabled'),
+      SnackBar(
+        content: Text(context.l10n.devOptionsMinorReviewTeenEnabledToast),
         backgroundColor: VineTheme.vineGreen,
       ),
     );
@@ -580,10 +593,12 @@ class _DeveloperOptionsScreenState
   }
 
   Future<void> _simulateUnder13MinorReview() async {
+    final l10n = context.l10n;
     final authService = ref.read(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex;
-    final moderationPubkey =
-        ref.read(moderationLabelServiceProvider).divineModerationPubkeyHex;
+    final moderationPubkey = ref
+        .read(moderationLabelServiceProvider)
+        .divineModerationPubkeyHex;
 
     final override = MinorAccountReviewStatus(
       restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
@@ -592,12 +607,11 @@ class _DeveloperOptionsScreenState
         state: MinorReviewCaseState.restrictedPendingSupportEmail,
         suspectedAgeBand: SuspectedAgeBand.under13,
         allowedResolution: MinorReviewResolutionType.supportEmailOnly,
-        instructions: const MinorReviewInstructions(
-          title: 'Parent support required',
-          body:
-              'A parent or guardian must contact Divine before this account can continue.',
+        instructions: MinorReviewInstructions(
+          title: l10n.minorAccountReviewUnder13SupportTitle,
+          body: l10n.minorAccountReviewUnder13Heading,
         ),
-        supportEmail: 'support@divine.video',
+        supportEmail: AppConstants.supportEmail,
         moderationConversationPubkey: moderationPubkey,
         moderationConversationId: currentPubkey == null
             ? null
@@ -614,8 +628,8 @@ class _DeveloperOptionsScreenState
     ref.invalidate(currentMinorAccountReviewStatusProvider);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Simulated under-13 support case enabled'),
+      SnackBar(
+        content: Text(context.l10n.devOptionsMinorReviewUnder13EnabledToast),
         backgroundColor: VineTheme.vineGreen,
       ),
     );

@@ -6,6 +6,8 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
@@ -24,9 +26,7 @@ class MinorAccountReviewScreen extends ConsumerWidget {
     final statusAsync = ref.watch(currentMinorAccountReviewStatusProvider);
 
     return Scaffold(
-      appBar: const DiVineAppBar(
-        title: 'Account Review',
-      ),
+      appBar: DiVineAppBar(title: context.l10n.minorAccountReviewTitle),
       backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
         child: Align(
@@ -35,14 +35,54 @@ class MinorAccountReviewScreen extends ConsumerWidget {
             constraints: const BoxConstraints(maxWidth: 640),
             child: statusAsync.when(
               data: (status) => _LoadedView(status: status),
-              loading: () => const Center(
-                child: PartialCircleSpinner(progress: 0.33),
-              ),
+              loading: () =>
+                  const Center(child: PartialCircleSpinner(progress: 0.33)),
               error: (error, _) => _ErrorView(
                 error: error,
                 onRetry: () =>
                     ref.invalidate(currentMinorAccountReviewStatusProvider),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MinorAccountReviewLoadingScreen extends StatelessWidget {
+  static const routeName = 'minor-account-review-loading';
+  static const path = '/account-review/checking';
+
+  const MinorAccountReviewLoadingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const PartialCircleSpinner(progress: 0.33),
+                const SizedBox(height: 20),
+                Text(
+                  context.l10n.minorAccountReviewCheckingStatusTitle,
+                  style: VineTheme.titleMediumFont(),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  context.l10n.minorAccountReviewCheckingStatusBody,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.secondaryText,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ),
@@ -58,15 +98,18 @@ class _LoadedView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final reviewCase = status.currentCase;
-    final title = reviewCase?.instructions.title ?? 'Account review required';
-    final body =
-        reviewCase?.instructions.body ??
-        'We need to review this account before it can use Divine normally.';
-    final supportEmail = reviewCase?.supportEmail ?? 'support@divine.video';
+    final title = reviewCase?.instructions.title.isNotEmpty == true
+        ? reviewCase!.instructions.title
+        : l10n.minorAccountReviewDefaultTitle;
+    final body = reviewCase?.instructions.body.isNotEmpty == true
+        ? reviewCase!.instructions.body
+        : l10n.minorAccountReviewDefaultBody;
+    final supportEmail = reviewCase?.supportEmail ?? AppConstants.supportEmail;
     final caseId = reviewCase?.id;
-    final primaryAction = _primaryAction(reviewCase);
-    final infoCard = _infoCardForCase(reviewCase, supportEmail);
+    final primaryAction = _primaryAction(reviewCase, l10n);
+    final infoCard = _infoCardForCase(reviewCase, supportEmail, l10n);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -76,7 +119,9 @@ class _LoadedView extends ConsumerWidget {
           decoration: BoxDecoration(
             color: VineTheme.surfaceContainerHigh,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: VineTheme.vineGreen.withValues(alpha: .2)),
+            border: Border.all(
+              color: VineTheme.vineGreen.withValues(alpha: .2),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +135,7 @@ class _LoadedView extends ConsumerWidget {
               if (caseId != null && caseId.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
-                  'Case ID: $caseId',
+                  l10n.minorAccountReviewCaseId(caseId),
                   style: VineTheme.labelMediumFont(
                     color: VineTheme.secondaryText,
                   ),
@@ -101,21 +146,18 @@ class _LoadedView extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         Text(
-          'What is restricted right now',
+          l10n.minorAccountReviewRestrictionsTitle,
           style: VineTheme.titleMediumFont(),
         ),
         const SizedBox(height: 12),
-        ...const [
-          _RestrictionLine('Posting and publishing are paused'),
-          _RestrictionLine('Comments, likes, reposts, and follows are paused'),
-          _RestrictionLine('Starting or replying to regular messages is paused'),
-          _RestrictionLine('Support and your moderation message remain available'),
-        ],
+        ...[
+          l10n.minorAccountReviewRestrictionPosting,
+          l10n.minorAccountReviewRestrictionEngagement,
+          l10n.minorAccountReviewRestrictionMessaging,
+          l10n.minorAccountReviewRestrictionSupport,
+        ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
-        _InfoCard(
-          title: infoCard.title,
-          body: infoCard.body,
-        ),
+        _InfoCard(title: infoCard.title, body: infoCard.body),
         const SizedBox(height: 24),
         if (primaryAction != null) ...[
           DivineButton(
@@ -126,14 +168,14 @@ class _LoadedView extends ConsumerWidget {
           const SizedBox(height: 12),
         ],
         DivineButton(
-          label: 'Open Support Center',
+          label: l10n.minorAccountReviewOpenSupportCenter,
           leadingIcon: DivineIconName.headphones,
           expanded: true,
           onPressed: () => context.push(SupportCenterScreen.path),
         ),
         const SizedBox(height: 12),
         DivineButton(
-          label: 'Open Moderation Message',
+          label: l10n.minorAccountReviewOpenModerationMessage,
           type: DivineButtonType.secondary,
           leadingIcon: DivineIconName.chatCircle,
           expanded: true,
@@ -143,16 +185,17 @@ class _LoadedView extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         DivineButton(
-          label: 'Check Again',
+          label: l10n.minorAccountReviewCheckAgain,
           type: DivineButtonType.ghost,
           expanded: true,
-          onPressed: () => ref.invalidate(currentMinorAccountReviewStatusProvider),
+          onPressed: () =>
+              ref.invalidate(currentMinorAccountReviewStatusProvider),
         ),
         const SizedBox(height: 24),
         TextButton(
           onPressed: () => ref.read(authServiceProvider).signOut(),
           child: Text(
-            'Log out',
+            l10n.minorAccountReviewLogOut,
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
         ),
@@ -185,54 +228,54 @@ class _LoadedView extends ConsumerWidget {
   _MinorReviewInfoCardCopy _infoCardForCase(
     MinorReviewCase? reviewCase,
     String supportEmail,
+    AppLocalizations l10n,
   ) {
     if (reviewCase == null) {
-      return const _MinorReviewInfoCardCopy(
-        title: 'Next step',
-        body:
-            'Open the support center or your moderation message if you need help with this review.',
+      return _MinorReviewInfoCardCopy(
+        title: l10n.minorAccountReviewNextStepTitle,
+        body: l10n.minorAccountReviewNextStepBody,
       );
     }
 
     if (reviewCase.isAwaitingModeratorDecision) {
-      return const _MinorReviewInfoCardCopy(
-        title: 'Review in progress',
-        body:
-            'We have what we need for now. Our team is reviewing this case before restoring normal account access.',
+      return _MinorReviewInfoCardCopy(
+        title: l10n.minorAccountReviewInProgressTitle,
+        body: l10n.minorAccountReviewInProgressBody,
       );
     }
 
     if (reviewCase.isUnder13Path) {
       return _MinorReviewInfoCardCopy(
-        title: 'Under-13 accounts',
-        body:
-            'If this account belongs to someone under 13, a parent or guardian must email $supportEmail and include the case ID.',
+        title: l10n.minorAccountReviewUnder13Title,
+        body: l10n.minorAccountReviewUnder13Body(supportEmail),
       );
     }
 
-    return const _MinorReviewInfoCardCopy(
-      title: 'Next step',
-      body:
-          'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.',
+    return _MinorReviewInfoCardCopy(
+      title: l10n.minorAccountReviewNextStepTitle,
+      body: l10n.minorAccountReviewTeenBody,
     );
   }
 
-  _MinorReviewPrimaryAction? _primaryAction(MinorReviewCase? reviewCase) {
+  _MinorReviewPrimaryAction? _primaryAction(
+    MinorReviewCase? reviewCase,
+    AppLocalizations l10n,
+  ) {
     if (reviewCase == null || reviewCase.isAwaitingModeratorDecision) {
       return null;
     }
 
     if (!reviewCase.needsUserAction) {
-      return const _MinorReviewPrimaryAction(
-        label: 'Open Support Center',
+      return _MinorReviewPrimaryAction(
+        label: l10n.minorAccountReviewOpenSupportCenter,
         onPressed: _openSupportCenter,
       );
     }
 
     return _MinorReviewPrimaryAction(
       label: reviewCase.isUnder13Path
-          ? 'Parent Support Instructions'
-          : 'Continue',
+          ? l10n.minorAccountReviewParentSupportInstructions
+          : l10n.minorAccountReviewContinue,
       onPressed: (context) => _continueToNextStep(context, reviewCase),
     );
   }
@@ -241,10 +284,7 @@ class _LoadedView extends ConsumerWidget {
     context.push(SupportCenterScreen.path);
   }
 
-  void _continueToNextStep(
-    BuildContext context,
-    MinorReviewCase reviewCase,
-  ) {
+  void _continueToNextStep(BuildContext context, MinorReviewCase reviewCase) {
     if (reviewCase.isUnder13Path) {
       context.push(MinorAccountReviewUnder13SupportScreen.path);
       return;
@@ -263,10 +303,7 @@ class _LoadedView extends ConsumerWidget {
 }
 
 class _MinorReviewInfoCardCopy {
-  const _MinorReviewInfoCardCopy({
-    required this.title,
-    required this.body,
-  });
+  const _MinorReviewInfoCardCopy({required this.title, required this.body});
 
   final String title;
   final String body;
@@ -296,7 +333,11 @@ class _RestrictionLine extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 4),
-            child: Icon(Icons.remove_circle_outline, size: 16, color: VineTheme.vineGreen),
+            child: Icon(
+              Icons.remove_circle_outline,
+              size: 16,
+              color: VineTheme.vineGreen,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -312,10 +353,7 @@ class _RestrictionLine extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.body,
-  });
+  const _InfoCard({required this.title, required this.body});
 
   final String title;
   final String body;
@@ -344,10 +382,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({
-    required this.error,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.error, required this.onRetry});
 
   final Object error;
   final VoidCallback onRetry;
@@ -360,7 +395,7 @@ class _ErrorView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'We could not load your account review status.',
+            context.l10n.minorAccountReviewErrorTitle,
             style: VineTheme.titleMediumFont(),
             textAlign: TextAlign.center,
           ),
@@ -371,7 +406,11 @@ class _ErrorView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 20),
-          DivineButton(label: 'Try Again', expanded: true, onPressed: onRetry),
+          DivineButton(
+            label: context.l10n.minorAccountReviewTryAgain,
+            expanded: true,
+            onPressed: onRetry,
+          ),
         ],
       ),
     );

@@ -4441,6 +4441,103 @@
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
   "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "minorAccountReviewTitle": "Account Review",
+  "minorAccountReviewCheckingStatusTitle": "Checking account status...",
+  "minorAccountReviewCheckingStatusBody": "Please wait while we confirm this account's current review status.",
+  "minorAccountReviewDefaultTitle": "Account review required",
+  "minorAccountReviewDefaultBody": "We need to review this account before it can use Divine normally.",
+  "minorAccountReviewCaseId": "Case ID: {caseId}",
+  "@minorAccountReviewCaseId": {
+    "placeholders": {
+      "caseId": {
+        "type": "String"
+      }
+    }
+  },
+  "minorAccountReviewCaseIdShortLabel": "Case ID",
+  "minorAccountReviewRestrictionsTitle": "What is restricted right now",
+  "minorAccountReviewRestrictionPosting": "Posting and publishing are paused",
+  "minorAccountReviewRestrictionEngagement": "Comments, likes, reposts, and follows are paused",
+  "minorAccountReviewRestrictionMessaging": "Starting or replying to regular messages is paused",
+  "minorAccountReviewRestrictionSupport": "Support and your moderation message remain available",
+  "minorAccountReviewOpenSupportCenter": "Open Support Center",
+  "minorAccountReviewOpenModerationMessage": "Open Moderation Message",
+  "minorAccountReviewCheckAgain": "Check Again",
+  "minorAccountReviewLogOut": "Log out",
+  "minorAccountReviewNextStepTitle": "Next step",
+  "minorAccountReviewNextStepBody": "Open the support center or your moderation message if you need help with this review.",
+  "minorAccountReviewInProgressTitle": "Review in progress",
+  "minorAccountReviewInProgressBody": "We have what we need for now. Our team is reviewing this case before restoring normal account access.",
+  "minorAccountReviewUnder13Title": "Under-13 accounts",
+  "minorAccountReviewUnder13Body": "If this account belongs to someone under 13, a parent or guardian must email {supportEmail} and include the case ID.",
+  "@minorAccountReviewUnder13Body": {
+    "placeholders": {
+      "supportEmail": {
+        "type": "String"
+      }
+    }
+  },
+  "minorAccountReviewTeenBody": "If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.",
+  "minorAccountReviewParentSupportInstructions": "Parent Support Instructions",
+  "minorAccountReviewContinue": "Continue",
+  "minorAccountReviewErrorTitle": "We could not load your account review status.",
+  "minorAccountReviewTryAgain": "Try Again",
+  "minorAccountReviewParentContactTitle": "Parent Contact",
+  "minorAccountReviewParentContactHeading": "Add a parent or guardian email",
+  "minorAccountReviewParentContactBody": "We will use this address for the parental consent review on case {caseId}.",
+  "@minorAccountReviewParentContactBody": {
+    "placeholders": {
+      "caseId": {
+        "type": "String"
+      }
+    }
+  },
+  "minorAccountReviewParentContactFieldLabel": "Parent or guardian email",
+  "minorAccountReviewSubmitting": "Submitting...",
+  "minorAccountReviewSubmitEmail": "Submit Email",
+  "minorAccountReviewBackToReview": "Back to Account Review",
+  "minorAccountReviewSubmissionReceivedTitle": "Email submitted",
+  "minorAccountReviewSubmissionReceivedBody": "We submitted {email} for review. We'll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.",
+  "@minorAccountReviewSubmissionReceivedBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "minorAccountReviewSubmissionReceivedLocalBody": "We received the parent or guardian contact for this account. Our team will review it before restoring access.",
+  "minorAccountReviewMissingCase": "We could not find an active review case for this account.",
+  "minorAccountReviewParentContactError": "Could not submit the parent email. Please try again.",
+  "minorAccountReviewUnder13SupportTitle": "Parent Support",
+  "minorAccountReviewUnder13Heading": "A parent or guardian must contact Divine",
+  "minorAccountReviewUnder13SupportBody": "For likely under-13 accounts, the next step is parent or guardian contact by email.",
+  "minorAccountReviewSupportEmailLabel": "Support email",
+  "minorAccountReviewSupportEmailCopied": "Support email copied",
+  "minorAccountReviewCaseIdCopied": "Case ID copied",
+  "minorAccountReviewUnavailable": "Unavailable",
+  "minorAccountReviewUnder13Instructions": "Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.",
+  "devOptionsMinorReviewSimulationTitle": "Minor Account Review Simulation",
+  "devOptionsMinorReviewCurrentStateLabel": "Current state",
+  "devOptionsMinorReviewStateRestricted": "Restricted ({state})",
+  "@devOptionsMinorReviewStateRestricted": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsMinorReviewStateActive": "Active",
+  "devOptionsMinorReviewStateLoading": "Loading...",
+  "devOptionsMinorReviewStateError": "Error loading state",
+  "devOptionsMinorReviewClearTitle": "Clear simulation override",
+  "devOptionsMinorReviewClearSubtitle": "Use backend or default active state again",
+  "devOptionsMinorReviewTeenTitle": "Simulate 13-15 review case",
+  "devOptionsMinorReviewTeenSubtitle": "Restricted account with parent contact path",
+  "devOptionsMinorReviewUnder13Title": "Simulate under-13 support case",
+  "devOptionsMinorReviewUnder13Subtitle": "Restricted account with parent-email-only instructions",
+  "devOptionsMinorReviewClearedToast": "Minor account review simulation cleared",
+  "devOptionsMinorReviewTeenEnabledToast": "Simulated 13-15 review case enabled",
+  "devOptionsMinorReviewUnder13EnabledToast": "Simulated under-13 support case enabled",
   "commentsRecordVideoButtonLabel": "Record video comment",
   "@commentsRecordVideoButtonLabel": {
     "description": "Semantics label for the button that opens the recorder to create a video reply in comments."

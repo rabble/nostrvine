@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
@@ -30,7 +31,11 @@ void main() {
               );
             }),
           ],
-          child: const MaterialApp(home: MinorAccountReviewScreen()),
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewScreen(),
+          ),
         ),
       );
 
@@ -41,44 +46,49 @@ void main() {
       expect(find.text('Continue', skipOffstage: false), findsOneWidget);
     });
 
-    testWidgets('shows review in progress without primary CTA after submission', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
-              return const MinorAccountReviewStatus(
-                restrictionStatus:
-                    AccountRestrictionStatus.restrictedMinorReview,
-                currentCase: MinorReviewCase(
-                  id: 'case-reviewing',
-                  state: MinorReviewCaseState.submittedForReview,
-                  suspectedAgeBand: SuspectedAgeBand.age13To15,
-                  allowedResolution:
-                      MinorReviewResolutionType.parentVideoOrEmail,
-                  instructions: MinorReviewInstructions(
-                    title: 'Submission received',
-                    body: 'We are reviewing this case.',
+    testWidgets(
+      'shows review in progress without primary CTA after submission',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+                return const MinorAccountReviewStatus(
+                  restrictionStatus:
+                      AccountRestrictionStatus.restrictedMinorReview,
+                  currentCase: MinorReviewCase(
+                    id: 'case-reviewing',
+                    state: MinorReviewCaseState.submittedForReview,
+                    suspectedAgeBand: SuspectedAgeBand.age13To15,
+                    allowedResolution:
+                        MinorReviewResolutionType.parentVideoOrEmail,
+                    instructions: MinorReviewInstructions(
+                      title: 'Submission received',
+                      body: 'We are reviewing this case.',
+                    ),
+                    supportEmail: 'support@divine.video',
                   ),
-                  supportEmail: 'support@divine.video',
-                ),
-              );
-            }),
-          ],
-          child: const MaterialApp(home: MinorAccountReviewScreen()),
-        ),
-      );
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MinorAccountReviewScreen(),
+            ),
+          ),
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(find.text('Review in progress'), findsOneWidget);
-      expect(find.text('Continue', skipOffstage: false), findsNothing);
-      expect(
-        find.text('Parent Support Instructions', skipOffstage: false),
-        findsNothing,
-      );
-      expect(find.text('Open Support Center'), findsOneWidget);
-    });
+        expect(find.text('Review in progress'), findsOneWidget);
+        expect(find.text('Continue', skipOffstage: false), findsNothing);
+        expect(
+          find.text('Parent Support Instructions', skipOffstage: false),
+          findsNothing,
+        );
+        expect(find.text('Open Support Center'), findsOneWidget);
+      },
+    );
   });
 }

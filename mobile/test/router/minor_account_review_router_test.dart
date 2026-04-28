@@ -1,14 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
+import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/bug_report_service.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -21,10 +28,54 @@ void main() {
       mockAuthService = createMockAuthService();
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn('user-pubkey');
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());
     });
+
+    Future<void> pumpRouter(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    MinorAccountReviewStatus restrictedStatus({
+      MinorReviewCaseState state =
+          MinorReviewCaseState.restrictedPendingUserResponse,
+      SuspectedAgeBand ageBand = SuspectedAgeBand.age13To15,
+      MinorReviewResolutionType resolution =
+          MinorReviewResolutionType.parentVideoOrEmail,
+      String? moderationConversationId,
+    }) {
+      return MinorAccountReviewStatus(
+        restrictionStatus: AccountRestrictionStatus.restrictedMinorReview,
+        currentCase: MinorReviewCase(
+          id: 'case-router',
+          state: state,
+          suspectedAgeBand: ageBand,
+          allowedResolution: resolution,
+          instructions: const MinorReviewInstructions(
+            title: 'Account review required',
+            body: 'We need parental consent information.',
+          ),
+          supportEmail: 'support@divine.video',
+          moderationConversationPubkey: 'moderation-pubkey',
+          moderationConversationId: moderationConversationId,
+        ),
+      );
+    }
 
     testWidgets('redirects restricted accounts to account review', (
       tester,
@@ -32,38 +83,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
-            return const MinorAccountReviewStatus(
-              restrictionStatus:
-                  AccountRestrictionStatus.restrictedMinorReview,
-              currentCase: MinorReviewCase(
-                id: 'case-router',
-                state: MinorReviewCaseState.restrictedPendingUserResponse,
-                suspectedAgeBand: SuspectedAgeBand.age13To15,
-                allowedResolution:
-                    MinorReviewResolutionType.parentVideoOrEmail,
-                instructions: MinorReviewInstructions(
-                  title: 'Account review required',
-                  body: 'We need parental consent information.',
-                ),
-                supportEmail: 'support@divine.video',
-              ),
-            );
-          }),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(),
+          ),
         ],
       );
       addTearDown(container.dispose);
       await container.read(currentMinorAccountReviewStatusProvider.future);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpRouter(tester, container);
 
       final router = container.read(goRouterProvider);
       router.go(VideoFeedPage.pathForIndex(0));
@@ -79,38 +107,15 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(mockAuthService: mockAuthService),
-          currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
-            return const MinorAccountReviewStatus(
-              restrictionStatus:
-                  AccountRestrictionStatus.restrictedMinorReview,
-              currentCase: MinorReviewCase(
-                id: 'case-router',
-                state: MinorReviewCaseState.restrictedPendingUserResponse,
-                suspectedAgeBand: SuspectedAgeBand.age13To15,
-                allowedResolution:
-                    MinorReviewResolutionType.parentVideoOrEmail,
-                instructions: MinorReviewInstructions(
-                  title: 'Account review required',
-                  body: 'We need parental consent information.',
-                ),
-                supportEmail: 'support@divine.video',
-              ),
-            );
-          }),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(),
+          ),
         ],
       );
       addTearDown(container.dispose);
       await container.read(currentMinorAccountReviewStatusProvider.future);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpRouter(tester, container);
 
       final router = container.read(goRouterProvider);
       router.go(MinorAccountReviewParentContactScreen.path);
@@ -120,6 +125,139 @@ void main() {
         router.routeInformationProvider.value.uri.toString(),
         MinorAccountReviewParentContactScreen.path,
       );
+    });
+
+    testWidgets('allows support center route while restricted', (tester) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          bugReportServiceProvider.overrideWith((ref) => BugReportService()),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
+
+      final router = container.read(goRouterProvider);
+      router.go(SupportCenterScreen.path);
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        SupportCenterScreen.path,
+      );
+    });
+
+    testWidgets('allows under-13 support route while restricted', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => restrictedStatus(
+              state: MinorReviewCaseState.restrictedPendingSupportEmail,
+              ageBand: SuspectedAgeBand.under13,
+              resolution: MinorReviewResolutionType.supportEmailOnly,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
+
+      final router = container.read(goRouterProvider);
+      router.go(MinorAccountReviewUnder13SupportScreen.path);
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewUnder13SupportScreen.path,
+      );
+    });
+
+    testWidgets('allows only the case-specific moderation conversation', (
+      tester,
+    ) async {
+      final allowedConversationId = ConversationPage.pathForId('mod-conv-123');
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async =>
+                restrictedStatus(moderationConversationId: 'mod-conv-123'),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
+
+      final router = container.read(goRouterProvider);
+      router.go(allowedConversationId);
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        allowedConversationId,
+      );
+    });
+
+    testWidgets('redirects non-moderation conversations while restricted', (
+      tester,
+    ) async {
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async =>
+                restrictedStatus(moderationConversationId: 'mod-conv-123'),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
+      await pumpRouter(tester, container);
+
+      final router = container.read(goRouterProvider);
+      router.go(ConversationPage.pathForId('other-conversation'));
+      await tester.pumpAndSettle();
+
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        MinorAccountReviewScreen.path,
+      );
+    });
+
+    testWidgets('shows loading gate while review status is unresolved', (
+      tester,
+    ) async {
+      final completer = Completer<MinorAccountReviewStatus>();
+      final container = ProviderContainer(
+        overrides: [
+          ...getStandardTestOverrides(mockAuthService: mockAuthService),
+          isNostrReadyProvider.overrideWith((ref) => false),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) => completer.future,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await pumpRouter(tester, container);
+
+      final routeUri = container
+          .read(goRouterProvider)
+          .routeInformationProvider
+          .value
+          .uri;
+      expect(routeUri.path, MinorAccountReviewLoadingScreen.path);
     });
   });
 }

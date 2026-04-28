@@ -6,7 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
 
 class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review-under13-support';
@@ -20,7 +23,7 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Parent Support',
+        title: context.l10n.minorAccountReviewUnder13SupportTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -31,9 +34,8 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: statusAsync.when(
-              loading: () => const Center(
-                child: PartialCircleSpinner(progress: 0.33),
-              ),
+              loading: () =>
+                  const Center(child: PartialCircleSpinner(progress: 0.33)),
               error: (error, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -47,10 +49,12 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
                 ),
               ),
               data: (status) {
+                final l10n = context.l10n;
                 final reviewCase = status.currentCase;
                 final supportEmail =
-                    reviewCase?.supportEmail ?? 'support@divine.video';
-                final caseId = reviewCase?.id ?? 'Unavailable';
+                    reviewCase?.supportEmail ?? AppConstants.supportEmail;
+                final caseId =
+                    reviewCase?.id ?? l10n.minorAccountReviewUnavailable;
 
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -58,41 +62,49 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'A parent or guardian must contact Divine',
+                        l10n.minorAccountReviewUnder13Heading,
                         style: VineTheme.headlineMediumFont(),
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'For likely under-13 accounts, the next step is parent or guardian contact by email.',
+                        l10n.minorAccountReviewUnder13SupportBody,
                         style: VineTheme.bodyMediumFont(
                           color: VineTheme.lightText,
                         ),
                       ),
                       const SizedBox(height: 24),
                       _ValueCard(
-                        title: 'Support email',
+                        title: l10n.minorAccountReviewSupportEmailLabel,
                         value: supportEmail,
-                        onCopy: () =>
-                            _copy(context, supportEmail, 'Support email copied'),
+                        onCopy: () => _copy(
+                          context,
+                          supportEmail,
+                          l10n.minorAccountReviewSupportEmailCopied,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _ValueCard(
-                        title: 'Case ID',
+                        title: l10n.minorAccountReviewCaseIdShortLabel,
                         value: caseId,
-                        onCopy: () => _copy(context, caseId, 'Case ID copied'),
+                        onCopy: () => _copy(
+                          context,
+                          caseId,
+                          l10n.minorAccountReviewCaseIdCopied,
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.',
+                        l10n.minorAccountReviewUnder13Instructions,
                         style: VineTheme.bodyMediumFont(
                           color: VineTheme.lightText,
                         ),
                       ),
                       const Spacer(),
                       DivineButton(
-                        label: 'Back to Account Review',
+                        label: l10n.minorAccountReviewBackToReview,
                         expanded: true,
-                        onPressed: () => context.go('/account-review'),
+                        onPressed: () =>
+                            context.go(MinorAccountReviewScreen.path),
                       ),
                     ],
                   ),
@@ -112,9 +124,9 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
   ) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      DivineSnackbarContainer.snackBar(successMessage),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(DivineSnackbarContainer.snackBar(successMessage));
   }
 }
 
