@@ -2082,10 +2082,14 @@ final currentMinorAccountReviewStatusProvider =
         return MinorAccountReviewStatus.active();
       }
 
-      final overrideService = ref.watch(minorAccountReviewOverrideServiceProvider);
-      final localOverride = overrideService.getOverride();
-      if (localOverride != null) {
-        return localOverride;
+      if (kDebugMode) {
+        final overrideService = ref.watch(
+          minorAccountReviewOverrideServiceProvider,
+        );
+        final localOverride = overrideService.getOverride();
+        if (localOverride != null) {
+          return localOverride;
+        }
       }
 
       final repository = ref.watch(minorAccountReviewRepositoryProvider);

@@ -2,11 +2,14 @@
 // ABOUTME: cases. Sends a parent or guardian email to the backend.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/utils/validators.dart';
 
 class MinorAccountReviewParentContactScreen extends ConsumerStatefulWidget {
@@ -40,7 +43,7 @@ class _MinorAccountReviewParentContactScreenState
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Parent Contact',
+        title: context.l10n.minorAccountReviewParentContactTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -51,9 +54,8 @@ class _MinorAccountReviewParentContactScreenState
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 640),
             child: statusAsync.when(
-              loading: () => const Center(
-                child: PartialCircleSpinner(progress: 0.33),
-              ),
+              loading: () =>
+                  const Center(child: PartialCircleSpinner(progress: 0.33)),
               error: (error, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -75,6 +77,8 @@ class _MinorAccountReviewParentContactScreenState
   }
 
   Widget _buildBody(BuildContext context, MinorAccountReviewStatus status) {
+    final l10n = context.l10n;
+    final validationMessages = AuthValidationMessages.fromL10n(l10n);
     final reviewCase = status.currentCase;
     if (reviewCase == null) {
       return const _MissingCaseView();
@@ -83,7 +87,8 @@ class _MinorAccountReviewParentContactScreenState
     if (_submittedEmail != null) {
       return _SuccessView(
         email: _submittedEmail!,
-        onCheckAgain: () => ref.invalidate(currentMinorAccountReviewStatusProvider),
+        onCheckAgain: () =>
+            ref.invalidate(currentMinorAccountReviewStatusProvider),
       );
     }
 
@@ -97,21 +102,24 @@ class _MinorAccountReviewParentContactScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Add a parent or guardian email',
+                l10n.minorAccountReviewParentContactHeading,
                 style: VineTheme.headlineMediumFont(),
               ),
               const SizedBox(height: 12),
               Text(
-                'We will use this address for the parental consent review on case ${reviewCase.id}.',
+                l10n.minorAccountReviewParentContactBody(reviewCase.id),
                 style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
               ),
               const SizedBox(height: 24),
               DivineAuthTextField(
-                label: 'Parent or guardian email',
+                label: l10n.minorAccountReviewParentContactFieldLabel,
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
-                validator: Validators.validateEmail,
+                validator: (value) => Validators.validateEmail(
+                  value,
+                  messages: validationMessages,
+                ),
               ),
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
@@ -122,13 +130,15 @@ class _MinorAccountReviewParentContactScreenState
               ],
               const SizedBox(height: 24),
               DivineButton(
-                label: _isSubmitting ? 'Submitting...' : 'Submit Email',
+                label: _isSubmitting
+                    ? l10n.minorAccountReviewSubmitting
+                    : l10n.minorAccountReviewSubmitEmail,
                 expanded: true,
                 onPressed: _isSubmitting ? null : () => _submit(reviewCase),
               ),
               const SizedBox(height: 12),
               DivineButton(
-                label: 'Back to Account Review',
+                label: l10n.minorAccountReviewBackToReview,
                 type: DivineButtonType.secondary,
                 expanded: true,
                 onPressed: _isSubmitting ? null : context.pop,
@@ -150,26 +160,34 @@ class _MinorAccountReviewParentContactScreenState
     });
 
     try {
-      final overrideService = ref.read(minorAccountReviewOverrideServiceProvider);
-      final localOverride = overrideService.getOverride();
-      if (localOverride?.currentCase?.id == reviewCase.id) {
-        await overrideService.setOverride(
-          localOverride!.copyWith(
-            currentCase: localOverride.currentCase!.copyWith(
-              state: MinorReviewCaseState.submittedForReview,
-              instructions: const MinorReviewInstructions(
-                title: 'Submission received',
-                body:
-                    'We received the parent or guardian contact for this account. Our team will review it before restoring access.',
+      if (kDebugMode) {
+        final overrideService = ref.read(
+          minorAccountReviewOverrideServiceProvider,
+        );
+        final localOverride = overrideService.getOverride();
+        if (localOverride?.currentCase?.id == reviewCase.id) {
+          await overrideService.setOverride(
+            localOverride!.copyWith(
+              currentCase: localOverride.currentCase!.copyWith(
+                state: MinorReviewCaseState.submittedForReview,
+                instructions: MinorReviewInstructions(
+                  title: context.l10n.minorAccountReviewSubmissionReceivedTitle,
+                  body: context
+                      .l10n
+                      .minorAccountReviewSubmissionReceivedLocalBody,
+                ),
               ),
             ),
-          ),
-        );
-      } else {
-      await ref.read(minorAccountReviewRepositoryProvider).submitParentContact(
-            caseId: reviewCase.id,
-            email: email,
           );
+        } else {
+          await ref
+              .read(minorAccountReviewRepositoryProvider)
+              .submitParentContact(caseId: reviewCase.id, email: email);
+        }
+      } else {
+        await ref
+            .read(minorAccountReviewRepositoryProvider)
+            .submitParentContact(caseId: reviewCase.id, email: email);
       }
       ref.invalidate(currentMinorAccountReviewStatusProvider);
       if (!mounted) return;
@@ -179,7 +197,7 @@ class _MinorAccountReviewParentContactScreenState
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Could not submit the parent email. Please try again.';
+        _errorMessage = context.l10n.minorAccountReviewParentContactError;
       });
     } finally {
       if (mounted) {
@@ -190,10 +208,7 @@ class _MinorAccountReviewParentContactScreenState
 }
 
 class _SuccessView extends StatelessWidget {
-  const _SuccessView({
-    required this.email,
-    required this.onCheckAgain,
-  });
+  const _SuccessView({required this.email, required this.onCheckAgain});
 
   final String email;
   final VoidCallback onCheckAgain;
@@ -206,26 +221,29 @@ class _SuccessView extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Email submitted', style: VineTheme.headlineMediumFont()),
+          Text(
+            context.l10n.minorAccountReviewSubmissionReceivedTitle,
+            style: VineTheme.headlineMediumFont(),
+          ),
           const SizedBox(height: 12),
           Text(
-            'We submitted $email for review. If we update your case status, use Check Again from the account review screen.',
+            context.l10n.minorAccountReviewSubmissionReceivedBody(email),
             style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
           ),
           const SizedBox(height: 24),
           DivineButton(
-            label: 'Back to Account Review',
+            label: context.l10n.minorAccountReviewBackToReview,
             expanded: true,
-            onPressed: () => context.go('/account-review'),
+            onPressed: () => context.go(MinorAccountReviewScreen.path),
           ),
           const SizedBox(height: 12),
           DivineButton(
-            label: 'Check Again',
+            label: context.l10n.minorAccountReviewCheckAgain,
             type: DivineButtonType.secondary,
             expanded: true,
             onPressed: () {
               onCheckAgain();
-              context.go('/account-review');
+              context.go(MinorAccountReviewScreen.path);
             },
           ),
         ],
@@ -242,10 +260,21 @@ class _MissingCaseView extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(
-          'We could not find an active review case for this account.',
-          style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
-          textAlign: TextAlign.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              context.l10n.minorAccountReviewMissingCase,
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            DivineButton(
+              label: context.l10n.minorAccountReviewBackToReview,
+              expanded: true,
+              onPressed: () => context.go(MinorAccountReviewScreen.path),
+            ),
+          ],
         ),
       ),
     );

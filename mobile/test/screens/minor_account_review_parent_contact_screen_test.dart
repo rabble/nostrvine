@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -47,6 +48,8 @@ void main() {
             }),
           ],
           child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
             home: MinorAccountReviewParentContactScreen(),
           ),
         ),
@@ -54,10 +57,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byType(TextFormField),
-        'parent@example.com',
-      );
+      await tester.enterText(find.byType(TextFormField), 'parent@example.com');
       await tester.tap(find.text('Submit Email'));
       await tester.pumpAndSettle();
 
@@ -70,7 +70,7 @@ void main() {
       );
       expect(
         updatedOverride?.currentCase?.instructions.title,
-        'Submission received',
+        'Email submitted',
       );
     });
   });

@@ -7207,6 +7207,232 @@ class AppLocalizationsBg extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Очаква получателя';
 
   @override
+  String get minorAccountReviewTitle => 'Account Review';
+
+  @override
+  String get minorAccountReviewCheckingStatusTitle =>
+      'Checking account status...';
+
+  @override
+  String get minorAccountReviewCheckingStatusBody =>
+      'Please wait while we confirm this account\'s current review status.';
+
+  @override
+  String get minorAccountReviewDefaultTitle => 'Account review required';
+
+  @override
+  String get minorAccountReviewDefaultBody =>
+      'We need to review this account before it can use Divine normally.';
+
+  @override
+  String minorAccountReviewCaseId(String caseId) {
+    return 'Case ID: $caseId';
+  }
+
+  @override
+  String get minorAccountReviewCaseIdShortLabel => 'Case ID';
+
+  @override
+  String get minorAccountReviewRestrictionsTitle =>
+      'What is restricted right now';
+
+  @override
+  String get minorAccountReviewRestrictionPosting =>
+      'Posting and publishing are paused';
+
+  @override
+  String get minorAccountReviewRestrictionEngagement =>
+      'Comments, likes, reposts, and follows are paused';
+
+  @override
+  String get minorAccountReviewRestrictionMessaging =>
+      'Starting or replying to regular messages is paused';
+
+  @override
+  String get minorAccountReviewRestrictionSupport =>
+      'Support and your moderation message remain available';
+
+  @override
+  String get minorAccountReviewOpenSupportCenter => 'Open Support Center';
+
+  @override
+  String get minorAccountReviewOpenModerationMessage =>
+      'Open Moderation Message';
+
+  @override
+  String get minorAccountReviewCheckAgain => 'Check Again';
+
+  @override
+  String get minorAccountReviewLogOut => 'Log out';
+
+  @override
+  String get minorAccountReviewNextStepTitle => 'Next step';
+
+  @override
+  String get minorAccountReviewNextStepBody =>
+      'Open the support center or your moderation message if you need help with this review.';
+
+  @override
+  String get minorAccountReviewInProgressTitle => 'Review in progress';
+
+  @override
+  String get minorAccountReviewInProgressBody =>
+      'We have what we need for now. Our team is reviewing this case before restoring normal account access.';
+
+  @override
+  String get minorAccountReviewUnder13Title => 'Under-13 accounts';
+
+  @override
+  String minorAccountReviewUnder13Body(String supportEmail) {
+    return 'If this account belongs to someone under 13, a parent or guardian must email $supportEmail and include the case ID.';
+  }
+
+  @override
+  String get minorAccountReviewTeenBody =>
+      'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
+
+  @override
+  String get minorAccountReviewParentSupportInstructions =>
+      'Parent Support Instructions';
+
+  @override
+  String get minorAccountReviewContinue => 'Continue';
+
+  @override
+  String get minorAccountReviewErrorTitle =>
+      'We could not load your account review status.';
+
+  @override
+  String get minorAccountReviewTryAgain => 'Try Again';
+
+  @override
+  String get minorAccountReviewParentContactTitle => 'Parent Contact';
+
+  @override
+  String get minorAccountReviewParentContactHeading =>
+      'Add a parent or guardian email';
+
+  @override
+  String minorAccountReviewParentContactBody(String caseId) {
+    return 'We will use this address for the parental consent review on case $caseId.';
+  }
+
+  @override
+  String get minorAccountReviewParentContactFieldLabel =>
+      'Parent or guardian email';
+
+  @override
+  String get minorAccountReviewSubmitting => 'Submitting...';
+
+  @override
+  String get minorAccountReviewSubmitEmail => 'Submit Email';
+
+  @override
+  String get minorAccountReviewBackToReview => 'Back to Account Review';
+
+  @override
+  String get minorAccountReviewSubmissionReceivedTitle => 'Email submitted';
+
+  @override
+  String minorAccountReviewSubmissionReceivedBody(String email) {
+    return 'We submitted $email for review. We\'ll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.';
+  }
+
+  @override
+  String get minorAccountReviewSubmissionReceivedLocalBody =>
+      'We received the parent or guardian contact for this account. Our team will review it before restoring access.';
+
+  @override
+  String get minorAccountReviewMissingCase =>
+      'We could not find an active review case for this account.';
+
+  @override
+  String get minorAccountReviewParentContactError =>
+      'Could not submit the parent email. Please try again.';
+
+  @override
+  String get minorAccountReviewUnder13SupportTitle => 'Parent Support';
+
+  @override
+  String get minorAccountReviewUnder13Heading =>
+      'A parent or guardian must contact Divine';
+
+  @override
+  String get minorAccountReviewUnder13SupportBody =>
+      'For likely under-13 accounts, the next step is parent or guardian contact by email.';
+
+  @override
+  String get minorAccountReviewSupportEmailLabel => 'Support email';
+
+  @override
+  String get minorAccountReviewSupportEmailCopied => 'Support email copied';
+
+  @override
+  String get minorAccountReviewCaseIdCopied => 'Case ID copied';
+
+  @override
+  String get minorAccountReviewUnavailable => 'Unavailable';
+
+  @override
+  String get minorAccountReviewUnder13Instructions =>
+      'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.';
+
+  @override
+  String get devOptionsMinorReviewSimulationTitle =>
+      'Minor Account Review Simulation';
+
+  @override
+  String get devOptionsMinorReviewCurrentStateLabel => 'Current state';
+
+  @override
+  String devOptionsMinorReviewStateRestricted(String state) {
+    return 'Restricted ($state)';
+  }
+
+  @override
+  String get devOptionsMinorReviewStateActive => 'Active';
+
+  @override
+  String get devOptionsMinorReviewStateLoading => 'Loading...';
+
+  @override
+  String get devOptionsMinorReviewStateError => 'Error loading state';
+
+  @override
+  String get devOptionsMinorReviewClearTitle => 'Clear simulation override';
+
+  @override
+  String get devOptionsMinorReviewClearSubtitle =>
+      'Use backend or default active state again';
+
+  @override
+  String get devOptionsMinorReviewTeenTitle => 'Simulate 13-15 review case';
+
+  @override
+  String get devOptionsMinorReviewTeenSubtitle =>
+      'Restricted account with parent contact path';
+
+  @override
+  String get devOptionsMinorReviewUnder13Title =>
+      'Simulate under-13 support case';
+
+  @override
+  String get devOptionsMinorReviewUnder13Subtitle =>
+      'Restricted account with parent-email-only instructions';
+
+  @override
+  String get devOptionsMinorReviewClearedToast =>
+      'Minor account review simulation cleared';
+
+  @override
+  String get devOptionsMinorReviewTeenEnabledToast =>
+      'Simulated 13-15 review case enabled';
+
+  @override
+  String get devOptionsMinorReviewUnder13EnabledToast =>
+      'Simulated under-13 support case enabled';
+
+  @override
   String get commentsRecordVideoButtonLabel => 'Запис на видео коментар';
 
   @override

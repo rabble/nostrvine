@@ -29,6 +29,9 @@ class AppConstants {
     divineTeamPubkey2,
   ];
 
+  /// Support email used by account-review and support flows.
+  static const String supportEmail = 'support@divine.video';
+
   // ============================================================================
   // FEED CONFIGURATION
   // ============================================================================
