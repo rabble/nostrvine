@@ -63,12 +63,12 @@ Note: 33 packages use VGV's reusable CI workflow, the mobile app CI runs tests a
 ### Package CI coverage thresholds inconsistent and too low
 **Problem**: Coverage thresholds across packages range from 20% to 100% with no coherent policy. Several are far below the VGV 100% target.
 
-**Evidence**: Current thresholds: `blossom_upload_service` (100%), `time_formatter` (100%), `media_cache` (98%), `dm_repository` (93%), down to `funnelcake_api_client` (44%), `db_client` (40%), `models` (25%), `permissions_service` (22%), `nostr_sdk` (20%). The low thresholds were set to match actual coverage at the time of CI creation, but they have not been ratcheted up since. They function as accepted-debt markers rather than meaningful quality gates.
+**Evidence**: Current thresholds: `blossom_upload_service` (100%), `time_formatter` (100%), `media_cache` (98%), `dm_repository` (93%), down to `funnelcake_api_client` (44%), `db_client` (40%), `models` (25%), `permissions_service` (22%), `nostr_sdk` (20%). The low thresholds were set to match actual coverage at the time of CI creation, but they have not been raised since. They function as accepted-debt markers rather than meaningful quality gates.
 
 **Done well**: `blossom_upload_service` (100%), `time_formatter` (100%), and `media_cache` (98%) demonstrate that high thresholds are achievable and enforced.
 
 **Impact**: Medium. Low thresholds allow coverage to regress within a large margin without CI catching it. A package at 22% coverage could lose half its tests and still pass CI. The inconsistency also makes it unclear what the project's actual standard is.
 
-**Effort**: Low per package. Raise each threshold to match current actual coverage (so no existing PR breaks), then ratchet up by 5-10% per quarter. Requires measuring actual coverage first for packages where the threshold was set long ago.
+**Effort**: Low per package. Raise each threshold to match current actual coverage (so no existing PR breaks), then raise incrementally per quarter. Requires measuring actual coverage first for packages where the threshold was set long ago.
 
 **GitHub ticket**: TBD
