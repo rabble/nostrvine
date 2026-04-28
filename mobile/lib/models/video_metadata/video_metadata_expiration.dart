@@ -51,6 +51,7 @@ enum VideoMetadataExpiration {
     return notExpire;
   }
 
+  /// Returns the localized label for this expiration option.
   String localizedLabel(BuildContext context) {
     return switch (this) {
       .notExpire => context.l10n.videoMetadataExpirationNotExpire,

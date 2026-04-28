@@ -25,6 +25,7 @@ class VideoEditorConstants {
   /// Maximum number of tags allowed per video.
   static const int tagLimit = 1 << 30; // ~1 billion
 
+  /// Maximum number of characters allowed in a description.
   static const int descriptionLimit = 1_000;
 
   /// Maximum number of collaborators allowed per video.

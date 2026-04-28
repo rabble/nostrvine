@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -102,7 +103,9 @@ void main() {
       expect(find.text('Inspired by'), findsOneWidget);
     });
 
-    testWidgets('displays "None" when no inspiration is set', (tester) async {
+    testWidgets('renders selection tile when no inspiration is set', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -122,7 +125,7 @@ void main() {
         ),
       );
 
-      expect(find.text('None'), findsOneWidget);
+      expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
     });
 
     testWidgets('renders caret icon when no inspiration is set', (
@@ -189,7 +192,7 @@ void main() {
       expect(foundInspiredBySemantics, isTrue);
     });
 
-    testWidgets('renders help button', (tester) async {
+    testWidgets('does not render legacy help tooltip', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -209,14 +212,12 @@ void main() {
         ),
       );
 
-      // Should find the info icon button (VideoMetadataHelpButton)
-      // It uses an SVG icon with a tooltip
       final tooltip = find.byWidgetPredicate(
         (widget) =>
             widget is Tooltip &&
             widget.message == 'How inspiration credits work',
       );
-      expect(tooltip, findsOneWidget);
+      expect(tooltip, findsNothing);
     });
 
     testWidgets('displays inspired by person chip when inspiredByNpub is set', (
@@ -252,7 +253,7 @@ void main() {
       expect(find.text('None'), findsNothing);
     });
 
-    testWidgets('InkWell is not tappable when inspired by is set', (
+    testWidgets('selection tile still renders when inspired by is set', (
       tester,
     ) async {
       final state = VideoEditorProviderState(
@@ -281,12 +282,10 @@ void main() {
         ),
       );
 
-      // When hasInspiredBy is true, onTap should be null
-      final inkWell = tester.widget<InkWell>(find.byType(InkWell).first);
-      expect(inkWell.onTap, isNull);
+      expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
     });
 
-    testWidgets('InkWell is tappable when no inspired by is set', (
+    testWidgets('selection tile renders when no inspired by is set', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -308,9 +307,7 @@ void main() {
         ),
       );
 
-      // When hasInspiredBy is false, onTap should be defined
-      final inkWell = tester.widget<InkWell>(find.byType(InkWell).first);
-      expect(inkWell.onTap, isNotNull);
+      expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
     });
   });
 }

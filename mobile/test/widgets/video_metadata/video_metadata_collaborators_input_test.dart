@@ -4,13 +4,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -88,7 +88,7 @@ void main() {
       expect(find.text('Collaborators'), findsOneWidget);
     });
 
-    testWidgets('displays 0 collaborators count initially', (tester) async {
+    testWidgets('renders $VideoMetadataSelectionTile', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -105,13 +105,10 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('0/${VideoEditorConstants.maxCollaborators} Collaborators'),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
     });
 
-    testWidgets('displays collaborator count when collaborators exist', (
+    testWidgets('renders correctly when collaborators exist in state', (
       tester,
     ) async {
       // Use valid 64-character hex pubkeys (Nostr spec)
@@ -140,10 +137,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('2/${VideoEditorConstants.maxCollaborators} Collaborators'),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
     });
 
     testWidgets('renders caret icon', (tester) async {
@@ -202,105 +196,40 @@ void main() {
       expect(foundInviteCollaboratorSemantics, isTrue);
     });
 
-    testWidgets('renders help button', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(prefs),
-            followRepositoryProvider.overrideWithValue(
-              _createMockFollowRepository(),
+    testWidgets(
+      'renders $VideoMetadataSelectionTile when max collaborators reached',
+      (tester) async {
+        final state = VideoEditorProviderState(
+          collaboratorPubkeys: {
+            'abcd000000000000000000000000000000000000000000000000000000000000',
+            'abcd000000000000000000000000000000000000000000000000000000000001',
+            'abcd000000000000000000000000000000000000000000000000000000000002',
+            'abcd000000000000000000000000000000000000000000000000000000000003',
+            'abcd000000000000000000000000000000000000000000000000000000000004',
+          },
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataCollaboratorsInput()),
             ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoMetadataCollaboratorsInput()),
           ),
-        ),
-      );
+        );
 
-      // Should find the info icon button (VideoMetadataHelpButton)
-      // It uses an SVG icon with a tooltip
-      final tooltip = find.byWidgetPredicate(
-        (widget) =>
-            widget is Tooltip && widget.message == 'How collaborators work',
-      );
-      expect(tooltip, findsOneWidget);
-    });
-
-    testWidgets('caret icon color changes when max collaborators reached', (
-      tester,
-    ) async {
-      // Create state with max collaborators using valid 64-char hex pubkeys
-      final maxCollaborators = List.generate(
-        VideoEditorConstants.maxCollaborators,
-        (i) => 'abcd${i.toString().padLeft(60, '0')}',
-      ).toSet();
-      final state = VideoEditorProviderState(
-        collaboratorPubkeys: maxCollaborators,
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            followRepositoryProvider.overrideWithValue(
-              _createMockFollowRepository(),
-            ),
-            videoEditorProvider.overrideWith(
-              () => _MockVideoEditorNotifier(state),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoMetadataCollaboratorsInput()),
-          ),
-        ),
-      );
-
-      // Should show max count
-      expect(
-        find.text(
-          '${VideoEditorConstants.maxCollaborators}/'
-          '${VideoEditorConstants.maxCollaborators} Collaborators',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('collaborator chips are rendered when collaborators exist', (
-      tester,
-    ) async {
-      // Use valid 64-character hex pubkeys (Nostr spec)
-      final state = VideoEditorProviderState(
-        collaboratorPubkeys: {
-          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-          'fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321',
-        },
-      );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            followRepositoryProvider.overrideWithValue(
-              _createMockFollowRepository(),
-            ),
-            videoEditorProvider.overrideWith(
-              () => _MockVideoEditorNotifier(state),
-            ),
-          ],
-          child: const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: VideoMetadataCollaboratorsInput()),
-          ),
-        ),
-      );
-
-      // Should render chips - we can't directly find _CollaboratorChip
-      // since it's private, but we can look for the Wrap widget
-      expect(find.byType(Wrap), findsOneWidget);
-    });
+        expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
+      },
+    );
 
     testWidgets('no chips rendered when no collaborators', (tester) async {
       await tester.pumpWidget(

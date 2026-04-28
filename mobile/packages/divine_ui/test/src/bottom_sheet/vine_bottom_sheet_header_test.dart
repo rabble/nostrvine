@@ -57,7 +57,7 @@ void main() {
 
       expect(
         padding.padding,
-        const EdgeInsetsDirectional.only(start: 24, end: 24, top: 8),
+        const EdgeInsetsDirectional.only(start: 16, end: 16, top: 8),
       );
     });
 
@@ -106,6 +106,84 @@ void main() {
 
       expect(find.text('Test Title'), findsOneWidget);
       expect(find.byKey(const Key('leading')), findsOneWidget);
+    });
+
+    testWidgets('renders leading action and trailing placeholder', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheetHeader(
+              title: const Text('Test Title'),
+              leadingAction: DivineIconButton(
+                key: const Key('leading_action'),
+                icon: DivineIconName.x,
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('leading_action')), findsNWidgets(2));
+      expect(
+        find.descendant(
+          of: find.byType(VineBottomSheetHeader),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is IgnorePointer && widget.ignoring,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(VineBottomSheetHeader),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Opacity && widget.opacity == 0,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders trailing action and leading placeholder', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheetHeader(
+              title: const Text('Test Title'),
+              trailingAction: DivineIconButton(
+                key: const Key('trailing_action'),
+                icon: DivineIconName.check,
+                onPressed: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('trailing_action')), findsNWidgets(2));
+      expect(
+        find.descendant(
+          of: find.byType(VineBottomSheetHeader),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is IgnorePointer && widget.ignoring,
+          ),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(VineBottomSheetHeader),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Opacity && widget.opacity == 0,
+          ),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

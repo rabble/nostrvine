@@ -92,7 +92,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(InkWell));
+      await tester.tap(find.bySemanticsLabel('Select expiration time'));
       await tester.pumpAndSettle();
 
       // Bottom sheet should be visible with all options
@@ -126,7 +126,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(InkWell));
+      await tester.tap(find.bySemanticsLabel('Select expiration time'));
       await tester.pumpAndSettle();
 
       // Check that checkmark icon exists in the widget tree
@@ -154,11 +154,14 @@ void main() {
       );
 
       // Open bottom sheet
-      await tester.tap(find.byType(InkWell));
+      await tester.tap(find.bySemanticsLabel('Select expiration time'));
       await tester.pumpAndSettle();
 
-      // Verify setExpiration callback works
-      mockNotifier.setExpiration(.oneWeek);
+      // Select a different option from bottom sheet.
+      await tester.tap(
+        find.text(_expirationLabel(VideoMetadataExpiration.oneWeek)),
+      );
+      await tester.pumpAndSettle();
 
       expect(selectedExpiration, equals(VideoMetadataExpiration.oneWeek));
     });
