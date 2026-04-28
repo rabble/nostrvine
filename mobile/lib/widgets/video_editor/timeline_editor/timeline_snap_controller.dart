@@ -42,7 +42,13 @@ class TimelineSnapController {
 
   /// Mutable so callers can reuse a single controller across pinch-zoom
   /// changes instead of allocating a new instance on every zoom step.
-  /// Updating mid-gesture preserves the accumulated drag state.
+  ///
+  /// Note: the dead-zone math assumes [pixelsPerSecond] is **stable for the
+  /// duration of a single drag** — `_acc` and `_catchAcc` are stored in
+  /// pixels at the pps that was active when they were captured. In practice
+  /// this holds because pinch-zoom (two fingers) and long-press drag (one
+  /// finger) cannot overlap; if that ever changes, call [begin] again on
+  /// the new pps to reset the accumulators.
   double pixelsPerSecond;
 
   // ---------------------------------------------------------------------------
