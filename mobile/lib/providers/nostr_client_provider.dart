@@ -72,8 +72,7 @@ class NostrService extends _$NostrService {
       dbClient: dbClient,
     );
 
-    // Register callback so when NIP-65 discovery completes later, we add those
-    // relays to this client (fixes race where discovery finishes after client build)
+    // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
     authService.registerUserRelaysDiscoveredCallback(
       _userRelaysDiscoveredCallbackFor(client),
     );
@@ -168,7 +167,7 @@ class NostrService extends _$NostrService {
         dbClient: dbClient,
       );
 
-      // Register callback for new client so later discovery adds relays to it
+      // NIP-65 discovered-relays callback — see _userRelaysDiscoveredCallbackFor.
       authService.registerUserRelaysDiscoveredCallback(
         _userRelaysDiscoveredCallbackFor(newClient),
       );
@@ -191,9 +190,13 @@ class NostrService extends _$NostrService {
   }
 
   /// Builds the NIP-65 discovered-relays callback bound to [client].
-  /// Used at both initial-build and account-switch sites so the
+  ///
+  /// Registered with AuthService so when NIP-65 discovery completes later,
+  /// the discovered relays are added to [client] — this fixes the race
+  /// where discovery finishes after the client has been built. Used at
+  /// both initial-build and account-switch sites so the
   /// add-relays-on-discovery flow stays in one place.
-  UserRelaysDiscoveredCallback _userRelaysDiscoveredCallbackFor(
+  static UserRelaysDiscoveredCallback _userRelaysDiscoveredCallbackFor(
     NostrClient client,
   ) {
     return (relayUrls) {
