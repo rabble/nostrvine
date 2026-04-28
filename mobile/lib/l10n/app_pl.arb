@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Edytuj okładkę",
   "videoMetadataEditCoverCloseSemanticLabel": "Zamknij edytor okładki",
   "videoMetadataEditCoverConfirmSemanticLabel": "Potwierdź wybór okładki",
-  "videoMetadataEditCoverStripSemanticLabel": "Przewijaj wideo, aby wybrać klatkę okładki"
+  "videoMetadataEditCoverStripSemanticLabel": "Przewijaj wideo, aby wybrać klatkę okładki",
+  "userPickerRemoveSelectionSemantics": "Usuń {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Nie udało się zaktualizować okładki. Spróbuj ponownie."
 }

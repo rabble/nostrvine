@@ -7104,6 +7104,12 @@ abstract class AppLocalizations {
   /// **'Select {name}'**
   String userPickerSelectSemantics(String name);
 
+  /// Semantic label for the remove button on a selected user chip in the user picker. {name} is the user's display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String userPickerRemoveSelectionSemantics(String name);
+
   /// No description provided for @userPickerEmptyFollowListTitle.
   ///
   /// In en, this message translates to:
@@ -9245,6 +9251,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get commonClose;
+
+  /// Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update the cover. Try again.'**
+  String get videoMetadataEditCoverFailedSnackbar;
 
   /// No description provided for @videoMetadataTags.
   ///

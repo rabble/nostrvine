@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Edit sampul",
   "videoMetadataEditCoverCloseSemanticLabel": "Tutup editor sampul",
   "videoMetadataEditCoverConfirmSemanticLabel": "Konfirmasi pilihan sampul",
-  "videoMetadataEditCoverStripSemanticLabel": "Gulir video untuk memilih bingkai sampul"
+  "videoMetadataEditCoverStripSemanticLabel": "Gulir video untuk memilih bingkai sampul",
+  "userPickerRemoveSelectionSemantics": "Hapus {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Tidak dapat memperbarui sampul. Coba lagi."
 }

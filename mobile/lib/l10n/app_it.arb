@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Modifica copertina",
   "videoMetadataEditCoverCloseSemanticLabel": "Chiudi editor copertina",
   "videoMetadataEditCoverConfirmSemanticLabel": "Conferma selezione copertina",
-  "videoMetadataEditCoverStripSemanticLabel": "Scorri il video per selezionare il fotogramma di copertina"
+  "videoMetadataEditCoverStripSemanticLabel": "Scorri il video per selezionare il fotogramma di copertina",
+  "userPickerRemoveSelectionSemantics": "Rimuovi {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Impossibile aggiornare la copertina. Riprova."
 }

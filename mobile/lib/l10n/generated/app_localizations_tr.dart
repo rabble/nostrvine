@@ -4030,6 +4030,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return '$name kaldır';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'Ekibin dışarıda';
 
   @override
@@ -5196,6 +5201,10 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get commonClose => 'Kapat';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'Kapak güncellenemedi. Tekrar dene.';
 
   @override
   String get videoMetadataTags => 'Etiketler';

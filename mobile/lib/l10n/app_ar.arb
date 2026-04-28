@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "تعديل الغلاف",
   "videoMetadataEditCoverCloseSemanticLabel": "إغلاق محرر الغلاف",
   "videoMetadataEditCoverConfirmSemanticLabel": "تأكيد اختيار الغلاف",
-  "videoMetadataEditCoverStripSemanticLabel": "التنقل عبر الفيديو لاختيار إطار الغلاف"
+  "videoMetadataEditCoverStripSemanticLabel": "التنقل عبر الفيديو لاختيار إطار الغلاف",
+  "userPickerRemoveSelectionSemantics": "إزالة {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "تعذر تحديث الغلاف. حاول مرة أخرى."
 }

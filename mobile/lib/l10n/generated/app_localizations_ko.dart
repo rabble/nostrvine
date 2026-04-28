@@ -3868,6 +3868,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return '$name 제거';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => '네 크루는 밖에 있어';
 
   @override
@@ -5017,6 +5022,10 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get commonClose => '닫기';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      '커버를 업데이트하지 못했습니다. 다시 시도하세요.';
 
   @override
   String get videoMetadataTags => '태그';

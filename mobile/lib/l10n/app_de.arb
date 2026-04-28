@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Cover bearbeiten",
   "videoMetadataEditCoverCloseSemanticLabel": "Cover-Editor schließen",
   "videoMetadataEditCoverConfirmSemanticLabel": "Coverauswahl bestätigen",
-  "videoMetadataEditCoverStripSemanticLabel": "Durch Video scrollen, um Cover-Frame auszuwählen"
+  "videoMetadataEditCoverStripSemanticLabel": "Durch Video scrollen, um Cover-Frame auszuwählen",
+  "userPickerRemoveSelectionSemantics": "{name} entfernen",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Cover konnte nicht aktualisiert werden. Versuche es erneut."
 }

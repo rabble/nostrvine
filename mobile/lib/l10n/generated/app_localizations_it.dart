@@ -4093,6 +4093,11 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return 'Rimuovi $name';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'La tua crew è là fuori';
 
   @override
@@ -5262,6 +5267,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get commonClose => 'Chiudi';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'Impossibile aggiornare la copertina. Riprova.';
 
   @override
   String get videoMetadataTags => 'Tag';

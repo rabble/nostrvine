@@ -3854,6 +3854,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return '$nameを削除';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'あなたの仲間は外にいる';
 
   @override
@@ -5001,6 +5006,10 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get commonClose => '閉じる';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'カバーを更新できませんでした。もう一度お試しください。';
 
   @override
   String get videoMetadataTags => 'タグ';

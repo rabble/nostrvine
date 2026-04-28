@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Editar capa",
   "videoMetadataEditCoverCloseSemanticLabel": "Fechar editor de capa",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirmar seleção de capa",
-  "videoMetadataEditCoverStripSemanticLabel": "Percorra o vídeo para selecionar o quadro de capa"
+  "videoMetadataEditCoverStripSemanticLabel": "Percorra o vídeo para selecionar o quadro de capa",
+  "userPickerRemoveSelectionSemantics": "Remover {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Não foi possível atualizar a capa. Tente novamente."
 }

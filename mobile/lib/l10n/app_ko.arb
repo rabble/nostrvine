@@ -2751,5 +2751,14 @@
   "videoMetadataEditCoverTitle": "커버 편집",
   "videoMetadataEditCoverCloseSemanticLabel": "커버 편집기 닫기",
   "videoMetadataEditCoverConfirmSemanticLabel": "커버 선택 확인",
-  "videoMetadataEditCoverStripSemanticLabel": "커버 프레임 선택을 위해 동영상 탐색"
+  "videoMetadataEditCoverStripSemanticLabel": "커버 프레임 선택을 위해 동영상 탐색",
+  "userPickerRemoveSelectionSemantics": "{name} 제거",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "커버를 업데이트하지 못했습니다. 다시 시도하세요."
 }

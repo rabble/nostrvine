@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Redigera omslag",
   "videoMetadataEditCoverCloseSemanticLabel": "Stäng omslagsredigerare",
   "videoMetadataEditCoverConfirmSemanticLabel": "Bekräfta omslagsval",
-  "videoMetadataEditCoverStripSemanticLabel": "Sök igenom videon för att välja omslagsbild"
+  "videoMetadataEditCoverStripSemanticLabel": "Sök igenom videon för att välja omslagsbild",
+  "userPickerRemoveSelectionSemantics": "Ta bort {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Det gick inte att uppdatera omslaget. Försök igen."
 }

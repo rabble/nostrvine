@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "カバーを編集",
   "videoMetadataEditCoverCloseSemanticLabel": "カバーエディターを閉じる",
   "videoMetadataEditCoverConfirmSemanticLabel": "カバー選択を確認",
-  "videoMetadataEditCoverStripSemanticLabel": "カバーフレームを選択するために動画をシーク"
+  "videoMetadataEditCoverStripSemanticLabel": "カバーフレームを選択するために動画をシーク",
+  "userPickerRemoveSelectionSemantics": "{name}を削除",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "カバーを更新できませんでした。もう一度お試しください。"
 }

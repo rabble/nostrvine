@@ -4173,6 +4173,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return 'Elimină $name';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'Gașca ta e acolo';
 
   @override
@@ -5362,6 +5367,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commonClose => 'Închide';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'Coperta nu a putut fi actualizată. Încearcă din nou.';
 
   @override
   String get videoMetadataTags => 'Etichete';

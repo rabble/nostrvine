@@ -4074,6 +4074,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return 'Remover $name';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'Sua turma está por aí';
 
   @override
@@ -5246,6 +5251,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get commonClose => 'Fechar';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'Não foi possível atualizar a capa. Tente novamente.';
 
   @override
   String get videoMetadataTags => 'Tags';

@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Omslag bewerken",
   "videoMetadataEditCoverCloseSemanticLabel": "Omslageditor sluiten",
   "videoMetadataEditCoverConfirmSemanticLabel": "Omslagselectie bevestigen",
-  "videoMetadataEditCoverStripSemanticLabel": "Door video scrollen om omslagframe te selecteren"
+  "videoMetadataEditCoverStripSemanticLabel": "Door video scrollen om omslagframe te selecteren",
+  "userPickerRemoveSelectionSemantics": "{name} verwijderen",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Kan de cover niet bijwerken. Probeer het opnieuw."
 }

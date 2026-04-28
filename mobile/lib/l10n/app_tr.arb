@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Kapağı düzenle",
   "videoMetadataEditCoverCloseSemanticLabel": "Kapak düzenleyicisini kapat",
   "videoMetadataEditCoverConfirmSemanticLabel": "Kapak seçimini onayla",
-  "videoMetadataEditCoverStripSemanticLabel": "Kapak karesi seçmek için videoda gezin"
+  "videoMetadataEditCoverStripSemanticLabel": "Kapak karesi seçmek için videoda gezin",
+  "userPickerRemoveSelectionSemantics": "{name} kaldır",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Kapak güncellenemedi. Tekrar dene."
 }

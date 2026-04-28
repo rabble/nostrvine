@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Editar portada",
   "videoMetadataEditCoverCloseSemanticLabel": "Cerrar editor de portada",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirmar selección de portada",
-  "videoMetadataEditCoverStripSemanticLabel": "Desliza el video para seleccionar el fotograma de portada"
+  "videoMetadataEditCoverStripSemanticLabel": "Desliza el video para seleccionar el fotograma de portada",
+  "userPickerRemoveSelectionSemantics": "Eliminar a {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "No se pudo actualizar la portada. Inténtalo de nuevo."
 }

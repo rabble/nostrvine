@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Modifier la couverture",
   "videoMetadataEditCoverCloseSemanticLabel": "Fermer l'éditeur de couverture",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirmer la sélection de couverture",
-  "videoMetadataEditCoverStripSemanticLabel": "Faire défiler la vidéo pour sélectionner l'image de couverture"
+  "videoMetadataEditCoverStripSemanticLabel": "Faire défiler la vidéo pour sélectionner l'image de couverture",
+  "userPickerRemoveSelectionSemantics": "Retirer {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Impossible de mettre à jour la couverture. Réessayez."
 }

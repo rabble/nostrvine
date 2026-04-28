@@ -4007,6 +4007,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return 'إزالة $name';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'Ekibin orada';
 
   @override
@@ -5169,6 +5174,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commonClose => 'إغلاق';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'تعذر تحديث الغلاف. حاول مرة أخرى.';
 
   @override
   String get videoMetadataTags => 'الوسوم';

@@ -3962,6 +3962,11 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String userPickerRemoveSelectionSemantics(String name) {
+    return 'Remove $name';
+  }
+
+  @override
   String get userPickerEmptyFollowListTitle => 'የእርስዎ ሠራተኞች እዚያ አሉ።';
 
   @override
@@ -5112,6 +5117,10 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get commonClose => 'ዝጋ';
+
+  @override
+  String get videoMetadataEditCoverFailedSnackbar =>
+      'Couldn\'t update the cover. Try again.';
 
   @override
   String get videoMetadataTags => 'መለያዎች';

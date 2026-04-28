@@ -3462,5 +3462,14 @@
   "videoMetadataEditCoverTitle": "Editează coperta",
   "videoMetadataEditCoverCloseSemanticLabel": "Închide editorul de copertă",
   "videoMetadataEditCoverConfirmSemanticLabel": "Confirmă selecția copertei",
-  "videoMetadataEditCoverStripSemanticLabel": "Parcurge videoclipul pentru a selecta cadrul copertei"
+  "videoMetadataEditCoverStripSemanticLabel": "Parcurge videoclipul pentru a selecta cadrul copertei",
+  "userPickerRemoveSelectionSemantics": "Elimină {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Coperta nu a putut fi actualizată. Încearcă din nou."
 }
