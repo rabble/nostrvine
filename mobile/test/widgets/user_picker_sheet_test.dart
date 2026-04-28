@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -127,7 +128,12 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.search), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is DivineIcon && w.icon == DivineIconName.search,
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('"Type a name to search" hint for allUsers mode', (
@@ -834,9 +840,9 @@ void main() {
         expect(find.text('Already Selected'), findsOneWidget);
         expect(find.text('Available User'), findsOneWidget);
 
-        // SVG icons shown for each user (Check.svg for excluded, plus.svg for
-        // available)
-        expect(find.byType(SvgPicture), findsNWidgets(2));
+        // 3 SVG icons: header x button + its invisible layout mirror + search
+        // field prefix icon (user tiles no longer show per-user check/plus icons)
+        expect(find.byType(SvgPicture), findsNWidgets(3));
       });
     });
 
