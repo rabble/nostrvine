@@ -34,7 +34,11 @@ final class NotificationFeedState extends Equatable {
   /// The list of enriched, grouped notification items.
   final List<NotificationItem> notifications;
 
-  /// Total unread count reported by the server.
+  /// Server-reported unread count.
+  ///
+  /// Held as the diagnostic source — the inbox badge derives from
+  /// [unreadBadgeCount] instead so Kind 3 republish duplicates do not
+  /// inflate the user-visible counter past the consolidated list.
   final int unreadCount;
 
   /// Whether more pages are available for pagination.
@@ -42,6 +46,20 @@ final class NotificationFeedState extends Equatable {
 
   /// Whether a load-more operation is in progress.
   final bool isLoadingMore;
+
+  /// Inbox unread badge count, derived from the consolidated visible list.
+  ///
+  /// The server reports one row per Kind 3 republish per follower — so the
+  /// same N followers can produce 2N+ rows after a few contact-list edits,
+  /// even though [NotificationRepository] has already merged them on screen
+  /// via `_consolidateFollows`. Counting unread items in the
+  /// post-consolidation list keeps the badge in sync with what the user
+  /// actually sees.
+  ///
+  // TODO(funnelcake#234): Revert to [unreadCount] once server-side Kind 3
+  // republish dedup ships and the visible list and server count agree
+  // again. Tracking: divinevideo/divine-funnelcake#234.
+  int get unreadBadgeCount => notifications.where((n) => !n.isRead).length;
 
   /// Create a copy with updated values.
   NotificationFeedState copyWith({

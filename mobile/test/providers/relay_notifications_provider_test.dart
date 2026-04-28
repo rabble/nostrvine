@@ -148,6 +148,40 @@ void main() {
       );
     }
 
+    /// Waits for relayNotificationsProvider to enter an in-flight state.
+    Future<void> waitForLoadingEmission(ProviderContainer container) async {
+      final completer = Completer<void>();
+
+      container.listen<AsyncValue<NotificationFeedState>>(
+        relayNotificationsProvider,
+        (previous, next) {
+          next.when(
+            data: (state) {
+              if (state.isInitialLoad && !completer.isCompleted) {
+                completer.complete();
+              }
+            },
+            loading: () {
+              if (!completer.isCompleted) completer.complete();
+            },
+            error: (_, _) {},
+          );
+        },
+        fireImmediately: true,
+      );
+
+      container.read(relayNotificationsProvider);
+
+      return completer.future.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw TimeoutException(
+            'relayNotificationsProvider never entered a loading state',
+          );
+        },
+      );
+    }
+
     group('Initial Load', () {
       test('returns empty state when user is not authenticated', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -980,10 +1014,8 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => const NotificationsResponse(
-              notifications: [],
-              unreadCount: 42,
-            ),
+            (_) async =>
+                const NotificationsResponse(notifications: [], unreadCount: 42),
           );
 
           final container = createTestContainer();
@@ -1022,6 +1054,82 @@ void main() {
 
           // 2 unread out of 3, regardless of server's unreadCount.
           expect(container.read(relayNotificationUnreadCountProvider), 2);
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'relayNotificationUnreadCount returns 0 while the feed is still loading',
+        () async {
+          // Hang the API call so the provider stays in its loading phase.
+          // The badge must read 0 even though the server eventually reports
+          // unread items, otherwise a stale unread count from a prior session
+          // could flash before the consolidated list is available.
+          final loadCompleter = Completer<NotificationsResponse>();
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) => loadCompleter.future);
+
+          final container = createTestContainer();
+
+          await waitForLoadingEmission(container);
+
+          expect(
+            container.read(relayNotificationsProvider).isLoading ||
+                container
+                        .read(relayNotificationsProvider)
+                        .value
+                        ?.isInitialLoad ==
+                    true,
+            isTrue,
+            reason: 'precondition: feed should still be loading',
+          );
+          expect(container.read(relayNotificationUnreadCountProvider), 0);
+
+          // Complete the load so the container can dispose cleanly.
+          loadCompleter.complete(
+            NotificationsResponse(
+              notifications: [createMockRelayNotification(id: 'n1')],
+              unreadCount: 1,
+            ),
+          );
+          await waitForLoadComplete(container);
+
+          // Sanity check: once data arrives the helper reflects the count.
+          expect(container.read(relayNotificationUnreadCountProvider), 1);
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'relayNotificationUnreadCount returns 0 when the feed errors out',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(Exception('boom'));
+
+          final container = createTestContainer();
+          await container
+              .read(relayNotificationsProvider.future)
+              .catchError(
+                (_, _) => const NotificationFeedState(notifications: []),
+              );
+
+          expect(container.read(relayNotificationUnreadCountProvider), 0);
 
           container.dispose();
         },

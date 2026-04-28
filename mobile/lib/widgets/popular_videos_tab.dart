@@ -1,5 +1,5 @@
-// ABOUTME: Popular Videos tab widget showing trending videos sorted by loop count
-// ABOUTME: Uses REST API (sort=loops) with Nostr fallback for accurate loop-based sorting
+// ABOUTME: Popular Videos tab widget showing videos with the highest current watch volume
+// ABOUTME: Uses REST API (sort=watching) with Nostr fallback (NIP-50 sort:hot) for active-watch ranking
 
 import 'dart:async';
 
@@ -23,7 +23,7 @@ import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-/// Tab widget displaying popular/trending videos sorted by loop count.
+/// Tab widget displaying popular videos by current watch volume.
 ///
 /// Handles its own:
 /// - Riverpod provider watching (videoEventsProvider)
@@ -65,8 +65,8 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Use popularVideosFeedProvider which tries REST API (sort=loops) first,
-    // then falls back to Nostr if unavailable
+    // Use popularVideosFeedProvider which tries REST API (sort=watching) first,
+    // then falls back to Nostr (NIP-50 sort:hot) if unavailable.
     final feedAsync = ref.watch(popularVideosFeedProvider);
 
     Log.debug(
@@ -98,8 +98,9 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
   }
 
   Widget _buildDataState(List<VideoEvent> videos) {
-    // Videos are already sorted by loops from the provider (REST API or Nostr fallback)
-    // and filtered for platform compatibility
+    // Videos are already sorted by current watch volume from the provider
+    // (REST API sort=watching, or NIP-50 sort:hot fallback) and filtered for
+    // platform compatibility
 
     Log.info(
       '✅ PopularVideosTab: Data state - ${videos.length} videos '

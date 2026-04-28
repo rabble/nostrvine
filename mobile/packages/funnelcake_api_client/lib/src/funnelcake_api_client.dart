@@ -183,10 +183,7 @@ class FunnelcakeApiClient {
             ? int.tryParse(totalCountHeader)
             : null;
 
-        return VideosByAuthorResponse(
-          videos: videos,
-          totalCount: totalCount,
-        );
+        return VideosByAuthorResponse(videos: videos, totalCount: totalCount);
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Author videos',
@@ -321,6 +318,66 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch recent videos: $e');
+    }
+  }
+
+  /// Fetches videos sorted by 24-hour CDN view count with NO age decay.
+  ///
+  /// Surfaces what people are looking at right now — including classic
+  /// Vines getting current attention. Backed by Funnelcake's
+  /// `?sort=watching` mode (see funnelcake#305 + funnelcake#307).
+  ///
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [before] is an optional Unix timestamp cursor for pagination.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getWatchingVideos({
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = _videoQueryParameters({
+      'sort': 'watching',
+      'limit': limit.toString(),
+    });
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch watching videos',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch watching videos: $e');
     }
   }
 
@@ -874,10 +931,7 @@ class FunnelcakeApiClient {
             int.tryParse(response.headers['x-total-count'] ?? '') ??
             videos.length;
 
-        return VideoSearchResponse(
-          videos: videos,
-          totalCount: totalCount,
-        );
+        return VideoSearchResponse(videos: videos, totalCount: totalCount);
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to search videos',
@@ -989,9 +1043,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<TrendingHashtag>> fetchTrendingHashtags({
-    int limit = 20,
-  }) async {
+  Future<List<TrendingHashtag>> fetchTrendingHashtags({int limit = 20}) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -1147,16 +1199,13 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Video ID cannot be empty');
     }
 
-    final uri =
-        Uri.parse(
-          '$_baseUrl/api/videos/$videoId/comments',
-        ).replace(
-          queryParameters: {
-            'sort': sort,
-            'limit': limit.toString(),
-            'offset': offset.toString(),
-          },
-        );
+    final uri = Uri.parse('$_baseUrl/api/videos/$videoId/comments').replace(
+      queryParameters: {
+        'sort': sort,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+    );
 
     try {
       final response = await _get(uri);
@@ -1840,11 +1889,7 @@ class FunnelcakeApiClient {
   }) async {
     final url =
         requestUri ??
-        notificationsUri(
-          pubkey: pubkey,
-          limit: limit,
-          cursor: cursor,
-        );
+        notificationsUri(pubkey: pubkey, limit: limit, cursor: cursor);
 
     try {
       final response = await _httpClient
@@ -1891,9 +1936,7 @@ class FunnelcakeApiClient {
   }) async {
     final url = Uri.parse('$_baseUrl/api/users/$pubkey/notifications/read');
 
-    final payload = jsonEncode({
-      'notification_ids': ?notificationIds,
-    });
+    final payload = jsonEncode({'notification_ids': ?notificationIds});
 
     try {
       final response = await _httpClient

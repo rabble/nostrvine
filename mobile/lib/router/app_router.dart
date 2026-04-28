@@ -1055,6 +1055,7 @@ int tabIndexFromLocation(String loc) {
       return 3; // Liked videos keeps profile tab active
     case 'search':
     case 'apps':
+    case 'invites':
     case 'settings':
     case 'relay-settings':
     case 'relay-diagnostic':

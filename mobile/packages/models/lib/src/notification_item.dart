@@ -159,6 +159,29 @@ class GroupedNotification extends NotificationItem {
   /// Total number of actors in this group.
   final int totalCount;
 
+  /// Returns a copy with the given fields replaced.
+  GroupedNotification copyWith({
+    String? id,
+    NotificationKind? type,
+    List<ActorInfo>? actors,
+    int? totalCount,
+    DateTime? timestamp,
+    bool? isRead,
+    String? targetEventId,
+    String? videoTitle,
+  }) {
+    return GroupedNotification(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      actors: actors ?? this.actors,
+      totalCount: totalCount ?? this.totalCount,
+      timestamp: timestamp ?? this.timestamp,
+      isRead: isRead ?? this.isRead,
+      targetEventId: targetEventId ?? this.targetEventId,
+      videoTitle: videoTitle ?? this.videoTitle,
+    );
+  }
+
   @override
   String get message {
     if (actors.isEmpty) return 'Someone liked your video';

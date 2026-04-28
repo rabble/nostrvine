@@ -185,7 +185,7 @@ class NotificationFeedBloc
       if (n.id != event.notificationId || n.isRead) return n;
       return switch (n) {
         SingleNotification() => n.copyWith(isRead: true),
-        GroupedNotification() => n,
+        GroupedNotification() => n.copyWith(isRead: true),
       };
     }).toList();
 
@@ -206,11 +206,23 @@ class NotificationFeedBloc
   }
 
   /// Handle mark all as read.
+  ///
+  /// Flips `isRead: true` on every visible notification so the derived
+  /// [NotificationFeedState.unreadBadgeCount] drops to 0 immediately,
+  /// then mirrors the same on the server-truth [state.unreadCount].
   Future<void> _onMarkAllRead(
     NotificationFeedMarkAllRead event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    emit(state.copyWith(unreadCount: 0));
+    final updated = state.notifications.map((n) {
+      if (n.isRead) return n;
+      return switch (n) {
+        SingleNotification() => n.copyWith(isRead: true),
+        GroupedNotification() => n.copyWith(isRead: true),
+      };
+    }).toList();
+
+    emit(state.copyWith(notifications: updated, unreadCount: 0));
 
     unawaited(_notificationRepository.markAllAsRead());
   }
