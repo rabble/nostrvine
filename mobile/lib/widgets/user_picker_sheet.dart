@@ -943,7 +943,9 @@ class _SelectionChipState extends State<_SelectionChip>
               ),
               Semantics(
                 button: true,
-                label: 'Remove ${widget.label}',
+                label: context.l10n.userPickerRemoveSelectionSemantics(
+                  widget.label,
+                ),
                 child: GestureDetector(
                   onTap: _handleRemove,
                   child: const Padding(

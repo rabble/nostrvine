@@ -7,6 +7,28 @@ import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 
+/// UI-side localization for [VideoMetadataExpiration]. Lives in the widget
+/// layer so the model itself stays free of Flutter imports.
+extension VideoMetadataExpirationL10n on VideoMetadataExpiration {
+  /// Returns the localized label for this expiration option.
+  String localizedLabel(BuildContext context) {
+    return switch (this) {
+      VideoMetadataExpiration.notExpire =>
+        context.l10n.videoMetadataExpirationNotExpire,
+      VideoMetadataExpiration.oneDay =>
+        context.l10n.videoMetadataExpirationOneDay,
+      VideoMetadataExpiration.oneWeek =>
+        context.l10n.videoMetadataExpirationOneWeek,
+      VideoMetadataExpiration.oneMonth =>
+        context.l10n.videoMetadataExpirationOneMonth,
+      VideoMetadataExpiration.oneYear =>
+        context.l10n.videoMetadataExpirationOneYear,
+      VideoMetadataExpiration.oneDecade =>
+        context.l10n.videoMetadataExpirationOneDecade,
+    };
+  }
+}
+
 /// Widget for selecting video expiration time.
 ///
 /// Displays the currently selected expiration option and opens

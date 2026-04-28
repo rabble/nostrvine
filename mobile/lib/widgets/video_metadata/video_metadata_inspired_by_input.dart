@@ -76,7 +76,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: VineTheme.transparent,
           elevation: 0,
           behavior: .floating,
           content: DivineSnackbarContainer(

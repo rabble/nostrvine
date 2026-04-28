@@ -25,11 +25,18 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
     DivineVideoClip clip,
   ) async {
     FocusManager.instance.primaryFocus?.unfocus();
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 300);
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
+        transitionDuration: duration,
+        reverseTransitionDuration: duration,
         pageBuilder: (_, _, _) => VideoMetadataCoverScreen(clip: clip),
         transitionsBuilder: (_, animation, _, child) {
+          if (reduceMotion) return child;
           return FadeTransition(opacity: animation, child: child);
         },
       ),

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -43,6 +44,10 @@ class _VideoMetadataCoverScreenState
   DivineVideoPlayerController? _controller;
 
   List<StripThumbnail> _stripThumbnails = const [];
+  // Tracks every strip thumbnail path the service has ever emitted, so
+  // dispose can clean them up even if a later batch superseded the list
+  // currently held in [_stripThumbnails].
+  final Set<String> _allStripThumbnailPaths = <String>{};
   StreamSubscription<List<StripThumbnail>>? _stripSubscription;
 
   Duration _selectedPosition = Duration.zero;
@@ -134,6 +139,9 @@ class _VideoMetadataCoverScreenState
           priorityTimestamps: slotTimestamps,
           batchSize: 10,
         ).listen((thumbnails) {
+          for (final t in thumbnails) {
+            _allStripThumbnailPaths.add(t.path);
+          }
           if (mounted) {
             setState(() => _stripThumbnails = thumbnails);
           }
@@ -179,6 +187,7 @@ class _VideoMetadataCoverScreenState
     if (_isConfirming) return;
     setState(() => _isConfirming = true);
 
+    var didSucceed = false;
     try {
       final videoPath = widget.clip.video.file?.path;
       if (videoPath != null) {
@@ -193,6 +202,7 @@ class _VideoMetadataCoverScreenState
                 thumbnailPath: result.path,
                 thumbnailTimestamp: _selectedPosition,
               );
+          didSucceed = true;
         }
       }
     } catch (e, stackTrace) {
@@ -202,20 +212,48 @@ class _VideoMetadataCoverScreenState
         error: e,
         stackTrace: stackTrace,
       );
-    } finally {
-      if (mounted) context.pop();
     }
+
+    if (!mounted) return;
+    if (didSucceed) {
+      context.pop();
+      return;
+    }
+
+    // Stay on screen so the user can retry. Surface the failure.
+    final message = context.l10n.videoMetadataEditCoverFailedSnackbar;
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(DivineSnackbarContainer.snackBar(message));
+    setState(() => _isConfirming = false);
   }
 
   @override
   void dispose() {
-    _stripSubscription?.cancel();
-    // Delete strip thumbnail files to avoid leaving temp files on disk.
-    for (final t in _stripThumbnails) {
-      File(t.path).delete().ignore();
-    }
+    unawaited(_disposeStripResources());
     unawaited(_controller?.dispose());
     super.dispose();
+  }
+
+  /// Cancels the strip generation stream and deletes every thumbnail file
+  /// the service ever produced for this screen instance. Awaiting the
+  /// cancel before deleting ensures any in-flight batch has been flushed
+  /// into [_allStripThumbnailPaths] first.
+  Future<void> _disposeStripResources() async {
+    final subscription = _stripSubscription;
+    _stripSubscription = null;
+    if (subscription != null) {
+      await subscription.cancel();
+    }
+    for (final path in _allStripThumbnailPaths) {
+      File(path).delete().ignore();
+    }
+    _allStripThumbnailPaths.clear();
   }
 
   @override

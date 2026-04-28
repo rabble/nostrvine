@@ -270,6 +270,89 @@ void main() {
       final clipRRect = tester.widget<ClipRRect>(find.byType(ClipRRect));
       expect(clipRRect.borderRadius, equals(BorderRadius.circular(16)));
     });
+
+    testWidgets(
+      'cover-editor tap is disabled until finalRenderedClip is available',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(VideoEditorProviderState()),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataCaptureClipPreview()),
+            ),
+          ),
+        );
+
+        final tappable = tester.widget<GestureDetector>(
+          find
+              .descendant(
+                of: find.byType(ClipRRect),
+                matching: find.byType(GestureDetector),
+              )
+              .first,
+        );
+        expect(
+          tappable.onTap,
+          isNull,
+          reason:
+              'Cover editor must not open before the final rendered clip is '
+              'ready, otherwise VideoMetadataCoverScreen receives a stale clip.',
+        );
+      },
+    );
+
+    testWidgets(
+      'cover-editor tap is enabled once finalRenderedClip is available',
+      (tester) async {
+        final finalClip = DivineVideoClip(
+          id: 'final-clip',
+          video: EditorVideo.file('final.mp4'),
+          duration: const Duration(seconds: 15),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              clipManagerProvider.overrideWith(
+                () => _MockClipManagerNotifier([testClip]),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(
+                  VideoEditorProviderState(finalRenderedClip: finalClip),
+                ),
+              ),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataCaptureClipPreview()),
+            ),
+          ),
+        );
+
+        final tappable = tester.widget<GestureDetector>(
+          find
+              .descendant(
+                of: find.byType(ClipRRect),
+                matching: find.byType(GestureDetector),
+              )
+              .first,
+        );
+        expect(tappable.onTap, isNotNull);
+      },
+    );
   });
 }
 

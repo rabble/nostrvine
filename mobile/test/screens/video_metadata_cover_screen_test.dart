@@ -227,28 +227,9 @@ void main() {
       verify(() => mockGoRouter.pop<Object?>(any())).called(1);
     });
 
-    testWidgets('tapping confirm button calls context.pop()', (tester) async {
-      setUpPlayerChannel();
-      addTearDown(tearDownPlayerChannel);
-
-      await tester.pumpWidget(buildWidget());
-      await tester.pump(const Duration(milliseconds: 400));
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      await tester.tap(
-        find.bySemanticsLabel(l10n.videoMetadataEditCoverConfirmSemanticLabel),
-        warnIfMissed: false,
-      );
-      // Pump several times: setState → extractThumbnail (returns null) → pop.
-      for (var i = 0; i < 5; i++) {
-        await tester.pump();
-      }
-
-      verify(() => mockGoRouter.pop<Object?>(any())).called(1);
-    });
-
     testWidgets(
-      'confirm button shows loading spinner while confirming',
+      'tapping confirm with no extracted thumbnail surfaces failure snackbar '
+      'and stays on screen',
       (tester) async {
         setUpPlayerChannel();
         addTearDown(tearDownPlayerChannel);
@@ -257,8 +238,38 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
 
         final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(
+          find.bySemanticsLabel(
+            l10n.videoMetadataEditCoverConfirmSemanticLabel,
+          ),
+          warnIfMissed: false,
+        );
+        // Pump several times: setState → extractThumbnail (returns null) →
+        // snackbar surface.
+        for (var i = 0; i < 5; i++) {
+          await tester.pump();
+        }
 
-        // Before tap: check icon button visible, no spinner.
+        // Must NOT have popped: the user needs to retry.
+        verifyNever(() => mockGoRouter.pop<Object?>(any()));
+        expect(
+          find.text(l10n.videoMetadataEditCoverFailedSnackbar),
+          findsOneWidget,
+        );
+        // Confirm icon button is interactable again.
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'confirm button shows the check icon in its idle state',
+      (tester) async {
+        setUpPlayerChannel();
+        addTearDown(tearDownPlayerChannel);
+
+        await tester.pumpWidget(buildWidget());
+        await tester.pump(const Duration(milliseconds: 400));
+
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(
           find.byWidgetPredicate(
@@ -266,17 +277,6 @@ void main() {
           ),
           findsOneWidget,
         );
-
-        await tester.tap(
-          find.bySemanticsLabel(
-            l10n.videoMetadataEditCoverConfirmSemanticLabel,
-          ),
-          warnIfMissed: false,
-        );
-        // One pump: setState(_isConfirming = true) has run, frame rendered.
-        await tester.pump();
-
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
       },
     );
   });
