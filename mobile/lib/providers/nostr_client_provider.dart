@@ -99,13 +99,9 @@ class NostrService extends _$NostrService {
     // Register bootstrap kind:10002 callback — AuthService calls this when
     // indexer discovery returns empty, so we self-publish a minimal relay
     // list on the user's behalf. See divine-mobile#3174 / keycast#94.
-    authService.registerBootstrapRelayListCallback((event, targetRelays) async {
-      final published = await client.publishEvent(
-        event,
-        targetRelays: targetRelays,
-      );
-      return published != null;
-    });
+    authService.registerBootstrapRelayListCallback(
+      _bootstrapCallbackFor(client),
+    );
 
     // Schedule initialization after build completes
     // Add user relays BEFORE initialize() to avoid race condition
@@ -217,16 +213,9 @@ class NostrService extends _$NostrService {
 
       // Register bootstrap kind:10002 callback for the new client. See
       // divine-mobile#3174 / keycast#94.
-      authService.registerBootstrapRelayListCallback((
-        event,
-        targetRelays,
-      ) async {
-        final published = await newClient.publishEvent(
-          event,
-          targetRelays: targetRelays,
-        );
-        return published != null;
-      });
+      authService.registerBootstrapRelayListCallback(
+        _bootstrapCallbackFor(newClient),
+      );
 
       _lastPubkey = newPubkey;
 
@@ -238,5 +227,18 @@ class NostrService extends _$NostrService {
       await newClient.initialize();
       state = newClient;
     }
+  }
+
+  /// Builds the bootstrap kind:10002 publisher closure bound to [client].
+  /// Used at both initial-build and account-switch sites so the publish
+  /// path stays in one place.
+  BootstrapRelayListCallback _bootstrapCallbackFor(NostrClient client) {
+    return (event, targetRelays) async {
+      final published = await client.publishEvent(
+        event,
+        targetRelays: targetRelays,
+      );
+      return published != null;
+    };
   }
 }
