@@ -45,7 +45,9 @@ Note: The layered architecture (`UI → BLoC → Repository → Client`) is esta
 
 **Impact**: High. Creates a bypass around the BLoC layer; widgets and screens import services directly, leaking business logic into the UI. Every service change can ripple into both BLoC and UI layers simultaneously.
 
-**Effort**: High. Requires classifying all ~138 files by VGV layer (Client/Repository/Utility), extracting repository and client packages incrementally, and updating all import sites. Multi-sprint effort.
+**Effort**: High. Requires classifying all ~138 files by VGV layer (Client/Repository/Utility), extracting repository and client packages incrementally, and updating all import sites.
+
+**Related**: Each extracted package should ship with tests in the same PR. 50+ services currently have zero test coverage (see [issues-testing.md](issues-testing.md)), and the VGV per-package CI template enforces coverage, so extraction is the natural moment to add tests rather than treating it as separate work.
 
 **GitHub ticket**: TBD
 

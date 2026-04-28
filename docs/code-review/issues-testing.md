@@ -15,6 +15,8 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: High. Writing tests for 50+ services requires mocking dependencies and understanding internal logic. Priority: P0 for safety-critical (`bookmark`, `mute`, `content_moderation`), P1 for business logic (`social`, `circuit_breaker`, `personal_event_cache`), P2 for observability (`analytics`, `metrics`).
 
+**Related**: This work pairs naturally with the `services/` directory migration in [issues-architecture.md](issues-architecture.md). As each service is extracted into a dedicated package (repository most likely), tests should be added as part of the same PR.
+
 **GitHub ticket**: TBD
 
 ---
