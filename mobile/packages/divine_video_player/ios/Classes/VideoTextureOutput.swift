@@ -1,5 +1,6 @@
 import AVFoundation
 import Flutter
+import QuartzCore
 
 /// Bridges an `AVPlayer` to Flutter's texture system.
 ///
@@ -28,14 +29,21 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Window during which the display link bypasses `hasNewPixelBuffer`
     /// and tries `copyPixelBuffer` on every tick. Covers the GOP-decode
     /// stall after an exact seek (up to ~500 ms on long-GOP clips).
-    private var forceRefreshDeadline: Date = .distantPast
+    /// Uses `CACurrentMediaTime()` (monotonic) so NTP/TZ clock jumps
+    /// can't collapse or extend the window.
+    private var forceRefreshDeadline: CFTimeInterval = 0
 
     /// Failed `copyPixelBuffer` ticks within the current force window.
     /// Non-zero at expiry means the compositor is stuck at this time.
     private var forceWindowFailCount = 0
 
+    /// Marks the current force window as a tolerant-seek retry. When
+    /// `true`, expiry without a frame does NOT fire `onSeekStuck` again,
+    /// preventing an infinite retry loop on persistently broken content.
+    private var forceWindowIsRetry = false
+
     /// Fired when the force window expires without a frame; caller should
-    /// retry the seek with tolerance.
+    /// retry the seek with tolerance. Suppressed for retry windows.
     var onSeekStuck: ((CMTime) -> Void)?
 
     init(
@@ -87,10 +95,13 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Opens a 600 ms force window after a seek and requests a delegate
     /// notification, so the texture updates even while paused. Pass the
     /// exact seek target — used directly in `outputMediaDataWillChange`.
-    func forceRefresh(for seekTime: CMTime) {
+    /// Pass `isRetry: true` for a tolerant-seek retry; suppresses
+    /// `onSeekStuck` on expiry to break recovery loops.
+    func forceRefresh(for seekTime: CMTime, isRetry: Bool = false) {
         pendingSeekTime = seekTime
-        forceRefreshDeadline = Date(timeIntervalSinceNow: 0.6)
+        forceRefreshDeadline = CACurrentMediaTime() + 0.6
         forceWindowFailCount = 0
+        forceWindowIsRetry = isRetry
         videoOutput?.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
 
@@ -126,7 +137,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
             return
         }
         pendingSeekTime = .invalid
-        forceRefreshDeadline = .distantPast
+        forceRefreshDeadline = 0
         forceWindowFailCount = 0
         deliverFrame(pixelBuffer)
     }
@@ -179,13 +190,13 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
 
         let itemTime = player.currentTime()
 
-        if Date() < forceRefreshDeadline {
+        if CACurrentMediaTime() < forceRefreshDeadline {
             if let pixelBuffer = output.copyPixelBuffer(
                 forItemTime: itemTime,
                 itemTimeForDisplay: nil
             ) {
                 pendingSeekTime = .invalid
-                forceRefreshDeadline = .distantPast
+                forceRefreshDeadline = 0
                 forceWindowFailCount = 0
                 deliverFrame(pixelBuffer)
             } else {
@@ -196,9 +207,13 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
 
         if forceWindowFailCount > 0 {
             let stuckTime = itemTime
+            let wasRetry = forceWindowIsRetry
             forceWindowFailCount = 0
-            DispatchQueue.main.async { [weak self] in
-                self?.onSeekStuck?(stuckTime)
+            forceWindowIsRetry = false
+            if !wasRetry {
+                DispatchQueue.main.async { [weak self] in
+                    self?.onSeekStuck?(stuckTime)
+                }
             }
         }
 

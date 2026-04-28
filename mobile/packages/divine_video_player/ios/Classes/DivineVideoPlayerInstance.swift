@@ -86,7 +86,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             ) { [weak self] _ in
                 guard let self else { return }
                 let actualTime = self.player?.currentTime() ?? stuckTime
-                self.textureOutput?.forceRefresh(for: actualTime)
+                self.textureOutput?.forceRefresh(for: actualTime, isRetry: true)
                 self.safePreroll(at: actualTime)
             }
         }
@@ -452,7 +452,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     /// Calls `AVPlayer.preroll(atRate:)` only when the player is ready;
     /// otherwise defers via a one-shot KVO on `status`. No-op while
     /// `player.rate != 0` (preroll is only useful when paused).
+    ///
+    /// Must be called on the main thread — `pendingPrerollObservation`
+    /// is mutated here without synchronization. All current callers
+    /// (setClips Task @MainActor, MethodChannel callbacks, seek
+    /// completion handlers) are already main-queue.
     private func safePreroll(at time: CMTime) {
+        assert(Thread.isMainThread, "safePreroll must be called on the main thread")
         guard let player = self.player else { return }
         guard player.rate == 0 else { return }
         if player.status == .readyToPlay {
