@@ -421,6 +421,184 @@ If the surrounding widget is a `ConsumerWidget` /
 
 ---
 
+## Stateful widgets that hold the captured-dep bloc directly
+
+The same capture trap reproduces in a different shape:
+`ConsumerStatefulWidget` whose `State` constructs a bloc in
+`initState` and holds it via `late final`. The `ref.read` calls
+inside `initState` capture whichever instance each provider
+returned at that moment, and the `late final` field can never be
+reassigned — so the captured chain is permanent for the widget's
+lifetime, even across auth flips and account switches. Greppable
+shape:
+
+```dart
+class _MyState extends ConsumerState<MyWidget> {
+  late final SomeBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = SomeBloc(
+      repository: ref.read(someRepositoryProvider), // WRONG
+    );
+  }
+}
+```
+
+The `BlocProvider`-keyed-on-identity rule above doesn't apply
+directly — there is no `BlocProvider` at the construction site to
+attach a `ValueKey` to.
+
+### Preferred fix: Page/View split
+
+Push the bloc construction up into a `ConsumerWidget` parent that
+wraps a `StatefulWidget` child via `BlocProvider`, and have the
+stateful child consume the bloc through `context.read<Bloc>()`.
+The parent then uses the existing rule (record-typed `ValueKey`
+over the captured provider tuple) — no new shape introduced. This
+matches the four canonical existing examples in this codebase:
+`_PooledVideoFeedItem` / `_PooledVideoFeedItemContent` in
+`video_feed_page.dart`, and `_PooledFullscreenItem` /
+`_PooledFullscreenItemContent` in
+`pooled_fullscreen_video_feed_screen.dart`. It also follows the
+Page/View pattern in [`ui_theming.md`](ui_theming.md) and the
+constructor-injection guidance in
+[`architecture.md`](architecture.md) — the stateful child stops
+reaching into Riverpod for its dependencies.
+
+**Skeleton:**
+
+```dart
+class _MyParent extends ConsumerWidget {
+  const _MyParent({required this.input});
+
+  final InputType input;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo1 = ref.watch(repo1Provider);
+    final repo2 = ref.watch(repo2Provider);
+    return BlocProvider<MyBloc>(
+      key: ValueKey((repo1, repo2)),
+      create: (_) => MyBloc(repo1: repo1, repo2: repo2)
+        ..add(const MyInitialEvent()),
+      child: _MyChild(input: input),
+    );
+  }
+}
+
+class _MyChild extends StatefulWidget {
+  const _MyChild({required this.input});
+
+  final InputType input;
+
+  @override
+  State<_MyChild> createState() => _MyChildState();
+}
+
+class _MyChildState extends State<_MyChild> {
+  // animation controllers, ValueNotifiers, scroll listeners, …
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<MyBloc>();
+    // …
+  }
+}
+```
+
+The split lets the parent own dependency lifecycle and the child
+own local UI state, which is the same separation the existing four
+sites already use.
+
+### Workaround when refactor is blocked
+
+When splitting the widget isn't feasible in scope (e.g. the
+stateful logic tangles with the bloc lifecycle in a way the
+refactor would balloon), snapshot the captured deps in `initState`
+and use `ref.listen` in `build` to detect identity changes and
+rebuild the bloc. The codebase already uses `ref.listen`-in-`build`
+for forwarding Riverpod signals to a Bloc (see
+`my_followers_screen.dart`'s blocklist invalidation handler) — this
+extends the same idiom to "rebuild the bloc itself when its
+captured deps change identity":
+
+```dart
+late MyBloc _bloc;
+late (Repo1, Repo2) _captured;
+
+@override
+void initState() {
+  super.initState();
+  _captured = (
+    ref.read(repo1Provider),
+    ref.read(repo2Provider),
+  );
+  _bloc = _createBloc(_captured)..add(const MyInitialEvent());
+}
+
+@override
+Widget build(BuildContext context) {
+  ref.listen<Repo1>(repo1Provider, (_, _) => _maybeRecreate());
+  ref.listen<Repo2>(repo2Provider, (_, _) => _maybeRecreate());
+  return BlocProvider<MyBloc>.value(
+    value: _bloc,
+    child: const _MyChild(),
+  );
+}
+
+void _maybeRecreate() {
+  if (!mounted) return;
+  final fresh = (
+    ref.read(repo1Provider),
+    ref.read(repo2Provider),
+  );
+  if (fresh == _captured) return;
+  _bloc.close();
+  _captured = fresh;
+  setState(() {
+    _bloc = _createBloc(fresh)..add(const MyInitialEvent());
+  });
+}
+
+@override
+void dispose() {
+  _bloc.close();
+  super.dispose();
+}
+
+MyBloc _createBloc((Repo1, Repo2) deps) {
+  final (repo1, repo2) = deps;
+  return MyBloc(repo1: repo1, repo2: repo2);
+}
+```
+
+This is a fallback, not the primary recommendation. It introduces
+a shape that doesn't currently appear elsewhere in the codebase
+and bypasses the established Page/View precedent. Prefer the
+refactor when reasonable.
+
+The same state-loss tradeoff applies as the `BlocProvider` case:
+each recreate drops in-flight optimistic state and pending
+publishes, which is the correct behaviour when the underlying
+repository is bound to a different signer / `NostrClient` / user.
+
+### Detection
+
+```
+grep -rn "late\s\+\(final\s\+\)\?[A-Z][A-Za-z]*\(Bloc\|Cubit\)\b" mobile/lib --include="*.dart"
+```
+
+For each hit, check `initState` for `ref.read(...Provider)` calls
+that capture providers whose identity can flip (auth flip, account
+switch, sign-out, explicit `ref.invalidate`). Apply the same
+identity-flip judgment as the `BlocProvider.create:` case — if the
+captured provider rebuilds in response to runtime events, the
+`late final` field will go stale.
+
+---
+
 ## Persisting state across shell-route transitions
 
 Screens inside a `ShellRoute` whose content is gated on the current URL

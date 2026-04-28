@@ -95,6 +95,14 @@ State management:
   `ValueKey` over the dependency tuple. `ref.read` here silently
   captures stale state on the next dep rebuild — see
   [`state_management.md`](state_management.md#bridging-riverpod-provided-dependencies-into-blocprovider).
+- [ ] No `ConsumerStatefulWidget` constructs a bloc with
+  `late final SomeBloc _bloc = SomeBloc(repo: ref.read(...Provider))`
+  in `initState` capturing an identity-flippable Riverpod
+  dependency. The preferred fix is the Page/View split — push bloc
+  construction into a `ConsumerWidget` parent that wraps a stateful
+  child via `BlocProvider`-keyed-on-identity (the existing rule
+  then covers the parent). See
+  [`state_management.md`](state_management.md#stateful-widgets-that-hold-the-captured-dep-bloc-directly).
 - [ ] No error strings / exception objects in BLoC `state`. Use status
   enums + `addError`. See [`state_management.md`](state_management.md).
 - [ ] No mutable instance variables on a BLoC class. All state lives in
