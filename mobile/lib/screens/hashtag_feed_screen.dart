@@ -48,9 +48,6 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// Stream controller for pushing video list updates to the fullscreen feed.
   late final StreamController<List<VideoEvent>> _videosStreamController;
 
-  /// Shown in the hashtag more sheet; synced from the grid’s combined list.
-  int _hashtagMenuVideoCount = 0;
-
   @override
   void initState() {
     super.initState();
@@ -279,116 +276,100 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final body = Builder(
-      builder: (context) {
-        Log.debug(
-          '🏷️ Building HashtagFeedScreen for #${widget.hashtag}',
-          category: LogCategory.video,
-        );
-        final hashtagService = ref.watch(hashtagServiceProvider);
-
-        // Combine Funnelcake videos (fast, pre-sorted) with WebSocket videos
-        final webSocketVideos = List<VideoEvent>.from(
-          hashtagService.getVideosByHashtags([widget.hashtag]),
-        );
-        final videos = _combineAndSortVideos(webSocketVideos);
-
-        if (_hashtagMenuVideoCount != videos.length) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            setState(() {
-              _hashtagMenuVideoCount = videos.length;
-            });
-          });
-        }
-
-        // Push updated video list to stream so any open fullscreen feed
-        // receives the latest ordering (keeps grid and feed in sync).
-        if (videos.isNotEmpty) {
-          _videosStreamController.add(videos);
-        }
-
-        Log.debug(
-          '🏷️ Found ${videos.length} videos for #${widget.hashtag} '
-          '(Funnelcake: ${_popularVideos?.length ?? 0}, WebSocket: ${webSocketVideos.length})',
-          category: LogCategory.video,
-        );
-
-        // Show a full-screen loader only before the initial startup attempt.
-        // Once background loading has started, render empty or cached state
-        // instead of blocking on relay subscription setup.
-        final shouldShowLoading = !_subscriptionAttempted;
-
-        if (shouldShowLoading && videos.isEmpty) {
-          final l10n = context.l10n;
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const CircularProgressIndicator(color: VineTheme.vineGreen),
-                const SizedBox(height: 24),
-                Text(
-                  l10n.hashtagFeedLoadingMessage(widget.hashtag),
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.hashtagFeedLoadingSubtitle,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        if (videos.isEmpty) {
-          final l10n = context.l10n;
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.hashtagFeedEmptyTitle(widget.hashtag),
-                  style: const TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.hashtagFeedEmptySubtitle,
-                  style: const TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ComposableVideoGrid(
-          videos: videos,
-          useMasonryLayout: true,
-          onVideoTap:
-              widget.onVideoTap ??
-              (videoList, index) {
-                _navigateToFullscreenFeed(context, videoList, index);
-              },
-          onRefresh: _loadHashtagVideos,
-        );
-      },
+    Log.debug(
+      '🏷️ Building HashtagFeedScreen for #${widget.hashtag}',
+      category: LogCategory.video,
     );
+    final hashtagService = ref.watch(hashtagServiceProvider);
+    final webSocketVideos = List<VideoEvent>.from(
+      hashtagService.getVideosByHashtags([widget.hashtag]),
+    );
+    final videos = _combineAndSortVideos(webSocketVideos);
+
+    // Push updated video list to stream so any open fullscreen feed
+    // receives the latest ordering (keeps grid and feed in sync).
+    if (videos.isNotEmpty) {
+      _videosStreamController.add(videos);
+    }
+
+    Log.debug(
+      '🏷️ Found ${videos.length} videos for #${widget.hashtag} '
+      '(Funnelcake: ${_popularVideos?.length ?? 0}, WebSocket: ${webSocketVideos.length})',
+      category: LogCategory.video,
+    );
+
+    // Show a full-screen loader only before the initial startup attempt.
+    // Once background loading has started, render empty or cached state
+    // instead of blocking on relay subscription setup.
+    final shouldShowLoading = !_subscriptionAttempted;
+
+    late final Widget body;
+    if (shouldShowLoading && videos.isEmpty) {
+      final l10n = context.l10n;
+      body = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: VineTheme.vineGreen),
+            const SizedBox(height: 24),
+            Text(
+              l10n.hashtagFeedLoadingMessage(widget.hashtag),
+              style: const TextStyle(
+                color: VineTheme.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.hashtagFeedLoadingSubtitle,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else if (videos.isEmpty) {
+      final l10n = context.l10n;
+      body = Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
+            const SizedBox(height: 16),
+            Text(
+              l10n.hashtagFeedEmptyTitle(widget.hashtag),
+              style: const TextStyle(
+                color: VineTheme.primaryText,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.hashtagFeedEmptySubtitle,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      body = ComposableVideoGrid(
+        videos: videos,
+        useMasonryLayout: true,
+        onVideoTap:
+            widget.onVideoTap ??
+            (videoList, index) {
+              _navigateToFullscreenFeed(context, videoList, index);
+            },
+        onRefresh: _loadHashtagVideos,
+      );
+    }
 
     if (widget.embedded) {
       return Column(
@@ -396,48 +377,37 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         children: [
           _HashtagFavoriteToolbar(
             hashtag: widget.hashtag,
-            videoCount: _hashtagMenuVideoCount,
+            videoCount: videos.length,
           ),
           Expanded(child: body),
         ],
       );
     }
 
-    final repo = ref.watch(followedHashtagsRepositoryProvider);
-    return StreamBuilder<List<String>>(
-      stream: repo.profileSavedHashtagsStream,
-      initialData: repo.profileSavedHashtags,
-      builder: (context, _) {
-        return StreamBuilder<List<String>>(
-          stream: repo.followingFeedHashtagLabelsStream,
-          initialData: repo.followingFeedHashtagLabels,
-          builder: (context, _) {
-            final l10n = context.l10n;
-            return Scaffold(
-              backgroundColor: VineTheme.backgroundColor,
-              appBar: DiVineAppBar(
-                title: '#${widget.hashtag}',
-                showBackButton: true,
-                onBackPressed: context.pop,
-                actions: [
-                  DiVineAppBarAction(
-                    icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
-                    tooltip: l10n.hashtagOptionsMoreTooltip,
-                    semanticLabel: l10n.hashtagOptionsMoreTooltip,
-                    onPressed: () => showHashtagMoreMenu(
-                      context,
-                      ref,
-                      hashtag: widget.hashtag,
-                      videoCount: _hashtagMenuVideoCount,
-                    ),
-                  ),
-                ],
-              ),
-              body: body,
-            );
-          },
-        );
-      },
+    // More menu reads [FollowedHashtagsRepository] when opened — no stream
+    // listeners on the overflow control (would rebuild [body] via StreamBuilder).
+    final l10n = context.l10n;
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
+      appBar: DiVineAppBar(
+        title: '#${widget.hashtag}',
+        showBackButton: true,
+        onBackPressed: context.pop,
+        actions: [
+          DiVineAppBarAction(
+            icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
+            tooltip: l10n.hashtagOptionsMoreTooltip,
+            semanticLabel: l10n.hashtagOptionsMoreTooltip,
+            onPressed: () => showHashtagMoreMenu(
+              context,
+              ref,
+              hashtag: widget.hashtag,
+              videoCount: videos.length,
+            ),
+          ),
+        ],
+      ),
+      body: body,
     );
   }
 }
@@ -454,52 +424,35 @@ class _HashtagFavoriteToolbar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final repo = ref.watch(followedHashtagsRepositoryProvider);
-    const style = DiVineAppBarStyle.solidStyle;
-    return StreamBuilder<List<String>>(
-      stream: repo.profileSavedHashtagsStream,
-      initialData: repo.profileSavedHashtags,
-      builder: (context, _) {
-        return StreamBuilder<List<String>>(
-          stream: repo.followingFeedHashtagLabelsStream,
-          initialData: repo.followingFeedHashtagLabels,
-          builder: (context, _) {
-            final l10n = context.l10n;
-            return Material(
-              color: VineTheme.surfaceContainerHigh,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(
-                  end: 8,
-                  top: 4,
-                  bottom: 4,
-                ),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    DiVineAppBarIconButton(
-                      icon: SvgIconSource(DivineIconName.dotsThree.assetPath),
-                      tooltip: l10n.hashtagOptionsMoreTooltip,
-                      semanticLabel: l10n.hashtagOptionsMoreTooltip,
-                      onPressed: () => showHashtagMoreMenu(
-                        context,
-                        ref,
-                        hashtag: hashtag,
-                        videoCount: videoCount,
-                      ),
-                      backgroundColor: style.iconButtonBackgroundColor,
-                      borderSide: style.iconButtonBorderSide,
-                      iconColor: style.iconColor,
-                      size: style.iconButtonSize,
-                      iconSize: style.iconSize,
-                      borderRadius: style.iconButtonBorderRadius,
-                    ),
-                  ],
+    final l10n = context.l10n;
+    return Material(
+      color: VineTheme.surfaceContainerHigh,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(
+          end: 8,
+          top: 4,
+          bottom: 4,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Tooltip(
+              message: l10n.hashtagOptionsMoreTooltip,
+              child: DivineIconButton(
+                icon: DivineIconName.dotsThree,
+                type: DivineIconButtonType.secondary,
+                semanticLabel: l10n.hashtagOptionsMoreTooltip,
+                onPressed: () => showHashtagMoreMenu(
+                  context,
+                  ref,
+                  hashtag: hashtag,
+                  videoCount: videoCount,
                 ),
               ),
-            );
-          },
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
