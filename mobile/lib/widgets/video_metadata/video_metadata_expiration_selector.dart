@@ -1,28 +1,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-
-extension _VideoMetadataExpirationL10nX on VideoMetadataExpiration {
-  String localizedLabel(BuildContext context) {
-    return switch (this) {
-      VideoMetadataExpiration.notExpire =>
-        context.l10n.videoMetadataExpirationNotExpire,
-      VideoMetadataExpiration.oneDay =>
-        context.l10n.videoMetadataExpirationOneDay,
-      VideoMetadataExpiration.oneWeek =>
-        context.l10n.videoMetadataExpirationOneWeek,
-      VideoMetadataExpiration.oneMonth =>
-        context.l10n.videoMetadataExpirationOneMonth,
-      VideoMetadataExpiration.oneYear =>
-        context.l10n.videoMetadataExpirationOneYear,
-      VideoMetadataExpiration.oneDecade =>
-        context.l10n.videoMetadataExpirationOneDecade,
-    };
-  }
-}
+import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 
 /// Widget for selecting video expiration time.
 ///
@@ -44,6 +27,12 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
     final result = await VineBottomSheetSelectionMenu.show(
       context: context,
       selectedValue: currentOption.name,
+      headerLeadingAction: DivineIconButton(
+        icon: .x,
+        onPressed: context.pop,
+        type: .secondary,
+        size: .small,
+      ),
       title: Text(context.l10n.videoMetadataExpiration),
       options: VideoMetadataExpiration.values.map((option) {
         return VineBottomSheetSelectionOptionData(
@@ -69,42 +58,11 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
       videoEditorProvider.select((s) => s.expiration),
     );
 
-    return Semantics(
-      button: true,
-      label: context.l10n.videoMetadataSelectExpirationSemanticLabel,
-      child: InkWell(
-        onTap: () => _selectExpiration(context, ref),
-        child: Padding(
-          padding: const .all(16),
-          child: Column(
-            spacing: 8,
-            crossAxisAlignment: .stretch,
-            children: [
-              Text(
-                context.l10n.videoMetadataExpirationLabel,
-                style: VineTheme.labelSmallFont(
-                  color: VineTheme.onSurfaceVariant,
-                ),
-              ),
-              // Current selection with chevron icon
-              Row(
-                mainAxisAlignment: .spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      currentOption.localizedLabel(context),
-                      style: VineTheme.titleMediumFont(
-                        color: VineTheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const DivineIcon(icon: .caretRight, color: VineTheme.primary),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    return VideoMetadataSelectionTile(
+      onTap: () => _selectExpiration(context, ref),
+      semanticsLabel: context.l10n.videoMetadataSelectExpirationSemanticLabel,
+      labelText: context.l10n.videoMetadataExpirationLabel,
+      value: currentOption.localizedLabel(context),
     );
   }
 }

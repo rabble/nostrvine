@@ -12093,6 +12093,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
+
+  /// No description provided for @videoMetadataEditCoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit cover'**
+  String get videoMetadataEditCoverTitle;
+
+  /// No description provided for @videoMetadataEditCoverCloseSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close cover editor'**
+  String get videoMetadataEditCoverCloseSemanticLabel;
+
+  /// No description provided for @videoMetadataEditCoverConfirmSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm cover selection'**
+  String get videoMetadataEditCoverConfirmSemanticLabel;
+
+  /// No description provided for @videoMetadataEditCoverStripSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Seek through video to select cover frame'**
+  String get videoMetadataEditCoverStripSemanticLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -48,6 +48,9 @@ class VineBottomSheetSelectionMenu {
     required List<VineBottomSheetSelectionOptionData> options,
     Widget? title,
     String? selectedValue,
+    EdgeInsetsGeometry? headerPadding,
+    DivineIconButton? headerLeadingAction,
+    DivineIconButton? headerTrailingAction,
   }) {
     return VineBottomSheet.show<String>(
       context: context,
@@ -55,6 +58,9 @@ class VineBottomSheetSelectionMenu {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
+      headerPadding: headerPadding,
+      headerLeadingAction: headerLeadingAction,
+      headerTrailingAction: headerTrailingAction,
       body: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

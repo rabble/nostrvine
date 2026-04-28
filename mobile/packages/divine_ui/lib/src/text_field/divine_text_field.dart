@@ -28,6 +28,7 @@ class DivineTextField extends StatelessWidget {
     this.onEditingComplete,
     this.onSubmitted,
     this.onChanged,
+    this.primaryWhenFilled = false,
   });
 
   /// Label text shown inside the field when empty, floats above when focused.
@@ -93,6 +94,10 @@ class DivineTextField extends StatelessWidget {
   /// Called when the text changes.
   final ValueChanged<String>? onChanged;
 
+  /// Whether the floating label uses [VineTheme.primary] when the field
+  /// has content (in addition to when it is focused).
+  final bool primaryWhenFilled;
+
   @override
   Widget build(BuildContext context) {
     return TextField(
@@ -124,8 +129,10 @@ class DivineTextField extends StatelessWidget {
         filled: false,
         contentPadding: contentPadding,
         floatingLabelStyle: WidgetStateTextStyle.resolveWith((states) {
+          final isFilled =
+              primaryWhenFilled && (controller?.text.isNotEmpty ?? false);
           return VineTheme.labelSmallFont(
-            color: states.contains(WidgetState.focused)
+            color: states.contains(WidgetState.focused) || isFilled
                 ? VineTheme.primary
                 : VineTheme.onSurfaceVariant,
           ).copyWith(

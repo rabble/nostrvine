@@ -3,13 +3,17 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 
 /// A custom header widget for video metadata screens.
 /// Unlike AppBar, this provides full control over layout and positioning.
-class VideoMetadataCaptureAppBar extends StatelessWidget
+class VideoMetadataCaptureAppBar extends ConsumerWidget
     implements PreferredSizeWidget {
   /// Creates a custom header for video metadata screens.
   const VideoMetadataCaptureAppBar({super.key});
@@ -17,8 +21,32 @@ class VideoMetadataCaptureAppBar extends StatelessWidget
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
+  /// Opens the full-screen video preview with a fade transition.
+  Future<void> _openPreview(BuildContext context, DivineVideoClip clip) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await Navigator.push(
+      context,
+      PageRouteBuilder<void>(
+        pageBuilder: (_, _, _) => VideoMetadataPreviewScreen(clip: clip),
+        transitionsBuilder: (_, animation, _, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(
+      videoEditorProvider.select(
+        (s) => (
+          isProcessing: s.isProcessing,
+          finalRenderedClip: s.finalRenderedClip,
+        ),
+      ),
+    );
+    final isReady = state.finalRenderedClip != null && !state.isProcessing;
+
     return SafeArea(
       bottom: false,
       child: Container(
@@ -42,6 +70,15 @@ class VideoMetadataCaptureAppBar extends StatelessWidget
                 context.l10n.videoMetadataPostDetailsTitle,
                 style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
               ),
+            ),
+
+            DivineIconButton(
+              icon: .eye,
+              type: .ghostSecondary,
+              size: .small,
+              onPressed: isReady
+                  ? () => _openPreview(context, state.finalRenderedClip!)
+                  : null,
             ),
           ],
         ),

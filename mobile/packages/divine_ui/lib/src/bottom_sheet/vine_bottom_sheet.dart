@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 ///
 /// Features:
 /// - Drag handle for gesture indication
-/// - Customizable header with title and trailing actions
+/// - Customizable header with title, trailing actions, and optional
+///   [headerLeadingAction]/[headerTrailingAction] icon buttons
+///   (see [VineBottomSheetHeader])
 /// - Two modes: scrollable (draggable) and fixed
 /// - Optional bottom input section
 /// - Dark mode optimized with proper theming
@@ -35,7 +37,10 @@ class VineBottomSheet extends StatelessWidget {
     this.bottomInput,
     this.expanded = true,
     this.showHeaderDivider = true,
+    this.showDragHandle = true,
     this.headerPadding,
+    this.headerLeadingAction,
+    this.headerTrailingAction,
     super.key,
   }) : assert(
          children != null || body != null || buildScrollBody != null,
@@ -105,8 +110,23 @@ class VineBottomSheet extends StatelessWidget {
   /// Defaults to true.
   final bool showHeaderDivider;
 
+  /// Whether to show the drag handle at the top of the header.
+  ///
+  /// Forwarded to [VineBottomSheetHeader.showDragHandle]. Defaults to true.
+  final bool showDragHandle;
+
   /// Optional padding override forwarded to [VineBottomSheetHeader].
   final EdgeInsetsGeometry? headerPadding;
+
+  /// Optional icon button on the left side of the header.
+  ///
+  /// Forwarded to [VineBottomSheetHeader.leadingAction].
+  final DivineIconButton? headerLeadingAction;
+
+  /// Optional icon button on the right side of the header.
+  ///
+  /// Forwarded to [VineBottomSheetHeader.trailingAction].
+  final DivineIconButton? headerTrailingAction;
 
   /// Shows the bottom sheet as a modal.
   ///
@@ -130,6 +150,11 @@ class VineBottomSheet extends StatelessWidget {
   /// tap-catcher). Has no effect in fixed mode — the standard modal
   /// barrier already dismisses on tap there.
   ///
+  /// [headerLeadingAction] and [headerTrailingAction] are forwarded to
+  /// [VineBottomSheetHeader] to place icon buttons on the left/right side of
+  /// the header. When only one is set, the other side receives an invisible
+  /// placeholder to keep the title centered.
+  ///
   /// [contentWrapper] wraps the entire sheet subtree once. Useful for
   /// injecting a single `BlocProvider` / `InheritedWidget` above every
   /// slot (title, trailing, bottomInput, body, buildScrollBody) without
@@ -148,7 +173,10 @@ class VineBottomSheet extends StatelessWidget {
     Widget? bottomInput,
     bool expanded = true,
     bool showHeaderDivider = true,
+    bool showDragHandle = true,
     EdgeInsetsGeometry? headerPadding,
+    DivineIconButton? headerLeadingAction,
+    DivineIconButton? headerTrailingAction,
     bool? isScrollControlled,
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
@@ -211,7 +239,10 @@ class VineBottomSheet extends StatelessWidget {
               bottomInput: bottomInput,
               expanded: expanded,
               showHeaderDivider: showHeaderDivider,
+              showDragHandle: showDragHandle,
               headerPadding: headerPadding,
+              headerLeadingAction: headerLeadingAction,
+              headerTrailingAction: headerTrailingAction,
               body: body,
               children: children,
             );
@@ -296,7 +327,10 @@ class VineBottomSheet extends StatelessWidget {
             bottomInput: bottomInput,
             expanded: expanded,
             showHeaderDivider: showHeaderDivider,
+            showDragHandle: showDragHandle,
             headerPadding: headerPadding,
+            headerLeadingAction: headerLeadingAction,
+            headerTrailingAction: headerTrailingAction,
             body: body,
             children: children,
           );
@@ -326,7 +360,10 @@ class VineBottomSheet extends StatelessWidget {
                 contentTitle: contentTitle,
                 bottomInput: bottomInput,
                 showHeaderDivider: showHeaderDivider,
+                showDragHandle: showDragHandle,
                 headerPadding: headerPadding,
+                headerLeadingAction: headerLeadingAction,
+                headerTrailingAction: headerTrailingAction,
                 children: children,
               )
             : _FixedContent(
@@ -338,7 +375,10 @@ class VineBottomSheet extends StatelessWidget {
                 contentTitle: contentTitle,
                 bottomInput: bottomInput,
                 showHeaderDivider: showHeaderDivider,
+                showDragHandle: showDragHandle,
                 headerPadding: headerPadding,
+                headerLeadingAction: headerLeadingAction,
+                headerTrailingAction: headerTrailingAction,
                 children: children,
               ),
       ),
@@ -372,7 +412,10 @@ class _ScrollableContent extends StatelessWidget {
     required this.children,
     required this.bottomInput,
     required this.showHeaderDivider,
+    this.showDragHandle = true,
     this.headerPadding,
+    this.headerLeadingAction,
+    this.headerTrailingAction,
   });
 
   final bool showHeader;
@@ -386,7 +429,10 @@ class _ScrollableContent extends StatelessWidget {
   final List<Widget>? children;
   final Widget? bottomInput;
   final bool showHeaderDivider;
+  final bool showDragHandle;
   final EdgeInsetsGeometry? headerPadding;
+  final DivineIconButton? headerLeadingAction;
+  final DivineIconButton? headerTrailingAction;
 
   @override
   Widget build(BuildContext context) {
@@ -406,9 +452,12 @@ class _ScrollableContent extends StatelessWidget {
                   )
                 : trailing,
             showDivider: showHeaderDivider,
+            showDragHandle: showDragHandle,
             padding: headerPadding,
+            leadingAction: headerLeadingAction,
+            trailingAction: headerTrailingAction,
           )
-        else
+        else if (showDragHandle)
           // Drag handle only — content manages its own layout below
           const _HeaderlessDragHandle(),
 
@@ -467,7 +516,10 @@ class _FixedContent extends StatelessWidget {
     required this.children,
     required this.bottomInput,
     required this.showHeaderDivider,
+    this.showDragHandle = true,
     this.headerPadding,
+    this.headerLeadingAction,
+    this.headerTrailingAction,
   });
 
   final bool showHeader;
@@ -479,7 +531,10 @@ class _FixedContent extends StatelessWidget {
   final List<Widget>? children;
   final Widget? bottomInput;
   final bool showHeaderDivider;
+  final bool showDragHandle;
   final EdgeInsetsGeometry? headerPadding;
+  final DivineIconButton? headerLeadingAction;
+  final DivineIconButton? headerTrailingAction;
 
   @override
   Widget build(BuildContext context) {
@@ -502,11 +557,14 @@ class _FixedContent extends StatelessWidget {
                     )
                   : trailing,
               showDivider: showHeaderDivider,
+              showDragHandle: showDragHandle,
               padding:
                   headerPadding ??
                   const EdgeInsetsDirectional.only(start: 24, end: 24, top: 8),
+              leadingAction: headerLeadingAction,
+              trailingAction: headerTrailingAction,
             )
-          else
+          else if (showDragHandle)
             // Drag handle only
             const _HeaderlessDragHandle(),
 

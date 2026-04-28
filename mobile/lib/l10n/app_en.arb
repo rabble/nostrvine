@@ -3656,5 +3656,9 @@
   "badgesIssuedEmptySubtitle": "Badges you issue will show acceptance status here.",
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
-  "badgesRecipientWaitingStatus": "Waiting for recipient"
+  "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "videoMetadataEditCoverTitle": "Edit cover",
+  "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
+  "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+  "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame"
 }

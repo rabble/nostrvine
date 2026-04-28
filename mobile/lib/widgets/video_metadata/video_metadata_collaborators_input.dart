@@ -2,17 +2,14 @@
 // ABOUTME: Shows collaborator chips with remove buttons, max 5 limit,
 // ABOUTME: and opens UserPickerSheet for inviting via mutual-follow search
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_help_button.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_user_chip.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 
 /// Input widget for adding and managing collaborators on a video.
 ///
@@ -33,172 +30,61 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       ),
     );
 
-    final totalCount = collaborators.length + pendingCollaborators.length;
-    final canAddCollaborators =
-        totalCount < VideoEditorNotifier.maxCollaborators;
+    final collaboratorNames = [...collaborators, ...pendingCollaborators]
+        .map((pubkey) {
+          final name = ref
+              .watch(userProfileReactiveProvider(pubkey))
+              .value
+              ?.bestDisplayName;
+          return name ?? '';
+        })
+        .where((name) => name.isNotEmpty)
+        .join(', ');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Semantics(
-          button: true,
-          label: context.l10n.videoMetadataAddCollaboratorSemanticLabel,
-          child: InkWell(
-            onTap: canAddCollaborators
-                ? () => _addCollaborator(context, ref)
-                : null,
-            child: Padding(
-              padding: const .all(16),
-              child: Column(
-                spacing: 8,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        context.l10n.videoMetadataCollaboratorsLabel,
-                        style: VineTheme.labelSmallFont(
-                          color: VineTheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      VideoMetadataHelpButton(
-                        onTap: () => _showHelpDialog(context),
-                        tooltip:
-                            context.l10n.videoMetadataCollaboratorsHelpTooltip,
-                      ),
-                    ],
-                  ),
-                  Row(
-                    mainAxisAlignment: .spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          context.l10n.videoMetadataCollaboratorsCount(
-                            totalCount,
-                            VideoEditorNotifier.maxCollaborators,
-                          ),
-
-                          style: VineTheme.titleMediumFont(
-                            color: VineTheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: SvgPicture.asset(
-                            DivineIconName.caretRight.assetPath,
-                            colorFilter: ColorFilter.mode(
-                              canAddCollaborators
-                                  ? VineTheme.tabIndicatorGreen
-                                  : VineTheme.outlineMuted,
-                              .srcIn,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        if (collaborators.isNotEmpty || pendingCollaborators.isNotEmpty)
-          Padding(
-            padding: const .fromLTRB(16, 0, 16, 16),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ...collaborators.map(
-                  (pubkey) => VideoMetadataUserChip.fromPubkey(
-                    pubkey: pubkey,
-
-                    removeLabel: context
-                        .l10n
-                        .videoMetadataRemoveCollaboratorSemanticLabel,
-                    onRemove: () => ref
-                        .read(videoEditorProvider.notifier)
-                        .removeCollaborator(pubkey),
-                  ),
-                ),
-                ...pendingCollaborators.map(
-                  (pubkey) => VideoMetadataUserChip.fromPubkey(
-                    pubkey: pubkey,
-                    isLoading: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  void _showHelpDialog(BuildContext context) {
-    VineBottomSheet.show(
-      context: context,
-      expanded: false,
-      scrollable: false,
-      isScrollControlled: true,
-      body: VideoMetadataHelpSheet(
-        title: context.l10n.metadataCollaboratorsLabel,
-        message: context.l10n.videoMetadataCollaboratorsHelpMessage,
-        assetPath: 'assets/stickers/sparkle.svg',
-      ),
+    return VideoMetadataSelectionTile(
+      onTap: () => _addCollaborator(context, ref),
+      semanticsLabel: context.l10n.videoMetadataAddCollaboratorSemanticLabel,
+      labelText: context.l10n.videoMetadataCollaboratorsLabel,
+      value: collaboratorNames,
     );
   }
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
-    // Get current and pending collaborators to exclude from picker
     final editorState = ref.read(videoEditorProvider);
-    final excludePubkeys = {
-      ...editorState.collaboratorPubkeys,
-      ...editorState.pendingCollaboratorPubkeys,
-    };
 
-    final profile = await showUserPickerSheet(
+    // Confirmed collaborators shown as pre-selected chips in the picker.
+    final confirmedProfiles = editorState.collaboratorPubkeys
+        .map((k) => ref.read(userProfileReactiveProvider(k)).value)
+        .nonNulls
+        .toList();
+
+    final result = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
-      title: context.l10n.videoMetadataAddCollaboratorSemanticLabel,
+      title: context.l10n.videoMetadataCollaboratorsLabel,
       searchText: context.l10n.videoMetadataMutualFollowersSearchText,
-      excludePubkeys: excludePubkeys,
+      maxCount: VideoEditorConstants.maxCollaborators,
+      initialSelectedProfiles: confirmedProfiles,
     );
 
-    if (profile == null || !context.mounted) return;
+    if (result == null || !context.mounted) return;
 
-    // Add to pending immediately for instant UI feedback
     final notifier = ref.read(videoEditorProvider.notifier);
-    notifier.addPendingCollaborator(profile.pubkey);
+    final confirmedPubkeys = editorState.collaboratorPubkeys;
+    final resultPubkeys = {for (final p in result) p.pubkey};
 
-    // Verify mutual follow in the background
-    final followRepo = ref.read(followRepositoryProvider);
-    final isMutual = await followRepo.isMutualFollow(profile.pubkey);
-
-    if (!isMutual) {
-      notifier.removePendingCollaborator(profile.pubkey);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            behavior: SnackBarBehavior.floating,
-            content: DivineSnackbarContainer(
-              label: context.l10n.videoMetadataMustMutuallyFollowSnackbar(
-                profile.bestDisplayName,
-              ),
-            ),
-          ),
-        );
+    // Remove confirmed collaborators that were deselected in the picker.
+    for (final pubkey in confirmedPubkeys) {
+      if (!resultPubkeys.contains(pubkey)) {
+        notifier.removeCollaborator(pubkey);
       }
-      return;
     }
 
-    notifier.confirmCollaborator(profile.pubkey);
+    // Confirm newly selected profiles. Mutual-follow is already guaranteed
+    // by the picker's mutualFollowsOnly filter (verified at sheet open time).
+    for (final profile in result) {
+      if (confirmedPubkeys.contains(profile.pubkey)) continue;
+      notifier.addCollaborator(profile.pubkey);
+    }
   }
 }

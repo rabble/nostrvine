@@ -49,6 +49,7 @@ class PendingUpload {
     required this.nostrPubkey,
     required this.status,
     required this.createdAt,
+    this.thumbnailTimestampMillis,
     this.cloudinaryPublicId,
     this.videoId,
     this.cdnUrl,
@@ -75,6 +76,7 @@ class PendingUpload {
   factory PendingUpload.create({
     required String localVideoPath,
     required String nostrPubkey,
+    Duration? thumbnailTimestamp,
     String? thumbnailPath,
     String? title,
     String? description,
@@ -97,6 +99,7 @@ class PendingUpload {
     videoHeight: videoHeight,
     videoDurationMillis: videoDuration?.inMilliseconds,
     proofManifestJson: proofManifestJson,
+    thumbnailTimestampMillis: thumbnailTimestamp?.inMilliseconds,
   );
   @HiveField(0)
   final String id;
@@ -173,10 +176,18 @@ class PendingUpload {
   @HiveField(24)
   final BlossomResumableUploadSession? resumableSession;
 
+  @HiveField(25)
+  final int? thumbnailTimestampMillis; // Store as milliseconds for Hive
+
   /// Get video duration as Duration object
   Duration? get videoDuration => videoDurationMillis != null
       ? Duration(milliseconds: videoDurationMillis!)
       : null;
+
+  /// Get thumbnail timestamp as Duration object
+  Duration? get thumbnailTimestamp => thumbnailTimestampMillis == null
+      ? null
+      : Duration(milliseconds: thumbnailTimestampMillis!);
 
   /// Check if this upload has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
@@ -224,6 +235,7 @@ class PendingUpload {
     int? videoWidth,
     int? videoHeight,
     Duration? videoDuration,
+    Duration? thumbnailTimestamp,
     String? proofManifestJson,
     String? streamingMp4Url,
     String? streamingHlsUrl,
@@ -250,6 +262,8 @@ class PendingUpload {
     videoWidth: videoWidth ?? this.videoWidth,
     videoHeight: videoHeight ?? this.videoHeight,
     videoDurationMillis: (videoDuration ?? this.videoDuration)?.inMilliseconds,
+    thumbnailTimestampMillis:
+        (thumbnailTimestamp ?? this.thumbnailTimestamp)?.inMilliseconds,
     proofManifestJson: proofManifestJson ?? this.proofManifestJson,
     streamingMp4Url: streamingMp4Url ?? this.streamingMp4Url,
     streamingHlsUrl: streamingHlsUrl ?? this.streamingHlsUrl,

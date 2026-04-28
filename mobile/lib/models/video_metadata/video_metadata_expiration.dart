@@ -1,6 +1,9 @@
 // ABOUTME: Video post expiration options with duration values and display descriptions
 // ABOUTME: Defines lifecycle settings for video posts from permanent to decade-limited
 
+import 'package:flutter/widgets.dart';
+import 'package:openvine/l10n/l10n.dart';
+
 /// Expiration options for video posts.
 ///
 /// Provides predefined time periods after which a video post will expire
@@ -46,5 +49,16 @@ enum VideoMetadataExpiration {
       if (expiration.value == duration) return expiration;
     }
     return notExpire;
+  }
+
+  String localizedLabel(BuildContext context) {
+    return switch (this) {
+      .notExpire => context.l10n.videoMetadataExpirationNotExpire,
+      .oneDay => context.l10n.videoMetadataExpirationOneDay,
+      .oneWeek => context.l10n.videoMetadataExpirationOneWeek,
+      .oneMonth => context.l10n.videoMetadataExpirationOneMonth,
+      .oneYear => context.l10n.videoMetadataExpirationOneYear,
+      .oneDecade => context.l10n.videoMetadataExpirationOneDecade,
+    };
   }
 }

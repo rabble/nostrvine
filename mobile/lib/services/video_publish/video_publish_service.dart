@@ -197,6 +197,7 @@ class VideoPublishService {
         selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
         language: languagePreferenceService?.contentLanguage,
         contentWarning: draft.contentWarning,
+        thumbnailTimestamp: draft.thumbnailTimestamp,
       );
 
       if (!published) {

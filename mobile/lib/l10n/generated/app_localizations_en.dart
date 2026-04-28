@@ -6848,4 +6848,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+
+  @override
+  String get videoMetadataEditCoverTitle => 'Edit cover';
+
+  @override
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+
+  @override
+  String get videoMetadataEditCoverConfirmSemanticLabel =>
+      'Confirm cover selection';
+
+  @override
+  String get videoMetadataEditCoverStripSemanticLabel =>
+      'Seek through video to select cover frame';
 }

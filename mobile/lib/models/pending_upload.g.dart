@@ -22,6 +22,7 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       nostrPubkey: fields[2] as String,
       status: fields[3] as UploadStatus,
       createdAt: fields[4] as DateTime,
+      thumbnailTimestampMillis: (fields[25] as num).toInt(),
       cloudinaryPublicId: fields[5] as String?,
       videoId: fields[15] as String?,
       cdnUrl: fields[16] as String?,
@@ -48,7 +49,7 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
   @override
   void write(BinaryWriter writer, PendingUpload obj) {
     writer
-      ..writeByte(25)
+      ..writeByte(26)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -98,7 +99,9 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       ..writeByte(23)
       ..write(obj.fallbackUrl)
       ..writeByte(24)
-      ..write(obj.resumableSession);
+      ..write(obj.resumableSession)
+      ..writeByte(25)
+      ..write(obj.thumbnailTimestampMillis);
   }
 
   @override

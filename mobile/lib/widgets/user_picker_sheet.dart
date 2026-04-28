@@ -25,37 +25,35 @@ enum UserPickerFilterMode {
 /// Shows a [UserPickerSheet] as a modal bottom sheet.
 ///
 /// Returns the selected [UserProfile] or null if dismissed.
-Future<UserProfile?> showUserPickerSheet(
+Future<List<UserProfile>?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
   required String title,
   bool autoFocus = false,
   String? searchText,
   String? searchHint,
-  Set<String> excludePubkeys = const {},
   ValueChanged<UserProfile>? onUserToggled,
+  int? maxCount,
+  Set<String> excludePubkeys = const {},
+  List<UserProfile> initialSelectedProfiles = const [],
 }) {
-  final resolvedSearchText = searchText ?? context.l10n.userPickerSearchByName;
-
-  return VineBottomSheet.show<UserProfile>(
+  return VineBottomSheet.show<List<UserProfile>?>(
     context: context,
     initialChildSize: 1,
     maxChildSize: 1,
     minChildSize: 0.8,
-    title: Column(
-      spacing: 2,
-      children: [
-        Text(title, style: VineTheme.titleMediumFont()),
-        Text(resolvedSearchText, style: VineTheme.bodySmallFont()),
-      ],
-    ),
+    showDragHandle: false,
+    showHeader: false,
     buildScrollBody: (scrollController) => UserPickerSheet(
       filterMode: filterMode,
       scrollController: scrollController,
       autoFocus: autoFocus,
+      title: title,
+      maxCount: maxCount,
       excludePubkeys: excludePubkeys,
       searchHint: searchHint,
       onUserToggled: onUserToggled,
+      initialSelectedProfiles: initialSelectedProfiles,
     ),
   );
 }
@@ -65,16 +63,26 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   /// Creates a user picker bottom sheet.
   const UserPickerSheet({
     required this.filterMode,
+    required this.title,
     this.scrollController,
     this.autoFocus = false,
+    this.maxCount,
     this.excludePubkeys = const {},
     this.searchHint,
     this.onUserToggled,
+    this.initialSelectedProfiles = const [],
     super.key,
   });
 
   /// How to filter search results.
   final UserPickerFilterMode filterMode;
+
+  /// Title shown in the header.
+  final String title;
+
+  /// Optional maximum selectable count shown in the header as
+  /// "selected/max title".
+  final int? maxCount;
 
   /// Scroll controller for the draggable sheet.
   final ScrollController? scrollController;
@@ -93,11 +101,16 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   /// [excludePubkeys] (they will appear in the checked/disabled state).
   final ValueChanged<UserProfile>? onUserToggled;
 
+  /// Profiles pre-selected when the sheet opens.
+  final List<UserProfile> initialSelectedProfiles;
+
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
 }
 
 class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
+  static const _searchInputBorderRadius = 20.0;
+
   UserSearchBloc? _searchBloc;
   final _searchController = TextEditingController();
 
@@ -105,6 +118,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   List<UserProfile> _followProfiles = [];
   List<UserProfile> _filteredFollowProfiles = [];
   bool _followListLoaded = false;
+  final _selectedProfiles = <UserProfile>[];
 
   /// Whether the profile repository was unavailable at init time.
   bool _profileRepoMissing = false;
@@ -121,6 +135,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   void initState() {
     super.initState();
     _selectedPubkeys = Set.of(widget.excludePubkeys);
+    _selectedPubkeys = {
+      ...widget.excludePubkeys,
+      for (final profile in widget.initialSelectedProfiles) profile.pubkey,
+    };
+    if (widget.initialSelectedProfiles.isNotEmpty) {
+      _selectedProfiles.addAll(widget.initialSelectedProfiles);
+    }
     final profileRepo = ref.read(profileRepositoryProvider);
     if (profileRepo == null) {
       _profileRepoMissing = true;
@@ -136,7 +157,12 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
   }
 
-  /// Loads profiles of followed users from local cache for instant search.
+  /// Loads profiles of followed users for local search.
+  ///
+  /// For [UserPickerFilterMode.mutualFollowsOnly], fetches the current user's
+  /// followers from the relay in parallel with profile loading, then filters
+  /// the list to actual mutual follows. This way the mutual-follow check
+  /// happens once when the sheet opens rather than per-profile after selection.
   Future<void> _loadFollowProfiles() async {
     final followRepo = ref.read(followRepositoryProvider);
     final profileRepo = ref.read(profileRepositoryProvider);
@@ -145,17 +171,33 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       return;
     }
 
-    final pubkeys = followRepo.followingPubkeys;
+    final followingPubkeys = followRepo.followingPubkeys;
 
-    // Batch-load profiles from SQLite cache (fast, no network)
-    final futures = pubkeys.map(
-      (pk) => profileRepo.getCachedProfile(pubkey: pk),
+    // Start both fetches in parallel: profile cache (fast, SQLite) and
+    // my followers from relay (needed for mutual-follow filtering).
+    final profilesFuture = Future.wait(
+      followingPubkeys.map((pk) => profileRepo.getCachedProfile(pubkey: pk)),
     );
-    final results = await Future.wait(futures);
+    final myFollowersFuture =
+        widget.filterMode == UserPickerFilterMode.mutualFollowsOnly
+        ? followRepo.getMyFollowers()
+        : Future.value(const <String>[]);
 
-    final profiles = results.whereType<UserProfile>().toList();
+    final (rawProfiles, myFollowers) = await (
+      profilesFuture,
+      myFollowersFuture,
+    ).wait;
+    final myFollowersSet = myFollowers.toSet();
 
-    // Sort by display name for a nice default list
+    var profiles = rawProfiles.whereType<UserProfile>().toList();
+
+    // For mutualFollowsOnly, keep only users who follow us back.
+    if (widget.filterMode == UserPickerFilterMode.mutualFollowsOnly) {
+      profiles = profiles
+          .where((p) => myFollowersSet.contains(p.pubkey))
+          .toList();
+    }
+
     profiles.sort(
       (a, b) => a.bestDisplayName.toLowerCase().compareTo(
         b.bestDisplayName.toLowerCase(),
@@ -163,8 +205,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
 
     if (mounted) {
-      // Keep all profiles including excluded ones — excluded users are shown
-      // as disabled in the UI rather than being filtered out entirely.
       setState(() {
         _followProfiles = profiles;
         _filteredFollowProfiles = profiles;
@@ -218,9 +258,27 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         }
       });
       widget.onUserToggled!(profile);
+    } else if (widget.maxCount != null) {
+      setState(() {
+        if (_selectedProfiles.any((p) => p.pubkey == profile.pubkey)) {
+          _selectedProfiles.removeWhere((p) => p.pubkey == profile.pubkey);
+          _selectedPubkeys.remove(profile.pubkey);
+        } else if (_selectedProfiles.length < widget.maxCount!) {
+          _selectedProfiles.add(profile);
+          _selectedPubkeys.add(profile.pubkey);
+        }
+      });
     } else {
-      Navigator.of(context).pop(profile);
+      Navigator.of(context).pop([profile]);
     }
+  }
+
+  void _handleDone() {
+    Navigator.of(context).pop(List.of(_selectedProfiles));
+  }
+
+  void _handleClear() {
+    Navigator.of(context).pop(<UserProfile>[]);
   }
 
   @override
@@ -236,7 +294,37 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
             : context.l10n.userPickerSearchByNameHint);
 
     return Column(
+      crossAxisAlignment: .stretch,
       children: [
+        VineBottomSheetHeader(
+          showDivider: false,
+          leadingAction: DivineIconButton(
+            icon: .x,
+            type: .secondary,
+            size: .small,
+            onPressed: context.pop,
+          ),
+          title: _UserPickerTitle(
+            title: widget.title,
+            selectedCount: _selectedProfiles.length,
+            maxCount: widget.maxCount,
+          ),
+          trailingAction: widget.maxCount != null
+              ? DivineIconButton(
+                  icon: .check,
+                  size: .small,
+                  onPressed: _handleDone,
+                )
+              : widget.initialSelectedProfiles.isNotEmpty
+              ? DivineIconButton(
+                  icon: .trash,
+                  size: .small,
+                  type: .error,
+                  onPressed: _handleClear,
+                )
+              : null,
+        ),
+
         // Search field
         Semantics(
           textField: true,
@@ -245,7 +333,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
             margin: const .fromLTRB(16, 16, 16, 4),
             decoration: BoxDecoration(
               color: VineTheme.surfaceContainer,
-              borderRadius: .circular(20),
+              borderRadius: .circular(_searchInputBorderRadius),
             ),
             child: TextField(
               autofocus: widget.autoFocus,
@@ -273,10 +361,16 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                     size: 24,
                   ),
                 ),
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
+                border: .none,
+                enabledBorder: .none,
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: .circular(_searchInputBorderRadius),
+                  borderSide: const BorderSide(
+                    color: VineTheme.primary,
+                    width: 2,
+                  ),
+                ),
+                disabledBorder: .none,
                 filled: false,
                 contentPadding: const .symmetric(horizontal: 16, vertical: 14),
               ),
@@ -284,23 +378,53 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           ),
         ),
 
+        if (widget.maxCount != null)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            alignment: .topCenter,
+            child: _selectedProfiles.isNotEmpty
+                ? _SelectedChipsRow(
+                    profiles: _selectedProfiles,
+                    onRemove: (profile) => setState(() {
+                      _selectedProfiles.removeWhere(
+                        (p) => p.pubkey == profile.pubkey,
+                      );
+                    }),
+                  )
+                : const SizedBox.shrink(),
+          ),
+
         // Results list
         Expanded(
-          child: _useLocalSearch
-              ? _LocalResults(
-                  scrollController: widget.scrollController,
-                  followListLoaded: _followListLoaded,
-                  followProfiles: _followProfiles,
-                  filteredFollowProfiles: _filteredFollowProfiles,
-                  onUserSelected: _onUserSelected,
-                  excludePubkeys: _selectedPubkeys,
-                )
-              : _NetworkResults(
-                  searchBloc: _searchBloc!,
-                  scrollController: widget.scrollController,
-                  onUserSelected: _onUserSelected,
-                  excludePubkeys: _selectedPubkeys,
-                ),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            opacity:
+                widget.maxCount != null &&
+                    _selectedProfiles.length >= widget.maxCount!
+                ? 0.5
+                : 1.0,
+            child: _useLocalSearch
+                ? _LocalResults(
+                    scrollController: widget.scrollController,
+                    followListLoaded: _followListLoaded,
+                    followProfiles: _followProfiles,
+                    filteredFollowProfiles: _filteredFollowProfiles,
+                    onUserSelected: _onUserSelected,
+                    excludePubkeys: widget.excludePubkeys,
+                    selectedPubkeys: _selectedPubkeys,
+                    hidePubkeys: {for (final p in _selectedProfiles) p.pubkey},
+                  )
+                : _NetworkResults(
+                    searchBloc: _searchBloc!,
+                    scrollController: widget.scrollController,
+                    onUserSelected: _onUserSelected,
+                    excludePubkeys: widget.excludePubkeys,
+                    selectedPubkeys: _selectedPubkeys,
+                    hidePubkeys: {for (final p in _selectedProfiles) p.pubkey},
+                  ),
+          ),
         ),
 
         SizedBox(height: MediaQuery.viewInsetsOf(context).bottom),
@@ -315,85 +439,83 @@ class _UserSearchTile extends StatelessWidget {
     required this.profile,
     required this.onTap,
     this.isDisabled = false,
+    this.isSelected = false,
     super.key,
   });
 
   final UserProfile profile;
   final VoidCallback onTap;
-
-  /// Whether this user is already selected and cannot be tapped.
   final bool isDisabled;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
-    final textColor = isDisabled
-        ? VineTheme.onSurfaceMuted
-        : VineTheme.onSurface;
+    const textColor = VineTheme.onSurface;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        spacing: 16,
-        children: [
-          Opacity(
-            opacity: isDisabled ? 0.5 : 1.0,
-            child: UserAvatar(
-              imageUrl: profile.picture,
-              name: profile.bestDisplayName,
-              placeholderSeed: profile.pubkey,
-              size: 40,
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: .start,
-              children: [
-                Text(
-                  profile.bestDisplayName,
-                  maxLines: 1,
-                  overflow: .ellipsis,
-                  style: VineTheme.titleMediumFont(color: textColor),
+    return Semantics(
+      button: true,
+      label: isDisabled
+          ? context.l10n.userPickerAlreadyAddedSemantics(
+              profile.bestDisplayName,
+            )
+          : context.l10n.userPickerSelectSemantics(profile.bestDisplayName),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: isDisabled ? null : onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            spacing: 16,
+            children: [
+              Opacity(
+                opacity: isDisabled ? 0.5 : 1.0,
+                child: UserAvatar(
+                  imageUrl: profile.picture,
+                  name: profile.bestDisplayName,
+                  placeholderSeed: profile.pubkey,
+                  size: 40,
                 ),
-                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
-                  Text(
-                    profile.nip05!,
-                    maxLines: 1,
-                    overflow: .ellipsis,
-                    style: VineTheme.bodyMediumFont(color: textColor),
-                  ),
-              ],
-            ),
-          ),
-
-          Semantics(
-            button: !isDisabled,
-            label: isDisabled
-                ? context.l10n.userPickerAlreadyAddedSemantics(
-                    profile.bestDisplayName,
-                  )
-                : context.l10n.userPickerSelectSemantics(
-                    profile.bestDisplayName,
-                  ),
-            child: InkWell(
-              onTap: onTap,
-              child: Container(
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: .start,
+                  children: [
+                    Text(
+                      profile.bestDisplayName,
+                      maxLines: 1,
+                      overflow: .ellipsis,
+                      style: VineTheme.titleMediumFont(color: textColor),
+                    ),
+                    if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                      Text(
+                        profile.nip05!,
+                        maxLines: 1,
+                        overflow: .ellipsis,
+                        style: VineTheme.bodyMediumFont(color: textColor),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
                 padding: const .all(8),
                 decoration: ShapeDecoration(
                   color: isDisabled
+                      ? VineTheme.surfaceContainer
+                      : isSelected
                       ? VineTheme.surfaceContainer
                       : VineTheme.primary,
                   shape: RoundedRectangleBorder(borderRadius: .circular(16)),
                 ),
                 child: DivineIcon(
-                  icon: isDisabled ? .check : .plus,
-                  color: isDisabled
+                  icon: (isDisabled || isSelected) ? .check : .plus,
+                  color: (isDisabled || isSelected)
                       ? VineTheme.onSurfaceMuted
                       : VineTheme.onPrimary,
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -528,18 +650,25 @@ class _ResultsList extends StatelessWidget {
     required this.results,
     required this.onUserSelected,
     this.excludePubkeys = const {},
+    this.selectedPubkeys = const {},
+    this.hidePubkeys = const {},
   });
 
   final ScrollController? scrollController;
   final List<UserProfile> results;
   final ValueChanged<UserProfile> onUserSelected;
   final Set<String> excludePubkeys;
+  final Set<String> selectedPubkeys;
+  final Set<String> hidePubkeys;
 
   @override
   Widget build(BuildContext context) {
+    final visible = hidePubkeys.isEmpty
+        ? results
+        : results.where((p) => !hidePubkeys.contains(p.pubkey)).toList();
     return ListView.separated(
       controller: scrollController,
-      itemCount: results.length,
+      itemCount: visible.length,
       padding: EdgeInsets.fromLTRB(
         0,
         32,
@@ -552,13 +681,14 @@ class _ResultsList extends StatelessWidget {
         color: VineTheme.outlineDisabled,
       ),
       itemBuilder: (context, index) {
-        final profile = results[index];
+        final profile = visible[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
           key: ValueKey('${profile.pubkey}_$isDisabled'),
           profile: profile,
-          onTap: () => onUserSelected(profile),
           isDisabled: isDisabled,
+          isSelected: selectedPubkeys.contains(profile.pubkey),
+          onTap: () => onUserSelected(profile),
         );
       },
     );
@@ -571,12 +701,16 @@ class _NetworkResults extends StatelessWidget {
     required this.scrollController,
     required this.onUserSelected,
     this.excludePubkeys = const {},
+    this.selectedPubkeys = const {},
+    this.hidePubkeys = const {},
   });
 
   final UserSearchBloc searchBloc;
   final ScrollController? scrollController;
   final ValueChanged<UserProfile> onUserSelected;
   final Set<String> excludePubkeys;
+  final Set<String> selectedPubkeys;
+  final Set<String> hidePubkeys;
 
   @override
   Widget build(BuildContext context) {
@@ -594,6 +728,8 @@ class _NetworkResults extends StatelessWidget {
               results: state.results,
               onUserSelected: onUserSelected,
               excludePubkeys: excludePubkeys,
+              selectedPubkeys: selectedPubkeys,
+              hidePubkeys: hidePubkeys,
             ),
           UserSearchStatus.loading => const Center(
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -606,6 +742,8 @@ class _NetworkResults extends StatelessWidget {
             results: state.results,
             onUserSelected: onUserSelected,
             excludePubkeys: excludePubkeys,
+            selectedPubkeys: selectedPubkeys,
+            hidePubkeys: hidePubkeys,
           ),
         };
       },
@@ -621,6 +759,8 @@ class _LocalResults extends StatelessWidget {
     required this.filteredFollowProfiles,
     required this.onUserSelected,
     this.excludePubkeys = const {},
+    this.selectedPubkeys = const {},
+    this.hidePubkeys = const {},
   });
 
   final ScrollController? scrollController;
@@ -629,6 +769,8 @@ class _LocalResults extends StatelessWidget {
   final List<UserProfile> filteredFollowProfiles;
   final ValueChanged<UserProfile> onUserSelected;
   final Set<String> excludePubkeys;
+  final Set<String> selectedPubkeys;
+  final Set<String> hidePubkeys;
 
   @override
   Widget build(BuildContext context) {
@@ -648,7 +790,9 @@ class _LocalResults extends StatelessWidget {
 
     return ListView.separated(
       controller: scrollController,
-      itemCount: filteredFollowProfiles.length,
+      itemCount: filteredFollowProfiles
+          .where((p) => !hidePubkeys.contains(p.pubkey))
+          .length,
       padding: .fromLTRB(
         0,
         32,
@@ -661,15 +805,168 @@ class _LocalResults extends StatelessWidget {
         color: VineTheme.outlineDisabled,
       ),
       itemBuilder: (context, index) {
-        final profile = filteredFollowProfiles[index];
+        final visible = filteredFollowProfiles
+            .where((p) => !hidePubkeys.contains(p.pubkey))
+            .toList();
+        final profile = visible[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
           key: ValueKey('${profile.pubkey}_$isDisabled'),
           profile: profile,
-          onTap: () => onUserSelected(profile),
           isDisabled: isDisabled,
+          isSelected: selectedPubkeys.contains(profile.pubkey),
+          onTap: () => onUserSelected(profile),
         );
       },
+    );
+  }
+}
+
+class _UserPickerTitle extends StatelessWidget {
+  const _UserPickerTitle({
+    required this.title,
+    required this.selectedCount,
+    this.maxCount,
+  });
+
+  final String title;
+  final int selectedCount;
+  final int? maxCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayTitle = maxCount != null
+        ? '$selectedCount/$maxCount $title'
+        : title;
+    return Text(
+      displayTitle,
+      style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+    );
+  }
+}
+
+class _SelectedChipsRow extends StatelessWidget {
+  const _SelectedChipsRow({required this.profiles, required this.onRemove});
+
+  final List<UserProfile> profiles;
+  final ValueChanged<UserProfile> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 4,
+        children: [
+          for (final profile in profiles)
+            _SelectionChip(
+              key: ValueKey(profile.pubkey),
+              label: profile.bestDisplayName,
+              onRemove: () => onRemove(profile),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SelectionChip extends StatefulWidget {
+  const _SelectionChip({
+    required this.label,
+    required this.onRemove,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback onRemove;
+
+  @override
+  State<_SelectionChip> createState() => _SelectionChipState();
+}
+
+class _SelectionChipState extends State<_SelectionChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
+  bool _isRemoving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    final curved = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOut,
+      reverseCurve: Curves.easeIn,
+    );
+    _fadeAnimation = curved;
+    _scaleAnimation = Tween<double>(begin: 0.75, end: 1.0).animate(curved);
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRemove() async {
+    if (_isRemoving) return;
+    _isRemoving = true;
+    await _controller.reverse();
+    widget.onRemove();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                child: Text(
+                  widget.label,
+                  style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+                ),
+              ),
+              Semantics(
+                button: true,
+                label: 'Remove ${widget.label}',
+                child: GestureDetector(
+                  onTap: _handleRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.only(
+                      left: 8,
+                      right: 12,
+                      top: 8,
+                      bottom: 8,
+                    ),
+                    child: DivineIcon(
+                      icon: .x,
+                      size: 16,
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

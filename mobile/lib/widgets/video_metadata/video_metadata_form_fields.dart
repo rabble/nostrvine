@@ -1,6 +1,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
@@ -62,76 +64,104 @@ class _VideoMetadataFormFieldsState
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: .min,
-      crossAxisAlignment: .stretch,
-      children: [
-        const VideoMetadataLimitWarningBanner(),
+    return Padding(
+      padding: const .symmetric(horizontal: 16),
+      child: Column(
+        mainAxisSize: .min,
+        crossAxisAlignment: .stretch,
+        spacing: 16,
+        children: [
+          const VideoMetadataLimitWarningBanner(),
 
-        // Title input field
-        DivineTextField(
-          controller: _titleController,
-          labelText: context.l10n.videoMetadataTitleLabel,
-          focusNode: _titleFocusNode,
-          textInputAction: .next,
-          minLines: 1,
-          maxLines: 5,
-          onChanged: (value) {
-            ref.read(videoEditorProvider.notifier).updateMetadata(title: value);
-          },
-          onSubmitted: (_) => _descriptionFocusNode.requestFocus(),
-        ),
-        const _Divider(),
+          // Title input field
+          _InputWrapper(
+            child: DivineTextField(
+              controller: _titleController,
+              labelText: context.l10n.videoMetadataTitleLabel,
+              focusNode: _titleFocusNode,
+              textInputAction: .next,
+              primaryWhenFilled: true,
+              minLines: 1,
+              maxLines: 5,
+              onChanged: (value) {
+                ref
+                    .read(videoEditorProvider.notifier)
+                    .updateMetadata(title: value);
+              },
+              onSubmitted: (_) => _descriptionFocusNode.requestFocus(),
+            ),
+          ),
 
-        // Description input field
-        DivineTextField(
-          controller: _descriptionController,
-          labelText: context.l10n.videoMetadataDescriptionLabel,
-          focusNode: _descriptionFocusNode,
-          keyboardType: .multiline,
-          textInputAction: .newline,
-          minLines: 1,
-          maxLines: 10,
-          onChanged: (value) {
-            ref
-                .read(videoEditorProvider.notifier)
-                .updateMetadata(description: value);
-          },
-        ),
+          // Description input field
+          _InputWrapper(
+            child: Stack(
+              children: [
+                DivineTextField(
+                  controller: _descriptionController,
+                  labelText: context.l10n.videoMetadataDescriptionLabel,
+                  focusNode: _descriptionFocusNode,
+                  keyboardType: .multiline,
+                  textInputAction: .newline,
+                  primaryWhenFilled: true,
+                  minLines: 1,
+                  maxLines: 10,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(
+                      VideoEditorConstants.descriptionLimit,
+                    ),
+                  ],
+                  onChanged: (value) {
+                    ref
+                        .read(videoEditorProvider.notifier)
+                        .updateMetadata(description: value);
+                  },
+                ),
+                Positioned(
+                  top: 15,
+                  right: 16,
+                  child: ValueListenableBuilder(
+                    valueListenable: _descriptionController,
+                    builder: (context, value, child) {
+                      return AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: _descriptionController.text.isNotEmpty
+                            ? Text(
+                                '${_descriptionController.text.length}/'
+                                '${VideoEditorConstants.descriptionLimit}',
+                                style: VineTheme.labelSmallFont(
+                                  color: VineTheme.onSurfaceMuted,
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
 
-        if (widget.enableTags) ...[
-          const _Divider(enablePaddingBottom: true),
-          const VideoMetadataTagsInput(),
+          if (widget.enableTags)
+            const _InputWrapper(child: VideoMetadataTagsInput()),
+
+          if (widget.enableExpiration)
+            const _InputWrapper(child: VideoMetadataExpirationSelector()),
+
+          if (widget.enableCollaborators)
+            const _InputWrapper(child: VideoMetadataCollaboratorsInput()),
+
+          if (widget.enableInspiredBy)
+            const _InputWrapper(child: VideoMetadataInspiredByInput()),
+
+          if (widget.enableContentWarning)
+            const _InputWrapper(child: VideoMetadataContentWarningSelector()),
+
+          if (widget.enableAudioReuse)
+            const _InputWrapper(child: _VideoMetadataAudioReuseToggle()),
+
+          const SizedBox(height: 48),
         ],
-
-        if (widget.enableExpiration) ...[
-          _Divider(enablePaddingTop: widget.enableTags),
-          const VideoMetadataExpirationSelector(),
-        ],
-
-        if (widget.enableContentWarning) ...[
-          const _Divider(),
-          const VideoMetadataContentWarningSelector(),
-        ],
-
-        if (widget.enableAudioReuse) ...[
-          const _Divider(),
-          const _VideoMetadataAudioReuseToggle(),
-        ],
-
-        if (widget.enableCollaborators) ...[
-          const _Divider(),
-          const VideoMetadataCollaboratorsInput(),
-        ],
-
-        if (widget.enableInspiredBy) ...[
-          const _Divider(),
-          const VideoMetadataInspiredByInput(),
-        ],
-
-        const _Divider(),
-        const SizedBox(height: 48),
-      ],
+      ),
     );
   }
 }
@@ -168,27 +198,21 @@ class _VideoMetadataAudioReuseToggle extends ConsumerWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
-  const _Divider({
-    this.enablePaddingTop = false,
-    this.enablePaddingBottom = false,
-  });
+class _InputWrapper extends StatelessWidget {
+  const _InputWrapper({required this.child});
 
-  final bool enablePaddingTop;
-  final bool enablePaddingBottom;
+  final Widget child;
+
+  static const _borderRadius = 24.0;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: .only(
-        top: enablePaddingTop ? 12 : 0.0,
-        bottom: enablePaddingBottom ? 12 : 0,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceBackground,
+        borderRadius: .circular(_borderRadius),
       ),
-      child: const Divider(
-        thickness: 0,
-        height: 1,
-        color: VineTheme.outlineDisabled,
-      ),
+      child: child,
     );
   }
 }

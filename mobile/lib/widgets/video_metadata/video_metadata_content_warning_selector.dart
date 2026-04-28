@@ -4,10 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 
 /// Widget for selecting content warning labels on a video.
 ///
@@ -30,10 +32,11 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
 
     final result = await VineBottomSheet.show<Set<ContentLabel>>(
       context: context,
-      title: Text(context.l10n.videoMetadataContentWarnings),
       maxChildSize: 1,
       initialChildSize: 0.7,
       minChildSize: 0.4,
+      showHeader: false,
+      showDragHandle: false,
       buildScrollBody: (scrollController) => _ContentWarningMultiSelect(
         selected: current,
         scrollController: scrollController,
@@ -58,50 +61,12 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
               .join(', ')
         : context.l10n.contentWarningNone;
 
-    return Semantics(
-      button: true,
-      label: context.l10n.videoMetadataSelectContentWarningsSemanticLabel,
-      child: InkWell(
-        onTap: () => _selectContentWarnings(context, ref),
-        child: Padding(
-          padding: const .all(16),
-          child: Column(
-            spacing: 8,
-            crossAxisAlignment: .stretch,
-            children: [
-              Text(
-                context.l10n.videoMetadataContentWarningLabel,
-                style: VineTheme.labelSmallFont(
-                  color: VineTheme.onSurfaceVariant,
-                ),
-              ),
-              // Current selection with chevron icon
-              Row(
-                mainAxisAlignment: .spaceBetween,
-                spacing: 8,
-                children: [
-                  Flexible(
-                    child: Text(
-                      displayText,
-                      maxLines: 2,
-                      overflow: .ellipsis,
-                      style: VineTheme.titleMediumFont(
-                        color: VineTheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  DivineIcon(
-                    icon: isSet ? .warning : .caretRight,
-                    color: isSet
-                        ? VineTheme.contentWarningAmber
-                        : VineTheme.primary,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
+    return VideoMetadataSelectionTile(
+      onTap: () => _selectContentWarnings(context, ref),
+      semanticsLabel:
+          context.l10n.videoMetadataSelectContentWarningsSemanticLabel,
+      labelText: context.l10n.videoMetadataContentWarningLabel,
+      value: displayText,
     );
   }
 }
@@ -143,47 +108,109 @@ class _ContentWarningMultiSelectState
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              context.l10n.videoMetadataContentWarningSelectAllThatApply,
-              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-            ),
+    return Column(
+      children: [
+        VineBottomSheetHeader(
+          showDivider: false,
+          leadingAction: DivineIconButton(
+            icon: .x,
+            type: .secondary,
+            size: .small,
+            onPressed: context.pop,
           ),
-          Expanded(
-            child: ListView.builder(
-              controller: widget.scrollController,
-              itemCount: ContentLabel.values.length,
-              itemBuilder: (context, index) {
-                final label = ContentLabel.values[index];
-                final isChecked = _selected.contains(label);
-                return CheckboxListTile(
-                  value: isChecked,
-                  onChanged: (_) => _toggle(label),
-                  title: Text(
-                    localizedContentLabelName(context.l10n, label),
-                    style: VineTheme.bodyLargeFont(),
-                  ),
-                  activeColor: VineTheme.vineGreen,
-                  checkColor: VineTheme.whiteText,
-                  controlAffinity: ListTileControlAffinity.leading,
-                );
-              },
-            ),
+          title: const _ContentWarningHeaderTitle(),
+          trailingAction: DivineIconButton(
+            icon: .check,
+            size: .small,
+            onPressed: _selected.isNotEmpty
+                ? () => context.pop(_selected)
+                : null,
           ),
-          Padding(
-            padding: const .fromLTRB(16, 8, 16, 16),
-            child: DivineButton(
-              label: context.l10n.videoMetadataContentWarningDoneButton,
-              expanded: true,
-              type: .secondary,
-              onPressed: () => Navigator.of(context).pop(_selected),
+        ),
+        const Divider(
+          height: 0,
+          thickness: 0,
+          color: VineTheme.surfaceContainer,
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.paddingOf(context).bottom,
             ),
+            controller: widget.scrollController,
+            itemCount: ContentLabel.values.length,
+            separatorBuilder: (_, _) => const Divider(
+              height: 0,
+              thickness: 0,
+              color: VineTheme.surfaceContainer,
+            ),
+            itemBuilder: (_, index) {
+              final label = ContentLabel.values[index];
+              return _ContentLabelTile(
+                label: label,
+                isChecked: _selected.contains(label),
+                onTap: () => _toggle(label),
+              );
+            },
           ),
-        ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ContentWarningHeaderTitle extends StatelessWidget {
+  const _ContentWarningHeaderTitle();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 6,
+      children: [
+        Text(context.l10n.videoMetadataContentWarnings),
+        Text(
+          context.l10n.videoMetadataContentWarningSelectAllThatApply,
+          style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+        ),
+      ],
+    );
+  }
+}
+
+class _ContentLabelTile extends StatelessWidget {
+  const _ContentLabelTile({
+    required this.label,
+    required this.isChecked,
+    required this.onTap,
+  });
+
+  final ContentLabel label;
+  final bool isChecked;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: isChecked ? VineTheme.surfaceContainer : VineTheme.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  localizedContentLabelName(context.l10n, label),
+                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                ),
+              ),
+              DivineSpriteCheckbox(
+                state: isChecked ? .selected : .unselected,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

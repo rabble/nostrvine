@@ -8,6 +8,7 @@ import 'dart:math';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:path/path.dart' as p;
@@ -402,6 +403,7 @@ class UploadInitializationHelper {
       final testUpload = PendingUpload.create(
         localVideoPath: '/test/path',
         nostrPubkey: 'test_pubkey',
+        thumbnailTimestamp: VideoEditorConstants.defaultThumbnailExtractTime,
       );
 
       await box.put(testKey, testUpload);

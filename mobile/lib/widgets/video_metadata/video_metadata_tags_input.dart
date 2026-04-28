@@ -131,20 +131,19 @@ class _VideoMetadataTagsInputState
 
   @override
   Widget build(BuildContext context) {
+    final tags = ref.watch(videoEditorProvider.select((s) => s.tags));
     // Dynamic label color based on focus state
     final labelStyle = VineTheme.labelSmallFont(
-      color: _focusNode.hasFocus
+      color: _focusNode.hasFocus || tags.isNotEmpty
           ? VineTheme.primary
           : VineTheme.onSurfaceVariant,
     );
-
-    final tags = ref.watch(videoEditorProvider.select((s) => s.tags));
 
     return GestureDetector(
       onTap: _focusNode.requestFocus,
       behavior: .opaque,
       child: Padding(
-        padding: const .symmetric(horizontal: 16),
+        padding: const .symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: .start,
           spacing: 12,

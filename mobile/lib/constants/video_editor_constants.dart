@@ -25,6 +25,11 @@ class VideoEditorConstants {
   /// Maximum number of tags allowed per video.
   static const int tagLimit = 1 << 30; // ~1 billion
 
+  static const int descriptionLimit = 1_000;
+
+  /// Maximum number of collaborators allowed per video.
+  static const int maxCollaborators = 5;
+
   /// Whether to enforce the tag limit in the UI.
   static const bool enableTagLimit = false;
 

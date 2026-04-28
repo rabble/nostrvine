@@ -1990,11 +1990,12 @@ class _EditCollaboratorsSection extends ConsumerWidget {
   );
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
-    final profile = await showUserPickerSheet(
+    final result = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
       title: context.l10n.shareMenuAddCollaborator,
     );
+    final profile = result?.firstOrNull;
 
     if (profile == null || !context.mounted) return;
 
@@ -2147,11 +2148,12 @@ class _EditInspiredBySection extends ConsumerWidget {
   );
 
   Future<void> _selectInspiredBy(BuildContext context, WidgetRef ref) async {
-    final profile = await showUserPickerSheet(
+    final result = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.allUsers,
       title: context.l10n.shareMenuInspiredBy,
     );
+    final profile = result?.firstOrNull;
 
     if (profile == null || !context.mounted) return;
 

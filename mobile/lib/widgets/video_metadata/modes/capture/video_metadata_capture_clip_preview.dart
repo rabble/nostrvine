@@ -6,7 +6,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_cover_screen.dart';
 import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_preview_thumbnail.dart';
 
@@ -19,13 +19,16 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
   /// Creates a video metadata clip preview.
   const VideoMetadataCaptureClipPreview({super.key});
 
-  /// Opens the full-screen video preview with a fade transition.
-  Future<void> _openPreview(BuildContext context, DivineVideoClip clip) async {
+  /// Opens the cover selection screen.
+  Future<void> _openCoverEditor(
+    BuildContext context,
+    DivineVideoClip clip,
+  ) async {
     FocusManager.instance.primaryFocus?.unfocus();
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
-        pageBuilder: (_, _, _) => VideoMetadataPreviewScreen(clip: clip),
+        pageBuilder: (_, _, _) => VideoMetadataCoverScreen(clip: clip),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -38,7 +41,6 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
     // Get the first (and only) clip from manager
     final clips = ref.watch(clipManagerProvider).clips;
     if (clips.isEmpty) return const SizedBox.shrink();
-    final clip = clips.first;
     // Watch processing state and rendered clip
     final state = ref.watch(
       videoEditorProvider.select(
@@ -48,6 +50,7 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
         ),
       ),
     );
+    final clip = state.finalRenderedClip ?? clips.first;
     final isReady = state.finalRenderedClip != null;
 
     return Center(
@@ -68,7 +71,8 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                 label: context.l10n.videoMetadataOpenPreviewSemanticLabel,
                 child: GestureDetector(
                   onTap: isReady
-                      ? () => _openPreview(context, state.finalRenderedClip!)
+                      ? () =>
+                            _openCoverEditor(context, state.finalRenderedClip!)
                       : null,
                   child: Stack(
                     children: [
@@ -95,19 +99,26 @@ class VideoMetadataCaptureClipPreview extends ConsumerWidget {
                                 ),
                               ),
                       ),
-                      // Processing overlay with play button
+                      // Processing overlay with edit-cover icon
                       VideoEditorProcessingOverlay(
                         clip: clip,
                         isProcessing:
                             state.finalRenderedClip == null ||
                             state.isProcessing,
                         inactivePlaceholder: Center(
-                          child: DivineIconButton(
-                            icon: .play,
-                            type: .ghost,
-                            size: .small,
-                            onPressed: () =>
-                                _openPreview(context, state.finalRenderedClip!),
+                          child: Semantics(
+                            button: true,
+                            label: context.l10n.videoMetadataEditCoverTitle,
+                            excludeSemantics: true,
+                            child: DivineIconButton(
+                              icon: .pencilSimpleLine,
+                              type: .ghostSecondary,
+                              size: .small,
+                              onPressed: () => _openCoverEditor(
+                                context,
+                                state.finalRenderedClip!,
+                              ),
+                            ),
                           ),
                         ),
                       ),

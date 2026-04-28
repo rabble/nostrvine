@@ -91,6 +91,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -117,6 +118,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -145,6 +147,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -175,6 +178,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),
@@ -204,6 +208,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),
@@ -235,6 +240,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),
@@ -292,6 +298,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),
@@ -339,6 +346,7 @@ void main() {
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: UserPickerSheet(
+                    title: 'Title',
                     filterMode: UserPickerFilterMode.mutualFollowsOnly,
                   ),
                 ),
@@ -372,6 +380,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -401,6 +410,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -455,6 +465,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -550,6 +561,7 @@ void main() {
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: UserPickerSheet(
+                    title: 'Title',
                     filterMode: UserPickerFilterMode.allUsers,
                   ),
                 ),
@@ -593,6 +605,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -668,6 +681,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -717,6 +731,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                   autoFocus: true,
                 ),
@@ -745,6 +760,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.allUsers,
                 ),
               ),
@@ -802,6 +818,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
                   excludePubkeys: {'pubkey1'},
                 ),
@@ -839,6 +856,7 @@ void main() {
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(
                   body: UserPickerSheet(
+                    title: 'Title',
                     filterMode: UserPickerFilterMode.allUsers,
                   ),
                 ),
@@ -872,6 +890,7 @@ void main() {
               supportedLocales: AppLocalizations.supportedLocales,
               home: Scaffold(
                 body: UserPickerSheet(
+                  title: 'Title',
                   filterMode: UserPickerFilterMode.mutualFollowsOnly,
                 ),
               ),

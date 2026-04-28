@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:nostr_sdk/client_utils/keys.dart' as keys;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -167,6 +168,8 @@ void main() {
                 'This is a REAL test video uploaded to actual Blossom CDN',
             hashtags: ['real-e2e-test', 'integration-test'],
             videoDuration: const Duration(seconds: 5),
+            thumbnailTimestamp:
+                VideoEditorConstants.defaultThumbnailExtractTime,
           );
         } catch (e) {
           print(
@@ -358,6 +361,8 @@ void main() {
             nostrPubkey: testPublicKey,
             title: 'CDN Retrieval Test',
             videoDuration: const Duration(seconds: 5),
+            thumbnailTimestamp:
+                VideoEditorConstants.defaultThumbnailExtractTime,
           );
         } catch (e) {
           print('⚠️  Upload failed - skipping CDN retrieval test: $e');

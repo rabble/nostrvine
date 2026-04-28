@@ -435,6 +435,7 @@ class UploadManager {
       videoDuration: videoDuration,
       proofManifestJson: draft.proofManifestJson,
       onProgress: onProgress,
+      thumbnailTimestamp: draft.thumbnailTimestamp,
     );
   }
 
@@ -442,6 +443,7 @@ class UploadManager {
   Future<PendingUpload> startUpload({
     required File videoFile,
     required String nostrPubkey,
+    Duration? thumbnailTimestamp,
     ValueChanged<double>? onProgress,
     String? thumbnailPath,
     String? title,
@@ -488,6 +490,7 @@ class UploadManager {
       videoDuration: videoDuration,
       proofManifestJson: proofManifestJson,
       onProgress: onProgress,
+      thumbnailTimestamp: thumbnailTimestamp,
     );
   }
 
@@ -495,6 +498,7 @@ class UploadManager {
   Future<PendingUpload> _startUploadInternal({
     required File videoFile,
     required String nostrPubkey,
+    Duration? thumbnailTimestamp,
     ValueChanged<double>? onProgress,
     String? thumbnailPath,
     String? title,
@@ -635,6 +639,9 @@ class UploadManager {
       videoHeight: videoHeight,
       videoDuration: videoDuration,
       proofManifestJson: proofManifestJson,
+      thumbnailTimestamp:
+          thumbnailTimestamp ??
+          VideoEditorConstants.defaultThumbnailExtractTime,
     );
     Log.info(
       '✅ Created upload with ID: ${upload.id}',
@@ -2475,6 +2482,9 @@ Upload Timeout Failure:
       final thumbnailExtraction = await VideoThumbnailService.extractThumbnail(
         videoPath: videoFile.path,
         quality: 85,
+        targetTimestamp:
+            upload.thumbnailTimestamp ??
+            VideoEditorConstants.defaultThumbnailExtractTime,
       );
 
       if (thumbnailExtraction == null) {

@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -105,7 +106,7 @@ void main() {
       );
 
       expect(
-        find.text('0/${VideoEditorNotifier.maxCollaborators} Collaborators'),
+        find.text('0/${VideoEditorConstants.maxCollaborators} Collaborators'),
         findsOneWidget,
       );
     });
@@ -140,7 +141,7 @@ void main() {
       );
 
       expect(
-        find.text('2/${VideoEditorNotifier.maxCollaborators} Collaborators'),
+        find.text('2/${VideoEditorConstants.maxCollaborators} Collaborators'),
         findsOneWidget,
       );
     });
@@ -232,7 +233,7 @@ void main() {
     ) async {
       // Create state with max collaborators using valid 64-char hex pubkeys
       final maxCollaborators = List.generate(
-        VideoEditorNotifier.maxCollaborators,
+        VideoEditorConstants.maxCollaborators,
         (i) => 'abcd${i.toString().padLeft(60, '0')}',
       ).toSet();
       final state = VideoEditorProviderState(
@@ -260,8 +261,8 @@ void main() {
       // Should show max count
       expect(
         find.text(
-          '${VideoEditorNotifier.maxCollaborators}/'
-          '${VideoEditorNotifier.maxCollaborators} Collaborators',
+          '${VideoEditorConstants.maxCollaborators}/'
+          '${VideoEditorConstants.maxCollaborators} Collaborators',
         ),
         findsOneWidget,
       );
