@@ -394,10 +394,8 @@ class _NotificationList extends StatelessWidget {
                     notification.timestamp.millisecondsSinceEpoch ~/ 1000,
                     locale: Localizations.localeOf(context).toLanguageTag(),
                   ),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: VineTheme.secondaryText,
+                  style: VineTheme.labelLargeFont(
+                    color: VineTheme.onSurfaceMuted,
                   ),
                 ),
               ),
