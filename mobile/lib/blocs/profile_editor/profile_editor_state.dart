@@ -25,8 +25,15 @@ enum ProfileEditorStatus {
 ///
 /// The UI layer should map these to localized strings.
 enum ProfileEditorError {
-  /// Failed to publish profile to Nostr relays.
+  /// Failed to publish profile to Nostr relays (relay rejected or send error).
   publishFailed,
+
+  /// Failed to publish profile because no relays are currently connected.
+  ///
+  /// This is distinct from [publishFailed]: the device has no active relay
+  /// connections at all, rather than a relay actively rejecting the event.
+  /// The UI should show a connectivity-specific message and offer a retry.
+  noRelaysConnected,
 
   /// Failed to claim username (network error or other issue).
   claimFailed,

@@ -612,6 +612,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Gagal mempublikasikan profil. Silakan coba lagi.';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      'Tidak dapat menjangkau jaringan. Periksa koneksimu dan coba lagi.';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Nama Tampilan';
 
   @override

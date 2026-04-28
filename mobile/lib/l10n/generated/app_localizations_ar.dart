@@ -605,6 +605,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذّر نشر الملف الشخصي. حاول مرّة أخرى.';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      'لا يمكن الوصول إلى الشبكة. تحقق من اتصالك وحاول مرة أخرى.';
+
+  @override
   String get profileSetupDisplayNameLabel => 'الاسم المعروض';
 
   @override

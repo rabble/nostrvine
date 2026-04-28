@@ -312,6 +312,15 @@ class _ProfileSetupScreenViewState
                       backgroundColor: VineTheme.error,
                     ),
                   );
+                case ProfileEditorError.noRelaysConnected:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        context.l10n.profileSetupNoRelaysConnected,
+                      ),
+                      backgroundColor: VineTheme.error,
+                    ),
+                  );
                 case null:
                   break;
               }

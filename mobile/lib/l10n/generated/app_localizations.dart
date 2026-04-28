@@ -1168,6 +1168,12 @@ abstract class AppLocalizations {
   /// **'Failed to publish profile. Please try again.'**
   String get profileSetupPublishFailed;
 
+  /// No description provided for @profileSetupNoRelaysConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the network. Check your connection and try again.'**
+  String get profileSetupNoRelaysConnected;
+
   /// No description provided for @profileSetupDisplayNameLabel.
   ///
   /// In en, this message translates to:

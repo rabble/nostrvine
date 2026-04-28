@@ -656,6 +656,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'N-am putut publica profilul. Încearcă din nou.';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      'Nu s-a putut accesa rețeaua. Verifică conexiunea și încearcă din nou.';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Nume afișat';
 
   @override

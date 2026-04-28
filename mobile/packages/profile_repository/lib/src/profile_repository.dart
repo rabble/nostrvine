@@ -536,9 +536,22 @@ class ProfileRepository {
     );
 
     if (profileEvent == null) {
+      // Distinguish "no relays at all" from "relay rejected / send error".
+      // publishEvent already called retryDisconnectedRelays() internally, so
+      // if connectedRelays is still empty the device has no relay connections.
+      if (_nostrClient.connectedRelays.isEmpty) {
+        Log.error(
+          'sendProfile returned null — no connected relays after retry',
+          name: 'ProfileRepository.saveProfileEvent',
+          category: LogCategory.relay,
+        );
+        throw const NoRelaysConnectedException(
+          'No relays connected. Check your connection and try again.',
+        );
+      }
       Log.error(
         'sendProfile returned null '
-        '(no relays connected or relay rejected the event)',
+        '(relay rejected the event or send failed)',
         name: 'ProfileRepository.saveProfileEvent',
         category: LogCategory.relay,
       );
