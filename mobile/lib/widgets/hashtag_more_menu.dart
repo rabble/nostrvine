@@ -11,7 +11,6 @@ import 'package:followed_hashtags_repository/followed_hashtags_repository.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/hashtag_chip_accent.dart';
 
 /// Hashtag block: rounded purple `#` mark + [tag name] and optional video count
 /// (see `docs/images/tag_menu.png` in the divine repo).

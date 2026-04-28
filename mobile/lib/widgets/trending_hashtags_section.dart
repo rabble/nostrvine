@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/utils/hashtag_chip_accent.dart';
 
 /// A section displaying trending hashtags in a horizontal scrollable list.
 ///

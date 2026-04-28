@@ -1,11 +1,12 @@
-// ABOUTME: Accent background tints for hashtag UI (Popular Trending strip, tag menu # tile).
+// ABOUTME: Stable accent backgrounds for hashtag surfaces (trending strip,
+// menu # tile).
 
 import 'dart:ui' show Color;
 
-import 'package:divine_ui/divine_ui.dart';
+import 'package:divine_ui/src/theme/vine_theme.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 
-/// Round-robin list — same order as the former `_HashtagChip` in [TrendingHashtagsSection].
+/// Round-robin palette — same order as the original profile/trending chip treatment.
 const List<Color> kHashtagTilePalette = <Color>[
   VineTheme.accentYellow,
   VineTheme.accentLime,
@@ -24,7 +25,7 @@ int _intHashFromCodeUnits(Iterable<int> codeUnits) {
   return h;
 }
 
-/// Stable pick for surfaces without a list order (e.g. hashtag more menu # tile).
+/// Stable pick for surfaces without list order (e.g. hashtag more-menu # tile).
 Color hashtagTileBackgroundForLabel(String hashtag) {
   final n = kHashtagTilePalette.length;
   if (n == 0) return VineTheme.accentPurple;
