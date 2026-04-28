@@ -936,12 +936,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             // Seek to the trim handle's release point when restoring the composite.
             final trimEndPosition = _consumeTrimEndStartPosition(state.clips);
-            final mainBloc = context.read<VideoEditorMainBloc>();
-            final startPosition =
-                trimEndPosition ?? mainBloc.state.currentPosition;
+            final startPosition = trimEndPosition ?? bloc.state.currentPosition;
             // Sync so subsequent re-emits read the post-seek position.
             if (trimEndPosition != null) {
-              mainBloc.add(VideoEditorPositionChanged(trimEndPosition));
+              bloc.add(VideoEditorPositionChanged(trimEndPosition));
             }
             // Composition swap back — invalidate in-flight single-clip seeks.
             _seekEpoch++;
@@ -962,7 +960,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                     ),
               ], startPosition: startPosition);
               if (mounted) {
-                bloc.add(VideoEditorPositionChanged(startPosition));
+                // Skip the bloc dispatch when we already pushed this position
+                // pre-await (trimEndPosition != null) — the value is identical.
+                if (trimEndPosition == null) {
+                  bloc.add(VideoEditorPositionChanged(startPosition));
+                }
                 _proVideoController.setPlayTime(startPosition);
               }
             } catch (e, s) {
