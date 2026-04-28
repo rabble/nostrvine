@@ -79,5 +79,22 @@ void main() {
 
       expect(state1, isNot(equals(state2)));
     });
+
+    test('different reservedUsernames are not equal', () {
+      const state1 = ProfileEditorState();
+      const state2 = ProfileEditorState(reservedUsernames: {'admin'});
+
+      expect(state1, isNot(equals(state2)));
+    });
+
+    test(
+      'reservedUsernames with same elements are equal regardless of order',
+      () {
+        const state1 = ProfileEditorState(reservedUsernames: {'admin', 'root'});
+        const state2 = ProfileEditorState(reservedUsernames: {'root', 'admin'});
+
+        expect(state1, equals(state2));
+      },
+    );
   });
 }

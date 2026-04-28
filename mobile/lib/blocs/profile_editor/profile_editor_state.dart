@@ -233,6 +233,7 @@ final class ProfileEditorState extends Equatable {
     usernameStatus,
     usernameError,
     usernameFormatMessage,
+    reservedUsernames,
     nip05Mode,
     externalNip05,
     initialExternalNip05,
