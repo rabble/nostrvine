@@ -387,6 +387,7 @@ void main() {
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
           notifications: [_single(isRead: true)],
+          // ignore: avoid_redundant_argument_values
           unreadCount: 0,
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
