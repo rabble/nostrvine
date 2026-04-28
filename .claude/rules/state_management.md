@@ -248,6 +248,130 @@ bloc needs its own consumer; one consumer does not wake the others.
 
 ---
 
+## Bridging Riverpod-provided dependencies into BlocProvider
+
+`BlocProvider(create: ...)` runs its factory **once per subtree
+mount**. If the factory reads a Riverpod-provided dependency via
+`ref.read`, the bloc captures whatever instance the provider
+returned at that moment and keeps it for the lifetime of the
+surrounding widget. When that dependency is later rebuilt — auth
+flip, account switch, sign-out, explicit `ref.invalidate` — the
+provider emits a fresh instance, but the bloc stays wired to the
+stale one and silently operates on the previous state of the
+world.
+
+**Rule.** When a `BlocProvider.create:` consumes a Riverpod
+dependency whose identity can change at runtime, the surrounding
+`ConsumerWidget.build` must (a) read each such dependency with
+`ref.watch`, and (b) compose those watched values into a
+record-typed `ValueKey` on the `BlocProvider`. When any dependency
+changes identity, the key changes, the old bloc is closed, and
+`create:` runs again with the fresh dependencies. Records compare
+per-field with `==`; for classes that don't override `==` (most
+repositories and clients in this codebase) equality falls through
+to identity — exactly the semantics this pattern needs.
+
+**Bad — captures the dep at first build, never recovers:**
+```dart
+class _FeedItem extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final likesRepository = ref.read(likesRepositoryProvider); // WRONG
+    return BlocProvider<VideoInteractionsBloc>(
+      create: (_) => VideoInteractionsBloc(
+        likesRepository: likesRepository,
+        // ...
+      ),
+      child: ...,
+    );
+  }
+}
+```
+
+**Good — bloc lifecycle tracks the dep's identity:**
+```dart
+class _FeedItem extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
+    return BlocProvider<VideoInteractionsBloc>(
+      key: ValueKey(
+        (likesRepository, commentsRepository, repostsRepository),
+      ),
+      create: (_) => VideoInteractionsBloc(
+        likesRepository: likesRepository,
+        commentsRepository: commentsRepository,
+        repostsRepository: repostsRepository,
+        // ...
+      ),
+      child: ...,
+    );
+  }
+}
+```
+
+The canonical implementation lives at four sites — see
+`video_feed_page.dart` (`_PooledVideoFeedItem.build`,
+`_WebVideoFeedItem.build`) and
+`pooled_fullscreen_video_feed_screen.dart`
+(`_PooledFullscreenItem.build`, `_WebFullscreenItem.build`). The
+failure they cure (#3503): a cold-launch race where the warm-up
+chain materialised `likesRepository` before
+`AuthService.initialize()` resolved, the underlying `Nostr` wrapped
+a `LocalKeySigner(null)` placeholder, and every `sendLike` from the
+captured bloc threw `StateError("No public key available …")`.
+
+### Tradeoff: bloc state resets on swap
+
+When the record key flips, the old bloc is closed and a new one is
+constructed at initial state. **In-flight optimistic state — half-
+flipped UI, pending publishes — is dropped.** This is intentional:
+the optimistic state was bound to the *previous* dependency (a
+different signer / `NostrClient` / user), and replaying it against
+the new one is unsafe. The state-loss contract is pinned by
+`pooled_video_feed_item_repo_swap_test.dart` ("resets bloc state
+when likesRepositoryProvider rebuilds (intentional)"). If a future
+change introduces a non-auth invalidation of one of these providers,
+that test fails loudly so the state loss can be re-evaluated.
+
+### When the rule does NOT apply
+
+1. **The Riverpod dependency is genuinely stable for the bloc's
+   lifetime.** A `StateProvider<int>` that is never invalidated is
+   fine to read with `ref.read` — document the assumption inline.
+2. **The bloc lives at a higher scope than the dependency change.**
+   An app-shell-level bloc that needs to *react* to auth flips
+   internally must subscribe to the change (e.g. via `ref.listen`
+   from a parent `ConsumerWidget` or a stream subscription inside
+   the bloc) — the `BlocProvider` key trick does not apply, because
+   the bloc is supposed to outlive the change.
+3. **Pattern A (gate the provider on readiness) is available.**
+   When the dependency can be in a "not ready" state, the cleaner
+   option is to gate the *provider itself* on a readiness flag —
+   `profileRepositoryProvider` and `pendingActionServiceProvider`
+   already gate on `isNostrReadyProvider` and return `null` until
+   the real instance is available. The widget renders a loading /
+   disabled affordance until the provider hands over a non-null
+   dependency, and the bloc never gets to capture a stale one.
+
+### Detection
+
+A reviewer's quickest first filter is to grep for `ref.read` of a
+repository provider, then check whether each hit sits inside a
+`BlocProvider.create:` callback:
+
+```
+grep -rn "ref\.read(.*RepositoryProvider)" mobile/lib --include="*.dart"
+```
+
+If the surrounding widget is a `ConsumerWidget` /
+`ConsumerStatefulWidget` that wraps the value in a
+`BlocProvider<...>` without a `ValueKey`, this rule applies.
+
+---
+
 ## Persisting state across shell-route transitions
 
 Screens inside a `ShellRoute` whose content is gated on the current URL
