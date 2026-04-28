@@ -24,6 +24,10 @@ class HashtagActionMenuHeader extends StatelessWidget {
   final String hashtag;
   final int? videoCount;
 
+  /// Horizontal inset subtracted from screen width when constraining the header
+  /// row (sheet side margins + gutter vs. edge-to-edge title art in mocks).
+  static const double horizontalInsetTotal = 64;
+
   static const double _iconSize = 48;
   static const double _iconRadius = 12;
 
@@ -31,7 +35,7 @@ class HashtagActionMenuHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final body = normalizeHashtagLabel(hashtag);
-    final maxW = MediaQuery.sizeOf(context).width - 64;
+    final maxW = MediaQuery.sizeOf(context).width - horizontalInsetTotal;
     final tileColor = hashtagTileBackgroundForLabel(hashtag);
     return DefaultTextStyle(
       style: const TextStyle(),
@@ -44,6 +48,7 @@ class HashtagActionMenuHeader extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxW),
           child: Row(
+            spacing: 12,
             children: [
               Container(
                 width: _iconSize,
@@ -60,22 +65,21 @@ class HashtagActionMenuHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
+                  spacing: 4,
                   children: [
                     Text(
                       body.isEmpty ? '…' : body,
                       style: VineTheme.titleLargeFont(
                         color: VineTheme.onSurface,
-                      ).copyWith(fontWeight: FontWeight.w700),
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (videoCount != null) ...[
-                      const SizedBox(height: 4),
+                    if (videoCount != null)
                       Text(
                         l10n.hashtagMenuVideoCount(videoCount!),
                         style: VineTheme.bodySmallFont(
@@ -84,7 +88,6 @@ class HashtagActionMenuHeader extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ],
                   ],
                 ),
               ),
@@ -116,32 +119,22 @@ void showHashtagMoreMenu(
           ? l10n.hashtagOptionRemoveFromProfile
           : l10n.hashtagOptionSaveToProfile,
       isDestructive: isProfileSaved,
-      onTap: () {
+      onTap: () async {
         final r = ref.read(followedHashtagsRepositoryProvider);
         final wasSaved = r.hasProfileSavedHashtag(hashtag);
-        unawaited(() async {
-          if (wasSaved) {
-            await r.removeProfileSavedHashtag(hashtag);
-          } else {
-            await r.addProfileSavedHashtag(hashtag);
-          }
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              padding: EdgeInsets.zero,
-              backgroundColor: VineTheme.transparent,
-              elevation: 0,
-              behavior: SnackBarBehavior.floating,
-              margin: const EdgeInsets.fromLTRB(16, 0, 16, 68),
-              duration: const Duration(seconds: 2),
-              content: DivineSnackbarContainer(
-                label: wasSaved
-                    ? l10n.hashtagRemovedFromProfileSnackbar
-                    : l10n.hashtagSavedToProfileSnackbar,
-              ),
-            ),
-          );
-        }());
+        if (wasSaved) {
+          await r.removeProfileSavedHashtag(hashtag);
+        } else {
+          await r.addProfileSavedHashtag(hashtag);
+        }
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            wasSaved
+                ? l10n.hashtagRemovedFromProfileSnackbar
+                : l10n.hashtagSavedToProfileSnackbar,
+          ),
+        );
       },
     ),
   ];
@@ -154,32 +147,22 @@ void showHashtagMoreMenu(
             ? l10n.hashtagOptionRemoveFromFollowingFeed
             : l10n.hashtagOptionAddToFollowingFeed,
         isDestructive: isInFollowingFeed,
-        onTap: () {
+        onTap: () async {
           final wasIn = isInFollowingFeed;
-          unawaited(() async {
-            final r = ref.read(followedHashtagsRepositoryProvider);
-            if (wasIn) {
-              await r.removeFollowingFeedHashtag(hashtag);
-            } else {
-              await r.addFollowingFeedHashtag(hashtag);
-            }
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                padding: EdgeInsets.zero,
-                backgroundColor: VineTheme.transparent,
-                elevation: 0,
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.fromLTRB(16, 0, 16, 68),
-                duration: const Duration(seconds: 2),
-                content: DivineSnackbarContainer(
-                  label: wasIn
-                      ? l10n.hashtagRemovedFromFollowingFeedSnackbar
-                      : l10n.hashtagAddedToFollowingFeedSnackbar,
-                ),
-              ),
-            );
-          }());
+          final r = ref.read(followedHashtagsRepositoryProvider);
+          if (wasIn) {
+            await r.removeFollowingFeedHashtag(hashtag);
+          } else {
+            await r.addFollowingFeedHashtag(hashtag);
+          }
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            DivineSnackbarContainer.snackBar(
+              wasIn
+                  ? l10n.hashtagRemovedFromFollowingFeedSnackbar
+                  : l10n.hashtagAddedToFollowingFeedSnackbar,
+            ),
+          );
         },
       ),
     );
