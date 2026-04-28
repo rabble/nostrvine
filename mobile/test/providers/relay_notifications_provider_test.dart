@@ -1027,6 +1027,59 @@ void main() {
         },
       );
 
+      test(
+        'relayNotificationUnreadCount returns 0 while the feed is still loading',
+        () async {
+          // Hang the API call so the provider stays in its loading phase.
+          // The badge must read 0 even though the server eventually reports
+          // unread items, otherwise a stale unread count from a prior session
+          // could flash before the consolidated list is available.
+          final loadCompleter = Completer<NotificationsResponse>();
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) => loadCompleter.future);
+
+          final container = createTestContainer();
+
+          // Trigger the build and yield enough for the synchronous portion to
+          // run; the API future is still pending.
+          container.read(relayNotificationsProvider);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(
+            container.read(relayNotificationsProvider).isLoading ||
+                container
+                        .read(relayNotificationsProvider)
+                        .value
+                        ?.isInitialLoad ==
+                    true,
+            isTrue,
+            reason: 'precondition: feed should still be loading',
+          );
+          expect(container.read(relayNotificationUnreadCountProvider), 0);
+
+          // Complete the load so the container can dispose cleanly.
+          loadCompleter.complete(
+            NotificationsResponse(
+              notifications: [createMockRelayNotification(id: 'n1')],
+              unreadCount: 1,
+            ),
+          );
+          await waitForLoadComplete(container);
+
+          // Sanity check: once data arrives the helper reflects the count.
+          expect(container.read(relayNotificationUnreadCountProvider), 1);
+
+          container.dispose();
+        },
+      );
+
       test('relayNotificationsLoading reflects loading state', () async {
         when(
           () => mockApiService.getNotifications(

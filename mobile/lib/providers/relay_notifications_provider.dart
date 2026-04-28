@@ -1070,6 +1070,11 @@ RelayNotificationApiService relayNotificationApiService(Ref ref) {
 /// post-consolidation list keeps the badge in sync with what the user
 /// actually sees.
 ///
+/// Returns 0 while the underlying [relayNotificationsProvider] is still
+/// loading or in an error state, so the badge stays hidden until the
+/// consolidated list is available — matching the pre-#3472 behavior
+/// when the count came straight from the server.
+///
 // TODO(funnelcake#234): Revert to `state.unreadCount` once server-side
 // Kind 3 republish dedup ships and the visible list and server count
 // agree again. Tracking: divinevideo/divine-funnelcake#234.
