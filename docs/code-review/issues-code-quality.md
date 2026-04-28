@@ -1,0 +1,94 @@
+# Code Quality Issues
+
+Issues related to code patterns, style violations, and maintainability.
+
+Note: The codebase uses `very_good_analysis` across 33 packages and `unified_logger` in 250+ files. These issues cover pattern inconsistencies — `Future.delayed` misuse, serialization and equality divergence across models, API client boilerplate, and widget helper methods that should be extracted to widget classes.
+
+---
+
+### `Future.delayed` in app code
+**Problem**: 22 files use `Future.delayed` in providers and screens where project rules discourage it in favor of proper async coordination.
+
+**Evidence**: 22 files in `mobile/lib/` use `Future.delayed` in providers and screens. Project rules (CLAUDE.md, referencing AGENTS.md) explicitly state: "Avoid introducing arbitrary `Future.delayed()` calls in app code; prefer explicit async coordination." Common uses include waiting for animations to complete, debouncing user input, and timing workarounds where proper async coordination (streams, completers, `BlocListener`) should be used instead.
+
+**Done well**: `scroll_pagination_mixin.dart` uses Future-based coordination to prevent duplicate requests. `main.dart` uses `WidgetsBinding.addPostFrameCallback` for post-frame work. `BlocListener` with `listenWhen` is used throughout for state-driven side effects.
+
+**Impact**: Low. Introduces timing-dependent behavior that is fragile across devices with different performance characteristics; harder to test; masks coordination issues rather than fixing them.
+
+**Effort**: Low. Each occurrence needs case-by-case evaluation and replacement with proper async coordination: streams for data flow, completers for one-shot async, `BlocListener` for state-driven side effects, or `WidgetsBinding.instance.addPostFrameCallback` for post-frame work.
+
+**GitHub ticket**: TBD
+
+---
+
+### Logging hygiene: unguarded prints and duplicate batchers
+**Problem**: Production builds emit debug-level log output via bare `print()` calls, and two separate log-batching utilities implement the same concept with different APIs.
+
+**Evidence**:
+- `mobile/lib/services/video_loading_metrics.dart` lines 46–56, 184, 440: bare `print(message)` and `debugPrint(...)` without `kDebugMode` guards. Comment says "Use both UnifiedLogger AND print to ensure visibility" — debugging code that was not removed and writes video IDs and URLs to stdout in production. On iOS, visible via Console.app on any connected device.
+- `mobile/lib/utils/log_batcher.dart` (204 lines): static class `LogBatcher` with a 5-second flush interval.
+- `mobile/lib/utils/log_message_batcher.dart` (222 lines): singleton `LogMessageBatcher` with a 10-second interval and max-batch-size flush. Same concept, different API surface, both actively used.
+
+**Done well**: `unified_logger` is used correctly in 250+ files across the codebase. The infrastructure is sound; the issue is 3 files that bypass it.
+
+**Impact**: Low. No credentials leak, but unnecessary noise in production logs and duplicated maintenance for identical batching functionality.
+
+**Effort**: Low. Wrap `print()` calls in `if (kDebugMode)` or remove them (rely on `UnifiedLogger`). Consolidate log batchers: pick one (the singleton version is more configurable), migrate callers, delete the other (~200 LOC removed).
+
+**GitHub ticket**: TBD
+
+---
+
+### Inconsistent serialization approaches across models
+**Problem**: The `models` package uses two different serialization strategies with no clear convention: hand-rolled `fromJson`/`toJson` (majority) and `json_serializable` code generation (one model).
+
+**Evidence**: `json_serializable` used only by `VideoEvent` (`@JsonSerializable(createFactory: false)` at `video_event.dart:19`, with `.g.dart` for `toJson` only). Hand-rolled `fromJson` on `VideoStats`, `SocialCounts`, `UserProfile`, `ProfileSearchResult`, `HomeFeedResponse`, etc.
+
+**Impact**: Low.
+
+**Effort**: Medium. Standardize on one approach. Adopting `json_serializable` across the board (or Freezed for combined serialization + equality + copyWith) would eliminate the multiple approaches implemented. The only consideration, though, is the time cost of running code generation.
+
+**GitHub ticket**: TBD
+
+---
+
+### Inconsistent equality implementations across models
+**Problem**: Models use three different equality approaches: `Equatable` (9 models), hand-rolled `operator ==`/`hashCode` (20+ models), and no equality at all (several response models).
+
+**Evidence**: `Equatable` used by 9 models (`NotificationModel`, `VideoCategory`, `UserList`, `DmMessage`, etc.). Hand-rolled `operator ==`/`hashCode` on 20+ models. No equality implementation at all on `HomeFeedResponse`, `VideoCommentsResponse`, `BlossomUploadResult`, `VideoComment`. Hand-rolled equality is error-prone when fields are added because forgetting to update `==` or `hashCode` causes subtle state bugs.
+
+**Done well**: `NotificationModel`, `VideoCategory`, `UserList`, `DmMessage` and 5 other models use `Equatable` correctly, providing the standard for the rest of the package.
+
+**Impact**: Medium. Models without equality break BLoC state comparison (a `BlocBuilder` won't skip rebuilds when state contains these models). Hand-rolled equality risks going stale when fields change.
+
+**Effort**: Medium. Standardize on `Equatable` for all models in the `models` package.
+
+**GitHub ticket**: TBD
+
+---
+
+### Boilerplate duplication in FunnelcakeApiClient
+**Problem**: Every method in `FunnelcakeApiClient` repeats the same try/catch/timeout/error-handling pattern (~15 lines per method, 24 methods).
+
+**Evidence**: `mobile/packages/funnelcake_api_client/lib/src/funnelcake_api_client.dart` lines 144–1749: every method follows the identical pattern (check `isAvailable`, build URI, call `_get`/`_post`, decode JSON, catch `TimeoutException`, catch `FunnelcakeException`, catch generic). 24 methods with this duplication.
+
+**Impact**: Medium. A change to error handling logic requires touching 24 methods; risk of inconsistency.
+
+**Related**: See "Inconsistent error handling in notification methods" in [issues-error-handling.md](issues-error-handling.md). The notification methods deviate from the shared pattern. Extracting a `_request<T>` helper would likely resolve both issues.
+
+**Effort**: Low. Extract a generic `_request<T>` helper that handles the try/catch boilerplate and accepts a response parser callback. Straightforward refactor within one file.
+
+**GitHub ticket**: TBD
+
+---
+
+### Widget helper method anti-pattern
+**Problem**: 20+ files use `Widget _buildFoo()` methods instead of extracting to widget classes. Most affected: `share_video_menu.dart` (10 methods), `sounds_screen.dart` (9).
+
+**Evidence**: 20+ screen and widget files use private methods returning `Widget` instead of separate widget classes. Most affected: `share_video_menu.dart` (10 `_build*` methods), `sounds_screen.dart` (9), `safety_settings_screen.dart` (7), `relay_diagnostic_screen.dart` (6), `explore_screen.dart` (5). Explicitly called out as an anti-pattern in the project's own `.claude/rules/code_style.md` and `.claude/rules/ui_theming.md`.
+
+**Impact**: Medium. Prevents Flutter's diffing algorithm from optimizing rebuilds; makes individual components untestable in isolation; violates the project's own documented rules. Each `_build*` method lacks its own `BuildContext` and lifecycle.
+
+**Effort**: Low. Extract each `_buildFoo()` into a private `_Foo` widget class. Safe, incremental refactor that can be done when touching these files for any reason. No functional change.
+
+**GitHub ticket**: TBD
