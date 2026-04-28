@@ -380,11 +380,13 @@ class SocialService {
       );
 
       if (event != null) {
-        // Cache the follow set event immediately after creation
-        _personalEventCache?.cacheUserEvent(event);
-
         final sentEvent = await _nostrService.publishEvent(event);
         if (sentEvent != null) {
+          // Cache only after confirmed publish — kind 30000 is parameterized
+          // replaceable so NostrClient intentionally skips optimistic caching.
+          // Caching here mirrors the relay's acceptance of the event.
+          _personalEventCache?.cacheUserEvent(sentEvent);
+
           // Update local set with Nostr event ID
           final setIndex = _followSets.indexWhere((s) => s.id == set.id);
           if (setIndex != -1) {

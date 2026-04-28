@@ -241,6 +241,14 @@
             }
         }
     },
+    "profileAddToListDisplayName": "Tambahkan {displayName} ke daftar",
+    "@profileAddToListDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "profileUserBlockedTitle": "Pengguna Diblokir",
     "profileUserBlockedContent": "Kamu tidak akan melihat konten dari pengguna ini di feed-mu.",
     "profileUserBlockedUnblockHint": "Kamu bisa membuka blokir mereka kapan saja dari profilnya atau di Pengaturan > Keamanan.",
@@ -1942,6 +1950,10 @@
         }
     },
     "listCreateNewList": "Buat Daftar Baru",
+    "listNewPeopleList": "Daftar orang baru",
+    "listCollaboratorsNone": "Tidak ada",
+    "listAddCollaboratorTitle": "Tambahkan kolaborator",
+    "listCollaboratorSearchHint": "Cari diVine...",
     "listNameLabel": "Nama Daftar",
     "listDescriptionLabel": "Deskripsi (opsional)",
     "listPublicList": "Daftar Publik",

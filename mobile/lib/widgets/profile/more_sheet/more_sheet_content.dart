@@ -30,6 +30,7 @@ class MoreSheetContent extends StatefulWidget {
     required this.displayName,
     required this.isFollowing,
     required this.isBlocked,
+    this.showAddToList = false,
     this.initialMode = MoreSheetMode.menu,
     super.key,
   });
@@ -45,6 +46,9 @@ class MoreSheetContent extends StatefulWidget {
 
   /// Whether this user is blocked.
   final bool isBlocked;
+
+  /// Whether to show the "Add to list" option (gated by feature flag).
+  final bool showAddToList;
 
   /// The initial mode to display.
   final MoreSheetMode initialMode;
@@ -156,7 +160,10 @@ class _MoreSheetContentState extends State<MoreSheetContent>
       displayName: widget.displayName,
       isFollowing: widget.isFollowing,
       isBlocked: widget.isBlocked,
+      showAddToList: widget.showAddToList,
       onCopy: () => Navigator.of(context).pop(MoreSheetResult.copy),
+      onAddToList: () =>
+          Navigator.of(context).pop(MoreSheetResult.addToList),
       onUnfollow: () => Navigator.of(context).pop(MoreSheetResult.unfollow),
       onBlockTap: () {
         if (widget.isBlocked) {

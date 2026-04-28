@@ -10,9 +10,10 @@ import 'package:flutter/material.dart';
 /// Uses Bricolage Grotesque bold font at 24px for title.
 class VineBottomSheetHeader extends StatelessWidget {
   /// Creates a [VineBottomSheetHeader] with the given title and optional
-  /// trailing widget.
+  /// leading and trailing widgets.
   const VineBottomSheetHeader({
     this.title,
+    this.leading,
     this.trailing,
     this.showDivider = true,
     this.padding,
@@ -21,6 +22,9 @@ class VineBottomSheetHeader extends StatelessWidget {
 
   /// Optional title widget displayed in the center
   final Widget? title;
+
+  /// Optional leading widget on the left (e.g., close button)
+  final Widget? leading;
 
   /// Optional trailing widget on the right (e.g., badge, button)
   final Widget? trailing;
@@ -61,24 +65,37 @@ class VineBottomSheetHeader extends StatelessWidget {
               const SizedBox(height: 20),
 
               if (hasTitle)
-                // Title (centered) + optional trailing actions
+                // Title (centered) + optional leading/trailing actions
                 Padding(
                   padding: const EdgeInsets.only(bottom: 14),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Centered title
-                      Center(
-                        child: DefaultTextStyle(
-                          style: VineTheme.titleMediumFont(),
-                          child: title!,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 40),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Centered title
+                        Center(
+                          child: DefaultTextStyle(
+                            style: VineTheme.titleMediumFont(),
+                            child: title!,
+                          ),
                         ),
-                      ),
 
-                      // Trailing widget positioned on the right
-                      if (trailing != null)
-                        Positioned(right: 0, child: trailing!),
-                    ],
+                        // Leading widget aligned to the center-left
+                        if (leading != null)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: leading,
+                          ),
+
+                        // Trailing widget aligned to the center-right
+                        if (trailing != null)
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: trailing,
+                          ),
+                      ],
+                    ),
                   ),
                 ),
             ],

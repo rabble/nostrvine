@@ -353,6 +353,11 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return '$displayNameをリストに追加';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'ブロックしたよ';
 
   @override
@@ -3723,6 +3728,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get listCreateNewList => '新しいリストを作る';
+
+  @override
+  String get listNewPeopleList => '新しい人リスト';
+
+  @override
+  String get listCollaboratorsNone => 'なし';
+
+  @override
+  String get listAddCollaboratorTitle => 'コラボレーターを追加';
+
+  @override
+  String get listCollaboratorSearchHint => 'diVineを検索...';
 
   @override
   String get listNameLabel => 'リスト名';

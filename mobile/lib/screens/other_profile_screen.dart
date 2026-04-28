@@ -7,6 +7,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -21,6 +23,7 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
+import 'package:openvine/widgets/profile/new_people_list_sheet.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:share_plus/share_plus.dart';
@@ -199,6 +202,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     final displayName =
         profile?.bestDisplayName ?? widget.displayNameHint ?? fallbackName;
 
+    final userListsEnabled = ref.read(
+      isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
+    );
+
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
       scrollable: false,
@@ -209,6 +216,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             displayName: displayName,
             isFollowing: isFollowing,
             isBlocked: isBlocked,
+            showAddToList: userListsEnabled,
           );
         },
       ),
@@ -258,6 +266,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             SnackBar(content: Text(l10n.profileUnblockedUser(name))),
           );
         }
+      case MoreSheetResult.addToList:
+        final profile = ref
+            .read(userProfileReactiveProvider(widget.pubkey))
+            .value;
+        await showNewPeopleListSheet(
+          context,
+          initialCollaborator: profile,
+        );
     }
   }
 

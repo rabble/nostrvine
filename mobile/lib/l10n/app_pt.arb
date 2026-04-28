@@ -241,6 +241,14 @@
             }
         }
     },
+    "profileAddToListDisplayName": "Adicionar {displayName} a uma lista",
+    "@profileAddToListDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "profileUserBlockedTitle": "Usuário bloqueado",
     "profileUserBlockedContent": "Você não vai mais ver conteúdo desse usuário no seu feed.",
     "profileUserBlockedUnblockHint": "Você pode desbloqueá-lo a qualquer momento no perfil dele ou em Configurações > Segurança.",
@@ -1943,6 +1951,10 @@
         }
     },
     "listCreateNewList": "Criar nova lista",
+    "listNewPeopleList": "Nova lista de pessoas",
+    "listCollaboratorsNone": "Nenhum",
+    "listAddCollaboratorTitle": "Adicionar colaborador",
+    "listCollaboratorSearchHint": "Pesquisar no diVine...",
     "listNameLabel": "Nome da lista",
     "listDescriptionLabel": "Descrição (opcional)",
     "listPublicList": "Lista pública",

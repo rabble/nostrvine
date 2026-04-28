@@ -241,6 +241,14 @@
       }
     }
   },
+  "profileAddToListDisplayName": "Add {displayName} to a list",
+  "@profileAddToListDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "profileUserBlockedTitle": "User Blocked",
   "profileUserBlockedContent": "You won't see content from this user in your feeds.",
   "profileUserBlockedUnblockHint": "You can unblock them anytime from their profile or in Settings > Safety.",
@@ -1996,6 +2004,10 @@
     }
   },
   "listCreateNewList": "Create New List",
+  "listNewPeopleList": "New people list",
+  "listCollaboratorsNone": "None",
+  "listAddCollaboratorTitle": "Add a collaborator",
+  "listCollaboratorSearchHint": "Search diVine...",
   "listNameLabel": "List Name",
   "listDescriptionLabel": "Description (optional)",
   "listPublicList": "Public List",

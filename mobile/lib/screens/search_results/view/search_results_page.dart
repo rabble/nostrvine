@@ -56,7 +56,7 @@ class SearchResultsPage extends ConsumerWidget {
           create: (_) => ListSearchBloc(
             curatedListRepository: ref.read(curatedListRepositoryProvider),
             peopleListSearchEnabled: ref.read(
-              isFeatureEnabledProvider(FeatureFlag.peopleListSearch),
+              isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
             ),
           ),
         ),

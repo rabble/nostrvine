@@ -736,6 +736,12 @@ abstract class AppLocalizations {
   /// **'Unblock {displayName}'**
   String profileUnblockDisplayName(String displayName);
 
+  /// No description provided for @profileAddToListDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {displayName} to a list'**
+  String profileAddToListDisplayName(String displayName);
+
   /// No description provided for @profileUserBlockedTitle.
   ///
   /// In en, this message translates to:
@@ -6907,6 +6913,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create New List'**
   String get listCreateNewList;
+
+  /// No description provided for @listNewPeopleList.
+  ///
+  /// In en, this message translates to:
+  /// **'New people list'**
+  String get listNewPeopleList;
+
+  /// No description provided for @listCollaboratorsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get listCollaboratorsNone;
+
+  /// No description provided for @listAddCollaboratorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a collaborator'**
+  String get listAddCollaboratorTitle;
+
+  /// No description provided for @listCollaboratorSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search diVine...'**
+  String get listCollaboratorSearchHint;
 
   /// No description provided for @listNameLabel.
   ///

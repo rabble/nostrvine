@@ -371,6 +371,11 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return '$displayName kişisini bir listeye ekle';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'Kullanıcı Engellendi';
 
   @override
@@ -3893,6 +3898,18 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get listCreateNewList => 'Yeni Liste Oluştur';
+
+  @override
+  String get listNewPeopleList => 'Yeni kişi listesi';
+
+  @override
+  String get listCollaboratorsNone => 'Yok';
+
+  @override
+  String get listAddCollaboratorTitle => 'İşbirlikçi ekle';
+
+  @override
+  String get listCollaboratorSearchHint => 'diVine\'da ara...';
 
   @override
   String get listNameLabel => 'Liste Adı';

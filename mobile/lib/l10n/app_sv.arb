@@ -241,6 +241,14 @@
             }
         }
     },
+    "profileAddToListDisplayName": "Lägg till {displayName} i en lista",
+    "@profileAddToListDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "profileUserBlockedTitle": "Användare blockerad",
     "profileUserBlockedContent": "Du kommer inte se innehåll från den här användaren i dina flöden.",
     "profileUserBlockedUnblockHint": "Du kan avblockera när som helst från deras profil eller under Inställningar > Säkerhet.",
@@ -1943,6 +1951,10 @@
         }
     },
     "listCreateNewList": "Skapa ny lista",
+    "listNewPeopleList": "Ny personlista",
+    "listCollaboratorsNone": "Ingen",
+    "listAddCollaboratorTitle": "Lägg till en samarbetspartner",
+    "listCollaboratorSearchHint": "Sök diVine...",
     "listNameLabel": "Listnamn",
     "listDescriptionLabel": "Beskrivning (valfritt)",
     "listPublicList": "Publik lista",

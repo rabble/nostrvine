@@ -41,8 +41,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_ACCOUNT_SWITCHING');
       case FeatureFlag.hlsAuthWebPlayer:
         return const bool.fromEnvironment('FF_HLS_AUTH_WEB_PLAYER');
-      case FeatureFlag.peopleListSearch:
-        return const bool.fromEnvironment('FF_PEOPLE_LIST_SEARCH');
+      case FeatureFlag.profileListFeatures:
+        return const bool.fromEnvironment('FF_PROFILE_LIST_FEATURES');
       case FeatureFlag.contentPolicyV2:
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
       case FeatureFlag.advancedRelaySettings:
@@ -87,8 +87,8 @@ class BuildConfiguration {
         return 'FF_ACCOUNT_SWITCHING';
       case FeatureFlag.hlsAuthWebPlayer:
         return 'FF_HLS_AUTH_WEB_PLAYER';
-      case FeatureFlag.peopleListSearch:
-        return 'FF_PEOPLE_LIST_SEARCH';
+      case FeatureFlag.profileListFeatures:
+        return 'FF_PROFILE_LIST_FEATURES';
       case FeatureFlag.contentPolicyV2:
         return 'FF_CONTENT_POLICY_V2';
       case FeatureFlag.advancedRelaySettings:

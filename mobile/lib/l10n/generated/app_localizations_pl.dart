@@ -398,6 +398,11 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return 'Dodaj $displayName do listy';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'Użytkownik zablokowany';
 
   @override
@@ -4021,6 +4026,18 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get listCreateNewList => 'Utwórz nową listę';
+
+  @override
+  String get listNewPeopleList => 'Nowa lista osób';
+
+  @override
+  String get listCollaboratorsNone => 'Brak';
+
+  @override
+  String get listAddCollaboratorTitle => 'Dodaj współpracownika';
+
+  @override
+  String get listCollaboratorSearchHint => 'Szukaj w diVine...';
 
   @override
   String get listNameLabel => 'Nazwa listy';

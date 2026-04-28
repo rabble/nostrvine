@@ -354,6 +354,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return '$displayName님을 목록에 추가';
+  }
+
+  @override
   String get profileUserBlockedTitle => '사용자를 차단했어요';
 
   @override
@@ -3736,6 +3741,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get listCreateNewList => '새 목록 만들기';
+
+  @override
+  String get listNewPeopleList => '새 사람 목록';
+
+  @override
+  String get listCollaboratorsNone => '없음';
+
+  @override
+  String get listAddCollaboratorTitle => '협업자 추가';
+
+  @override
+  String get listCollaboratorSearchHint => 'diVine 검색...';
 
   @override
   String get listNameLabel => '목록 이름';

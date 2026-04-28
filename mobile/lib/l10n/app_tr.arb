@@ -241,6 +241,14 @@
             }
         }
     },
+    "profileAddToListDisplayName": "{displayName} kişisini bir listeye ekle",
+    "@profileAddToListDisplayName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
     "profileUserBlockedTitle": "Kullanıcı Engellendi",
     "profileUserBlockedContent": "Bu kullanıcının içeriğini artık akışında görmeyeceksin.",
     "profileUserBlockedUnblockHint": "Profilinden veya Ayarlar > Güvenlik'ten istediğin zaman engelini kaldırabilirsin.",
@@ -1942,6 +1950,10 @@
         }
     },
     "listCreateNewList": "Yeni Liste Oluştur",
+    "listNewPeopleList": "Yeni kişi listesi",
+    "listCollaboratorsNone": "Yok",
+    "listAddCollaboratorTitle": "İşbirlikçi ekle",
+    "listCollaboratorSearchHint": "diVine'da ara...",
     "listNameLabel": "Liste Adı",
     "listDescriptionLabel": "Açıklama (opsiyonel)",
     "listPublicList": "Herkese Açık Liste",

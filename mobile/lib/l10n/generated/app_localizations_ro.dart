@@ -412,6 +412,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return 'Adaugă $displayName la o listă';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'Utilizator blocat';
 
   @override
@@ -4026,6 +4031,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get listCreateNewList => 'Creează o listă nouă';
+
+  @override
+  String get listNewPeopleList => 'Listă de persoane nouă';
+
+  @override
+  String get listCollaboratorsNone => 'Niciunul';
+
+  @override
+  String get listAddCollaboratorTitle => 'Adaugă colaborator';
+
+  @override
+  String get listCollaboratorSearchHint => 'Caută în diVine...';
 
   @override
   String get listNameLabel => 'Numele listei';
