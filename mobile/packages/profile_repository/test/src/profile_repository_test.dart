@@ -3086,6 +3086,13 @@ void main() {
         expect(e.message, isNull);
         expect(e.toString(), contains('ProfileRepositoryException'));
       });
+
+      test('NoRelaysConnectedException has message and toString', () {
+        const e = NoRelaysConnectedException('no relays');
+
+        expect(e.message, equals('no relays'));
+        expect(e.toString(), equals('NoRelaysConnectedException: no relays'));
+      });
     });
 
     group('claimUsername', () {
