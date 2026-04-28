@@ -19,12 +19,13 @@ class DeveloperModeTapCounter extends _$DeveloperModeTapCounter {
     return 0;
   }
 
-  void tap() {
+  int tap() {
     _resetTimer?.cancel();
     _resetTimer = Timer(const Duration(seconds: 2), () {
       state = 0;
     });
     state++;
+    return state;
   }
 
   void reset() {

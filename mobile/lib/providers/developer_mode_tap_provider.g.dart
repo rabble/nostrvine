@@ -42,7 +42,7 @@ final class DeveloperModeTapCounterProvider
 }
 
 String _$developerModeTapCounterHash() =>
-    r'e1ec2bae8ee07c4cae51ff611316063cd2cda3ec';
+    r'024a1056be2a82a13b9c355e428bbbb266d3a013';
 
 abstract class _$DeveloperModeTapCounter extends $Notifier<int> {
   int build();
