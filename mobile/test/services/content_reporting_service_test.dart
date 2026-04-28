@@ -233,6 +233,18 @@ void main() {
     });
 
     test('reportContent() includes NIP-32 l/L tags for each reason', () async {
+      const expectedNip32Labels = {
+        ContentFilterReason.spam: 'NS-spam',
+        ContentFilterReason.harassment: 'NS-harassment',
+        ContentFilterReason.violence: 'NS-violence',
+        ContentFilterReason.sexualContent: 'NS-sexualContent',
+        ContentFilterReason.copyright: 'NS-copyright',
+        ContentFilterReason.falseInformation: 'NS-falseInformation',
+        ContentFilterReason.csam: 'NS-csam',
+        ContentFilterReason.aiGenerated: 'NS-aiGenerated',
+        ContentFilterReason.other: 'NS-other',
+      };
+
       final capturedTags = <List<List<String>>>[];
 
       when(
@@ -276,8 +288,8 @@ void main() {
       }
 
       expect(
-        capturedTags.length,
-        ContentFilterReason.values.length,
+        capturedTags,
+        hasLength(ContentFilterReason.values.length),
         reason: 'Should have captured tags for each reason',
       );
 
@@ -285,25 +297,38 @@ void main() {
         final reason = ContentFilterReason.values[i];
         final tags = capturedTags[i];
 
-        final lNamespaceTag = tags.firstWhere(
-          (t) => t[0] == 'L',
-          orElse: () => [],
-        );
+        final eTags = tags.where((t) => t[0] == 'e').toList();
+        expect(eTags, hasLength(1), reason: 'Missing e tag for ${reason.name}');
+
+        final pTags = tags.where((t) => t[0] == 'p').toList();
+        expect(pTags, hasLength(1), reason: 'Missing p tag for ${reason.name}');
+
+        final clientTags = tags.where((t) => t[0] == 'client').toList();
         expect(
-          lNamespaceTag,
-          ['L', 'social.nos.ontology'],
-          reason: 'Missing L namespace tag for ${reason.name}',
+          clientTags,
+          hasLength(1),
+          reason: 'Missing client tag for ${reason.name}',
         );
 
-        final lTag = tags.firstWhere(
-          (t) => t[0] == 'l',
-          orElse: () => [],
-        );
+        final lNamespaceTags = tags.where((t) => t[0] == 'L').toList();
         expect(
-          lTag,
-          ['l', 'NS-${reason.name}', 'social.nos.ontology'],
-          reason: 'Missing or incorrect l tag for ${reason.name}',
+          lNamespaceTags,
+          hasLength(1),
+          reason: 'Expected exactly one L tag for ${reason.name}',
         );
+        expect(lNamespaceTags.single, ['L', 'social.nos.ontology']);
+
+        final lTags = tags.where((t) => t[0] == 'l').toList();
+        expect(
+          lTags,
+          hasLength(1),
+          reason: 'Expected exactly one l tag for ${reason.name}',
+        );
+        expect(lTags.single, [
+          'l',
+          expectedNip32Labels[reason]!,
+          'social.nos.ontology',
+        ], reason: 'Missing or incorrect l tag for ${reason.name}');
       }
     });
 
