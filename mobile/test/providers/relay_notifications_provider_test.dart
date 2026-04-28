@@ -148,6 +148,40 @@ void main() {
       );
     }
 
+    /// Waits for relayNotificationsProvider to enter an in-flight state.
+    Future<void> waitForLoadingEmission(ProviderContainer container) async {
+      final completer = Completer<void>();
+
+      container.listen<AsyncValue<NotificationFeedState>>(
+        relayNotificationsProvider,
+        (previous, next) {
+          next.when(
+            data: (state) {
+              if (state.isInitialLoad && !completer.isCompleted) {
+                completer.complete();
+              }
+            },
+            loading: () {
+              if (!completer.isCompleted) completer.complete();
+            },
+            error: (_, _) {},
+          );
+        },
+        fireImmediately: true,
+      );
+
+      container.read(relayNotificationsProvider);
+
+      return completer.future.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {
+          throw TimeoutException(
+            'relayNotificationsProvider never entered a loading state',
+          );
+        },
+      );
+    }
+
     group('Initial Load', () {
       test('returns empty state when user is not authenticated', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -980,10 +1014,8 @@ void main() {
               before: any(named: 'before'),
             ),
           ).thenAnswer(
-            (_) async => const NotificationsResponse(
-              notifications: [],
-              unreadCount: 42,
-            ),
+            (_) async =>
+                const NotificationsResponse(notifications: [], unreadCount: 42),
           );
 
           final container = createTestContainer();
@@ -1047,10 +1079,7 @@ void main() {
 
           final container = createTestContainer();
 
-          // Trigger the build and yield enough for the synchronous portion to
-          // run; the API future is still pending.
-          container.read(relayNotificationsProvider);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
+          await waitForLoadingEmission(container);
 
           expect(
             container.read(relayNotificationsProvider).isLoading ||
@@ -1075,6 +1104,32 @@ void main() {
 
           // Sanity check: once data arrives the helper reflects the count.
           expect(container.read(relayNotificationUnreadCountProvider), 1);
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'relayNotificationUnreadCount returns 0 when the feed errors out',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(Exception('boom'));
+
+          final container = createTestContainer();
+          await container
+              .read(relayNotificationsProvider.future)
+              .catchError(
+                (_, _) => const NotificationFeedState(notifications: []),
+              );
+
+          expect(container.read(relayNotificationUnreadCountProvider), 0);
 
           container.dispose();
         },
