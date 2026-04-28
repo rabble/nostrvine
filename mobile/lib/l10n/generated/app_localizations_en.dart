@@ -6625,7 +6625,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'Content Warning';
+  String get videoMetadataContentWarningLabel => 'Add content warning';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6633,7 +6633,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'Select all that apply to your content';
+      'Select all that apply';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Done';
@@ -6646,7 +6646,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Collaborators';
+  String get videoMetadataCollaboratorsLabel => 'Add collaborators';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'Invite collaborator';
@@ -6676,7 +6676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'Inspired by';
+  String get videoMetadataInspiredByLabel => 'Add inspired by';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => 'Set inspired by';

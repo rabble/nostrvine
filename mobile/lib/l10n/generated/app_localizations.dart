@@ -11689,7 +11689,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataContentWarningLabel.
   ///
   /// In en, this message translates to:
-  /// **'Content Warning'**
+  /// **'Add content warning'**
   String get videoMetadataContentWarningLabel;
 
   /// No description provided for @videoMetadataSelectContentWarningsSemanticLabel.
@@ -11701,7 +11701,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataContentWarningSelectAllThatApply.
   ///
   /// In en, this message translates to:
-  /// **'Select all that apply to your content'**
+  /// **'Select all that apply'**
   String get videoMetadataContentWarningSelectAllThatApply;
 
   /// No description provided for @videoMetadataContentWarningDoneButton.
@@ -11725,7 +11725,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataCollaboratorsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Collaborators'**
+  /// **'Add collaborators'**
   String get videoMetadataCollaboratorsLabel;
 
   /// No description provided for @videoMetadataAddCollaboratorSemanticLabel.
@@ -11773,7 +11773,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoMetadataInspiredByLabel.
   ///
   /// In en, this message translates to:
-  /// **'Inspired by'**
+  /// **'Add inspired by'**
   String get videoMetadataInspiredByLabel;
 
   /// No description provided for @videoMetadataSetInspiredBySemanticLabel.

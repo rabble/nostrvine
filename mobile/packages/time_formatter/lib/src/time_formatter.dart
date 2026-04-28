@@ -128,6 +128,19 @@ abstract class TimeFormatter {
     return DateFormat.yMMMd().format(date);
   }
 
+  /// Formats a [Duration] as `m:ss` (minutes, zero-padded seconds).
+  ///
+  /// Hours are not rendered; the minutes field wraps at 60
+  /// (e.g. 65 minutes renders as `5:00`). Suitable for short-form media
+  /// timecodes where the duration is known to be under one hour.
+  ///
+  /// Examples: "0:00", "1:23", "10:05"
+  static String formatMinutesSeconds(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString();
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
   /// Formats a [Duration] as `m:ss.cc` (minutes, seconds, centiseconds).
   ///
   /// Examples: "0:04.60", "1:23.05", "0:00.00"

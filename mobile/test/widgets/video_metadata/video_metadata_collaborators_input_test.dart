@@ -4,15 +4,21 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_selection_tile.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../builders/user_profile_builder.dart';
+
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
 
 /// Mock for FollowRepository
 class _MockFollowRepository extends Mock implements FollowRepository {}
@@ -85,7 +91,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Collaborators'), findsOneWidget);
+      expect(find.text(_l10n.videoMetadataCollaboratorsLabel), findsOneWidget);
     });
 
     testWidgets('renders $VideoMetadataSelectionTile', (tester) async {
@@ -188,7 +194,8 @@ void main() {
       for (final element in semanticsWidgets.evaluate()) {
         final widget = element.widget as Semantics;
         if (widget.properties.button == true &&
-            widget.properties.label == 'Invite collaborator') {
+            widget.properties.label ==
+                _l10n.videoMetadataAddCollaboratorSemanticLabel) {
           foundInviteCollaboratorSemantics = true;
           break;
         }
@@ -251,5 +258,85 @@ void main() {
       // Wrap should not be present when no collaborators
       expect(find.byType(Wrap), findsNothing);
     });
+
+    testWidgets('tile value is empty when no collaborators', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            followRepositoryProvider.overrideWithValue(
+              _createMockFollowRepository(),
+            ),
+            userProfileReactiveProvider.overrideWith(
+              (ref, pubkey) => Stream<UserProfile?>.value(null),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: VideoMetadataCollaboratorsInput()),
+          ),
+        ),
+      );
+
+      final tile = tester.widget<VideoMetadataSelectionTile>(
+        find.byType(VideoMetadataSelectionTile),
+      );
+      expect(tile.value, isEmpty);
+    });
+
+    testWidgets(
+      'tile value joins display names of collaborators with profiles',
+      (tester) async {
+        const aliceKey =
+            '1111111111111111111111111111111111111111111111111111111111111111';
+        const bobKey =
+            '2222222222222222222222222222222222222222222222222222222222222222';
+
+        final state = VideoEditorProviderState(
+          collaboratorPubkeys: {aliceKey, bobKey},
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              followRepositoryProvider.overrideWithValue(
+                _createMockFollowRepository(),
+              ),
+              videoEditorProvider.overrideWith(
+                () => _MockVideoEditorNotifier(state),
+              ),
+              userProfileReactiveProvider.overrideWith((ref, pubkey) {
+                final displayName = switch (pubkey) {
+                  aliceKey => 'Alice',
+                  bobKey => 'Bob',
+                  _ => null,
+                };
+                if (displayName == null) {
+                  return Stream<UserProfile?>.value(null);
+                }
+                return Stream<UserProfile?>.value(
+                  UserProfileBuilder(
+                    pubkey: pubkey,
+                    displayName: displayName,
+                  ).build(),
+                );
+              }),
+            ],
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(body: VideoMetadataCollaboratorsInput()),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        final tile = tester.widget<VideoMetadataSelectionTile>(
+          find.byType(VideoMetadataSelectionTile),
+        );
+        expect(tile.value, anyOf(equals('Alice, Bob'), equals('Bob, Alice')));
+      },
+    );
   });
 }

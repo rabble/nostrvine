@@ -3553,13 +3553,13 @@
       }
     }
   },
-  "videoMetadataContentWarningLabel": "Content Warning",
+  "videoMetadataContentWarningLabel": "Add content warning",
   "videoMetadataSelectContentWarningsSemanticLabel": "Select content warnings",
-  "videoMetadataContentWarningSelectAllThatApply": "Select all that apply to your content",
+  "videoMetadataContentWarningSelectAllThatApply": "Select all that apply",
   "videoMetadataContentWarningDoneButton": "Done",
   "videoMetadataAudioReuseTitle": "Publish this sound",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataCollaboratorsLabel": "Collaborators",
+  "videoMetadataCollaboratorsLabel": "Add collaborators",
   "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",
   "videoMetadataCollaboratorsCount": "{count}/{max} Collaborators",
@@ -3584,7 +3584,7 @@
       }
     }
   },
-  "videoMetadataInspiredByLabel": "Inspired by",
+  "videoMetadataInspiredByLabel": "Add inspired by",
   "videoMetadataSetInspiredBySemanticLabel": "Set inspired by",
   "videoMetadataInspiredByHelpTooltip": "How inspiration credits work",
   "videoMetadataInspiredByNone": "None",

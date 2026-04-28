@@ -33,8 +33,8 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
     final result = await VineBottomSheet.show<Set<ContentLabel>>(
       context: context,
       maxChildSize: 1,
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
+      initialChildSize: 0.9,
+      minChildSize: 0.7,
       showHeader: false,
       showDragHandle: false,
       buildScrollBody: (scrollController) => _ContentWarningMultiSelect(
@@ -59,7 +59,7 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
         ? warnings
               .map((label) => localizedContentLabelName(context.l10n, label))
               .join(', ')
-        : context.l10n.contentWarningNone;
+        : '';
 
     return VideoMetadataSelectionTile(
       onTap: () => _selectContentWarnings(context, ref),

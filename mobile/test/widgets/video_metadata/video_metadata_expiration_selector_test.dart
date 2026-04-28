@@ -9,6 +9,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
+
 // English labels matching app_en.arb values.
 String _expirationLabel(VideoMetadataExpiration exp) {
   return switch (exp) {
@@ -92,7 +94,9 @@ void main() {
         ),
       );
 
-      await tester.tap(find.bySemanticsLabel('Select expiration time'));
+      await tester.tap(
+        find.bySemanticsLabel(_l10n.videoMetadataSelectExpirationSemanticLabel),
+      );
       await tester.pumpAndSettle();
 
       // Bottom sheet should be visible with all options
@@ -126,7 +130,9 @@ void main() {
         ),
       );
 
-      await tester.tap(find.bySemanticsLabel('Select expiration time'));
+      await tester.tap(
+        find.bySemanticsLabel(_l10n.videoMetadataSelectExpirationSemanticLabel),
+      );
       await tester.pumpAndSettle();
 
       // Check that checkmark icon exists in the widget tree
@@ -154,7 +160,9 @@ void main() {
       );
 
       // Open bottom sheet
-      await tester.tap(find.bySemanticsLabel('Select expiration time'));
+      await tester.tap(
+        find.bySemanticsLabel(_l10n.videoMetadataSelectExpirationSemanticLabel),
+      );
       await tester.pumpAndSettle();
 
       // Select a different option from bottom sheet.

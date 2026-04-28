@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/content_label.dart';
@@ -15,6 +14,8 @@ import '../../helpers/go_router.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   group(VideoMetadataContentWarningSelector, () {
     late MockGoRouter mockGoRouter;
@@ -42,10 +43,10 @@ void main() {
         ],
         child: MockGoRouterProvider(
           goRouter: mockGoRouter,
-          child: MaterialApp(
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: const Scaffold(body: VideoMetadataContentWarningSelector()),
+            home: Scaffold(body: VideoMetadataContentWarningSelector()),
           ),
         ),
       );
@@ -71,15 +72,17 @@ void main() {
     ) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.text('None'), findsOneWidget);
+      expect(find.text(l10n.contentWarningNone), findsOneWidget);
     });
 
-    testWidgets('displays "Content Warning" label', (tester) async {
+    testWidgets('displays content warning label', (tester) async {
       await tester.pumpWidget(buildWidget());
 
       expect(
         find.byWidgetPredicate(
-          (w) => w is DivineTextField && w.labelText == 'Content Warning',
+          (w) =>
+              w is DivineTextField &&
+              w.labelText == l10n.videoMetadataContentWarningLabel,
         ),
         findsOneWidget,
       );
@@ -122,12 +125,13 @@ void main() {
       await tester.pumpWidget(buildWidget());
 
       await tester.tap(
-        find.bySemanticsLabel('Select content warnings'),
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
       );
       await tester.pumpAndSettle();
 
-      // Bottom sheet header title should appear.
-      expect(find.text('Content Warnings'), findsOneWidget);
+      expect(find.text(l10n.videoMetadataContentWarnings), findsOneWidget);
     });
 
     testWidgets('bottom sheet shows all ContentLabel options', (
@@ -139,7 +143,11 @@ void main() {
 
       await tester.pumpWidget(buildWidget());
 
-      await tester.tap(find.bySemanticsLabel('Select content warnings'));
+      await tester.tap(
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Nudity'), findsOneWidget);
@@ -157,7 +165,9 @@ void main() {
       await tester.pumpWidget(buildWidget());
 
       await tester.tap(
-        find.bySemanticsLabel('Select content warnings'),
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
         warnIfMissed: false,
       );
       await tester.pumpAndSettle();
@@ -192,7 +202,11 @@ void main() {
 
       await tester.pumpWidget(buildWidget());
 
-      await tester.tap(find.bySemanticsLabel('Select content warnings'));
+      await tester.tap(
+        find.bySemanticsLabel(
+          l10n.videoMetadataSelectContentWarningsSemanticLabel,
+        ),
+      );
       await tester.pumpAndSettle();
 
       final unchecked = find.byWidgetPredicate(
@@ -217,20 +231,15 @@ void main() {
 }
 
 class _MockVideoEditorNotifier extends VideoEditorNotifier {
-  _MockVideoEditorNotifier(
-    this._state, {
-    this.onSetContentWarnings,
-  });
+  _MockVideoEditorNotifier(this._state);
 
   final VideoEditorProviderState _state;
-  final void Function(Set<ContentLabel>)? onSetContentWarnings;
 
   @override
   VideoEditorProviderState build() => _state;
 
   @override
   void setContentWarnings(Set<ContentLabel> labels) {
-    onSetContentWarnings?.call(labels);
     state = state.copyWith(contentWarnings: Set.of(labels));
   }
 }
