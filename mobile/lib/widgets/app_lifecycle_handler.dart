@@ -16,6 +16,7 @@ import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Handles app lifecycle events for video playback
@@ -140,6 +141,17 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
         if (_tickersEnabled) {
           setState(() => _tickersEnabled = false);
+        }
+
+        // Release pooled native video players eagerly so iOS can suspend.
+        // media_kit (mpv) keeps native dispatch loops, audio session and
+        // decoder sessions alive even when paused; iOS responds with
+        // RUNNINGBOARD 0xdead10cc (watchdog SIGKILL) if those resources
+        // are still held when the suspend window closes. The reactive
+        // pause-on-foreground-false chain only calls Player.pause(), which
+        // is not enough on its own — players must be disposed.
+        if (PlayerPool.isInitialized) {
+          unawaited(PlayerPool.instance.releaseAll());
         }
 
         // Active video pause is now handled by derived provider:
