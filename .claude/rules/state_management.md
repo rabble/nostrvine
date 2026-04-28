@@ -260,6 +260,22 @@ provider emits a fresh instance, but the bloc stays wired to the
 stale one and silently operates on the previous state of the
 world.
 
+**Before applying this rule, check whether Pattern A is available.**
+Some Riverpod-provided dependencies are *already* gated on a
+readiness signal — `profileRepositoryProvider` and
+`pendingActionServiceProvider` return `null` until
+`isNostrReadyProvider` resolves. When that's the case, the consumer
+reads the nullable value and renders a loading / disabled
+affordance until it's non-null; the bloc never gets a chance to
+capture a stale instance, and there's nothing for this rule to
+guard. #3523 tracks the in-flight migration of `likes` / `comments`
+/ `reposts` to the same shape — once it ships, the four canonical
+sites this rule cites won't need this rule at all.
+
+The rule below is the answer when Pattern A isn't available — when
+the provider has no clean "not ready" signal, or when restructuring
+the provider isn't in scope.
+
 **Rule.** When a `BlocProvider.create:` consumes a Riverpod
 dependency whose identity can change at runtime, the surrounding
 `ConsumerWidget.build` must (a) read each such dependency with
@@ -270,6 +286,28 @@ changes identity, the key changes, the old bloc is closed, and
 per-field with `==`; for classes that don't override `==` (most
 repositories and clients in this codebase) equality falls through
 to identity — exactly the semantics this pattern needs.
+
+**If any captured type ever overrides `==`** (e.g. content-based
+equality on a repository for testing) the record key silently stops
+detecting identity swaps — two distinct instances with equal
+content compare equal, the key doesn't change on rebuild, and the
+bloc keeps the stale capture. In that case, switch to an explicit
+identity-hash key:
+
+```dart
+key: ValueKey(
+  Object.hash(
+    identityHashCode(likesRepository),
+    identityHashCode(commentsRepository),
+    identityHashCode(repostsRepository),
+  ),
+),
+```
+
+This was the original form shipped in #3503 before #3522 simplified
+to records once the captured classes were confirmed not to override
+`==`. The hash form stays correct under any `==` override, at the
+cost of a vanishingly small (~2⁻³²) collision risk on a swap.
 
 **Bad — captures the dep at first build, never recovers:**
 ```dart
@@ -359,11 +397,22 @@ that test fails loudly so the state loss can be re-evaluated.
 ### Detection
 
 A reviewer's quickest first filter is to grep for `ref.read` of a
-repository provider, then check whether each hit sits inside a
-`BlocProvider.create:` callback:
+provider whose backing object can flip identity, then check whether
+each hit sits inside a `BlocProvider.create:` callback:
 
 ```
-grep -rn "ref\.read(.*RepositoryProvider)" mobile/lib --include="*.dart"
+grep -rn "ref\.read(.*\(Repository\|Service\|Client\|Manager\)Provider)" mobile/lib --include="*.dart"
+```
+
+The type-suffix filter is a starting point, not exhaustive — the
+codebase has ~40 `*ServiceProvider` / `*ClientProvider` /
+`*ManagerProvider` instances on top of the `*RepositoryProvider`
+ones, and naming isn't enforced. To catch every case at the cost of
+more false positives (e.g. unchanging `StateProvider`s, `.notifier`
+/ `.future` modifiers), widen to:
+
+```
+grep -rn "ref\.read\(.*Provider\)" mobile/lib --include="*.dart"
 ```
 
 If the surrounding widget is a `ConsumerWidget` /
