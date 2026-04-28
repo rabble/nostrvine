@@ -102,6 +102,47 @@ class FunnelcakeApiClient {
     };
   }
 
+  /// Unwraps a funnelcake list response that may be either a raw JSON array
+  /// (legacy / `legacy-array-response` flag on) or the post-#238 envelope
+  /// shape `{"data": [...], "pagination": {"has_more": bool, "next_cursor":
+  /// string|null, "next_offset": int|null}}`.
+  ///
+  /// Returns a record with:
+  /// - `items`: the list of raw JSON objects.
+  /// - `hasMore`: `true`/`false` from the envelope; `null` for raw arrays
+  ///   (caller should apply its own heuristic, e.g. `items.length >= limit`).
+  /// - `nextCursor`: opaque cursor string from the envelope, or `null` when
+  ///   the raw-array shape is used (caller computes its own cursor).
+  ///
+  /// Mirrors the `unwrapListResponse<T>` helper in divine-web#277.
+  static ({List<dynamic> items, bool? hasMore, String? nextCursor})
+  _unwrapListResponse(Object? decoded) {
+    if (decoded is List) {
+      return (items: decoded, hasMore: null, nextCursor: null);
+    }
+    if (decoded is Map<String, dynamic>) {
+      final data = decoded['data'];
+      if (data is List) {
+        final pagination = decoded['pagination'];
+        bool? hasMore;
+        String? nextCursor;
+        if (pagination is Map<String, dynamic>) {
+          hasMore = pagination['has_more'] as bool?;
+          final rawCursor = pagination['next_cursor'];
+          final rawOffset = pagination['next_offset'];
+          if (rawCursor != null) {
+            nextCursor = rawCursor.toString();
+          } else if (rawOffset != null) {
+            nextCursor = rawOffset.toString();
+          }
+        }
+        return (items: data, hasMore: hasMore, nextCursor: nextCursor);
+      }
+    }
+    // Unrecognised shape — return empty so callers never throw.
+    return (items: const <dynamic>[], hasMore: false, nextCursor: null);
+  }
+
   /// Builds the notifications endpoint URI for a user.
   ///
   /// The returned URI includes the same query parameters used by
@@ -171,13 +212,17 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, :hasMore, :nextCursor) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        final videos = data
+        final videos = items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
+        // X-Total-Count header is the primary source; fall back to envelope
+        // pagination when the header is absent (post-#238 envelope shape).
         final totalCountHeader = response.headers['x-total-count'];
         final totalCount = totalCountHeader != null
             ? int.tryParse(totalCountHeader)
@@ -241,9 +286,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -299,9 +346,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -359,9 +408,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -429,22 +480,31 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final raw = jsonDecode(response.body) as Map<String, dynamic>;
 
-        final videosData = data['videos'] as List<dynamic>? ?? [];
+        // Tolerate both the legacy shape `{"videos": [...]}` and the
+        // post-funnelcake#238 envelope `{"data": [...], "pagination": {...}}`.
+        final videosData =
+            (raw['videos'] as List<dynamic>?) ??
+            (raw['data'] as List<dynamic>?) ??
+            <dynamic>[];
         final videos = videosData
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
-        // Parse pagination cursor (may be string or int)
-        final rawCursor = data['next_cursor'];
+        // Pagination metadata may be at top level or under `pagination`.
+        final pagination = raw['pagination'] as Map<String, dynamic>?;
+        final rawCursor = raw['next_cursor'] ?? pagination?['next_cursor'];
         final nextCursor = switch (rawCursor) {
           final int value => value,
           final String value => int.tryParse(value),
           _ => null,
         };
-        final hasMore = data['has_more'] as bool? ?? false;
+        final hasMore =
+            raw['has_more'] as bool? ??
+            pagination?['has_more'] as bool? ??
+            false;
 
         return HomeFeedResponse(
           videos: videos,
@@ -528,9 +588,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((p) => ProfileSearchResult.fromJson(p as Map<String, dynamic>))
             .where((p) => p.pubkey.isNotEmpty)
             .toList();
@@ -597,9 +659,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -660,9 +724,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((item) {
               if (item is Map<String, dynamic>) {
                 return HashtagSearchResult.fromJson(item).tag;
@@ -723,9 +789,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -790,9 +858,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -853,9 +923,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -920,9 +992,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        final videos = data
+        final videos = items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -993,23 +1067,23 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
+        // Normalise the legacy `{"videos": [...]}` shape that was returned by
+        // earlier funnelcake server builds before funnelcake#238.  All other
+        // shapes (raw array, `{"data":[...], "pagination":{...}}` envelope) are
+        // handled by _unwrapListResponse below.
+        final raw = jsonDecode(response.body);
+        final normalised =
+            (raw is Map<String, dynamic> &&
+                raw['videos'] is List &&
+                raw['data'] == null)
+            ? (raw['videos'] as List<dynamic>)
+            : raw;
 
-        List<dynamic> data;
-        if (decoded is List) {
-          data = decoded;
-        } else if (decoded is Map<String, dynamic>) {
-          data =
-              (decoded['videos'] ??
-                      decoded['data'] ??
-                      decoded['results'] ??
-                      <dynamic>[])
-                  as List<dynamic>;
-        } else {
-          data = [];
-        }
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          normalised,
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
@@ -1056,9 +1130,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((h) => TrendingHashtag.fromJson(h as Map<String, dynamic>))
             .where((h) => h.tag.isNotEmpty)
             .toList();
@@ -1540,15 +1616,23 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final raw = jsonDecode(response.body) as Map<String, dynamic>;
 
-        final videosData = data['videos'] as List<dynamic>? ?? [];
+        // Tolerate both the legacy shape `{"videos": [...], "source": ...}`
+        // and the post-funnelcake#238 envelope
+        // `{"data": [...], "pagination": {...}, "source": ...}`.
+        // Mirrors divine-web#277 `fetchRecommendations` logic.
+        final videosData =
+            (raw['videos'] as List<dynamic>?) ??
+            (raw['data'] as List<dynamic>?) ??
+            <dynamic>[];
+
         final videos = videosData
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
-        final source = data['source'] as String? ?? 'unknown';
+        final source = raw['source'] as String? ?? 'unknown';
 
         return RecommendationsResponse(videos: videos, source: source);
       } else if (response.statusCode == 404) {
@@ -1781,8 +1865,10 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
-        return data
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
+        return items
             .map((item) => VideoCategory.fromJson(item as Map<String, dynamic>))
             .toList();
       } else {
@@ -1851,9 +1937,11 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as List<dynamic>;
+        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+          jsonDecode(response.body),
+        );
 
-        return data
+        return items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();

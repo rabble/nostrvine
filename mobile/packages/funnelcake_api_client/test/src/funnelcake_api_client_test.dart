@@ -683,6 +683,55 @@ void main() {
           ),
         );
       });
+
+      // Envelope shape tolerance (divine-funnelcake#238 / issue #3521)
+      test('returns feed from legacy {videos} shape', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validFeedResponse, 200),
+        );
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+        expect(result.videos, hasLength(1));
+        expect(result.hasMore, isTrue);
+        expect(result.nextCursor, equals(1699999000));
+      });
+
+      test('returns feed from {data, pagination} envelope shape', () async {
+        const envelope =
+            '''
+{
+  "data": [
+    {
+      "id": "feed-env-1",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "env-feed",
+      "title": "Envelope Feed Video",
+      "content": "",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/feed.mp4",
+      "reactions": 5,
+      "comments": 1,
+      "reposts": 0,
+      "engagement_score": 6
+    }
+  ],
+  "pagination": {"has_more": true, "next_cursor": "1699998000"}
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(envelope, 200));
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('feed-env-1'));
+        expect(result.hasMore, isTrue);
+        expect(result.nextCursor, equals(1699998000));
+      });
     });
 
     group('getVideosByAuthor', () {
@@ -3271,6 +3320,42 @@ void main() {
           throwsA(isA<FunnelcakeTimeoutException>()),
         );
       });
+
+      // Envelope shape tolerance (divine-funnelcake#238 / issue #3521)
+      test('returns followers from legacy {followers} shape', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"followers": ["$testPubkey"], "total": 1, "has_more": false}',
+            200,
+          ),
+        );
+
+        final result = await client.getFollowers(pubkey: testPubkey);
+        expect(result.pubkeys, hasLength(1));
+        expect(result.hasMore, isFalse);
+      });
+
+      test(
+        'returns followers from {data, pagination} envelope shape',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response(
+              '{"data": ["$testPubkey"], '
+              '"pagination": {"has_more": true, "next_cursor": "50"}}',
+              200,
+            ),
+          );
+
+          final result = await client.getFollowers(pubkey: testPubkey);
+          expect(result.pubkeys, hasLength(1));
+          expect(result.pubkeys.first, equals(testPubkey));
+          expect(result.hasMore, isTrue);
+        },
+      );
     });
 
     group('getFollowing', () {
@@ -3366,6 +3451,42 @@ void main() {
           throwsA(isA<FunnelcakeTimeoutException>()),
         );
       });
+
+      // Envelope shape tolerance (divine-funnelcake#238 / issue #3521)
+      test('returns following from legacy {following} shape', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"following": ["$testPubkey"], "total": 1, "has_more": false}',
+            200,
+          ),
+        );
+
+        final result = await client.getFollowing(pubkey: testPubkey);
+        expect(result.pubkeys, hasLength(1));
+        expect(result.hasMore, isFalse);
+      });
+
+      test(
+        'returns following from {data, pagination} envelope shape',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response(
+              '{"data": ["$testPubkey"], '
+              '"pagination": {"has_more": true, "next_cursor": "100"}}',
+              200,
+            ),
+          );
+
+          final result = await client.getFollowing(pubkey: testPubkey);
+          expect(result.pubkeys, hasLength(1));
+          expect(result.pubkeys.first, equals(testPubkey));
+          expect(result.hasMore, isTrue);
+        },
+      );
     });
 
     group('getRecommendations', () {
@@ -3542,7 +3663,62 @@ void main() {
           ),
         );
       });
-    });
+
+      // Envelope shape tolerance (divine-funnelcake#238 / issue #3521)
+      test(
+        'returns videos from legacy {videos} shape (pre-#238)',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response(validResponse, 200),
+          );
+
+          final result = await client.getRecommendations(pubkey: testPubkey);
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('rec123'));
+          expect(result.source, equals('personalized'));
+        },
+      );
+
+      test(
+        'returns videos from post-#238 {data, pagination} envelope shape',
+        () async {
+          const envelopeResponse =
+              '''
+{
+  "data": [
+    {
+      "id": "rec-env-1",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "rec-env",
+      "title": "Envelope Rec",
+      "content": "",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/env.mp4",
+      "reactions": 100,
+      "comments": 10,
+      "reposts": 5,
+      "engagement_score": 115
+    }
+  ],
+  "pagination": {"has_more": true, "next_cursor": "opaque-1"},
+  "source": "personalized"
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelopeResponse, 200));
+
+          final result = await client.getRecommendations(pubkey: testPubkey);
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('rec-env-1'));
+          expect(result.source, equals('personalized'));
+        },
+      );
+    }); // end group('getRecommendations')
 
     group('getBulkProfiles', () {
       test('returns profiles on success', () async {
@@ -4165,7 +4341,264 @@ void main() {
         );
       });
     });
-  });
+    // -------------------------------------------------------------------------
+    // Envelope shape tolerance tests (divine-funnelcake#238 / issue #3521)
+    //
+    // Each representative parser must handle BOTH the legacy raw-array shape
+    // (current production) AND the new {data, pagination} envelope shape
+    // (post-flag-flip) without throwing or returning empty.
+    // -------------------------------------------------------------------------
+
+    group('envelope shape tolerance', () {
+      const videoJson =
+          '''
+{
+  "id": "envvideo01",
+  "pubkey": "$testPubkey",
+  "created_at": 1700000000,
+  "kind": 34236,
+  "d_tag": "env-video",
+  "title": "Envelope Video",
+  "content": "Test",
+  "thumbnail": "https://example.com/thumb.jpg",
+  "video_url": "https://example.com/video.mp4",
+  "reactions": 10,
+  "comments": 2,
+  "reposts": 1,
+  "engagement_score": 13
+}
+''';
+
+      group('_unwrapListResponse via getTrendingVideos', () {
+        test('raw-array shape returns items correctly', () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[$videoJson]', 200),
+          );
+
+          final videos = await client.getTrendingVideos();
+          expect(videos, hasLength(1));
+          expect(
+            videos.first.id,
+            equals(
+              'envvideo01',
+            ),
+          );
+        });
+
+        test(
+          '{data, pagination} envelope shape returns items correctly',
+          () async {
+            const envelope =
+                '''
+{
+  "data": [$videoJson],
+  "pagination": {
+    "has_more": true,
+    "next_cursor": "1699999999"
+  }
+}
+''';
+            when(
+              () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+            ).thenAnswer((_) async => http.Response(envelope, 200));
+
+            final videos = await client.getTrendingVideos();
+            expect(videos, hasLength(1));
+            expect(
+              videos.first.id,
+              equals(
+                'envvideo01',
+              ),
+            );
+          },
+        );
+
+        test(
+          'envelope with next_offset instead of next_cursor returns items',
+          () async {
+            const envelope =
+                '''
+{
+  "data": [$videoJson],
+  "pagination": {
+    "has_more": true,
+    "next_offset": 50
+  }
+}
+''';
+            when(
+              () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+            ).thenAnswer((_) async => http.Response(envelope, 200));
+
+            final videos = await client.getTrendingVideos();
+            expect(videos, hasLength(1));
+          },
+        );
+
+        test(
+          'unrecognised shape returns empty list without throwing',
+          () async {
+            when(
+              () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+            ).thenAnswer(
+              (_) async => http.Response('{"unexpected": "shape"}', 200),
+            );
+
+            final videos = await client.getTrendingVideos();
+            expect(videos, isEmpty);
+          },
+        );
+      });
+
+      group('searchVideos envelope shape', () {
+        test(
+          'envelope returns videos, uses length for totalCount',
+          () async {
+            const envelope =
+                '''
+{
+  "data": [$videoJson],
+  "pagination": {
+    "has_more": false,
+    "next_cursor": null
+  }
+}
+''';
+            when(
+              () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+            ).thenAnswer((_) async => http.Response(envelope, 200));
+
+            final result = await client.searchVideos(query: 'test');
+            expect(result.videos, hasLength(1));
+            // X-Total-Count header is absent; fallback to videos.length.
+            expect(result.totalCount, equals(1));
+          },
+        );
+
+        test('raw-array shape still returns videos', () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[$videoJson]', 200),
+          );
+
+          final result = await client.searchVideos(query: 'test');
+          expect(result.videos, hasLength(1));
+        });
+      });
+
+      group('fetchTrendingHashtags envelope shape', () {
+        const hashtagJson = '''{"tag": "funny", "count": 42}''';
+
+        test('{data, pagination} envelope returns hashtags', () async {
+          const envelope =
+              '''
+{
+  "data": [$hashtagJson],
+  "pagination": {"has_more": false, "next_cursor": null}
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelope, 200));
+
+          final hashtags = await client.fetchTrendingHashtags();
+          expect(hashtags, hasLength(1));
+          expect(hashtags.first.tag, equals('funny'));
+        });
+
+        test('raw-array shape returns hashtags', () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[$hashtagJson]', 200),
+          );
+
+          final hashtags = await client.fetchTrendingHashtags();
+          expect(hashtags, hasLength(1));
+          expect(hashtags.first.tag, equals('funny'));
+        });
+      });
+
+      group('searchProfiles envelope shape', () {
+        const profileJson =
+            '''
+{
+  "pubkey": "$testPubkey",
+  "name": "Alice",
+  "display_name": "Alice",
+  "about": "",
+  "picture": "",
+  "nip05": "",
+  "follower_count": 0,
+  "following_count": 0,
+  "video_count": 1
+}
+''';
+
+        test('{data, pagination} envelope returns profiles', () async {
+          const envelope =
+              '''
+{
+  "data": [$profileJson],
+  "pagination": {"has_more": false, "next_cursor": null}
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelope, 200));
+
+          final profiles = await client.searchProfiles(query: 'alice');
+          expect(profiles, hasLength(1));
+          expect(profiles.first.pubkey, equals(testPubkey));
+        });
+
+        test('raw-array shape returns profiles', () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response('[$profileJson]', 200));
+
+          final profiles = await client.searchProfiles(query: 'alice');
+          expect(profiles, hasLength(1));
+        });
+      });
+
+      group('getCategories envelope shape', () {
+        const categoryJson =
+            '{"name": "comedy", "display_name": "Comedy", "video_count": 100}';
+
+        test('{data, pagination} envelope returns categories', () async {
+          const envelope =
+              '''
+{
+  "data": [$categoryJson],
+  "pagination": {"has_more": false, "next_cursor": null}
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelope, 200));
+
+          final categories = await client.getCategories();
+          expect(categories, hasLength(1));
+          expect(categories.first.name, equals('comedy'));
+        });
+
+        test('raw-array shape returns categories', () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[$categoryJson]', 200),
+          );
+
+          final categories = await client.getCategories();
+          expect(categories, hasLength(1));
+        });
+      }); // end group('getCategories envelope shape')
+    }); // end group('envelope shape tolerance')
+  }); // end group('FunnelcakeApiClient')
 
   group('Exceptions', () {
     test('FunnelcakeException has correct toString', () {
@@ -4213,5 +4646,5 @@ void main() {
       const exceptionWithoutUrl = FunnelcakeTimeoutException();
       expect(exceptionWithoutUrl.message, equals('Request timed out'));
     });
-  });
-}
+  }); // end group('Exceptions')
+} // end main

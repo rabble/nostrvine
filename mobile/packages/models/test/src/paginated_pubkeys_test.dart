@@ -95,6 +95,38 @@ void main() {
 
         expect(result.pubkeys, equals(['a']));
       });
+
+      // Envelope shape tolerance (divine-funnelcake#238 / issue #3521)
+      test('parses post-#238 {data, pagination} envelope', () {
+        final result = PaginatedPubkeys.fromJson(const {
+          'data': ['pub1', 'pub2'],
+          'pagination': {'has_more': true, 'next_cursor': '50'},
+        });
+
+        expect(result.pubkeys, equals(['pub1', 'pub2']));
+        expect(result.hasMore, isTrue);
+        expect(result.total, equals(2));
+      });
+
+      test('data key takes precedence over following in envelope', () {
+        final result = PaginatedPubkeys.fromJson(const {
+          'data': ['env1'],
+          'following': ['old1'],
+          'pagination': {'has_more': false},
+        });
+
+        expect(result.pubkeys, equals(['env1']));
+        expect(result.hasMore, isFalse);
+      });
+
+      test('has_more from pagination sub-object', () {
+        final result = PaginatedPubkeys.fromJson(const {
+          'data': ['x'],
+          'pagination': {'has_more': true},
+        });
+
+        expect(result.hasMore, isTrue);
+      });
     });
 
     group('equality', () {
