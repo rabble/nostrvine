@@ -2671,6 +2671,21 @@
       "actorName": { "type": "String" }
     }
   },
+  "notificationRepliedToYourComment": "replied to your comment",
+  "@notificationRepliedToYourComment": {
+    "description": "Verb phrase shown after the actor name in a reply notification."
+  },
+  "notificationAndConnector": "and",
+  "@notificationAndConnector": {
+    "description": "Connector word between the first actor and the 'N others' count in a grouped notification (e.g. 'Alice and 3 others liked your video')."
+  },
+  "notificationOthersCount": "{count, plural, =1{1 other} other{{count} others}}",
+  "@notificationOthersCount": {
+    "description": "Number of additional actors beyond the first in a grouped notification.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
 
   "searchSomethingWentWrong": "Something went wrong",
   "searchTryAgain": "Try again",

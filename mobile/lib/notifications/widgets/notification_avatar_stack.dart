@@ -1,4 +1,4 @@
-// ABOUTME: Overlapping circular avatar stack for grouped notifications.
+// ABOUTME: Overlapping rounded-square avatar stack for grouped notifications.
 // ABOUTME: Shows 1-3 actor avatars with optional overflow count indicator.
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -6,12 +6,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 
-/// Renders 1-3 overlapping circular avatars for grouped notifications.
+/// Renders 1-3 overlapping rounded-square avatars for grouped notifications.
 ///
-/// When [overflowCount] is greater than zero, a "+N" circle is appended
-/// after the last avatar.
+/// When [overflowCount] is greater than zero, a "+N" tile is appended after
+/// the last avatar.
 class NotificationAvatarStack extends StatelessWidget {
-  /// Creates an avatar stack from a list of actors.
   const NotificationAvatarStack({
     required this.actors,
     this.overflowCount,
@@ -24,33 +23,34 @@ class NotificationAvatarStack extends StatelessWidget {
   /// Number of additional actors beyond those displayed.
   final int? overflowCount;
 
-  /// Diameter of each avatar circle.
-  static const double _avatarSize = 36;
-
-  /// How much each successive avatar overlaps the previous one.
-  static const double _overlap = 12;
+  static const double _tileSize = 32;
+  static const double _tileRadius = 12.8;
+  static const double _overlap = 8;
 
   @override
   Widget build(BuildContext context) {
     final displayActors = actors.take(3).toList();
     final showOverflow = (overflowCount ?? 0) > 0;
     final itemCount = displayActors.length + (showOverflow ? 1 : 0);
-    final totalWidth = _avatarSize + (_avatarSize - _overlap) * (itemCount - 1);
+    if (itemCount == 0) {
+      return const SizedBox.shrink();
+    }
+    final totalWidth = _tileSize + (_tileSize - _overlap) * (itemCount - 1);
 
     return SizedBox(
       width: totalWidth,
-      height: _avatarSize,
+      height: _tileSize,
       child: Stack(
         children: [
           for (var i = 0; i < displayActors.length; i++)
             Positioned(
-              left: (_avatarSize - _overlap) * i,
-              child: _Avatar(actor: displayActors[i]),
+              left: (_tileSize - _overlap) * i,
+              child: _AvatarTile(actor: displayActors[i]),
             ),
           if (showOverflow)
             Positioned(
-              left: (_avatarSize - _overlap) * displayActors.length,
-              child: _OverflowCircle(count: overflowCount!),
+              left: (_tileSize - _overlap) * displayActors.length,
+              child: _OverflowTile(count: overflowCount!),
             ),
         ],
       ),
@@ -58,29 +58,38 @@ class NotificationAvatarStack extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.actor});
+class _AvatarTile extends StatelessWidget {
+  const _AvatarTile({required this.actor});
 
   final ActorInfo actor;
 
   @override
   Widget build(BuildContext context) {
+    final pictureUrl = actor.pictureUrl;
     return Container(
-      width: NotificationAvatarStack._avatarSize,
-      height: NotificationAvatarStack._avatarSize,
+      width: NotificationAvatarStack._tileSize,
+      height: NotificationAvatarStack._tileSize,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(width: 2),
+        borderRadius: BorderRadius.circular(
+          NotificationAvatarStack._tileRadius,
+        ),
+        border: Border.all(
+          color: VineTheme.onSurface.withValues(alpha: 0.25),
+          width: 0.8,
+        ),
       ),
-      child: ClipOval(
-        child: actor.pictureUrl != null
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(
+          NotificationAvatarStack._tileRadius,
+        ),
+        child: pictureUrl != null
             ? CachedNetworkImage(
-                imageUrl: actor.pictureUrl!,
-                width: NotificationAvatarStack._avatarSize,
-                height: NotificationAvatarStack._avatarSize,
+                imageUrl: pictureUrl,
+                width: NotificationAvatarStack._tileSize,
+                height: NotificationAvatarStack._tileSize,
                 fit: BoxFit.cover,
-                placeholder: (context, url) => const _DefaultAvatar(),
-                errorWidget: (context, url, error) => const _DefaultAvatar(),
+                placeholder: (context, _) => const _DefaultAvatar(),
+                errorWidget: (context, _, _) => const _DefaultAvatar(),
               )
             : const _DefaultAvatar(),
       ),
@@ -93,35 +102,39 @@ class _DefaultAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: NotificationAvatarStack._avatarSize,
-      height: NotificationAvatarStack._avatarSize,
+    return const ColoredBox(
       color: VineTheme.surfaceContainer,
-      child: const Icon(Icons.person, color: VineTheme.lightText, size: 20),
+      child: Center(
+        child: Icon(Icons.person, color: VineTheme.lightText, size: 18),
+      ),
     );
   }
 }
 
-class _OverflowCircle extends StatelessWidget {
-  const _OverflowCircle({required this.count});
+class _OverflowTile extends StatelessWidget {
+  const _OverflowTile({required this.count});
 
   final int count;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: NotificationAvatarStack._avatarSize,
-      height: NotificationAvatarStack._avatarSize,
+      width: NotificationAvatarStack._tileSize,
+      height: NotificationAvatarStack._tileSize,
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
-        shape: BoxShape.circle,
-        border: Border.all(width: 2),
-      ),
-      child: Center(
-        child: Text(
-          '+$count',
-          style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
+        borderRadius: BorderRadius.circular(
+          NotificationAvatarStack._tileRadius,
         ),
+        border: Border.all(
+          color: VineTheme.onSurface.withValues(alpha: 0.25),
+          width: 0.8,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '+$count',
+        style: VineTheme.labelSmallFont(color: VineTheme.secondaryText),
       ),
     );
   }

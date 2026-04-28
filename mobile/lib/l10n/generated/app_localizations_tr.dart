@@ -4996,6 +4996,23 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get notificationRepliedToYourComment => 'replied to your comment';
+
+  @override
+  String get notificationAndConnector => 'and';
+
+  @override
+  String notificationOthersCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count others',
+      one: '1 other',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get draftUntitled => 'Başlıksız';
 
   @override

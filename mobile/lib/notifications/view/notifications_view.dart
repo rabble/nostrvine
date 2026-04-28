@@ -413,13 +413,6 @@ class _NotificationList extends StatelessWidget {
                 if (pubkey != null) onFollowBack(pubkey);
               },
             ),
-            if (index < notifications.length - 1)
-              const Divider(
-                height: 1,
-                thickness: 0.5,
-                color: VineTheme.onSurfaceMuted,
-                indent: 72,
-              ),
           ],
         );
       },

@@ -1,6 +1,6 @@
 // ABOUTME: BLoC-compatible notification list item widget using the sealed
-// ABOUTME: NotificationItem model. Handles single and grouped notifications
-// ABOUTME: with exhaustive pattern matching.
+// ABOUTME: NotificationItem model. Matches the Figma notifications design:
+// ABOUTME: type-icon column on the left, avatar group above the message text.
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -9,13 +9,11 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/widgets/notification_type_icon.dart';
 
-/// Displays a single notification row in the notifications list.
-///
-/// Uses exhaustive switch on [NotificationItem] to render the correct
-/// layout for [SingleNotification] and [GroupedNotification].
+/// Row representing a single notification entry. Renders [SingleNotification]
+/// and [GroupedNotification] variants with the same outer structure.
 class NotificationListItem extends StatelessWidget {
-  /// Creates a notification list item.
   const NotificationListItem({
     required this.notification,
     required this.onTap,
@@ -24,166 +22,51 @@ class NotificationListItem extends StatelessWidget {
     super.key,
   });
 
-  /// The notification data to display.
   final NotificationItem notification;
-
-  /// Called when the entire row is tapped.
   final VoidCallback onTap;
-
-  /// Called when the actor avatar is tapped.
   final VoidCallback? onProfileTap;
-
-  /// Called when the "Follow back" button is tapped (follow notifications).
   final VoidCallback? onFollowBack;
 
   @override
   Widget build(BuildContext context) {
-    return switch (notification) {
-      SingleNotification() => _SingleRow(
-        notification: notification as SingleNotification,
-        onTap: onTap,
-        onProfileTap: onProfileTap,
-        onFollowBack: onFollowBack,
-      ),
-      GroupedNotification() => _GroupedRow(
-        notification: notification as GroupedNotification,
-        onTap: onTap,
-        onProfileTap: onProfileTap,
-      ),
+    final showFollowBack = switch (notification) {
+      SingleNotification(:final type, :final isFollowingBack) =>
+        type == NotificationKind.follow && !isFollowingBack,
+      GroupedNotification() => false,
     };
-  }
-}
 
-// ---------------------------------------------------------------------------
-// Single notification row
-// ---------------------------------------------------------------------------
-
-class _SingleRow extends StatelessWidget {
-  const _SingleRow({
-    required this.notification,
-    required this.onTap,
-    this.onProfileTap,
-    this.onFollowBack,
-  });
-
-  final SingleNotification notification;
-  final VoidCallback onTap;
-  final VoidCallback? onProfileTap;
-  final VoidCallback? onFollowBack;
-
-  @override
-  Widget build(BuildContext context) {
     return Material(
-      color: notification.isRead
-          ? VineTheme.backgroundColor
-          : VineTheme.cardBackground,
+      color: VineTheme.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _AvatarWithIcon(
-                pictureUrl: notification.actor.pictureUrl,
-                displayName: notification.actor.displayName,
-                type: notification.type,
-                onProfileTap: onProfileTap,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MessageText(
-                      message: notification.message,
-                      actorName: notification.actor.displayName,
-                    ),
-                    const SizedBox(height: 4),
-                    if (_hasCommentText) ...[
-                      _CommentPreview(text: notification.commentText!),
-                      const SizedBox(height: 4),
-                    ],
-                    _Timestamp(timestamp: notification.timestamp),
-                    if (_showFollowBack) ...[
-                      const SizedBox(height: 8),
-                      _FollowBackButton(onFollowBack: onFollowBack),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: VineTheme.outlineDisabled),
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  bool get _hasCommentText =>
-      (notification.type == NotificationKind.comment ||
-          notification.type == NotificationKind.reply) &&
-      notification.commentText != null;
-
-  bool get _showFollowBack =>
-      notification.type == NotificationKind.follow &&
-      !notification.isFollowingBack;
-}
-
-// ---------------------------------------------------------------------------
-// Grouped notification row
-// ---------------------------------------------------------------------------
-
-class _GroupedRow extends StatelessWidget {
-  const _GroupedRow({
-    required this.notification,
-    required this.onTap,
-    this.onProfileTap,
-  });
-
-  final GroupedNotification notification;
-  final VoidCallback onTap;
-  final VoidCallback? onProfileTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final overflowCount = notification.totalCount - notification.actors.length;
-
-    return Material(
-      color: notification.isRead
-          ? VineTheme.backgroundColor
-          : VineTheme.cardBackground,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: onProfileTap,
-                child: _StackWithIcon(
-                  actors: notification.actors,
-                  overflowCount: overflowCount > 0 ? overflowCount : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _LeadingTypeIcon(
                   type: notification.type,
+                  showUnreadDot: !notification.isRead,
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MessageText(
-                      message: notification.message,
-                      actorName: notification.actors.isNotEmpty
-                          ? notification.actors.first.displayName
-                          : null,
-                    ),
-                    const SizedBox(height: 4),
-                    _Timestamp(timestamp: notification.timestamp),
-                  ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _NotificationContent(
+                    notification: notification,
+                    onProfileTap: onProfileTap,
+                  ),
                 ),
-              ),
-            ],
+                if (showFollowBack) ...[
+                  const SizedBox(width: 8),
+                  _FollowBackButton(onPressed: onFollowBack),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -192,244 +75,389 @@ class _GroupedRow extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Shared sub-widgets
+// Leading type icon — maps NotificationKind → accent pair + DivineIcon.
 // ---------------------------------------------------------------------------
 
-class _AvatarWithIcon extends StatelessWidget {
-  const _AvatarWithIcon({
-    required this.type,
-    this.pictureUrl,
-    this.displayName,
+class _LeadingTypeIcon extends StatelessWidget {
+  const _LeadingTypeIcon({required this.type, required this.showUnreadDot});
+
+  final NotificationKind type;
+  final bool showUnreadDot;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = _typeIconSpec(type);
+    return NotificationTypeIcon(
+      icon: spec.icon,
+      backgroundColor: spec.background,
+      foregroundColor: spec.foreground,
+      showUnreadDot: showUnreadDot,
+    );
+  }
+}
+
+class _TypeIconSpec {
+  const _TypeIconSpec({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+  });
+  final DivineIconName icon;
+  final Color background;
+  final Color foreground;
+}
+
+_TypeIconSpec _typeIconSpec(NotificationKind type) {
+  return switch (type) {
+    NotificationKind.like => const _TypeIconSpec(
+      icon: DivineIconName.heart,
+      background: VineTheme.accentPinkBackground,
+      foreground: VineTheme.accentPink,
+    ),
+    NotificationKind.follow => const _TypeIconSpec(
+      icon: DivineIconName.user,
+      background: VineTheme.accentLimeBackground,
+      foreground: VineTheme.accentLime,
+    ),
+    NotificationKind.comment ||
+    NotificationKind.reply ||
+    NotificationKind.mention => const _TypeIconSpec(
+      icon: DivineIconName.chat,
+      background: VineTheme.accentVioletBackground,
+      foreground: VineTheme.accentViolet,
+    ),
+    NotificationKind.repost => const _TypeIconSpec(
+      icon: DivineIconName.repeat,
+      background: VineTheme.accentYellowBackground,
+      foreground: VineTheme.accentYellow,
+    ),
+    NotificationKind.system => const _TypeIconSpec(
+      icon: DivineIconName.logo,
+      background: VineTheme.onPrimaryButton,
+      foreground: VineTheme.primary,
+    ),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Content column: avatar(s) above the message text.
+// ---------------------------------------------------------------------------
+
+class _NotificationContent extends StatelessWidget {
+  const _NotificationContent({
+    required this.notification,
     this.onProfileTap,
   });
 
-  final String? pictureUrl;
-  final String? displayName;
-  final NotificationKind type;
+  final NotificationItem notification;
   final VoidCallback? onProfileTap;
-
-  static const double _avatarSize = 48;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: displayName != null ? 'View $displayName profile' : 'View profile',
-      button: true,
-      child: GestureDetector(
-        onTap: onProfileTap,
-        child: SizedBox(
-          width: _avatarSize,
-          height: _avatarSize,
-          child: Stack(
-            children: [
-              ClipOval(
-                child: pictureUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: pictureUrl!,
-                        width: _avatarSize,
-                        height: _avatarSize,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) =>
-                            const _DefaultSingleAvatar(),
-                        errorWidget: (context, url, error) =>
-                            const _DefaultSingleAvatar(),
-                      )
-                    : const _DefaultSingleAvatar(),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: _TypeIconBadge(type: type),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DefaultSingleAvatar extends StatelessWidget {
-  const _DefaultSingleAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: VineTheme.accentPurple.withValues(alpha: 0.2),
-        shape: BoxShape.circle,
-      ),
-      child: const Center(
-        child: Icon(Icons.person, color: VineTheme.accentPurple, size: 24),
-      ),
-    );
-  }
-}
-
-class _StackWithIcon extends StatelessWidget {
-  const _StackWithIcon({
-    required this.actors,
-    required this.type,
-    this.overflowCount,
-  });
-
-  final List<ActorInfo> actors;
-  final int? overflowCount;
-  final NotificationKind type;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        NotificationAvatarStack(actors: actors, overflowCount: overflowCount),
-        const SizedBox(height: 4),
-        _TypeIconBadge(type: type),
+        _Avatars(notification: notification, onProfileTap: onProfileTap),
+        const SizedBox(height: 8),
+        _MessageText(notification: notification),
+        if (notification is SingleNotification &&
+            (notification as SingleNotification).commentText != null) ...[
+          const SizedBox(height: 4),
+          _CommentQuote(
+            text: (notification as SingleNotification).commentText!,
+          ),
+        ],
       ],
     );
   }
 }
 
-class _TypeIconBadge extends StatelessWidget {
-  const _TypeIconBadge({required this.type});
+// ---------------------------------------------------------------------------
+// Avatars row — single avatar or overlapping stack for grouped.
+// ---------------------------------------------------------------------------
 
-  final NotificationKind type;
+class _Avatars extends StatelessWidget {
+  const _Avatars({required this.notification, this.onProfileTap});
+
+  final NotificationItem notification;
+  final VoidCallback? onProfileTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 20,
-      height: 20,
-      decoration: BoxDecoration(
-        color: _iconBackgroundColor,
-        shape: BoxShape.circle,
-        border: Border.all(width: 2),
+    return switch (notification) {
+      SingleNotification(:final actor) => _SingleAvatarTap(
+        actor: actor,
+        onProfileTap: onProfileTap,
       ),
-      child: Center(
-        child: Text(_typeEmoji, style: const TextStyle(fontSize: 10)),
+      GroupedNotification(:final actors, :final totalCount) => GestureDetector(
+        onTap: onProfileTap,
+        child: NotificationAvatarStack(
+          actors: actors,
+          overflowCount: (totalCount - actors.length).clamp(0, totalCount),
+        ),
+      ),
+    };
+  }
+}
+
+class _SingleAvatarTap extends StatelessWidget {
+  const _SingleAvatarTap({required this.actor, this.onProfileTap});
+
+  final ActorInfo actor;
+  final VoidCallback? onProfileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'View ${actor.displayName} profile',
+      button: true,
+      child: GestureDetector(
+        onTap: onProfileTap,
+        child: SingleNotificationAvatar(actor: actor),
       ),
     );
   }
-
-  Color get _iconBackgroundColor {
-    return switch (type) {
-      NotificationKind.like => VineTheme.error,
-      NotificationKind.comment => VineTheme.info,
-      NotificationKind.reply => VineTheme.info,
-      NotificationKind.follow => VineTheme.accentPurple,
-      NotificationKind.repost => VineTheme.vineGreen,
-      NotificationKind.mention => VineTheme.warning,
-      NotificationKind.system => VineTheme.lightText,
-    };
-  }
-
-  String get _typeEmoji {
-    return switch (type) {
-      NotificationKind.like => '\u2764\uFE0F',
-      NotificationKind.comment => '\uD83D\uDCAC',
-      NotificationKind.reply => '\u21A9\uFE0F',
-      NotificationKind.follow => '\uD83D\uDC64',
-      NotificationKind.repost => '\uD83D\uDD01',
-      NotificationKind.mention => '\u0040',
-      NotificationKind.system => '\u2139\uFE0F',
-    };
-  }
 }
 
-class _MessageText extends StatelessWidget {
-  const _MessageText({required this.message, this.actorName});
+/// Single 32×32 rounded-square avatar matching the Figma design.
+class SingleNotificationAvatar extends StatelessWidget {
+  const SingleNotificationAvatar({required this.actor, super.key});
 
-  final String message;
-  final String? actorName;
+  final ActorInfo actor;
+
+  static const double _size = 32;
+  static const double _radius = 12.8;
 
   @override
   Widget build(BuildContext context) {
-    if (_messageStartsWithActorName) {
-      return RichText(
-        textScaler: MediaQuery.textScalerOf(context),
-        text: TextSpan(
-          style: VineTheme.bodyMediumFont(),
-          children: [
-            TextSpan(
-              text: actorName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            TextSpan(text: message.substring(actorName!.length)),
-          ],
+    final pictureUrl = actor.pictureUrl;
+    final clip = ClipRRect(
+      borderRadius: BorderRadius.circular(_radius),
+      child: pictureUrl != null
+          ? CachedNetworkImage(
+              imageUrl: pictureUrl,
+              width: _size,
+              height: _size,
+              fit: BoxFit.cover,
+              placeholder: (context, _) => const _DefaultAvatarFill(),
+              errorWidget: (context, _, _) => const _DefaultAvatarFill(),
+            )
+          : const _DefaultAvatarFill(),
+    );
+
+    return Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(_radius),
+        border: Border.all(
+          color: VineTheme.onSurface.withValues(alpha: 0.25),
+          width: 0.8,
         ),
-      );
-    }
-
-    return Text(message, style: VineTheme.bodyMediumFont());
-  }
-
-  bool get _messageStartsWithActorName {
-    if (actorName == null) return false;
-    return message == actorName || message.startsWith('$actorName ');
+      ),
+      child: clip,
+    );
   }
 }
 
-class _CommentPreview extends StatelessWidget {
-  const _CommentPreview({required this.text});
+class _DefaultAvatarFill extends StatelessWidget {
+  const _DefaultAvatarFill();
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: VineTheme.surfaceContainer,
+      child: Center(
+        child: Icon(Icons.person, color: VineTheme.lightText, size: 18),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Message — bold actor names + post titles, regular verbs, muted timestamp.
+// ---------------------------------------------------------------------------
+
+class _MessageText extends StatelessWidget {
+  const _MessageText({required this.notification});
+
+  final NotificationItem notification;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final spans = _buildSpans(l10n);
+    spans.add(
+      TextSpan(
+        text: ' ${_relativeShort(l10n, notification.timestamp)}',
+        style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
+      ),
+    );
+    return Text.rich(
+      TextSpan(children: spans),
+      textScaler: MediaQuery.textScalerOf(context),
+    );
+  }
+
+  List<InlineSpan> _buildSpans(AppLocalizations l10n) {
+    final spans = <InlineSpan>[];
+    switch (notification) {
+      case SingleNotification(
+        :final actor,
+        :final type,
+        :final videoTitle,
+      ):
+        if (type == NotificationKind.system) {
+          spans.add(
+            TextSpan(
+              text: notification.message,
+              style: VineTheme.bodyMediumFont(),
+            ),
+          );
+          break;
+        }
+        spans.add(
+          TextSpan(text: actor.displayName, style: VineTheme.labelLargeFont()),
+        );
+        spans.add(
+          TextSpan(
+            text: ' ${_verbFor(l10n, type)}',
+            style: VineTheme.bodyMediumFont(),
+          ),
+        );
+        if (videoTitle != null && _typeShowsTitle(type)) {
+          spans.add(
+            TextSpan(text: ' $videoTitle', style: VineTheme.labelLargeFont()),
+          );
+        }
+      case GroupedNotification(
+        :final actors,
+        :final totalCount,
+        :final type,
+        :final videoTitle,
+      ):
+        if (actors.isEmpty) {
+          spans.add(
+            TextSpan(
+              text: notification.message,
+              style: VineTheme.bodyMediumFont(),
+            ),
+          );
+          break;
+        }
+        spans.add(
+          TextSpan(
+            text: actors.first.displayName,
+            style: VineTheme.labelLargeFont(),
+          ),
+        );
+        final othersCount = totalCount - 1;
+        if (othersCount > 0) {
+          spans.add(
+            TextSpan(
+              text: ' ${l10n.notificationAndConnector} ',
+              style: VineTheme.bodyMediumFont(),
+            ),
+          );
+          spans.add(
+            TextSpan(
+              text: l10n.notificationOthersCount(othersCount),
+              style: VineTheme.labelLargeFont(),
+            ),
+          );
+        }
+        spans.add(
+          TextSpan(
+            text: ' ${_verbFor(l10n, type)}',
+            style: VineTheme.bodyMediumFont(),
+          ),
+        );
+        if (videoTitle != null && _typeShowsTitle(type)) {
+          spans.add(
+            TextSpan(text: ' $videoTitle', style: VineTheme.labelLargeFont()),
+          );
+        }
+    }
+    return spans;
+  }
+}
+
+bool _typeShowsTitle(NotificationKind type) {
+  return type == NotificationKind.like ||
+      type == NotificationKind.comment ||
+      type == NotificationKind.repost;
+}
+
+String _verbFor(AppLocalizations l10n, NotificationKind type) {
+  return switch (type) {
+    NotificationKind.like => _stripActorPlaceholder(
+      l10n.notificationLikedYourVideo(''),
+    ),
+    NotificationKind.comment => _stripActorPlaceholder(
+      l10n.notificationCommentedOnYourVideo(''),
+    ),
+    NotificationKind.reply => l10n.notificationRepliedToYourComment,
+    NotificationKind.follow => _stripActorPlaceholder(
+      l10n.notificationStartedFollowing(''),
+    ),
+    NotificationKind.repost => _stripActorPlaceholder(
+      l10n.notificationRepostedYourVideo(''),
+    ),
+    NotificationKind.mention => _stripActorPlaceholder(
+      l10n.notificationMentionedYou(''),
+    ),
+    NotificationKind.system => '',
+  };
+}
+
+/// l10n verb keys carry the actor name as a leading `{actorName}` placeholder.
+/// Calling them with an empty string leaves a leading separator (a space in
+/// English, possibly something different in other locales) — strip it so the
+/// caller can prepend its own bold actor name.
+String _stripActorPlaceholder(String localized) => localized.trimLeft();
+
+String _relativeShort(AppLocalizations l10n, DateTime timestamp) {
+  return LocalizedTimeFormatter.formatRelative(
+    l10n,
+    timestamp.millisecondsSinceEpoch ~/ 1000,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Comment quote shown beneath comment / reply messages.
+// ---------------------------------------------------------------------------
+
+class _CommentQuote extends StatelessWidget {
+  const _CommentQuote({required this.text});
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-    );
-  }
-}
-
-class _Timestamp extends StatelessWidget {
-  const _Timestamp({required this.timestamp});
-
-  final DateTime timestamp;
-
-  @override
-  Widget build(BuildContext context) {
-    final unixSeconds = timestamp.millisecondsSinceEpoch ~/ 1000;
     return Text(
-      LocalizedTimeFormatter.formatRelativeVerbose(context.l10n, unixSeconds),
-      style: VineTheme.bodySmallFont(color: VineTheme.lightText),
+      '“$text”',
+      style: VineTheme.bodyMediumFont(),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Follow-back button shown on follow notifications.
+// ---------------------------------------------------------------------------
 
 class _FollowBackButton extends StatelessWidget {
-  const _FollowBackButton({this.onFollowBack});
+  const _FollowBackButton({this.onPressed});
 
-  final VoidCallback? onFollowBack;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32,
-      child: FilledButton(
-        onPressed: onFollowBack,
-        style: FilledButton.styleFrom(
-          backgroundColor: VineTheme.vineGreen,
-          foregroundColor: VineTheme.onPrimary,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Text(context.l10n.notificationFollowBack),
-      ),
+    return DivineButton(
+      label: context.l10n.notificationFollowBack,
+      onPressed: onPressed,
+      size: DivineButtonSize.small,
     );
   }
 }

@@ -8858,6 +8858,24 @@ abstract class AppLocalizations {
   /// **'{actorName} reposted your video'**
   String notificationRepostedYourVideo(String actorName);
 
+  /// Verb phrase shown after the actor name in a reply notification.
+  ///
+  /// In en, this message translates to:
+  /// **'replied to your comment'**
+  String get notificationRepliedToYourComment;
+
+  /// Connector word between the first actor and the 'N others' count in a grouped notification (e.g. 'Alice and 3 others liked your video').
+  ///
+  /// In en, this message translates to:
+  /// **'and'**
+  String get notificationAndConnector;
+
+  /// Number of additional actors beyond the first in a grouped notification.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 other} other{{count} others}}'**
+  String notificationOthersCount(int count);
+
   /// No description provided for @draftUntitled.
   ///
   /// In en, this message translates to:

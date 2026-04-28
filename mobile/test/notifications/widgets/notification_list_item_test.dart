@@ -76,7 +76,7 @@ void main() {
         await tester.pumpWidget(buildSubject(notification));
         await tester.pump();
 
-        expect(find.text('Great video!'), findsOneWidget);
+        expect(find.textContaining('Great video!'), findsOneWidget);
       });
 
       testWidgets('renders follow-back button for follow type', (tester) async {
@@ -164,7 +164,7 @@ void main() {
         await tester.pumpWidget(buildSubject(notification));
         await tester.pump();
 
-        expect(find.text('I agree!'), findsOneWidget);
+        expect(find.textContaining('I agree!'), findsOneWidget);
       });
 
       testWidgets('uses unread background when not read', (tester) async {

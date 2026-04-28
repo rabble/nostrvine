@@ -1,21 +1,51 @@
-// ABOUTME: Widget tests for NotificationListItem covering all notification types
-// ABOUTME: Tests rendering, onTap callback, read/unread visual state, and thumbnails
+// ABOUTME: Widget tests for the legacy NotificationListItem (relay-feed
+// ABOUTME: variant) covering type-icon mapping, message rendering, callbacks,
+// ABOUTME: and the unread indicator dot.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
+import 'package:openvine/widgets/notification_type_icon.dart';
 
-/// Helper to check if any RichText in the tree contains a given substring
 bool _richTextContains(WidgetTester tester, String substring) {
   final richTexts = tester.widgetList<RichText>(find.byType(RichText));
-  for (final richText in richTexts) {
-    if (richText.text.toPlainText().contains(substring)) {
+  for (final rt in richTexts) {
+    if (rt.text.toPlainText().contains(substring)) return true;
+  }
+  return false;
+}
+
+bool _hasBoldSpan(WidgetTester tester, String text) {
+  for (final rt in tester.widgetList<RichText>(find.byType(RichText))) {
+    if (_walkSpan(rt.text, text)) return true;
+  }
+  return false;
+}
+
+bool _walkSpan(InlineSpan span, String text) {
+  if (span is TextSpan) {
+    final weight = span.style?.fontWeight?.value ?? 400;
+    if (span.text == text && weight >= 600) {
       return true;
+    }
+    final children = span.children;
+    if (children != null) {
+      for (final child in children) {
+        if (_walkSpan(child, text)) return true;
+      }
     }
   }
   return false;
+}
+
+DivineIconName _typeIconName(WidgetTester tester) {
+  final icon = tester.widget<NotificationTypeIcon>(
+    find.byType(NotificationTypeIcon),
+  );
+  return icon.icon;
 }
 
 void main() {
@@ -49,7 +79,6 @@ void main() {
       String? actorName = 'Alice',
       String? message,
       bool isRead = false,
-      String? targetVideoThumbnail,
       Map<String, dynamic>? metadata,
     }) {
       return NotificationModel(
@@ -61,336 +90,53 @@ void main() {
         timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
         isRead: isRead,
         targetEventId: testEventId,
-        targetVideoThumbnail: targetVideoThumbnail,
         metadata: metadata,
       );
     }
 
-    group('like notification', () {
-      testWidgets('renders with heart icon overlay and message', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          message: 'Alice liked your video',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Heart emoji should appear as type icon overlay
-        expect(find.text('❤️'), findsOneWidget);
-        // Message should contain "liked your video" (rendered in RichText)
-        expect(_richTextContains(tester, 'liked your video'), isTrue);
+    group('type icon', () {
+      testWidgets('like uses heart', (tester) async {
+        await tester.pumpWidget(buildTestWidget(notification: makeNotification()));
+        expect(_typeIconName(tester), DivineIconName.heart);
       });
 
-      testWidgets('renders video thumbnail when targetVideoThumbnail set', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          targetVideoThumbnail: 'https://example.com/thumb.jpg',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // The thumbnail widget should be rendered (ClipRRect wrapping the image)
-        expect(find.byType(ClipRRect), findsWidgets);
-      });
-    });
-
-    group('comment notification', () {
-      testWidgets('renders with comment icon and message', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          type: NotificationType.comment,
-          message: 'Alice commented: Great video!',
-          metadata: {'comment': 'Great video!'},
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Comment icon emoji
-        expect(find.text('💬'), findsOneWidget);
-        // Message text rendered in RichText
-        expect(_richTextContains(tester, 'commented'), isTrue);
-      });
-
-      testWidgets('shows comment text from metadata', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          type: NotificationType.comment,
-          message: 'Alice commented: Nice content!',
-          metadata: {'comment': 'Nice content!'},
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Additional content (comment text) should be displayed as a Text widget
-        expect(find.text('Nice content!'), findsOneWidget);
-      });
-    });
-
-    group('follow notification', () {
-      testWidgets('renders with follow icon and no video thumbnail', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          type: NotificationType.follow,
-          message: 'Alice started following you',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Follow icon emoji
-        expect(find.text('👤'), findsOneWidget);
-        // Message rendered in RichText
-        expect(_richTextContains(tester, 'following you'), isTrue);
-      });
-
-      testWidgets(
-        'renders follow copy from current actor identity instead of stale someone fallback',
-        (WidgetTester tester) async {
-          final notification = makeNotification(
-            type: NotificationType.follow,
-            actorName: null,
-            message: 'Someone started following you',
-          );
-
-          await tester.pumpWidget(buildTestWidget(notification: notification));
-
-          final expectedName = UserProfile.defaultDisplayNameFor(testPubkey);
-          expect(
-            find.text('$expectedName started following you'),
-            findsOneWidget,
-          );
-          expect(find.text('Someone started following you'), findsNothing);
-        },
-      );
-    });
-
-    group('repost notification', () {
-      testWidgets('renders with repost icon and message', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          type: NotificationType.repost,
-          message: 'Alice reposted your video',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Repost icon emoji
-        expect(find.text('🔄'), findsOneWidget);
-        // Message rendered in RichText
-        expect(_richTextContains(tester, 'reposted'), isTrue);
-      });
-
-      testWidgets('renders video thumbnail when available', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          type: NotificationType.repost,
-          message: 'Alice reposted your video',
-          targetVideoThumbnail: 'https://example.com/repost-thumb.jpg',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Should have ClipRRect widgets for thumbnail rendering
-        expect(find.byType(ClipRRect), findsWidgets);
-      });
-    });
-
-    group('onTap callback', () {
-      testWidgets('fires when notification is tapped', (
-        WidgetTester tester,
-      ) async {
-        var tapped = false;
-        final notification = makeNotification();
-
+      testWidgets('comment uses chat', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
-            notification: notification,
-            onTap: () => tapped = true,
+            notification: makeNotification(type: NotificationType.comment),
           ),
         );
-
-        await tester.tap(find.byType(InkWell));
-        await tester.pump();
-
-        expect(tapped, isTrue);
+        expect(_typeIconName(tester), DivineIconName.chat);
       });
-    });
 
-    group('onProfileTap callback', () {
-      testWidgets('fires when avatar is tapped', (WidgetTester tester) async {
-        var profileTapped = false;
-        final notification = makeNotification();
-
+      testWidgets('follow uses user', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
-            notification: notification,
-            onProfileTap: () => profileTapped = true,
+            notification: makeNotification(type: NotificationType.follow),
           ),
         );
-
-        // Tap the Semantics widget with the profile label
-        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
-        await tester.pump();
-
-        expect(profileTapped, isTrue);
+        expect(_typeIconName(tester), DivineIconName.user);
       });
 
-      testWidgets('does not crash when onProfileTap is null', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification();
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Tap avatar area - should not throw
-        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
-        await tester.pump();
-
-        // Widget should still be rendered
-        expect(find.byType(NotificationListItem), findsOneWidget);
-      });
-    });
-
-    group('read vs unread visual state', () {
-      testWidgets('unread notification has different background than read', (
-        WidgetTester tester,
-      ) async {
-        // Build unread notification
-        final unreadNotification = makeNotification();
+      testWidgets('repost uses repeat', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(notification: unreadNotification),
-        );
-
-        // Find the Material widget inside NotificationListItem
-        // (it's the direct child that provides background color)
-        final unreadMaterials = tester.widgetList<Material>(
-          find.descendant(
-            of: find.byType(NotificationListItem),
-            matching: find.byType(Material),
+          buildTestWidget(
+            notification: makeNotification(type: NotificationType.repost),
           ),
         );
-        // The first Material descendant of the NotificationListItem is ours
-        final unreadColor = unreadMaterials.first.color;
+        expect(_typeIconName(tester), DivineIconName.repeat);
+      });
 
-        // Build read notification
-        final readNotification = makeNotification(isRead: true);
+      testWidgets('mention uses chat', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(notification: readNotification),
-        );
-
-        final readMaterials = tester.widgetList<Material>(
-          find.descendant(
-            of: find.byType(NotificationListItem),
-            matching: find.byType(Material),
+          buildTestWidget(
+            notification: makeNotification(type: NotificationType.mention),
           ),
         );
-        final readColor = readMaterials.first.color;
-
-        // The colors should be different
-        expect(unreadColor, isNot(equals(readColor)));
-      });
-    });
-
-    group('actor name rendering', () {
-      testWidgets('renders actor name bold in message', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          message: 'Alice liked your video',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Find the RichText that contains our notification message
-        // (the one with 'Alice' in bold)
-        bool foundBoldActor = false;
-        final richTexts = tester.widgetList<RichText>(find.byType(RichText));
-        for (final richText in richTexts) {
-          final textSpan = richText.text;
-          if (textSpan is TextSpan && textSpan.children != null) {
-            for (final child in textSpan.children!) {
-              if (child is TextSpan &&
-                  child.text == 'Alice' &&
-                  child.style?.fontWeight == FontWeight.bold) {
-                foundBoldActor = true;
-              }
-            }
-          }
-        }
-        expect(foundBoldActor, isTrue);
+        expect(_typeIconName(tester), DivineIconName.chat);
       });
 
-      testWidgets('handles multi-word actor names without duplicating text', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          actorName: 'Scary Guy',
-          message: 'Scary Guy liked your video',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        expect(_richTextContains(tester, 'Scary Guy liked your video'), isTrue);
-        expect(
-          _richTextContains(tester, 'Scary Guy Guy liked your video'),
-          isFalse,
-        );
-      });
-
-      testWidgets(
-        'renders l10n message with fallback name when actor name is null',
-        (WidgetTester tester) async {
-          final notification = makeNotification(
-            actorName: null,
-            message: 'Someone liked your video',
-          );
-
-          await tester.pumpWidget(buildTestWidget(notification: notification));
-
-          // When actorName is null, the code uses
-          // UserProfile.defaultDisplayNameFor(actorPubkey) as fallback
-          final fallbackName = UserProfile.defaultDisplayNameFor(testPubkey);
-          expect(find.text('$fallbackName liked your video'), findsOneWidget);
-        },
-      );
-    });
-
-    group('video thumbnail', () {
-      testWidgets('shows thumbnail when targetVideoThumbnail is set', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification(
-          targetVideoThumbnail: 'https://example.com/thumb.jpg',
-        );
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Should render ClipRRect containing the thumbnail
-        expect(find.byType(ClipRRect), findsWidgets);
-      });
-
-      testWidgets('does not show thumbnail when targetVideoThumbnail is null', (
-        WidgetTester tester,
-      ) async {
-        final notification = makeNotification();
-
-        await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // Verify the widget renders without error
-        expect(find.byType(NotificationListItem), findsOneWidget);
-      });
-    });
-
-    group('system notification', () {
-      testWidgets('renders system icon without avatar stack', (
-        WidgetTester tester,
-      ) async {
+      testWidgets('system uses logo', (tester) async {
         final notification = NotificationModel(
           id: 'sys-1',
           type: NotificationType.system,
@@ -398,41 +144,138 @@ void main() {
           message: 'System notification',
           timestamp: DateTime.now(),
         );
-
         await tester.pumpWidget(buildTestWidget(notification: notification));
-
-        // System icon emoji
-        expect(find.text('📱'), findsOneWidget);
-        expect(find.text('System notification'), findsOneWidget);
+        expect(_typeIconName(tester), DivineIconName.logo);
       });
-
-      testWidgets(
-        'renders plain text when message does not start with actor name',
-        (WidgetTester tester) async {
-          final notification = NotificationModel(
-            id: 'sys-2',
-            type: NotificationType.system,
-            actorPubkey: testPubkey,
-            actorName: 'Scary Guy',
-            message: 'You have a new update',
-            timestamp: DateTime.now(),
-          );
-
-          await tester.pumpWidget(buildTestWidget(notification: notification));
-
-          expect(find.text('You have a new update'), findsOneWidget);
-        },
-      );
     });
 
-    group('timestamp', () {
-      testWidgets('renders formatted timestamp', (WidgetTester tester) async {
-        final notification = makeNotification();
+    group('message', () {
+      testWidgets('renders actor name bold for like', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification()),
+        );
+
+        expect(_hasBoldSpan(tester, 'Alice'), isTrue);
+      });
+
+      testWidgets('verb is "liked your video" for like', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification()),
+        );
+        expect(_richTextContains(tester, 'liked your video'), isTrue);
+      });
+
+      testWidgets('falls back to default display name when actor name is null', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            notification: makeNotification(actorName: null),
+          ),
+        );
+
+        final fallback = UserProfile.defaultDisplayNameFor(testPubkey);
+        expect(_richTextContains(tester, '$fallback liked your video'), isTrue);
+      });
+
+      testWidgets('shows comment metadata as quoted text', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            notification: makeNotification(
+              type: NotificationType.comment,
+              metadata: const {'comment': 'Nice content!'},
+            ),
+          ),
+        );
+
+        expect(find.textContaining('Nice content!'), findsOneWidget);
+      });
+
+      testWidgets('renders system message as plain text', (tester) async {
+        final notification = NotificationModel(
+          id: 'sys-2',
+          type: NotificationType.system,
+          actorPubkey: testPubkey,
+          message: 'You have a new update',
+          timestamp: DateTime.now(),
+        );
 
         await tester.pumpWidget(buildTestWidget(notification: notification));
 
-        // Since timestamp is 5 minutes ago, should show "5m ago"
-        expect(find.text('5m ago'), findsOneWidget);
+        expect(_richTextContains(tester, 'You have a new update'), isTrue);
+      });
+
+      testWidgets('appends short relative timestamp', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification()),
+        );
+
+        // 5 minutes ago renders as "5m" via formatRelative.
+        expect(_richTextContains(tester, '5m'), isTrue);
+      });
+    });
+
+    group('unread indicator', () {
+      testWidgets('shows unread dot when isRead is false', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification()),
+        );
+
+        final icon = tester.widget<NotificationTypeIcon>(
+          find.byType(NotificationTypeIcon),
+        );
+        expect(icon.showUnreadDot, isTrue);
+      });
+
+      testWidgets('hides unread dot when isRead is true', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification(isRead: true)),
+        );
+
+        final icon = tester.widget<NotificationTypeIcon>(
+          find.byType(NotificationTypeIcon),
+        );
+        expect(icon.showUnreadDot, isFalse);
+      });
+    });
+
+    group('callbacks', () {
+      testWidgets('onTap fires when row is tapped', (tester) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            notification: makeNotification(),
+            onTap: () => tapped = true,
+          ),
+        );
+        await tester.tap(find.byType(InkWell));
+        await tester.pump();
+
+        expect(tapped, isTrue);
+      });
+
+      testWidgets('onProfileTap fires when avatar is tapped', (tester) async {
+        var profileTapped = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            notification: makeNotification(),
+            onProfileTap: () => profileTapped = true,
+          ),
+        );
+        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
+        await tester.pump();
+
+        expect(profileTapped, isTrue);
+      });
+
+      testWidgets('does not crash when onProfileTap is null', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification()),
+        );
+        await tester.tap(find.bySemanticsLabel(RegExp('View .* profile')));
+        await tester.pump();
+
+        expect(find.byType(NotificationListItem), findsOneWidget);
       });
     });
   });

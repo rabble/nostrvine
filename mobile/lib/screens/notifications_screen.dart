@@ -508,13 +508,6 @@ class _NotificationTabContentState
                             );
                           },
                         ),
-                        if (adjustedIndex < notifications.length - 1)
-                          const Divider(
-                            height: 1,
-                            thickness: 0.5,
-                            color: VineTheme.onSurfaceMuted,
-                            indent: 72,
-                          ),
                       ],
                     );
                   },
