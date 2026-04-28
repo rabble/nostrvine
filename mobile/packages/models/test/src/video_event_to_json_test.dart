@@ -178,6 +178,15 @@ const _excludedInternalFields = <String>{
   'warnLabels',
 };
 
+/// Adding a new persisted field to [VideoEvent] requires THREE coordinated
+/// edits — default-deny is intentional, but the cost is on the contributor:
+///   1. Add the `final` field + constructor parameter on [VideoEvent].
+///   2. Add the field to [VideoEvent.toJson]'s map literal.
+///   3. Add the field name to [_expectedKeys] below + populate it in
+///      [_fullVideo].
+///
+/// Miss only #2 → the "contains exactly the persisted field set" test fails
+/// loudly. Miss only #3 → the new field silently leaks through this guard.
 void main() {
   group('VideoEvent.toJson', () {
     test('contains exactly the persisted field set', () {
@@ -245,22 +254,23 @@ void main() {
       expect(() => jsonEncode(_fullVideo().toJson()), returnsNormally);
     });
 
-    test('omits inspiredByVideo when it is null', () {
-      final video = _fullVideo().copyWith();
-      // copyWith above keeps the existing value; build a minimal video to
-      // confirm null nested object encodes as null, not a missing key.
-      final minimal = VideoEvent(
-        id: _id,
-        pubkey: _pubkey,
-        createdAt: 1704067200,
-        content: '',
-        timestamp: DateTime.fromMillisecondsSinceEpoch(
-          1704067200 * 1000,
-          isUtc: true,
-        ),
-      );
-      expect(video.toJson().keys, contains('inspiredByVideo'));
-      expect(minimal.toJson()['inspiredByVideo'], isNull);
-    });
+    test(
+      'serializes a null inspiredByVideo as a null value (key always present)',
+      () {
+        final minimal = VideoEvent(
+          id: _id,
+          pubkey: _pubkey,
+          createdAt: 1704067200,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(
+            1704067200 * 1000,
+            isUtc: true,
+          ),
+        );
+        expect(_fullVideo().toJson().containsKey('inspiredByVideo'), isTrue);
+        expect(minimal.toJson().containsKey('inspiredByVideo'), isTrue);
+        expect(minimal.toJson()['inspiredByVideo'], isNull);
+      },
+    );
   });
 }
