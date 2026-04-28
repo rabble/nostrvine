@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 
 class _MockLikesRepository extends Mock implements LikesRepository {}
@@ -672,7 +673,13 @@ void main() {
             error: VideoInteractionsError.likeFailed,
           ),
         ],
-        errors: () => [isA<StateError>()],
+        errors: () => [
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<StateError>(),
+          ),
+        ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(

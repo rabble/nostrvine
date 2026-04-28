@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' show NIP71VideoKinds;
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -272,7 +273,7 @@ class VideoInteractionsBloc
         name: 'VideoInteractionsBloc',
         category: LogCategory.system,
       );
-      addError(e, stackTrace);
+      addError(Reportable(e, context: '_publishLike'), stackTrace);
       outcome = _LikeSettleFailed(wasLiked: wasLiked);
     }
 

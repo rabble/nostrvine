@@ -43,6 +43,7 @@ import 'package:openvine/l10n/resolve_app_ui_locale.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
+import 'package:openvine/observability/divine_bloc_observer.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
@@ -764,6 +765,11 @@ Future<void> _startOpenVineApp() async {
   StartupPerformanceService.instance.checkpoint('pre_app_launch');
 
   await initializeDateFormatting();
+
+  // Forward Bloc/Cubit errors (addError, uncaught handler throws, emit
+  // failures) to Crashlytics + UnifiedLogger. Surfaced during the #3503
+  // investigation as a missing observability hook. See #3526.
+  Bloc.observer = DivineBlocObserver();
 
   runApp(
     UncontrolledProviderScope(
