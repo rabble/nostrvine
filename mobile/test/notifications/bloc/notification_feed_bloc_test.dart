@@ -324,11 +324,34 @@ void main() {
           ),
         ],
       );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'marks a tapped grouped notification as read and decrements unread',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAsRead(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_grouped()],
+          unreadCount: 1,
+        ),
+        act: (bloc) =>
+            bloc.add(NotificationFeedItemTapped('group_like_video1')),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_grouped(isRead: true)],
+          ),
+        ],
+      );
     });
 
     group('NotificationFeedMarkAllRead', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'sets unread count to 0',
+        'flips isRead on every notification and zeros unread count',
         setUp: () {
           when(
             () => mockNotificationRepo.markAllAsRead(),
@@ -337,16 +360,41 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single()],
+          notifications: [_single(), _grouped()],
           unreadCount: 5,
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [_single()],
+            notifications: [_single(isRead: true), _grouped(isRead: true)],
           ),
         ],
+        verify: (bloc) {
+          // Derived badge reflects the flipped list immediately.
+          expect(bloc.state.unreadBadgeCount, 0);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'is a no-op when everything is already read and the count is zero',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_single(isRead: true)],
+          // ignore: avoid_redundant_argument_values
+          unreadCount: 0,
+        ),
+        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
+        expect: () => <NotificationFeedState>[],
+        verify: (_) {
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        },
       );
     });
 
@@ -393,6 +441,71 @@ void main() {
         expect: () => <NotificationFeedState>[],
         errors: () => [isA<Exception>()],
       );
+    });
+
+    group('unreadBadgeCount', () {
+      test('derives from the consolidated unread list, not the server-reported '
+          'unreadCount inflated by Kind 3 republishes', () {
+        // Repository already consolidated 5 raw follow rows from 2 distinct
+        // pubkeys down to 2 visible items, but the server still reports
+        // unreadCount: 5 (funnelcake#234). The badge must follow the list.
+        final state = NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _single(
+              id: 'follow_a',
+              type: NotificationKind.follow,
+              pubkey: 'follower_a',
+            ),
+            _single(
+              id: 'follow_b',
+              type: NotificationKind.follow,
+              pubkey: 'follower_b',
+            ),
+          ],
+          unreadCount: 5,
+        );
+
+        expect(state.unreadBadgeCount, 2);
+      });
+
+      test('drops to 0 when notifications list is empty even if server reports '
+          'unread items', () {
+        const state = NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          unreadCount: 42,
+        );
+
+        expect(state.unreadBadgeCount, 0);
+      });
+
+      test('excludes already-read notifications', () {
+        final state = NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _single(id: 'unread_1'),
+            _single(id: 'unread_2', pubkey: 'def'),
+            _single(id: 'read_1', pubkey: 'ghi', isRead: true),
+          ],
+          unreadCount: 3,
+        );
+
+        expect(state.unreadBadgeCount, 2);
+      });
+
+      test('counts unread grouped notifications alongside singles', () {
+        final state = NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _single(),
+            _grouped(),
+            _grouped(id: 'group2', targetEventId: 'video2', isRead: true),
+          ],
+        );
+
+        // Two unread (one single + one grouped), one read group excluded.
+        expect(state.unreadBadgeCount, 2);
+      });
     });
 
     group('realtime blocklist filtering', () {
