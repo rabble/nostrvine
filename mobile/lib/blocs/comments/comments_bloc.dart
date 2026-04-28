@@ -69,11 +69,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentSubmitted>(_onSubmitted);
     on<CommentErrorCleared>(_onErrorCleared);
     on<CommentDeleteRequested>(_onDeleteRequested);
-    // Single handler with droppable() so rapid taps of any vote — same
-    // comment, same direction OR opposite direction — drop while a
-    // publish is in flight. Splitting the handlers by direction would
-    // let an up-tap and a down-tap run concurrently and interleave
-    // kind-7 / kind-5 publishes on the relay.
+    // Single handler with droppable(): splitting by direction would let an
+    // up-tap and a down-tap run concurrently and interleave kind-7 / kind-5
+    // publishes on the relay.
     on<CommentVoteToggled>(_onVoteToggled, transformer: droppable());
     on<CommentVoteCountsFetchRequested>(_onVoteCountsFetchRequested);
     on<CommentsSortModeChanged>(_onSortModeChanged);
