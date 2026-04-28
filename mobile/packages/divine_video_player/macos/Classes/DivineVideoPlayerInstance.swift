@@ -345,7 +345,16 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
         let targetTime = CMTime(seconds: clipOffsets[index], preferredTimescale: 600)
         player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-            self?.syncAudioOverlays()
+            guard let self else {
+                result(nil)
+                return
+            }
+            self.textureOutput?.forceRefresh(for: targetTime)
+            self.syncAudioOverlays()
+            // Same stuck-frame guard as handleSeekTo: a paused player
+            // landing on a clip boundary keeps returning the pre-seek
+            // buffer until preroll primes the output pipeline.
+            self.safePreroll(at: targetTime)
             result(nil)
         }
     }
