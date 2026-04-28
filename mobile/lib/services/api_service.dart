@@ -143,6 +143,90 @@ class ApiService {
     }
   }
 
+  /// Get current account restriction and minor-account review status.
+  Future<Map<String, dynamic>> getMinorAccountReviewStatus() async {
+    Log.debug(
+      'Fetching minor-account review status',
+      name: 'ApiService',
+      category: LogCategory.api,
+    );
+
+    try {
+      final uri = Uri.parse('$_baseUrl/v1/account/moderation-status');
+      final response = await _client
+          .get(
+            uri,
+            headers: await _getHeaders(
+              url: uri.toString(),
+            ),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+
+      throw ApiException(
+        'Failed to get minor-account review status',
+        statusCode: response.statusCode,
+        responseBody: response.body,
+      );
+    } on TimeoutException {
+      throw const ApiException('Request timeout for moderation status');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        'Network error during moderation status request: $e',
+      );
+    }
+  }
+
+  /// Submit parent contact email for an open minor-account review case.
+  Future<void> submitMinorAccountReviewParentContact({
+    required String caseId,
+    required String email,
+  }) async {
+    Log.debug(
+      'Submitting parent contact for case $caseId',
+      name: 'ApiService',
+      category: LogCategory.api,
+    );
+
+    try {
+      final uri =
+          Uri.parse('$_baseUrl/v1/minor-review-cases/$caseId/parent-contact');
+      final response = await _client
+          .post(
+            uri,
+            headers: await _getHeaders(
+              url: uri.toString(),
+              method: HttpMethod.post,
+            ),
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(_defaultTimeout);
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204) {
+        return;
+      }
+
+      throw ApiException(
+        'Failed to submit parent contact',
+        statusCode: response.statusCode,
+        responseBody: response.body,
+      );
+    } on TimeoutException {
+      throw const ApiException('Request timeout for parent contact submission');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException(
+        'Network error during parent contact submission: $e',
+      );
+    }
+  }
+
   /// Get standard headers for API requests
   Future<Map<String, String>> _getHeaders({
     String? url,
