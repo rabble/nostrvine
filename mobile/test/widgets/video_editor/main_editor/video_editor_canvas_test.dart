@@ -64,8 +64,8 @@ void main() {
       );
     });
 
-    tearDown(() {
-      mainBloc.close();
+    tearDown(() async {
+      await mainBloc.close();
     });
 
     test(
