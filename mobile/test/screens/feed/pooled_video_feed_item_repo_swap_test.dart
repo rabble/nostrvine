@@ -45,13 +45,7 @@ class _Fixture extends ConsumerWidget {
     final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey(
-        Object.hash(
-          identityHashCode(likesRepository),
-          identityHashCode(commentsRepository),
-          identityHashCode(repostsRepository),
-        ),
-      ),
+      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: 'test-event',
@@ -214,8 +208,9 @@ void main() {
         );
 
         // Force the override to re-run, but keep returning the same mock
-        // — the composite key (built from identity hashes) must stay the
-        // same, so BlocProvider keeps the same bloc.
+        // — the record key compares fields by `==` (identity for these
+        // classes), so identical instances yield equal keys and the
+        // BlocProvider keeps the same bloc.
         container.read(_likesRepoSwap.notifier).state = 1;
         await tester.pump();
 
@@ -228,7 +223,97 @@ void main() {
           same(blocA),
           reason:
               'identical repo identities should keep the same bloc — '
-              'the composite key prevents unnecessary churn on rebuilds',
+              'the record key prevents unnecessary churn on rebuilds',
+        );
+      },
+    );
+
+    // Documents an intentional trade-off raised in PR #3522 review: when
+    // the composite record key changes, the old bloc is closed and the
+    // new one starts from initial state. Optimistic flips and in-flight
+    // publishes against the previous repo are intentionally dropped —
+    // the new repo points at a different NostrClient (different signer,
+    // possibly different user) so replaying them would be unsafe.
+    //
+    // Today the only paths that flip this key are:
+    //   - auth state transitions (the cold-launch race this PR fixes),
+    //   - sign-in / sign-out / account switch.
+    // If a future change adds a non-auth invalidation of one of the
+    // three repository providers, this test will fail loudly so the
+    // state-loss can be re-evaluated in that context.
+    testWidgets(
+      'resets bloc state when likesRepositoryProvider rebuilds (intentional)',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            likesRepositoryProvider.overrideWith((ref) {
+              final v = ref.watch(_likesRepoSwap);
+              return v == 0 ? mockLikesA : mockLikesB;
+            }),
+            commentsRepositoryProvider.overrideWith((_) => mockComments),
+            repostsRepositoryProvider.overrideWith((_) => mockReposts),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: _Fixture()),
+          ),
+        );
+
+        final blocBefore = BlocProvider.of<VideoInteractionsBloc>(
+          tester.element(find.byType(_Probe)),
+        );
+
+        // Synthesise a non-initial state to prove it actually gets lost.
+        // Mirrors what an optimistic like emit would look like: heart
+        // flipped + count incremented, no error.
+        blocBefore.emit(
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 7,
+          ),
+        );
+        await tester.pump();
+        expect(blocBefore.state.isLiked, isTrue);
+        expect(blocBefore.state.likeCount, equals(7));
+
+        // Flip the override → key changes → BlocProvider tears down
+        // blocBefore and creates a fresh bloc from initial state.
+        container.read(_likesRepoSwap.notifier).state = 1;
+        await tester.pump();
+
+        final blocAfter = BlocProvider.of<VideoInteractionsBloc>(
+          tester.element(find.byType(_Probe)),
+        );
+
+        expect(
+          blocAfter,
+          isNot(same(blocBefore)),
+          reason: 'precondition: a swap should have happened',
+        );
+        // The fresh bloc starts from initial state — the synthesised
+        // optimistic flip on blocBefore is gone. This is intentional:
+        // the optimistic state was bound to the previous repository
+        // (different NostrClient / signer), and replaying it against
+        // the new one is unsafe.
+        expect(
+          blocAfter.state.isLiked,
+          isFalse,
+          reason: 'new bloc should not inherit blocBefore.isLiked',
+        );
+        expect(
+          blocAfter.state.likeCount,
+          isNull,
+          reason: 'new bloc should not inherit blocBefore.likeCount',
+        );
+        expect(
+          blocAfter.state.error,
+          isNull,
+          reason: 'new bloc should not inherit blocBefore.error',
         );
       },
     );

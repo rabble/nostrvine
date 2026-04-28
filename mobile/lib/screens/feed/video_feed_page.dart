@@ -895,10 +895,12 @@ class _PooledVideoFeedItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ref.watch + composite ValueKey: when any of these provider instances
-    // is rebuilt (auth flip / sign-out / account switch) the BlocProvider's
+    // ref.watch + record key: when any of these provider instances is
+    // rebuilt (auth flip / sign-out / account switch) the BlocProvider's
     // key changes, the stale bloc is closed, and the new one's create:
-    // captures the fresh repository chain. See #3503.
+    // captures the fresh repository chain. Records compare structurally
+    // (per-field ==), and these classes don't override == — so equality
+    // falls through to identity, which is what we want. See #3503.
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
@@ -907,13 +909,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey(
-        Object.hash(
-          identityHashCode(likesRepository),
-          identityHashCode(commentsRepository),
-          identityHashCode(repostsRepository),
-        ),
-      ),
+      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -981,13 +977,7 @@ class _WebVideoFeedItem extends ConsumerWidget {
     final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     return BlocProvider<VideoInteractionsBloc>(
-      key: ValueKey(
-        Object.hash(
-          identityHashCode(likesRepository),
-          identityHashCode(commentsRepository),
-          identityHashCode(repostsRepository),
-        ),
-      ),
+      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
