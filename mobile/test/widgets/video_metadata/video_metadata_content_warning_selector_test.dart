@@ -67,12 +67,18 @@ void main() {
       expect(find.byType(VideoMetadataSelectionTile), findsOneWidget);
     });
 
-    testWidgets('shows "None" when no content warnings are selected', (
+    testWidgets('shows empty value when no content warnings are selected', (
       tester,
     ) async {
       await tester.pumpWidget(buildWidget());
 
-      expect(find.text(l10n.contentWarningNone), findsOneWidget);
+      expect(find.text(l10n.contentWarningNone), findsNothing);
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is EditableText && w.controller.text.isEmpty,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('displays content warning label', (tester) async {

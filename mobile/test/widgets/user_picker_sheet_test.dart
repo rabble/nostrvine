@@ -67,6 +67,7 @@ _MockFollowRepository _createMockFollowRepository({
   );
   when(() => mock.isInitialized).thenReturn(true);
   when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  when(() => mock.getMyFollowers()).thenAnswer((_) async => followingPubkeys);
   return mock;
 }
 

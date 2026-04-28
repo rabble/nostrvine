@@ -100,7 +100,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Inspired by'), findsOneWidget);
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(
+        find.text(l10n.videoMetadataInspiredByLabel),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders selection tile when no inspiration is set', (
@@ -184,7 +188,10 @@ void main() {
       for (final element in semanticsWidgets.evaluate()) {
         final widget = element.widget as Semantics;
         if (widget.properties.button == true &&
-            widget.properties.label == 'Set inspired by') {
+            widget.properties.label ==
+                lookupAppLocalizations(
+                  const Locale('en'),
+                ).videoMetadataSetInspiredBySemanticLabel) {
           foundInspiredBySemantics = true;
           break;
         }
