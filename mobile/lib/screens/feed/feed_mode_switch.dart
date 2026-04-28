@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/screens/feed/feed_mode_overlay_layout.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
@@ -42,13 +43,7 @@ class FeedModeSwitch extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            // Left padding (16) matches the video metadata container's
-            // `start: 16` on the overlay below, so the feed-mode label
-            // lines up with the avatar.
-            // Right padding (12) gives the trailing More popover a hair
-            // more breathing room from the screen edge — matches the
-            // fullscreen app bar and the profile screen's nav-button row.
-            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 12, 16),
+            padding: FeedModeOverlayLayout.contentPadding,
             child: isPreviewMode
                 ? _FeedModeContent(
                     label: _labelForMode(FeedMode.forYou, context.l10n),
@@ -126,7 +121,7 @@ class _FeedModeContent extends StatelessWidget {
           label: context.l10n.feedModeSemanticLabel(label),
           button: true,
           child: GestureDetector(
-            behavior: .opaque,
+            behavior: HitTestBehavior.opaque,
             onTap: onTap,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -144,7 +139,7 @@ class _FeedModeContent extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        ?trailing,
+        if (trailing != null) trailing!,
       ],
     );
   }
