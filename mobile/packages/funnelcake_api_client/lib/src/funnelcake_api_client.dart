@@ -324,6 +324,66 @@ class FunnelcakeApiClient {
     }
   }
 
+  /// Fetches videos sorted by 24-hour CDN view count with NO age decay.
+  ///
+  /// Surfaces what people are looking at right now — including classic
+  /// Vines getting current attention. Backed by Funnelcake's
+  /// `?sort=watching` mode (see funnelcake#305 + funnelcake#307).
+  ///
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [before] is an optional Unix timestamp cursor for pagination.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getWatchingVideos({
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = _videoQueryParameters({
+      'sort': 'watching',
+      'limit': limit.toString(),
+    });
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch watching videos',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch watching videos: $e');
+    }
+  }
+
   /// Fetches the home feed for a specific user.
   ///
   /// Returns videos from accounts the user follows, with cursor-based
