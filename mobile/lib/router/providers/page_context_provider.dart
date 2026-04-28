@@ -133,6 +133,22 @@ class RouteContext {
   final String? conversationId;
 }
 
+/// Decodes a URL path segment, returning the raw input on malformed
+/// percent-encoding instead of throwing. See #3413.
+///
+/// `Uri.decodeComponent` throws `ArgumentError` on malformed input
+/// (e.g. a dangling `%` from a hand-crafted deep link). Treating that
+/// as a recoverable boundary error rather than a programmer bug is
+/// intentional here, so the lint is suppressed locally.
+String _safeDecode(String segment) {
+  try {
+    return Uri.decodeComponent(segment);
+    // ignore: avoid_catching_errors
+  } on ArgumentError {
+    return segment;
+  }
+}
+
 /// Parse a URL path into a structured RouteContext
 /// Normalizes negative indices to 0 and decodes URL-encoded parameters
 RouteContext parseRoute(String path) {
@@ -162,7 +178,7 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final npub = Uri.decodeComponent(segments[1]); // Decode URL encoding
+      final npub = _safeDecode(segments[1]); // Decode URL encoding
       // Grid mode (no index) vs feed mode (with index)
       if (segments.length > 2) {
         final rawIndex = int.tryParse(segments[2]) ?? 0;
@@ -187,7 +203,7 @@ RouteContext parseRoute(String path) {
       // /inbox/message-requests - message requests inbox
       // /inbox/message-requests/:id - request preview
       if (segments.length > 2 && segments[1] == 'conversation') {
-        final conversationId = Uri.decodeComponent(segments[2]);
+        final conversationId = _safeDecode(segments[2]);
         return RouteContext(
           type: RouteType.conversation,
           conversationId: conversationId,
@@ -195,7 +211,7 @@ RouteContext parseRoute(String path) {
       }
       if (segments.length > 1 && segments[1] == 'message-requests') {
         if (segments.length > 2) {
-          final conversationId = Uri.decodeComponent(segments[2]);
+          final conversationId = _safeDecode(segments[2]);
           return RouteContext(
             type: RouteType.requestPreview,
             conversationId: conversationId,
@@ -219,7 +235,7 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final tag = Uri.decodeComponent(segments[1]); // Decode URL encoding
+      final tag = _safeDecode(segments[1]); // Decode URL encoding
       final rawIndex = segments.length > 2 ? int.tryParse(segments[2]) : null;
       final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
       return RouteContext(
@@ -232,7 +248,7 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final categoryName = Uri.decodeComponent(segments[1]);
+      final categoryName = _safeDecode(segments[1]);
       return RouteContext(
         type: RouteType.categoryGallery,
         categoryName: categoryName,
@@ -243,7 +259,7 @@ RouteContext parseRoute(String path) {
 
     case 'video-editor':
       if (segments.length > 1) {
-        final draftId = Uri.decodeComponent(segments[1]);
+        final draftId = _safeDecode(segments[1]);
         return RouteContext(type: RouteType.videoEditor, draftId: draftId);
       }
       return const RouteContext(type: RouteType.videoEditor);
@@ -258,7 +274,7 @@ RouteContext parseRoute(String path) {
       if (segments.length > 1) {
         return RouteContext(
           type: RouteType.settings,
-          appSlug: Uri.decodeComponent(segments[1]),
+          appSlug: _safeDecode(segments[1]),
         );
       }
       return const RouteContext(type: RouteType.settings, appSlug: '');
@@ -341,11 +357,11 @@ RouteContext parseRoute(String path) {
     case 'developer-options':
       return const RouteContext(type: RouteType.developerOptions);
     case 'following':
-      final followingPubkey = Uri.decodeComponent(segments[1]);
+      final followingPubkey = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.following, npub: followingPubkey);
 
     case 'followers':
-      final followersPubkey = Uri.decodeComponent(segments[1]);
+      final followersPubkey = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.followers, npub: followersPubkey);
 
     case 'video-feed':
@@ -354,7 +370,7 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.explore);
       }
-      final listId = Uri.decodeComponent(segments[1]);
+      final listId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.curatedList, listId: listId);
 
     case 'discover-lists':
@@ -364,14 +380,14 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final soundId = Uri.decodeComponent(segments[1]);
+      final soundId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.sound, soundId: soundId);
 
     case 'original-sound':
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final originalSoundPubkey = Uri.decodeComponent(segments[1]);
+      final originalSoundPubkey = _safeDecode(segments[1]);
       return RouteContext(
         type: RouteType.originalSound,
         npub: originalSoundPubkey,
@@ -381,7 +397,7 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final profileViewNpub = Uri.decodeComponent(segments[1]);
+      final profileViewNpub = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.profileView, npub: profileViewNpub);
 
     case 'secure-account':
@@ -394,7 +410,7 @@ RouteContext parseRoute(String path) {
       if (segments.length < 2) {
         return const RouteContext(type: RouteType.home);
       }
-      final videoId = Uri.decodeComponent(segments[1]);
+      final videoId = _safeDecode(segments[1]);
       return RouteContext(type: RouteType.videoDetail, videoId: videoId);
 
     default:

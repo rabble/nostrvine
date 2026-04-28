@@ -947,13 +947,20 @@ class _PooledFullscreenItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final likesRepository = ref.read(likesRepositoryProvider);
-    final commentsRepository = ref.read(commentsRepositoryProvider);
-    final repostsRepository = ref.read(repostsRepositoryProvider);
+    // ref.watch + record key: see video_feed_page.dart for rationale.
+    // Without this, a fullscreen entry that mounts during the auth-flip
+    // window (warm-up materialized providers pre-auth, then provider
+    // graph rebuilds) snapshots a stale LikesRepository whose underlying
+    // Nostr instance has an empty cached pubkey — every sendLike then
+    // throws StateError. See #3503.
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
+      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,
@@ -1013,11 +1020,13 @@ class _WebFullscreenItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final likesRepository = ref.read(likesRepositoryProvider);
-    final commentsRepository = ref.read(commentsRepositoryProvider);
-    final repostsRepository = ref.read(repostsRepositoryProvider);
+    // See _PooledFullscreenItem.build for the rationale on watch + key. #3503.
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     return BlocProvider<VideoInteractionsBloc>(
+      key: ValueKey((likesRepository, commentsRepository, repostsRepository)),
       create: (_) =>
           VideoInteractionsBloc(
               eventId: video.id,

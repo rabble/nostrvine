@@ -221,14 +221,8 @@ class _TrimmableOverlayTileState extends State<_TrimmableOverlayTile> {
   void didUpdateWidget(_TrimmableOverlayTile oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.pixelsPerSecond != widget.pixelsPerSecond) {
-      _leftSnap = TimelineSnapController(
-        direction: SnapEdgeDirection.positive,
-        pixelsPerSecond: widget.pixelsPerSecond,
-      );
-      _rightSnap = TimelineSnapController(
-        direction: SnapEdgeDirection.negative,
-        pixelsPerSecond: widget.pixelsPerSecond,
-      );
+      _leftSnap.pixelsPerSecond = widget.pixelsPerSecond;
+      _rightSnap.pixelsPerSecond = widget.pixelsPerSecond;
     }
   }
 

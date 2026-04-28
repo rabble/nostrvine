@@ -195,18 +195,20 @@ class _SoundContent extends StatelessWidget {
                     minWidth: 0,
                     maxWidth: waveformWidth,
                     alignment: .centerLeft,
-                    child: SizedBox(
-                      width: waveformWidth,
-                      child: CustomPaint(
-                        painter: StereoWaveformPainter(
-                          leftChannel: leftChannel ?? Float32List(0),
-                          rightChannel: rightChannel,
-                          progress: 1,
-                          activeColor: VineTheme.accentPurple,
-                          inactiveColor: VineTheme.accentPurple,
-                          audioDuration: effectiveMax,
-                          maxDuration: effectiveMax,
-                          barWidth: TimelineConstants.soundWaveformBarWidth,
+                    child: RepaintBoundary(
+                      child: SizedBox(
+                        width: waveformWidth,
+                        child: CustomPaint(
+                          painter: StereoWaveformPainter(
+                            leftChannel: leftChannel ?? Float32List(0),
+                            rightChannel: rightChannel,
+                            progress: 1,
+                            activeColor: VineTheme.accentPurple,
+                            inactiveColor: VineTheme.accentPurple,
+                            audioDuration: effectiveMax,
+                            maxDuration: effectiveMax,
+                            barWidth: TimelineConstants.soundWaveformBarWidth,
+                          ),
                         ),
                       ),
                     ),

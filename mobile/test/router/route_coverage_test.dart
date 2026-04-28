@@ -436,5 +436,45 @@ void main() {
         );
       }
     });
+
+    // Regression tests for #3413: malformed percent-encoded deep links
+    // (e.g. dangling `%`, `%2`, `%ZZ`) used to crash parseRoute when it
+    // called Uri.decodeComponent unguarded. parseRoute now routes every
+    // segment decode through a safe helper that returns the raw input on
+    // ArgumentError. The route type and raw segment are preserved.
+    group('Malformed percent-encoded segments do not throw', () {
+      const malformedSegments = ['foo%', 'foo%2', 'foo%ZZ', '%'];
+
+      for (final segment in malformedSegments) {
+        test('parseRoute(/hashtag/$segment) does not throw', () {
+          expect(() => parseRoute('/hashtag/$segment'), returnsNormally);
+          final context = parseRoute('/hashtag/$segment');
+          expect(context.type, RouteType.hashtag);
+          expect(context.hashtag, segment);
+        });
+
+        test('parseRoute(/profile/$segment) does not throw', () {
+          expect(() => parseRoute('/profile/$segment'), returnsNormally);
+          final context = parseRoute('/profile/$segment');
+          expect(context.type, RouteType.profile);
+          expect(context.npub, segment);
+        });
+
+        test('parseRoute(/video/$segment) does not throw', () {
+          expect(() => parseRoute('/video/$segment'), returnsNormally);
+          final context = parseRoute('/video/$segment');
+          expect(context.type, RouteType.videoDetail);
+          expect(context.videoId, segment);
+        });
+      }
+
+      test('parseRoute still decodes well-formed segments correctly', () {
+        // Sanity: the safe helper must remain a no-op for valid input.
+        final encoded = Uri.encodeComponent('hello world');
+        final context = parseRoute('/hashtag/$encoded');
+        expect(context.type, RouteType.hashtag);
+        expect(context.hashtag, 'hello world');
+      });
+    });
   });
 }

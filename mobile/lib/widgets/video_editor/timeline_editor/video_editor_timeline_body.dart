@@ -53,19 +53,6 @@ class VideoEditorTimelineBody extends StatelessWidget {
 
   static const _scrollBottomPadding = 100;
 
-  /// Computes cumulative clip-boundary positions in milliseconds.
-  /// Each clip edge (start of first clip + end of each clip) creates a
-  /// potential snap target for overlay items.
-  static List<int> _clipEdgesMs(List<DivineVideoClip> clips) {
-    final edges = <int>[0];
-    var runningMs = 0;
-    for (final clip in clips) {
-      runningMs += clip.trimmedDuration.inMilliseconds;
-      edges.add(runningMs);
-    }
-    return edges;
-  }
-
   final ValueChanged<List<DivineVideoClip>>? onReorder;
   final ValueChanged<bool>? onReorderChanged;
   final String? trimmingClipId;
@@ -104,6 +91,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
         : overlayTrimExpand;
     final showMaxDurationOverlays =
         !isReordering && totalDuration > VideoEditorConstants.maxDuration;
+    final outsideExtendWidth = MediaQuery.sizeOf(context).width / 2;
 
     return HitExpandedBox(
       expandLeft: trimExpand,
@@ -116,6 +104,7 @@ class VideoEditorTimelineBody extends StatelessWidget {
           _TimelineMaxDurationStripeOverlay(
             pixelsPerSecond: pixelsPerSecond,
             visible: showMaxDurationOverlays,
+            outsideExtendWidth: outsideExtendWidth,
           ),
 
           Column(
@@ -126,28 +115,32 @@ class VideoEditorTimelineBody extends StatelessWidget {
               AnimatedOpacity(
                 opacity: isReordering ? 0.0 : 1.0,
                 duration: const Duration(milliseconds: 200),
-                child: VideoEditorTimelineRulesIndicator(
-                  totalDuration: totalDuration,
-                  pixelsPerSecond: pixelsPerSecond,
-                  scrollController: scrollController,
-                  scrollPadding: scrollPadding,
+                child: RepaintBoundary(
+                  child: VideoEditorTimelineRulesIndicator(
+                    totalDuration: totalDuration,
+                    pixelsPerSecond: pixelsPerSecond,
+                    scrollController: scrollController,
+                    scrollPadding: scrollPadding,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
 
               /// Video-Clips
-              VideoEditorTimelineClipStrip(
-                clips: clips,
-                totalWidth: totalWidth,
-                pixelsPerSecond: pixelsPerSecond,
-                scrollController: scrollController,
-                isInteracting: isInteracting,
-                onReorder: onReorder,
-                onReorderChanged: onReorderChanged,
-                trimmingClipId: trimmingClipId,
-                onTrimChanged: onTrimChanged,
-                onTrimDragChanged: onTrimDragChanged,
-                onClipTapped: onClipTapped,
+              RepaintBoundary(
+                child: VideoEditorTimelineClipStrip(
+                  clips: clips,
+                  totalWidth: totalWidth,
+                  pixelsPerSecond: pixelsPerSecond,
+                  scrollController: scrollController,
+                  isInteracting: isInteracting,
+                  onReorder: onReorder,
+                  onReorderChanged: onReorderChanged,
+                  trimmingClipId: trimmingClipId,
+                  onTrimChanged: onTrimChanged,
+                  onTrimDragChanged: onTrimDragChanged,
+                  onClipTapped: onClipTapped,
+                ),
               ),
 
               /// Layers, Filters and Audio-Tracks
@@ -167,19 +160,21 @@ class VideoEditorTimelineBody extends StatelessWidget {
                       ),
                       child: IgnorePointer(
                         ignoring: isReordering,
-                        child: TimelineOverlayStrips(
-                          totalWidth: totalWidth,
-                          pixelsPerSecond: pixelsPerSecond,
-                          totalDuration: totalDuration,
-                          clipEdgesMs: _clipEdgesMs(clips),
-                          playheadPosition: playheadPosition,
-                          onItemTapped: onOverlayItemTapped,
-                          onItemMoved: onOverlayItemMoved,
-                          onItemMoving: onOverlayItemMoving,
-                          onItemTrimmed: onOverlayItemTrimmed,
-                          onTrimDragChanged: onOverlayTrimDragChanged,
-                          onDragStarted: onOverlayDragStarted,
-                          onDragEnded: onOverlayDragEnded,
+                        child: RepaintBoundary(
+                          child: _CachedOverlayStrips(
+                            clips: clips,
+                            totalWidth: totalWidth,
+                            pixelsPerSecond: pixelsPerSecond,
+                            totalDuration: totalDuration,
+                            playheadPosition: playheadPosition,
+                            onItemTapped: onOverlayItemTapped,
+                            onItemMoved: onOverlayItemMoved,
+                            onItemMoving: onOverlayItemMoving,
+                            onItemTrimmed: onOverlayItemTrimmed,
+                            onTrimDragChanged: onOverlayTrimDragChanged,
+                            onDragStarted: onOverlayDragStarted,
+                            onDragEnded: onOverlayDragEnded,
+                          ),
                         ),
                       ),
                     ),
@@ -191,9 +186,101 @@ class VideoEditorTimelineBody extends StatelessWidget {
           _TimelineMaxDurationDimOverlay(
             pixelsPerSecond: pixelsPerSecond,
             visible: showMaxDurationOverlays,
+            outsideExtendWidth: outsideExtendWidth,
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Wraps [TimelineOverlayStrips] and memoizes the clip-edge snap-point list
+/// so the same [List<int>] reference is passed on every parent rebuild,
+/// avoiding redundant bucket-split and snap-set recomputation downstream.
+class _CachedOverlayStrips extends StatefulWidget {
+  const _CachedOverlayStrips({
+    required this.clips,
+    required this.totalWidth,
+    required this.pixelsPerSecond,
+    required this.totalDuration,
+    required this.playheadPosition,
+    this.onItemTapped,
+    this.onItemMoved,
+    this.onItemMoving,
+    this.onItemTrimmed,
+    this.onTrimDragChanged,
+    this.onDragStarted,
+    this.onDragEnded,
+  });
+
+  final List<DivineVideoClip> clips;
+  final double totalWidth;
+  final double pixelsPerSecond;
+  final Duration totalDuration;
+  final ValueNotifier<Duration> playheadPosition;
+  final ValueChanged<TimelineOverlayItem>? onItemTapped;
+  final OverlayMoveCallback? onItemMoved;
+  final OverlayMovingCallback? onItemMoving;
+  final OverlayTrimCallback? onItemTrimmed;
+  final ValueChanged<bool>? onTrimDragChanged;
+  final ValueChanged<TimelineOverlayItem>? onDragStarted;
+  final VoidCallback? onDragEnded;
+
+  @override
+  State<_CachedOverlayStrips> createState() => _CachedOverlayStripsState();
+}
+
+class _CachedOverlayStripsState extends State<_CachedOverlayStrips> {
+  late List<int> _clipEdgesMs;
+
+  @override
+  void initState() {
+    super.initState();
+    _clipEdgesMs = _computeEdges(widget.clips);
+  }
+
+  @override
+  void didUpdateWidget(_CachedOverlayStrips old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.clips, widget.clips) &&
+        !_sameEdges(old.clips, widget.clips)) {
+      _clipEdgesMs = _computeEdges(widget.clips);
+    }
+  }
+
+  static List<int> _computeEdges(List<DivineVideoClip> clips) {
+    final edges = <int>[0];
+    var ms = 0;
+    for (final clip in clips) {
+      ms += clip.trimmedDuration.inMilliseconds;
+      edges.add(ms);
+    }
+    return edges;
+  }
+
+  static bool _sameEdges(List<DivineVideoClip> a, List<DivineVideoClip> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].trimmedDuration != b[i].trimmedDuration) return false;
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TimelineOverlayStrips(
+      totalWidth: widget.totalWidth,
+      pixelsPerSecond: widget.pixelsPerSecond,
+      totalDuration: widget.totalDuration,
+      clipEdgesMs: _clipEdgesMs,
+      playheadPosition: widget.playheadPosition,
+      onItemTapped: widget.onItemTapped,
+      onItemMoved: widget.onItemMoved,
+      onItemMoving: widget.onItemMoving,
+      onItemTrimmed: widget.onItemTrimmed,
+      onTrimDragChanged: widget.onTrimDragChanged,
+      onDragStarted: widget.onDragStarted,
+      onDragEnded: widget.onDragEnded,
     );
   }
 }
@@ -202,15 +289,15 @@ class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
   const _TimelineMaxDurationStripeOverlay({
     required this.pixelsPerSecond,
     required this.visible,
+    required this.outsideExtendWidth,
   });
 
   final double pixelsPerSecond;
   final bool visible;
+  final double outsideExtendWidth;
 
   @override
   Widget build(BuildContext context) {
-    final outsideExtendWidth = MediaQuery.sizeOf(context).width / 2;
-
     return Positioned(
       left:
           VideoEditorConstants.maxDuration.inMilliseconds /
@@ -222,7 +309,6 @@ class _TimelineMaxDurationStripeOverlay extends StatelessWidget {
       child: IgnorePointer(
         child: Visibility(
           visible: visible,
-          maintainState: true,
           child: const CustomPaint(
             painter: _TimelineOutsideAreaPainter(
               stripeColor: VineTheme.onSurfaceDisabled,
@@ -239,15 +325,15 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
   const _TimelineMaxDurationDimOverlay({
     required this.pixelsPerSecond,
     required this.visible,
+    required this.outsideExtendWidth,
   });
 
   final double pixelsPerSecond;
   final bool visible;
+  final double outsideExtendWidth;
 
   @override
   Widget build(BuildContext context) {
-    final outsideExtendWidth = MediaQuery.sizeOf(context).width / 2;
-
     return Positioned(
       left:
           VideoEditorConstants.maxDuration.inMilliseconds /
@@ -259,7 +345,6 @@ class _TimelineMaxDurationDimOverlay extends StatelessWidget {
       child: IgnorePointer(
         child: Visibility(
           visible: visible,
-          maintainState: true,
           child: ColoredBox(
             color: VineTheme.surfaceContainerHigh.withValues(alpha: 0.3),
             child: const SizedBox.expand(),

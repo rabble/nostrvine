@@ -78,7 +78,6 @@ void main() {
       expect(bloc.state.isReposted, isFalse);
       expect(bloc.state.repostCount, isNull);
       expect(bloc.state.commentCount, isNull);
-      expect(bloc.state.error, isNull);
       bloc.close();
     });
 
@@ -281,7 +280,7 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'emits [loading, success] with error when fetch fails',
+        'emits [loading, success] and reports addError when fetch fails',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -291,11 +290,9 @@ void main() {
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
         expect: () => [
           const VideoInteractionsState(status: VideoInteractionsStatus.loading),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            error: VideoInteractionsError.fetchFailed,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -591,12 +588,11 @@ void main() {
             isLiked: true,
           ),
           // Rollback after the publish failure restores the pre-tap heart
-          // state and surfaces the error.
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            error: VideoInteractionsError.likeFailed,
-          ),
+          // state. The failure itself is surfaced via addError, asserted
+          // below.
+          const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -624,9 +620,54 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             likeCount: 10,
-            error: VideoInteractionsError.likeFailed,
           ),
         ],
+        errors: () => [isA<Exception>()],
+      );
+
+      // Regression for #3503: when the home feed mounts a feed item whose
+      // BlocProvider snapshotted a stale LikesRepository (one wrapping a
+      // Nostr instance with an empty cached public key), every sendLike
+      // surfaces as `StateError('No public key available …')` from
+      // `Nostr.ensurePublicKey`. The bloc must roll back the optimistic
+      // flip and surface the StateError via `addError` — not crash and
+      // not leave the heart filled. The fix in
+      // `_PooledVideoFeedItem.build` (video_feed_page.dart) prevents the
+      // stale snapshot in the first place; this test pins the bloc-side
+      // behaviour so a future change to `ensurePublicKey`'s error type
+      // doesn't silently drop the rollback.
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'rolls back when toggle throws StateError from ensurePublicKey',
+        setUp: () {
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+            ),
+          ).thenThrow(
+            StateError(
+              'No public key available — signer may not be configured',
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          likeCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 6,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 5,
+          ),
+        ],
+        errors: () => [isA<StateError>()],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -972,18 +1013,16 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'emits error when no addressable ID is present',
+        'no-ops when no addressable ID is present',
         build: createBloc, // No addressable ID
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
-        expect: () => [
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            error: VideoInteractionsError.repostFailed,
-          ),
-        ],
+        // The handler logs a warning and returns early — no state emit, no
+        // addError. Reposting a non-addressable video is a precondition
+        // failure, not an exceptional error worth Crashlytics noise.
+        expect: () => const <VideoInteractionsState>[],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -1060,9 +1099,9 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             repostCount: 5,
-            error: VideoInteractionsError.repostFailed,
           ),
         ],
+        errors: () => [isA<Exception>()],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -1342,16 +1381,6 @@ void main() {
       expect(updated.isLiked, isTrue);
       expect(updated.likeCount, 42);
       expect(updated.commentCount, 10);
-    });
-
-    test('copyWith clearError clears error', () {
-      const state = VideoInteractionsState(
-        error: VideoInteractionsError.likeFailed,
-      );
-
-      final updated = state.copyWith(clearError: true);
-
-      expect(updated.error, isNull);
     });
   });
 }

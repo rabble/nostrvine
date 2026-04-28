@@ -85,6 +85,17 @@ class _RulerPainter extends CustomPainter {
     color: VineTheme.onSurfaceMuted,
   ).copyWith(fontFeatures: [const FontFeature.tabularFigures()]);
 
+  /// Laid-out [TextPainter] instances keyed by label string.
+  ///
+  /// Safe only while [_labelStyle] is a compile-time-stable constant —
+  /// cached painters become invalid the moment the style changes.
+  /// Avoids creating and laying out a new [TextPainter] for every
+  /// visible label on every scroll frame (~600–1200 allocations/sec
+  /// at 60 Hz). Bounded to [_tpCacheMax] to cap native paragraph
+  /// memory; oldest entries are evicted and disposed.
+  static final Map<String, TextPainter> _tpCache = {};
+  static const int _tpCacheMax = 256;
+
   @override
   void paint(Canvas canvas, Size size) {
     final totalSeconds = totalDuration.inMilliseconds / 1000.0;
@@ -120,10 +131,19 @@ class _RulerPainter extends CustomPainter {
       final x = i * stepPx;
       final label = _formatLabel(i * frameStep);
 
-      final tp = TextPainter(
-        text: TextSpan(text: label, style: _labelStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
+      final tp = _tpCache.putIfAbsent(
+        label,
+        () {
+          if (_tpCache.length >= _tpCacheMax) {
+            final oldestKey = _tpCache.keys.first;
+            _tpCache.remove(oldestKey)?.dispose();
+          }
+          return TextPainter(
+            text: TextSpan(text: label, style: _labelStyle),
+            textDirection: TextDirection.ltr,
+          )..layout();
+        },
+      );
 
       tp.paint(canvas, Offset(x, centerY - tp.height / 2));
     }

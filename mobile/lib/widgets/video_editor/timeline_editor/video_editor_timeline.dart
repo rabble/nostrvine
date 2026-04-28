@@ -661,19 +661,17 @@ class _VideoEditorTimelineState extends State<VideoEditorTimelineScaffold> {
   }
 
   void _onPointerUp(PointerUpEvent event) {
+    final wasPinching = _isPinching;
     _pointerPositions.remove(event.pointer);
-    if (_pointerPositions.length < 2) {
-      _pinchBaseDistance = 0;
-      setState(() {});
-    }
+    _pinchBaseDistance = 0;
+    if (wasPinching && !_isPinching) setState(() {});
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
+    final wasPinching = _isPinching;
     _pointerPositions.remove(event.pointer);
-    if (_pointerPositions.length < 2) {
-      _pinchBaseDistance = 0;
-      setState(() {});
-    }
+    _pinchBaseDistance = 0;
+    if (wasPinching && !_isPinching) setState(() {});
   }
 
   double _currentPointerDistance() {

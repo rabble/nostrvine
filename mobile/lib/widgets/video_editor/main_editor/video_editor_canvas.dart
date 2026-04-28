@@ -39,7 +39,7 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Wraps [ProImageEditor] and configures it for video editing with custom
 /// styling and callbacks that dispatch events to [VideoEditorMainBloc].
-class VideoEditorCanvas extends StatefulWidget {
+class VideoEditorCanvas extends StatelessWidget {
   /// Creates a [VideoEditorCanvas].
   const VideoEditorCanvas({super.key});
 
@@ -65,11 +65,6 @@ class VideoEditorCanvas extends StatefulWidget {
   }
 
   @override
-  State<VideoEditorCanvas> createState() => _VideoEditorCanvasState();
-}
-
-class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
-  @override
   Widget build(BuildContext context) {
     final isSubEditorOpen = context.select(
       (VideoEditorMainBloc b) => b.state.isSubEditorOpen,
@@ -85,12 +80,24 @@ class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
           bloc.add(const VideoEditorMainSubEditorClosed());
         }
       },
-      child: Padding(
-        padding: .only(top: MediaQuery.viewPaddingOf(context).top),
-        child: _CanvasFitter(
-          builder: (bodySize, renderSize) =>
-              _VideoEditor(renderSize: renderSize, bodySize: bodySize),
-        ),
+      // Const child: Flutter detects identical() widget and skips the
+      // rebuild cascade (_CanvasFitter → LayoutBuilder → _VideoEditorState)
+      // when only isSubEditorOpen changes.
+      child: const _CanvasBody(),
+    );
+  }
+}
+
+class _CanvasBody extends StatelessWidget {
+  const _CanvasBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: .only(top: MediaQuery.viewPaddingOf(context).top),
+      child: _CanvasFitter(
+        builder: (bodySize, renderSize) =>
+            _VideoEditor(renderSize: renderSize, bodySize: bodySize),
       ),
     );
   }

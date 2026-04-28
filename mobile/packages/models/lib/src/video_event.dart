@@ -5,18 +5,14 @@
 
 import 'dart:developer' as developer;
 
-import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
 import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
 
-part 'video_event.g.dart';
-
 /// Represents a video event (NIP-71 compliant kinds 22, 34236)
 @immutable
-@JsonSerializable(createFactory: false)
 class VideoEvent {
   // approved, flagged, etc.
 
@@ -743,7 +739,6 @@ class VideoEvent {
 
   /// Original event tags as `List<List<String>>` for republishing.
   /// Preserved from the Nostr event so we can rebuild the event with new tags.
-  @JsonKey(includeToJson: false, includeFromJson: false)
   final List<List<String>> nostrEventTags;
 
   /// Addressable coordinates or URL for text-track subtitle reference.
@@ -764,14 +759,12 @@ class VideoEvent {
   /// These are separate from [contentWarningLabels] (author self-labels)
   /// because ML labels are noisy and should only trigger "hide" filtering,
   /// not "warn" blur overlays that block autoplay.
-  @JsonKey(includeToJson: false, includeFromJson: false)
   final List<String> moderationLabels;
 
   /// Content warning labels that triggered the "warn" filter preference.
   ///
   /// Set during feed processing based on user's per-category filter settings.
   /// When non-empty, the video should be shown with a blur overlay.
-  @JsonKey(includeToJson: false, includeFromJson: false)
   final List<String> warnLabels;
 
   /// Whether this video has any content warnings.
@@ -1288,8 +1281,59 @@ class VideoEvent {
       'createdAt: $createdAt'
       ')';
 
-  /// Serialize VideoEvent to JSON map (auto-generated)
-  Map<String, dynamic> toJson() => _$VideoEventToJson(this);
+  /// Serialize VideoEvent to a JSON-encodable map.
+  ///
+  /// Explicit allow-list of declared persisted fields. Computed getters,
+  /// `hashCode`, and time-dependent values (e.g. `isExpired`) are deliberately
+  /// excluded so the output is stable across calls and safe to persist or
+  /// transmit. Adding a new persisted field requires updating both this map
+  /// and `video_event_to_json_test.dart`.
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'pubkey': pubkey,
+    'createdAt': createdAt,
+    'content': content,
+    'title': title,
+    'videoUrl': videoUrl,
+    'thumbnailUrl': thumbnailUrl,
+    'duration': duration,
+    'dimensions': dimensions,
+    'mimeType': mimeType,
+    'sha256': sha256,
+    'fileSize': fileSize,
+    'hashtags': hashtags,
+    'categories': categories,
+    'timestamp': timestamp.toIso8601String(),
+    'publishedAt': publishedAt,
+    'rawTags': rawTags,
+    'vineId': vineId,
+    'group': group,
+    'altText': altText,
+    'blurhash': blurhash,
+    'isRepost': isRepost,
+    'reposterId': reposterId,
+    'reposterPubkey': reposterPubkey,
+    'reposterPubkeys': reposterPubkeys,
+    'repostedAt': repostedAt?.toIso8601String(),
+    'isFlaggedContent': isFlaggedContent,
+    'moderationStatus': moderationStatus,
+    'originalLoops': originalLoops,
+    'originalLikes': originalLikes,
+    'originalComments': originalComments,
+    'originalReposts': originalReposts,
+    'expirationTimestamp': expirationTimestamp,
+    'audioEventId': audioEventId,
+    'audioEventRelay': audioEventRelay,
+    'nostrLikeCount': nostrLikeCount,
+    'authorName': authorName,
+    'authorAvatar': authorAvatar,
+    'collaboratorPubkeys': collaboratorPubkeys,
+    'inspiredByVideo': inspiredByVideo?.toJson(),
+    'inspiredByNpub': inspiredByNpub,
+    'textTrackRef': textTrackRef,
+    'textTrackContent': textTrackContent,
+    'contentWarningLabels': contentWarningLabels,
+  };
 
   /// Create a VideoEvent instance representing a repost
   /// Used when displaying Kind 6 repost events in the feed
