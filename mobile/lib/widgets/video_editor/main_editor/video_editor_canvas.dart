@@ -43,6 +43,27 @@ class VideoEditorCanvas extends StatefulWidget {
   /// Creates a [VideoEditorCanvas].
   const VideoEditorCanvas({super.key});
 
+  /// Pushes the post-`setClips` start position back into the
+  /// [VideoEditorMainBloc] and the [ProVideoController] after a trim
+  /// release.
+  ///
+  /// Skips the bloc dispatch when [trimEndAlreadyDispatched] is `true`
+  /// — the same value was already pushed pre-await — but always
+  /// updates the controller's play time so the on-screen scrubber
+  /// matches the native player's seek target.
+  @visibleForTesting
+  static void syncPositionAfterTrimRelease({
+    required VideoEditorMainBloc mainBloc,
+    required ProVideoController proVideoController,
+    required Duration startPosition,
+    required bool trimEndAlreadyDispatched,
+  }) {
+    if (!trimEndAlreadyDispatched) {
+      mainBloc.add(VideoEditorPositionChanged(startPosition));
+    }
+    proVideoController.setPlayTime(startPosition);
+  }
+
   @override
   State<VideoEditorCanvas> createState() => _VideoEditorCanvasState();
 }
@@ -960,12 +981,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                     ),
               ], startPosition: startPosition);
               if (mounted) {
-                // Skip the bloc dispatch when we already pushed this position
-                // pre-await (trimEndPosition != null) — the value is identical.
-                if (trimEndPosition == null) {
-                  bloc.add(VideoEditorPositionChanged(startPosition));
-                }
-                _proVideoController.setPlayTime(startPosition);
+                VideoEditorCanvas.syncPositionAfterTrimRelease(
+                  mainBloc: bloc,
+                  proVideoController: _proVideoController,
+                  startPosition: startPosition,
+                  trimEndAlreadyDispatched: trimEndPosition != null,
+                );
               }
             } catch (e, s) {
               Log.error(
