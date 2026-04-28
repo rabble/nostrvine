@@ -22,7 +22,7 @@ class PendingUploadAdapter extends TypeAdapter<PendingUpload> {
       nostrPubkey: fields[2] as String,
       status: fields[3] as UploadStatus,
       createdAt: fields[4] as DateTime,
-      thumbnailTimestampMillis: (fields[25] as num).toInt(),
+      thumbnailTimestampMillis: (fields[25] as num?)?.toInt(),
       cloudinaryPublicId: fields[5] as String?,
       videoId: fields[15] as String?,
       cdnUrl: fields[16] as String?,
