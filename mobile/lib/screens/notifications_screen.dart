@@ -272,13 +272,13 @@ class _NotificationTabContentState
 
     return asyncState.when(
       loading: () => const ColoredBox(
-        color: VineTheme.backgroundColor,
+        color: VineTheme.surfaceContainerHigh,
         child: Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
       ),
       error: (error, _) => ColoredBox(
-        color: VineTheme.backgroundColor,
+        color: VineTheme.surfaceContainerHigh,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -327,7 +327,7 @@ class _NotificationTabContentState
 
         if (notifications.isEmpty) {
           return ColoredBox(
-            color: VineTheme.backgroundColor,
+            color: VineTheme.surfaceContainerHigh,
             child: RefreshIndicator(
               semanticsLabel: context.l10n.notificationsCheckingNew,
               color: VineTheme.onPrimary,
@@ -411,7 +411,7 @@ class _NotificationTabContentState
         }
 
         return ColoredBox(
-          color: VineTheme.backgroundColor,
+          color: VineTheme.surfaceContainerHigh,
           child: RefreshIndicator(
             semanticsLabel: 'checking for new notifications',
             color: VineTheme.onPrimary,

@@ -75,7 +75,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.backgroundColor,
+      color: VineTheme.surfaceContainerHigh,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
           return switch (state.status) {
