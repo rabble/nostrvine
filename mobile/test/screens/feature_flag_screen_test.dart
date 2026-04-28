@@ -34,6 +34,41 @@ void main() {
       }
     });
 
+    Widget buildSubject() {
+      return ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: FeatureFlagScreen(),
+        ),
+      );
+    }
+
+    Future<void> initializeFeatureFlags(WidgetTester tester) async {
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(FeatureFlagScreen)),
+      );
+      final service = container.read(featureFlagServiceProvider);
+      await service.initialize();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('constrains menu content width on wide screens', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(buildSubject());
+      await initializeFeatureFlags(tester);
+
+      final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+      expect(listViewWidth, moreOrLessEquals(600));
+    });
+
     testWidgets('should display all flags', (tester) async {
       await tester.pumpWidget(
         ProviderScope(

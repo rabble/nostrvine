@@ -208,7 +208,7 @@ void main() {
         DivineVideoClip? capturedStartClip;
         DivineVideoClip? capturedEndClip;
 
-        final result = await VideoEditorSplitService.splitClip(
+        await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
           onClipsCreated: (start, end) {
@@ -219,8 +219,6 @@ void main() {
           onClipRendered: null,
         );
 
-        expect(result.startClip.duration, const Duration(seconds: 2));
-        expect(result.endClip.duration, const Duration(seconds: 3));
         expect(capturedStartClip, isNotNull);
         expect(capturedEndClip, isNotNull);
         expect(capturedStartClip!.duration, const Duration(seconds: 2));
@@ -325,19 +323,26 @@ void main() {
           originalAspectRatio: 9 / 16,
         );
 
-        final result = await VideoEditorSplitService.splitClip(
+        DivineVideoClip? capturedStartClip;
+        DivineVideoClip? capturedEndClip;
+
+        await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
+          onClipsCreated: (start, end) {
+            capturedStartClip = start;
+            capturedEndClip = end;
+          },
           onThumbnailExtracted: null,
           onClipRendered: null,
         );
 
-        expect(result.startClip.processingCompleter?.isCompleted, isTrue);
-        expect(result.endClip.processingCompleter?.isCompleted, isTrue);
+        expect(capturedStartClip!.processingCompleter?.isCompleted, isTrue);
+        expect(capturedEndClip!.processingCompleter?.isCompleted, isTrue);
 
-        final startSuccess = await result.startClip.processingCompleter!.future;
-        final endSuccess = await result.endClip.processingCompleter!.future;
+        final startSuccess =
+            await capturedStartClip!.processingCompleter!.future;
+        final endSuccess = await capturedEndClip!.processingCompleter!.future;
 
         expect(startSuccess, isTrue);
         expect(endSuccess, isTrue);
@@ -379,10 +384,13 @@ void main() {
           originalAspectRatio: 9 / 16,
         );
 
-        final result1 = await VideoEditorSplitService.splitClip(
+        DivineVideoClip? endClip1;
+        DivineVideoClip? endClip2;
+
+        await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
+          onClipsCreated: (_, end) => endClip1 = end,
           onThumbnailExtracted: null,
           onClipRendered: null,
         );
@@ -390,15 +398,15 @@ void main() {
         // Wait a bit to ensure different timestamp
         await Future<void>.delayed(const Duration(milliseconds: 2));
 
-        final result2 = await VideoEditorSplitService.splitClip(
+        await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           splitPosition: const Duration(seconds: 2),
-          onClipsCreated: null,
+          onClipsCreated: (_, end) => endClip2 = end,
           onThumbnailExtracted: null,
           onClipRendered: null,
         );
 
-        expect(result1.endClip.id, isNot(equals(result2.endClip.id)));
+        expect(endClip1!.id, isNot(equals(endClip2!.id)));
       });
 
       test('splits trimmed clip at correct absolute position', () async {
@@ -417,7 +425,7 @@ void main() {
         DivineVideoClip? capturedStartClip;
         DivineVideoClip? capturedEndClip;
 
-        final result = await VideoEditorSplitService.splitClip(
+        await VideoEditorSplitService.splitClip(
           sourceClip: clip,
           // Split at 2s into the trimmed clip (absolute 5s)
           splitPosition: const Duration(seconds: 2),
@@ -429,29 +437,28 @@ void main() {
           onClipRendered: null,
         );
 
+        expect(capturedStartClip, isNotNull);
+        expect(capturedEndClip, isNotNull);
+
         // Start clip: 0–5s (absolute), trimStart=3s, trimEnd=0
         // trimmedDuration = 5 - 3 = 2s ✓
-        expect(result.startClip.duration, const Duration(seconds: 5));
-        expect(result.startClip.trimStart, const Duration(seconds: 3));
-        expect(result.startClip.trimEnd, Duration.zero);
-        expect(result.startClip.trimmedDuration, const Duration(seconds: 2));
+        expect(capturedStartClip!.duration, const Duration(seconds: 5));
+        expect(capturedStartClip!.trimStart, const Duration(seconds: 3));
+        expect(capturedStartClip!.trimEnd, Duration.zero);
+        expect(capturedStartClip!.trimmedDuration, const Duration(seconds: 2));
 
         // End clip: 5s–10s (absolute), trimStart=0, trimEnd=2s
         // trimmedDuration = 5 - 2 = 3s ✓
-        expect(result.endClip.duration, const Duration(seconds: 5));
-        expect(result.endClip.trimStart, Duration.zero);
-        expect(result.endClip.trimEnd, const Duration(seconds: 2));
-        expect(result.endClip.trimmedDuration, const Duration(seconds: 3));
+        expect(capturedEndClip!.duration, const Duration(seconds: 5));
+        expect(capturedEndClip!.trimStart, Duration.zero);
+        expect(capturedEndClip!.trimEnd, const Duration(seconds: 2));
+        expect(capturedEndClip!.trimmedDuration, const Duration(seconds: 3));
 
         // Total trimmedDuration preserved: 2 + 3 = 5s
         expect(
-          result.startClip.trimmedDuration + result.endClip.trimmedDuration,
+          capturedStartClip!.trimmedDuration + capturedEndClip!.trimmedDuration,
           clip.trimmedDuration,
         );
-
-        // onClipsCreated should receive matching clips
-        expect(capturedStartClip!.duration, const Duration(seconds: 5));
-        expect(capturedEndClip!.duration, const Duration(seconds: 5));
       });
     });
   });

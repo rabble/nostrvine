@@ -201,5 +201,74 @@ void main() {
       // Model.id should be the actual notification ID from the API
       expect(model.id, 'real-notification-id-123');
     });
+
+    group('mention navigation target (#3168)', () {
+      test(
+        'falls back to sourceEventId when referencedEventId is null',
+        () {
+          final relay = makeRelayNotification(
+            notificationType: 'mention',
+            sourceKind: 1,
+            referencedEventId: null,
+          );
+
+          final model = notificationModelFromRelayApi(relay, actorName: 'Bob');
+
+          expect(model.type, NotificationType.mention);
+          // Without the fallback, navigationAction would be 'open_profile'
+          // and the user would land on Bob's profile instead of the post.
+          expect(model.targetEventId, equals(relay.sourceEventId));
+          expect(model.navigationAction, equals('open_video'));
+          expect(model.navigationTarget, equals(relay.sourceEventId));
+        },
+      );
+
+      test(
+        'prefers referencedEventId when both are present',
+        () {
+          final relay = makeRelayNotification(
+            notificationType: 'mention',
+            sourceKind: 1,
+            referencedEventId: 'root-video-event',
+          );
+
+          final model = notificationModelFromRelayApi(relay, actorName: 'Bob');
+
+          expect(model.type, NotificationType.mention);
+          expect(model.targetEventId, equals('root-video-event'));
+          expect(model.navigationTarget, equals('root-video-event'));
+        },
+      );
+
+      test(
+        'leaves targetEventId null when both ids are missing',
+        () {
+          final relay = RelayNotification(
+            id: 'notif-1',
+            sourcePubkey:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            sourceEventId: '',
+            sourceKind: 1,
+            notificationType: 'mention',
+            createdAt: DateTime.utc(2026, 4, 27, 10),
+            read: false,
+          );
+
+          final model = notificationModelFromRelayApi(relay, actorName: 'Bob');
+
+          expect(model.type, NotificationType.mention);
+          expect(model.targetEventId, isNull);
+        },
+      );
+
+      test('does not affect non-mention notifications', () {
+        final relay = makeRelayNotification(referencedEventId: null);
+
+        final model = notificationModelFromRelayApi(relay, actorName: 'Alice');
+
+        expect(model.type, NotificationType.like);
+        expect(model.targetEventId, isNull);
+      });
+    });
   });
 }

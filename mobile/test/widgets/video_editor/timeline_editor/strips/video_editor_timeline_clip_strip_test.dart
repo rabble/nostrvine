@@ -196,10 +196,77 @@ void main() {
         expect(find.byType(VideoEditorTimelineClipStrip), findsOneWidget);
       });
     });
+
+    group('trimmed clips', () {
+      testWidgets('renders trimmed clip without error', (tester) async {
+        final clips = [
+          _createTestClip(
+            id: 'trimmed',
+            seconds: 5,
+            trimStartMs: 1000,
+            trimEndMs: 500,
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
+
+        expect(find.byType(VideoEditorTimelineClipStrip), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets(
+        'multi-clip strip with trimmed clips renders both tiles',
+        (tester) async {
+          final clips = [
+            // trimmedDuration = 5s - 2s - 1s = 2s
+            _createTestClip(
+              id: 'a',
+              seconds: 5,
+              trimStartMs: 2000,
+              trimEndMs: 1000,
+            ),
+            _createTestClip(id: 'b', seconds: 3),
+          ];
+
+          await tester.pumpWidget(
+            buildWidget(
+              clips: clips,
+            ),
+          );
+
+          expect(find.byType(ClipRRect), findsNWidgets(2));
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets('fully trimmed clip does not crash the strip', (
+        tester,
+      ) async {
+        // trimStart + trimEnd == duration → trimmedDuration == zero;
+        // the strip should skip this clip gracefully.
+        final clips = [
+          _createTestClip(id: 'normal', seconds: 3),
+          _createTestClip(
+            id: 'over_trimmed',
+            trimStartMs: 1000,
+            trimEndMs: 1000,
+          ),
+        ];
+
+        await tester.pumpWidget(buildWidget(clips: clips, totalWidth: 400));
+
+        expect(tester.takeException(), isNull);
+      });
+    });
   });
 }
 
-DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
+DivineVideoClip _createTestClip({
+  required String id,
+  int seconds = 2,
+  int trimStartMs = 0,
+  int trimEndMs = 0,
+}) {
   return DivineVideoClip(
     id: id,
     video: EditorVideo.file('/tmp/test_$id.mp4'),
@@ -207,5 +274,7 @@ DivineVideoClip _createTestClip({required String id, int seconds = 2}) {
     recordedAt: DateTime(2025),
     originalAspectRatio: 9 / 16,
     targetAspectRatio: .vertical,
+    trimStart: Duration(milliseconds: trimStartMs),
+    trimEnd: Duration(milliseconds: trimEndMs),
   );
 }

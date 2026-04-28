@@ -262,6 +262,21 @@ void main() {
       expect(appBar.backgroundColor, isNotNull);
     });
 
+    testWidgets('constrains menu content width on wide screens', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+      expect(listViewWidth, moreOrLessEquals(600));
+    });
+
     testWidgets('shows Divine-hosted-only toggle and persists changes', (
       tester,
     ) async {

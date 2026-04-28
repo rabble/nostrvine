@@ -955,7 +955,7 @@ class _ThumbnailPlaceholder extends StatelessWidget {
 ///
 /// Shows a swipeable pooled feed with a header showing sound info
 /// and a close button to return to the grid view.
-class _SoundVideoFeedOverlay extends StatelessWidget {
+class _SoundVideoFeedOverlay extends ConsumerWidget {
   const _SoundVideoFeedOverlay({
     required this.videos,
     required this.startIndex,
@@ -969,12 +969,13 @@ class _SoundVideoFeedOverlay extends StatelessWidget {
   final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       children: [
         PooledFullscreenVideoFeedScreen(
           videosStream: Stream.value(videos),
           initialIndex: startIndex,
+          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: soundTitle,
         ),
 

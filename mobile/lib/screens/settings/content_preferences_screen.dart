@@ -14,6 +14,7 @@ import 'package:openvine/l10n/localized_content_label_name.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
+import 'package:openvine/screens/settings/account_content_labels_tile.dart';
 import 'package:openvine/services/language_preference_service.dart';
 
 class ContentPreferencesScreen extends ConsumerWidget {
@@ -64,7 +65,7 @@ class ContentPreferencesScreen extends ConsumerWidget {
                 ),
                 onTap: () => context.push(ContentFiltersScreen.path),
               ),
-              const _AccountContentLabelsTile(),
+              const AccountContentLabelsTile(),
               const _AudioSharingToggle(),
               if (!kIsWeb && defaultTargetPlatform != TargetPlatform.linux)
                 const _AudioDeviceSelector(),

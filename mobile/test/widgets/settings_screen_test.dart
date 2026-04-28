@@ -13,6 +13,7 @@ import 'package:openvine/blocs/locale/locale_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -40,6 +41,7 @@ class _MockLocaleCubit extends MockCubit<LocaleState> implements LocaleCubit {}
 _MockInviteStatusCubit _createMockInviteCubit() {
   final cubit = _MockInviteStatusCubit();
   when(() => cubit.state).thenReturn(const InviteStatusState());
+  when(cubit.load).thenAnswer((_) async {});
   return cubit;
 }
 
@@ -96,12 +98,13 @@ void main() {
       AuthState authState = AuthState.authenticated,
       MockGoRouter? goRouter,
       List<KnownAccount> knownAccounts = const [],
+      _MockInviteStatusCubit? inviteCubit,
     }) {
       when(
         () => mockAuthService.getKnownAccounts(),
       ).thenAnswer((_) async => knownAccounts);
 
-      final mockInviteCubit = _createMockInviteCubit();
+      final mockInviteCubit = inviteCubit ?? _createMockInviteCubit();
 
       final app = ProviderScope(
         overrides: [
@@ -169,6 +172,74 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('loads invite status so profile can show invite access', (
+      tester,
+    ) async {
+      final mockInviteCubit = _createMockInviteCubit();
+
+      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+      await tester.pumpAndSettle();
+
+      verify(mockInviteCubit.load).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders invite shortcut when unclaimed invites exist', (
+      tester,
+    ) async {
+      final mockInviteCubit = _MockInviteStatusCubit();
+      when(mockInviteCubit.load).thenAnswer((_) async {});
+      when(() => mockInviteCubit.state).thenReturn(
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: true,
+            remaining: 0,
+            total: 1,
+            codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invites'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('renders invite shortcut when invite capacity exists', (
+      tester,
+    ) async {
+      final mockInviteCubit = _MockInviteStatusCubit();
+      when(mockInviteCubit.load).thenAnswer((_) async {});
+      when(() => mockInviteCubit.state).thenReturn(
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: true,
+            remaining: 5,
+            total: 5,
+            codes: [],
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(buildSubject(inviteCubit: mockInviteCubit));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Invites'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
     testWidgets(
       'hides account action when multiple accounts exist and switching is disabled',
       (tester) async {
@@ -209,8 +280,8 @@ void main() {
       // Tiles below the centered header may need scrolling
       for (final title in [
         'Notifications',
-        'Content Preferences',
-        'Moderation Controls',
+        'General Settings',
+        'Content & Safety',
         'Nostr Settings',
       ]) {
         await tester.scrollUntilVisible(
@@ -426,54 +497,52 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('shows Bluesky Publishing tile when feature flag is on', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            draftStorageServiceProvider.overrideWithValue(
-              mockDraftStorageService,
-            ),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.authenticated,
-            ),
-            userProfileReactiveProvider.overrideWith(
-              (ref, pubkey) => Stream.value(null),
-            ),
-            isFeatureEnabledProvider(
-              FeatureFlag.blueskyPublishing,
-            ).overrideWith((ref) => true),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: MultiBlocProvider(
-              providers: [
-                BlocProvider<InviteStatusCubit>.value(
-                  value: _createMockInviteCubit(),
-                ),
-                BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
-              ],
-              child: const SettingsScreen(),
+    testWidgets(
+      'keeps Bluesky Publishing off the hub when feature flag is on',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+              currentAuthStateProvider.overrideWith(
+                (ref) => AuthState.authenticated,
+              ),
+              userProfileReactiveProvider.overrideWith(
+                (ref, pubkey) => Stream.value(null),
+              ),
+              isFeatureEnabledProvider(
+                FeatureFlag.blueskyPublishing,
+              ).overrideWith((ref) => true),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+                ],
+                child: const SettingsScreen(),
+              ),
             ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      final scrollable = find.byType(Scrollable);
-      await tester.scrollUntilVisible(
-        find.text('Bluesky Publishing'),
-        100,
-        scrollable: scrollable,
-      );
-      expect(find.text('Bluesky Publishing'), findsOneWidget);
+        expect(find.text('General Settings'), findsOneWidget);
+        expect(find.text('Bluesky Publishing'), findsNothing);
 
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
+        await tester.pumpWidget(const SizedBox());
+        await tester.pump();
+      },
+    );
   });
 }

@@ -22,6 +22,16 @@ class InviteStatusState extends Equatable {
   /// The number of unclaimed invite codes.
   int get unclaimedCount => inviteStatus?.unclaimedCodes.length ?? 0;
 
+  /// Whether there are generated or still-generatable invites.
+  bool get hasAvailableInvites => availableInviteCount > 0;
+
+  /// Count of invites the user can share now or generate from allocation.
+  int get availableInviteCount {
+    final status = inviteStatus;
+    if (status == null) return 0;
+    return status.remaining + status.unclaimedCodes.length;
+  }
+
   /// Returns a copy with the given fields replaced.
   InviteStatusState copyWith({
     InviteStatusLoadingStatus? status,

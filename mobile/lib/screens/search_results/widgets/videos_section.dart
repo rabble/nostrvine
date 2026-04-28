@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
@@ -76,16 +78,16 @@ class _VideosPaginationTrigger extends StatelessWidget {
   }
 }
 
-class _VideosContent extends StatefulWidget {
+class _VideosContent extends ConsumerStatefulWidget {
   const _VideosContent({this.showAll = false});
 
   final bool showAll;
 
   @override
-  State<_VideosContent> createState() => _VideosContentState();
+  ConsumerState<_VideosContent> createState() => _VideosContentState();
 }
 
-class _VideosContentState extends State<_VideosContent> {
+class _VideosContentState extends ConsumerState<_VideosContent> {
   late final StreamController<List<VideoEvent>> _videosStreamController;
   late final StreamController<bool> _hasMoreStreamController;
 
@@ -114,6 +116,7 @@ class _VideosContentState extends State<_VideosContent> {
         hasMoreStream: _hasMoreStreamController.stream.startWith(
           context.read<VideoSearchBloc>().state.hasMore,
         ),
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: context.read<VideoSearchBloc>().state.query,

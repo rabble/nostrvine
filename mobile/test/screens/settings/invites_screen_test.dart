@@ -76,6 +76,52 @@ void main() {
         expect(find.text('Share diVine with people you know'), findsOneWidget);
       });
 
+      testWidgets('constrains menu content width on wide screens', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(900, 1200);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 1,
+              total: 1,
+              codes: [InviteCode(code: 'AB23-EF7K', claimed: false)],
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(buildSubject());
+
+        final listViewWidth = tester.getSize(find.byType(ListView).first).width;
+        expect(listViewWidth, moreOrLessEquals(600));
+      });
+
+      testWidgets('generate invite action when capacity is available', (
+        tester,
+      ) async {
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 5,
+              total: 5,
+              codes: [],
+            ),
+          ),
+        );
+        await tester.pumpWidget(buildSubject());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.invitesGenerateButtonLabel), findsOneWidget);
+        expect(find.text('No invites available right now'), findsNothing);
+      });
+
       testWidgets('claimed codes section', (tester) async {
         when(() => mockCubit.state).thenReturn(
           const InviteStatusState(
@@ -119,6 +165,27 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.tap(find.text('Retry'));
         verify(() => mockCubit.load()).called(1);
+      });
+
+      testWidgets('tapping generate invite creates a code', (tester) async {
+        when(() => mockCubit.state).thenReturn(
+          const InviteStatusState(
+            status: InviteStatusLoadingStatus.loaded,
+            inviteStatus: InviteStatus(
+              canInvite: true,
+              remaining: 5,
+              total: 5,
+              codes: [],
+            ),
+          ),
+        );
+        when(() => mockCubit.generateInvite()).thenAnswer((_) async {});
+
+        await tester.pumpWidget(buildSubject());
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.invitesGenerateButtonLabel));
+
+        verify(() => mockCubit.generateInvite()).called(1);
       });
     });
   });

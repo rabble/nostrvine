@@ -244,7 +244,7 @@ class NotificationRepository {
         actor: actor,
         timestamp: n.createdAt,
         isRead: n.read,
-        targetEventId: n.referencedEventId,
+        targetEventId: _resolveTargetEventId(n, kind),
         commentText: _truncateComment(n.content, kind),
       );
     }).toList();
@@ -346,6 +346,24 @@ class NotificationRepository {
       displayName: profile?.bestDisplayName ?? 'Unknown user',
       pictureUrl: profile?.picture,
     );
+  }
+
+  /// Resolves the navigation target for a notification.
+  ///
+  /// Mentions sometimes arrive with no `referenced_event_id` (e.g. a mention
+  /// inside a NIP-22 comment). Fall back to the source event so taps still
+  /// land on the post — the UI's resolver walks `E` / `e` tags back to the
+  /// root video. Without this, mention taps route to the mentioner's
+  /// profile (#3168).
+  static String? _resolveTargetEventId(
+    RelayNotification n,
+    NotificationKind kind,
+  ) {
+    if (kind == NotificationKind.mention) {
+      final source = n.sourceEventId;
+      return n.referencedEventId ?? (source.isEmpty ? null : source);
+    }
+    return n.referencedEventId;
   }
 
   /// Maps a relay notification type string + source kind to

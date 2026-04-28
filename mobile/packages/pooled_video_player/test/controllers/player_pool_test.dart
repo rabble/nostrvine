@@ -552,6 +552,42 @@ void main() {
         });
       });
 
+      group('releaseAll', () {
+        test(
+          'starts disposing all players before awaiting any one disposal',
+          () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+
+            final firstDispose = Completer<void>();
+            final secondDisposeStarted = Completer<void>();
+            Future<void>? releaseFuture;
+
+            when(createdPlayers[0].dispose).thenAnswer(
+              (_) => firstDispose.future,
+            );
+            when(createdPlayers[1].dispose).thenAnswer((_) async {
+              secondDisposeStarted.complete();
+            });
+
+            addTearDown(() async {
+              if (!firstDispose.isCompleted) {
+                firstDispose.complete();
+              }
+              await releaseFuture;
+            });
+
+            releaseFuture = pool.releaseAll();
+            await Future<void>.delayed(Duration.zero);
+
+            expect(secondDisposeStarted.isCompleted, isTrue);
+
+            firstDispose.complete();
+            await releaseFuture;
+          },
+        );
+      });
+
       group('dispose', () {
         test('disposes all players', () async {
           await pool.getPlayer('https://example.com/v1.mp4');

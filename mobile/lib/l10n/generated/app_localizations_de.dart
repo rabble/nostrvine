@@ -4844,6 +4844,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get invitesTitle => 'Freunde einladen';
 
   @override
+  String invitesGenerateCardTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count invites ready to generate',
+      one: '1 invite ready to generate',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get invitesGenerateCardSubtitle =>
+      'Generate a code when you are ready to share one.';
+
+  @override
+  String get invitesGenerateButtonLabel => 'Generate invite';
+
+  @override
   String get searchSomethingWentWrong => 'Etwas ist schiefgelaufen';
 
   @override
@@ -5768,4 +5786,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Untertitel für alle Videos deaktiviert';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video entfernt';
 }

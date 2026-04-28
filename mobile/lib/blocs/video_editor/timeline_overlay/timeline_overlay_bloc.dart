@@ -35,6 +35,7 @@ class TimelineOverlayBloc
     on<TimelineOverlayItemTrimmed>(_onItemTrimmed, transformer: restartable());
     on<TimelineOverlayItemSelected>(_onItemSelected);
     on<TimelineOverlayDragStarted>(_onDragStarted);
+    on<TimelineOverlayDragMoved>(_onDragMoved);
     on<TimelineOverlayDragEnded>(_onDragEnded);
     on<TimelineOverlayTrimStarted>(_onTrimStarted);
     on<TimelineOverlayTrimEnded>(_onTrimEnded);
@@ -318,10 +319,10 @@ class TimelineOverlayBloc
 
     final item = items[idx];
 
-    items[idx] = item.copyWith(
-      startTime: event.startTime,
-      endTime: event.endTime,
-    );
+    final newStart = event.startTime ?? item.startTime;
+    final newEnd = event.endTime ?? item.endTime;
+
+    items[idx] = item.copyWith(startTime: newStart, endTime: newEnd);
 
     // Only re-assign rows for the changed type; other types are unaffected.
     final changedType = item.type;
@@ -330,7 +331,12 @@ class TimelineOverlayBloc
       items.where((el) => el.type == changedType).toList(),
     );
 
-    emit(state.copyWith(items: [...unchanged, ...reassigned]));
+    emit(
+      state.copyWith(
+        items: [...unchanged, ...reassigned],
+        trimPosition: event.isStart ? newStart : newEnd,
+      ),
+    );
   }
 
   void _onItemSelected(
@@ -351,6 +357,14 @@ class TimelineOverlayBloc
     emit(state.copyWith(draggingItemId: event.itemId));
   }
 
+  void _onDragMoved(
+    TimelineOverlayDragMoved event,
+    Emitter<TimelineOverlayState> emit,
+  ) {
+    if (state.draggingItemId == null) return;
+    emit(state.copyWith(dragPosition: event.position));
+  }
+
   void _onDragEnded(
     TimelineOverlayDragEnded event,
     Emitter<TimelineOverlayState> emit,
@@ -360,6 +374,7 @@ class TimelineOverlayBloc
       state.copyWith(
         items: _recalculateRows(state.items),
         clearDraggingItemId: true,
+        clearDragPosition: true,
       ),
     );
   }
@@ -379,6 +394,7 @@ class TimelineOverlayBloc
       state.copyWith(
         items: _recalculateRows(state.items),
         clearTrimmingItemId: true,
+        clearTrimPosition: true,
       ),
     );
   }

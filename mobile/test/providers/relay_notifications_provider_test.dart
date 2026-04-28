@@ -899,32 +899,133 @@ void main() {
     });
 
     group('Helper Providers', () {
-      test('relayNotificationUnreadCount returns correct count', () async {
-        when(
-          () => mockApiService.getNotifications(
-            pubkey: any(named: 'pubkey'),
-            types: any(named: 'types'),
-            unreadOnly: any(named: 'unreadOnly'),
-            limit: any(named: 'limit'),
-            before: any(named: 'before'),
-          ),
-        ).thenAnswer(
-          (_) async =>
-              const NotificationsResponse(notifications: [], unreadCount: 42),
-        );
+      test(
+        'relayNotificationUnreadCount derives from the consolidated unread list, '
+        'not the server-reported count',
+        () async {
+          // Server returns 5 follow rows from 2 distinct pubkeys (Kind 3
+          // republish bug — funnelcake#234) and reports unreadCount: 5.
+          // After follow consolidation the visible list has 2 rows; the
+          // badge must reflect what the user sees, not what the server says.
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(
+                  id: 'follow_a_1',
+                  notificationType: 'follow',
+                  sourcePubkey: 'follower_a',
+                  createdAtSeconds: 1700000100,
+                ),
+                createMockRelayNotification(
+                  id: 'follow_a_2',
+                  notificationType: 'follow',
+                  sourcePubkey: 'follower_a',
+                  createdAtSeconds: 1700000200,
+                ),
+                createMockRelayNotification(
+                  id: 'follow_a_3',
+                  notificationType: 'follow',
+                  sourcePubkey: 'follower_a',
+                  createdAtSeconds: 1700000300,
+                ),
+                createMockRelayNotification(
+                  id: 'follow_b_1',
+                  notificationType: 'follow',
+                  sourcePubkey: 'follower_b',
+                  createdAtSeconds: 1700000150,
+                ),
+                createMockRelayNotification(
+                  id: 'follow_b_2',
+                  notificationType: 'follow',
+                  sourcePubkey: 'follower_b',
+                  createdAtSeconds: 1700000250,
+                ),
+              ],
+              unreadCount: 5,
+            ),
+          );
 
-        final container = createTestContainer();
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
 
-        // Wait for provider to load
-        await waitForLoadComplete(container);
+          final unreadCount = container.read(
+            relayNotificationUnreadCountProvider,
+          );
 
-        final unreadCount = container.read(
-          relayNotificationUnreadCountProvider,
-        );
-        expect(unreadCount, 42);
+          // 2 distinct pubkeys after consolidation, both unread.
+          expect(unreadCount, 2);
 
-        container.dispose();
-      });
+          container.dispose();
+        },
+      );
+
+      test(
+        'relayNotificationUnreadCount drops to 0 when notifications list is empty '
+        'even if server reports unread items',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => const NotificationsResponse(
+              notifications: [],
+              unreadCount: 42,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          expect(container.read(relayNotificationUnreadCountProvider), 0);
+
+          container.dispose();
+        },
+      );
+
+      test(
+        'relayNotificationUnreadCount excludes already-read notifications',
+        () async {
+          when(
+            () => mockApiService.getNotifications(
+              pubkey: any(named: 'pubkey'),
+              types: any(named: 'types'),
+              unreadOnly: any(named: 'unreadOnly'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'unread_1'),
+                createMockRelayNotification(id: 'unread_2'),
+                createMockRelayNotification(id: 'read_1', read: true),
+              ],
+              unreadCount: 3,
+            ),
+          );
+
+          final container = createTestContainer();
+          await waitForLoadComplete(container);
+
+          // 2 unread out of 3, regardless of server's unreadCount.
+          expect(container.read(relayNotificationUnreadCountProvider), 2);
+
+          container.dispose();
+        },
+      );
 
       test('relayNotificationsLoading reflects loading state', () async {
         when(

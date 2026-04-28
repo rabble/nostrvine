@@ -2925,5 +2925,9 @@
   "videoEditorAudioSegmentInstruction": "Seleziona il segmento audio per il tuo video",
   "videoEditorClipGalleryInstruction": "Tocca per modificare. Tieni premuto e trascina per riordinare.",
   "navSearch": "Cerca",
-  "navSearchTooltip": "Cerca"
+  "navSearchTooltip": "Cerca",
+  "fullscreenFeedRemovedMessage": "Video rimosso",
+  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+  "invitesGenerateButtonLabel": "Generate invite"
 }

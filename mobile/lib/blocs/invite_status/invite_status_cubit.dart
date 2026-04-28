@@ -31,4 +31,23 @@ class InviteStatusCubit extends Cubit<InviteStatusState> {
       emit(state.copyWith(status: InviteStatusLoadingStatus.error));
     }
   }
+
+  Future<void> generateInvite() async {
+    if (state.status == InviteStatusLoadingStatus.loading) return;
+
+    emit(state.copyWith(status: InviteStatusLoadingStatus.loading));
+    try {
+      await _inviteApiClient.generateInvite();
+      final inviteStatus = await _inviteApiClient.getInviteStatus();
+      emit(
+        state.copyWith(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: inviteStatus,
+        ),
+      );
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(state.copyWith(status: InviteStatusLoadingStatus.error));
+    }
+  }
 }

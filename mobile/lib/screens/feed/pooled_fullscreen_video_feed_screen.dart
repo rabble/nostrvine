@@ -20,6 +20,7 @@ import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -102,6 +103,7 @@ class PooledFullscreenVideoFeedArgs {
     required this.initialIndex,
     this.onLoadMore,
     this.hasMoreStream,
+    this.removedIdsStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -120,6 +122,11 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Stream of whether the source can paginate further.
   final Stream<bool>? hasMoreStream;
+
+  /// Side-channel for "this video must be dropped now" — fed from
+  /// [VideoEventService.removedVideoIds]. Optional so that callers
+  /// pre-dating the deletion-bus migration keep working.
+  final Stream<String>? removedIdsStream;
 
   /// Optional title for context display.
   final String? contextTitle;
@@ -161,6 +168,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     required this.initialIndex,
     this.onLoadMore,
     this.hasMoreStream,
+    this.removedIdsStream,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -173,6 +181,12 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final int initialIndex;
   final VoidCallback? onLoadMore;
   final Stream<bool>? hasMoreStream;
+
+  /// Side-channel that emits a video id whenever the underlying service
+  /// has marked it removed (deletion / future block / mute). Optional so
+  /// not-yet-migrated callers keep working — without the wire-up the
+  /// fullscreen falls back to today's stale behaviour.
+  final Stream<String>? removedIdsStream;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -200,6 +214,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
             videosStream: videosStream,
             initialIndex: initialIndex,
             hasMoreStream: hasMoreStream,
+            removedIdsStream: removedIdsStream,
             onLoadMore: onLoadMore,
             mediaCache: mediaCache,
             blossomAuthService: blossomAuthService,
@@ -630,9 +645,53 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               if (target != null) unawaited(_handlePendingSkip(target));
             },
           ),
+          // Pop the route when the last visible video has been removed
+          // by deletion (or, soon, block / mute). When `maybePop`
+          // returns false (cold deep-link into the fullscreen with no
+          // parent route in the stack), the BlocBuilder below renders
+          // an explicit `emptyAfterRemoval` branch so the user is not
+          // left looking at a perpetual loading spinner.
+          BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+            listenWhen: (prev, curr) =>
+                prev.status != curr.status &&
+                curr.status == FullscreenFeedStatus.emptyAfterRemoval,
+            listener: (context, _) {
+              unawaited(Navigator.of(context).maybePop());
+            },
+          ),
         ],
         child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
           builder: (context, state) {
+            // The BlocListener above tries to pop on this status; when
+            // it can (parent route exists) the route is gone before this
+            // branch renders. When `maybePop` is a no-op, we land here
+            // and show an explicit empty-state with a back button rather
+            // than the loading spinner below.
+            if (state.status == FullscreenFeedStatus.emptyAfterRemoval) {
+              return Scaffold(
+                backgroundColor: VineTheme.backgroundColor,
+                appBar: DiVineAppBar(
+                  title: widget.contextTitle ?? '',
+                  showBackButton: true,
+                  // The BlocListener above already tried `maybePop` and
+                  // failed (otherwise we wouldn't be rendering this
+                  // branch). The same `pop` from the appbar back button
+                  // would also be a no-op, so fall back to the home
+                  // shell to avoid a dead-end UX.
+                  onBackPressed: () =>
+                      context.canPop() ? context.pop() : context.go('/'),
+                  backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                  forceMaterialTransparency: true,
+                ),
+                body: Center(
+                  child: Text(
+                    context.l10n.fullscreenFeedRemovedMessage,
+                    style: VineTheme.bodyMediumFont(),
+                  ),
+                ),
+              );
+            }
+
             if (state.status == FullscreenFeedStatus.initial ||
                 !state.hasVideos) {
               return Scaffold(

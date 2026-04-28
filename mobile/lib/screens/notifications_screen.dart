@@ -298,52 +298,78 @@ class _NotificationTabContentState
               color: VineTheme.onPrimary,
               backgroundColor: VineTheme.vineGreen,
               onRefresh: () async {
-                await ref.read(relayNotificationsProvider.notifier).refresh();
+                await Future.wait([
+                  ref.read(relayNotificationsProvider.notifier).refresh(),
+                  context.read<InviteStatusCubit>().load(),
+                ]);
               },
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: SizedBox(
-                    height: constraints.maxHeight,
-                    child: Center(
-                      child: isSearchingForFilteredContent
-                          ? _FilteredTabLoadingState(
-                              filterName: _getFilterName(widget.filter!),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.notifications_none,
-                                  size: 64,
-                                  color: VineTheme.lightText,
+              child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
+                builder: (context, inviteState) {
+                  final showInviteCard =
+                      widget.filter == null && inviteState.hasAvailableInvites;
+                  if (showInviteCard) {
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      controller: _scrollController,
+                      children: [
+                        _InviteNotificationCard(
+                          count: inviteState.availableInviteCount,
+                        ),
+                      ],
+                    );
+                  }
+
+                  return LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: constraints.maxHeight,
+                        child: Center(
+                          child: isSearchingForFilteredContent
+                              ? _FilteredTabLoadingState(
+                                  filterName: _getFilterName(widget.filter!),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications_none,
+                                      size: 64,
+                                      color: VineTheme.lightText,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      widget.filter == null
+                                          ? context.l10n.notificationsNoneYet
+                                          : context.l10n
+                                                .notificationsNoneForType(
+                                                  _getFilterName(
+                                                    widget.filter!,
+                                                  ),
+                                                ),
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        color: VineTheme.secondaryText,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      context
+                                          .l10n
+                                          .notificationsEmptyDescription,
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: VineTheme.lightText,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  widget.filter == null
-                                      ? context.l10n.notificationsNoneYet
-                                      : context.l10n.notificationsNoneForType(
-                                          _getFilterName(widget.filter!),
-                                        ),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    color: VineTheme.secondaryText,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  context.l10n.notificationsEmptyDescription,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: VineTheme.lightText,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           );
@@ -356,12 +382,15 @@ class _NotificationTabContentState
             color: VineTheme.onPrimary,
             backgroundColor: VineTheme.vineGreen,
             onRefresh: () async {
-              await ref.read(relayNotificationsProvider.notifier).refresh();
+              await Future.wait([
+                ref.read(relayNotificationsProvider.notifier).refresh(),
+                context.read<InviteStatusCubit>().load(),
+              ]);
             },
             child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
               builder: (context, inviteState) {
                 final showInviteCard =
-                    widget.filter == null && inviteState.hasUnclaimedCodes;
+                    widget.filter == null && inviteState.hasAvailableInvites;
                 final inviteCardOffset = showInviteCard ? 1 : 0;
                 final hasLoadingIndicator =
                     feedState.hasMoreContent &&
@@ -379,7 +408,7 @@ class _NotificationTabContentState
                     // Invite card at top of All tab
                     if (showInviteCard && index == 0) {
                       return _InviteNotificationCard(
-                        count: inviteState.unclaimedCount,
+                        count: inviteState.availableInviteCount,
                       );
                     }
                     final adjustedIndex = index - inviteCardOffset;
@@ -664,7 +693,9 @@ class _NotificationTabContentState
       return;
     }
 
-    final shouldAutoOpenComments = notificationType == NotificationType.comment;
+    final shouldAutoOpenComments =
+        notificationType == NotificationType.comment ||
+        notificationType == NotificationType.mention;
     final videoForNav = video;
 
     // Navigate to video player using the pooled playback path
@@ -673,6 +704,7 @@ class _NotificationTabContentState
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: Stream.value([videoForNav]),
         initialIndex: 0,
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,
         autoOpenComments: shouldAutoOpenComments,
       ),

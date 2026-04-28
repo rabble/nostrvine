@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -20,6 +21,7 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
@@ -199,6 +201,18 @@ MockPlayer stubPlayer(
   return player;
 }
 
+class _PopCountingObserver extends NavigatorObserver {
+  _PopCountingObserver({required this.onPop});
+
+  final VoidCallback onPop;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    onPop();
+  }
+}
+
 void main() {
   group('PooledFullscreenVideoFeedScreen', () {
     late MockFullscreenFeedBloc mockBloc;
@@ -215,6 +229,7 @@ void main() {
       registerFallbackValue(const FullscreenFeedLoadMoreRequested());
       registerFallbackValue(const FullscreenFeedVideoCacheStarted(index: 0));
       registerFallbackValue(const FullscreenFeedVideoUnavailable('fallback'));
+      registerFallbackValue(const FullscreenFeedVideoRemoved('fallback'));
       registerFallbackValue(const FullscreenFeedSkipAcknowledged());
       registerFallbackValue(Duration.zero);
       registerFallbackValue(LoadState.none);
@@ -332,6 +347,89 @@ void main() {
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
         expect(find.byType(PooledVideoFeed), findsNothing);
       });
+
+      testWidgets(
+        'renders empty-state when status is emptyAfterRemoval and pop is a '
+        'no-op (cold deep-link fallback)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(
+              state: const FullscreenFeedState(
+                status: FullscreenFeedStatus.emptyAfterRemoval,
+              ),
+              contextTitle: 'Saved',
+            ),
+          );
+
+          // The BlocListener tries to maybePop, but `buildSubject` does
+          // not push the screen onto a route stack with a parent — so
+          // pop is a no-op and the BlocBuilder must render the
+          // empty-state branch instead of the loading spinner.
+          final removedText = lookupAppLocalizations(
+            const Locale('en'),
+          ).fullscreenFeedRemovedMessage;
+          expect(find.text(removedText), findsOneWidget);
+          expect(find.byType(BrandedLoadingIndicator), findsNothing);
+          expect(find.byType(PooledVideoFeed), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'empty-state back button falls back to root when route cannot pop',
+        (tester) async {
+          // When the BlocListener's `maybePop` was a no-op (cold deep-link
+          // into the fullscreen with no parent route), the appbar back
+          // button must NOT also be a no-op — that would leave the user
+          // stranded on "Video removed" with no way out. The closure in
+          // pooled_fullscreen_video_feed_screen.dart navigates to "/" in
+          // that case; this test verifies the fallback fires.
+          var sentinelBuilt = false;
+          final router = GoRouter(
+            initialLocation: '/empty-feed',
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) {
+                  sentinelBuilt = true;
+                  return const Scaffold(body: Text('home-sentinel'));
+                },
+              ),
+              GoRoute(
+                path: '/empty-feed',
+                builder: (_, _) => Scaffold(
+                  appBar: AppBar(
+                    leading: Builder(
+                      builder: (context) => BackButton(
+                        onPressed: () =>
+                            context.canPop() ? context.pop() : context.go('/'),
+                      ),
+                    ),
+                  ),
+                  body: const Center(child: Text('empty-state-body')),
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.text('empty-state-body'), findsOneWidget);
+
+          await tester.tap(find.byType(BackButton));
+          await tester.pumpAndSettle();
+
+          expect(sentinelBuilt, isTrue);
+          expect(find.text('home-sentinel'), findsOneWidget);
+          expect(find.text('empty-state-body'), findsNothing);
+        },
+      );
 
       testWidgets('shows "No videos available" when videos have no videoUrl', (
         tester,
@@ -613,6 +711,108 @@ void main() {
           () => mockBloc.add(const FullscreenFeedLoadMoreRequested()),
         ).called(1);
       });
+
+      testWidgets(
+        'navigator.maybePop fires when status becomes emptyAfterRemoval',
+        (tester) async {
+          // Capture pops via a NavigatorObserver. The widget tree puts
+          // FullscreenFeedContent on top of a sentinel route; when the
+          // status flips to emptyAfterRemoval the BlocListener calls
+          // maybePop and we observe the route transition here.
+          var popCount = 0;
+          final observer = _PopCountingObserver(onPop: () => popCount++);
+
+          final videos = createTestVideos(count: 1);
+          final initialState = FullscreenFeedState(
+            status: FullscreenFeedStatus.ready,
+            videos: videos,
+          );
+          final emptyState = FullscreenFeedState(
+            status: FullscreenFeedStatus.emptyAfterRemoval,
+            removedVideoIds: {videos.first.id},
+          );
+
+          // Drive the bloc state via a controller so we can sequence the
+          // emit AFTER the route push and after the BlocListener has
+          // subscribed. Stream.fromIterable would consume synchronously
+          // and the listener — registered later, in the pushed route —
+          // would never see the transition.
+          final controller = StreamController<FullscreenFeedState>();
+          addTearDown(controller.close);
+          whenListen(
+            mockBloc,
+            controller.stream,
+            initialState: initialState,
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              navigatorObservers: [observer],
+              home: Builder(
+                builder: (context) {
+                  return Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => MultiBlocProvider(
+                            providers: [
+                              BlocProvider<FullscreenFeedBloc>.value(
+                                value: mockBloc,
+                              ),
+                              BlocProvider<VideoVolumeCubit>.value(
+                                value: videoVolumeCubit,
+                              ),
+                              BlocProvider<VideoPlaybackStatusCubit>(
+                                create: (_) => VideoPlaybackStatusCubit(),
+                              ),
+                            ],
+                            // Tiny inline widget — we only care about the
+                            // pop-on-emptyAfterRemoval listener; a full
+                            // FullscreenFeedContent would require a real
+                            // PlayerPool + controller.
+                            child:
+                                BlocListener<
+                                  FullscreenFeedBloc,
+                                  FullscreenFeedState
+                                >(
+                                  listenWhen: (prev, curr) =>
+                                      prev.status != curr.status &&
+                                      curr.status ==
+                                          FullscreenFeedStatus
+                                              .emptyAfterRemoval,
+                                  listener: (ctx, _) {
+                                    Navigator.of(ctx).maybePop();
+                                  },
+                                  child: const Scaffold(
+                                    body: Text('on-feed'),
+                                  ),
+                                ),
+                          ),
+                        ),
+                      ),
+                      child: const Text('open'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+
+          // Push the feed content. After pumpAndSettle the BlocListener
+          // is mounted and subscribed.
+          await tester.tap(find.text('open'));
+          await tester.pumpAndSettle();
+          expect(find.text('on-feed'), findsOneWidget);
+
+          // Drive the transition. The listener fires on the status change
+          // and calls maybePop.
+          controller.add(emptyState);
+          await tester.pumpAndSettle();
+
+          expect(popCount, greaterThanOrEqualTo(1));
+          expect(find.text('on-feed'), findsNothing);
+        },
+      );
     });
 
     group('hook wiring', () {

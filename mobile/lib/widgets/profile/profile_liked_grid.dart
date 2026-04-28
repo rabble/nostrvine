@@ -6,11 +6,13 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
@@ -129,7 +131,7 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid>
 }
 
 /// Individual liked video tile in the grid with heart badge
-class _LikedGridTile extends StatelessWidget {
+class _LikedGridTile extends ConsumerWidget {
   const _LikedGridTile({
     required this.videoEvent,
     required this.index,
@@ -141,7 +143,7 @@ class _LikedGridTile extends StatelessWidget {
   final List<VideoEvent> allVideos;
 
   @override
-  Widget build(BuildContext context) => Semantics(
+  Widget build(BuildContext context, WidgetRef ref) => Semantics(
     label: 'liked_video_thumbnail_$index',
     child: GestureDetector(
       onTap: () {
@@ -155,6 +157,9 @@ class _LikedGridTile extends StatelessWidget {
           extra: PooledFullscreenVideoFeedArgs(
             videosStream: Stream.value(allVideos),
             initialIndex: index,
+            removedIdsStream: ref
+                .read(videoEventServiceProvider)
+                .removedVideoIds,
             trafficSource: ViewTrafficSource.profile,
           ),
         );

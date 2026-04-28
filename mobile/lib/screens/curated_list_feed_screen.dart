@@ -229,6 +229,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         PooledFullscreenVideoFeedScreen(
           videosStream: Stream.value(videos),
           initialIndex: _activeVideoIndex!,
+          removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: widget.listName,
           trafficSource: ViewTrafficSource.search,
         ),

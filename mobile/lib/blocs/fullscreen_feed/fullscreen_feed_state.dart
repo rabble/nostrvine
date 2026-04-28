@@ -11,6 +11,10 @@ enum FullscreenFeedStatus {
   /// Videos loaded and ready.
   ready,
 
+  /// The last visible video was just removed (deletion / block / mute).
+  /// The screen reacts by popping the route — there is nothing to show.
+  emptyAfterRemoval,
+
   /// An error occurred.
   failure,
 }

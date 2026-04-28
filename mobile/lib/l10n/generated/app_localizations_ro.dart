@@ -4918,6 +4918,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get invitesTitle => 'Invită prieteni';
 
   @override
+  String invitesGenerateCardTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count invites ready to generate',
+      one: '1 invite ready to generate',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get invitesGenerateCardSubtitle =>
+      'Generate a code when you are ready to share one.';
+
+  @override
+  String get invitesGenerateButtonLabel => 'Generate invite';
+
+  @override
   String get searchSomethingWentWrong => 'Ceva nu a mers bine';
 
   @override
@@ -5847,4 +5865,7 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Subtitrări dezactivate pentru toate videoclipurile';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Videoclip eliminat';
 }

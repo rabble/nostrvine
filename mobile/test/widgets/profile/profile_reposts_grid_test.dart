@@ -8,13 +8,21 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
 
 import '../../helpers/go_router.dart';
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileRepostedVideosBloc
     extends MockBloc<ProfileRepostedVideosEvent, ProfileRepostedVideosState>
     implements ProfileRepostedVideosBloc {}
+
+class _FakeVideoEventService extends Mock implements VideoEventService {
+  @override
+  Stream<String> get removedVideoIds => const Stream<String>.empty();
+}
 
 List<VideoEvent> _createTestVideos({int count = 2}) {
   final now = DateTime.now();
@@ -47,15 +55,23 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject({bool isOwnProfile = true, MockGoRouter? goRouter}) {
-      final app = MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: VineTheme.theme,
-        home: Scaffold(
-          body: BlocProvider<ProfileRepostedVideosBloc>.value(
-            value: mockBloc,
-            child: ProfileRepostsGrid(isOwnProfile: isOwnProfile),
+    Widget buildSubject({
+      bool isOwnProfile = true,
+      MockGoRouter? goRouter,
+    }) {
+      final app = testProviderScope(
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(_FakeVideoEventService()),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: BlocProvider<ProfileRepostedVideosBloc>.value(
+              value: mockBloc,
+              child: ProfileRepostsGrid(isOwnProfile: isOwnProfile),
+            ),
           ),
         ),
       );
@@ -66,17 +82,21 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('loading indicator when status is initial', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const ProfileRepostedVideosState());
+      testWidgets('loading indicator when status is initial', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          const ProfileRepostedVideosState(),
+        );
 
         await tester.pumpWidget(buildSubject());
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('loading indicator when status is syncing', (tester) async {
+      testWidgets('loading indicator when status is syncing', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.syncing,
@@ -88,7 +108,9 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('loading indicator when status is loading', (tester) async {
+      testWidgets('loading indicator when status is loading', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.loading,
@@ -130,7 +152,9 @@ void main() {
         );
       });
 
-      testWidgets('other profile empty state when no reposts', (tester) async {
+      testWidgets('other profile empty state when no reposts', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
@@ -148,7 +172,9 @@ void main() {
         );
       });
 
-      testWidgets('grid of reposted videos when videos exist', (tester) async {
+      testWidgets('grid of reposted videos when videos exist', (
+        tester,
+      ) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(
           ProfileRepostedVideosState(
@@ -162,7 +188,9 @@ void main() {
         expect(find.byType(SliverGrid), findsOneWidget);
       });
 
-      testWidgets('bottom loading indicator when loading more', (tester) async {
+      testWidgets('bottom loading indicator when loading more', (
+        tester,
+      ) async {
         final videos = _createTestVideos(count: 3);
         when(() => mockBloc.state).thenReturn(
           ProfileRepostedVideosState(
@@ -199,7 +227,9 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockBloc.add(const ProfileRepostedVideosLoadMoreRequested()),
+          () => mockBloc.add(
+            const ProfileRepostedVideosLoadMoreRequested(),
+          ),
         ).called(greaterThanOrEqualTo(1));
       });
 
@@ -220,7 +250,10 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(
-          () => mockGoRouter.push<Object?>(any(), extra: any(named: 'extra')),
+          () => mockGoRouter.push<Object?>(
+            any(),
+            extra: any(named: 'extra'),
+          ),
         ).called(1);
       });
     });
@@ -245,7 +278,9 @@ void main() {
               home: Scaffold(
                 body: NestedScrollView(
                   headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                    const SliverToBoxAdapter(child: SizedBox(height: 200)),
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: 200),
+                    ),
                   ],
                   body: BlocProvider<ProfileRepostedVideosBloc>.value(
                     value: mockBloc,
@@ -266,55 +301,56 @@ void main() {
         },
       );
 
-      testWidgets('header scrolls away when scrolling inside the grid', (
-        tester,
-      ) async {
-        final videos = _createTestVideos(count: 30);
-        when(() => mockBloc.state).thenReturn(
-          ProfileRepostedVideosState(
-            status: ProfileRepostedVideosStatus.success,
-            videos: videos,
-          ),
-        );
+      testWidgets(
+        'header scrolls away when scrolling inside the grid',
+        (tester) async {
+          final videos = _createTestVideos(count: 30);
+          when(() => mockBloc.state).thenReturn(
+            ProfileRepostedVideosState(
+              status: ProfileRepostedVideosStatus.success,
+              videos: videos,
+            ),
+          );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: VineTheme.theme,
-            home: Scaffold(
-              body: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  const SliverToBoxAdapter(
-                    child: SizedBox(
-                      height: 200,
-                      child: ColoredBox(
-                        color: Colors.red,
-                        child: Center(child: Text('Header')),
+          await tester.pumpWidget(
+            MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    const SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 200,
+                        child: ColoredBox(
+                          color: Colors.red,
+                          child: Center(child: Text('Header')),
+                        ),
                       ),
                     ),
+                  ],
+                  body: BlocProvider<ProfileRepostedVideosBloc>.value(
+                    value: mockBloc,
+                    child: const ProfileRepostsGrid(isOwnProfile: true),
                   ),
-                ],
-                body: BlocProvider<ProfileRepostedVideosBloc>.value(
-                  value: mockBloc,
-                  child: const ProfileRepostsGrid(isOwnProfile: true),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        expect(find.text('Header'), findsOneWidget);
+          expect(find.text('Header'), findsOneWidget);
 
-        await tester.drag(
-          find.byType(CustomScrollView).last,
-          const Offset(0, -300),
-        );
-        await tester.pumpAndSettle();
+          await tester.drag(
+            find.byType(CustomScrollView).last,
+            const Offset(0, -300),
+          );
+          await tester.pumpAndSettle();
 
-        // Header should have scrolled off screen (clipped from tree)
-        expect(find.text('Header'), findsNothing);
-      });
+          // Header should have scrolled off screen (clipped from tree)
+          expect(find.text('Header'), findsNothing);
+        },
+      );
     });
   });
 }

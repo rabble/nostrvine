@@ -1,5 +1,5 @@
-// ABOUTME: Tests that VideoExploreTile only shows NIP-05 badge for verified users
-// ABOUTME: Ensures blue checkmark requires actual DNS verification, not just a claim
+// ABOUTME: Tests that VideoExploreTile does not show NIP-05 checkmarks
+// ABOUTME: Ensures valid NIP-05 does not look like account verification
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,8 +88,8 @@ void main() {
   }
 
   group(VideoExploreTile, () {
-    group('NIP-05 badge', () {
-      testWidgets('shows blue checkmark when NIP-05 is verified', (
+    group('NIP-05 checkmark', () {
+      testWidgets('does not show checkmark when NIP-05 is verified', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -100,7 +100,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byIcon(Icons.check), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsNothing);
       });
 
       testWidgets('does not show checkmark when NIP-05 verification fails', (
@@ -154,6 +154,20 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.check), findsNothing);
+      });
+
+      testWidgets('shows checkmark for Kirsten Swasey special profile', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            verificationStatus: Nip05VerificationStatus.verified,
+            nip05: '_@kirstenswasey.divine.video',
+          ),
+        );
+        await tester.pump();
+
+        expect(find.byIcon(Icons.check), findsOneWidget);
       });
     });
   });

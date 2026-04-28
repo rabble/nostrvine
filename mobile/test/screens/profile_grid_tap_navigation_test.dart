@@ -21,6 +21,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -31,6 +32,11 @@ import '../helpers/test_provider_overrides.dart';
 class _MockBackgroundPublishBloc
     extends MockBloc<BackgroundPublishEvent, BackgroundPublishState>
     implements BackgroundPublishBloc {}
+
+class _FakeVideoEventService extends Mock implements VideoEventService {
+  @override
+  Stream<String> get removedVideoIds => const Stream<String>.empty();
+}
 
 class _TestProfileFeed extends ProfileFeed {
   _TestProfileFeed(this._initialState);
@@ -603,6 +609,9 @@ void main() {
                 VideoFeedState(videos: mockVideos, hasMoreContent: true),
               ),
             ),
+            videoEventServiceProvider.overrideWithValue(
+              _FakeVideoEventService(),
+            ),
           ],
           child: BlocProvider<BackgroundPublishBloc>.value(
             value: backgroundPublishBloc,
@@ -621,6 +630,7 @@ void main() {
 
       expect(capturedArgs, isNotNull);
       expect(capturedArgs!.hasMoreStream, isNotNull);
+      expect(capturedArgs!.removedIdsStream, isNotNull);
     });
   });
 }

@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyStorageException;
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -29,6 +31,9 @@ class NostrSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
+    final showAdvancedRelaySettings = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.advancedRelaySettings),
+    );
     final authState = ref.watch(currentAuthStateProvider);
     final isAuthenticated = authState == AuthState.authenticated;
 
@@ -57,18 +62,20 @@ class NostrSettingsScreen extends ConsumerWidget {
 
               // Network section
               const _SectionHeader(title: 'Network'),
-              _SettingsTile(
-                icon: Icons.hub,
-                title: 'Relays',
-                subtitle: 'Manage Nostr relay connections',
-                onTap: () => context.push(RelaySettingsScreen.path),
-              ),
-              _SettingsTile(
-                icon: Icons.troubleshoot,
-                title: 'Relay Diagnostics',
-                subtitle: 'Debug relay connectivity and network issues',
-                onTap: () => context.push(RelayDiagnosticScreen.path),
-              ),
+              if (showAdvancedRelaySettings) ...[
+                _SettingsTile(
+                  icon: Icons.hub,
+                  title: 'Relays',
+                  subtitle: 'Manage Nostr relay connections',
+                  onTap: () => context.push(RelaySettingsScreen.path),
+                ),
+                _SettingsTile(
+                  icon: Icons.troubleshoot,
+                  title: 'Relay Diagnostics',
+                  subtitle: 'Debug relay connectivity and network issues',
+                  onTap: () => context.push(RelayDiagnosticScreen.path),
+                ),
+              ],
               _SettingsTile(
                 icon: Icons.cloud_upload,
                 title: 'Media Servers',

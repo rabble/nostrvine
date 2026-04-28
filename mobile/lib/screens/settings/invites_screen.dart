@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:share_plus/share_plus.dart';
@@ -46,21 +47,27 @@ class InvitesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<InviteStatusCubit, InviteStatusState>(
-      builder: (context, state) {
-        return switch (state.status) {
-          InviteStatusLoadingStatus.initial ||
-          InviteStatusLoadingStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-          InviteStatusLoadingStatus.error => _ErrorView(
-            onRetry: () => context.read<InviteStatusCubit>().load(),
-          ),
-          InviteStatusLoadingStatus.loaded => _LoadedView(
-            inviteStatus: state.inviteStatus!,
-          ),
-        };
-      },
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600),
+        child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              InviteStatusLoadingStatus.initial ||
+              InviteStatusLoadingStatus.loading => const Center(
+                child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              ),
+              InviteStatusLoadingStatus.error => _ErrorView(
+                onRetry: () => context.read<InviteStatusCubit>().load(),
+              ),
+              InviteStatusLoadingStatus.loaded => _LoadedView(
+                inviteStatus: state.inviteStatus!,
+              ),
+            };
+          },
+        ),
+      ),
     );
   }
 }
@@ -74,8 +81,9 @@ class _LoadedView extends StatelessWidget {
   Widget build(BuildContext context) {
     final unclaimed = inviteStatus.unclaimedCodes;
     final claimed = inviteStatus.claimedCodes;
+    final hasRemainingCapacity = inviteStatus.remaining > 0;
 
-    if (unclaimed.isEmpty && claimed.isEmpty) {
+    if (unclaimed.isEmpty && claimed.isEmpty && !hasRemainingCapacity) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
@@ -102,6 +110,10 @@ class _LoadedView extends StatelessWidget {
           ...unclaimed.map((code) => _InviteCodeCard(code: code)),
           const SizedBox(height: 24),
         ],
+        if (hasRemainingCapacity) ...[
+          _GenerateInviteCard(remaining: inviteStatus.remaining),
+          const SizedBox(height: 24),
+        ],
         if (claimed.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -113,6 +125,43 @@ class _LoadedView extends StatelessWidget {
           ...claimed.map((code) => _ClaimedCodeRow(code: code)),
         ],
       ],
+    );
+  }
+}
+
+class _GenerateInviteCard extends StatelessWidget {
+  const _GenerateInviteCard({required this.remaining});
+
+  final int remaining;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Card(
+      color: VineTheme.surfaceContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 12,
+          children: [
+            Text(
+              l10n.invitesGenerateCardTitle(remaining),
+              style: VineTheme.titleMediumFont(),
+            ),
+            Text(
+              l10n.invitesGenerateCardSubtitle,
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            ),
+            DivineButton(
+              label: l10n.invitesGenerateButtonLabel,
+              expanded: true,
+              onPressed: () =>
+                  context.read<InviteStatusCubit>().generateInvite(),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

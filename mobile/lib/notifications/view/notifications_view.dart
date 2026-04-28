@@ -258,7 +258,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply;
+        notificationKind == NotificationKind.reply ||
+        notificationKind == NotificationKind.mention;
     final videoForNav = video;
 
     context.push(
@@ -266,6 +267,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: Stream.value([videoForNav]),
         initialIndex: 0,
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,
         autoOpenComments: shouldAutoOpenComments,
       ),

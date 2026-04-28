@@ -6,6 +6,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -19,6 +21,7 @@ part 'video_editor_timeline_clip_strip_tiles.dart';
 typedef ClipTrimCallback =
     void Function({
       required String clipId,
+      required bool isStart,
       required Duration trimStart,
       required Duration trimEnd,
     });
@@ -108,6 +111,10 @@ class _VideoEditorTimelineClipStripState
   /// clip tile rebuilds, not the entire strip.
   final _thumbnails = ClipThumbnailManager();
 
+  /// Identity of the last split event we already seeded thumbnails
+  /// for. Used to ensure each split is processed exactly once.
+  ClipSplitEvent? _lastSeededSplit;
+
   static const double _reorderSize = TimelineConstants.thumbnailStripHeight;
 
   // Auto-scroll state.
@@ -129,6 +136,7 @@ class _VideoEditorTimelineClipStripState
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _maybeSeedSplit();
     _syncThumbnails();
   }
 
@@ -138,6 +146,7 @@ class _VideoEditorTimelineClipStripState
     if (!_isReordering) {
       _orderedClips = List.of(widget.clips);
     }
+    _maybeSeedSplit();
     _syncThumbnails();
   }
 
@@ -157,6 +166,51 @@ class _VideoEditorTimelineClipStripState
     );
   }
 
+  /// Seeds the new clips' thumbnail notifiers from the source clip's
+  /// already-loaded thumbnails when a split has just occurred. This
+  /// avoids a flash of placeholder/wrong-range frames while the
+  /// trimmed segment files are being rendered — the real
+  /// subscriptions kick in once the rendered file paths arrive.
+  void _maybeSeedSplit() {
+    final bloc = context.read<ClipEditorBloc?>();
+    if (bloc == null) return;
+    final split = bloc.state.lastSplit;
+    if (split == null || identical(split, _lastSeededSplit)) return;
+    _lastSeededSplit = split;
+
+    final startClipIdx = widget.clips.indexWhere(
+      (c) => c.id == split.startClipId,
+    );
+    final endClipIdx = widget.clips.indexWhere(
+      (c) => c.id == split.endClipId,
+    );
+    if (startClipIdx == -1 || endClipIdx == -1) return;
+    final startClip = widget.clips[startClipIdx];
+    final endClip = widget.clips[endClipIdx];
+    final sourcePath = startClip.video.file?.path;
+    if (sourcePath == null) return;
+
+    _thumbnails.seedFromSource(
+      sourceClipId: split.sourceClipId,
+      targetClipId: split.startClipId,
+      sourceRange: DurationRange(
+        start: split.sourceTrimStart,
+        end: split.absoluteSplitPosition,
+      ),
+      timestampOffset: Duration.zero,
+      currentSourcePath: sourcePath,
+    );
+    _thumbnails.seedFromSource(
+      sourceClipId: split.sourceClipId,
+      targetClipId: split.endClipId,
+      sourceRange: DurationRange(
+        start: split.absoluteSplitPosition,
+        end: split.sourceDuration - split.sourceTrimEnd,
+      ),
+      currentSourcePath: endClip.video.file?.path ?? sourcePath,
+    );
+  }
+
   /// Computes the exact timestamps that the currently visible thumbnail
   /// slots need at the current zoom level.
   ///
@@ -168,15 +222,16 @@ class _VideoEditorTimelineClipStripState
 
     for (final clip in widget.clips) {
       final clipPx = _clipWidth(clip);
-      final durationMs = clip.duration.inMilliseconds;
-      if (clipPx <= 0 || durationMs <= 0) continue;
+      final trimmedMs = clip.trimmedDuration.inMilliseconds;
+      if (clipPx <= 0 || trimmedMs <= 0) continue;
 
       final slotCount = (clipPx / TimelineConstants.thumbnailWidth)
           .ceil()
           .clamp(1, 1000);
       final timestamps = <Duration>[];
       for (var i = 0; i < slotCount; i++) {
-        final centerMs = durationMs * (i + 0.5) / slotCount;
+        final centerMs =
+            clip.trimStart.inMilliseconds + trimmedMs * (i + 0.5) / slotCount;
         timestamps.add(Duration(milliseconds: centerMs.round()));
       }
       result[clip.id] = timestamps;
@@ -523,6 +578,7 @@ class _VideoEditorTimelineClipStripState
                   dragClipWidth: _dragClipWidth,
                   effectiveLocalX: _effectiveLocalX,
                   dragFingerRatio: _dragFingerRatio,
+                  pixelsPerSecond: widget.pixelsPerSecond,
                 ),
             ],
           ),
@@ -663,6 +719,7 @@ class _NonTrimmingClipPositions extends StatelessWidget {
                 index: i,
                 total: orderedClips.length,
                 clipWidth: layout.widths[i],
+                pixelsPerSecond: pixelsPerSecond,
                 thumbnailNotifier: thumbnails[orderedClips[i].id],
                 onReorder: onReorder,
                 onTap: onClipTapped,
@@ -686,6 +743,7 @@ class _DraggedClipPosition extends StatelessWidget {
     required this.dragClipWidth,
     required this.effectiveLocalX,
     required this.dragFingerRatio,
+    required this.pixelsPerSecond,
   });
 
   final List<DivineVideoClip> orderedClips;
@@ -699,6 +757,7 @@ class _DraggedClipPosition extends StatelessWidget {
   final double dragClipWidth;
   final double effectiveLocalX;
   final double dragFingerRatio;
+  final double pixelsPerSecond;
 
   @override
   Widget build(BuildContext context) {
@@ -715,7 +774,7 @@ class _DraggedClipPosition extends StatelessWidget {
       child: _DraggedClipTile(
         clip: orderedClips[dragIndex!],
         index: dragIndex!,
-        fullWidth: layout.widths[dragIndex!],
+        pixelsPerSecond: pixelsPerSecond,
         thumbnailNotifier: thumbnails[orderedClips[dragIndex!].id],
       ),
     );

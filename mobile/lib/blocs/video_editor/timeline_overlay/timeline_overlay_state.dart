@@ -7,7 +7,9 @@ class TimelineOverlayState extends Equatable {
     this.audioTracks = const [],
     this.selectedItemId,
     this.draggingItemId,
+    this.dragPosition,
     this.trimmingItemId,
+    this.trimPosition,
     this.collapsedTypes = const {},
   });
 
@@ -26,8 +28,20 @@ class TimelineOverlayState extends Equatable {
   /// The item being dragged, or `null`.
   final String? draggingItemId;
 
+  /// The live startTime of the item currently being dragged.
+  ///
+  /// Set to the dragged item's `startTime` while a move gesture is
+  /// active; `null` when no drag is in progress.
+  final Duration? dragPosition;
+
   /// The item being trimmed, or `null`.
   final String? trimmingItemId;
+
+  /// The live position of the trim handle currently being dragged.
+  ///
+  /// Set to the dragged [startTime] or [endTime] while a trim gesture is
+  /// active; `null` when no trim is in progress.
+  final Duration? trimPosition;
 
   /// Strip types that are in collapsed view.
   final Set<TimelineOverlayType> collapsedTypes;
@@ -39,8 +53,12 @@ class TimelineOverlayState extends Equatable {
     bool clearSelectedItemId = false,
     String? draggingItemId,
     bool clearDraggingItemId = false,
+    Duration? dragPosition,
+    bool clearDragPosition = false,
     String? trimmingItemId,
     bool clearTrimmingItemId = false,
+    Duration? trimPosition,
+    bool clearTrimPosition = false,
     Set<TimelineOverlayType>? collapsedTypes,
   }) {
     return TimelineOverlayState(
@@ -52,9 +70,15 @@ class TimelineOverlayState extends Equatable {
       draggingItemId: clearDraggingItemId
           ? null
           : (draggingItemId ?? this.draggingItemId),
+      dragPosition: clearDragPosition
+          ? null
+          : (dragPosition ?? this.dragPosition),
       trimmingItemId: clearTrimmingItemId
           ? null
           : (trimmingItemId ?? this.trimmingItemId),
+      trimPosition: clearTrimPosition
+          ? null
+          : (trimPosition ?? this.trimPosition),
       collapsedTypes: collapsedTypes ?? this.collapsedTypes,
     );
   }
@@ -65,7 +89,9 @@ class TimelineOverlayState extends Equatable {
     audioTracks,
     selectedItemId,
     draggingItemId,
+    dragPosition,
     trimmingItemId,
+    trimPosition,
     collapsedTypes,
   ];
 }

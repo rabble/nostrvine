@@ -40,6 +40,8 @@ void main() {
       expect(cubit.state.inviteStatus, isNull);
       expect(cubit.state.hasUnclaimedCodes, isFalse);
       expect(cubit.state.unclaimedCount, equals(0));
+      expect(cubit.state.hasAvailableInvites, isFalse);
+      expect(cubit.state.availableInviteCount, equals(0));
     });
 
     blocTest<InviteStatusCubit, InviteStatusState>(
@@ -113,6 +115,36 @@ void main() {
       ],
     );
 
+    blocTest<InviteStatusCubit, InviteStatusState>(
+      'generateInvite creates one code then reloads invite status',
+      setUp: () {
+        when(
+          () => mockInviteApiClient.generateInvite(),
+        ).thenAnswer(
+          (_) async => const GenerateInviteResult(
+            code: 'WX56-3MKT',
+            remaining: 4,
+          ),
+        );
+        when(
+          () => mockInviteApiClient.getInviteStatus(),
+        ).thenAnswer((_) async => testStatus);
+      },
+      build: buildCubit,
+      act: (cubit) => cubit.generateInvite(),
+      expect: () => [
+        const InviteStatusState(status: InviteStatusLoadingStatus.loading),
+        const InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: testStatus,
+        ),
+      ],
+      verify: (_) {
+        verify(() => mockInviteApiClient.generateInvite()).called(1);
+        verify(() => mockInviteApiClient.getInviteStatus()).called(1);
+      },
+    );
+
     group('state computed properties', () {
       test('hasUnclaimedCodes returns true when unclaimed exist', () {
         const state = InviteStatusState(
@@ -126,6 +158,8 @@ void main() {
         );
         expect(state.hasUnclaimedCodes, isTrue);
         expect(state.unclaimedCount, equals(1));
+        expect(state.hasAvailableInvites, isTrue);
+        expect(state.availableInviteCount, equals(2));
       });
 
       test('hasUnclaimedCodes returns false when all claimed', () {
@@ -140,6 +174,24 @@ void main() {
         );
         expect(state.hasUnclaimedCodes, isFalse);
         expect(state.unclaimedCount, equals(0));
+        expect(state.hasAvailableInvites, isFalse);
+        expect(state.availableInviteCount, equals(0));
+      });
+
+      test('hasAvailableInvites includes remaining invite capacity', () {
+        const state = InviteStatusState(
+          status: InviteStatusLoadingStatus.loaded,
+          inviteStatus: InviteStatus(
+            canInvite: true,
+            remaining: 5,
+            total: 5,
+            codes: [],
+          ),
+        );
+        expect(state.hasUnclaimedCodes, isFalse);
+        expect(state.unclaimedCount, equals(0));
+        expect(state.hasAvailableInvites, isTrue);
+        expect(state.availableInviteCount, equals(5));
       });
     });
   });

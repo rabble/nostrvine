@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:likes_repository/likes_repository.dart';
@@ -16,6 +17,7 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
@@ -355,6 +357,50 @@ void main() {
 
           await streamController.close();
           await bloc.close();
+        },
+      );
+
+      test(
+        'does not log "Cannot add new events after calling close" '
+        'when bloc closes before loadComments completes',
+        () async {
+          final loadCompleter = Completer<CommentThread>();
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => loadCompleter.future);
+
+          await LogCaptureService().clearAllLogs();
+
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+
+          // Drive the handler to its `await loadComments(...)` point.
+          await pumpEventQueue();
+
+          // User dismisses the sheet before the load resolves.
+          await bloc.close();
+
+          // The load now resolves against a closed bloc; the resumed
+          // continuation must be guarded by `if (!isClosed)`.
+          loadCompleter.complete(CommentThread.empty(validId('root')));
+          await pumpEventQueue();
+
+          final hasCloseError = LogCaptureService()
+              .getRecentLogs(minLevel: LogLevel.error)
+              .any(
+                (entry) =>
+                    entry.name == 'CommentsBloc' &&
+                    entry.message.contains(
+                      'Cannot add new events after calling close',
+                    ),
+              );
+          expect(hasCloseError, isFalse);
+          expect(bloc.isClosed, isTrue);
         },
       );
     });
@@ -2844,6 +2890,102 @@ void main() {
 
         await streamController.close();
         await bloc.close();
+      });
+
+      test(
+        'does not throw if a streamed comment arrives after close',
+        () async {
+          final streamController = StreamController<Comment>.broadcast();
+
+          when(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+
+          // Let _onLoadRequested run, _startWatchingComments() subscribe,
+          // and the awaited loadComments resolve.
+          await pumpEventQueue();
+
+          await bloc.close();
+
+          // A late event from the relay arrives after the user dismissed
+          // the sheet. The throttled listener may still deliver it briefly
+          // depending on cancel timing — the bloc must drop it without
+          // throwing "Cannot add new events after calling close".
+          streamController.add(
+            Comment(
+              id: validId('late'),
+              content: 'Late comment',
+              authorPubkey: validId('lateAuthor'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          );
+          await pumpEventQueue();
+
+          expect(bloc.isClosed, isTrue);
+          await streamController.close();
+        },
+      );
+
+      test('cancels throttle refill timer when bloc.close() is called', () {
+        final streamController = StreamController<Comment>.broadcast();
+
+        when(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+        fakeAsync((fake) {
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+          fake.flushMicrotasks();
+
+          // The throttle's per-second refill timer should be running.
+          expect(fake.periodicTimerCount, equals(1));
+
+          // bloc.close() awaits _commentStreamSubscription.cancel() — the
+          // wrapper synchronously cancels the refill timer before delegating
+          // to the inner subscription's cancel.
+          unawaited(bloc.close());
+          fake.flushMicrotasks();
+
+          // No orphan periodic timer left behind.
+          expect(fake.periodicTimerCount, equals(0));
+
+          streamController.close();
+          fake.flushMicrotasks();
+        });
       });
 
       test('throttles comments exceeding rate limit', () async {

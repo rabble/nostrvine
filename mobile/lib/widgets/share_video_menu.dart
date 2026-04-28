@@ -193,7 +193,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
               ),
               if (widget.video.title != null)
                 Text(
-                  widget.video.title ?? '',
+                  widget.video.displayTitle ?? '',
                   style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 14,

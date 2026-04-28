@@ -34,76 +34,90 @@ class FeatureFlagScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Cache Recovery Section
-          _buildCacheRecoverySection(context),
-          const Divider(),
-          // Feature Flags List
-          Expanded(
-            child: ListView.builder(
-              itemCount: FeatureFlag.values.length,
-              itemBuilder: (context, index) {
-                final flag = FeatureFlag.values[index];
-                final isEnabled = state[flag] ?? false;
-                final hasUserOverride = service.hasUserOverride(flag);
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              children: [
+                // Cache Recovery Section
+                _buildCacheRecoverySection(context),
+                const Divider(),
+                // Feature Flags List
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: FeatureFlag.values.length,
+                    itemBuilder: (context, index) {
+                      final flag = FeatureFlag.values[index];
+                      final isEnabled = state[flag] ?? false;
+                      final hasUserOverride = service.hasUserOverride(flag);
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 4.0,
-                  ),
-                  child: ListTile(
-                    title: Text(
-                      flag.displayName,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: hasUserOverride
-                            ? Theme.of(context).colorScheme.primary
-                            : null,
-                      ),
-                    ),
-                    subtitle: Text(
-                      flag.description,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (hasUserOverride)
-                          Padding(
-                            padding: const EdgeInsetsDirectional.only(end: 8),
-                            child: Icon(
-                              Icons.edit,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary,
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 4.0,
+                        ),
+                        child: ListTile(
+                          title: Text(
+                            flag.displayName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: hasUserOverride
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
                             ),
                           ),
-                        Switch(
-                          value: isEnabled,
-                          onChanged: (value) async {
-                            await service.setFlag(flag, value);
-                          },
-                          activeThumbColor: hasUserOverride
-                              ? Theme.of(context).colorScheme.primary
-                              : null,
-                        ),
-                        if (hasUserOverride)
-                          IconButton(
-                            icon: const Icon(Icons.undo, size: 20),
-                            tooltip: context.l10n.featureFlagResetToDefault,
-                            onPressed: () async {
-                              await service.resetFlag(flag);
-                            },
+                          subtitle: Text(
+                            flag.description,
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
-                      ],
-                    ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (hasUserOverride)
+                                Padding(
+                                  padding: const EdgeInsetsDirectional.only(
+                                    end: 8,
+                                  ),
+                                  child: Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                ),
+                              Switch(
+                                value: isEnabled,
+                                onChanged: (value) async {
+                                  await service.setFlag(flag, value);
+                                },
+                                activeThumbColor: hasUserOverride
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                              ),
+                              if (hasUserOverride)
+                                IconButton(
+                                  icon: const Icon(Icons.undo, size: 20),
+                                  tooltip:
+                                      context.l10n.featureFlagResetToDefault,
+                                  onPressed: () async {
+                                    await service.resetFlag(flag);
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

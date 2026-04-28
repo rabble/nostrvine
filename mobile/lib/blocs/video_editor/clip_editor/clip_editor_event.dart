@@ -133,12 +133,18 @@ class ClipEditorSplitRequested extends ClipEditorEvent {
 class ClipEditorTrimUpdated extends ClipEditorEvent {
   const ClipEditorTrimUpdated({
     required this.clipId,
+    required this.isStart,
     required this.trimStart,
     required this.trimEnd,
   });
 
   /// ID of the clip being trimmed.
   final String clipId;
+
+  /// Whether the start handle (left) is being dragged.
+  ///
+  /// `true` → left handle; `false` → right handle.
+  final bool isStart;
 
   /// Offset from the beginning of the original clip.
   final Duration trimStart;
@@ -147,7 +153,7 @@ class ClipEditorTrimUpdated extends ClipEditorEvent {
   final Duration trimEnd;
 
   @override
-  List<Object?> get props => [clipId, trimStart, trimEnd];
+  List<Object?> get props => [clipId, isStart, trimStart, trimEnd];
 }
 
 /// Signals that a trim handle drag gesture has started.

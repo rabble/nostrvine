@@ -28,9 +28,7 @@ class VideoEditorPlayer extends StatelessWidget {
       clipper: _RoundedRectClipper(
         bodySize: bodySize,
         targetAspectRatio: targetAspectRatio.value,
-        borderRadius: targetAspectRatio == .square
-            ? 0
-            : VideoEditorConstants.canvasRadius,
+        borderRadius: VideoEditorConstants.canvasRadius,
       ),
       child: AspectRatio(
         aspectRatio: aspectRatio,

@@ -10,8 +10,8 @@ import 'package:openvine/utils/string_utils.dart';
 /// Base widget for video overlay action buttons (like, comment, repost, share).
 ///
 /// Matches Figma node `15314:53971`: a 48x48 fully tappable container with a
-/// 24 icon centered over an 8 px gap and a label/small caption beneath it.
-/// The entire 48x48 region captures the tap — not just the icon.
+/// 24 icon over an 8 px gap and a label/small caption. 48x48 is a *minimum* —
+/// the column may grow past it so caption text never clips.
 ///
 /// Example usage:
 /// ```dart
@@ -83,10 +83,11 @@ class VideoActionButton extends StatelessWidget {
         onTap: isLoading ? null : onPressed,
         child: SizedBox(
           width: 48,
-          height: 48,
-          child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (isLoading)
                   const SizedBox.square(

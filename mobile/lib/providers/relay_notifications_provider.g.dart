@@ -168,18 +168,54 @@ final class RelayNotificationApiServiceProvider
 String _$relayNotificationApiServiceHash() =>
     r'8a7a6103fecbdfe08649ef6869a43fd27aa4f410';
 
-/// Provider to get current unread notification count
+/// Provider to get the inbox unread badge count.
+///
+/// Derives from the consolidated visible list, not the server's raw
+/// `unreadCount`. The server reports one row per Kind 3 republish per
+/// follower — so the same N followers can produce 2N+ rows after a few
+/// contact-list edits, even though `_consolidateFollowNotifications`
+/// has already merged them on screen. Counting unread items in the
+/// post-consolidation list keeps the badge in sync with what the user
+/// actually sees.
+///
+// TODO(funnelcake#234): Revert to `state.unreadCount` once server-side
+// Kind 3 republish dedup ships and the visible list and server count
+// agree again. Tracking: divinevideo/divine-funnelcake#234.
 
 @ProviderFor(relayNotificationUnreadCount)
 const relayNotificationUnreadCountProvider =
     RelayNotificationUnreadCountProvider._();
 
-/// Provider to get current unread notification count
+/// Provider to get the inbox unread badge count.
+///
+/// Derives from the consolidated visible list, not the server's raw
+/// `unreadCount`. The server reports one row per Kind 3 republish per
+/// follower — so the same N followers can produce 2N+ rows after a few
+/// contact-list edits, even though `_consolidateFollowNotifications`
+/// has already merged them on screen. Counting unread items in the
+/// post-consolidation list keeps the badge in sync with what the user
+/// actually sees.
+///
+// TODO(funnelcake#234): Revert to `state.unreadCount` once server-side
+// Kind 3 republish dedup ships and the visible list and server count
+// agree again. Tracking: divinevideo/divine-funnelcake#234.
 
 final class RelayNotificationUnreadCountProvider
     extends $FunctionalProvider<int, int, int>
     with $Provider<int> {
-  /// Provider to get current unread notification count
+  /// Provider to get the inbox unread badge count.
+  ///
+  /// Derives from the consolidated visible list, not the server's raw
+  /// `unreadCount`. The server reports one row per Kind 3 republish per
+  /// follower — so the same N followers can produce 2N+ rows after a few
+  /// contact-list edits, even though `_consolidateFollowNotifications`
+  /// has already merged them on screen. Counting unread items in the
+  /// post-consolidation list keeps the badge in sync with what the user
+  /// actually sees.
+  ///
+  // TODO(funnelcake#234): Revert to `state.unreadCount` once server-side
+  // Kind 3 republish dedup ships and the visible list and server count
+  // agree again. Tracking: divinevideo/divine-funnelcake#234.
   const RelayNotificationUnreadCountProvider._()
     : super(
         from: null,
@@ -214,7 +250,7 @@ final class RelayNotificationUnreadCountProvider
 }
 
 String _$relayNotificationUnreadCountHash() =>
-    r'ef90b461acd34548961a32c49924d10e62764927';
+    r'655a7aa957d76849af10895bb85dc0689f528c03';
 
 /// Provider to check if notifications are loading
 

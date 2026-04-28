@@ -151,7 +151,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
-      add(const CommentVoteCountsFetchRequested());
+      if (!isClosed) {
+        add(const CommentVoteCountsFetchRequested());
+      }
     } catch (e) {
       Log.error(
         'Error loading comments: $e',
@@ -231,7 +233,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
-      add(const CommentVoteCountsFetchRequested());
+      if (!isClosed) {
+        add(const CommentVoteCountsFetchRequested());
+      }
 
       Log.info(
         'Loaded ${thread.comments.length} more comments '
@@ -1005,7 +1009,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         stream,
         maxPerSecond: _maxCommentsPerSecond,
         onData: (comment) {
-          add(NewCommentReceived(comment));
+          if (!isClosed) {
+            add(NewCommentReceived(comment));
+          }
         },
         onError: (Object e) {
           Log.warning(
@@ -1036,18 +1042,11 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     void Function(Object)? onError,
   }) {
     var budget = maxPerSecond;
-    Timer? refillTimer;
+    final refillTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      budget = maxPerSecond;
+    });
 
-    void startRefill() {
-      refillTimer?.cancel();
-      refillTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-        budget = maxPerSecond;
-      });
-    }
-
-    startRefill();
-
-    return stream.listen(
+    final subscription = stream.listen(
       (event) {
         if (budget > 0) {
           budget--;
@@ -1055,10 +1054,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         }
       },
       onError: onError,
-      onDone: () {
-        refillTimer?.cancel();
-      },
+      onDone: refillTimer.cancel,
     );
+    return _ThrottledSubscription<T>(subscription, refillTimer);
   }
 
   @override
@@ -1121,4 +1119,42 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
     return lastBatchCount >= _pageSize;
   }
+}
+
+/// Wraps a [StreamSubscription] so that cancelling it also cancels the
+/// throttle's refill [Timer]. Without this wrapper the periodic timer is only
+/// cleaned up via the source stream's `onDone`, leaking one timer per
+/// comments-sheet open/close cycle.
+class _ThrottledSubscription<T> implements StreamSubscription<T> {
+  _ThrottledSubscription(this._inner, this._refillTimer);
+
+  final StreamSubscription<T> _inner;
+  final Timer _refillTimer;
+
+  @override
+  Future<void> cancel() {
+    _refillTimer.cancel();
+    return _inner.cancel();
+  }
+
+  @override
+  void onData(void Function(T data)? handleData) => _inner.onData(handleData);
+
+  @override
+  void onError(Function? handleError) => _inner.onError(handleError);
+
+  @override
+  void onDone(void Function()? handleDone) => _inner.onDone(handleDone);
+
+  @override
+  bool get isPaused => _inner.isPaused;
+
+  @override
+  void pause([Future<void>? resumeSignal]) => _inner.pause(resumeSignal);
+
+  @override
+  void resume() => _inner.resume();
+
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => _inner.asFuture<E>(futureValue);
 }

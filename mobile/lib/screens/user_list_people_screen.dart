@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -217,6 +218,9 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
             PooledFullscreenVideoFeedScreen(
               videosStream: Stream.value(videos),
               initialIndex: _activeVideoIndex!,
+              removedIdsStream: ref
+                  .read(videoEventServiceProvider)
+                  .removedVideoIds,
               contextTitle: widget.userList.name,
             ),
             // Header bar showing list name and back button

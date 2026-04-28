@@ -364,6 +364,57 @@ void main() {
 
         expect(profile1.bestDisplayName, equals(profile2.bestDisplayName));
       });
+
+      test('strips zalgo combining marks from displayName', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          displayName: 'A\u0300\u0301\u0302\u0303\u0304',
+          name: 'username',
+        );
+
+        expect(profile.bestDisplayName, equals('A\u0300\u0301'));
+      });
+
+      test('strips zalgo combining marks from name fallback', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          name: 'B\u0300\u0301\u0302\u0303',
+        );
+
+        expect(profile.bestDisplayName, equals('B\u0300\u0301'));
+      });
+    });
+
+    group('betterDisplayName', () {
+      test('strips zalgo from displayName', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          displayName: 'X\u0300\u0301\u0302\u0303',
+        );
+
+        expect(profile.betterDisplayName(null), equals('X\u0300\u0301'));
+      });
+
+      test('strips zalgo from name fallback', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          name: 'Y\u0300\u0301\u0302\u0303',
+        );
+
+        expect(profile.betterDisplayName(null), equals('Y\u0300\u0301'));
+      });
     });
 
     group('generatedNameFor', () {

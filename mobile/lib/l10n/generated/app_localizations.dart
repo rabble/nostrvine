@@ -8486,6 +8486,24 @@ abstract class AppLocalizations {
   /// **'Invite Friends'**
   String get invitesTitle;
 
+  /// Title of the generate-invite card on the invites screen, shown when the user has invite capacity that has not been generated as codes yet.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}'**
+  String invitesGenerateCardTitle(int count);
+
+  /// Body text on the generate-invite card explaining what tapping the button does.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate a code when you are ready to share one.'**
+  String get invitesGenerateCardSubtitle;
+
+  /// Label of the button on the generate-invite card that creates a new invite code from remaining capacity.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate invite'**
+  String get invitesGenerateButtonLabel;
+
   /// No description provided for @searchSomethingWentWrong.
   ///
   /// In en, this message translates to:
@@ -10097,6 +10115,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Captions disabled for all videos'**
   String get metadataCaptionsDisabledSemantics;
+
+  /// Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link).
+  ///
+  /// In en, this message translates to:
+  /// **'Video removed'**
+  String get fullscreenFeedRemovedMessage;
 }
 
 class _AppLocalizationsDelegate

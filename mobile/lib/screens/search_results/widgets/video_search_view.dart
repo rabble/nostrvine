@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/videos_section.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -38,7 +40,7 @@ class VideoSearchView extends StatelessWidget {
   }
 }
 
-class _VideoSearchGrid extends StatefulWidget {
+class _VideoSearchGrid extends ConsumerStatefulWidget {
   const _VideoSearchGrid({
     required this.videos,
     required this.hasMore,
@@ -50,10 +52,10 @@ class _VideoSearchGrid extends StatefulWidget {
   final bool isLoadingMore;
 
   @override
-  State<_VideoSearchGrid> createState() => _VideoSearchGridState();
+  ConsumerState<_VideoSearchGrid> createState() => _VideoSearchGridState();
 }
 
-class _VideoSearchGridState extends State<_VideoSearchGrid>
+class _VideoSearchGridState extends ConsumerState<_VideoSearchGrid>
     with ScrollPaginationMixin {
   final _scrollController = ScrollController();
   late final StreamController<List<VideoEvent>> _videosStreamController;
@@ -109,6 +111,7 @@ class _VideoSearchGridState extends State<_VideoSearchGrid>
         hasMoreStream: _hasMoreStreamController.stream.startWith(
           widget.hasMore,
         ),
+        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: 'Search Results',
         trafficSource: ViewTrafficSource.search,
         sourceDetail: context.read<VideoSearchBloc>().state.query,

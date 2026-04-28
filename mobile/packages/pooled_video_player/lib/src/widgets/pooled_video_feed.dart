@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, listEquals;
 import 'package:flutter/material.dart';
 
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
@@ -151,15 +152,28 @@ class PooledVideoFeedState extends State<PooledVideoFeed>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
+    if (_shouldDeactivateForLifecycleState(state)) {
+      _controller.setActive(active: false);
+    }
+  }
+
+  bool _shouldDeactivateForLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.hidden:
       case AppLifecycleState.detached:
-        _controller.setActive(active: false);
-
-      case AppLifecycleState.resumed:
+        return true;
       case AppLifecycleState.inactive:
-        break;
+        // On mobile, inactive is the first signal before background suspension.
+        return switch (defaultTargetPlatform) {
+          TargetPlatform.android || TargetPlatform.iOS => true,
+          TargetPlatform.fuchsia ||
+          TargetPlatform.linux ||
+          TargetPlatform.macOS ||
+          TargetPlatform.windows => false,
+        };
+      case AppLifecycleState.resumed:
+        return false;
     }
   }
 

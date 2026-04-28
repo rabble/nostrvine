@@ -4778,6 +4778,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get invitesTitle => 'Bjud in vänner';
 
   @override
+  String invitesGenerateCardTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count invites ready to generate',
+      one: '1 invite ready to generate',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get invitesGenerateCardSubtitle =>
+      'Generate a code when you are ready to share one.';
+
+  @override
+  String get invitesGenerateButtonLabel => 'Generate invite';
+
+  @override
   String get searchSomethingWentWrong => 'Något gick fel';
 
   @override
@@ -5692,4 +5710,7 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get metadataCaptionsDisabledSemantics =>
       'Undertexter inaktiverade för alla videor';
+
+  @override
+  String get fullscreenFeedRemovedMessage => 'Video borttagen';
 }

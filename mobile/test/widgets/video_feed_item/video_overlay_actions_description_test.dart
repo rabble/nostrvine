@@ -10,6 +10,9 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -128,6 +131,97 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('author line does not show checkmark for verified NIP-05', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      testProviderScope(
+        additionalOverrides: [
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+            yield UserProfile(
+              pubkey: pubkey,
+              name: 'Alice',
+              nip05: 'alice@example.com',
+              rawData: const {},
+              createdAt: DateTime(2026),
+              eventId: 'kind0_event_id',
+            );
+          }),
+          nip05VerificationProvider.overrideWith(
+            (ref, pubkey) async => Nip05VerificationStatus.verified,
+          ),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: BlocProvider<VideoInteractionsBloc>.value(
+              value: mockInteractionsBloc,
+              child: VideoOverlayActions(
+                video: testVideo,
+                isVisible: true,
+                isActive: true,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Alice'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsNothing);
+  });
+
+  testWidgets(
+    'author line shows checkmark for Kirsten Swasey special profile',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testProviderScope(
+          additionalOverrides: [
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            userProfileReactiveProvider.overrideWith((ref, pubkey) async* {
+              yield UserProfile(
+                pubkey: pubkey,
+                name: 'Alice',
+                nip05: '_@kirstenswasey.divine.video',
+                rawData: const {},
+                createdAt: DateTime(2026),
+                eventId: 'kind0_event_id',
+              );
+            }),
+            nip05VerificationProvider.overrideWith(
+              (ref, pubkey) async => Nip05VerificationStatus.verified,
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: BlocProvider<VideoInteractionsBloc>.value(
+                value: mockInteractionsBloc,
+                child: VideoOverlayActions(
+                  video: testVideo,
+                  isVisible: true,
+                  isActive: true,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'does not render a dedicated captions button in the action rail',
