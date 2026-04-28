@@ -666,10 +666,7 @@ void main() {
           expect(result.videos, hasLength(1));
           // Moderation labels go to moderationLabels, not contentWarningLabels
           expect(result.videos.first.contentWarningLabels, isEmpty);
-          expect(
-            result.videos.first.moderationLabels,
-            equals(['violence']),
-          );
+          expect(result.videos.first.moderationLabels, equals(['violence']));
           // ML labels should not trigger warn behaviour
           expect(result.videos.first.warnLabels, isEmpty);
           verifyNever(() => mockNostrClient.queryEvents(any()));
@@ -714,10 +711,7 @@ void main() {
           expect(result.videos, hasLength(1));
           // Moderation labels go to moderationLabels, not contentWarningLabels
           expect(result.videos.first.contentWarningLabels, isEmpty);
-          expect(
-            result.videos.first.moderationLabels,
-            equals(['violence']),
-          );
+          expect(result.videos.first.moderationLabels, equals(['violence']));
           expect(result.videos.first.warnLabels, isEmpty);
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
@@ -755,10 +749,7 @@ void main() {
           );
 
           expect(result.videos, hasLength(1));
-          expect(
-            result.videos.first.warnLabels,
-            equals(['nudity']),
-          );
+          expect(result.videos.first.warnLabels, equals(['nudity']));
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
@@ -1870,7 +1861,7 @@ void main() {
         test('returns API results when Funnelcake succeeds', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1909,7 +1900,7 @@ void main() {
         test('preserves API trending order (no re-sort)', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1946,7 +1937,7 @@ void main() {
         test('passes limit and before to Funnelcake API', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -1972,7 +1963,7 @@ void main() {
           );
 
           verify(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: 10,
               before: 1704067200,
             ),
@@ -1982,7 +1973,7 @@ void main() {
         test('falls back to NIP-50 when Funnelcake throws', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -2023,7 +2014,7 @@ void main() {
           () async {
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
             when(
-              () => mockFunnelcakeClient.getTrendingVideos(
+              () => mockFunnelcakeClient.getWatchingVideos(
                 limit: any(named: 'limit'),
                 before: any(named: 'before'),
               ),
@@ -2082,7 +2073,7 @@ void main() {
           await repositoryWithApi.getPopularVideos();
 
           verifyNever(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -2092,7 +2083,7 @@ void main() {
         test('applies content filters to API results', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -2456,7 +2447,7 @@ void main() {
 
         test('returns cached result without network call', () async {
           when(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -2475,7 +2466,7 @@ void main() {
           final cached = await repoWithCache.getPopularVideos();
 
           verify(
-            () => mockFunnelcakeClient.getTrendingVideos(
+            () => mockFunnelcakeClient.getWatchingVideos(
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
@@ -4108,10 +4099,7 @@ void main() {
             );
 
             expect(result, hasLength(1));
-            expect(
-              result.first.collaboratorPubkeys,
-              equals(['collab-pubkey']),
-            );
+            expect(result.first.collaboratorPubkeys, equals(['collab-pubkey']));
             expect(result.first.hasCollaborators, isTrue);
           },
         );
@@ -4764,10 +4752,7 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => const VideoSearchResponse(
-            videos: [],
-            totalCount: 0,
-          ),
+          (_) async => const VideoSearchResponse(videos: [], totalCount: 0),
         );
 
         final repoWithApi = VideosRepository(
@@ -6090,7 +6075,7 @@ void main() {
           ],
         );
         when(
-          () => mockFunnelcakeClient.getTrendingVideos(
+          () => mockFunnelcakeClient.getWatchingVideos(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
@@ -6123,7 +6108,7 @@ void main() {
           ),
         ).called(2);
         verify(
-          () => mockFunnelcakeClient.getTrendingVideos(
+          () => mockFunnelcakeClient.getWatchingVideos(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),

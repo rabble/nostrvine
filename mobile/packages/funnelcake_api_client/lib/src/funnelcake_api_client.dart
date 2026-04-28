@@ -183,10 +183,7 @@ class FunnelcakeApiClient {
             ? int.tryParse(totalCountHeader)
             : null;
 
-        return VideosByAuthorResponse(
-          videos: videos,
-          totalCount: totalCount,
-        );
+        return VideosByAuthorResponse(videos: videos, totalCount: totalCount);
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Author videos',
@@ -934,10 +931,7 @@ class FunnelcakeApiClient {
             int.tryParse(response.headers['x-total-count'] ?? '') ??
             videos.length;
 
-        return VideoSearchResponse(
-          videos: videos,
-          totalCount: totalCount,
-        );
+        return VideoSearchResponse(videos: videos, totalCount: totalCount);
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to search videos',
@@ -1049,9 +1043,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<TrendingHashtag>> fetchTrendingHashtags({
-    int limit = 20,
-  }) async {
+  Future<List<TrendingHashtag>> fetchTrendingHashtags({int limit = 20}) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -1207,16 +1199,13 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Video ID cannot be empty');
     }
 
-    final uri =
-        Uri.parse(
-          '$_baseUrl/api/videos/$videoId/comments',
-        ).replace(
-          queryParameters: {
-            'sort': sort,
-            'limit': limit.toString(),
-            'offset': offset.toString(),
-          },
-        );
+    final uri = Uri.parse('$_baseUrl/api/videos/$videoId/comments').replace(
+      queryParameters: {
+        'sort': sort,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      },
+    );
 
     try {
       final response = await _get(uri);
@@ -1900,11 +1889,7 @@ class FunnelcakeApiClient {
   }) async {
     final url =
         requestUri ??
-        notificationsUri(
-          pubkey: pubkey,
-          limit: limit,
-          cursor: cursor,
-        );
+        notificationsUri(pubkey: pubkey, limit: limit, cursor: cursor);
 
     try {
       final response = await _httpClient
@@ -1951,9 +1936,7 @@ class FunnelcakeApiClient {
   }) async {
     final url = Uri.parse('$_baseUrl/api/users/$pubkey/notifications/read');
 
-    final payload = jsonEncode({
-      'notification_ids': ?notificationIds,
-    });
+    final payload = jsonEncode({'notification_ids': ?notificationIds});
 
     try {
       final response = await _httpClient
