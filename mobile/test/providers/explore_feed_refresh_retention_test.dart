@@ -80,16 +80,16 @@ void main() {
       'popular now keeps existing videos visible while refresh is in flight',
       () async {
         final refreshCompleter = Completer<List<VideoStats>>();
-        var recentCallCount = 0;
+        var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getRecentVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideos(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) {
-          recentCallCount += 1;
-          if (recentCallCount == 1) {
+          watchingCallCount += 1;
+          if (watchingCallCount == 1) {
             return Future.value([_videoStats('popular-now-initial')]);
           }
           return refreshCompleter.future;
@@ -157,19 +157,19 @@ void main() {
       () async {
         final resumeBuildCompleter = Completer<List<VideoStats>>();
         final refreshCompleter = Completer<List<VideoStats>>();
-        var recentCallCount = 0;
+        var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getRecentVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideos(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) {
-          recentCallCount += 1;
-          if (recentCallCount == 1) {
+          watchingCallCount += 1;
+          if (watchingCallCount == 1) {
             return Future.value([_videoStats('popular-now-initial')]);
           }
-          if (recentCallCount == 2) {
+          if (watchingCallCount == 2) {
             return resumeBuildCompleter.future;
           }
           return refreshCompleter.future;
@@ -247,7 +247,7 @@ void main() {
         ]);
         expect(refreshingState.isRefreshing, isTrue);
         expect(
-          recentCallCount,
+          watchingCallCount,
           3,
           reason:
               'Refresh should keep using REST while the resume rebuild is in flight',
