@@ -698,6 +698,65 @@ void main() {
       });
     });
 
+    group('mention navigation target (#3168)', () {
+      test(
+        'mention falls back to sourceEventId when referencedEventId is null',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourceKind: 1,
+              sourceEventId: 'mention_evt_1',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.first as SingleNotification;
+          expect(item.type, equals(NotificationKind.mention));
+          // Without the fallback, targetEventId would be null and the UI
+          // would have nothing to navigate to, leaving avatar tap as the
+          // only working route — straight to the mentioner's profile.
+          expect(item.targetEventId, equals('mention_evt_1'));
+        },
+      );
+
+      test(
+        'mention prefers referencedEventId when both are present',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'mention',
+              sourceKind: 1,
+              sourceEventId: 'mention_evt_1',
+              referencedEventId: 'video_root',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.first as SingleNotification;
+          expect(item.targetEventId, equals('video_root'));
+        },
+      );
+
+      test(
+        'non-mention notifications keep null targetEventId when '
+        'referencedEventId is null',
+        () async {
+          stubNotifications([
+            makeNotification(sourceEventId: 'reaction_evt'),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.first as SingleNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.targetEventId, isNull);
+        },
+      );
+    });
+
     group('comment text truncation', () {
       test('truncates comment text > 50 chars', () async {
         final longComment = 'A' * 60;

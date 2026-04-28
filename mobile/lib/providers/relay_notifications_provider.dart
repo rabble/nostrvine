@@ -1060,11 +1060,26 @@ RelayNotificationApiService relayNotificationApiService(Ref ref) {
   );
 }
 
-/// Provider to get current unread notification count
+/// Provider to get the inbox unread badge count.
+///
+/// Derives from the consolidated visible list, not the server's raw
+/// `unreadCount`. The server reports one row per Kind 3 republish per
+/// follower — so the same N followers can produce 2N+ rows after a few
+/// contact-list edits, even though `_consolidateFollowNotifications`
+/// has already merged them on screen. Counting unread items in the
+/// post-consolidation list keeps the badge in sync with what the user
+/// actually sees.
+///
+// TODO(funnelcake#234): Revert to `state.unreadCount` once server-side
+// Kind 3 republish dedup ships and the visible list and server count
+// agree again. Tracking: divinevideo/divine-funnelcake#234.
 @riverpod
 int relayNotificationUnreadCount(Ref ref) {
   final asyncState = ref.watch(relayNotificationsProvider);
-  return asyncState.whenOrNull(data: (state) => state.unreadCount) ?? 0;
+  return asyncState.whenOrNull(
+        data: (state) => state.notifications.where((n) => !n.isRead).length,
+      ) ??
+      0;
 }
 
 /// Provider to check if notifications are loading

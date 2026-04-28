@@ -1,0 +1,12 @@
+name: text_sanitizer
+description: Utilities for sanitizing user-generated text before display.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dev_dependencies:
+  test: ^1.26.3
+  very_good_analysis: ^10.2.0

@@ -1,27 +1,9 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' as model show AspectRatio;
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 
 void main() {
-  group(canvasBorderRadiusForAspectRatio, () {
-    test('keeps square previews unrounded', () {
-      expect(
-        canvasBorderRadiusForAspectRatio(model.AspectRatio.square),
-        equals(0),
-      );
-    });
-
-    test('rounds non-square previews', () {
-      expect(
-        canvasBorderRadiusForAspectRatio(model.AspectRatio.vertical),
-        equals(VideoEditorConstants.canvasRadius),
-      );
-    });
-  });
-
   group(computeClipSize, () {
     group('square (1:1) target', () {
       test('clips tall widget to square using width as shortest side', () {

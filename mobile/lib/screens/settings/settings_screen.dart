@@ -60,6 +60,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void initState() {
     super.initState();
     unawaited(_loadAppVersion());
+    unawaited(context.read<InviteStatusCubit?>()?.load());
     _accountCubit = SettingsAccountCubit(
       authService: ref.read(authServiceProvider),
       draftStorageService: ref.read(draftStorageServiceProvider),
@@ -314,7 +315,7 @@ class _AccountHeader extends StatelessWidget {
               _AccountHeaderProfile(pubkey: pubkey),
               BlocBuilder<InviteStatusCubit, InviteStatusState>(
                 builder: (context, inviteState) {
-                  if (!inviteState.hasUnclaimedCodes) {
+                  if (!inviteState.hasAvailableInvites) {
                     return const SizedBox.shrink();
                   }
                   return Semantics(
@@ -360,7 +361,7 @@ class _AccountHeader extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                '${inviteState.unclaimedCount}',
+                                '${inviteState.availableInviteCount}',
                                 style: VineTheme.labelSmallFont(
                                   color: VineTheme.backgroundColor,
                                 ),

@@ -2926,5 +2926,8 @@
   "videoEditorClipGalleryInstruction": "Tryck för att redigera. Håll ned och dra för att ändra ordning.",
   "navSearch": "Sök",
   "navSearchTooltip": "Sök",
-  "fullscreenFeedRemovedMessage": "Video borttagen"
+  "fullscreenFeedRemovedMessage": "Video borttagen",
+  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+  "invitesGenerateButtonLabel": "Generate invite"
 }

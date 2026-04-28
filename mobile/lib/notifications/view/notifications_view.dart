@@ -258,7 +258,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply;
+        notificationKind == NotificationKind.reply ||
+        notificationKind == NotificationKind.mention;
     final videoForNav = video;
 
     context.push(

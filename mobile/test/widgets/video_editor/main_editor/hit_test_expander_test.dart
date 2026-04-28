@@ -145,40 +145,5 @@ void main() {
       await tester.tapAt(expanderRect.topLeft + const Offset(10, 10));
       expect(hits, 2);
     });
-
-    testWidgets('does not clamp scrim taps when disabled', (tester) async {
-      var hits = 0;
-      await tester.pumpWidget(
-        Directionality(
-          textDirection: TextDirection.ltr,
-          child: Center(
-            child: SizedBox.fromSize(
-              size: const Size(200, 200),
-              child: HitTestExpander(
-                visibleSize: const Size(100, 100),
-                enabled: false,
-                child: Center(
-                  child: SizedBox.fromSize(
-                    size: const Size(100, 100),
-                    child: Listener(
-                      behavior: HitTestBehavior.opaque,
-                      onPointerDown: (_) => hits++,
-                      child: const SizedBox.expand(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      final expanderRect = tester.getRect(find.byType(HitTestExpander));
-      await tester.tapAt(expanderRect.topLeft + const Offset(10, 10));
-      expect(hits, 0);
-
-      await tester.tapAt(tester.getCenter(find.byType(Listener)));
-      expect(hits, 1);
-    });
   });
 }

@@ -145,13 +145,13 @@ class _DraggedClipTile extends StatelessWidget {
   const _DraggedClipTile({
     required this.clip,
     required this.index,
-    required this.fullWidth,
+    required this.pixelsPerSecond,
     required this.thumbnailNotifier,
   });
 
   final DivineVideoClip clip;
   final int index;
-  final double fullWidth;
+  final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
 
   @override
@@ -168,7 +168,9 @@ class _DraggedClipTile extends StatelessWidget {
         ),
         child: _ClipTile(
           clip: clip,
-          fullWidth: fullWidth,
+          fullWidth: clip.durationInSeconds * pixelsPerSecond,
+          trimStartOffset:
+              clip.trimStart.inMilliseconds / 1000.0 * pixelsPerSecond,
           thumbnailNotifier: thumbnailNotifier,
         ),
       ),
@@ -182,6 +184,7 @@ class _AccessibleClipTile extends StatelessWidget {
     required this.index,
     required this.total,
     required this.clipWidth,
+    required this.pixelsPerSecond,
     required this.thumbnailNotifier,
     required this.onReorder,
     this.onTap,
@@ -191,6 +194,7 @@ class _AccessibleClipTile extends StatelessWidget {
   final int index;
   final int total;
   final double clipWidth;
+  final double pixelsPerSecond;
   final ValueNotifier<List<StripThumbnail>> thumbnailNotifier;
   final void Function(int from, int to) onReorder;
   final ValueChanged<int>? onTap;
@@ -224,7 +228,9 @@ class _AccessibleClipTile extends StatelessWidget {
         },
         child: _ClipTile(
           clip: clip,
-          fullWidth: clipWidth,
+          fullWidth: clip.durationInSeconds * pixelsPerSecond,
+          trimStartOffset:
+              clip.trimStart.inMilliseconds / 1000.0 * pixelsPerSecond,
           thumbnailNotifier: thumbnailNotifier,
         ),
       ),

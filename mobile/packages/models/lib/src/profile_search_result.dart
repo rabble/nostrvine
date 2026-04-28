@@ -3,6 +3,7 @@
 
 import 'package:meta/meta.dart';
 import 'package:models/src/user_profile.dart';
+import 'package:text_sanitizer/text_sanitizer.dart';
 
 /// Profile result from Funnelcake search API.
 ///
@@ -144,7 +145,13 @@ class ProfileSearchResult {
   final int? videoCount;
 
   /// Get the best display name available.
-  String get bestDisplayName => displayName ?? name ?? pubkey;
+  ///
+  /// Sanitizes [displayName] and [name] against zalgo overflow; the [pubkey]
+  /// hex fallback is returned as-is (hex contains no combining characters).
+  String get bestDisplayName {
+    final source = displayName ?? name;
+    return source != null ? stripZalgo(source) : pubkey;
+  }
 
   /// Converts this [ProfileSearchResult] to a [UserProfile] for app use.
   ///
