@@ -6,7 +6,7 @@ import FlutterMacOS
 /// Uses `AVPlayerItemVideoOutput` to pull `CVPixelBuffer` frames from
 /// the player and exposes them via the `FlutterTexture` protocol.
 /// A timer drives the frame polling loop (macOS has no `CADisplayLink`).
-final class VideoTextureOutput: NSObject, FlutterTexture {
+final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPullDelegate {
 
     private let registry: FlutterTextureRegistry
     private var onFirstFrame: (() -> Void)?
@@ -19,6 +19,24 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
     private var latestPixelBuffer: CVPixelBuffer?
     private var hasDeliveredFirstFrame = false
     private weak var player: AVPlayer?
+    /// Item the output is currently attached to, so we can detach cleanly.
+    private weak var attachedItem: AVPlayerItem?
+    /// Exact seek target from the most recent `forceRefresh`; preferred over
+    /// `player.currentTime()` because a newer seek may already be in flight.
+    private var pendingSeekTime: CMTime = .invalid
+
+    /// Window during which the poll loop bypasses `hasNewPixelBuffer`
+    /// and tries `copyPixelBuffer` on every tick. Covers the GOP-decode
+    /// stall after an exact seek (up to ~500 ms on long-GOP clips).
+    private var forceRefreshDeadline: Date = .distantPast
+
+    /// Failed `copyPixelBuffer` ticks within the current force window.
+    /// Non-zero at expiry means the compositor is stuck at this time.
+    private var forceWindowFailCount = 0
+
+    /// Fired when the force window expires without a frame; caller should
+    /// retry the seek with tolerance.
+    var onSeekStuck: ((CMTime) -> Void)?
 
     init(
         registry: FlutterTextureRegistry,
@@ -38,9 +56,9 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
     /// Attaches the video output to a player item so frames can be
     /// pulled from it.
     func attach(to item: AVPlayerItem) {
-        // Remove previous output if any.
-        if let old = videoOutput {
-            item.remove(old)
+        // Remove the old output from the item it was actually added to.
+        if let old = videoOutput, let prev = attachedItem {
+            prev.remove(old)
         }
 
         let attrs: [String: Any] = [
@@ -50,9 +68,12 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
         let output = AVPlayerItemVideoOutput(
             pixelBufferAttributes: attrs
         )
+        output.setDelegate(self, queue: .main)
         item.add(output)
         videoOutput = output
+        attachedItem = item
         hasDeliveredFirstFrame = false
+        pendingSeekTime = .invalid
     }
 
     /// Attaches the polling loop to the player.
@@ -60,6 +81,53 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
     func attachPlayer(_ player: AVPlayer) {
         self.player = player
         startPolling()
+    }
+
+    /// Opens a 600 ms force window after a seek and requests a delegate
+    /// notification, so the texture updates even while paused. Pass the
+    /// exact seek target — used directly in `outputMediaDataWillChange`.
+    func forceRefresh(for seekTime: CMTime) {
+        pendingSeekTime = seekTime
+        forceRefreshDeadline = Date(timeIntervalSinceNow: 0.6)
+        forceWindowFailCount = 0
+        videoOutput?.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+    }
+
+    // MARK: - AVPlayerItemOutputPullDelegate
+
+    /// Called after a seek flushes the output queue.
+    func outputSequenceWasFlushed(_ output: AVPlayerItemOutput) {
+        (output as? AVPlayerItemVideoOutput)?
+            .requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+    }
+
+    /// Fires even on a paused player — most reliable frame path after an
+    /// exact seek on an `AVMutableComposition` with `AVVideoComposition`.
+    func outputMediaDataWillChange(_ sender: AVPlayerItemOutput) {
+        guard let videoOutput = sender as? AVPlayerItemVideoOutput else {
+            return
+        }
+        // Prefer the stored seek target; fall back to currentTime only when
+        // there's no pending seek (e.g. notification from a flush).
+        let targetTime: CMTime
+        if pendingSeekTime.isValid {
+            targetTime = pendingSeekTime
+        } else if let p = player {
+            targetTime = p.currentTime()
+        } else {
+            return
+        }
+        guard let pixelBuffer = videoOutput.copyPixelBuffer(
+            forItemTime: targetTime,
+            itemTimeForDisplay: nil
+        ) else {
+            videoOutput.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+            return
+        }
+        pendingSeekTime = .invalid
+        forceRefreshDeadline = .distantPast
+        forceWindowFailCount = 0
+        deliverFrame(pixelBuffer)
     }
 
     /// Cleans up the timer and unregisters the texture.
@@ -101,19 +169,46 @@ final class VideoTextureOutput: NSObject, FlutterTexture {
               let player else { return }
 
         let itemTime = player.currentTime()
+
+        if Date() < forceRefreshDeadline {
+            if let pixelBuffer = output.copyPixelBuffer(
+                forItemTime: itemTime,
+                itemTimeForDisplay: nil
+            ) {
+                pendingSeekTime = .invalid
+                forceRefreshDeadline = .distantPast
+                forceWindowFailCount = 0
+                deliverFrame(pixelBuffer)
+            } else {
+                forceWindowFailCount += 1
+            }
+            return
+        }
+
+        if forceWindowFailCount > 0 {
+            let stuckTime = itemTime
+            forceWindowFailCount = 0
+            DispatchQueue.main.async { [weak self] in
+                self?.onSeekStuck?(stuckTime)
+            }
+        }
+
         guard output.hasNewPixelBuffer(forItemTime: itemTime) else { return }
 
         if let pixelBuffer = output.copyPixelBuffer(
             forItemTime: itemTime,
             itemTimeForDisplay: nil
         ) {
-            latestPixelBuffer = pixelBuffer
-            registry.textureFrameAvailable(textureId)
+            deliverFrame(pixelBuffer)
+        }
+    }
 
-            if !hasDeliveredFirstFrame {
-                hasDeliveredFirstFrame = true
-                onFirstFrame?()
-            }
+    private func deliverFrame(_ pixelBuffer: CVPixelBuffer) {
+        latestPixelBuffer = pixelBuffer
+        registry.textureFrameAvailable(textureId)
+        if !hasDeliveredFirstFrame {
+            hasDeliveredFirstFrame = true
+            onFirstFrame?()
         }
     }
 }
