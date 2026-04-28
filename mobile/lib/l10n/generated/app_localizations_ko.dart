@@ -5980,6 +5980,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hashtagFeedEmptySubtitle => '이 해시태그로 올리는 첫 동영상이 되어 보세요!';
 
   @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return '$title 해시태그 피드 열기';
+  }
+
+  @override
   String get cameraAgeRestriction => '콘텐츠를 만들려면 16세 이상이어야 해요';
 
   @override

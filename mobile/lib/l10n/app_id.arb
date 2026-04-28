@@ -2561,6 +2561,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Jadilah yang pertama memposting video dengan hashtag ini!",
+  "followingHashtagPageTitleSemantic": "Buka feed hashtag untuk {title}",
     "searchForLists": "Cari daftar",
     "commentReplyToPrefix": "Bls:",
     "commentHideKeyboard": "Hide keyboard",

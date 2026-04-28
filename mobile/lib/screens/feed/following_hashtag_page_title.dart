@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 
 /// Single-line label for followed-hashtag attribution (matches chip cap: 2 + N).
@@ -69,7 +70,9 @@ class FollowingHashtagPageTitle extends StatelessWidget {
                 alignment: Alignment.topCenter,
                 child: Semantics(
                   button: true,
-                  label: 'Open hashtag feed for $titleText',
+                  label: context.l10n.followingHashtagPageTitleSemantic(
+                    titleText,
+                  ),
                   child: Material(
                     type: MaterialType.transparency,
                     child: InkWell(

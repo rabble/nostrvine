@@ -3404,6 +3404,15 @@
   "@hashtagFeedEmptySubtitle": {
     "description": "Empty state subtitle on the hashtag video screen."
   },
+  "followingHashtagPageTitleSemantic": "Open hashtag feed for {title}",
+  "@followingHashtagPageTitleSemantic": {
+    "description": "Accessibility label for tapping the pinned hashtag row on Following.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "cameraAgeRestriction": "You must be 16 or older to create content",
   "featureRequestCancel": "Cancel",
   "keyImportError": "Error: {error}",

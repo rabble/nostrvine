@@ -5956,6 +5956,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get hashtagFeedEmptySubtitle => 'このハッシュタグで最初の動画を投稿しよう！';
 
   @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return '$titleのハッシュタグフィードを開く';
+  }
+
+  @override
   String get cameraAgeRestriction => 'コンテンツを作るには16歳以上である必要があるよ';
 
   @override

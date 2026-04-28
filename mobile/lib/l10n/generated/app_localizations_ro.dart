@@ -6379,6 +6379,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Fii primul care publică un videoclip cu acest hashtag!';
 
   @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return 'Deschide fluxul hashtag pentru $title';
+  }
+
+  @override
   String get cameraAgeRestriction =>
       'Trebuie să ai cel puțin 16 ani pentru a crea conținut';
 

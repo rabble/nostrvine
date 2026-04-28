@@ -2554,6 +2554,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "このハッシュタグで最初の動画を投稿しよう！",
+  "followingHashtagPageTitleSemantic": "{title}のハッシュタグフィードを開く",
     "searchForLists": "リストを検索",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

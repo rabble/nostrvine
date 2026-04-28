@@ -2570,6 +2570,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "¡Sé el primero en publicar un video con este hashtag!",
+  "followingHashtagPageTitleSemantic": "Abrir feed del hashtag para {title}",
     "searchForLists": "Buscar listas",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

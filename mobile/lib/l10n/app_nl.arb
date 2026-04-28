@@ -2562,6 +2562,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Wees de eerste die een video met deze hashtag plaatst!",
+  "followingHashtagPageTitleSemantic": "Hashtag-feed openen voor {title}",
     "searchForLists": "Zoek naar lijsten",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

@@ -2562,6 +2562,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Sei der Erste, der ein Video mit diesem Hashtag postet!",
+  "followingHashtagPageTitleSemantic": "Hashtag-Feed für {title} öffnen",
     "searchForLists": "Nach Listen suchen",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

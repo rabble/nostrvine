@@ -6216,6 +6216,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Be the first to post a video with this hashtag!';
 
   @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return 'Open hashtag feed for $title';
+  }
+
+  @override
   String get cameraAgeRestriction =>
       'You must be 16 or older to create content';
 

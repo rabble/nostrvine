@@ -10958,6 +10958,12 @@ abstract class AppLocalizations {
   /// **'Be the first to post a video with this hashtag!'**
   String get hashtagFeedEmptySubtitle;
 
+  /// Accessibility label for tapping the pinned hashtag row on Following.
+  ///
+  /// In en, this message translates to:
+  /// **'Open hashtag feed for {title}'**
+  String followingHashtagPageTitleSemantic(String title);
+
   /// No description provided for @cameraAgeRestriction.
   ///
   /// In en, this message translates to:

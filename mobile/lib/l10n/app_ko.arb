@@ -1850,6 +1850,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "이 해시태그로 올리는 첫 동영상이 되어 보세요!",
+  "followingHashtagPageTitleSemantic": "{title} 해시태그 피드 열기",
     "searchForLists": "목록 검색",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

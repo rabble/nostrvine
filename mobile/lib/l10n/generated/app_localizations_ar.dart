@@ -6158,6 +6158,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get hashtagFeedEmptySubtitle => 'كن أول من ينشر فيديو بهذا الوسم!';
 
   @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return 'فتح موجز الهاشتاغ لـ $title';
+  }
+
+  @override
   String get cameraAgeRestriction =>
       'يجب أن يكون عمرك 16 عامًا أو أكثر لإنشاء محتوى';
 

@@ -2562,6 +2562,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Fii primul care publică un videoclip cu acest hashtag!",
+  "followingHashtagPageTitleSemantic": "Deschide fluxul hashtag pentru {title}",
     "searchForLists": "Caută liste",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

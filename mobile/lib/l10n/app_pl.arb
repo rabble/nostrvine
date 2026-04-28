@@ -2562,6 +2562,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Bądź pierwszy i opublikuj film z tym hashtagiem!",
+  "followingHashtagPageTitleSemantic": "Otwórz kanał hashtagu dla {title}",
     "searchForLists": "Szukaj list",
     "commentReplyToPrefix": "Odp.:",
     "commentHideKeyboard": "Hide keyboard",

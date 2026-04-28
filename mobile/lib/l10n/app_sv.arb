@@ -2562,6 +2562,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Bli den första som publicerar en video med den här hashtagen!",
+  "followingHashtagPageTitleSemantic": "Öppna hashtagflöde för {title}",
     "searchForLists": "Sök efter listor",
     "commentReplyToPrefix": "Sv:",
     "commentHideKeyboard": "Hide keyboard",

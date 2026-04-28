@@ -6192,6 +6192,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get hashtagFeedEmptySubtitle => 'Bu etiketle ilk videoyu sen paylaş!';
 
   @override
+  String followingHashtagPageTitleSemantic(String title) {
+    return 'Hashtag akışını aç: $title';
+  }
+
+  @override
   String get cameraAgeRestriction =>
       'İçerik oluşturmak için 16 yaşında veya daha büyük olmalısın';
 

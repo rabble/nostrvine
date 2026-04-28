@@ -2554,6 +2554,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "كن أول من ينشر فيديو بهذا الوسم!",
+  "followingHashtagPageTitleSemantic": "فتح موجز الهاشتاغ لـ {title}",
     "searchForLists": "البحث عن قوائم",
     "commentReplyToPrefix": "رد:",
     "commentHideKeyboard": "Hide keyboard",

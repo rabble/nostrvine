@@ -2561,6 +2561,7 @@
     }
   },
   "hashtagFeedEmptySubtitle": "Bu etiketle ilk videoyu sen paylaş!",
+  "followingHashtagPageTitleSemantic": "Hashtag akışını aç: {title}",
     "searchForLists": "Liste ara",
     "commentReplyToPrefix": "Yan:",
     "commentHideKeyboard": "Hide keyboard",
