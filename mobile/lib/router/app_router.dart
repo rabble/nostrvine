@@ -408,6 +408,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: HashtagScreenRouter.routeName,
         parentNavigatorKey: NavigatorKeys.root,
         builder: (ctx, st) {
+          // go_router already decodes path parameters once during route
+          // matching (see go_router/src/match.dart). Decoding again here
+          // would crash on legitimate inputs containing literal `%`
+          // (e.g. `100%fun`) because the second decode sees a malformed
+          // sequence. Pass the value through as-is.
           final tag = st.pathParameters['tag'];
           if (tag == null || tag.isEmpty) {
             return Scaffold(
@@ -415,8 +420,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: Center(child: Text(ctx.l10n.routeInvalidHashtag)),
             );
           }
-          final decoded = Uri.decodeComponent(tag);
-          return HashtagFeedScreen(hashtag: decoded);
+          return HashtagFeedScreen(hashtag: tag);
         },
       ),
       // SEARCH RESULTS - unified search screen (no bottom nav)
@@ -424,9 +428,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: SearchResultsPage.path,
         parentNavigatorKey: NavigatorKeys.root,
         builder: (ctx, st) {
-          final query = st.pathParameters['query'];
-          final decoded = query != null ? Uri.decodeComponent(query) : '';
-          return SearchResultsPage(initialQuery: decoded);
+          // See note above: do not double-decode path parameters.
+          final query = st.pathParameters['query'] ?? '';
+          return SearchResultsPage(initialQuery: query);
         },
       ),
 
