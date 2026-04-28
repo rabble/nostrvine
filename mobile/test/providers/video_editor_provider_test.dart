@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:characters/characters.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -171,6 +172,65 @@ void main() {
 
         notifier.updateMetadata(title: 'My #video title');
         expect(container.read(videoEditorProvider).tags, contains('video'));
+      });
+    });
+
+    group('updateMetadata description trimming', () {
+      test(
+        'truncates description by grapheme clusters without splitting emoji',
+        () {
+          final notifier = container.read(videoEditorProvider.notifier);
+
+          // Build a description that exceeds descriptionLimit by repeating a
+          // multi-code-unit emoji ("🎉" is one grapheme but 2 UTF-16 code
+          // units). Naive substring on UTF-16 code units would split the
+          // surrogate pair at the boundary and produce an invalid string.
+          const emoji = '🎉';
+          final longDescription =
+              emoji * (VideoEditorConstants.descriptionLimit + 10);
+
+          notifier.updateMetadata(description: longDescription);
+          final stored = container.read(videoEditorProvider).description;
+
+          expect(
+            stored.characters.length,
+            VideoEditorConstants.descriptionLimit,
+            reason: 'should be truncated to limit measured in graphemes',
+          );
+          // The truncated string must remain composed of full emoji
+          // graphemes — i.e. its UTF-16 code-unit length must be exactly
+          // 2 * descriptionLimit (each emoji = 2 code units).
+          expect(
+            stored.length,
+            VideoEditorConstants.descriptionLimit * 2,
+            reason: 'no surrogate pair was split mid-character',
+          );
+          expect(
+            stored.characters.every((g) => g == emoji),
+            isTrue,
+            reason: 'every grapheme is the original emoji',
+          );
+        },
+      );
+
+      test('preserves descriptions shorter than the limit verbatim', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.updateMetadata(description: 'short text');
+        expect(
+          container.read(videoEditorProvider).description,
+          'short text',
+        );
+      });
+
+      test('trims whitespace before applying the grapheme limit', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.updateMetadata(description: '   hello world   ');
+        expect(
+          container.read(videoEditorProvider).description,
+          'hello world',
+        );
       });
     });
 
@@ -721,6 +781,58 @@ void main() {
           reason:
               'isProcessing should remain true because '
               'invalidate is a no-op when clip is null',
+        );
+      });
+    });
+
+    group('updateCover', () {
+      test('is a no-op when finalRenderedClip is null', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+        final stateBefore = container.read(videoEditorProvider);
+
+        expect(stateBefore.finalRenderedClip, isNull);
+
+        notifier.updateCover(
+          thumbnailPath: '/docs/cover.jpg',
+          thumbnailTimestamp: const Duration(seconds: 2),
+        );
+
+        expect(
+          identical(container.read(videoEditorProvider), stateBefore),
+          isTrue,
+          reason:
+              'state should be the exact same instance when '
+              'finalRenderedClip is null — no autosave triggered',
+        );
+      });
+
+      test('updates thumbnailPath and thumbnailTimestamp on the clip', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.state = notifier.state.copyWith(
+          finalRenderedClip: DivineVideoClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 5),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        notifier.updateCover(
+          thumbnailPath: '/docs/cover.jpg',
+          thumbnailTimestamp: const Duration(seconds: 2),
+        );
+
+        final updatedClip = container
+            .read(videoEditorProvider)
+            .finalRenderedClip;
+        expect(updatedClip, isNotNull);
+        expect(updatedClip!.thumbnailPath, '/docs/cover.jpg');
+        expect(
+          updatedClip.thumbnailTimestamp,
+          const Duration(seconds: 2),
         );
       });
     });

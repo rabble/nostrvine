@@ -694,6 +694,187 @@ void main() {
           expect(find.text('Fixed Body'), findsOneWidget);
         },
       );
+
+      testWidgets(
+        'forwards headerLeadingAction to VineBottomSheetHeader',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        title: const Text('With Leading'),
+                        headerLeadingAction: DivineIconButton(
+                          key: const Key('leading'),
+                          icon: DivineIconName.x,
+                          onPressed: () {},
+                        ),
+                        children: const [Text('Body')],
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          // Header renders the action plus a hidden placeholder copy.
+          expect(find.byKey(const Key('leading')), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'forwards headerTrailingAction to VineBottomSheetHeader',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        title: const Text('With Trailing'),
+                        headerTrailingAction: DivineIconButton(
+                          key: const Key('trailing'),
+                          icon: DivineIconName.check,
+                          onPressed: () {},
+                        ),
+                        children: const [Text('Body')],
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const Key('trailing')), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'forwards header actions in fixed (non-scrollable) mode',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        scrollable: false,
+                        title: const Text('Fixed Title'),
+                        headerLeadingAction: DivineIconButton(
+                          key: const Key('fixed_leading'),
+                          icon: DivineIconName.x,
+                          onPressed: () {},
+                        ),
+                        children: const [Text('Body')],
+                      );
+                    },
+                    child: const Text('Open Fixed'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Fixed'));
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const Key('fixed_leading')), findsNWidgets(2));
+        },
+      );
+
+      testWidgets(
+        'showDragHandle: false hides the drag handle when no header',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        showHeader: false,
+                        showDragHandle: false,
+                        children: const [Text('Body')],
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          // Drag handle is a 64x4 rounded Container; with no header and
+          // showDragHandle: false there must be none in the sheet subtree.
+          expect(
+            find.byWidgetPredicate((w) {
+              if (w is! Container) return false;
+              final c = w.constraints;
+              return c?.maxWidth == 64 && c?.maxHeight == 4;
+            }),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'showDragHandle: false hides the drag handle in fixed mode',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        scrollable: false,
+                        showHeader: false,
+                        showDragHandle: false,
+                        children: const [Text('Body')],
+                      );
+                    },
+                    child: const Text('Open Fixed'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open Fixed'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byWidgetPredicate((w) {
+              if (w is! Container) return false;
+              final c = w.constraints;
+              return c?.maxWidth == 64 && c?.maxHeight == 4;
+            }),
+            findsNothing,
+          );
+        },
+      );
     });
     group('onComplete', () {
       testWidgets(

@@ -207,15 +207,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     final rawTitle = title ?? state.title;
     final rawDescription = description ?? state.description;
 
-    // Trim for storage (but after hashtag extraction)
+    // Trim for storage (but after hashtag extraction). Truncate by
+    // grapheme clusters via `characters` so we never split inside a
+    // surrogate pair or combining sequence (emoji, flags, etc.).
     final cleanedTitle = rawTitle.trim();
-    final cleanedDescription = rawDescription.trim().substring(
-      0,
-      rawDescription.trim().length.clamp(
-        0,
-        VideoEditorConstants.descriptionLimit,
-      ),
-    );
+    final trimmedDescription = rawDescription.trim();
+    final cleanedDescription = trimmedDescription.characters
+        .take(VideoEditorConstants.descriptionLimit)
+        .toString();
     const tagLimit = VideoEditorConstants.tagLimit;
 
     // Only extract hashtags when text changes, not when tags are manually edited
@@ -852,25 +851,25 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     required Duration thumbnailTimestamp,
   }) {
     final finalRenderedClip = state.finalRenderedClip;
-    if (finalRenderedClip != null) {
-      state = state.copyWith(
-        finalRenderedClip: finalRenderedClip.copyWith(
-          thumbnailPath: thumbnailPath,
-          thumbnailTimestamp: thumbnailTimestamp,
-        ),
-      );
-      Log.debug(
-        '🖼️  Updated cover thumbnail',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    } else {
+    if (finalRenderedClip == null) {
       Log.warning(
         '⚠️ Cannot update thumbnail - final clip not found',
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      return;
     }
+    state = state.copyWith(
+      finalRenderedClip: finalRenderedClip.copyWith(
+        thumbnailPath: thumbnailPath,
+        thumbnailTimestamp: thumbnailTimestamp,
+      ),
+    );
+    Log.debug(
+      '🖼️  Updated cover thumbnail',
+      name: 'VideoEditorNotifier',
+      category: .video,
+    );
     autosaveChanges();
   }
 

@@ -134,7 +134,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedPubkeys = Set.of(widget.excludePubkeys);
     _selectedPubkeys = {
       ...widget.excludePubkeys,
       for (final profile in widget.initialSelectedProfiles) profile.pubkey,
@@ -355,10 +354,9 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                 ),
                 prefixIcon: const Padding(
                   padding: .only(left: 16, right: 8),
-                  child: Icon(
-                    Icons.search,
+                  child: DivineIcon(
+                    icon: DivineIconName.search,
                     color: VineTheme.onSurfaceMuted,
-                    size: 24,
                   ),
                 ),
                 border: .none,
@@ -390,6 +388,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                       _selectedProfiles.removeWhere(
                         (p) => p.pubkey == profile.pubkey,
                       );
+                      _selectedPubkeys.remove(profile.pubkey);
                     }),
                   )
                 : const SizedBox.shrink(),
@@ -788,11 +787,13 @@ class _LocalResults extends StatelessWidget {
       return const _NoResults();
     }
 
+    final visible = filteredFollowProfiles
+        .where((p) => !hidePubkeys.contains(p.pubkey))
+        .toList(growable: false);
+
     return ListView.separated(
       controller: scrollController,
-      itemCount: filteredFollowProfiles
-          .where((p) => !hidePubkeys.contains(p.pubkey))
-          .length,
+      itemCount: visible.length,
       padding: .fromLTRB(
         0,
         32,
@@ -805,9 +806,6 @@ class _LocalResults extends StatelessWidget {
         color: VineTheme.outlineDisabled,
       ),
       itemBuilder: (context, index) {
-        final visible = filteredFollowProfiles
-            .where((p) => !hidePubkeys.contains(p.pubkey))
-            .toList();
         final profile = visible[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(

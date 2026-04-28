@@ -204,5 +204,108 @@ void main() {
 
       focusNode.dispose();
     });
+
+    group('primaryWhenFilled', () {
+      Widget buildField({
+        required TextEditingController controller,
+        required bool primaryWhenFilled,
+      }) {
+        return MaterialApp(
+          theme: VineTheme.theme,
+          home: Scaffold(
+            body: DivineTextField(
+              labelText: 'Test Label',
+              controller: controller,
+              primaryWhenFilled: primaryWhenFilled,
+            ),
+          ),
+        );
+      }
+
+      testWidgets(
+        'unfocused floating label uses primary color when filled',
+        (tester) async {
+          final controller = TextEditingController(text: 'has content');
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            buildField(controller: controller, primaryWhenFilled: true),
+          );
+
+          final textField = tester.widget<TextField>(find.byType(TextField));
+          final floatingStyle =
+              textField.decoration!.floatingLabelStyle! as WidgetStateTextStyle;
+          final unfocusedStyle = floatingStyle.resolve(<WidgetState>{});
+
+          expect(unfocusedStyle.color, VineTheme.primary);
+        },
+      );
+
+      testWidgets(
+        'unfocused floating label uses variant color when empty',
+        (tester) async {
+          final controller = TextEditingController();
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            buildField(controller: controller, primaryWhenFilled: true),
+          );
+
+          final textField = tester.widget<TextField>(find.byType(TextField));
+          final floatingStyle =
+              textField.decoration!.floatingLabelStyle! as WidgetStateTextStyle;
+          final unfocusedStyle = floatingStyle.resolve(<WidgetState>{});
+
+          expect(unfocusedStyle.color, VineTheme.onSurfaceVariant);
+        },
+      );
+
+      testWidgets(
+        'unfocused floating label uses variant color when filled but '
+        'primaryWhenFilled is false',
+        (tester) async {
+          final controller = TextEditingController(text: 'has content');
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            buildField(controller: controller, primaryWhenFilled: false),
+          );
+
+          final textField = tester.widget<TextField>(find.byType(TextField));
+          final floatingStyle =
+              textField.decoration!.floatingLabelStyle! as WidgetStateTextStyle;
+          final unfocusedStyle = floatingStyle.resolve(<WidgetState>{});
+
+          expect(unfocusedStyle.color, VineTheme.onSurfaceVariant);
+        },
+      );
+
+      testWidgets(
+        'defaults to false (no primary color when filled)',
+        (tester) async {
+          final controller = TextEditingController(text: 'has content');
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: DivineTextField(
+                  labelText: 'Test Label',
+                  controller: controller,
+                ),
+              ),
+            ),
+          );
+
+          final textField = tester.widget<TextField>(find.byType(TextField));
+          final floatingStyle =
+              textField.decoration!.floatingLabelStyle! as WidgetStateTextStyle;
+          final unfocusedStyle = floatingStyle.resolve(<WidgetState>{});
+
+          expect(unfocusedStyle.color, VineTheme.onSurfaceVariant);
+        },
+      );
+    });
   });
 }
