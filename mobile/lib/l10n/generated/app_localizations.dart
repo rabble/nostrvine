@@ -1446,7 +1446,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Upload failed. Please try again later.'**
-  String get profileSetupUploadFailedGeneric;
+  String profileSetupUploadFailedGeneric(Object error);
 
   /// No description provided for @profileSetupUploadNetworkError.
   ///

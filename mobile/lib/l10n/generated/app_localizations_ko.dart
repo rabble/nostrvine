@@ -720,8 +720,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupGotItButton => '알겠어요';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      '이미지를 올리지 못했어요. 잠시 후 다시 시도해주세요.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return '이미지를 올리지 못했어요: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -767,7 +768,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupUsernameInvalidFormat => '문자, 숫자, 하이픈만 쓸 수 있어요';
 
   @override
-  String get profileSetupUsernameInvalidLength => '사용자명은 3~63자 사이여야 해요';
+  String get profileSetupUsernameInvalidLength => '사용자명은 3~20자 사이여야 해요';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -6192,7 +6193,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => '커뮤니티';
@@ -6380,14 +6381,13 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => '콘텐츠 경고';
+  String get videoMetadataContentWarningLabel => '콘텐츠 경고 추가';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel => '콘텐츠 경고 선택';
 
   @override
-  String get videoMetadataContentWarningSelectAllThatApply =>
-      '콘텐츠에 해당하는 것을 모두 선택';
+  String get videoMetadataContentWarningSelectAllThatApply => '해당하는 것을 모두 선택';
 
   @override
   String get videoMetadataContentWarningDoneButton => '완료';
@@ -6400,7 +6400,7 @@ class AppLocalizationsKo extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => '협업자';
+  String get videoMetadataCollaboratorsLabel => '협업자 추가';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => '협업자 추가';
@@ -6429,7 +6429,7 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => '영감 출처';
+  String get videoMetadataInspiredByLabel => '영감 출처 추가';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => '영감 출처 설정';
@@ -6596,16 +6596,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get badgesRecipientWaitingStatus => '수령자를 기다리는 중';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => '커버 편집';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => '커버 편집기 닫기';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+  String get videoMetadataEditCoverConfirmSemanticLabel => '커버 선택 확인';
 
   @override
-  String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+  String get videoMetadataEditCoverStripSemanticLabel => '커버 프레임 선택을 위해 동영상 탐색';
 }

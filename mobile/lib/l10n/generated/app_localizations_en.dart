@@ -776,8 +776,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileSetupGotItButton => 'Got it';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Upload failed. Please try again later.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Upload failed. Please try again later.';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>

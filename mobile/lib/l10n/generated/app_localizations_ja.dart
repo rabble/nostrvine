@@ -719,7 +719,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupGotItButton => '了解！';
 
   @override
-  String get profileSetupUploadFailedGeneric => '画像をアップロードできなかった。あとでもう一度試してみて。';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return '画像のアップロードがうまくいかなかった: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -765,7 +767,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupUsernameInvalidFormat => '使えるのは英数字とハイフンだけだよ';
 
   @override
-  String get profileSetupUsernameInvalidLength => 'ユーザー名は3〜63文字にしてね';
+  String get profileSetupUsernameInvalidLength => 'ユーザー名は3〜20文字にしてね';
 
   @override
   String get profileSetupUsernameNetworkError => '使えるか確認できなかった。もう一回試してみて。';
@@ -6169,7 +6171,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '動画に使うオーディオ範囲を選択';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'コミュニティ';
@@ -6356,14 +6358,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'コンテンツ警告';
+  String get videoMetadataContentWarningLabel => 'コンテンツ警告を追加';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel => 'コンテンツ警告を選択';
 
   @override
-  String get videoMetadataContentWarningSelectAllThatApply =>
-      'コンテンツに該当するものをすべて選択';
+  String get videoMetadataContentWarningSelectAllThatApply => '該当するものをすべて選択';
 
   @override
   String get videoMetadataContentWarningDoneButton => '完了';
@@ -6376,7 +6377,7 @@ class AppLocalizationsJa extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'コラボレーター';
+  String get videoMetadataCollaboratorsLabel => 'コラボレーターを追加';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'コラボレーターを追加';
@@ -6405,7 +6406,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'インスパイア元';
+  String get videoMetadataInspiredByLabel => 'インスパイア元を追加';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => 'インスパイア元を設定';
@@ -6572,16 +6573,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get badgesRecipientWaitingStatus => '受信者の承認待ち';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'カバーを編集';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'カバーエディターを閉じる';
 
   @override
-  String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+  String get videoMetadataEditCoverConfirmSemanticLabel => 'カバー選択を確認';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'カバーフレームを選択するために動画をシーク';
 }

@@ -805,8 +805,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupGotItButton => 'Am înțeles';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Încărcarea imaginii a eșuat: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -855,7 +856,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Numele trebuie să aibă 3-63 de caractere';
+      'Numele trebuie să aibă 3-20 de caractere';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -6606,7 +6607,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alege segmentul audio pentru videoclipul tău';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Comunitate';
@@ -6802,7 +6803,8 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'Avertisment de conținut';
+  String get videoMetadataContentWarningLabel =>
+      'Adaugă avertisment de conținut';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6810,7 +6812,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'Selectează tot ce se aplică conținutului tău';
+      'Selectează tot ce se aplică';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Gata';
@@ -6823,7 +6825,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Colaboratori';
+  String get videoMetadataCollaboratorsLabel => 'Adaugă colaboratori';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'Adaugă colaborator';
@@ -6854,7 +6856,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'Inspirat de';
+  String get videoMetadataInspiredByLabel => 'Adaugă inspirat de';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => 'Setează inspirat de';
@@ -7034,16 +7036,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Se așteaptă destinatarul';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'Editează coperta';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Închide editorul de copertă';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Confirmă selecția copertei';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'Parcurge videoclipul pentru a selecta cadrul copertei';
 }

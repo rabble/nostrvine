@@ -752,8 +752,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupGotItButton => 'فهمت';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'فشل رفع الصورة: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -802,7 +803,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'يجب أن يتراوح طول اسم المستخدم بين 3 و 63 حرفًا';
+      'يجب أن يتراوح طول اسم المستخدم بين 3 و 20 حرفًا';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -6377,7 +6378,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => 'حدّد مقطع الصوت لفيديوك';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'المجتمع';
@@ -6568,7 +6569,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'تحذير المحتوى';
+  String get videoMetadataContentWarningLabel => 'إضافة تحذير محتوى';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6576,7 +6577,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'اختر كل ما ينطبق على محتواك';
+      'اختر كل ما ينطبق';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'تم';
@@ -6589,7 +6590,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'المتعاونون';
+  String get videoMetadataCollaboratorsLabel => 'إضافة متعاونين';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'إضافة متعاون';
@@ -6618,7 +6619,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'مستلهم من';
+  String get videoMetadataInspiredByLabel => 'إضافة مستلهم من';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => 'تحديد مصدر الإلهام';
@@ -6790,16 +6791,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'بانتظار المستلم';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'تعديل الغلاف';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'إغلاق محرر الغلاف';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'تأكيد اختيار الغلاف';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'التنقل عبر الفيديو لاختيار إطار الغلاف';
 }

@@ -786,8 +786,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupGotItButton => 'Разбрах';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Качването на изображението се провали. Опитай отново след малко.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Качването на изображението се провали. Опитай отново след малко.';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>

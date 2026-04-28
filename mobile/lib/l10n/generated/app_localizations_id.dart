@@ -760,8 +760,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupGotItButton => 'Mengerti';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Gagal mengunggah gambar. Coba lagi nanti.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Gagal mengunggah gambar: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -810,7 +811,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Username harus 3-63 karakter';
+      'Username harus 3-20 karakter';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -6408,7 +6409,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Pilih segmen audio untuk videomu';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Komunitas';
@@ -6603,7 +6604,7 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'Peringatan Konten';
+  String get videoMetadataContentWarningLabel => 'Tambah peringatan konten';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6611,7 +6612,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'Pilih semua yang berlaku untuk kontenmu';
+      'Pilih semua yang berlaku';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Selesai';
@@ -6624,7 +6625,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Kolaborator';
+  String get videoMetadataCollaboratorsLabel => 'Tambah kolaborator';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'Tambah kolaborator';
@@ -6655,7 +6656,7 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'Terinspirasi oleh';
+  String get videoMetadataInspiredByLabel => 'Tambah terinspirasi oleh';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => 'Atur inspirasi';
@@ -6831,16 +6832,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Menunggu penerima';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'Edit sampul';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel => 'Tutup editor sampul';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Konfirmasi pilihan sampul';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'Gulir video untuk memilih bingkai sampul';
 }

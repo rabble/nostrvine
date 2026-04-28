@@ -787,8 +787,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileSetupGotItButton => 'Rozumiem';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Nie udało się przesłać obrazu. Spróbuj ponownie później.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Nie udało się przesłać obrazu: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -840,7 +841,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Nazwa użytkownika musi mieć od 3 do 63 znaków';
+      'Nazwa użytkownika musi mieć 3-20 znaków';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -6587,7 +6588,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wybierz fragment audio dla swojego filmu';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Społeczność';
@@ -6783,7 +6784,7 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'Ostrzeżenie o treści';
+  String get videoMetadataContentWarningLabel => 'Dodaj ostrzeżenie o treści';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6791,7 +6792,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'Wybierz wszystko, co dotyczy Twojej treści';
+      'Wybierz wszystko, co dotyczy';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Gotowe';
@@ -6804,7 +6805,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Współtwórcy';
+  String get videoMetadataCollaboratorsLabel => 'Dodaj współtwórców';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'Dodaj współtwórcę';
@@ -6834,7 +6835,7 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'Zainspirowane przez';
+  String get videoMetadataInspiredByLabel => 'Dodaj zainspirowane przez';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel =>
@@ -7012,16 +7013,17 @@ class AppLocalizationsPl extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Oczekiwanie na odbiorcę';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'Edytuj okładkę';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Zamknij edytor okładki';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Potwierdź wybór okładki';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'Przewijaj wideo, aby wybrać klatkę okładki';
 }

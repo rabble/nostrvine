@@ -758,8 +758,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupGotItButton => 'Anlaşıldı';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Görsel yüklenemedi. Lütfen daha sonra tekrar dene.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Görsel yüklenemedi: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -810,7 +811,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Kullanıcı adı 3-63 karakter olmalı';
+      'Kullanıcı adı 3-20 karakter olmalı';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -6409,7 +6410,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Videon için ses bölümünü seç';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Topluluk';
@@ -6604,7 +6605,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'İçerik Uyarısı';
+  String get videoMetadataContentWarningLabel => 'İçerik uyarısı ekle';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6612,7 +6613,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'İçeriğinize uyanların hepsini seçin';
+      'Geçerli olanların hepsini seçin';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Bitti';
@@ -6625,7 +6626,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';
+  String get videoMetadataCollaboratorsLabel => 'Ortak çalışan ekle';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel => 'Ortak çalışan ekle';
@@ -6656,7 +6657,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'İlham kaynağı';
+  String get videoMetadataInspiredByLabel => 'İlham kaynağı ekle';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel =>
@@ -6834,16 +6835,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Alıcı bekleniyor';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'Kapağı düzenle';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Kapak düzenleyicisini kapat';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Kapak seçimini onayla';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'Kapak karesi seçmek için videoda gezin';
 }

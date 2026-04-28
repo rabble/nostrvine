@@ -761,8 +761,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupGotItButton => 'Jag fattar';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'Det gick inte att ladda upp bilden. Försök igen senare.';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'Kunde inte ladda upp bilden: $error';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -813,7 +814,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Användarnamnet måste vara 3–63 tecken';
+      'Användarnamnet måste vara 3–20 tecken';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -1338,7 +1339,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareRemovedFromBookmarks => 'Borttagen från bokmärken';
 
   @override
-  String get shareFailedToAddBookmark => 'Kunde inte lägga till bokmärket';
+  String get shareFailedToAddBookmark => 'Kunde inte lägga till bokmärke';
 
   @override
   String get shareFailedToRemoveBookmark => 'Kunde inte ta bort från bokmärken';
@@ -3448,7 +3449,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Tillagd i bokmärken!';
 
   @override
-  String get shareMenuFailedToAddBookmark => 'Kunde inte lägga till bokmärket';
+  String get shareMenuFailedToAddBookmark => 'Kunde inte lägga till bokmärke';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {
@@ -6438,7 +6439,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj ljudsegmentet för din video';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'OG Sounds';
+  String get videoEditorAudioCategoryDivine => 'diVine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Gemenskap';
@@ -6629,7 +6630,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataContentWarningLabel => 'Innehållsvarning';
+  String get videoMetadataContentWarningLabel => 'Lägg till innehållsvarning';
 
   @override
   String get videoMetadataSelectContentWarningsSemanticLabel =>
@@ -6637,7 +6638,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningSelectAllThatApply =>
-      'Välj allt som gäller för ditt innehåll';
+      'Välj allt som gäller';
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Klar';
@@ -6650,7 +6651,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Let others save and reuse this video\'s audio.';
 
   @override
-  String get videoMetadataCollaboratorsLabel => 'Samarbetspartners';
+  String get videoMetadataCollaboratorsLabel => 'Lägg till samarbetspartners';
 
   @override
   String get videoMetadataAddCollaboratorSemanticLabel =>
@@ -6682,7 +6683,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get videoMetadataInspiredByLabel => 'Inspirerad av';
+  String get videoMetadataInspiredByLabel => 'Lägg till inspirerad av';
 
   @override
   String get videoMetadataSetInspiredBySemanticLabel => 'Ange inspirerad av';
@@ -6861,16 +6862,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Väntar på mottagare';
 
   @override
-  String get videoMetadataEditCoverTitle => 'Edit cover';
+  String get videoMetadataEditCoverTitle => 'Redigera omslag';
 
   @override
-  String get videoMetadataEditCoverCloseSemanticLabel => 'Close cover editor';
+  String get videoMetadataEditCoverCloseSemanticLabel =>
+      'Stäng omslagsredigerare';
 
   @override
   String get videoMetadataEditCoverConfirmSemanticLabel =>
-      'Confirm cover selection';
+      'Bekräfta omslagsval';
 
   @override
   String get videoMetadataEditCoverStripSemanticLabel =>
-      'Seek through video to select cover frame';
+      'Sök igenom videon för att välja omslagsbild';
 }

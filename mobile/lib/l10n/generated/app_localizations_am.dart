@@ -750,8 +750,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupGotItButton => 'ገባኝ';
 
   @override
-  String get profileSetupUploadFailedGeneric =>
-      'ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።';
+  String profileSetupUploadFailedGeneric(Object error) {
+    return 'ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።';
+  }
 
   @override
   String get profileSetupUploadNetworkError =>
