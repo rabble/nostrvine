@@ -2,6 +2,7 @@
 // ABOUTME: Verifies stale auth refreshes do not reach a disposed container
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -145,7 +146,7 @@ void main() {
     );
 
     testWidgets(
-      'pathForTag with literal # round-trips through go_router decode',
+      'pathForTag with literal `#` (encoded as `%23`) round-trips correctly',
       (tester) async {
         const original = 'c#dev';
         final result = await navigateAndCapture(
@@ -185,5 +186,71 @@ void main() {
         expect(result.capturedQuery, equals(original));
       },
     );
+  });
+
+  // Static-source regression guard for #3413 — Crashlytics issue
+  // 489d5ebc7bd571dfd29e4701e92abdf6. The round-trip tests above assert
+  // the encode/decode contract holds when callers use pathForTag /
+  // pathForQuery, but they use a synthetic GoRoute builder and so do not
+  // exercise the production builders in lib/router/app_router.dart. This
+  // guard reads the production source and fails if the hashtag or search
+  // builder regions reintroduce Uri.decodeComponent — the exact regression
+  // that originally caused the crash.
+  group('Builder regression guard (#3413)', () {
+    test('hashtag and search builders do not call Uri.decodeComponent', () {
+      final source = File('lib/router/app_router.dart').readAsStringSync();
+
+      final hashtagPathOffset = source.indexOf(
+        'path: HashtagScreenRouter.path',
+      );
+      final searchPathOffset = source.indexOf(
+        'path: SearchResultsPage.path',
+      );
+      expect(
+        hashtagPathOffset,
+        isNonNegative,
+        reason:
+            'Hashtag GoRoute marker not found in app_router.dart. '
+            'Update this regression test to match the new marker.',
+      );
+      expect(
+        searchPathOffset,
+        greaterThan(hashtagPathOffset),
+        reason:
+            'Search-results GoRoute marker not found after hashtag '
+            'GoRoute. Update this regression test to match the new layout.',
+      );
+
+      final hashtagRegion = source.substring(
+        hashtagPathOffset,
+        searchPathOffset,
+      );
+      final nextGoRouteAfterSearch = source.indexOf(
+        'GoRoute(',
+        searchPathOffset,
+      );
+      final searchRegion = source.substring(
+        searchPathOffset,
+        nextGoRouteAfterSearch == -1 ? source.length : nextGoRouteAfterSearch,
+      );
+
+      const guard =
+          'go_router 16.x already decodes path parameters once during '
+          'route matching. Calling Uri.decodeComponent again here '
+          'crashes on legitimate inputs containing a literal `%` '
+          '(e.g. searching for "100%") — the original Crashlytics '
+          'issue. Pass state.pathParameters[...] through unchanged.';
+
+      expect(
+        hashtagRegion.contains('Uri.decodeComponent'),
+        isFalse,
+        reason: 'Hashtag builder must not double-decode. $guard',
+      );
+      expect(
+        searchRegion.contains('Uri.decodeComponent'),
+        isFalse,
+        reason: 'Search-results builder must not double-decode. $guard',
+      );
+    });
   });
 }
