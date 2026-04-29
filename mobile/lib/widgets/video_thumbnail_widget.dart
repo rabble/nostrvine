@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
     show HttpExceptionWithStatus;
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -93,12 +94,20 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       return Stack(
         fit: StackFit.expand,
         children: [
-          // Show flat color as background while image loads
-          Container(
-            width: widget.width,
-            height: widget.height,
-            color: VineTheme.surfaceContainer,
-          ),
+          // Show blurhash or flat color as background while image loads
+          if (widget.video.blurhash != null)
+            BlurhashDisplay(
+              blurhash: widget.video.blurhash!,
+              width: widget.width,
+              height: widget.height,
+              fit: fit,
+            )
+          else
+            Container(
+              width: widget.width,
+              height: widget.height,
+              color: VineTheme.surfaceContainer,
+            ),
           // Actual thumbnail image with error boundary
           _SafeNetworkImage(
             url: _thumbnailUrl!,
@@ -130,15 +139,24 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       );
     }
 
-    // No thumbnail URL - show flat placeholder color with optional play icon
+    // No thumbnail URL - show blurhash or flat placeholder color with
+    // optional play icon
     return Stack(
       fit: StackFit.expand,
       children: [
-        Container(
-          width: widget.width,
-          height: widget.height,
-          color: VineTheme.surfaceContainer,
-        ),
+        if (widget.video.blurhash != null && !widget.showPlayIcon)
+          BlurhashDisplay(
+            blurhash: widget.video.blurhash!,
+            width: widget.width,
+            height: widget.height,
+            fit: fit,
+          )
+        else
+          Container(
+            width: widget.width,
+            height: widget.height,
+            color: VineTheme.surfaceContainer,
+          ),
         if (widget.showPlayIcon)
           Center(
             child: Container(

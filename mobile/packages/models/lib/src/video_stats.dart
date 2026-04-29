@@ -218,6 +218,22 @@ class VideoStats {
           if (tagName == 'blurhash' && blurhashFromTag == null) {
             blurhashFromTag = tagValue;
           }
+          if (tagName == 'imeta') {
+            // Parse space-separated imeta components to extract blurhash
+            // (publisher embeds blurhash inside imeta, not as a standalone tag)
+            for (var i = 1; i < tag.length; i++) {
+              final element = tag[i].toString();
+              final spaceIndex = element.indexOf(' ');
+              if (spaceIndex <= 0) continue;
+              final key = element.substring(0, spaceIndex);
+              final value = element.substring(spaceIndex + 1);
+              if (key == 'blurhash' &&
+                  blurhashFromTag == null &&
+                  value.isNotEmpty) {
+                blurhashFromTag = value;
+              }
+            }
+          }
           if ((tagName == 'dim' || tagName == 'size') && dimensions == null) {
             dimensions = tagValue;
           }
@@ -280,12 +296,14 @@ class VideoStats {
         json['author_avatar']?.toString();
     if (authorAvatar != null && authorAvatar.isEmpty) authorAvatar = null;
 
-    // Parse blurhash for thumbnail placeholders
-    var blurhash =
-        eventData['blurhash']?.toString() ??
-        json['blurhash']?.toString() ??
-        blurhashFromTag;
-    if (blurhash != null && blurhash.isEmpty) blurhash = null;
+    // Parse blurhash for thumbnail placeholders.
+    // Use firstWhere so that empty strings from the API don't shadow the
+    // blurhashFromTag value extracted from the Nostr imeta/blurhash tags.
+    final blurhash = [
+      eventData['blurhash']?.toString(),
+      json['blurhash']?.toString(),
+      blurhashFromTag,
+    ].firstWhere((s) => s != null && s.isNotEmpty, orElse: () => null);
 
     // Parse reactions/likes - check multiple field names
     final reactions =
