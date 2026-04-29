@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:flutter/widgets.dart' show SizedBox;
 import 'package:models/models.dart'
     show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
 import 'package:openvine/models/content_label.dart';
@@ -401,7 +402,15 @@ class DivineVideoDraft {
   bool get hasEditorStateEdits {
     if (editorStateHistory.isEmpty) return false;
 
-    return ImportStateHistory.fromMap(editorStateHistory).editorPosition != -1;
+    return ImportStateHistory.fromMap(
+          editorStateHistory,
+          configs: ImportEditorConfigs(
+            // We just need a simple dummy widgetLoader so we can load
+            // the history.
+            widgetLoader: (id, {meta}) => const SizedBox(),
+          ),
+        ).editorPosition !=
+        -1;
   }
 
   /// Whether the draft has been edited beyond its initial recording.
