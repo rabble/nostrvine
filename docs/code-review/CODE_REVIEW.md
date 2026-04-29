@@ -5,6 +5,8 @@ Working document. GitHub issues will be created once the list is finalized.
 **Reference commit:** [`4f2834ddb`](https://github.com/divinevideo/divine-mobile/commit/4f2834ddb529487020333feea8e269c6fa19bfbc): `feat(feed): move captions control into more info (#3105)` (2026-04-16)
 
 > **Note:** All file paths, line numbers, and code snippets in the issue files below were captured at the reference commit. Since `main` continues to evolve, some references may be outdated — files may have moved, lines shifted, or code changed. When acting on an issue, verify against the current state of the codebase.
+>
+> **Scope:** File paths and code snippets cited in each issue are **representative examples**, not an exhaustive list. Counts (e.g., "40+ screens", "~170 catch blocks") reflect the scale at the reference commit; individual issues cite enough evidence to illustrate the pattern without cataloguing every instance.
 
 ## Summary
 
