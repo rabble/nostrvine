@@ -36,32 +36,36 @@ class NotificationTypeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: _containerSize + _dotBorder,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: _containerSize,
-            height: _containerSize,
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(_radius),
+    // Decorative: the surrounding row already announces the notification
+    // type via its message text and unread state via its semantic label.
+    return ExcludeSemantics(
+      child: SizedBox.square(
+        dimension: _containerSize + _dotBorder,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: _containerSize,
+              height: _containerSize,
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(_radius),
+              ),
+              alignment: Alignment.center,
+              child: DivineIcon(
+                icon: icon,
+                size: _iconSize,
+                color: foregroundColor,
+              ),
             ),
-            alignment: Alignment.center,
-            child: DivineIcon(
-              icon: icon,
-              size: _iconSize,
-              color: foregroundColor,
-            ),
-          ),
-          if (showUnreadDot)
-            const Positioned(
-              top: -_dotBorder + 2,
-              right: -_dotBorder + 2,
-              child: _UnreadDot(),
-            ),
-        ],
+            if (showUnreadDot)
+              const Positioned(
+                top: -_dotBorder + 2,
+                right: -_dotBorder + 2,
+                child: _UnreadDot(),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -38,35 +38,45 @@ class NotificationListItem extends StatelessWidget {
 
     return Material(
       type: .transparency,
-      child: InkWell(
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+      child: Semantics(
+        button: true,
+        container: true,
+        label: notification.isRead
+            ? null
+            : context.l10n.notificationsUnreadPrefix,
+        child: InkWell(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: VineTheme.outlineDisabled),
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _LeadingTypeIcon(
-                  type: notification.type,
-                  showUnreadDot: !notification.isRead,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _NotificationContent(
-                    notification: notification,
-                    onProfileTap: onProfileTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _LeadingTypeIcon(
+                    type: notification.type,
+                    showUnreadDot: !notification.isRead,
                   ),
-                ),
-                if (showFollowBack) ...[
-                  const SizedBox(width: 8),
-                  _FollowBackButton(onPressed: onFollowBack),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _NotificationContent(
+                      notification: notification,
+                      onProfileTap: onProfileTap,
+                    ),
+                  ),
+                  if (showFollowBack) ...[
+                    const SizedBox(width: 8),
+                    _FollowBackButton(onPressed: onFollowBack),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

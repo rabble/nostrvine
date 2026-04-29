@@ -38,22 +38,27 @@ class NotificationAvatarStack extends StatelessWidget {
     }
     final totalWidth = _tileSize + (_tileSize - _overlap) * (itemCount - 1);
 
-    return SizedBox(
-      width: totalWidth,
-      height: _tileSize,
-      child: Stack(
-        children: [
-          for (var i = 0; i < displayActors.length; i++)
-            Positioned(
-              left: (_tileSize - _overlap) * i,
-              child: _AvatarTile(actor: displayActors[i]),
-            ),
-          if (showOverflow)
-            Positioned(
-              left: (_tileSize - _overlap) * displayActors.length,
-              child: _OverflowTile(count: overflowCount!),
-            ),
-        ],
+    // The parent row owns the semantic label for the avatar group; the
+    // individual tiles are decorative and would otherwise produce one
+    // duplicate "<name> avatar" announcement per actor.
+    return ExcludeSemantics(
+      child: SizedBox(
+        width: totalWidth,
+        height: _tileSize,
+        child: Stack(
+          children: [
+            for (var i = 0; i < displayActors.length; i++)
+              Positioned(
+                left: (_tileSize - _overlap) * i,
+                child: _AvatarTile(actor: displayActors[i]),
+              ),
+            if (showOverflow)
+              Positioned(
+                left: (_tileSize - _overlap) * displayActors.length,
+                child: _OverflowTile(count: overflowCount!),
+              ),
+          ],
+        ),
       ),
     );
   }
