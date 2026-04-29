@@ -765,7 +765,11 @@ class _ProfileAvatarWithColor extends StatelessWidget {
     );
     final avatar = hasAvatar
         ? GestureDetector(
-            onTap: () => _showAvatarLightbox(context, imageUrl),
+            onTap: () => _showAvatarLightbox(
+              context,
+              imageUrl: imageUrl,
+              userIdHex: userIdHex,
+            ),
             child: avatarWidget,
           )
         : avatarWidget;
@@ -877,20 +881,31 @@ class _ProfileActionLabel extends StatelessWidget {
 // Avatar lightbox
 // ---------------------------------------------------------------------------
 
-void _showAvatarLightbox(BuildContext context, String? imageUrl) {
+void _showAvatarLightbox(
+  BuildContext context, {
+  required String userIdHex,
+  String? imageUrl,
+}) {
   showGeneralDialog<void>(
     context: context,
     barrierColor: VineTheme.transparent,
     barrierDismissible: true,
     barrierLabel: 'Close avatar',
-    pageBuilder: (context, _, _) => _AvatarLightbox(imageUrl: imageUrl),
+    pageBuilder: (context, _, _) => _AvatarLightbox(
+      imageUrl: imageUrl,
+      userIdHex: userIdHex,
+    ),
   );
 }
 
 class _AvatarLightbox extends StatelessWidget {
-  const _AvatarLightbox({this.imageUrl});
+  const _AvatarLightbox({required this.userIdHex, this.imageUrl});
 
   final String? imageUrl;
+
+  /// Pubkey used as the placeholder seed so the lightbox's fallback
+  /// colour matches the avatar everywhere else when the image fails.
+  final String userIdHex;
 
   @override
   Widget build(BuildContext context) {
@@ -911,6 +926,7 @@ class _AvatarLightbox extends StatelessWidget {
                   Center(
                     child: UserAvatar(
                       imageUrl: imageUrl,
+                      placeholderSeed: userIdHex,
                       size: 288,
                       cornerRadius: 112,
                     ),
