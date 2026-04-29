@@ -64,7 +64,7 @@ const Duration _outerPublishTimeoutCeiling = Duration(seconds: 60);
 /// `perRelay × N` budget at default-config sizes (≈14% of the 35s outer
 /// at N=6) but large enough to absorb realistic dispatch overhead on
 /// cold-start without erosion as the relay count grows.
-const Duration _outerPublishTimeoutBuffer = Duration(seconds: 5);
+const Duration _outerPublishTimeoutBuffer = RelayPool.perRelaySendTimeout;
 
 /// Computes the outer timeout that bounds the call into
 /// [NostrClient.publishEvent] inside `_publishEventToNostr`.
