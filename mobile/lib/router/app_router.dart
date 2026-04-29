@@ -76,6 +76,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
+import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Global route observer for [RouteAware] subscribers (e.g. pausing video
@@ -977,24 +978,35 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: PooledFullscreenVideoFeedScreen.path,
         name: PooledFullscreenVideoFeedScreen.routeName,
         builder: (ctx, st) {
-          final args = st.extra as PooledFullscreenVideoFeedArgs?;
-          if (args == null) {
-            return Scaffold(
-              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
-              body: Center(child: Text(ctx.l10n.routeNoVideosToDisplay)),
+          final extra = st.extra;
+          if (extra is PooledFullscreenVideoFeedArgs) {
+            return PooledFullscreenVideoFeedScreen(
+              videosStream: extra.videosStream,
+              initialIndex: extra.initialIndex,
+              onLoadMore: extra.onLoadMore,
+              hasMoreStream: extra.hasMoreStream,
+              removedIdsStream: extra.removedIdsStream,
+              contextTitle: extra.contextTitle,
+              trafficSource: extra.trafficSource,
+              sourceDetail: extra.sourceDetail,
+              autoOpenComments: extra.autoOpenComments,
+              onPageChanged: extra.onPageChanged,
             );
           }
-          return PooledFullscreenVideoFeedScreen(
-            videosStream: args.videosStream,
-            initialIndex: args.initialIndex,
-            onLoadMore: args.onLoadMore,
-            hasMoreStream: args.hasMoreStream,
-            removedIdsStream: args.removedIdsStream,
-            contextTitle: args.contextTitle,
-            trafficSource: args.trafficSource,
-            sourceDetail: args.sourceDetail,
-            autoOpenComments: args.autoOpenComments,
-            onPageChanged: args.onPageChanged,
+          if (extra is ProfilePooledFullscreenVideoFeedArgs) {
+            return ProfileVideoFeedView(
+              npub: '',
+              userIdHex: extra.userIdHex,
+              videoIndex: extra.initialIndex,
+              initialVideoId: extra.initialVideoId,
+              initialStableId: extra.initialStableId,
+              contextTitleOverride: extra.contextTitle,
+              onPageChanged: extra.onPageChanged ?? (_) {},
+            );
+          }
+          return Scaffold(
+            appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+            body: Center(child: Text(ctx.l10n.routeNoVideosToDisplay)),
           );
         },
       ),

@@ -1,7 +1,7 @@
 // ABOUTME: Grid widget displaying user's videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails, handles empty state and navigation
 
-import 'dart:async';
+import 'dart:async' show FutureOr;
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -17,7 +17,6 @@ import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/profile/profile_tab_empty_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_error_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_loading_more_sliver.dart';
@@ -25,7 +24,6 @@ import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Internal class that represents a video entry in the grid
@@ -70,9 +68,6 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     with GridPrefetchMixin, ScrollPaginationMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
-  final _videosStreamController =
-      StreamController<List<VideoEvent>>.broadcast();
-  final _hasMoreStreamController = StreamController<bool>.broadcast();
   final _precachedThumbnailUrls = <String>{};
 
   /// Resolved from [PrimaryScrollController] provided by [NestedScrollView].
@@ -120,8 +115,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   @override
   void dispose() {
     disposePagination();
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
     super.dispose();
   }
 
@@ -149,7 +142,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     VideoEvent tappedVideo, {
     required int fallbackIndex,
     required List<VideoEvent> displayedVideos,
-    required VoidCallback onLoadMore,
   }) {
     final currentFeedVideos = ref
         .read(profileFeedProvider(widget.userIdHex))
@@ -166,13 +158,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               video.stableId == tappedVideo.stableId),
     );
     final resolvedIndex = index >= 0 ? index : fallbackIndex;
-    final hasMoreContent =
-        ref
-            .read(profileFeedProvider(widget.userIdHex))
-            .asData
-            ?.value
-            .hasMoreContent ??
-        false;
     Log.info(
       '🎯 ProfileVideosGrid TAP: gridIndex=$resolvedIndex, '
       'videoId=${tappedVideo.id}',
@@ -184,38 +169,18 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
-      extra: PooledFullscreenVideoFeedArgs(
-        videosStream: _videosStreamController.stream.startWith(videos),
+      extra: ProfilePooledFullscreenVideoFeedArgs(
+        userIdHex: widget.userIdHex,
         initialIndex: resolvedIndex,
-        onLoadMore: onLoadMore,
-        hasMoreStream: _hasMoreStreamController.stream.startWith(
-          hasMoreContent,
-        ),
-        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
-        trafficSource: ViewTrafficSource.profile,
+        initialVideoId: tappedVideo.id,
+        initialStableId: tappedVideo.stableId,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Push provider updates to stream for fullscreen feed
-    ref.listen(profileFeedProvider(widget.userIdHex), (_, next) {
-      next.whenData((feedState) {
-        if (!_videosStreamController.isClosed) {
-          _videosStreamController.add(feedState.videos);
-        }
-        if (!_hasMoreStreamController.isClosed) {
-          _hasMoreStreamController.add(feedState.hasMoreContent);
-        }
-      });
-    });
-
     final authService = ref.read(authServiceProvider);
-    final profileFeedNotifier = ref.read(
-      profileFeedProvider(widget.userIdHex).notifier,
-    );
-    Future<void> loadMoreProfileVideos() => profileFeedNotifier.loadMore();
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
     final isOwnProfile = authService.currentPublicKeyHex == widget.userIdHex;
 
@@ -353,7 +318,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                         eventEntry.videoEvent,
                         fallbackIndex: publishedIndex,
                         displayedVideos: displayedVideos,
-                        onLoadMore: loadMoreProfileVideos,
                       );
                     }
                   },

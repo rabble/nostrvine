@@ -24,9 +24,12 @@ class ProfileVideoFeedView extends ConsumerStatefulWidget {
   const ProfileVideoFeedView({
     required this.npub,
     required this.userIdHex,
-    required this.videos,
     required this.videoIndex,
     required this.onPageChanged,
+    this.videos = const [],
+    this.initialVideoId,
+    this.initialStableId,
+    this.contextTitleOverride,
     super.key,
   });
 
@@ -36,11 +39,19 @@ class ProfileVideoFeedView extends ConsumerStatefulWidget {
   /// The hex public key of the profile.
   final String userIdHex;
 
-  /// Initial list of videos to seed the feed with.
+  /// Initial list of videos to seed the feed with before the provider resolves.
   final List<VideoEvent> videos;
 
   /// Current video index from the URL.
   final int videoIndex;
+
+  /// Optional specific tapped video identity for resolving the initial index
+  /// against the live provider-backed feed.
+  final String? initialVideoId;
+  final String? initialStableId;
+
+  /// Optional title override when the caller already has context.
+  final String? contextTitleOverride;
 
   /// Callback when the page changes (for URL updates).
   final void Function(int newIndex) onPageChanged;
@@ -95,29 +106,29 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch feed state only for the hasMoreContent flag; pushing videos into
-    // the stream is handled in initState / didUpdateWidget so each rebuild
-    // doesn't trigger a redundant stream event.
     final feedState = ref
         .watch(profileFeedProvider(widget.userIdHex))
         .asData
         ?.value;
+    final liveVideos = feedState?.videos ?? const <VideoEvent>[];
+    final effectiveVideos = liveVideos.isNotEmpty ? liveVideos : widget.videos;
+    _pushVideos(effectiveVideos);
     final hasMoreContent = feedState?.hasMoreContent ?? false;
     _pushHasMore(hasMoreContent);
 
-    final safeIndex = widget.videos.isEmpty
-        ? 0
-        : widget.videoIndex.clamp(0, widget.videos.length - 1);
+    final resolvedIndex = _resolveInitialIndex(effectiveVideos);
 
-    final contextTitle = ref
-        .watch(fetchUserProfileProvider(widget.userIdHex))
-        .value
-        ?.betterDisplayName(context.l10n.profileTitle);
+    final contextTitle =
+        widget.contextTitleOverride ??
+        ref
+            .watch(fetchUserProfileProvider(widget.userIdHex))
+            .value
+            ?.betterDisplayName(context.l10n.profileTitle);
 
     return PooledFullscreenVideoFeedScreen(
       // Pass the raw broadcast stream — seeding happened in initState.
       videosStream: _videosController.stream,
-      initialIndex: safeIndex,
+      initialIndex: resolvedIndex,
       trafficSource: ViewTrafficSource.profile,
       contextTitle: contextTitle,
       onLoadMore: hasMoreContent
@@ -129,5 +140,22 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
       removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
       onPageChanged: widget.onPageChanged,
     );
+  }
+
+  int _resolveInitialIndex(List<VideoEvent> videos) {
+    if (videos.isEmpty) return 0;
+
+    final initialVideoId = widget.initialVideoId;
+    final initialStableId = widget.initialStableId;
+    if (initialVideoId != null || initialStableId != null) {
+      final resolved = videos.indexWhere(
+        (video) =>
+            (initialVideoId != null && video.id == initialVideoId) ||
+            (initialStableId != null && video.stableId == initialStableId),
+      );
+      if (resolved >= 0) return resolved;
+    }
+
+    return widget.videoIndex.clamp(0, videos.length - 1);
   }
 }

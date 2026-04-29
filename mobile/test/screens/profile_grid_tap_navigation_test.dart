@@ -570,10 +570,10 @@ void main() {
       );
     });
 
-    testWidgets('passes a live hasMoreStream to fullscreen navigation', (
+    testWidgets('passes provider-backed fullscreen args to navigation', (
       tester,
     ) async {
-      PooledFullscreenVideoFeedArgs? capturedArgs;
+      ProfilePooledFullscreenVideoFeedArgs? capturedArgs;
 
       final router = GoRouter(
         initialLocation: '/',
@@ -590,7 +590,8 @@ void main() {
           GoRoute(
             path: PooledFullscreenVideoFeedScreen.path,
             builder: (context, state) {
-              capturedArgs = state.extra! as PooledFullscreenVideoFeedArgs;
+              capturedArgs =
+                  state.extra! as ProfilePooledFullscreenVideoFeedArgs;
               return const Scaffold(body: SizedBox.shrink());
             },
           ),
@@ -629,8 +630,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(capturedArgs, isNotNull);
-      expect(capturedArgs!.hasMoreStream, isNotNull);
-      expect(capturedArgs!.removedIdsStream, isNotNull);
+      expect(capturedArgs!.userIdHex, testUserHex);
+      expect(capturedArgs!.initialVideoId, mockVideos[0].id);
+      expect(capturedArgs!.initialStableId, mockVideos[0].stableId);
     });
   });
 }

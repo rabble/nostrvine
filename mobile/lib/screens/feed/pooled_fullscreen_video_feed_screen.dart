@@ -148,6 +148,29 @@ class PooledFullscreenVideoFeedArgs {
   final void Function(int index)? onPageChanged;
 }
 
+/// Profile-backed arguments for fullscreen playback.
+///
+/// Unlike [PooledFullscreenVideoFeedArgs], this keeps the fullscreen route
+/// subscribed directly to [profileFeedProvider] so profile-specific metadata
+/// updates (like loop counts) are not lost when the launching grid unmounts.
+class ProfilePooledFullscreenVideoFeedArgs {
+  const ProfilePooledFullscreenVideoFeedArgs({
+    required this.userIdHex,
+    required this.initialIndex,
+    this.initialVideoId,
+    this.initialStableId,
+    this.contextTitle,
+    this.onPageChanged,
+  });
+
+  final String userIdHex;
+  final int initialIndex;
+  final String? initialVideoId;
+  final String? initialStableId;
+  final String? contextTitle;
+  final void Function(int index)? onPageChanged;
+}
+
 /// Fullscreen video feed screen using pooled_video_player.
 ///
 /// This screen is pushed outside the shell route so it doesn't show
