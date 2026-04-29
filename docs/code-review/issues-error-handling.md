@@ -15,7 +15,7 @@ Note: The project has strong crash reporting infrastructure (Firebase Crashlytic
 
 **Effort**: Low. Audit each instance: add `Log.warning()` where the error is recoverable but worth observing, or add a comment explaining why the no-op is intentional (per the project's error handling rules on documenting no-ops).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3588](https://github.com/divinevideo/divine-mobile/issues/3588)
 
 ---
 
@@ -41,7 +41,7 @@ These use `context.l10n` but the translated string is e.g. `"Error: {error}"` an
 
 **Effort**: Medium. The 2 non-l10n cases are trivial one-line fixes. The ~26 ARB entries need a decision: either remove the `{error}` placeholder and show a generic user-friendly message, or map known exception types to specific l10n keys in the caller before passing to the l10n string. Recommend tackling by user-facing priority: auth (`webAuth*`), share (`shareMenu*`), upload (`uploadRetryFailed`), and explore (`explore*`) first.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3589](https://github.com/divinevideo/divine-mobile/issues/3589)
 
 ---
 
@@ -58,7 +58,7 @@ These use `context.l10n` but the translated string is e.g. `"Error: {error}"` an
 
 **Effort**: Low. Make these methods throw like the rest, or document the intentional deviation with a clear reason.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3590](https://github.com/divinevideo/divine-mobile/issues/3590)
 
 ---
 
@@ -73,7 +73,7 @@ These use `context.l10n` but the translated string is e.g. `"Error: {error}"` an
 
 **Effort**: Medium. Replace String fields with enum/sealed-class status codes and map to `context.l10n` in the UI. The three sealed error states should drop the `message` field and use `addError()` + a status enum instead.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3591](https://github.com/divinevideo/divine-mobile/issues/3591)
 
 ---
 
@@ -89,7 +89,7 @@ These use `context.l10n` but the translated string is e.g. `"Error: {error}"` an
 
 **Effort**: Medium. Adding `addError(e, stackTrace)` to existing catch blocks is a one-line fix per handler, but 54 handlers across ~25 files need it. The 14 handlers missing try/catch entirely need fuller wrapping. Recommend tackling by priority: auth flow (`WelcomeBloc`, `DivineAuthCubit`) and core interactions (`CommentsBloc`, `VideoInteractionsBloc`, `ShareSheetBloc`) first.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3592](https://github.com/divinevideo/divine-mobile/issues/3592)
 
 ---
 
@@ -105,4 +105,4 @@ These use `context.l10n` but the translated string is e.g. `"Error: {error}"` an
 
 **Effort**: Medium. The work splits into two tracks: (a) for genuinely problematic methods (~20–30), choose a propagation strategy (throw, `Result<T>`, or redefine `false`), starting with `LocalKeySigner`, `AuthService` key methods, and `VideoEventPublisher`; (b) for intentionally-suppressing methods (~140+), add `///` documentation to the method signature explaining when `null`/`false`/`[]` is returned and why, per the project's error handling rules on documenting no-ops.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3593](https://github.com/divinevideo/divine-mobile/issues/3593)

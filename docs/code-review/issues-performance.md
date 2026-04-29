@@ -15,7 +15,7 @@ Note: These 7 issues are concentrated on the video feed (the app's highest-traff
 
 **Effort**: Low. Remove the "temporarily disable" comment and re-enable `isMinifyEnabled = true` and `isShrinkResources = true`.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3601](https://github.com/divinevideo/divine-mobile/issues/3601)
 
 ---
 
@@ -41,7 +41,7 @@ Note: These 7 issues are concentrated on the video feed (the app's highest-traff
 
 **Related**: Items #1 and #2 live in `pooled_fullscreen_video_feed_screen.dart`, which is part of the `pooled_video_player` system being replaced by `divine_video_player` (see [issues-dependencies.md](issues-dependencies.md#migrate-to-divine_video_player-replace-media_kit-fork-with-native-platform-apis)). These should be addressed during the feed integration work for the new player to avoid carrying the same patterns into the new implementation. Items #3–5 are in the feed orchestration layer (`video_feed_page.dart`, `web_video_feed.dart`) and need separate fixes regardless of the player migration.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3602](https://github.com/divinevideo/divine-mobile/issues/3602)
 
 ---
 
@@ -63,7 +63,7 @@ The code has a comment (lines 229–234) acknowledging the `downloadFile` placem
 
 **Related**: Migrating this screen to BLoC would resolve this naturally. The de-duplication would run once in the event handler and the filtered list would be stored in state, eliminating recomputation on every rebuild.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3603](https://github.com/divinevideo/divine-mobile/issues/3603)
 
 ---
 
@@ -79,7 +79,7 @@ The code has a comment (lines 229–234) acknowledging the `downloadFile` placem
 
 See also: [Code Quality — `Future.delayed` in app code](issues-code-quality.md) for the broader pattern across 22 files.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3604](https://github.com/divinevideo/divine-mobile/issues/3604)
 
 ---
 
@@ -103,7 +103,7 @@ See also: [Code Quality — `Future.delayed` in app code](issues-code-quality.md
 - #2: `context.select<VideoEditorDrawBloc, DrawToolType>((bloc) => bloc.state.selectedTool)`
 - #3: `context.select<MyProfileBloc, UserProfile?>((bloc) => switch (bloc.state) { MyProfileUpdated(:final profile) => profile, _ => null })`
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3605](https://github.com/divinevideo/divine-mobile/issues/3605)
 
 ---
 
@@ -118,7 +118,7 @@ See also: [Code Quality — `Future.delayed` in app code](issues-code-quality.md
 
 **Related**: See "Schema stuck at version 1 with ad-hoc migration logic" in [issues-architecture.md](issues-architecture.md). Fixing the migration approach would also resolve the `_createMissingTables()` startup cost.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3606](https://github.com/divinevideo/divine-mobile/issues/3606)
 
 ---
 
@@ -134,4 +134,4 @@ See also: [Code Quality — `Future.delayed` in app code](issues-code-quality.md
 
 **Effort**: Low. Wire `GET /api/videos/{id}/stats` through the existing `FunnelcakeApiClient` into the video repository. Return all three counts in one call. Keep the relay path as fallback when the API is unavailable.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3607](https://github.com/divinevideo/divine-mobile/issues/3607)

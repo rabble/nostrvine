@@ -17,7 +17,7 @@ Note: The project has strong security foundations. Nostr private keys use `flutt
 
 **Effort**: Low. Refactor to call `createAnonymousAccountFromPrivateKeyHex` inside the `withPrivateKey` callback, or pass the container directly to the downstream method.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3578](https://github.com/divinevideo/divine-mobile/issues/3578)
 
 ---
 
@@ -30,7 +30,7 @@ Note: The project has strong security foundations. Nostr private keys use `flutt
 
 **Effort**: Medium. Redesign to accept a callback (signing operation) rather than returning the raw key, consistent with the `withPrivateKey` pattern used elsewhere.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3580](https://github.com/divinevideo/divine-mobile/issues/3580)
 
 ---
 
@@ -45,5 +45,5 @@ Note: The project has strong security foundations. Nostr private keys use `flutt
 
 **Effort**: Medium. Add a pre-capture filter to `UnifiedLogger._log()` that scrubs known sensitive patterns before writing to the memory buffer, rather than relying solely on post-capture sanitization at report time.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3581](https://github.com/divinevideo/divine-mobile/issues/3581)
 

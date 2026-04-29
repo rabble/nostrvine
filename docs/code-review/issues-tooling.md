@@ -17,7 +17,7 @@ Note: `very_good_analysis` is adopted across 33 packages with per-package CI, an
 
 **Effort**: Medium. Phased re-enablement required. Start with type-safety rules (`invalid_assignment`, `return_of_invalid_type`, `list_element_type_not_assignable`, `map_value_type_not_assignable`) as these likely indicate real bugs. Then address `unawaited_futures` and `cancel_subscriptions` for resource leak detection. Each rule re-enablement may surface existing violations that need fixing.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3573](https://github.com/divinevideo/divine-mobile/issues/3573)
 
 ---
 
@@ -30,4 +30,4 @@ Note: `very_good_analysis` is adopted across 33 packages with per-package CI, an
 
 **Effort**: Low. Add `analysis_options.yaml` with `include: package:very_good_analysis/analysis_options.yaml` to each of the 3 packages. May surface existing violations that need fixing, but the configuration change itself is trivial.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3574](https://github.com/divinevideo/divine-mobile/issues/3574)

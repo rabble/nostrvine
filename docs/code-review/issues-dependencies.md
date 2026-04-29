@@ -22,7 +22,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low to decide, Medium–High to execute option 2 or 3.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3629](https://github.com/divinevideo/divine-mobile/issues/3629)
 
 ---
 
@@ -35,7 +35,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. Remove both entries from `pubspec.yaml` and run `flutter pub get` to verify nothing breaks.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3631](https://github.com/divinevideo/divine-mobile/issues/3631)
 
 ---
 
@@ -48,7 +48,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. Remove both from root `pubspec.yaml`, verify package-level declarations are sufficient.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3632](https://github.com/divinevideo/divine-mobile/issues/3632)
 
 ---
 
@@ -63,7 +63,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Medium. Investigate whether upstream versions now fix the original issues; if so, remove the overrides and use the published packages. If not, add README files documenting the reason and a tracking issue for removal.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3635](https://github.com/divinevideo/divine-mobile/issues/3635)
 
 ---
 
@@ -76,7 +76,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. For `c2pa_flutter`, check if a pub.dev release now exists; for `media_kit_video`, create a tracking issue and verify the upstream fix status. Both need TODO comments at minimum.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3637](https://github.com/divinevideo/divine-mobile/issues/3637)
 
 ---
 
@@ -89,7 +89,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Medium. Remove the override, resolve any version conflicts surfaced by `flutter pub get`, and test on both iOS and Android. Major version bumps may include breaking API changes.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3638](https://github.com/divinevideo/divine-mobile/issues/3638)
 
 ---
 
@@ -102,7 +102,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. Bump all 5 Firebase packages together, run `flutter pub get`, and verify the app builds and Firebase features work on both platforms.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3640](https://github.com/divinevideo/divine-mobile/issues/3640)
 
 ---
 
@@ -115,7 +115,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Medium. Read changelogs for v20 and v21, update call sites, test notification delivery on both platforms.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3642](https://github.com/divinevideo/divine-mobile/issues/3642)
 
 ---
 
@@ -128,7 +128,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Medium. Read v10 changelog, update call sites, verify secure storage read/write on both platforms. Prioritize due to security sensitivity.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3644](https://github.com/divinevideo/divine-mobile/issues/3644)
 
 ---
 
@@ -141,7 +141,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: High. Read v17 changelog, update route definitions and navigation call sites across the app, test deep linking and back navigation. Large blast radius due to app-wide usage.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3646](https://github.com/divinevideo/divine-mobile/issues/3646)
 
 ---
 
@@ -154,7 +154,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. Read changelogs for v7 and v8, update any changed APIs. Likely a contained change.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3648](https://github.com/divinevideo/divine-mobile/issues/3648)
 
 ---
 
@@ -167,7 +167,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. Read v13 changelog, update share call sites, test share flows on both platforms.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3650](https://github.com/divinevideo/divine-mobile/issues/3650)
 
 ---
 
@@ -180,7 +180,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Medium. Read v7 changelog, update initialization and listener code, test deep link handling on both platforms.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3651](https://github.com/divinevideo/divine-mobile/issues/3651)
 
 ---
 
@@ -193,7 +193,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Medium. Read v5 changelog, update auth call sites, test all OAuth flows on both platforms.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3653](https://github.com/divinevideo/divine-mobile/issues/3653)
 
 ---
 
@@ -206,7 +206,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: Low. Add a Dependabot configuration for the root `pubspec.yaml` and key packages. Alternatively, add a scheduled CI job that runs `flutter pub outdated` and posts results to a Slack channel or creates an issue.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3655](https://github.com/divinevideo/divine-mobile/issues/3655)
 
 ---
 
@@ -221,7 +221,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: High. Requires migrating all 12 Hive usage sites to Drift, writing data migration logic for existing user data, and removing the Hive dependency. Best done incrementally per feature.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3657](https://github.com/divinevideo/divine-mobile/issues/3657)
 
 
 ---
@@ -237,7 +237,7 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: High. The player package exists and is being integrated. Remaining work: complete feed integration, migrate all other playback surfaces (explore, profile, video detail, editor preview), remove `media_kit`/`pooled_video_player`, and establish test coverage for the new package.
 
-**GitHub ticket**: TBD (relates to #2732)
+**GitHub ticket**: [#3658](https://github.com/divinevideo/divine-mobile/issues/3658) (relates to #2732)
 
 ---
 
@@ -263,4 +263,4 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 
 **Effort**: High. Standardizing on Dio across all API client packages is a large migration. A smaller improvement: extract shared auth/header logic into a common utility rather than duplicating it across clients.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3660](https://github.com/divinevideo/divine-mobile/issues/3660)

@@ -17,7 +17,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Related**: This work pairs naturally with the `services/` directory migration in [issues-architecture.md](issues-architecture.md). As each service is extracted into a dedicated package (repository most likely), tests should be added as part of the same PR.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3608](https://github.com/divinevideo/divine-mobile/issues/3608)
 
 ---
 
@@ -30,7 +30,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Medium. Each occurrence needs either wrapping in `fakeAsync` with `elapse()` to control time deterministically, or replacement with `Completer`, stream listeners, or `pumpAndSettle` where the delay was masking an async coordination problem. `await Future<void>.delayed(Duration.zero)` is acceptable for single event-loop cycling. Mechanical but tedious across 51 files and 264 call sites.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3609](https://github.com/divinevideo/divine-mobile/issues/3609)
 
 ---
 
@@ -43,7 +43,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Medium. Triage each skip: restore, update, or delete. Assigning owners and linking to GitHub issues is the critical missing step. Re-enabling the ~14,000 lines of skipped service tests is the highest-value target.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3610](https://github.com/divinevideo/divine-mobile/issues/3610)
 
 ---
 
@@ -56,7 +56,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Low. For each file, check git blame to determine if the code under test still exists. If yes, restore the tests. If not, delete the file. Can be done in a single PR.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3611](https://github.com/divinevideo/divine-mobile/issues/3611)
 
 ---
 
@@ -69,7 +69,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Medium. The infrastructure is already in place. The remaining work is: root-cause the CI rendering mismatch (Alchemist and `loadAppFonts()` are already configured, so the issue may be a golden image regeneration or platform-specific rendering delta), register the `golden` tag in `dart_test.yaml`, create `TestTag.golden` constant, un-skip and regenerate goldens, and add a dedicated golden CI job with `--update-goldens` available as a manual trigger.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3612](https://github.com/divinevideo/divine-mobile/issues/3612)
 
 ---
 
@@ -84,7 +84,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Low. Migrate the 39 test files to use the existing `createTestApp()` helper, or add delegates directly to their `MaterialApp` wrappers. One-time fix that prevents all future occurrences.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3613](https://github.com/divinevideo/divine-mobile/issues/3613)
 
 ---
 
@@ -99,7 +99,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Medium. Move root-level files into correct subdirectories. Consolidate split test files into single `<source>_test.dart` files using `group()` blocks. The `video_event_service` (25 files) and `upload_manager` (9 files) are the largest consolidation efforts; smaller splits are mechanical merges.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3614](https://github.com/divinevideo/divine-mobile/issues/3614)
 
 ---
 
@@ -114,7 +114,7 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: Low. Wrap existing tests in appropriate `group()` calls. Mechanical change with no logic modifications.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3615](https://github.com/divinevideo/divine-mobile/issues/3615)
 
 ---
 
@@ -127,4 +127,4 @@ Note: BLoC testing is well-covered (42 directories, 61 test files). These issues
 
 **Effort**: High. Each new flow needs Docker stack interaction and potentially new test helpers. Priority: feed scroll/pagination (highest traffic), upload E2E (revenue-critical), follow/unfollow (social core).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3616](https://github.com/divinevideo/divine-mobile/issues/3616)

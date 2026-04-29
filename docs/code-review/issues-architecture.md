@@ -17,7 +17,7 @@ Note: The layered architecture (`UI → BLoC → Repository → Client`) is esta
 
 **Effort**: Medium. Extract URL resolution into a separate utility class. Remove or gate the `developer.log` calls behind a debug flag. Consider splitting the model's factory method into a dedicated parser.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3617](https://github.com/divinevideo/divine-mobile/issues/3617)
 
 ---
 
@@ -32,7 +32,7 @@ Note: The layered architecture (`UI → BLoC → Repository → Client`) is esta
 
 **Effort**: High. Migrating to proper schema versioning requires numbering the current state as a base version, writing incremental migration callbacks for future changes, and carefully handling the transition for existing users at arbitrary intermediate states.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3618](https://github.com/divinevideo/divine-mobile/issues/3618)
 
 ---
 
@@ -49,7 +49,7 @@ Note: The layered architecture (`UI → BLoC → Repository → Client`) is esta
 
 **Related**: Each extracted package should ship with tests in the same PR. 50+ services currently have zero test coverage (see [issues-testing.md](issues-testing.md)), and the VGV per-package CI template enforces coverage, so extraction is the natural moment to add tests rather than treating it as separate work.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3619](https://github.com/divinevideo/divine-mobile/issues/3619)
 
 ---
 
@@ -66,7 +66,7 @@ Beyond direct service imports, 13 screens perform data transformation logic insi
 
 **Effort**: High. Each widget/screen needs a BLoC or Cubit intermediary. For analytics/cross-cutting services, consider a `BlocObserver` or dedicated analytics middleware that observes state transitions rather than being called from widgets. For filtering/sorting in build, extract the logic into the corresponding BLoC or Cubit with the result stored in state. Priority: `explore_screen.dart` (highest traffic screen with service call in build).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3620](https://github.com/divinevideo/divine-mobile/issues/3620)
 
 ---
 
@@ -81,7 +81,7 @@ Beyond direct service imports, 13 screens perform data transformation logic insi
 
 **Effort**: High. BLoC migration is underway but Riverpod dominates by volume. ChangeNotifier usage needs to be added to migration tracking. Multi-quarter effort; priority targets are the 6 largest provider files totaling 8,000+ lines.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3621](https://github.com/divinevideo/divine-mobile/issues/3621)
 
 ---
 
@@ -98,7 +98,7 @@ Beyond direct service imports, 13 screens perform data transformation logic insi
 
 **Effort**: Medium. Migration is opportunistic: colocate when touching a feature for BLoC migration or a major change. Low risk per move but 40+ features to eventually migrate.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3622](https://github.com/divinevideo/divine-mobile/issues/3622)
 
 ---
 
@@ -113,7 +113,7 @@ Beyond direct service imports, 13 screens perform data transformation logic insi
 
 **Effort**: Medium. Convert to constructor-injected services incrementally. For services with early-initialization requirements, exposing the instance via a Riverpod override is acceptable as an exception, not the norm.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3623](https://github.com/divinevideo/divine-mobile/issues/3623)
 
 ---
 
@@ -146,7 +146,7 @@ Four storage backends (in-memory, Hive, SharedPreferences, Drift/SQLite) serve o
 
 **Effort**: High. A unified caching strategy is a design exercise first (define cache tiers, TTL policies, eviction budget) and an incremental migration second. This is a long-term architectural direction.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3624](https://github.com/divinevideo/divine-mobile/issues/3624)
 
 ---
 
@@ -171,7 +171,7 @@ No analytics package exists; all 9 services live in `lib/services/` as unpackage
 
 **Effort**: High. Design an analytics architecture: (1) extract a shared analytics package with a unified event schema, (2) introduce a `BlocObserver` for centralized state-transition tracking(where flutter_bloc is used), (3) move UI-layer analytics calls into BLoCs or the observer, (4) consolidate the 9 services behind a facade. Incremental: start with the `BlocObserver` and facade, migrate call sites opportunistically.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3625](https://github.com/divinevideo/divine-mobile/issues/3625)
 
 ---
 
@@ -188,7 +188,7 @@ This is closely related to the caching architecture (see "No unified caching arc
 
 **Effort**: Medium. The pattern is proven in the codebase. Adopt incrementally as features are touched.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3626](https://github.com/divinevideo/divine-mobile/issues/3626)
 
 ---
 
@@ -221,4 +221,4 @@ No documentation explains why a given feature uses one pattern over another. Som
 
 **Effort**: Medium. The work splits into two tracks: (1) **Document the strategy** — define when each pattern should be used, add it as a decision tree to the architecture docs, and classify existing features against it. (2) **Wire the gaps** — prioritize by impact: video overlay counts first (every video), profile grid batch second (every profile visit), comment pagination third. Hashtag and notification fallbacks are lower priority since they require more complex relay aggregation.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3627](https://github.com/divinevideo/divine-mobile/issues/3627)

@@ -40,7 +40,7 @@ Note: 33 packages use VGV's reusable CI workflow, the mobile app CI runs tests a
 
 **Effort**: Low. Each workflow is a copy of the existing VGV reusable workflow template. ~15 min per package. `nostr_apps` additionally needs tests written before a workflow is useful.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3575](https://github.com/divinevideo/divine-mobile/issues/3575)
 
 ---
 
@@ -56,7 +56,7 @@ Note: 33 packages use VGV's reusable CI workflow, the mobile app CI runs tests a
 
 **Effort**: Medium. Need to add `--coverage` to the test step, aggregate sharded lcov files, and add a threshold check (e.g. via `very_good_coverage`).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3576](https://github.com/divinevideo/divine-mobile/issues/3576)
 
 ---
 
@@ -71,4 +71,4 @@ Note: 33 packages use VGV's reusable CI workflow, the mobile app CI runs tests a
 
 **Effort**: Low per package. Raise each threshold to match current actual coverage (so no existing PR breaks), then raise incrementally per quarter. Requires measuring actual coverage first for packages where the threshold was set long ago.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3577](https://github.com/divinevideo/divine-mobile/issues/3577)

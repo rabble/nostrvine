@@ -17,7 +17,7 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 **Effort**: Low. Each occurrence needs case-by-case evaluation and replacement with proper async coordination: streams for data flow, completers for one-shot async, `BlocListener` for state-driven side effects, or `WidgetsBinding.instance.addPostFrameCallback` for post-frame work.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3582](https://github.com/divinevideo/divine-mobile/issues/3582)
 
 ---
 
@@ -35,7 +35,7 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 **Effort**: Low. Wrap `print()` calls in `if (kDebugMode)` or remove them (rely on `UnifiedLogger`). Consolidate log batchers: pick one (the singleton version is more configurable), migrate callers, delete the other (~200 LOC removed).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3583](https://github.com/divinevideo/divine-mobile/issues/3583)
 
 ---
 
@@ -48,7 +48,7 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 **Effort**: Medium. Standardize on one approach. Adopting `json_serializable` across the board (or Freezed for combined serialization + equality + copyWith) would eliminate the multiple approaches implemented. The only consideration, though, is the time cost of running code generation.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3584](https://github.com/divinevideo/divine-mobile/issues/3584)
 
 ---
 
@@ -63,7 +63,7 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 **Effort**: Medium. Standardize on `Equatable` for all models in the `models` package.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3585](https://github.com/divinevideo/divine-mobile/issues/3585)
 
 ---
 
@@ -78,7 +78,7 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 **Effort**: Low. Extract a generic `_request<T>` helper that handles the try/catch boilerplate and accepts a response parser callback. Straightforward refactor within one file.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3586](https://github.com/divinevideo/divine-mobile/issues/3586)
 
 ---
 
@@ -91,4 +91,4 @@ Note: The codebase uses `very_good_analysis` across 33 packages and `unified_log
 
 **Effort**: Low. Extract each `_buildFoo()` into a private `_Foo` widget class. Safe, incremental refactor that can be done when touching these files for any reason. No functional change.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3587](https://github.com/divinevideo/divine-mobile/issues/3587)

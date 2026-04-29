@@ -19,7 +19,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. Most already have ARB keys defined. For those that do, it is a find-and-replace to `context.l10n.keyName`. For those that lack ARB keys, new keys must be added first.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3628](https://github.com/divinevideo/divine-mobile/issues/3628)
 
 ---
 
@@ -32,7 +32,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Low. For the ~30+ keys with matching hardcoded strings, the fix is replacing the string with `context.l10n.keyName`. The rest should be audited to determine if they are truly dead.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3630](https://github.com/divinevideo/divine-mobile/issues/3630)
 
 ---
 
@@ -45,7 +45,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. For the 22 ARB keys, convert to ICU `{count, plural, =1{...} other{...}}` syntax. For the 11 inline Dart occurrences, create new ARB keys with ICU plural syntax and replace the inline logic.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3633](https://github.com/divinevideo/divine-mobile/issues/3633)
 
 ---
 
@@ -58,7 +58,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Low. Add the 3 keys to all 14 ARB files with translated values.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3634](https://github.com/divinevideo/divine-mobile/issues/3634)
 
 ---
 
@@ -73,7 +73,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. Add `Semantics(label: ..., button: true)` wrappers or `tooltip` to each instance. The bottom nav fix is highest priority.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3636](https://github.com/divinevideo/divine-mobile/issues/3636)
 
 ---
 
@@ -96,7 +96,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: High. Requires a systematic pass through all screens to identify decorative vs. meaningful content.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3639](https://github.com/divinevideo/divine-mobile/issues/3639)
 
 ---
 
@@ -109,7 +109,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. The follow button needs design coordination (keep visual at 20px but wrap in a transparent 48x48 hit area). The more button is a simple size increase.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3641](https://github.com/divinevideo/divine-mobile/issues/3641)
 
 ---
 
@@ -124,7 +124,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Low to define a higher-contrast variant, High to audit all 738 usages and determine which should use it.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3643](https://github.com/divinevideo/divine-mobile/issues/3643)
 
 ---
 
@@ -137,7 +137,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. Add `SemanticsService.announce()` calls after key async operations. Focus first on upload complete/fail, delete, and follow/unfollow.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3645](https://github.com/divinevideo/divine-mobile/issues/3645)
 
 ---
 
@@ -150,7 +150,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. Create a shared utility `bool shouldAnimate(BuildContext context)` and thread it through animation durations. For critical ones (video overlay, editor), set `duration: Duration.zero` when reduced motion is active.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3647](https://github.com/divinevideo/divine-mobile/issues/3647)
 
 ---
 
@@ -165,7 +165,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Medium. Mechanical replacement in 56 files, but each occurrence needs mapping to the correct `VineTheme` method. Can be done opportunistically when touching these screens.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3649](https://github.com/divinevideo/divine-mobile/issues/3649)
 
 ---
 
@@ -180,7 +180,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Low. Replace each `Colors.*` reference with the corresponding `VineTheme` token. Small, isolated changes.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3652](https://github.com/divinevideo/divine-mobile/issues/3652)
 
 ---
 
@@ -195,7 +195,7 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Low. Replace each `Image.network` call with `VineCachedImage`. The `blurhash_display.dart` case may need a `VineCachedImage` with an `errorWidget` fallback to avoid infinite retry loops.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3654](https://github.com/divinevideo/divine-mobile/issues/3654)
 
 ---
 
@@ -210,4 +210,4 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Effort**: Low. Add a failure/error branch to each screen's `BlocBuilder` or switch expression. The BLoCs already emit failure states; the UI just doesn't render them.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3656](https://github.com/divinevideo/divine-mobile/issues/3656)

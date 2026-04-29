@@ -15,7 +15,7 @@ Note: Newer features like `features/feature_flags/` demonstrate clean co-locatio
 
 **Effort**: High. Each oversized file requires a domain-specific decomposition strategy. Priority targets: `video_event_service` (self-documented 9-concern split), `share_video_menu` (move business logic into `ShareSheetBloc`), `auth_service` (extract key management, session lifecycle, profile ops).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3594](https://github.com/divinevideo/divine-mobile/issues/3594)
 
 ---
 
@@ -37,7 +37,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Medium. Extract incrementally: (1) move `_UploadFailureListener` and `_CrashProbeHotspot` to their own files, (2) extract the startup/initialization functions into a dedicated `startup/` module, (3) extract the `MultiRepositoryProvider`/`MultiBlocProvider` wiring into a dedicated provider setup widget, (4) extract deep link handling into its own service (partially exists in `deep_link_service.dart` already).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3595](https://github.com/divinevideo/divine-mobile/issues/3595)
 
 ---
 
@@ -52,7 +52,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Low. Verify the new `lib/notifications/` BLoC system covers all functionality, update `inbox_view.dart` to use the new notifications page, delete old screen and provider. Estimated ~1,000 LOC removed.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3596](https://github.com/divinevideo/divine-mobile/issues/3596)
 
 ---
 
@@ -65,7 +65,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Low. Rename the BLoC-internal one to `VideoFeedBlocState` (it's a `part of` the bloc, only one file needs changing). ~5 minutes.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3597](https://github.com/divinevideo/divine-mobile/issues/3597)
 
 ---
 
@@ -78,7 +78,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Medium. Introduce a `ModerationPipeline` that composes `ContentBlocklistService`, `NsfwContentFilter`, `ModerationLabelService`, and `DivineHostFilterService` into a single `shouldFilter(VideoEvent) → ModerationDecision` call. `ContentFilterService` already partially does this; expand it. Inline the 15-line wrapper.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3598](https://github.com/divinevideo/divine-mobile/issues/3598)
 
 ---
 
@@ -91,7 +91,7 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Low. Move debug screen behind `DeveloperOptionsScreen` or delete; move scripts to `mobile/tools/` (already exists); move transport utilities to `test/helpers/nostr/`. ~520 LOC relocated or removed.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3599](https://github.com/divinevideo/divine-mobile/issues/3599)
 
 ---
 
@@ -104,4 +104,4 @@ The `DivineApp.build()` method alone is ~400 lines deep with nested `MultiReposi
 
 **Effort**: Low. Add a notification accent color to `VineTheme`, update `notification_list_item.dart` to use it, delete `lib/theme/app_theme.dart`. ~30 lines removed.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3600](https://github.com/divinevideo/divine-mobile/issues/3600)

@@ -15,7 +15,7 @@ Note: Root-level documentation is strong. `README.md` and `CONTRIBUTING.md` cove
 
 **Effort**: Low. The existing template is ~15 lines. Generating READMEs for 19 packages using the established format is mechanical work.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3570](https://github.com/divinevideo/divine-mobile/issues/3570)
 
 ---
 
@@ -28,4 +28,4 @@ Note: Root-level documentation is strong. `README.md` and `CONTRIBUTING.md` cove
 
 **Effort**: Low. Either add a link from `CONTRIBUTING.md` to `.claude/rules/architecture.md`, or create a thin `docs/ARCHITECTURE.md` (renamed, with the current one moved to `NOSTR_SDK_ARCHITECTURE.md`) that points to the Claude rules as the source of truth.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3571](https://github.com/divinevideo/divine-mobile/issues/3571)

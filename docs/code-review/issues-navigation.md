@@ -15,7 +15,7 @@ Note: GoRouter handles 60+ routes with deep linking and `pushWithVideoPause` man
 
 **Effort**: High. Migrating all routes to `@TypedGoRoute` requires adding route data classes for each route, running code generation, and updating all navigation call sites across the app. Best done incrementally: adopt `@TypedGoRoute` for new routes, migrate existing routes when touched.
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3572](https://github.com/divinevideo/divine-mobile/issues/3572)
 
 ---
 
@@ -28,4 +28,4 @@ Note: GoRouter handles 60+ routes with deep linking and `pushWithVideoPause` man
 
 **Effort**: Low. Add format validation before navigation (regex check for hex video IDs, bech32 validation for npub).
 
-**GitHub ticket**: TBD
+**GitHub ticket**: [#3579](https://github.com/divinevideo/divine-mobile/issues/3579)
