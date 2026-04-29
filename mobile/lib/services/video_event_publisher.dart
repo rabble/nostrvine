@@ -14,6 +14,7 @@ import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
@@ -26,6 +27,77 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Floor for the derived outer publish timeout. Covers empty-config /
+/// pre-init races where `configuredRelayCount` reads as `0` but the
+/// publish would still queue against a tempRelay or wait on
+/// initialisation. Also keeps the timeout from collapsing to the buffer
+/// alone for `relayCount == 1`, which would leave no slack for normal
+/// network latency.
+const Duration _outerPublishTimeoutFloor = Duration(seconds: 10);
+
+/// Ceiling for the derived outer publish timeout. Bounds worst-case
+/// user-visible publish latency on misconfigured huge relay lists so a
+/// user with 50 wedged relays does not wait several minutes for the
+/// publish to give up.
+///
+/// **Trade-off**: clamping to the ceiling means the strict invariant
+/// `outer >= inner_worst_case + buffer` only holds while
+/// `derived <= ceiling`. Beyond that boundary (currently
+/// `relayCount >= 12` with `perRelaySendTimeout = 5s` and `buffer = 5s`)
+/// the buffer evaporates; from `relayCount == 13` upward the outer
+/// guard can fire before the inner sequential fan-out completes,
+/// re-introducing the original false-negative-publish failure mode for
+/// that edge case. We accept this because the field worst case is
+/// driven by `connecting`-state waits and post-handshake socket
+/// wedges — not all configured relays — so practical fan-out times for
+/// any reasonable config stay well under the ceiling. The retry loop in
+/// [VideoEventPublisher.publishDirectUpload] absorbs the rare
+/// false-negative when it does happen.
+const Duration _outerPublishTimeoutCeiling = Duration(seconds: 60);
+
+/// Buffer added on top of the per-relay × count derivation. Covers the
+/// microtask queue drains between sequential `relay.send` calls inside
+/// [RelayPool._sendCollect], plus a small allowance for log formatting
+/// and other in-process scheduling jitter. Picked at one
+/// `perRelaySendTimeout` worth of slack — small relative to the total
+/// `perRelay × N` budget at default-config sizes (≈14% of the 35s outer
+/// at N=6) but large enough to absorb realistic dispatch overhead on
+/// cold-start without erosion as the relay count grows.
+const Duration _outerPublishTimeoutBuffer = Duration(seconds: 5);
+
+/// Computes the outer timeout that bounds the call into
+/// [NostrClient.publishEvent] inside `_publishEventToNostr`.
+///
+/// Derivation: `RelayPool.perRelaySendTimeout * relayCount + buffer`,
+/// clamped to `[floor, ceiling]`. Encoding the relationship in code
+/// keeps the outer guard from silently firing before the inner
+/// sequential fan-out inside [RelayPool._sendCollect] can complete on
+/// degraded networks, regardless of how many relays the user has
+/// configured — up to the ceiling boundary documented on
+/// [_outerPublishTimeoutCeiling].
+///
+/// **Caveats on `relayCount`**: the value passed in is treated as an
+/// upper bound on the actual sequential fan-out width. Two factors
+/// make the real fan-out narrower:
+///   * `_sendCollect` skips relays without `writeAccess` for `EVENT`
+///     messages, so read-only relays in the configured set don't
+///     consume a per-relay slot.
+///   * Callers passing `tempRelays` to `RelayPool.send` add fan-out
+///     width that this helper cannot see; the canonical
+///     [VideoEventPublisher] path does not, but a future caller might.
+/// Both factors err on the conservative side — the derived bound is
+/// never tighter than the real worst case.
+///
+/// Exposed at file scope so unit tests can assert the math directly
+/// without spinning up a [NostrClient].
+Duration outerPublishTimeoutFor(int relayCount) {
+  final derived =
+      RelayPool.perRelaySendTimeout * relayCount + _outerPublishTimeoutBuffer;
+  if (derived < _outerPublishTimeoutFloor) return _outerPublishTimeoutFloor;
+  if (derived > _outerPublishTimeoutCeiling) return _outerPublishTimeoutCeiling;
+  return derived;
+}
 
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -63,6 +135,17 @@ class VideoEventPublisher {
   int _totalEventsPublished = 0;
   int _totalEventsFailed = 0;
   DateTime? _lastPublishTime;
+
+  /// The outer timeout that will bound the next call into
+  /// [NostrClient.publishEvent] inside [_publishEventToNostr], computed
+  /// live from [outerPublishTimeoutFor] and the current
+  /// [NostrClient.configuredRelayCount].
+  ///
+  /// Exposed so tests can pin the production wiring between the helper
+  /// and the call site without instrumenting `Future.timeout`. Reading
+  /// this getter has no side effects.
+  Duration get currentOuterPublishTimeout =>
+      outerPublishTimeoutFor(_nostrService.configuredRelayCount);
 
   /// Initialize the publisher
   Future<void> initialize() async {
@@ -206,10 +289,17 @@ class VideoEventPublisher {
 
       // Use the existing Nostr service to publish.
       //
-      // Defense-in-depth: hard 30s timeout so a misbehaving relay
-      // (e.g. stuck in connecting / reconnect backoff) cannot freeze the
-      // publish flow indefinitely. The retry loop in [publishDirectUpload]
-      // will pick up after each failed attempt.
+      // Defense-in-depth: outer timeout so a misbehaving relay (e.g. stuck
+      // in connecting / reconnect backoff) cannot freeze the publish flow
+      // indefinitely. The retry loop in [publishDirectUpload] picks up
+      // after each failed attempt.
+      //
+      // The bound is derived from [RelayPool.perRelaySendTimeout] and the
+      // configured relay count (see [outerPublishTimeoutFor]) so it stays
+      // strictly above the worst-case sequential fan-out inside
+      // [_sendCollect]. Hard-coding the outer timeout would silently break
+      // the moment a user adds a relay or the SDK retunes the per-relay
+      // cap; the derivation encodes the invariant in code.
       //
       // We use try/catch on [TimeoutException] rather than `.timeout(
       // onTimeout: ...)`. The `onTimeout` closure has its return type
@@ -220,14 +310,19 @@ class VideoEventPublisher {
       // `onTimeout: () => null` throw at runtime in tests. The try/catch
       // shape sidesteps the closure-cast entirely; behaviour against a
       // real `NostrClient` is identical.
+      final outerTimeout = currentOuterPublishTimeout;
       Event? sentEvent;
       try {
         sentEvent = await _nostrService
             .publishEvent(event)
-            .timeout(const Duration(seconds: 30));
+            .timeout(
+              outerTimeout,
+            );
       } on TimeoutException {
         Log.error(
-          '⏱️ publishEvent timed out after 30s for event ${event.id}',
+          '⏱️ publishEvent timed out after ${outerTimeout.inSeconds}s for '
+          'event ${event.id} '
+          '(relayCount=${_nostrService.configuredRelayCount})',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );

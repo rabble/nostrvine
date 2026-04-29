@@ -394,8 +394,8 @@ void main() {
       // Belt-and-suspenders: skipReconnect: true short-circuits the
       // disconnected-state reconnect dance, but does NOT bypass the
       // `connecting` state's _waitForConnection() nor protect against
-      // a wedged-after-handshake socket. The 5s per-relay timeout in
-      // _sendCollect catches these residual cases so a single
+      // a wedged-after-handshake socket. The [RelayPool.perRelaySendTimeout]
+      // backstop in _sendCollect catches these residual cases so a single
       // pathological relay cannot stall the sequential fan-out.
       final healthy = _SucceedingRelay('wss://healthy.relay');
       final hanging = _AlwaysHangingRelay('wss://hanging.relay');
@@ -409,10 +409,15 @@ void main() {
       final ok = await nostr.relayPool.send(['EVENT', event.toJson()]);
       stopwatch.stop();
 
-      // Per-relay timeout is 5s. With one hanging relay, total elapsed
-      // should sit comfortably under 7s (5s timeout + setup overhead).
-      // If the timeout is removed, this test would hang for 60s+.
-      expect(stopwatch.elapsedMilliseconds, lessThan(7000));
+      // With one hanging relay, total elapsed should sit comfortably
+      // under perRelaySendTimeout + 2s of setup overhead. If the
+      // timeout is removed, this test would hang for 60s+.
+      final expectedCeiling =
+          RelayPool.perRelaySendTimeout + const Duration(seconds: 2);
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(expectedCeiling.inMilliseconds),
+      );
       // The healthy relay still accepted the EVENT.
       expect(ok, isTrue);
       expect(
@@ -425,6 +430,22 @@ void main() {
       // to sentTo because its future timed out.
       expect(hanging.sentMessages, isNotEmpty);
     });
+
+    test(
+      'RelayPool.perRelaySendTimeout is exposed as a stable public contract',
+      () {
+        // Pin: the public constant is the SDK's contract with callers
+        // that need to size their own outer guards (e.g.
+        // `outerPublishTimeoutFor` in mobile/lib/services/
+        // video_event_publisher.dart). Bumping this value is a SDK-
+        // public-API change — callers depending on the worst-case
+        // sequential fan-out math need to be revisited.
+        expect(
+          RelayPool.perRelaySendTimeout,
+          equals(const Duration(seconds: 5)),
+        );
+      },
+    );
   });
 
   group('RelayPool COUNT concurrency', () {

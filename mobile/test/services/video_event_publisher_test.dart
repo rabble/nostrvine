@@ -7,7 +7,9 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/video_event_publisher.dart';
 
 /// Helper class to test imeta tag generation logic
 class ImetaTagGenerator {
@@ -451,29 +453,33 @@ void main() {
   });
 
   group('publishEvent timeout guard', () {
-    // Locks the contract introduced in video_event_publisher.dart line 208:
-    // a 30s `Future.timeout` wrapped in try/catch (TimeoutException) so a
-    // stalled relay-pool send cannot freeze the publish flow. We use the
-    // try/catch shape (not `onTimeout: () => null`) because mocktail-stubbed
-    // Futures lose their declared `?` nullability at runtime, which would
-    // make the onTimeout closure-cast throw — see
+    // Locks the contract introduced in video_event_publisher.dart's
+    // `_publishEventToNostr`: a derived `Future.timeout` wrapped in
+    // try/catch (TimeoutException) so a stalled relay-pool send cannot
+    // freeze the publish flow. We use the try/catch shape (not
+    // `onTimeout: () => null`) because mocktail-stubbed Futures lose
+    // their declared `?` nullability at runtime, which would make the
+    // onTimeout closure-cast throw — see
     // `test/diag/mocktail_timeout_diag_test.dart` for the full diagnosis.
+    //
+    // The duration used here is incidental to the pattern under test;
+    // production sizes the timeout via `outerPublishTimeoutFor`, covered
+    // by the dedicated group below.
+    const patternTimeout = Duration(seconds: 30);
 
     test(
       'a never-completing publishEvent future surfaces TimeoutException '
-      'after 30s and is mapped to null',
+      'and is mapped to null',
       () {
         fakeAsync((async) {
           final never = Completer<String?>();
           var completed = false;
           String? result;
 
-          // Mirrors the exact wrapping at video_event_publisher.dart:208.
+          // Mirrors the exact wrapping inside _publishEventToNostr.
           Future<void> wrapped() async {
             try {
-              result = await never.future.timeout(
-                const Duration(seconds: 30),
-              );
+              result = await never.future.timeout(patternTimeout);
             } on TimeoutException {
               result = null;
             }
@@ -504,9 +510,7 @@ void main() {
 
           Future<void> wrapped() async {
             try {
-              final value = await completer.future.timeout(
-                const Duration(seconds: 30),
-              );
+              final value = await completer.future.timeout(patternTimeout);
               resolvedValue = value ?? 'null';
             } on TimeoutException {
               resolvedValue = 'timeout';
@@ -521,6 +525,127 @@ void main() {
 
           expect(resolvedValue, equals('signed_event_id'));
         });
+      },
+    );
+  });
+
+  group('outerPublishTimeoutFor', () {
+    // Pins the derivation introduced as the follow-up to PR #3683 / issue
+    // #3688: the outer publish timeout is `RelayPool.perRelaySendTimeout *
+    // relayCount + buffer`, clamped to `[floor, ceiling]`. Encoding the
+    // relationship in code keeps the outer guard from silently firing
+    // before the inner sequential fan-out can complete on degraded
+    // networks, regardless of how many relays the user configures.
+
+    test('clamps to the floor when the relay count is zero', () {
+      // 0 * 5s + 5s = 5s, which is below the 10s floor.
+      expect(
+        outerPublishTimeoutFor(0),
+        equals(const Duration(seconds: 10)),
+      );
+    });
+
+    test('still clamps to the floor for a single relay', () {
+      // 1 * 5s + 5s = 10s, exactly at the floor — never below it.
+      expect(
+        outerPublishTimeoutFor(1),
+        equals(const Duration(seconds: 10)),
+      );
+    });
+
+    test('scales linearly between the floor and ceiling', () {
+      // 2 * 5s + 5s = 15s
+      expect(
+        outerPublishTimeoutFor(2),
+        equals(const Duration(seconds: 15)),
+      );
+      // 6 * 5s + 5s = 35s — the current default-config worst case.
+      expect(
+        outerPublishTimeoutFor(6),
+        equals(const Duration(seconds: 35)),
+      );
+      // 11 * 5s + 5s = 60s, exactly at the ceiling.
+      expect(
+        outerPublishTimeoutFor(11),
+        equals(const Duration(seconds: 60)),
+      );
+    });
+
+    test('clamps to the ceiling for misconfigured huge relay lists', () {
+      // 12 * 5s + 5s = 65s → clamped to 60s ceiling. Bounds worst-case
+      // publish latency so the user never stares at a spinner for
+      // several minutes.
+      expect(
+        outerPublishTimeoutFor(12),
+        equals(const Duration(seconds: 60)),
+      );
+      expect(
+        outerPublishTimeoutFor(50),
+        equals(const Duration(seconds: 60)),
+      );
+    });
+
+    test(
+      'strictly exceeds the inner worst-case fan-out up to the ceiling '
+      'boundary',
+      () {
+        // The whole point of the derivation: the outer guard must never
+        // fire before the inner sequential fan-out inside
+        // `RelayPool._sendCollect` can complete. Asserts the invariant
+        // strictly (with the buffer present) for the full range up to
+        // the ceiling boundary.
+        for (final relayCount in [0, 1, 2, 6, 7, 11]) {
+          final innerWorstCase = RelayPool.perRelaySendTimeout * relayCount;
+          final outer = outerPublishTimeoutFor(relayCount);
+          expect(
+            outer > innerWorstCase,
+            isTrue,
+            reason:
+                'outer ($outer) must strictly exceed inner worst case '
+                '($innerWorstCase) for relayCount=$relayCount '
+                '(buffer must be present)',
+          );
+        }
+      },
+    );
+
+    test(
+      'invariant degrades at the ceiling boundary (relayCount >= 12)',
+      () {
+        // Pinned trade-off: clamping to the 60s ceiling means the
+        // strict `outer > inner_worst_case` invariant evaporates at the
+        // boundary and inverts beyond it. This test locks the documented
+        // edge so any change to the ceiling, the per-relay timeout, or
+        // the buffer surfaces here loudly. See the
+        // `_outerPublishTimeoutCeiling` doc comment for the rationale.
+
+        // At relayCount == 12: derived = 12 * 5s + 5s = 65s, clamped to
+        // 60s. Inner worst case = 12 * 5s = 60s. Outer == inner; buffer
+        // is gone but the invariant is not yet violated.
+        final innerAt12 = RelayPool.perRelaySendTimeout * 12;
+        final outerAt12 = outerPublishTimeoutFor(12);
+        expect(outerAt12, equals(const Duration(seconds: 60)));
+        expect(outerAt12, equals(innerAt12));
+        expect(
+          outerAt12 > innerAt12,
+          isFalse,
+          reason: 'buffer is exhausted at relayCount == 12',
+        );
+
+        // At relayCount == 13: derived = 70s, clamped to 60s. Inner
+        // worst case = 65s. Outer < inner — the original false-negative
+        // failure mode is back for this edge. The retry loop in
+        // VideoEventPublisher.publishDirectUpload absorbs it.
+        final innerAt13 = RelayPool.perRelaySendTimeout * 13;
+        final outerAt13 = outerPublishTimeoutFor(13);
+        expect(outerAt13, equals(const Duration(seconds: 60)));
+        expect(
+          outerAt13 < innerAt13,
+          isTrue,
+          reason:
+              'invariant breaks at relayCount == 13: '
+              'outer ($outerAt13) < inner ($innerAt13)',
+        );
       },
     );
   });

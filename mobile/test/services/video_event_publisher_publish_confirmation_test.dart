@@ -194,4 +194,63 @@ void main() {
       verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
     });
   });
+
+  group('VideoEventPublisher.currentOuterPublishTimeout wiring', () {
+    // Pins the production wiring between [outerPublishTimeoutFor] and
+    // the actual `Future.timeout` inside _publishEventToNostr. The math
+    // is covered exhaustively in video_event_publisher_test.dart; this
+    // group only verifies the call site reads from the helper rather
+    // than re-introducing a hard-coded literal.
+
+    test(
+      'reflects outerPublishTimeoutFor for the current configuredRelayCount',
+      () {
+        when(() => mockNostrClient.configuredRelayCount).thenReturn(6);
+        expect(
+          publisher.currentOuterPublishTimeout,
+          equals(outerPublishTimeoutFor(6)),
+        );
+      },
+    );
+
+    test('updates live as configuredRelayCount changes', () {
+      when(() => mockNostrClient.configuredRelayCount).thenReturn(0);
+      expect(
+        publisher.currentOuterPublishTimeout,
+        equals(outerPublishTimeoutFor(0)),
+      );
+
+      when(() => mockNostrClient.configuredRelayCount).thenReturn(50);
+      expect(
+        publisher.currentOuterPublishTimeout,
+        equals(outerPublishTimeoutFor(50)),
+      );
+    });
+
+    test(
+      'never collapses to a single hard-coded literal across relay counts',
+      () {
+        // Regression guard against reverting the call site to e.g.
+        // `Duration(seconds: 30)`. With three different stubbed counts
+        // straddling the floor / mid-range / ceiling, the getter must
+        // produce three distinct values.
+        when(() => mockNostrClient.configuredRelayCount).thenReturn(0);
+        final atFloor = publisher.currentOuterPublishTimeout;
+
+        when(() => mockNostrClient.configuredRelayCount).thenReturn(6);
+        final atDefault = publisher.currentOuterPublishTimeout;
+
+        when(() => mockNostrClient.configuredRelayCount).thenReturn(50);
+        final atCeiling = publisher.currentOuterPublishTimeout;
+
+        expect(
+          {atFloor, atDefault, atCeiling},
+          hasLength(3),
+          reason:
+              'getter must vary with configuredRelayCount; '
+              'a single literal would collapse all three to one value',
+        );
+      },
+    );
+  });
 }
