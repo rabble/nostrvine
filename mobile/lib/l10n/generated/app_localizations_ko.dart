@@ -3984,6 +3984,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedLatestEmpty => '아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => '영상 둘러보기';
 
   @override

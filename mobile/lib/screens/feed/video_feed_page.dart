@@ -717,7 +717,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       )
                     else
                       KeyedSubtree(
-                        key: ValueKey(state.mode),
+                        key: ValueKey(
+                          '${state.mode.name}:${state.homeHashtagLabel ?? ''}',
+                        ),
                         child: PooledVideoFeed(
                           key: _feedKey,
                           videos: pooledVideos,
@@ -929,6 +931,7 @@ class FeedEmptyWidget extends StatelessWidget {
       FeedMode.forYou => context.l10n.feedForYouEmpty,
       FeedMode.following => context.l10n.feedFollowingEmpty,
       FeedMode.latest => context.l10n.feedLatestEmpty,
+      FeedMode.homeHashtag => context.l10n.feedHomeHashtagEmpty,
     };
   }
 }

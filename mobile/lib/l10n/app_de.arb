@@ -1812,6 +1812,7 @@
     "feedForYouEmpty": "Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creator:innen, um ihn zu personalisieren.",
     "feedFollowingEmpty": "Noch keine Videos von Personen, denen du folgst.\nFinde Creator:innen, die dir gefallen, und folge ihnen.",
     "feedLatestEmpty": "Noch keine neuen Videos.\nSchau bald wieder vorbei.",
+  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
     "feedExploreVideos": "Videos entdecken",
     "feedExternalVideoSlow": "Externes Video lädt langsam",
     "feedSkip": "Überspringen",

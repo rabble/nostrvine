@@ -1809,6 +1809,7 @@
     "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
     "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
     "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
+  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
     "feedExploreVideos": "Jelajahi Video",
     "feedExternalVideoSlow": "Video eksternal memuat lambat",
     "feedSkip": "Lewati",

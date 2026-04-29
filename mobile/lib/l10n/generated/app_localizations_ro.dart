@@ -4294,6 +4294,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încă nu există videoclipuri noi.\nRevino curând.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'Explorează videoclipuri';
 
   @override

@@ -4213,6 +4213,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ancora nessun nuovo video.\nTorna a controllare a breve.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'Esplora video';
 
   @override

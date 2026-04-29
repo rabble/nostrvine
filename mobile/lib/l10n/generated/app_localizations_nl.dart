@@ -4188,6 +4188,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Nog geen nieuwe video\'s.\nKom binnenkort terug.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'Video\'s verkennen';
 
   @override

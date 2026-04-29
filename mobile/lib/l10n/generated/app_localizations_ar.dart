@@ -4125,6 +4125,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feedLatestEmpty => 'لا توجد مقاطع جديدة بعد.\nعد لاحقًا.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';
 
   @override

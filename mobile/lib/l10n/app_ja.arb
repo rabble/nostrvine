@@ -1802,6 +1802,7 @@
     "feedForYouEmpty": "おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。",
     "feedFollowingEmpty": "フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。",
     "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
+  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
     "feedExploreVideos": "動画を探しに行こう",
     "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
     "feedSkip": "スキップ",

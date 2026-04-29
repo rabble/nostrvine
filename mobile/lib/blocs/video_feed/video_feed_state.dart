@@ -13,6 +13,10 @@ enum FeedMode {
 
   /// All videos sorted by creation time (newest first).
   latest,
+
+  /// Home feed for a single hashtag the user added via the feed selector
+  /// (local “following feed” hashtag list — not merged with [following]).
+  homeHashtag,
 }
 
 /// Status of the video feed.
@@ -41,7 +45,7 @@ enum VideoFeedError {
 /// Contains:
 /// - [videos]: The list of video events for the current mode
 /// - [status]: The current loading status
-/// - [mode]: The active feed mode (forYou, following, latest)
+/// - [mode]: The active feed mode (forYou, following, latest, homeHashtag)
 /// - [hasMore]: Whether more videos can be loaded
 /// - [isLoadingMore]: Whether pagination is in progress
 /// - [error]: Any error that occurred
@@ -57,6 +61,8 @@ final class VideoFeedState extends Equatable {
     this.listOnlyVideoIds = const {},
     this.videoHashtagSources = const {},
     this.creatorProfiles = const {},
+    this.homeHashtagLabel,
+    this.feedHashtagSheetLabels = const [],
   });
 
   /// The current loading status.
@@ -89,10 +95,8 @@ final class VideoFeedState extends Equatable {
   /// list attribution for them (Phase 4).
   final Set<String> listOnlyVideoIds;
 
-  /// Maps videoId → followed hashtag label(s) that contributed this video.
-  ///
-  /// Populated for [FeedMode.following] when the repository merges followed
-  /// hashtags. Used to show a top-of-screen tag strip on those clips.
+  /// Maps videoId → hashtag label(s) that contributed this video from
+  /// hashtag-backed home fetches. Populated for [FeedMode.homeHashtag].
   final Map<String, Set<String>> videoHashtagSources;
 
   /// Creator profiles keyed by pubkey.
@@ -101,6 +105,12 @@ final class VideoFeedState extends Equatable {
   /// videos load. Warms the repository's Drift cache so individual
   /// profile lookups are instant hits.
   final Map<String, UserProfile> creatorProfiles;
+
+  /// Canonical label (lowercase, no `#`) when [mode] is [FeedMode.homeHashtag].
+  final String? homeHashtagLabel;
+
+  /// Tags listed in the home feed selector (mirrors the followed-hashtags repo).
+  final List<String> feedHashtagSheetLabels;
 
   /// Whether data has been successfully loaded.
   bool get isLoaded => status == VideoFeedStatus.success;
@@ -124,6 +134,9 @@ final class VideoFeedState extends Equatable {
     Set<String>? listOnlyVideoIds,
     Map<String, Set<String>>? videoHashtagSources,
     Map<String, UserProfile>? creatorProfiles,
+    String? homeHashtagLabel,
+    bool clearHomeHashtagLabel = false,
+    List<String>? feedHashtagSheetLabels,
   }) {
     return VideoFeedState(
       status: status ?? this.status,
@@ -136,6 +149,11 @@ final class VideoFeedState extends Equatable {
       listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
       videoHashtagSources: videoHashtagSources ?? this.videoHashtagSources,
       creatorProfiles: creatorProfiles ?? this.creatorProfiles,
+      homeHashtagLabel: clearHomeHashtagLabel
+          ? null
+          : (homeHashtagLabel ?? this.homeHashtagLabel),
+      feedHashtagSheetLabels:
+          feedHashtagSheetLabels ?? this.feedHashtagSheetLabels,
     );
   }
 
@@ -151,5 +169,7 @@ final class VideoFeedState extends Equatable {
     listOnlyVideoIds,
     videoHashtagSources,
     creatorProfiles,
+    homeHashtagLabel,
+    feedHashtagSheetLabels,
   ];
 }

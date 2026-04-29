@@ -4167,6 +4167,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get feedLatestEmpty => 'Inga nya videor än.\nTitta in igen snart.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'Upptäck videor';
 
   @override

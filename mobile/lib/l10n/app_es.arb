@@ -1816,6 +1816,7 @@
     "feedForYouEmpty": "Tu feed Para ti está vacío.\nExplora videos y sigue a creadores para personalizarlo.",
     "feedFollowingEmpty": "Aún no hay videos de personas que sigues.\nEncuentra creadores que te gusten y síguelos.",
     "feedLatestEmpty": "Aún no hay videos nuevos.\nVuelve pronto.",
+  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
     "feedExploreVideos": "Explorar videos",
     "feedExternalVideoSlow": "Un video externo se carga lento",
     "feedSkip": "Saltar",

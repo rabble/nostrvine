@@ -1,4 +1,4 @@
-// ABOUTME: Local hashtag lists — profile “saved” vs Following feed
+// ABOUTME: Local hashtag lists — profile “saved” vs feed-selector tags (home)
 // ABOUTME: Normalizes with hashtag_repository (divine-web parity)
 
 import 'dart:async';
@@ -9,8 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persists two lists (alignment plan §5):
 /// **Profile** — Saved tab, Explore “tracked” highlight.
-/// **Following feed** — labels merged in Following home
-/// via VideosRepository.
+/// **Feed selector** — labels shown as their own home feed rows (top-left
+/// switcher), loaded as single-tag streams — not merged into the Following
+/// people feed.
 ///
 /// [separateFollowingFeedHashtagsEnabled]: when `false`, the feed list is kept
 /// identical to the profile list (gated “Add to feed” / single combined UX).
@@ -19,7 +20,7 @@ class FollowedHashtagsRepository {
   ///
   /// The repository persists two separate lists:
   /// - Profile‑saved hashtags (Saved tab, Explore badges)
-  /// - Following‑feed hashtags (merged into the Following home feed)
+  /// - Feed‑selector hashtags (own rows in the home feed mode sheet)
   ///
   /// When [separateFollowingFeedHashtagsEnabled] is `false`, the feed list is
   /// kept identical to the profile list (single‑list UX).
@@ -54,7 +55,7 @@ class FollowedHashtagsRepository {
   /// [SharedPreferences] key for profile-saved (Saved tab / Explore badges).
   static const preferencesKey = 'followed_hashtag_labels';
 
-  /// [SharedPreferences] key for the Following feed merge.
+  /// [SharedPreferences] key for feed-selector hashtag labels (home sheet).
   static const followingFeedPreferencesKey = 'following_feed_hashtag_labels';
 
   /// When `false`, feed and profile lists are kept in sync (no separate
@@ -144,21 +145,20 @@ class FollowedHashtagsRepository {
     }
   }
 
-  // --- Following feed (home) ---
+  // --- Feed selector list (home) ---
 
-  /// Stream of hashtag labels that are merged into the Following home feed.
+  /// Stream of hashtag labels offered as separate home feeds (feed mode sheet).
   ///
   /// Emits a new list whenever the feed list changes.
   Stream<List<String>> get followingFeedHashtagLabelsStream => _feed.stream;
 
-  /// Current snapshot of hashtag labels that are merged into
-  /// the Following feed.
+  /// Current snapshot of hashtag labels for feed-selector home rows.
   ///
   /// Returns an unmodifiable copy of the internal list.
   List<String> get followingFeedHashtagLabels =>
       List<String>.unmodifiable(_feed.value);
 
-  /// Checks whether a hashtag is present in the Following‑feed list.
+  /// Checks whether a hashtag is present in the feed-selector list.
   ///
   /// The label is normalized before checking (leading `#` is stripped,
   /// case‑insensitive comparison).
@@ -168,7 +168,7 @@ class FollowedHashtagsRepository {
     return _feed.value.contains(tag);
   }
 
-  /// Adds a hashtag to the Following‑feed list.
+  /// Adds a hashtag to the feed-selector list.
   ///
   /// The label is normalized before addition. If the tag is already present,
   /// the operation is a no‑op.
@@ -188,7 +188,7 @@ class FollowedHashtagsRepository {
     _subjectFeed(next);
   }
 
-  /// Removes a hashtag from the Following‑feed list.
+  /// Removes a hashtag from the feed-selector list.
   ///
   /// The label is normalized before removal. If the tag is not present,
   /// the operation is a no‑op.

@@ -7310,6 +7310,12 @@ abstract class AppLocalizations {
   /// **'No new videos yet.\nCheck back soon.'**
   String get feedLatestEmpty;
 
+  /// No description provided for @feedHomeHashtagEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos for this hashtag yet.\nCheck back soon.'**
+  String get feedHomeHashtagEmpty;
+
   /// No description provided for @feedExploreVideos.
   ///
   /// In en, this message translates to:

@@ -28,13 +28,16 @@ final class VideoFeedStarted extends VideoFeedEvent {
 /// Triggers loading of videos for the new mode. Previous videos
 /// are cleared and fresh data is fetched.
 final class VideoFeedModeChanged extends VideoFeedEvent {
-  const VideoFeedModeChanged(this.mode);
+  const VideoFeedModeChanged(this.mode, {this.homeHashtagLabel});
 
   /// The new feed mode to switch to.
   final FeedMode mode;
 
+  /// Required when [mode] is [FeedMode.homeHashtag] (canonical label, no `#`).
+  final String? homeHashtagLabel;
+
   @override
-  List<Object?> get props => [mode];
+  List<Object?> get props => [mode, homeHashtagLabel];
 }
 
 /// Request to load more videos (pagination).
@@ -64,7 +67,7 @@ final class VideoFeedRefreshRequested extends VideoFeedEvent {
 ///
 /// Dispatched by the UI on app resume (background → foreground).
 /// The bloc will only perform the refresh if:
-/// - The current feed mode is [FeedMode.following]
+/// - The current feed mode is [FeedMode.following] or [FeedMode.homeHashtag]
 /// - Enough time has passed since the last successful load
 final class VideoFeedAutoRefreshRequested extends VideoFeedEvent {
   const VideoFeedAutoRefreshRequested();
@@ -103,8 +106,8 @@ final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
 /// Followed hashtag subscriptions changed (local list).
 ///
 /// Dispatched when the followed-hashtags repository stream emits
-/// after the initial replay (skipped). Refreshes the [FeedMode.following] feed
-/// so merged hashtag results stay in sync.
+/// after the initial replay (skipped). Refreshes the [FeedMode.following] or
+/// [FeedMode.homeHashtag] feed and updates [VideoFeedState.feedHashtagSheetLabels].
 final class VideoFeedFollowedHashtagsChanged extends VideoFeedEvent {
   const VideoFeedFollowedHashtagsChanged(this.hashtags);
 

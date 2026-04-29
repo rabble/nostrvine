@@ -4150,6 +4150,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Henüz yeni video yok.\nYakında tekrar kontrol et.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'Videoları Keşfet';
 
   @override

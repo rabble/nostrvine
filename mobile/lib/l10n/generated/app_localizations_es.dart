@@ -4217,6 +4217,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get feedLatestEmpty => 'Aún no hay videos nuevos.\nVuelve pronto.';
 
   @override
+  String get feedHomeHashtagEmpty =>
+      'No videos for this hashtag yet.\nCheck back soon.';
+
+  @override
   String get feedExploreVideos => 'Explorar videos';
 
   @override

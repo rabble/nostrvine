@@ -1802,6 +1802,7 @@
     "feedForYouEmpty": "خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.",
     "feedFollowingEmpty": "لا توجد مقاطع بعد من الأشخاص الذين تتابعهم.\nاعثر على صناع محتوى يعجبونك وتابعهم.",
     "feedLatestEmpty": "لا توجد مقاطع جديدة بعد.\nعد لاحقًا.",
+  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
     "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
     "feedSkip": "تخطي",

@@ -1,15 +1,18 @@
 // ABOUTME: Feed mode picker overlay widget for video feed
-// ABOUTME: Shows current mode (For You/New/Following) with bottom sheet selection
+// ABOUTME: Shows current mode (For You/New/Following + saved hashtag feeds)
 
 import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/feed/feed_mode_overlay_layout.dart';
 import 'package:openvine/screens/feed/feed_settings_menu.dart';
+
+const _homeHashtagSheetValuePrefix = 'homeHashtag.';
 
 /// Feed mode picker overlay that displays the current feed mode
 /// and allows users to switch between modes via a bottom sheet.
@@ -23,6 +26,69 @@ class FeedModeSwitch extends StatelessWidget {
   /// When true, displays a static "For You" label without requiring
   /// [VideoFeedBloc] or feature-flag providers in the widget tree.
   final bool isPreviewMode;
+
+  static Future<void> showFeedModeBottomSheet(
+    BuildContext context,
+    VideoFeedState state,
+  ) async {
+    final l10n = context.l10n;
+    final tagOptions = (state.feedHashtagSheetLabels.toList()..sort())
+        .map(
+          (tag) => VineBottomSheetSelectionOptionData(
+            label: formatHashtagForDisplay(tag),
+            value: '$_homeHashtagSheetValuePrefix$tag',
+          ),
+        )
+        .toList();
+
+    final selectedValue = switch (state.mode) {
+      FeedMode.homeHashtag when state.homeHashtagLabel != null =>
+        '$_homeHashtagSheetValuePrefix${state.homeHashtagLabel}',
+      _ => state.mode.name,
+    };
+
+    final selected = await VineBottomSheetSelectionMenu.show(
+      context: context,
+      selectedValue: selectedValue,
+      options: [
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeForYou,
+          value: 'forYou',
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeNew,
+          value: 'latest',
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeFollowing,
+          value: 'following',
+        ),
+        ...tagOptions,
+      ],
+    );
+
+    if (selected != null && context.mounted) {
+      if (selected.startsWith(_homeHashtagSheetValuePrefix)) {
+        final raw = selected.substring(_homeHashtagSheetValuePrefix.length);
+        context.read<VideoFeedBloc>().add(
+          VideoFeedModeChanged(FeedMode.homeHashtag, homeHashtagLabel: raw),
+        );
+      } else {
+        final mode = FeedMode.values.firstWhere((m) => m.name == selected);
+        context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
+      }
+    }
+  }
+
+  static String _overlayLabel(BuildContext context, VideoFeedState state) {
+    if (state.mode == FeedMode.homeHashtag) {
+      final label = state.homeHashtagLabel;
+      if (label != null && label.isNotEmpty) {
+        return formatHashtagForDisplay(label);
+      }
+    }
+    return _labelForMode(state.mode, context.l10n);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +115,17 @@ class FeedModeSwitch extends StatelessWidget {
                     label: _labelForMode(FeedMode.forYou, context.l10n),
                   )
                 : BlocBuilder<VideoFeedBloc, VideoFeedState>(
-                    buildWhen: (prev, curr) => prev.mode != curr.mode,
+                    buildWhen: (prev, curr) =>
+                        prev.mode != curr.mode ||
+                        prev.homeHashtagLabel != curr.homeHashtagLabel ||
+                        prev.feedHashtagSheetLabels !=
+                            curr.feedHashtagSheetLabels,
                     builder: (context, state) => _FeedModeContent(
-                      onTap: () =>
-                          _showFeedModeBottomSheet(context, state.mode),
-                      label: _labelForMode(state.mode, context.l10n),
+                      onTap: () => FeedModeSwitch.showFeedModeBottomSheet(
+                        context,
+                        state,
+                      ),
+                      label: FeedModeSwitch._overlayLabel(context, state),
                       trailing: const FeedSettingsMenu(),
                     ),
                   ),
@@ -62,42 +134,13 @@ class FeedModeSwitch extends StatelessWidget {
       ),
     );
   }
-
-  Future<void> _showFeedModeBottomSheet(
-    BuildContext context,
-    FeedMode currentMode,
-  ) async {
-    final l10n = context.l10n;
-    final selected = await VineBottomSheetSelectionMenu.show(
-      context: context,
-      selectedValue: currentMode.name,
-      options: [
-        VineBottomSheetSelectionOptionData(
-          label: l10n.feedModeForYou,
-          value: 'forYou',
-        ),
-        VineBottomSheetSelectionOptionData(
-          label: l10n.feedModeNew,
-          value: 'latest',
-        ),
-        VineBottomSheetSelectionOptionData(
-          label: l10n.feedModeFollowing,
-          value: 'following',
-        ),
-      ],
-    );
-
-    if (selected != null && context.mounted) {
-      final mode = FeedMode.values.firstWhere((m) => m.name == selected);
-      context.read<VideoFeedBloc>().add(VideoFeedModeChanged(mode));
-    }
-  }
 }
 
 String _labelForMode(FeedMode mode, AppLocalizations l10n) => switch (mode) {
   FeedMode.forYou => l10n.feedModeForYou,
   FeedMode.latest => l10n.feedModeNew,
   FeedMode.following => l10n.feedModeFollowing,
+  FeedMode.homeHashtag => l10n.feedModeFollowing,
 };
 
 /// Shared row rendering — label + caret + optional trailing widget — used

@@ -28,6 +28,9 @@ const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 /// SharedPreferences key for persisting the selected feed mode.
 const _feedModeKey = 'selected_feed_mode';
 
+/// SharedPreferences key for [FeedMode.homeHashtag] (canonical label, no `#`).
+const _homeHashtagLabelKey = 'selected_home_hashtag_label';
+
 /// BLoC for managing the unified video feed.
 ///
 /// Handles:
@@ -116,7 +119,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   ///
   /// When [FollowedHashtagsRepository] is provided, subscribes to
   /// [FollowedHashtagsRepository.followingFeedHashtagLabelsStream] with `skip(1)` so
-  /// runtime hashtag add/remove refreshes the following feed without
+  /// runtime hashtag add/remove refreshes [FeedMode.following],
+  /// [FeedMode.homeHashtag], and [VideoFeedState.feedHashtagSheetLabels] without
   /// duplicating the initial load.
   ///
   /// Following and hashtag subscriptions use `unawaited` so neither blocks
@@ -128,15 +132,40 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     VideoFeedStarted event,
     Emitter<VideoFeedState> emit,
   ) async {
+    final sheetLabels = List<String>.from(
+      _followedHashtagsRepository?.followingFeedHashtagLabels ?? const [],
+    );
+
     final savedModeName = _sharedPreferences?.getString(_feedModeKey);
-    final mode = savedModeName != null
+    var mode = savedModeName != null
         ? FeedMode.values.firstWhere(
             (m) => m.name == savedModeName,
             orElse: () => event.mode,
           )
         : event.mode;
 
-    emit(state.copyWith(status: VideoFeedStatus.loading, mode: mode));
+    String? homeLabel;
+    if (mode == FeedMode.homeHashtag) {
+      homeLabel = _sharedPreferences?.getString(_homeHashtagLabelKey);
+      if (homeLabel == null ||
+          homeLabel.isEmpty ||
+          !sheetLabels.contains(homeLabel)) {
+        mode = FeedMode.forYou;
+        homeLabel = null;
+        unawaited(_sharedPreferences?.remove(_feedModeKey));
+        unawaited(_sharedPreferences?.remove(_homeHashtagLabelKey));
+      }
+    }
+
+    emit(
+      state.copyWith(
+        status: VideoFeedStatus.loading,
+        mode: mode,
+        homeHashtagLabel: homeLabel,
+        clearHomeHashtagLabel: mode != FeedMode.homeHashtag,
+        feedHashtagSheetLabels: sheetLabels,
+      ),
+    );
 
     _feedTracker?.startFeedLoad(mode.name);
 
@@ -202,17 +231,41 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     VideoFeedModeChanged event,
     Emitter<VideoFeedState> emit,
   ) async {
-    // Skip if already on this mode
-    if (state.mode == event.mode && state.status == VideoFeedStatus.success) {
+    if (event.mode == FeedMode.homeHashtag) {
+      final label = event.homeHashtagLabel;
+      if (label == null || label.isEmpty) return;
+      final allowed =
+          _followedHashtagsRepository?.followingFeedHashtagLabels.contains(
+            label,
+          ) ??
+          false;
+      if (!allowed) return;
+    }
+
+    // Skip if already showing this feed.
+    if (state.mode == event.mode &&
+        state.status == VideoFeedStatus.success &&
+        (event.mode != FeedMode.homeHashtag ||
+            state.homeHashtagLabel == event.homeHashtagLabel)) {
       return;
     }
 
     await _sharedPreferences?.setString(_feedModeKey, event.mode.name);
+    if (event.mode == FeedMode.homeHashtag) {
+      await _sharedPreferences?.setString(
+        _homeHashtagLabelKey,
+        event.homeHashtagLabel!,
+      );
+    } else {
+      await _sharedPreferences?.remove(_homeHashtagLabelKey);
+    }
 
     emit(
       state.copyWith(
         status: VideoFeedStatus.loading,
         mode: event.mode,
+        homeHashtagLabel: event.homeHashtagLabel,
+        clearHomeHashtagLabel: event.mode != FeedMode.homeHashtag,
         videos: [],
         hasMore: true,
         clearError: true,
@@ -247,7 +300,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           .reduce((a, b) => a < b ? a : b);
       final cursor = oldestCreatedAt - 1;
 
-      final result = await _fetchVideosForMode(state.mode, until: cursor);
+      final result = await _fetchVideosForMode(
+        state.mode,
+        until: cursor,
+        homeHashtagLabel: state.mode == FeedMode.homeHashtag
+            ? state.homeHashtagLabel
+            : null,
+      );
 
       // Filter out videos without valid URLs
       final validNewVideos = result.videos
@@ -333,14 +392,17 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Handle auto-refresh request (dispatched by UI on app resume).
   ///
   /// Only refreshes when:
-  /// - The current feed mode is [FeedMode.following]
+  /// - The current feed mode is [FeedMode.following] or [FeedMode.homeHashtag]
   /// - The data is stale (last refresh was longer ago than
   ///   [_autoRefreshMinInterval])
   Future<void> _onAutoRefreshRequested(
     VideoFeedAutoRefreshRequested event,
     Emitter<VideoFeedState> emit,
   ) async {
-    if (state.mode != FeedMode.following) return;
+    if (state.mode != FeedMode.following &&
+        state.mode != FeedMode.homeHashtag) {
+      return;
+    }
 
     final lastRefresh = _lastRefreshedAt;
     if (lastRefresh != null &&
@@ -366,8 +428,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// skipped). Performs a silent refresh — keeps current videos visible and
   /// replaces when done.
   ///
-  /// - **Empty list** → show `noFollowedUsers` CTA immediately, unless the
-  ///   user has followed hashtags (then refresh so tag-only home feed works).
+  /// - **Empty list** → refresh once (curated lists may still fill the feed);
+  ///   if still empty, show `noFollowedUsers` CTA.
   /// - **Non-empty list** → silent refresh via [_loadVideos]. Old content
   ///   stays visible briefly, then replaced with updated feed (no loading
   ///   flash).
@@ -378,27 +440,21 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
 
-    // Empty follow list → show "follow someone" CTA, except when followed
-    // hashtags can still supply the home feed.
     if (event.followingPubkeys.isEmpty) {
-      final hasFollowedHashtags =
-          _followedHashtagsRepository?.followingFeedHashtagLabels.isNotEmpty ??
-          false;
-      if (hasFollowedHashtags) {
-        await _loadVideos(FeedMode.following, emit, skipCache: true);
-        return;
+      await _loadVideos(FeedMode.following, emit, skipCache: true);
+      if (state.videos.isEmpty) {
+        emit(
+          state.copyWith(
+            status: VideoFeedStatus.success,
+            videos: [],
+            hasMore: false,
+            error: VideoFeedError.noFollowedUsers,
+            videoListSources: const {},
+            listOnlyVideoIds: const {},
+            videoHashtagSources: const {},
+          ),
+        );
       }
-      emit(
-        state.copyWith(
-          status: VideoFeedStatus.success,
-          videos: [],
-          hasMore: false,
-          error: VideoFeedError.noFollowedUsers,
-          videoListSources: const {},
-          listOnlyVideoIds: const {},
-          videoHashtagSources: const {},
-        ),
-      );
       return;
     }
 
@@ -431,19 +487,65 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
   /// Handle followed hashtag list changes from [FollowedHashtagsRepository].
   ///
-  /// Mirrors [VideoFeedFollowingListChanged]: silent refresh with
   /// [skipCache] so in-memory home cache cannot serve a stale hashtag set.
-  /// When the user has no follows and no followed hashtags and the feed is
-  /// empty afterward, shows [VideoFeedError.noFollowedUsers].
+  /// Updates [VideoFeedState.feedHashtagSheetLabels]. When the user has no
+  /// follows and no followed hashtags and the following feed is empty
+  /// afterward, shows [VideoFeedError.noFollowedUsers].
   Future<void> _onFollowedHashtagsChanged(
     VideoFeedFollowedHashtagsChanged event,
     Emitter<VideoFeedState> emit,
   ) async {
     if (_followedHashtagsRepository == null) return;
-    if (state.mode != FeedMode.following) return;
     if (state.status == VideoFeedStatus.loading) return;
 
-    await _loadVideos(FeedMode.following, emit, skipCache: true);
+    final sheet = List<String>.from(event.hashtags);
+
+    if (state.mode == FeedMode.homeHashtag) {
+      final label = state.homeHashtagLabel;
+      if (label == null || !event.hashtags.contains(label)) {
+        await _sharedPreferences?.remove(_homeHashtagLabelKey);
+        await _sharedPreferences?.setString(
+          _feedModeKey,
+          FeedMode.forYou.name,
+        );
+        emit(
+          state.copyWith(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.forYou,
+            clearHomeHashtagLabel: true,
+            videos: [],
+            hasMore: true,
+            clearError: true,
+          ),
+        );
+        await _loadVideos(
+          FeedMode.forYou,
+          emit,
+          skipCache: true,
+          nextFeedHashtagSheetLabels: sheet,
+        );
+      } else {
+        await _loadVideos(
+          FeedMode.homeHashtag,
+          emit,
+          skipCache: true,
+          nextFeedHashtagSheetLabels: sheet,
+        );
+      }
+      return;
+    }
+
+    if (state.mode != FeedMode.following) {
+      emit(state.copyWith(feedHashtagSheetLabels: sheet));
+      return;
+    }
+
+    await _loadVideos(
+      FeedMode.following,
+      emit,
+      skipCache: true,
+      nextFeedHashtagSheetLabels: sheet,
+    );
 
     final followingEmpty = _followRepository.followingPubkeys.isEmpty;
     final hashtagsEmpty = event.hashtags.isEmpty;
@@ -457,6 +559,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           videoListSources: const {},
           listOnlyVideoIds: const {},
           videoHashtagSources: const {},
+          feedHashtagSheetLabels: sheet,
         ),
       );
     }
@@ -508,6 +611,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     FeedMode mode,
     Emitter<VideoFeedState> emit, {
     bool skipCache = false,
+    List<String>? nextFeedHashtagSheetLabels,
   }) async {
     // Serve cached home feed on first load for instant startup.
     if (_serveCachedHomeFeed &&
@@ -539,7 +643,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     }
 
     try {
-      final result = await _fetchVideosForMode(mode, skipCache: skipCache);
+      final result = await _fetchVideosForMode(
+        mode,
+        skipCache: skipCache,
+        homeHashtagLabel: mode == FeedMode.homeHashtag
+            ? state.homeHashtagLabel
+            : null,
+      );
 
       // Filter out videos without valid URLs
       final validVideos = result.videos
@@ -561,6 +671,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           videoListSources: result.videoListSources,
           listOnlyVideoIds: result.listOnlyVideoIds,
           videoHashtagSources: result.videoHashtagSources,
+          feedHashtagSheetLabels:
+              nextFeedHashtagSheetLabels ?? state.feedHashtagSheetLabels,
         ),
       );
 
@@ -616,6 +728,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     FeedMode mode, {
     int? until,
     bool skipCache = false,
+    String? homeHashtagLabel,
   }) => switch (mode) {
     FeedMode.forYou => _videosRepository.getRecommendedVideos(
       userPubkey: _userPubkey,
@@ -625,12 +738,20 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     FeedMode.following => _videosRepository.getHomeFeedVideos(
       authors: _followRepository.followingPubkeys,
       videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
-      followedHashtagLabels:
-          _followedHashtagsRepository?.followingFeedHashtagLabels ?? const [],
       userPubkey: _userPubkey,
       until: until,
       skipCache: skipCache,
     ),
+    FeedMode.homeHashtag =>
+      (homeHashtagLabel != null && homeHashtagLabel.isNotEmpty)
+          ? _videosRepository.getHomeFeedVideos(
+              authors: const [],
+              followedHashtagLabels: [homeHashtagLabel],
+              userPubkey: _userPubkey,
+              until: until,
+              skipCache: skipCache,
+            )
+          : Future.value(const HomeFeedResult(videos: [])),
     FeedMode.latest =>
       _videosRepository
           .getNewVideos(until: until, skipCache: skipCache)
