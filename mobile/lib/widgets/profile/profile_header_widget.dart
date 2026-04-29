@@ -657,9 +657,11 @@ class _BannerImage extends StatelessWidget {
 
 /// Stats row displaying Followers, Following, Likes, and Loops with dividers.
 ///
-/// Shows a skeleton for up to [_skeletonTimeout] while stats are being fetched.
-/// After the timeout the row collapses to nothing if stats still haven't arrived,
-/// rather than showing a skeleton indefinitely.
+/// Shows a skeleton for up to [_ProfileStatsRowState._skeletonTimeout] while
+/// stats are being fetched. After the timeout the row keeps all four columns
+/// visible but renders a `—` placeholder for each count, rather than
+/// shimmering indefinitely or collapsing the row (which would shift the
+/// surrounding profile layout).
 class _ProfileStatsRow extends StatefulWidget {
   const _ProfileStatsRow({
     required this.userIdHex,

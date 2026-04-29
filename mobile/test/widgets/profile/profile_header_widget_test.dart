@@ -364,7 +364,8 @@ void main() {
     });
 
     testWidgets(
-      'hides all stat columns once the skeleton timeout expires and profileStats is still null',
+      'keeps all stat columns visible with em-dash placeholders once the '
+      'skeleton timeout expires and profileStats is still null',
       (tester) async {
         final testProfile = createTestProfile(displayName: 'Test User');
 
@@ -380,10 +381,12 @@ void main() {
         await tester.pump(const Duration(seconds: 8));
         await tester.pumpAndSettle();
 
-        expect(find.text('Followers'), findsNothing);
-        expect(find.text('Following'), findsNothing);
-        expect(find.text('Likes'), findsNothing);
-        expect(find.text('Loops'), findsNothing);
+        // All four labels stay in the tree; counts fall back to '—'.
+        expect(find.text('Followers'), findsOneWidget);
+        expect(find.text('Following'), findsOneWidget);
+        expect(find.text('Likes'), findsOneWidget);
+        expect(find.text('Loops'), findsOneWidget);
+        expect(find.text('—'), findsNWidgets(4));
       },
     );
 
