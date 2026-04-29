@@ -53,6 +53,13 @@ class ProfileFeed extends _$ProfileFeed {
   /// Guard against duplicate listener registration from retained-state path.
   bool _listenersRegistered = false;
 
+  /// Guard against duplicate Funnelcake availability listener registration.
+  bool _availabilityListenerRegistered = false;
+
+  /// Tracks a late availability flip that happened before the notifier had
+  /// published its first state.
+  bool _pendingAvailabilityRefresh = false;
+
   /// Cached [VideoEventService] captured at build() time.
   ///
   /// Both [videoEventServiceProvider] and this notifier are keepAlive, so
@@ -60,26 +67,6 @@ class ProfileFeed extends _$ProfileFeed {
   /// the merge/tombstone hot path was unnecessary friction. Reassigned on
   /// each build() so a test-time provider override still wins.
   late VideoEventService _videoEventService;
-
-  void _logLoopSnapshot(String stage, List<VideoEvent> videos) {
-    final withViews = videos.where((v) => v.rawTags['views'] != null).length;
-    final withLoops = videos.where((v) => v.originalLoops != null).length;
-    final sample = videos
-        .take(3)
-        .map((video) {
-          return '${video.id}'
-              '[loops=${video.originalLoops ?? 'null'},'
-              'views=${video.rawTags['views'] ?? 'null'},'
-              'total=${video.totalLoops}]';
-        })
-        .join(', ');
-    Log.info(
-      'ProfileFeed LOOP_DEBUG $stage user=$userId count=${videos.length} '
-      'withViews=$withViews withOriginalLoops=$withLoops sample=[$sample]',
-      name: 'ProfileFeedProvider',
-      category: LogCategory.video,
-    );
-  }
 
   @override
   Future<VideoFeedState> build(String userId) async {
@@ -99,6 +86,7 @@ class ProfileFeed extends _$ProfileFeed {
     );
 
     _videoEventService = ref.watch(videoEventServiceProvider);
+    _registerFunnelcakeAvailabilityListener();
     List<VideoEvent> authorVideos = [];
 
     // Try REST API first if available (use centralized availability check)
@@ -107,13 +95,6 @@ class ProfileFeed extends _$ProfileFeed {
     // cascade rebuilds create new instances and lose state.
     final funnelcakeAsync = ref.read(funnelcakeAvailableProvider);
     final funnelcakeAvailable = funnelcakeAsync.asData?.value ?? false;
-    Log.info(
-      'ProfileFeed LOOP_DEBUG build availability user=$userId '
-      'funnelcakeResolved=${funnelcakeAsync.hasValue} '
-      'funnelcakeAvailable=$funnelcakeAvailable',
-      name: 'ProfileFeedProvider',
-      category: LogCategory.video,
-    );
     final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
     final sessionCache = ref.read(profileFeedSessionCacheProvider);
     final retainedState = sessionCache.read(userId);
@@ -165,6 +146,14 @@ class ProfileFeed extends _$ProfileFeed {
       totalVideoCount: _totalVideoCount,
     );
     _cacheSnapshot(initialState);
+    if (_pendingAvailabilityRefresh) {
+      _pendingAvailabilityRefresh = false;
+      unawaited(refresh(retainedState: initialState));
+      return initialState.copyWith(
+        isRefreshing: true,
+        isFetchingTotalCount: true,
+      );
+    }
     return initialState;
   }
 
@@ -233,6 +222,31 @@ class ProfileFeed extends _$ProfileFeed {
     unawaited(refresh());
   }
 
+  void _registerFunnelcakeAvailabilityListener() {
+    if (_availabilityListenerRegistered) return;
+    _availabilityListenerRegistered = true;
+
+    ref.listen<AsyncValue<bool>>(funnelcakeAvailableProvider, (previous, next) {
+      final wasAvailable = previous?.asData?.value ?? false;
+      final isAvailable = next.asData?.value ?? false;
+      if (wasAvailable || !isAvailable || !ref.mounted) return;
+
+      final currentState = state.asData?.value;
+      if (currentState == null) {
+        _pendingAvailabilityRefresh = true;
+        return;
+      }
+
+      if (_usingRestApi || _isRefreshing) return;
+      unawaited(refresh(retainedState: currentState));
+    });
+
+    ref.onDispose(() {
+      _availabilityListenerRegistered = false;
+      _pendingAvailabilityRefresh = false;
+    });
+  }
+
   /// Optimistically add a newly published video to the profile feed state.
   /// This is called when the user publishes a new video to ensure instant feedback
   /// without waiting for Funnelcake REST API to index the event.
@@ -292,7 +306,6 @@ class ProfileFeed extends _$ProfileFeed {
         result.videos.toVideoEvents(),
         client: client,
       );
-      _logLoopSnapshot('afterAuthorRestHydration', apiVideos);
 
       if (!ref.mounted) return;
 
@@ -305,11 +318,9 @@ class ProfileFeed extends _$ProfileFeed {
           relayVideos,
           apiVideos.where((v) => !v.isRepost).toList(),
         );
-        _logLoopSnapshot('afterAuthorMerge', authorVideos);
         _cacheVideoMetadata(authorVideos);
 
         final filteredVideos = _videoEventService.filterVideoList(authorVideos);
-        _logLoopSnapshot('afterAuthorFilter', filteredVideos);
 
         _usingRestApi = true;
         _mergeSourceVideos(
@@ -429,7 +440,6 @@ class ProfileFeed extends _$ProfileFeed {
           result.videos.toVideoEvents(),
           client: client,
         );
-        _logLoopSnapshot('afterLoadMoreRestHydration', apiVideos);
 
         if (!ref.mounted) return;
         _totalVideoCount = result.totalCount ?? _totalVideoCount;
@@ -450,7 +460,6 @@ class ProfileFeed extends _$ProfileFeed {
 
           // Apply content filter preferences
           newVideos = _videoEventService.filterVideoList(newVideos);
-          _logLoopSnapshot('afterLoadMoreFilter', newVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = _mergeVideoLists(currentState.videos, newVideos);
@@ -653,7 +662,6 @@ class ProfileFeed extends _$ProfileFeed {
         originalLoops: stats.loops ?? video.originalLoops,
       );
     }).toList();
-    _logLoopSnapshot('afterBulkStats', hydrated);
     return hydrated;
   }
 
@@ -687,7 +695,6 @@ class ProfileFeed extends _$ProfileFeed {
         rawTags: <String, String>{...video.rawTags, 'views': '$count'},
       );
     }).toList();
-    _logLoopSnapshot('afterViewsEndpoint', hydrated);
     return hydrated;
   }
 
@@ -899,7 +906,6 @@ class ProfileFeed extends _$ProfileFeed {
         ? currentState?.videos ?? const <VideoEvent>[]
         : const <VideoEvent>[];
     final mergedVideos = _mergeVideoLists(currentVideos, incoming);
-    _logLoopSnapshot('mergeSourceVideos', mergedVideos);
 
     final nextState =
         (currentState ??

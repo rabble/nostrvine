@@ -31,6 +31,18 @@ class _NeverAvailableFunnelcake extends FunnelcakeAvailable {
   Future<bool> build() async => false;
 }
 
+bool _controlledFunnelcakeAvailability = false;
+final _controlledFunnelcakeAvailabilityProvider = Provider<bool>(
+  (ref) => _controlledFunnelcakeAvailability,
+);
+
+class _ControlledFunnelcake extends FunnelcakeAvailable {
+  @override
+  Future<bool> build() async {
+    return ref.watch(_controlledFunnelcakeAvailabilityProvider);
+  }
+}
+
 void main() {
   const userId =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -124,6 +136,7 @@ void main() {
     late _MockNostrClient mockNostrClient;
 
     setUp(() {
+      _controlledFunnelcakeAvailability = false;
       mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
@@ -159,14 +172,19 @@ void main() {
       ).thenReturn(false);
     });
 
-    ProviderContainer createContainer({bool funnelcakeAvailable = true}) {
+    ProviderContainer createContainer({
+      bool funnelcakeAvailable = true,
+      bool useControlledAvailability = false,
+    }) {
       final container = ProviderContainer(
         overrides: [
           funnelcakeApiClientProvider.overrideWithValue(
             mockFunnelcakeApiClient,
           ),
           funnelcakeAvailableProvider.overrideWith(
-            funnelcakeAvailable
+            useControlledAvailability
+                ? _ControlledFunnelcake.new
+                : funnelcakeAvailable
                 ? _AlwaysAvailableFunnelcake.new
                 : _NeverAvailableFunnelcake.new,
           ),
@@ -257,6 +275,79 @@ void main() {
 
         expect(state.videos.map((v) => v.id), ['relay-head']);
         expect(state.isInitialLoad, isFalse);
+      },
+    );
+
+    test(
+      'late Funnelcake availability refreshes relay-only profile videos with REST stats',
+      () async {
+        when(() => mockVideoEventService.authorVideos(userId)).thenReturn([
+          _relayVideo(
+            id: 'video-0',
+            pubkey: userId,
+            stableId: 'video-0',
+            createdAt: DateTime(2026, 3, 30, 12),
+          ),
+        ]);
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [
+              VideoStats(
+                id: 'video-0',
+                pubkey: userId,
+                createdAt: DateTime(2026, 3, 30, 12),
+                kind: 22,
+                dTag: 'video-0',
+                title: 'Video 0',
+                thumbnail: 'https://example.com/thumb-0.jpg',
+                videoUrl: 'https://example.com/video-0.mp4',
+                reactions: 0,
+                comments: 0,
+                reposts: 0,
+                engagementScore: 0,
+              ),
+            ],
+          ),
+        );
+        when(
+          () => mockFunnelcakeApiClient.getVideoViews('video-0'),
+        ).thenAnswer((_) async => 42);
+
+        final container = createContainer(useControlledAvailability: true);
+
+        final initialState = await container.read(
+          profileFeedProvider(userId).future,
+        );
+        expect(initialState.videos, hasLength(1));
+        expect(initialState.videos.single.totalLoops, 0);
+        expect(initialState.isFetchingTotalCount, isFalse);
+
+        final hydrated = Completer<VideoFeedState>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 1 &&
+                value.videos.single.totalLoops == 42 &&
+                !hydrated.isCompleted) {
+              hydrated.complete(value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        _controlledFunnelcakeAvailability = true;
+        container.invalidate(_controlledFunnelcakeAvailabilityProvider);
+
+        final hydratedState = await hydrated.future.timeout(
+          const Duration(milliseconds: 300),
+        );
+        expect(hydratedState.videos.single.rawTags['views'], '42');
+        expect(hydratedState.videos.single.totalLoops, 42);
       },
     );
 

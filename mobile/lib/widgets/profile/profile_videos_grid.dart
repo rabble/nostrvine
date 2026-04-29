@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory;
+import 'package:models/models.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
@@ -24,7 +24,6 @@ import 'package:openvine/widgets/profile/profile_tab_loading_state.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Internal class that represents a video entry in the grid
 /// It can be a video event or an uploading video
@@ -158,18 +157,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               video.stableId == tappedVideo.stableId),
     );
     final resolvedIndex = index >= 0 ? index : fallbackIndex;
-    final matchedVideo = index >= 0 ? videos[index] : null;
-    Log.info(
-      '🎯 ProfileVideosGrid TAP: gridIndex=$resolvedIndex, '
-      'videoId=${tappedVideo.id} '
-      'tappedLoops=${tappedVideo.originalLoops ?? 'null'} '
-      'tappedViews=${tappedVideo.rawTags['views'] ?? 'null'} '
-      'tappedTotal=${tappedVideo.totalLoops} '
-      'matchedLoops=${matchedVideo?.originalLoops ?? 'null'} '
-      'matchedViews=${matchedVideo?.rawTags['views'] ?? 'null'} '
-      'matchedTotal=${matchedVideo?.totalLoops ?? 'null'}',
-      category: LogCategory.video,
-    );
 
     // Pre-warm adjacent videos before navigation
     prefetchAroundIndex(resolvedIndex, videos);
