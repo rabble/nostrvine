@@ -1,5 +1,6 @@
 // ABOUTME: Own profile "Saved" tab — plan #1602: bookmarked Videos + Tags sub-filters
 // ABOUTME: Replaces separate Saved grid-only tab and a dedicated # tab per Figma alignment
+// ABOUTME: Chardot ref: inactive = plain label; selected = pill on surfaceContainer (#1602 review PNG).
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -28,33 +29,22 @@ class _ProfileOwnSavedTabState extends State<ProfileOwnSavedTab> {
         Semantics(
           label: l10n.profileTabSavedSemantic,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               spacing: 8,
               children: [
-                Expanded(
-                  child: _SavedFilterChip(
-                    label: l10n.profileSavedFilterVideos,
-                    selected: _index == 0,
-                    onSelected: () => setState(() => _index = 0),
-                  ),
+                _SavedSegmentTab(
+                  label: l10n.profileSavedFilterVideos,
+                  selected: _index == 0,
+                  onTap: () => setState(() => _index = 0),
                 ),
-                Expanded(
-                  child: _SavedFilterChip(
-                    label: l10n.profileSavedFilterTags,
-                    selected: _index == 1,
-                    onSelected: () => setState(() => _index = 1),
-                  ),
+                _SavedSegmentTab(
+                  label: l10n.profileSavedFilterTags,
+                  selected: _index == 1,
+                  onTap: () => setState(() => _index = 1),
                 ),
               ],
             ),
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: Divider(
-            height: 1,
-            color: VineTheme.outlineVariant,
           ),
         ),
         Expanded(
@@ -71,36 +61,62 @@ class _ProfileOwnSavedTabState extends State<ProfileOwnSavedTab> {
   }
 }
 
-class _SavedFilterChip extends StatelessWidget {
-  const _SavedFilterChip({
+/// One secondary Saved filter: label only when inactive; pill fill when active.
+class _SavedSegmentTab extends StatelessWidget {
+  const _SavedSegmentTab({
     required this.label,
     required this.selected,
-    required this.onSelected,
+    required this.onTap,
   });
 
   final String label;
   final bool selected;
-  final VoidCallback onSelected;
+  final VoidCallback onTap;
+
+  static const double _pillRadius = 999;
+  static const EdgeInsets _padding = EdgeInsets.symmetric(
+    horizontal: 14,
+    vertical: 8,
+  );
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Center(
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
+    final text = Text(
+      label,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      // Active: vineGreen (same as SearchTagChip `#`). Inactive: onSurfaceMuted — same
+      // token as unselected icons in [_ProfileTabBar] (Videos / Liked / …).
+      style: selected
+          // ? VineTheme.labelLargeFont(color: VineTheme.vineGreen)
+          ? VineTheme.titleSmallFont(color: VineTheme.vineGreen)
+          // : VineTheme.labelLargeFont(color: VineTheme.onSurfaceMuted),
+          : VineTheme.titleSmallFont(color: VineTheme.onSurfaceMuted),
+    );
+
+    final padded = Padding(padding: _padding, child: text);
+
+    return Semantics(
+      button: true,
       selected: selected,
-      showCheckmark: false,
-      onSelected: (_) => onSelected(),
-      selectedColor: VineTheme.vineGreen.withValues(alpha: 0.2),
-      labelStyle: VineTheme.labelLargeFont(
-        color: selected ? VineTheme.whiteText : VineTheme.onSurfaceMuted,
-      ),
-      side: BorderSide(
-        color: selected ? VineTheme.vineGreen : VineTheme.outlineMuted,
+      label: label,
+      child: Material(
+        color: VineTheme.transparent,
+        child: InkWell(
+          onTap: onTap,
+          splashFactory: NoSplash.splashFactory,
+          overlayColor: WidgetStateProperty.all(VineTheme.transparent),
+          borderRadius: BorderRadius.circular(_pillRadius),
+          child: selected
+              ? DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: VineTheme.surfaceContainer,
+                    borderRadius: BorderRadius.circular(_pillRadius),
+                  ),
+                  child: padded,
+                )
+              : padded,
+        ),
       ),
     );
   }

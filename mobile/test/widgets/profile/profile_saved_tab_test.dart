@@ -65,7 +65,7 @@ void main() {
       await repo.dispose();
     });
 
-    testWidgets('Tags chip switches visible pane to hashtag grid empty state', (
+    testWidgets('Tags tab switches visible pane to hashtag grid empty state', (
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
