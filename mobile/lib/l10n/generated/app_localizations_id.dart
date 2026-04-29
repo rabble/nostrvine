@@ -3383,6 +3383,14 @@ class AppLocalizationsId extends AppLocalizations {
       'Saat orang berinteraksi dengan kontenmu, kamu akan melihatnya di sini';
 
   @override
+  String notificationsViewProfileSemanticLabel(String displayName) {
+    return 'View $displayName profile';
+  }
+
+  @override
+  String get notificationsViewProfilesSemanticLabel => 'View profiles';
+
+  @override
   String notificationsLoadingType(String type) {
     return 'Memuat notifikasi $type...';
   }

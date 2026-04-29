@@ -160,7 +160,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                     ],
                   ),
                   // Right-edge fade gradient shim to hint scrollability.
-                  const Positioned(
+                  Positioned(
                     top: 0,
                     bottom: 0,
                     right: 0,
@@ -173,7 +173,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                             end: Alignment.centerLeft,
                             colors: [
                               VineTheme.surfaceContainerHigh,
-                              Color(0x00000A06),
+                              VineTheme.surfaceContainerHigh.withValues(
+                                alpha: 0,
+                              ),
                             ],
                           ),
                         ),

@@ -185,7 +185,9 @@ class _AvatarTap extends StatelessWidget {
       size: 32,
       cornerRadius: 12.8,
       onTap: onProfileTap,
-      semanticLabel: 'View $displayName profile',
+      semanticLabel: context.l10n.notificationsViewProfileSemanticLabel(
+        displayName,
+      ),
     );
   }
 }

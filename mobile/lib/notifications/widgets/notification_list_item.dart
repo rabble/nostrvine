@@ -189,11 +189,15 @@ class _Avatars extends StatelessWidget {
         actor: actor,
         onProfileTap: onProfileTap,
       ),
-      GroupedNotification(:final actors, :final totalCount) => GestureDetector(
-        onTap: onProfileTap,
-        child: NotificationAvatarStack(
-          actors: actors,
-          overflowCount: (totalCount - actors.length).clamp(0, totalCount),
+      GroupedNotification(:final actors, :final totalCount) => Semantics(
+        button: onProfileTap != null,
+        label: context.l10n.notificationsViewProfilesSemanticLabel,
+        child: GestureDetector(
+          onTap: onProfileTap,
+          child: NotificationAvatarStack(
+            actors: actors,
+            overflowCount: (totalCount - actors.length).clamp(0, totalCount),
+          ),
         ),
       ),
     };
@@ -215,7 +219,9 @@ class _SingleAvatarTap extends StatelessWidget {
       size: 32,
       cornerRadius: 12.8,
       onTap: onProfileTap,
-      semanticLabel: 'View ${actor.displayName} profile',
+      semanticLabel: context.l10n.notificationsViewProfileSemanticLabel(
+        actor.displayName,
+      ),
     );
   }
 }

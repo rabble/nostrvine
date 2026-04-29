@@ -3374,6 +3374,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'عندما يتفاعل الأشخاص مع محتواك، سيظهر هنا';
 
   @override
+  String notificationsViewProfileSemanticLabel(String displayName) {
+    return 'View $displayName profile';
+  }
+
+  @override
+  String get notificationsViewProfilesSemanticLabel => 'View profiles';
+
+  @override
   String notificationsLoadingType(String type) {
     return 'جارٍ تحميل إشعارات $type...';
   }

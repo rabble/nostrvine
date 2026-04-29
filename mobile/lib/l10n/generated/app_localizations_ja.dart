@@ -3241,6 +3241,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationsEmptyDescription => '誰かがあなたのコンテンツに反応したらここに出るよ';
 
   @override
+  String notificationsViewProfileSemanticLabel(String displayName) {
+    return 'View $displayName profile';
+  }
+
+  @override
+  String get notificationsViewProfilesSemanticLabel => 'View profiles';
+
+  @override
   String notificationsLoadingType(String type) {
     return '$typeの通知を読み込み中...';
   }

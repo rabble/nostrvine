@@ -6002,6 +6002,18 @@ abstract class AppLocalizations {
   /// **'When people interact with your content, you\'ll see it here'**
   String get notificationsEmptyDescription;
 
+  /// Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.
+  ///
+  /// In en, this message translates to:
+  /// **'View {displayName} profile'**
+  String notificationsViewProfileSemanticLabel(String displayName);
+
+  /// Screen-reader label for a grouped notification's avatar stack, which opens the list of involved profiles.
+  ///
+  /// In en, this message translates to:
+  /// **'View profiles'**
+  String get notificationsViewProfilesSemanticLabel;
+
   /// No description provided for @notificationsLoadingType.
   ///
   /// In en, this message translates to:
