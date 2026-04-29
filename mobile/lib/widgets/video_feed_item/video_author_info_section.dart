@@ -183,12 +183,17 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                   style: VineTheme.bodySmallFont().copyWith(
                     shadows: VineTheme.buttonShadows,
                   ),
-                  hashtagStyle: VineTheme.bodySmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
+                  hashtagStyle:
+                      VineTheme.bodySmallFont(
+                        color: VineTheme.vineGreen,
+                      ).copyWith(
+                        fontWeight: FontWeight.w600,
+                        shadows: VineTheme.buttonShadows,
+                      ),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   showHashtagMoreButton: true,
+                  onVideoStateChange: onInteracted,
                 ),
               ),
             ),

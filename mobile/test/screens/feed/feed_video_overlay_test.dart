@@ -457,6 +457,37 @@ void main() {
         );
         expect(find.text('Likes'), findsOneWidget);
       });
+
+      testWidgets('renders hashtags with vine styling and options control', (
+        tester,
+      ) async {
+        testVideo = testVideo.copyWith(content: 'Hello #world caption');
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.text('#world'), findsOneWidget);
+        final l10n = _l10n(tester);
+        expect(
+          find.bySemanticsLabel(l10n.hashtagOptionsMoreTooltip),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders Auto action when enabled for the current feed', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(
+            showAutoButton: true,
+            isAutoEnabled: true,
+            onAutoPressed: () {},
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Compilation'), findsOneWidget);
+        expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
+      });
     });
 
     group('loop count labels (l10n)', () {
