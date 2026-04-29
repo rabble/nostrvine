@@ -19,12 +19,12 @@ Note: Root-level documentation is strong. `README.md` and `CONTRIBUTING.md` cove
 
 ---
 
-### App architecture is documented but not discoverable by humans
-**Problem**: `docs/ARCHITECTURE.md` covers only the Nostr SDK internals. The full app layer structure (`UI → BLoC → Repository → Client`), dependency direction, project organization, and package extraction guidance is well-documented in `.claude/rules/architecture.md` — but that path is not where human developers would look during onboarding.
+### App architecture is documented but not easily discoverable by contributors
+**Problem**: `docs/ARCHITECTURE.md` covers only the Nostr SDK internals. The full app layer structure (`UI → BLoC → Repository → Client`), dependency direction, project organization, and package extraction guidance is well-documented in `.claude/rules/architecture.md` — but that path is not where contributors would look during onboarding.
 
-**Evidence**: `.claude/rules/architecture.md` comprehensively covers layers, dependency graph, barrel files, dependency injection, and when to extract packages. However, `CONTRIBUTING.md` references the architecture pattern without linking to it, and `docs/ARCHITECTURE.md` only describes Nostr SDK internals. A new engineer looking for "the architecture doc" would find the SDK deep-dive, not the app-level layer map.
+**Evidence**: `.claude/rules/architecture.md` comprehensively covers layers, dependency graph, barrel files, dependency injection, and when to extract packages. However, `CONTRIBUTING.md` references the architecture pattern without linking to it, and `docs/ARCHITECTURE.md` only describes Nostr SDK internals. A new contributor looking for "the architecture doc" would find the SDK deep-dive, not the app-level layer map.
 
-**Impact**: Low–Medium. The content exists and is complete; the gap is discoverability for human engineers. AI assistants already consume the Claude rules automatically.
+**Impact**: Low–Medium. The content exists and is complete; the gap is discoverability for contributors. AI assistants already consume the Claude rules automatically.
 
 **Effort**: Low. Either add a link from `CONTRIBUTING.md` to `.claude/rules/architecture.md`, or create a thin `docs/ARCHITECTURE.md` (renamed, with the current one moved to `NOSTR_SDK_ARCHITECTURE.md`) that points to the Claude rules as the source of truth.
 

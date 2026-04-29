@@ -129,7 +129,7 @@ Standardize patterns so new code doesn't recreate old inconsistencies.
 | 7 | **Migrate GoRouter to `@TypedGoRoute`** — 1,117-line procedural router vs project's own type-safe routing rules | [Navigation](issues-navigation.md) |
 | 8 | **Add deep link parameter validation** — no format checking on video IDs, npub, or hashtags | [Navigation](issues-navigation.md) |
 | 9 | **Add READMEs to all packages** — using the existing 15-line template | [Documentation](issues-documentation.md) |
-| 10 | **Make architecture docs discoverable** — link from `CONTRIBUTING.md` or create human-facing `docs/ARCHITECTURE.md` | [Documentation](issues-documentation.md) |
+| 10 | **Make architecture docs discoverable by contributors** — link from `CONTRIBUTING.md` or create contributor-facing `docs/ARCHITECTURE.md` | [Documentation](issues-documentation.md) |
 | 11 | **Migrate 56 files from raw `TextStyle` to `VineTheme` font methods** | [UI/UX](issues-ui-ux.md) |
 | 12 | **Replace 7 files using raw `Colors.*`** with `VineTheme` tokens | [UI/UX](issues-ui-ux.md) |
 | 13 | **Fix 4 screens with missing error state branches** | [UI/UX](issues-ui-ux.md) |
