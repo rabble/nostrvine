@@ -182,6 +182,24 @@ class ProfileFeed extends _$ProfileFeed {
     return {...secondary, ...primary};
   }
 
+  @visibleForTesting
+  static bool sameVideoSequenceForMerge(
+    List<VideoEvent> left,
+    List<VideoEvent> right,
+  ) {
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      final leftVideo = left[i];
+      final rightVideo = right[i];
+      if (leftVideo.id != rightVideo.id) return false;
+      if (leftVideo.originalLoops != rightVideo.originalLoops) return false;
+      if (leftVideo.rawTags['views'] != rightVideo.rawTags['views']) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// Refresh state - uses REST API when available, otherwise Nostr with metadata preservation
   /// Call this after a video is updated to sync the provider's state
   void refreshFromService() {
@@ -857,11 +875,7 @@ class ProfileFeed extends _$ProfileFeed {
   }
 
   bool _sameVideoSequence(List<VideoEvent> left, List<VideoEvent> right) {
-    if (left.length != right.length) return false;
-    for (var i = 0; i < left.length; i++) {
-      if (left[i].id != right[i].id) return false;
-    }
-    return true;
+    return sameVideoSequenceForMerge(left, right);
   }
 
   void _emitState(VideoFeedState nextState) {

@@ -201,6 +201,57 @@ void main() {
         expect(mergedVideo.rawTags['views'], equals('42'));
         expect(mergedVideo.totalLoops, equals(42));
       });
+
+      test('sequence comparison treats views-only metadata changes as updates', () {
+        final stale = [
+          createTestVideo(
+            'id1',
+            'pubkey1',
+            'stable1',
+            baseTime,
+          ),
+        ];
+        final enriched = [
+          createTestVideo(
+            'id1',
+            'pubkey1',
+            'stable1',
+            baseTime,
+          ).copyWith(rawTags: {'d': 'stable1', 'views': '42'}),
+        ];
+
+        expect(
+          ProfileFeed.sameVideoSequenceForMerge(stale, enriched),
+          isFalse,
+        );
+      });
+
+      test(
+        'sequence comparison treats originalLoops changes as updates',
+        () {
+          final stale = [
+            createTestVideo(
+              'id1',
+              'pubkey1',
+              'stable1',
+              baseTime,
+            ),
+          ];
+          final enriched = [
+            createTestVideo(
+              'id1',
+              'pubkey1',
+              'stable1',
+              baseTime,
+            ).copyWith(originalLoops: 100),
+          ];
+
+          expect(
+            ProfileFeed.sameVideoSequenceForMerge(stale, enriched),
+            isFalse,
+          );
+        },
+      );
     });
   });
 }
