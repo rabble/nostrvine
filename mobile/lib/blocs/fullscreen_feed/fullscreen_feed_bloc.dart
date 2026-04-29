@@ -344,8 +344,14 @@ class FullscreenFeedBloc
       final blossomAuth = _blossomAuthService;
       final sha256 = request.sha256;
       if (blossomAuth != null && sha256 != null) {
+        // Extract the server origin from the video URL so the BUD-01 kind
+        // 24242 auth event includes the optional `server` tag.  Without it,
+        // media.divine.video returns 401 on bare-blob GET requests even when
+        // the hash and signature are otherwise valid.
+        final serverUrl = _serverOrigin(request.videoUrl);
         final header = await blossomAuth.createGetAuthHeader(
           sha256Hash: sha256,
+          serverUrl: serverUrl,
         );
         if (header != null) {
           authHeaders = {'Authorization': header};
@@ -499,6 +505,21 @@ class FullscreenFeedBloc
         removedVideoIds: updatedRemoved,
       ),
     );
+  }
+
+  /// Extracts the scheme+host origin from [url], e.g.
+  /// `https://media.divine.video/abc123` → `https://media.divine.video`.
+  ///
+  /// Returns `null` when the URL cannot be parsed, so callers can fall back
+  /// to omitting the `server` tag rather than sending a malformed value.
+  static String? _serverOrigin(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (!uri.hasScheme || uri.host.isEmpty) return null;
+      return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+    } on FormatException {
+      return null;
+    }
   }
 
   @override

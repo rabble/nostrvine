@@ -773,6 +773,7 @@ void main() {
           when(
             () => mockBlossomAuth.createGetAuthHeader(
               sha256Hash: any(named: 'sha256Hash'),
+              serverUrl: any(named: 'serverUrl'),
             ),
           ).thenAnswer((_) async => 'Nostr test-token');
           when(
@@ -792,6 +793,14 @@ void main() {
             bloc.add(const FullscreenFeedVideoCacheStarted(index: 0)),
         wait: const Duration(milliseconds: 100),
         verify: (_) {
+          // Server origin extracted from videoUrl and forwarded so the
+          // BUD-01 kind 24242 event includes the `server` tag.
+          verify(
+            () => mockBlossomAuth.createGetAuthHeader(
+              sha256Hash: 'abc123',
+              serverUrl: 'https://example.com',
+            ),
+          ).called(1);
           verify(
             () => mockMediaCache.downloadFile(
               'https://example.com/video_video1.mp4',
