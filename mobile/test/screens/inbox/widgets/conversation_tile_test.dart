@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -162,7 +163,11 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(find.text('Collaborator invite'), findsOneWidget);
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(
+            find.text(l10n.inboxConversationCollabInvitePreview),
+            findsOneWidget,
+          );
           expect(
             find.textContaining('Open diVine to review and accept'),
             findsNothing,

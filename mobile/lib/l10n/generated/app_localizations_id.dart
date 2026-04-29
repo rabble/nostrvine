@@ -4554,7 +4554,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxCollabInviteSentStatus => 'Undangan terkirim';
 
   @override
-  String get inboxConversationCollabInvitePreview => 'Collaborator invite';
+  String get inboxConversationCollabInvitePreview => 'Undangan kolaborasi';
 
   @override
   String get reportDialogCancel => 'Batal';

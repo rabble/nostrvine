@@ -2269,7 +2269,7 @@
     "inboxCollabInviteCardTitle": "دعوة للتعاون",
     "inboxCollabInviteIgnoreButton": "تجاهل",
     "inboxCollabInviteIgnoredStatus": "تم التجاهل",
-    "inboxConversationCollabInvitePreview": "Collaborator invite",
+    "inboxConversationCollabInvitePreview": "دعوة للتعاون",
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },

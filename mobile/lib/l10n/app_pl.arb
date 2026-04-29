@@ -2270,7 +2270,7 @@
     "inboxCollabInviteCardTitle": "Zaproszenie do współpracy",
     "inboxCollabInviteIgnoreButton": "Ignoruj",
     "inboxCollabInviteIgnoredStatus": "Zignorowano",
-    "inboxConversationCollabInvitePreview": "Collaborator invite",
+    "inboxConversationCollabInvitePreview": "Zaproszenie do współpracy",
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },

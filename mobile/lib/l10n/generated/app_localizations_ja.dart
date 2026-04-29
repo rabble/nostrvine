@@ -4387,7 +4387,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxCollabInviteSentStatus => '招待を送ったよ';
 
   @override
-  String get inboxConversationCollabInvitePreview => 'Collaborator invite';
+  String get inboxConversationCollabInvitePreview => 'コラボ招待';
 
   @override
   String get reportDialogCancel => 'キャンセル';
