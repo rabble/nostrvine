@@ -32,9 +32,10 @@ void main() {
     testWidgets('omits unread dot by default', (tester) async {
       await tester.pumpWidget(buildSubject(showUnreadDot: false));
 
-      // Two Containers when no dot: outer SizedBox + the icon container.
-      // Three Containers when dot present: outer + icon + dot ring + dot fill.
-      // Use the count delta as a proxy to assert the dot is absent.
+      // Without the dot, the only Container in the subtree is the icon
+      // background tile (the outer sizing widget is a SizedBox.square).
+      // With the dot, the dot ring and fill add two more Containers.
+      // Use the count as a proxy to assert the dot is absent.
       expect(
         tester.widgetList<Container>(find.byType(Container)).length,
         equals(1),
@@ -44,10 +45,10 @@ void main() {
     testWidgets('renders unread dot when requested', (tester) async {
       await tester.pumpWidget(buildSubject(showUnreadDot: true));
 
-      // Outer container + dot ring + dot fill = 3 Containers total.
+      // Icon container + dot ring + dot fill = 3 Containers total.
       expect(
         tester.widgetList<Container>(find.byType(Container)).length,
-        greaterThan(1),
+        equals(3),
       );
     });
   });
