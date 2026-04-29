@@ -16,7 +16,9 @@ Note: The project has 44 packages across `mobile/packages/`. These issues cover 
 2. **Extract to the GitHub org as a standalone repo**: enables independent versioning, dedicated issue tracking, and potential reuse by other Nostr apps in the org. Can be consumed via git dependency or published to pub.dev. Downside: 17 in-repo consumers need to switch from `path:` to a versioned dependency; coordination overhead for cross-repo changes.
 3. **Contribute back to the original upstream repo**: returns improvements to the community and reduces long-term maintenance burden. Downside: upstream may have diverged; requires alignment on API direction; less control over release cadence.
 
-**Impact**: Low (no urgency). The package works fine in-repo. This is a strategic decision about long-term maintainability and community contribution.
+**Recommendation**: Extract to the org as a standalone repo (option 2). With 17 packages depending on it, you want control over when releases happen. Once it's stable and versioned on its own, contributing fixes back upstream (option 3) might be a better long-term solution.
+
+**Impact**: Low (no urgency). The package works fine in-repo. This is about long-term maintainability and community contribution.
 
 **Effort**: Low to decide, Medium–High to execute option 2 or 3.
 
