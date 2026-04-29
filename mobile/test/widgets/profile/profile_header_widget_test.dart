@@ -363,24 +363,79 @@ void main() {
       expect(find.text('Loops'), findsOneWidget);
     });
 
-    testWidgets('hides all stat columns when profileStats is null', (
-      tester,
-    ) async {
-      final testProfile = createTestProfile(displayName: 'Test User');
+    testWidgets(
+      'hides all stat columns once the skeleton timeout expires and profileStats is still null',
+      (tester) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
 
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: true,
-          profile: testProfile,
-        ),
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
+        // Advance past the 4-second skeleton timeout, then settle any
+        // remaining switch animations.
+        await tester.pump(const Duration(seconds: 5));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Followers'), findsNothing);
+        expect(find.text('Following'), findsNothing);
+        expect(find.text('Likes'), findsNothing);
+        expect(find.text('Loops'), findsNothing);
+      },
+    );
+
+    group('Stats row skeleton timeout', () {
+      testWidgets(
+        'shows placeholder columns as skeleton while profileStats is null before timeout',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: testProfile,
+              // profileStats deliberately omitted (null)
+            ),
+          );
+          // One frame only — the 4-second skeleton timer has not fired yet.
+          await tester.pump();
+
+          // All four column labels are in the tree, rendered as skeletons.
+          expect(find.text('Followers'), findsOneWidget);
+          expect(find.text('Following'), findsOneWidget);
+          expect(find.text('Likes'), findsOneWidget);
+          expect(find.text('Loops'), findsOneWidget);
+        },
       );
-      await tester.pumpAndSettle();
 
-      expect(find.text('Followers'), findsNothing);
-      expect(find.text('Following'), findsNothing);
-      expect(find.text('Likes'), findsNothing);
-      expect(find.text('Loops'), findsNothing);
+      testWidgets(
+        'stat columns remain visible once profileStats arrives before timeout',
+        (tester) async {
+          const stats = ProfileStats(
+            pubkey: testUserHex,
+            totalLikes: 10,
+            totalViews: 20,
+          );
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: createTestProfile(displayName: 'Test User'),
+              profileStats: stats,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Actual data shown — no timeout was needed.
+          expect(find.text('Loops'), findsOneWidget);
+          expect(find.text('Likes'), findsOneWidget);
+        },
+      );
     });
 
     testWidgets('displays user bio when present', (tester) async {
