@@ -175,10 +175,21 @@ class UserAvatar extends StatelessWidget {
 
   Widget _buildPlaceholder() {
     final palette = _palettes[_effectiveTone] ?? _palettes.values.first;
-    final headSize = size * 0.42;
-    final headInset = size * 0.215;
-    final shoulderWidth = size * 0.84;
-    final shoulderHeight = size * 0.38;
+    // Geometry tuned to match the Figma profile-setup avatar (node 11251:229419):
+    // a single silhouette where the head is ~46% of the box, sits in the upper
+    // third, and the body is a near-full-width circle whose lower half is
+    // clipped by the avatar bounding box.
+    final headSize = size * 0.46;
+    final headHorizontalInset = (size - headSize) / 2;
+    final headTopInset = size * 0.20;
+
+    // Body is a horizontal ellipse — wider than tall — that sits low and is
+    // partly clipped by the avatar bounding box. Width > size means the sides
+    // extend past the box and get clipped by the outer rounded corners.
+    final bodyWidth = size * 0.76;
+    final bodyHeight = size * 0.56;
+    final bodyHorizontalInset = (size - bodyWidth) / 2;
+    final bodyTopInset = size * 0.68;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -208,47 +219,117 @@ class UserAvatar extends StatelessWidget {
               ),
             ),
           ),
+          // Body: horizontal ellipse, partly clipped by the bounding box.
+          // Rendered before the head so the head sits on top at the neck.
           Positioned(
-            left: headInset,
-            right: headInset,
-            top: size * 0.16,
-            child: Container(
-              width: headSize,
-              height: headSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: const Alignment(-0.3, -0.35),
-                  radius: 1.05,
-                  colors: [
-                    _lighten(palette.figure, 0.18),
-                    palette.figure,
-                    palette.shadow,
-                  ],
-                  stops: const [0, 0.55, 1],
-                ),
+            left: bodyHorizontalInset,
+            top: bodyTopInset,
+            child: SizedBox(
+              width: bodyWidth,
+              height: bodyHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Base figure colour with a soft top-left highlight.
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(
+                        Radius.elliptical(bodyWidth / 2, bodyHeight / 2),
+                      ),
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.3, -0.6),
+                        radius: 1.1,
+                        colors: [
+                          _lighten(palette.figure, 0.20),
+                          palette.figure,
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Inner shadow: directional dark overlay on the
+                  // lower-right edge. Transparent on the lit side so the
+                  // base figure colour shows through unchanged.
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(
+                        Radius.elliptical(bodyWidth / 2, bodyHeight / 2),
+                      ),
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.5, -0.7),
+                        radius: 1.4,
+                        colors: [
+                          VineTheme.transparent,
+                          VineTheme.transparent,
+                          _darken(palette.shadow, 0.35).withValues(alpha: 0.95),
+                        ],
+                        stops: const [0, 0.25, 1],
+                      ),
+                    ),
+                  ),
+                  // Inner shadow: dark band along the top edge that fades
+                  // downward. Reads as the body curving away beneath the
+                  // head / neck.
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.all(
+                        Radius.elliptical(bodyWidth / 2, bodyHeight / 2),
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          _darken(palette.shadow, 0.4).withValues(alpha: 0.35),
+                          VineTheme.transparent,
+                        ],
+                        stops: const [0, 0.22],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           Positioned(
-            left: (size - shoulderWidth) / 2,
-            right: (size - shoulderWidth) / 2,
-            bottom: -size * 0.13,
-            child: Container(
-              width: shoulderWidth,
-              height: shoulderHeight,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(shoulderHeight),
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    _lighten(palette.figure, 0.16),
-                    palette.figure,
-                    palette.shadow,
-                  ],
-                  stops: const [0, 0.5, 1],
-                ),
+            left: headHorizontalInset,
+            top: headTopInset,
+            child: SizedBox(
+              width: headSize,
+              height: headSize,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Base head with soft top-left highlight.
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.4, -0.45),
+                        radius: 1.05,
+                        colors: [
+                          _lighten(palette.figure, 0.22),
+                          palette.figure,
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Inner shadow: directional dark overlay on the
+                  // lower-right edge.
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        center: const Alignment(-0.55, -0.6),
+                        radius: 1.3,
+                        colors: [
+                          VineTheme.transparent,
+                          VineTheme.transparent,
+                          _darken(palette.shadow, 0.35).withValues(alpha: 0.95),
+                        ],
+                        stops: const [0, 0.25, 1],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
