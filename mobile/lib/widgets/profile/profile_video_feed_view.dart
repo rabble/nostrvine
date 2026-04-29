@@ -13,6 +13,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Fullscreen video feed view for profile screens.
 ///
@@ -117,6 +118,19 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
     _pushHasMore(hasMoreContent);
 
     final resolvedIndex = _resolveInitialIndex(effectiveVideos);
+    final selectedVideo = effectiveVideos.isEmpty
+        ? null
+        : effectiveVideos[resolvedIndex];
+    Log.info(
+      'ProfileVideoFeedView LOOP_DEBUG user=${widget.userIdHex} '
+      'resolvedIndex=$resolvedIndex initialVideoId=${widget.initialVideoId} '
+      'selectedId=${selectedVideo?.id ?? 'none'} '
+      'loops=${selectedVideo?.originalLoops ?? 'null'} '
+      'views=${selectedVideo?.rawTags['views'] ?? 'null'} '
+      'total=${selectedVideo?.totalLoops ?? 'null'}',
+      name: 'ProfileVideoFeedView',
+      category: LogCategory.video,
+    );
 
     final contextTitle =
         widget.contextTitleOverride ??

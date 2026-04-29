@@ -158,9 +158,16 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               video.stableId == tappedVideo.stableId),
     );
     final resolvedIndex = index >= 0 ? index : fallbackIndex;
+    final matchedVideo = index >= 0 ? videos[index] : null;
     Log.info(
       '🎯 ProfileVideosGrid TAP: gridIndex=$resolvedIndex, '
-      'videoId=${tappedVideo.id}',
+      'videoId=${tappedVideo.id} '
+      'tappedLoops=${tappedVideo.originalLoops ?? 'null'} '
+      'tappedViews=${tappedVideo.rawTags['views'] ?? 'null'} '
+      'tappedTotal=${tappedVideo.totalLoops} '
+      'matchedLoops=${matchedVideo?.originalLoops ?? 'null'} '
+      'matchedViews=${matchedVideo?.rawTags['views'] ?? 'null'} '
+      'matchedTotal=${matchedVideo?.totalLoops ?? 'null'}',
       category: LogCategory.video,
     );
 

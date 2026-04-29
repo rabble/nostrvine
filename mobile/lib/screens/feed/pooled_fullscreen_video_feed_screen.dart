@@ -877,55 +877,64 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                       onScrollOffsetChanged: (page) =>
                           _pagePosition.value = page,
                       maxLoopDuration: VideoEditorConstants.maxDuration,
-                      itemBuilder:
-                          (context, video, index, {required isActive}) {
-                            if (state.videos.isEmpty) {
-                              debugPrint(
-                                'FullscreenFeed: itemBuilder called with empty '
-                                'state.videos! index=$index, '
-                                'video.id=${video.id}',
-                              );
-                              return const ColoredBox(
-                                color: VineTheme.backgroundColor,
-                              );
-                            }
-                            final originalEvent = state.videos.firstWhere(
-                              (v) => v.id == video.id,
-                              orElse: () {
-                                final clamped = index.clamp(
-                                  0,
-                                  state.videos.length - 1,
-                                );
-                                debugPrint(
-                                  'FullscreenFeed: video ID lookup miss! '
-                                  'video.id=${video.id}, index=$index, '
-                                  'clamped=$clamped, '
-                                  'state.videos.length='
-                                  '${state.videos.length}, '
-                                  'pooledVideos.length='
-                                  '${state.pooledVideos.length}',
-                                );
-                                return state.videos[clamped];
-                              },
+                      itemBuilder: (context, video, index, {required isActive}) {
+                        if (state.videos.isEmpty) {
+                          debugPrint(
+                            'FullscreenFeed: itemBuilder called with empty '
+                            'state.videos! index=$index, '
+                            'video.id=${video.id}',
+                          );
+                          return const ColoredBox(
+                            color: VineTheme.backgroundColor,
+                          );
+                        }
+                        final originalEvent = state.videos.firstWhere(
+                          (v) => v.id == video.id,
+                          orElse: () {
+                            final clamped = index.clamp(
+                              0,
+                              state.videos.length - 1,
                             );
-                            return _PooledFullscreenItem(
-                              video: originalEvent,
-                              index: index,
-                              isActive: isActive,
-                              pagePosition: _pagePosition,
-                              contextTitle: widget.contextTitle,
-                              trafficSource: widget.trafficSource,
-                              sourceDetail: widget.sourceDetail,
-                              isOwnVideo: isOwnVideo,
-                              showAutoButton: autoAdvanceAvailable,
-                              isAutoEnabled: effectiveAutoEnabled,
-                              isAutoAdvanceActive: effectiveAutoActive,
-                              onAutoPressed: _toggleAutoAdvance,
-                              onInteracted: _suppressAutoAdvance,
-                              onAutoAdvanceCompleted:
-                                  _handleAutoAdvanceCompleted,
+                            debugPrint(
+                              'FullscreenFeed: video ID lookup miss! '
+                              'video.id=${video.id}, index=$index, '
+                              'clamped=$clamped, '
+                              'state.videos.length='
+                              '${state.videos.length}, '
+                              'pooledVideos.length='
+                              '${state.pooledVideos.length}',
                             );
+                            return state.videos[clamped];
                           },
+                        );
+                        if (index == state.currentIndex) {
+                          Log.info(
+                            'PooledFullscreen LOOP_DEBUG '
+                            'index=$index videoId=${originalEvent.id} '
+                            'loops=${originalEvent.originalLoops ?? 'null'} '
+                            "views=${originalEvent.rawTags['views'] ?? 'null'} "
+                            'total=${originalEvent.totalLoops}',
+                            name: 'PooledFullscreenVideoFeedScreen',
+                            category: LogCategory.video,
+                          );
+                        }
+                        return _PooledFullscreenItem(
+                          video: originalEvent,
+                          index: index,
+                          isActive: isActive,
+                          pagePosition: _pagePosition,
+                          contextTitle: widget.contextTitle,
+                          trafficSource: widget.trafficSource,
+                          sourceDetail: widget.sourceDetail,
+                          isOwnVideo: isOwnVideo,
+                          showAutoButton: autoAdvanceAvailable,
+                          isAutoEnabled: effectiveAutoEnabled,
+                          isAutoAdvanceActive: effectiveAutoActive,
+                          onAutoPressed: _toggleAutoAdvance,
+                          onInteracted: _suppressAutoAdvance,
+                          onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
+                        );
+                      },
                     ),
             );
           },

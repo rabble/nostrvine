@@ -61,6 +61,26 @@ class ProfileFeed extends _$ProfileFeed {
   /// each build() so a test-time provider override still wins.
   late VideoEventService _videoEventService;
 
+  void _logLoopSnapshot(String stage, List<VideoEvent> videos) {
+    final withViews = videos.where((v) => v.rawTags['views'] != null).length;
+    final withLoops = videos.where((v) => v.originalLoops != null).length;
+    final sample = videos
+        .take(3)
+        .map((video) {
+          return '${video.id}'
+              '[loops=${video.originalLoops ?? 'null'},'
+              'views=${video.rawTags['views'] ?? 'null'},'
+              'total=${video.totalLoops}]';
+        })
+        .join(', ');
+    Log.info(
+      'ProfileFeed LOOP_DEBUG $stage user=$userId count=${videos.length} '
+      'withViews=$withViews withOriginalLoops=$withLoops sample=[$sample]',
+      name: 'ProfileFeedProvider',
+      category: LogCategory.video,
+    );
+  }
+
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset REST pagination state at start of build to ensure clean state.
@@ -87,6 +107,13 @@ class ProfileFeed extends _$ProfileFeed {
     // cascade rebuilds create new instances and lose state.
     final funnelcakeAsync = ref.read(funnelcakeAvailableProvider);
     final funnelcakeAvailable = funnelcakeAsync.asData?.value ?? false;
+    Log.info(
+      'ProfileFeed LOOP_DEBUG build availability user=$userId '
+      'funnelcakeResolved=${funnelcakeAsync.hasValue} '
+      'funnelcakeAvailable=$funnelcakeAvailable',
+      name: 'ProfileFeedProvider',
+      category: LogCategory.video,
+    );
     final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
     final sessionCache = ref.read(profileFeedSessionCacheProvider);
     final retainedState = sessionCache.read(userId);
@@ -265,6 +292,7 @@ class ProfileFeed extends _$ProfileFeed {
         result.videos.toVideoEvents(),
         client: client,
       );
+      _logLoopSnapshot('afterAuthorRestHydration', apiVideos);
 
       if (!ref.mounted) return;
 
@@ -277,9 +305,11 @@ class ProfileFeed extends _$ProfileFeed {
           relayVideos,
           apiVideos.where((v) => !v.isRepost).toList(),
         );
+        _logLoopSnapshot('afterAuthorMerge', authorVideos);
         _cacheVideoMetadata(authorVideos);
 
         final filteredVideos = _videoEventService.filterVideoList(authorVideos);
+        _logLoopSnapshot('afterAuthorFilter', filteredVideos);
 
         _usingRestApi = true;
         _mergeSourceVideos(
@@ -399,6 +429,7 @@ class ProfileFeed extends _$ProfileFeed {
           result.videos.toVideoEvents(),
           client: client,
         );
+        _logLoopSnapshot('afterLoadMoreRestHydration', apiVideos);
 
         if (!ref.mounted) return;
         _totalVideoCount = result.totalCount ?? _totalVideoCount;
@@ -419,6 +450,7 @@ class ProfileFeed extends _$ProfileFeed {
 
           // Apply content filter preferences
           newVideos = _videoEventService.filterVideoList(newVideos);
+          _logLoopSnapshot('afterLoadMoreFilter', newVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = _mergeVideoLists(currentState.videos, newVideos);
@@ -604,7 +636,7 @@ class ProfileFeed extends _$ProfileFeed {
 
     if (statsById.isEmpty) return videos;
 
-    return videos.map((video) {
+    final hydrated = videos.map((video) {
       final stats = statsById[video.id];
       if (stats == null) return video;
 
@@ -621,6 +653,8 @@ class ProfileFeed extends _$ProfileFeed {
         originalLoops: stats.loops ?? video.originalLoops,
       );
     }).toList();
+    _logLoopSnapshot('afterBulkStats', hydrated);
+    return hydrated;
   }
 
   Future<List<VideoEvent>> _hydrateVideosWithViewsEndpoint(
@@ -646,13 +680,15 @@ class ProfileFeed extends _$ProfileFeed {
 
     if (fetchedViews.isEmpty) return videos;
 
-    return videos.map((video) {
+    final hydrated = videos.map((video) {
       final count = fetchedViews[video.id];
       if (count == null) return video;
       return video.copyWith(
         rawTags: <String, String>{...video.rawTags, 'views': '$count'},
       );
     }).toList();
+    _logLoopSnapshot('afterViewsEndpoint', hydrated);
+    return hydrated;
   }
 
   bool _hasViewLikeCount(VideoEvent video) {
@@ -863,6 +899,7 @@ class ProfileFeed extends _$ProfileFeed {
         ? currentState?.videos ?? const <VideoEvent>[]
         : const <VideoEvent>[];
     final mergedVideos = _mergeVideoLists(currentVideos, incoming);
+    _logLoopSnapshot('mergeSourceVideos', mergedVideos);
 
     final nextState =
         (currentState ??
