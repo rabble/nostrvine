@@ -13,7 +13,11 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(displayName: 'Bob', pubkey: 'pk1', onViewProfile: () {}),
+              body: EmptyConversation(
+                displayName: 'Bob',
+                pubkey: 'pk1',
+                onViewProfile: () {},
+              ),
             ),
           ),
         );
@@ -27,7 +31,11 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(displayName: 'Bob', pubkey: 'pk1', onViewProfile: () {}),
+              body: EmptyConversation(
+                displayName: 'Bob',
+                pubkey: 'pk1',
+                onViewProfile: () {},
+              ),
             ),
           ),
         );
@@ -60,7 +68,11 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(displayName: 'Bob', pubkey: 'pk1', onViewProfile: () {}),
+              body: EmptyConversation(
+                displayName: 'Bob',
+                pubkey: 'pk1',
+                onViewProfile: () {},
+              ),
             ),
           ),
         );
@@ -75,7 +87,11 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              body: EmptyConversation(displayName: 'Bob', pubkey: 'pk1', onViewProfile: () {}),
+              body: EmptyConversation(
+                displayName: 'Bob',
+                pubkey: 'pk1',
+                onViewProfile: () {},
+              ),
             ),
           ),
         );

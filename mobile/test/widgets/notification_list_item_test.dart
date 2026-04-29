@@ -96,7 +96,9 @@ void main() {
 
     group('type icon', () {
       testWidgets('like uses heart', (tester) async {
-        await tester.pumpWidget(buildTestWidget(notification: makeNotification()));
+        await tester.pumpWidget(
+          buildTestWidget(notification: makeNotification()),
+        );
         expect(_typeIconName(tester), DivineIconName.heart);
       });
 
@@ -165,18 +167,24 @@ void main() {
         expect(_richTextContains(tester, 'liked your video'), isTrue);
       });
 
-      testWidgets('falls back to default display name when actor name is null', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            notification: makeNotification(actorName: null),
-          ),
-        );
+      testWidgets(
+        'falls back to default display name when actor name is null',
+        (
+          tester,
+        ) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              notification: makeNotification(actorName: null),
+            ),
+          );
 
-        final fallback = UserProfile.defaultDisplayNameFor(testPubkey);
-        expect(_richTextContains(tester, '$fallback liked your video'), isTrue);
-      });
+          final fallback = UserProfile.defaultDisplayNameFor(testPubkey);
+          expect(
+            _richTextContains(tester, '$fallback liked your video'),
+            isTrue,
+          );
+        },
+      );
 
       testWidgets('shows comment metadata as quoted text', (tester) async {
         await tester.pumpWidget(
