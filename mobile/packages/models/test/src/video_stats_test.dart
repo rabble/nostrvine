@@ -557,6 +557,29 @@ void main() {
         expect(stats.views, equals(100));
       });
 
+      test('parses total_loops and total_views field variants', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 10,
+          'comments': 5,
+          'reposts': 2,
+          'engagement_score': 125,
+          'total_loops': 42.0,
+          'total_views': 100.0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+        expect(stats.loops, equals(42));
+        expect(stats.views, equals(100));
+      });
+
       test('normalizes empty values to null', () {
         final json = {
           'id': 'test-id',

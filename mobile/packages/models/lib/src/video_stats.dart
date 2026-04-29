@@ -100,7 +100,15 @@ class VideoStats {
     // Parse loops from multiple possible sources
     int? loops;
     final directLoops =
-        statsData['loops'] ?? json['loops'] ?? json['original_loops'];
+        statsData['loops'] ??
+        statsData['total_loops'] ??
+        statsData['computed_loops'] ??
+        statsData['embedded_loops'] ??
+        json['loops'] ??
+        json['original_loops'] ??
+        json['total_loops'] ??
+        json['computed_loops'] ??
+        json['embedded_loops'];
     if (directLoops is int) {
       loops = directLoops;
     } else if (directLoops is double) {
@@ -134,7 +142,12 @@ class VideoStats {
     // Parse view counts from multiple possible sources
     int? views;
     final directViews =
-        statsData['views'] ?? json['views'] ?? json['view_count'];
+        statsData['views'] ??
+        statsData['view_count'] ??
+        statsData['total_views'] ??
+        json['views'] ??
+        json['view_count'] ??
+        json['total_views'];
     if (directViews is int) {
       views = directViews;
     } else if (directViews is double) {

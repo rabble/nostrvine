@@ -777,6 +777,50 @@ void main() {
         expect(result.totalCount, equals(42));
       });
 
+      test(
+        'parses total_loops and total_views from author videos response',
+        () async {
+          const responseWithLoopMetrics =
+              '''
+[
+  {
+    "id": "abc123def456",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "test-video-1",
+    "title": "Test Video",
+    "content": "A test video description",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "total_loops": 42.0,
+    "total_views": 100.0,
+    "reactions": 100,
+    "comments": 10,
+    "reposts": 5,
+    "engagement_score": 115
+  }
+]
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response(
+              responseWithLoopMetrics,
+              200,
+              headers: {'x-total-count': '42'},
+            ),
+          );
+
+          final result = await client.getVideosByAuthor(pubkey: testPubkey);
+          final video = result.videos.single.toVideoEvent();
+
+          expect(video.originalLoops, equals(42));
+          expect(video.rawTags['views'], equals('100'));
+          expect(video.totalLoops, equals(142));
+        },
+      );
+
       test('constructs correct URL with default limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
