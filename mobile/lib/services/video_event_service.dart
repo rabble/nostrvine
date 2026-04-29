@@ -129,10 +129,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     ProfileRepository? profileRepository,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
+    PerformanceTraceMonitor? performanceMonitor,
   }) : _subscriptionManager = subscriptionManager,
        _profileRepository = profileRepository,
        _eventRouter = eventRouter,
-       _videoFilterBuilder = videoFilterBuilder {
+       _videoFilterBuilder = videoFilterBuilder,
+       _performanceMonitor =
+           performanceMonitor ?? PerformanceMonitoringService.instance {
     _initializePaginationStates();
     _initializeRepostResolver();
   }
@@ -141,6 +144,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   final ProfileRepository? _profileRepository;
   final EventRouter? _eventRouter;
   final VideoFilterBuilder? _videoFilterBuilder;
+  final PerformanceTraceMonitor _performanceMonitor;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
 
   // REFACTORED: Separate event lists per subscription type
@@ -1679,7 +1683,24 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
         // Start performance trace for feed loading
         final traceName = 'feed_load_${subscriptionType.name}';
-        await PerformanceMonitoringService.instance.startTrace(traceName);
+        var traceCompleted = false;
+        void completeFeedLoadTrace(String completion, {int? eventTotal}) {
+          if (traceCompleted) return;
+          traceCompleted = true;
+          _performanceMonitor.setMetric(
+            traceName,
+            'event_count',
+            eventTotal ?? eventCount,
+          );
+          _performanceMonitor.putAttribute(
+            traceName,
+            'completion',
+            completion,
+          );
+          unawaited(_performanceMonitor.stopTrace(traceName));
+        }
+
+        await _performanceMonitor.startTrace(traceName);
 
         Log.info(
           '📡 Creating subscription for $subscriptionType at ${subscriptionStartTime.toIso8601String()}',
@@ -1724,6 +1745,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               relayConnected: _nostrService.connectedRelayCount > 0,
               isOnline: _connectionService.isOnline,
             );
+
+            completeFeedLoadTrace('timeout');
           }
         });
 
@@ -1780,6 +1803,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             name: 'VideoEventService',
             category: LogCategory.video,
           );
+          completeFeedLoadTrace('cache', eventTotal: cachedEvents.length);
         }
 
         // 🎯 RELAY DEBUG: Track loop counts from relay
@@ -1858,6 +1882,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
                 relayConnected: _nostrService.connectedRelayCount > 0,
                 isOnline: _connectionService.isOnline,
               );
+              completeFeedLoadTrace('eose_empty');
+            } else {
+              completeFeedLoadTrace('eose');
             }
 
             // Complete per-subscription loading state — historical data
@@ -1898,13 +1925,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               );
 
               // Stop performance trace on first event arrival
-              final traceName = 'feed_load_${subscriptionType.name}';
-              PerformanceMonitoringService.instance.setMetric(
-                traceName,
-                'event_count',
-                eventCount,
-              );
-              PerformanceMonitoringService.instance.stopTrace(traceName);
+              completeFeedLoadTrace('first_relay_event');
             }
 
             if (subscriptionType == SubscriptionType.homeFeed) {
@@ -1939,6 +1960,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
               name: 'VideoEventService',
               category: LogCategory.video,
             );
+            completeFeedLoadTrace('error');
             _handleSubscriptionError(error, subscriptionType);
           },
           onDone: () {
@@ -1953,6 +1975,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
             // PERSISTENT SUBSCRIPTION: onDone means relay closed connection
             // For main feeds, this should trigger reconnection attempt
+            completeFeedLoadTrace('done');
             _handleSubscriptionComplete(subscriptionType);
             if (_shouldMaintainSubscription(subscriptionType)) {
               _scheduleReconnection(subscriptionType);

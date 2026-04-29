@@ -4,8 +4,21 @@
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Minimal trace API used by services that need testable performance spans.
+abstract class PerformanceTraceMonitor {
+  Future<void> startTrace(String traceName);
+
+  Future<void> stopTrace(String traceName);
+
+  void incrementMetric(String traceName, String metricName, int value);
+
+  void setMetric(String traceName, String metricName, int value);
+
+  void putAttribute(String traceName, String attribute, String value);
+}
+
 /// Performance monitoring service for tracking app performance
-class PerformanceMonitoringService {
+class PerformanceMonitoringService implements PerformanceTraceMonitor {
   static PerformanceMonitoringService? _instance;
   static PerformanceMonitoringService get instance =>
       _instance ??= PerformanceMonitoringService._();
@@ -43,6 +56,7 @@ class PerformanceMonitoringService {
   }
 
   /// Start a custom trace for tracking operation performance
+  @override
   Future<void> startTrace(String traceName) async {
     if (!_initialized) return;
 
@@ -67,6 +81,7 @@ class PerformanceMonitoringService {
   }
 
   /// Stop a custom trace and record the duration
+  @override
   Future<void> stopTrace(String traceName) async {
     if (!_initialized) return;
 
@@ -88,6 +103,7 @@ class PerformanceMonitoringService {
   }
 
   /// Add a metric to an active trace
+  @override
   void incrementMetric(String traceName, String metricName, int value) {
     if (!_initialized) return;
 
@@ -114,6 +130,7 @@ class PerformanceMonitoringService {
   }
 
   /// Set a metric value on an active trace
+  @override
   void setMetric(String traceName, String metricName, int value) {
     if (!_initialized) return;
 
@@ -140,6 +157,7 @@ class PerformanceMonitoringService {
   }
 
   /// Add an attribute to an active trace for filtering in Firebase Console
+  @override
   void putAttribute(String traceName, String attribute, String value) {
     if (!_initialized) return;
 
