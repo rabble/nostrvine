@@ -5,6 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
@@ -216,8 +217,8 @@ class _SingleAvatarTap extends StatelessWidget {
       imageUrl: actor.pictureUrl,
       name: actor.displayName,
       placeholderSeed: actor.pubkey,
-      size: 32,
-      cornerRadius: 12.8,
+      size: NotificationConstants.avatarSize,
+      cornerRadius: NotificationConstants.avatarCornerRadius,
       onTap: onProfileTap,
       semanticLabel: context.l10n.notificationsViewProfileSemanticLabel(
         actor.displayName,

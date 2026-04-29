@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Renders 1-3 overlapping rounded-square avatars for grouped notifications.
@@ -23,8 +24,8 @@ class NotificationAvatarStack extends StatelessWidget {
   /// Number of additional actors beyond those displayed.
   final int? overflowCount;
 
-  static const double _tileSize = 32;
-  static const double _tileRadius = 12.8;
+  static const double _tileSize = NotificationConstants.avatarSize;
+  static const double _tileRadius = NotificationConstants.avatarCornerRadius;
   static const double _overlap = 8;
 
   @override
