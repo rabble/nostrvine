@@ -594,7 +594,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     try {
       final hardBindingValue =
           await NativeProofModeService.generateSha256FileHash(filePath);
-      return await ref
+      final assertion = await ref
           .read(nostrCreatorBindingServiceProvider)
           .createAssertion(
             claims: _buildCreatorBindingClaims(
@@ -609,6 +609,20 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
               if (aiTrainingOptOut) 'cawg.training-mining',
             ],
           );
+
+      if (assertion == null) {
+        // Expected for OAuth-only identities while the Keycast backend
+        // does not yet expose `sign_canonical`, and for NIP-46 / NIP-55
+        // remote signers whose protocols don't include canonical signing.
+        // Logged at debug because it isn't an error condition.
+        Log.debug(
+          'Canonical signing not supported by current identity; '
+          'skipping creator-binding assertion.',
+          name: 'VideoPublishNotifier',
+          category: LogCategory.video,
+        );
+      }
+      return assertion;
     } catch (error, stackTrace) {
       Log.warning(
         'Failed to create creator-binding assertion: $error\n$stackTrace',

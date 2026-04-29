@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/local_key_signer.dart';
@@ -22,7 +23,10 @@ sealed class NostrIdentity implements NostrSigner {
   /// Signs an arbitrary canonical payload (SHA-256 + schnorr with fixed aux).
   ///
   /// Returns the signature hex string, or null if this identity does not
-  /// support deterministic local signing (remote-only signers).
+  /// support deterministic canonical signing. Local identities sign
+  /// directly; Keycast identities try local first and fall back to a
+  /// `sign_canonical` RPC. NIP-46 (bunker) and NIP-55 (amber) identities
+  /// always return null because their protocols only define event signing.
   Future<String?> signCanonicalPayload(Uint8List payload);
 }
 
@@ -125,8 +129,25 @@ class KeycastNostrIdentity extends NostrIdentity
 
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async {
-    // Canonical signing requires deterministic local keys.
-    return _localSigner?.signCanonicalPayload(payload);
+    // Local signing path (fast, deterministic) when a matching local key is
+    // available. This is the steady-state path for users who have completed
+    // BYOK setup or signed in with a recovery phrase.
+    final local = _localSigner;
+    if (local != null) {
+      final result = await local.signCanonicalPayload(payload);
+      if (result != null && result.isNotEmpty) return result;
+    }
+
+    // OAuth-only fallback: ask the Keycast backend to sign the canonical
+    // payload remotely. Returns null if the backend doesn't expose
+    // `sign_canonical` yet, in which case the caller skips creator-binding
+    // gracefully rather than blocking the publish.
+    final rpc = _rpcSigner;
+    if (rpc is KeycastRpc) {
+      return rpc.signCanonicalPayload(payload);
+    }
+
+    return null;
   }
 
   @override
@@ -204,6 +225,10 @@ class BunkerNostrIdentity extends NostrIdentity {
   @override
   Future<Event?> signEvent(Event event) => _remoteSigner.signEvent(event);
 
+  /// NIP-46 does not expose canonical-payload signing — the protocol
+  /// only defines event signing. C2PA creator-binding is therefore not
+  /// available for bunker-backed identities and the caller skips the
+  /// assertion gracefully.
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async => null;
 
@@ -248,6 +273,10 @@ class AmberNostrIdentity extends NostrIdentity {
   @override
   Future<Event?> signEvent(Event event) => _amberSigner.signEvent(event);
 
+  /// NIP-55 (Amber Android) does not expose canonical-payload signing —
+  /// only event signing. C2PA creator-binding is therefore not available
+  /// for amber-backed identities and the caller skips the assertion
+  /// gracefully.
   @override
   Future<String?> signCanonicalPayload(Uint8List payload) async => null;
 

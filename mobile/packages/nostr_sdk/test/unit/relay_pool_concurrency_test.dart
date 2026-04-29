@@ -150,6 +150,91 @@ class _FailingSendRelay extends Relay {
   }
 }
 
+/// A relay that simulates the worst-case reconnect-backoff hang on the
+/// publish path. When `skipReconnect: true` is honoured, returns `false`
+/// in microseconds (the real `RelayBase.send` short-circuits the
+/// `_tryReconnect` loop). When `skipReconnect: false`, hangs for
+/// [stallDuration] to simulate the SDK's exponential-backoff reconnect
+/// dance that previously blocked the publish flow indefinitely.
+class _StallingReconnectRelay extends Relay {
+  _StallingReconnectRelay(
+    String url, {
+    this.stallDuration = const Duration(seconds: 30),
+  }) : super(url, RelayStatus(url));
+
+  final Duration stallDuration;
+  final List<List<dynamic>> sentMessages = [];
+  bool wasInvokedWithoutSkipReconnect = false;
+
+  @override
+  Future<bool> doConnect() async {
+    // Stay in disconnected state to force the reconnect path.
+    relayStatus.connected = ClientConnected.disconnect;
+    return false;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    relayStatus.connected = ClientConnected.disconnect;
+  }
+
+  @override
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+    bool skipReconnect = false,
+  }) async {
+    sentMessages.add(message);
+    if (skipReconnect) {
+      // Fast-fail path: this is what the publish loop must hit.
+      return false;
+    }
+    // Reconnect path: simulate the multi-minute exponential-backoff
+    // hang that motivated this regression test.
+    wasInvokedWithoutSkipReconnect = true;
+    await Future<void>.delayed(stallDuration);
+    return false;
+  }
+}
+
+/// A relay whose `send` hangs no matter what flags are passed — models
+/// pathological cases where `skipReconnect: true` is honoured but the
+/// underlying send still wedges (TCP backpressure, slow peer post-
+/// handshake, or a future SDK regression that drops the skipReconnect
+/// short-circuit). Used to verify the per-relay timeout backstop in
+/// `_sendCollect`.
+class _AlwaysHangingRelay extends Relay {
+  _AlwaysHangingRelay(String url) : super(url, RelayStatus(url));
+
+  final List<List<dynamic>> sentMessages = [];
+
+  @override
+  Future<bool> doConnect() async {
+    relayStatus.connected = ClientConnected.connected;
+    return true;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    relayStatus.connected = ClientConnected.disconnect;
+  }
+
+  @override
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+    bool skipReconnect = false,
+  }) async {
+    sentMessages.add(message);
+    // Hang far longer than any reasonable per-relay timeout. The pool's
+    // `.timeout(...)` wrap must surface this as `false` and move on.
+    await Future<void>.delayed(const Duration(minutes: 1));
+    return true;
+  }
+}
+
 void main() {
   group('RelayPool concurrency', () {
     late Nostr nostr;
@@ -261,6 +346,84 @@ void main() {
       // onComplete should have been called immediately since no relay
       // accepted the query (saveQuery was never called)
       expect(completeCalled, isTrue);
+    });
+
+    test(
+      'pool.send does not block on a relay stuck in reconnect backoff',
+      () async {
+        // One healthy relay + one relay that would hang for 30s if
+        // _sendCollect forwarded the publish without `skipReconnect: true`.
+        // Regression test for the multi-minute publish hang where a
+        // single configured-but-disconnected relay (e.g. relay.ditto.pub)
+        // blocked the entire fan-out via WebSocketConnectionManager's
+        // exponential-backoff reconnect.
+        final healthy = _SucceedingRelay('wss://healthy.relay');
+        final stalling = _StallingReconnectRelay(
+          'wss://stalling.relay',
+          stallDuration: const Duration(seconds: 30),
+        );
+        await nostr.relayPool.add(healthy);
+        await nostr.relayPool.add(stalling);
+
+        final event = Event(await signer.getPublicKey() ?? '', 1, [], 'test');
+        await signer.signEvent(event);
+
+        final stopwatch = Stopwatch()..start();
+        final ok = await nostr.relayPool.send(['EVENT', event.toJson()]);
+        stopwatch.stop();
+
+        // If the bug regresses, this would take 30+ seconds.
+        expect(stopwatch.elapsedMilliseconds, lessThan(2000));
+        // At least one relay accepted the WebSocket frame.
+        expect(ok, isTrue);
+        // The healthy relay actually received the EVENT.
+        expect(
+          healthy.sentMessages
+              .where((m) => m.isNotEmpty && m.first == 'EVENT')
+              .length,
+          equals(1),
+        );
+        // The stalling relay's send was invoked with skipReconnect: true,
+        // so it short-circuited instead of hanging.
+        expect(stalling.wasInvokedWithoutSkipReconnect, isFalse);
+      },
+    );
+
+    test('pool.send respects the per-relay timeout when a relay hangs even '
+        'with skipReconnect honoured', () async {
+      // Belt-and-suspenders: skipReconnect: true short-circuits the
+      // disconnected-state reconnect dance, but does NOT bypass the
+      // `connecting` state's _waitForConnection() nor protect against
+      // a wedged-after-handshake socket. The 5s per-relay timeout in
+      // _sendCollect catches these residual cases so a single
+      // pathological relay cannot stall the sequential fan-out.
+      final healthy = _SucceedingRelay('wss://healthy.relay');
+      final hanging = _AlwaysHangingRelay('wss://hanging.relay');
+      await nostr.relayPool.add(healthy);
+      await nostr.relayPool.add(hanging);
+
+      final event = Event(await signer.getPublicKey() ?? '', 1, [], 'test');
+      await signer.signEvent(event);
+
+      final stopwatch = Stopwatch()..start();
+      final ok = await nostr.relayPool.send(['EVENT', event.toJson()]);
+      stopwatch.stop();
+
+      // Per-relay timeout is 5s. With one hanging relay, total elapsed
+      // should sit comfortably under 7s (5s timeout + setup overhead).
+      // If the timeout is removed, this test would hang for 60s+.
+      expect(stopwatch.elapsedMilliseconds, lessThan(7000));
+      // The healthy relay still accepted the EVENT.
+      expect(ok, isTrue);
+      expect(
+        healthy.sentMessages
+            .where((m) => m.isNotEmpty && m.first == 'EVENT')
+            .length,
+        equals(1),
+      );
+      // The hanging relay's send was invoked but did not contribute
+      // to sentTo because its future timed out.
+      expect(hanging.sentMessages, isNotEmpty);
     });
   });
 

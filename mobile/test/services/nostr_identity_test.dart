@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -13,6 +14,8 @@ class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
 class _MockNostrSigner extends Mock implements NostrSigner {}
 
 class _MockLocalKeySigner extends Mock implements LocalKeySigner {}
+
+class _MockKeycastRpc extends Mock implements KeycastRpc {}
 
 void main() {
   const testPrivateKey =
@@ -161,37 +164,128 @@ void main() {
       },
     );
 
-    test('signCanonicalPayload returns null without local signer', () async {
-      final identity = KeycastNostrIdentity(
-        pubkey: testPublicKey,
-        rpcSigner: mockRpc,
-      );
+    test(
+      'signCanonicalPayload returns null when no local signer and rpcSigner '
+      'is a generic NostrSigner (not KeycastRpc)',
+      () async {
+        // Generic NostrSigner doesn't implement signCanonicalPayload, so the
+        // identity must short-circuit to null rather than try to call it.
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockRpc,
+        );
 
-      final result = await identity.signCanonicalPayload(
-        Uint8List.fromList([1, 2, 3]),
-      );
+        final result = await identity.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
 
-      expect(result, isNull);
-    });
+        expect(result, isNull);
+      },
+    );
 
-    test('signCanonicalPayload delegates to local signer', () async {
-      final mockLocal = _MockLocalKeySigner();
-      when(
-        () => mockLocal.signCanonicalPayload(any()),
-      ).thenAnswer((_) async => 'sig_hex');
+    test(
+      'signCanonicalPayload falls back to KeycastRpc when no local signer',
+      () async {
+        // OAuth-only path: no local key, RPC backend supports sign_canonical.
+        final mockKeycastRpc = _MockKeycastRpc();
+        when(
+          () => mockKeycastRpc.signCanonicalPayload(any()),
+        ).thenAnswer((_) async => 'remote_sig_hex');
 
-      final identity = KeycastNostrIdentity(
-        pubkey: testPublicKey,
-        rpcSigner: mockRpc,
-        localSigner: mockLocal,
-      );
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockKeycastRpc,
+        );
 
-      final result = await identity.signCanonicalPayload(
-        Uint8List.fromList([1, 2, 3]),
-      );
+        final result = await identity.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
 
-      expect(result, equals('sig_hex'));
-    });
+        expect(result, equals('remote_sig_hex'));
+        verify(() => mockKeycastRpc.signCanonicalPayload(any())).called(1);
+      },
+    );
+
+    test(
+      'signCanonicalPayload returns null when KeycastRpc has no backend '
+      'support yet (graceful skip)',
+      () async {
+        // Backend doesn't expose sign_canonical → KeycastRpc returns null →
+        // identity returns null → caller skips creator-binding. Publish is
+        // not blocked.
+        final mockKeycastRpc = _MockKeycastRpc();
+        when(
+          () => mockKeycastRpc.signCanonicalPayload(any()),
+        ).thenAnswer((_) async => null);
+
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockKeycastRpc,
+        );
+
+        final result = await identity.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
+
+        expect(result, isNull);
+      },
+    );
+
+    test(
+      'signCanonicalPayload prefers local signer when available',
+      () async {
+        final mockLocal = _MockLocalKeySigner();
+        final mockKeycastRpc = _MockKeycastRpc();
+        when(
+          () => mockLocal.signCanonicalPayload(any()),
+        ).thenAnswer((_) async => 'local_sig_hex');
+
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockKeycastRpc,
+          localSigner: mockLocal,
+        );
+
+        final result = await identity.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
+
+        expect(result, equals('local_sig_hex'));
+        verify(() => mockLocal.signCanonicalPayload(any())).called(1);
+        // Local short-circuit means RPC must NOT be called for the perf
+        // optimisation to hold.
+        verifyNever(() => mockKeycastRpc.signCanonicalPayload(any()));
+      },
+    );
+
+    test(
+      'signCanonicalPayload falls back to KeycastRpc when local signer '
+      'returns null',
+      () async {
+        final mockLocal = _MockLocalKeySigner();
+        final mockKeycastRpc = _MockKeycastRpc();
+        when(
+          () => mockLocal.signCanonicalPayload(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockKeycastRpc.signCanonicalPayload(any()),
+        ).thenAnswer((_) async => 'remote_sig_hex');
+
+        final identity = KeycastNostrIdentity(
+          pubkey: testPublicKey,
+          rpcSigner: mockKeycastRpc,
+          localSigner: mockLocal,
+        );
+
+        final result = await identity.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
+
+        expect(result, equals('remote_sig_hex'));
+        verify(() => mockLocal.signCanonicalPayload(any())).called(1);
+        verify(() => mockKeycastRpc.signCanonicalPayload(any())).called(1);
+      },
+    );
   });
 
   group(BunkerNostrIdentity, () {

@@ -204,8 +204,35 @@ class VideoEventPublisher {
         );
       }
 
-      // Use the existing Nostr service to publish
-      final sentEvent = await _nostrService.publishEvent(event);
+      // Use the existing Nostr service to publish.
+      //
+      // Defense-in-depth: hard 30s timeout so a misbehaving relay
+      // (e.g. stuck in connecting / reconnect backoff) cannot freeze the
+      // publish flow indefinitely. The retry loop in [publishDirectUpload]
+      // will pick up after each failed attempt.
+      //
+      // We use try/catch on [TimeoutException] rather than `.timeout(
+      // onTimeout: ...)`. The `onTimeout` closure has its return type
+      // runtime-checked against the source future's `T`, and mocktail-
+      // stubbed Futures (`thenAnswer((_) async => event)`) infer their
+      // runtime type as `Future<Event>` — non-nullable — even when the
+      // declared signature is `Future<Event?>`. That mismatch makes
+      // `onTimeout: () => null` throw at runtime in tests. The try/catch
+      // shape sidesteps the closure-cast entirely; behaviour against a
+      // real `NostrClient` is identical.
+      Event? sentEvent;
+      try {
+        sentEvent = await _nostrService
+            .publishEvent(event)
+            .timeout(const Duration(seconds: 30));
+      } on TimeoutException {
+        Log.error(
+          '⏱️ publishEvent timed out after 30s for event ${event.id}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+        sentEvent = null;
+      }
 
       // Check if publish was successful
       if (sentEvent != null) {

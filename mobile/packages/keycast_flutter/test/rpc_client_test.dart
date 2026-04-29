@@ -2,6 +2,7 @@
 // ABOUTME: Verifies all RPC methods with mocked HTTP, error handling, auth headers
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -269,6 +270,98 @@ void main() {
         );
 
         expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
+      });
+    });
+
+    group('signCanonicalPayload', () {
+      test(
+        'returns hex signature from RPC and base64-encodes payload',
+        () async {
+          final payload = Uint8List.fromList([0x01, 0x02, 0x03, 0xff]);
+          const expectedSig =
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+          mockClient = MockClient((request) async {
+            expect(request.headers['Authorization'], 'Bearer test_token');
+            expect(request.headers['Content-Type'], 'application/json');
+
+            final body = jsonDecode(request.body);
+            expect(body['method'], 'sign_canonical');
+            expect(body['params'], [base64Encode(payload)]);
+
+            return http.Response(
+              jsonEncode({'result': expectedSig}),
+              200,
+            );
+          });
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+          );
+
+          final result = await rpc.signCanonicalPayload(payload);
+          expect(result, equals(expectedSig));
+        },
+      );
+
+      test(
+        'returns null (not throw) when backend reports method-not-found',
+        () async {
+          mockClient = MockClient((request) async {
+            return http.Response(
+              jsonEncode({'error': 'method_not_found'}),
+              200,
+            );
+          });
+
+          final rpc = KeycastRpc(
+            nostrApi: 'https://login.divine.video/api/nostr',
+            accessToken: 'test_token',
+            httpClient: mockClient,
+          );
+
+          final result = await rpc.signCanonicalPayload(
+            Uint8List.fromList([1, 2, 3]),
+          );
+          expect(result, isNull);
+        },
+      );
+
+      test('returns null on HTTP 500 error response', () async {
+        mockClient = MockClient((request) async {
+          return http.Response('Server error', 500);
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        final result = await rpc.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null on network exception', () async {
+        mockClient = MockClient((request) async {
+          throw Exception('connection refused');
+        });
+
+        final rpc = KeycastRpc(
+          nostrApi: 'https://login.divine.video/api/nostr',
+          accessToken: 'test_token',
+          httpClient: mockClient,
+        );
+
+        final result = await rpc.signCanonicalPayload(
+          Uint8List.fromList([1, 2, 3]),
+        );
+        expect(result, isNull);
       });
     });
   });

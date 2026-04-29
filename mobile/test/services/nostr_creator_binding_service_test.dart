@@ -5,10 +5,13 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/nostr_creator_binding_service.dart';
 import 'package:openvine/services/nostr_identity.dart';
 
 class _MockSecureKeyContainer extends Mock implements SecureKeyContainer {}
+
+class _MockNostrSigner extends Mock implements NostrSigner {}
 
 void main() {
   late _MockSecureKeyContainer mockKeyContainer;
@@ -85,7 +88,12 @@ void main() {
           ],
         );
 
-        final payload = jsonDecode(first.payloadJson) as Map<String, dynamic>;
+        expect(first, isNotNull);
+        expect(second, isNotNull);
+        final firstAssertion = first!;
+        final secondAssertion = second!;
+        final payload =
+            jsonDecode(firstAssertion.payloadJson) as Map<String, dynamic>;
         final claims = payload['claims'] as Map<String, dynamic>;
         final socialHandles = claims['social_handles'] as List<dynamic>;
         final unsignedPayload = Map<String, dynamic>.from(payload)
@@ -95,12 +103,12 @@ void main() {
             .toString();
 
         expect(
-          first.assertionLabel,
+          firstAssertion.assertionLabel,
           equals('video.divine.nostr.creator_binding'),
         );
-        expect(first.pubkey, equals(testPublicKey));
-        expect(first.payloadJson, equals(second.payloadJson));
-        expect(first.signature, equals(second.signature));
+        expect(firstAssertion.pubkey, equals(testPublicKey));
+        expect(firstAssertion.payloadJson, equals(secondAssertion.payloadJson));
+        expect(firstAssertion.signature, equals(secondAssertion.signature));
         expect(payload['version'], equals(1));
         expect(payload['pubkey'], equals(testPublicKey));
         expect(payload['sig_alg'], equals('nostr.secp256k1'));
@@ -155,5 +163,36 @@ void main() {
         throwsA(isA<StateError>()),
       );
     });
+
+    test(
+      'returns null (not throw) when identity does not support canonical '
+      'signing',
+      () async {
+        // BunkerNostrIdentity always returns null from signCanonicalPayload
+        // because NIP-46 has no canonical-sign primitive. The same fall-soft
+        // path applies to OAuth users until the Keycast backend exposes
+        // sign_canonical, and to Amber users.
+        final mockSigner = _MockNostrSigner();
+        final bunkerIdentity = BunkerNostrIdentity(
+          pubkey: testPublicKey,
+          remoteSigner: mockSigner,
+        );
+        final unsupportedService = NostrCreatorBindingService(
+          identity: bunkerIdentity,
+          now: () => DateTime.utc(2026, 3, 29, 8, 30),
+        );
+
+        final result = await unsupportedService.createAssertion(
+          claims: const CreatorBindingClaims(),
+          hardBinding: const CreatorBindingHardBinding(
+            alg: 'sha256',
+            value: 'deadbeef',
+          ),
+          referencedAssertions: const <String>['c2pa.hash.data'],
+        );
+
+        expect(result, isNull);
+      },
+    );
   });
 }

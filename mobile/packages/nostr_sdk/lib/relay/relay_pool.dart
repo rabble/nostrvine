@@ -862,11 +862,27 @@ class RelayPool {
   /// frame (or it was queued for pending-auth delivery). It does NOT mean the
   /// relay accepted the event at the protocol level — use
   /// [sendEventAwaitOk] for that guarantee.
+  ///
+  /// Sends use `skipReconnect: true` so that a single disconnected relay
+  /// cannot block the sequential fan-out by triggering a multi-minute
+  /// exponential-backoff reconnect (mirrors the query fan-out paths above).
+  /// Reconnection is driven by the relay manager's heartbeat, not by
+  /// outbound publishes.
+  ///
+  /// Each individual `relay.send` is also wrapped in a 5-second timeout as a
+  /// belt-and-suspenders backstop. `skipReconnect: true` already short-
+  /// circuits the disconnected-state path inside `WebSocketConnectionManager`,
+  /// but it does not bypass the `connecting`-state wait nor protect against
+  /// a relay whose underlying socket is wedged after a successful handshake
+  /// (TCP backpressure, slow peer). The per-relay timeout caps any single
+  /// relay's contribution to the sequential fan-out at 5 seconds, so the
+  /// outer publish flow stays responsive even on degraded networks.
   Future<List<String>> _sendCollect(
     List<dynamic> message, {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
+    const perRelayTimeout = Duration(seconds: 5);
     final sentTo = <String>[];
 
     for (final relay in _relaysSnapshot()) {
@@ -896,7 +912,13 @@ class RelayPool {
             log(
               '🔐 vine.hol.is detected - sending message to trigger AUTH challenge',
             );
-            var result = await relay.send(message, forceSend: true);
+            // Auth-trigger path intentionally does NOT pass skipReconnect:
+            // the AUTH handshake requires a real send. Per-relay timeout
+            // still applies so a stuck auth-trigger send cannot block the
+            // rest of the fan-out.
+            var result = await relay
+                .send(message, forceSend: true)
+                .timeout(perRelayTimeout, onTimeout: () => false);
             if (result) {
               sentTo.add(relay.url);
             }
@@ -913,7 +935,13 @@ class RelayPool {
           log(
             '🔐 Relay ${relay.url} sending immediately (alwaysAuth=${relay.relayStatus.alwaysAuth}, authed=${relay.relayStatus.authed})',
           );
-          var result = await relay.send(message);
+          // Skip reconnect during fan-out to avoid blocking other relays
+          // while one dead relay tries exponential backoff (can hang the
+          // publish for many minutes). Same convention as relayDoQuery /
+          // relayDoSubscribe above.
+          var result = await relay
+              .send(message, skipReconnect: true)
+              .timeout(perRelayTimeout, onTimeout: () => false);
           if (result) {
             sentTo.add(relay.url);
           }
@@ -927,7 +955,12 @@ class RelayPool {
     if (tempRelays != null) {
       for (var tempRelayAddr in tempRelays) {
         var tempRelay = checkAndGenTempRelay(tempRelayAddr);
-        var result = await tempRelay.send(message);
+        // Same skipReconnect rationale as the main loop above: a fresh
+        // tempRelay whose initial connection is still in-flight must not
+        // block the publish.
+        var result = await tempRelay
+            .send(message, skipReconnect: true)
+            .timeout(perRelayTimeout, onTimeout: () => false);
         if (result) {
           sentTo.add(tempRelay.url);
         }

@@ -85,7 +85,16 @@ class NostrCreatorBindingService {
   final NostrIdentity? _identity;
   final DateTime Function() _now;
 
-  Future<NostrCreatorBindingAssertion> createAssertion({
+  /// Builds a signed creator-binding assertion for the C2PA proof manifest.
+  ///
+  /// Returns `null` when the active identity does not support canonical
+  /// payload signing (e.g. Divine OAuth without a local key and without a
+  /// backend `sign_canonical` RPC method, NIP-46 bunker, NIP-55 amber).
+  /// Callers treat null as "skip the binding" and proceed without it.
+  ///
+  /// Throws [StateError] only when there is no authenticated identity at
+  /// all, which indicates a programmer error in the calling flow.
+  Future<NostrCreatorBindingAssertion?> createAssertion({
     required CreatorBindingClaims claims,
     required CreatorBindingHardBinding hardBinding,
     required List<String> referencedAssertions,
@@ -113,7 +122,10 @@ class NostrCreatorBindingService {
     final signature = await identity.signCanonicalPayload(payloadBytes);
 
     if (signature == null || signature.isEmpty) {
-      throw StateError('Failed to sign canonical creator-binding payload');
+      // Identity can't produce a canonical signature (RPC-only without
+      // backend support, or remote signers whose protocol lacks it).
+      // Caller skips the binding rather than aborting the publish.
+      return null;
     }
 
     final payloadJson = jsonEncode(<String, dynamic>{

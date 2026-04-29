@@ -2,6 +2,7 @@
 // ABOUTME: Provides remote signing via Keycast server for Nostr events
 
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:keycast_flutter/src/models/exceptions.dart';
@@ -119,6 +120,38 @@ class KeycastRpc implements NostrSigner {
   @override
   Future<Map?> getRelays() async {
     return null;
+  }
+
+  /// Remote canonical-payload signing for C2PA creator-binding flows.
+  ///
+  /// Performs SHA-256 of [payload] and schnorr-signs the digest with the
+  /// account's private key, returning a hex-encoded signature. Server-side
+  /// MUST use deterministic auxiliary data (32 zero bytes) so repeated
+  /// signing of the same payload produces the same signature, matching the
+  /// local signer at `LocalKeySigner.signCanonicalPayload`.
+  ///
+  /// Returns `null` (rather than throwing) when:
+  ///   * the backend does not yet expose `sign_canonical` (method-not-found
+  ///     surfaces as [RpcException]),
+  ///   * the request errors at the HTTP level,
+  ///   * the response is malformed.
+  ///
+  /// Callers (e.g. [KeycastNostrIdentity]) treat null as "canonical signing
+  /// unsupported by this identity" and skip the assertion gracefully.
+  Future<String?> signCanonicalPayload(Uint8List payload) async {
+    try {
+      return await _call(
+        'sign_canonical',
+        [base64Encode(payload)],
+        (result) => result as String,
+      );
+    } on RpcException {
+      // Backend doesn't expose sign_canonical yet, or returned an error.
+      return null;
+    } catch (_) {
+      // Network/parse error: degrade gracefully.
+      return null;
+    }
   }
 
   @override

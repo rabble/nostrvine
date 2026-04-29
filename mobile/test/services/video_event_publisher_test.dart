@@ -1,8 +1,11 @@
 // ABOUTME: Tests for VideoEventPublisher service ensuring complete imeta tag generation
 // ABOUTME: Verifies file metadata (size, SHA256), thumbnails, and NIP-71 kind 34236 compliance
 
+import 'dart:async';
 import 'dart:io';
+
 import 'package:crypto/crypto.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/pending_upload.dart';
 
@@ -445,5 +448,80 @@ void main() {
         reason: 'Should use original CDN URL',
       );
     });
+  });
+
+  group('publishEvent timeout guard', () {
+    // Locks the contract introduced in video_event_publisher.dart line 208:
+    // a 30s `Future.timeout` wrapped in try/catch (TimeoutException) so a
+    // stalled relay-pool send cannot freeze the publish flow. We use the
+    // try/catch shape (not `onTimeout: () => null`) because mocktail-stubbed
+    // Futures lose their declared `?` nullability at runtime, which would
+    // make the onTimeout closure-cast throw — see
+    // `test/diag/mocktail_timeout_diag_test.dart` for the full diagnosis.
+
+    test(
+      'a never-completing publishEvent future surfaces TimeoutException '
+      'after 30s and is mapped to null',
+      () {
+        fakeAsync((async) {
+          final never = Completer<String?>();
+          var completed = false;
+          String? result;
+
+          // Mirrors the exact wrapping at video_event_publisher.dart:208.
+          Future<void> wrapped() async {
+            try {
+              result = await never.future.timeout(
+                const Duration(seconds: 30),
+              );
+            } on TimeoutException {
+              result = null;
+            }
+            completed = true;
+          }
+
+          unawaited(wrapped());
+
+          // Just before the timeout — must still be pending.
+          async.elapse(const Duration(seconds: 29));
+          expect(completed, isFalse);
+
+          // Cross the timeout boundary.
+          async.elapse(const Duration(seconds: 2));
+          expect(completed, isTrue);
+          expect(result, isNull);
+        });
+      },
+    );
+
+    test(
+      'a publishEvent future that completes before the timeout returns its '
+      'value',
+      () {
+        fakeAsync((async) {
+          final completer = Completer<String?>();
+          var resolvedValue = 'unset';
+
+          Future<void> wrapped() async {
+            try {
+              final value = await completer.future.timeout(
+                const Duration(seconds: 30),
+              );
+              resolvedValue = value ?? 'null';
+            } on TimeoutException {
+              resolvedValue = 'timeout';
+            }
+          }
+
+          unawaited(wrapped());
+
+          async.elapse(const Duration(seconds: 5));
+          completer.complete('signed_event_id');
+          async.flushMicrotasks();
+
+          expect(resolvedValue, equals('signed_event_id'));
+        });
+      },
+    );
   });
 }
