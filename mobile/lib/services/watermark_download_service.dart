@@ -108,7 +108,7 @@ class WatermarkDownloadService {
       // which may be missing or wrong — e.g. a square video defaults to
       // 1080x1920 and causes black letterboxing).
       final metadata = await ProVideoEditor.instance.getMetadata(
-        EditorVideo.file(videoFile),
+        EditorVideo.file(videoFile.path),
       );
       final videoWidth = metadata.resolution.width.round();
       final videoHeight = metadata.resolution.height.round();
@@ -141,7 +141,7 @@ class WatermarkDownloadService {
       onProgress(WatermarkDownloadStage.saving);
 
       final saveResult = await _gallerySaveService.saveVideoToGallery(
-        EditorVideo.file(File(tempOutputPath)),
+        EditorVideo.file(tempOutputPath),
       );
 
       if (saveResult is GallerySavePermissionDenied) {
@@ -200,7 +200,7 @@ class WatermarkDownloadService {
       onProgress(OriginalSaveStage.saving);
 
       final saveResult = await _gallerySaveService.saveVideoToGallery(
-        EditorVideo.file(videoFile),
+        EditorVideo.file(videoFile.path),
       );
 
       if (saveResult is GallerySavePermissionDenied) {

@@ -1,17 +1,35 @@
 // ABOUTME: Tests for WatermarkDownloadService result types and stage enums
 // ABOUTME: Validates the sealed class hierarchy and download flow contracts
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
 
+VideoEvent _createTestVideo() => VideoEvent(
+  id: 'test-video-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+  pubkey:
+      'pubkey-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+  createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+  content: 'Test video',
+  timestamp: DateTime.now(),
+  videoUrl: 'https://example.com/video.mp4',
+);
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(EditorVideo.file('/tmp/fallback.mp4'));
+  });
+
   group('WatermarkDownloadStage', () {
     test('has all three stages', () {
       expect(WatermarkDownloadStage.values, hasLength(3));
@@ -101,6 +119,39 @@ void main() {
     });
 
     group('downloadOriginal', () {
+      test('saves a cached video file successfully', () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'watermark-download-service-test',
+        );
+        final videoFile = File('${tempDir.path}/video.mp4');
+        await videoFile.writeAsBytes(const [1, 2, 3, 4]);
+
+        addTearDown(() async {
+          if (tempDir.existsSync()) {
+            await tempDir.delete(recursive: true);
+          }
+        });
+
+        final stages = <OriginalSaveStage>[];
+
+        when(() => mockCache.getCachedFileSync(any())).thenReturn(videoFile);
+        when(
+          () => mockGallerySave.saveVideoToGallery(any()),
+        ).thenAnswer((_) async => const GallerySaveSuccess());
+
+        final result = await service.downloadOriginal(
+          video: _createTestVideo(),
+          onProgress: stages.add,
+        );
+
+        expect(result, isA<WatermarkDownloadSuccess>());
+        expect(stages, [
+          OriginalSaveStage.downloading,
+          OriginalSaveStage.saving,
+        ]);
+        verify(() => mockGallerySave.saveVideoToGallery(any())).called(1);
+      });
+
       test('returns failure when video file cannot be downloaded', () async {
         when(() => mockCache.getCachedFileSync(any())).thenReturn(null);
 
