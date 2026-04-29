@@ -261,7 +261,10 @@ class ProfileFeed extends _$ProfileFeed {
       final result = await client
           .getVideosByAuthor(pubkey: userId)
           .timeout(_restApiTimeout);
-      final apiVideos = result.videos.toVideoEvents();
+      final apiVideos = await _hydrateRestVideosFromStats(
+        result.videos.toVideoEvents(),
+        client: client,
+      );
 
       if (!ref.mounted) return;
 
@@ -392,7 +395,10 @@ class ProfileFeed extends _$ProfileFeed {
         final result = await client
             .getVideosByAuthor(pubkey: userId, offset: offset)
             .timeout(_restApiTimeout);
-        final apiVideos = result.videos.toVideoEvents();
+        final apiVideos = await _hydrateRestVideosFromStats(
+          result.videos.toVideoEvents(),
+          client: client,
+        );
 
         if (!ref.mounted) return;
         _totalVideoCount = result.totalCount ?? _totalVideoCount;
@@ -565,6 +571,106 @@ class ProfileFeed extends _$ProfileFeed {
     ];
 
     await Future.wait(refreshFutures);
+  }
+
+  Future<List<VideoEvent>> _hydrateRestVideosFromStats(
+    List<VideoEvent> videos, {
+    required FunnelcakeApiClient client,
+  }) async {
+    if (videos.isEmpty) return videos;
+
+    final withBulkStats = await _hydrateVideosWithBulkStats(
+      videos,
+      client: client,
+    );
+    return _hydrateVideosWithViewsEndpoint(withBulkStats, client: client);
+  }
+
+  Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
+    List<VideoEvent> videos, {
+    required FunnelcakeApiClient client,
+  }) async {
+    final ids = videos.map((video) => video.id).where((id) => id.isNotEmpty);
+    final idList = ids.toList();
+    if (idList.isEmpty) return videos;
+
+    final statsById = <String, BulkVideoStatsEntry>{};
+    for (var i = 0; i < idList.length; i += 100) {
+      final end = math.min(i + 100, idList.length);
+      final chunk = idList.sublist(i, end);
+      final response = await client.getBulkVideoStats(chunk);
+      statsById.addAll(response.stats);
+    }
+
+    if (statsById.isEmpty) return videos;
+
+    return videos.map((video) {
+      final stats = statsById[video.id];
+      if (stats == null) return video;
+
+      final mergedTags = <String, String>{...video.rawTags};
+      if (stats.loops != null) {
+        mergedTags['loops'] = stats.loops!.toString();
+      }
+      if (stats.views != null) {
+        mergedTags['views'] = stats.views!.toString();
+      }
+
+      return video.copyWith(
+        rawTags: mergedTags,
+        originalLoops: stats.loops ?? video.originalLoops,
+      );
+    }).toList();
+  }
+
+  Future<List<VideoEvent>> _hydrateVideosWithViewsEndpoint(
+    List<VideoEvent> videos, {
+    required FunnelcakeApiClient client,
+  }) async {
+    final missingViews = videos
+        .where((video) => !_hasViewLikeCount(video) && video.id.isNotEmpty)
+        .toList();
+    if (missingViews.isEmpty) return videos;
+
+    final fetchedViews = <String, int>{};
+    for (var i = 0; i < missingViews.length; i += 12) {
+      final end = math.min(i + 12, missingViews.length);
+      final chunk = missingViews.sublist(i, end);
+      final counts = await Future.wait(
+        chunk.map((video) => client.getVideoViews(video.id)),
+      );
+      for (var j = 0; j < chunk.length; j++) {
+        fetchedViews[chunk[j].id] = counts[j];
+      }
+    }
+
+    if (fetchedViews.isEmpty) return videos;
+
+    return videos.map((video) {
+      final count = fetchedViews[video.id];
+      if (count == null) return video;
+      return video.copyWith(
+        rawTags: <String, String>{...video.rawTags, 'views': '$count'},
+      );
+    }).toList();
+  }
+
+  bool _hasViewLikeCount(VideoEvent video) {
+    final viewTags = [
+      video.rawTags['views'],
+      video.rawTags['view_count'],
+      video.rawTags['total_views'],
+      video.rawTags['unique_views'],
+      video.rawTags['unique_viewers'],
+    ];
+    for (final value in viewTags) {
+      if (value == null) continue;
+      final normalized = value.replaceAll(',', '').trim();
+      if (normalized.isEmpty) continue;
+      if (int.tryParse(normalized) != null) return true;
+      if (double.tryParse(normalized) != null) return true;
+    }
+    return false;
   }
 
   /// Cache metadata from REST API videos for later merging with Nostr data
