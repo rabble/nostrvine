@@ -22,7 +22,7 @@ class SearchResultsView extends StatelessWidget {
 
     if (isIdle) {
       return ColoredBox(
-        color: VineTheme.surfaceBackground,
+        color: VineTheme.backgroundColor,
         child: CustomScrollView(
           slivers: [
             SearchSectionInitialState(
@@ -40,7 +40,7 @@ class SearchResultsView extends StatelessWidget {
     );
 
     return ColoredBox(
-      color: VineTheme.surfaceBackground,
+      color: VineTheme.backgroundColor,
       child: switch (filter) {
         SearchResultsFilter.all => CustomScrollView(
           // Reset scroll position when filter changes.

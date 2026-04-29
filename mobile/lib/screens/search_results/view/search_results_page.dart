@@ -84,10 +84,9 @@ class SearchResultsPage extends ConsumerWidget {
         ),
       ],
       child: Scaffold(
-        // bg/surface — matches SearchResultsView's body background so the
-        // app bar area (which doesn't paint its own background) doesn't
-        // show through to the root scaffold's darker default.
-        backgroundColor: VineTheme.surfaceBackground,
+        // Match the app scaffold canvas (plain black) so the tag/results
+        // area matches design review; avoids the green tint of surfaceBackground.
+        backgroundColor: VineTheme.backgroundColor,
         body: _SearchResultsBody(initialQuery: initialQuery ?? ''),
       ),
     );
