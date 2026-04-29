@@ -209,10 +209,10 @@ class ClipThumbnailManager {
         });
   }
 
-  static Future<void> _deleteFiles(List<StripThumbnail> thumbnails) async {
+  static void _deleteFiles(List<StripThumbnail> thumbnails) {
     for (final thumb in thumbnails) {
       try {
-        await File(thumb.path).delete();
+        File(thumb.path).deleteSync();
       } catch (_) {}
     }
   }
