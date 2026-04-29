@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Deze gebruikersnaam is net bezet. Kies een andere.",
     "profileSetupClaimFailed": "Gebruikersnaam claimen mislukt. Probeer het opnieuw.",
     "profileSetupPublishFailed": "Profiel publiceren mislukt. Probeer het opnieuw.",
+    "profileSetupNoRelaysConnected": "Kan het netwerk niet bereiken. Controleer je verbinding en probeer het opnieuw.",
+    "profileSetupRetryLabel": "Opnieuw",
     "profileSetupDisplayNameLabel": "Weergavenaam",
     "profileSetupDisplayNameHint": "Hoe moeten mensen je kennen?",
     "profileSetupDisplayNameHelper": "Elke naam of label die je wilt. Hoeft niet uniek te zijn.",

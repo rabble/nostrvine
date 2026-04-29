@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Ese nombre de usuario se acaba de ocupar. Elegí otro.",
     "profileSetupClaimFailed": "No se pudo reservar el nombre de usuario. Probá de nuevo.",
     "profileSetupPublishFailed": "No se pudo publicar el perfil. Probá de nuevo.",
+    "profileSetupNoRelaysConnected": "No se pudo conectar a la red. Verificá tu conexión e intentá de nuevo.",
+    "profileSetupRetryLabel": "Reintentar",
     "profileSetupDisplayNameLabel": "Nombre a mostrar",
     "profileSetupDisplayNameHint": "¿Cómo querés que te conozcan?",
     "profileSetupDisplayNameHelper": "Cualquier nombre o apodo que quieras. No tiene que ser único.",

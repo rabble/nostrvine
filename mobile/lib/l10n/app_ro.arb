@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Numele tocmai a fost luat. Alege altul.",
     "profileSetupClaimFailed": "N-am putut revendica numele. Încearcă din nou.",
     "profileSetupPublishFailed": "N-am putut publica profilul. Încearcă din nou.",
+    "profileSetupNoRelaysConnected": "Nu s-a putut accesa rețeaua. Verifică conexiunea și încearcă din nou.",
+    "profileSetupRetryLabel": "Încearcă din nou",
     "profileSetupDisplayNameLabel": "Nume afișat",
     "profileSetupDisplayNameHint": "Cum să te știe oamenii?",
     "profileSetupDisplayNameHelper": "Orice nume sau etichetă vrei. Nu trebuie să fie unic.",

@@ -18,3 +18,18 @@ class ProfilePublishFailedException extends ProfileRepositoryException {
   @override
   String toString() => 'ProfilePublishFailedException: $message';
 }
+
+/// Thrown when profile publish fails because no relays are connected.
+///
+/// A sibling of [ProfilePublishFailedException] — both extend
+/// [ProfileRepositoryException] directly. This exception signals that the
+/// device has no active Nostr relay connections rather than a relay actively
+/// rejecting the event. The caller can show a connectivity-specific error and
+/// offer a reconnect/retry action.
+class NoRelaysConnectedException extends ProfileRepositoryException {
+  /// Creates a no-relays-connected exception with an optional [message].
+  const NoRelaysConnectedException([super.message]);
+
+  @override
+  String toString() => 'NoRelaysConnectedException: $message';
+}

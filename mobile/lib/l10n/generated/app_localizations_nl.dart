@@ -635,6 +635,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Profiel publiceren mislukt. Probeer het opnieuw.';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      'Kan het netwerk niet bereiken. Controleer je verbinding en probeer het opnieuw.';
+
+  @override
+  String get profileSetupRetryLabel => 'Opnieuw';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Weergavenaam';
 
   @override

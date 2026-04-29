@@ -582,6 +582,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupPublishFailed => 'プロフィールの公開がうまくいかなかった。もう一回試してみて。';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      'ネットワークに接続できなかった。接続を確認してもう一回試してみて。';
+
+  @override
+  String get profileSetupRetryLabel => '再試行';
+
+  @override
   String get profileSetupDisplayNameLabel => '表示名';
 
   @override

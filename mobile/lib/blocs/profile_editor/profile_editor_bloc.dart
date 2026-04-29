@@ -407,12 +407,16 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         name: 'ProfileEditorBloc',
       );
       await _profileRepository.cacheProfile(savedProfile);
-    } catch (error) {
+    } catch (error, stackTrace) {
+      addError(error, stackTrace);
       Log.error('Failed to publish profile: $error', name: 'ProfileEditorBloc');
+      final profileError = error is NoRelaysConnectedException
+          ? ProfileEditorError.noRelaysConnected
+          : ProfileEditorError.publishFailed;
       emit(
         state.copyWith(
           status: ProfileEditorStatus.failure,
-          error: ProfileEditorError.publishFailed,
+          error: profileError,
         ),
       );
       return;

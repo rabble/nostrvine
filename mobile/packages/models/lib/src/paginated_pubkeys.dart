@@ -14,20 +14,29 @@ class PaginatedPubkeys {
 
   /// Creates a [PaginatedPubkeys] from JSON response.
   ///
-  /// The Funnelcake API uses context-specific keys:
-  /// - `/following` returns `{"following": [...]}`
-  /// - `/followers` returns `{"followers": [...]}`
-  /// - Falls back to `"pubkeys"` for generic responses
+  /// Tolerates both the legacy shape and the post-funnelcake#238 envelope:
+  /// - Legacy: `{"following": [...], "total": int, "has_more": bool}`
+  ///   (key varies: `following`, `followers`, or `pubkeys`)
+  /// - Envelope: `{"data": [...], "pagination": {"has_more": bool,
+  ///   "next_cursor": string}}`
   factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
+    final pagination = json['pagination'] as Map<String, dynamic>?;
+
+    // Prefer the envelope `data` key; fall back to endpoint-specific keys.
     final pubkeysData =
+        json['data'] as List<dynamic>? ??
         json['following'] as List<dynamic>? ??
         json['followers'] as List<dynamic>? ??
         json['pubkeys'] as List<dynamic>? ??
         <dynamic>[];
+
+    final hasMore =
+        json['has_more'] as bool? ?? pagination?['has_more'] as bool? ?? false;
+
     return PaginatedPubkeys(
       pubkeys: pubkeysData.map((e) => e.toString()).toList(),
       total: json['total'] as int? ?? pubkeysData.length,
-      hasMore: json['has_more'] as bool? ?? false,
+      hasMore: hasMore,
     );
   }
 

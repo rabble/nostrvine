@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Il nome utente è appena stato preso. Scegline un altro.",
     "profileSetupClaimFailed": "Impossibile rivendicare il nome utente. Riprova.",
     "profileSetupPublishFailed": "Impossibile pubblicare il profilo. Riprova.",
+    "profileSetupNoRelaysConnected": "Impossibile raggiungere la rete. Controlla la connessione e riprova.",
+    "profileSetupRetryLabel": "Riprova",
     "profileSetupDisplayNameLabel": "Nome visualizzato",
     "profileSetupDisplayNameHint": "Come ti devono conoscere?",
     "profileSetupDisplayNameHelper": "Qualsiasi nome o etichetta. Non deve essere univoco.",

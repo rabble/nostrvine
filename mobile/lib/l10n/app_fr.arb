@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Ce nom d'utilisateur vient d'être pris. Choisis-en un autre.",
     "profileSetupClaimFailed": "Échec de la réservation du nom d'utilisateur. Réessaie.",
     "profileSetupPublishFailed": "Échec de la publication du profil. Réessaie.",
+    "profileSetupNoRelaysConnected": "Impossible d'accéder au réseau. Vérifie ta connexion et réessaie.",
+    "profileSetupRetryLabel": "Réessayer",
     "profileSetupDisplayNameLabel": "Nom affiché",
     "profileSetupDisplayNameHint": "Comment veux-tu qu'on te reconnaisse ?",
     "profileSetupDisplayNameHelper": "N'importe quel nom ou pseudo. Pas besoin qu'il soit unique.",

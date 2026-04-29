@@ -338,6 +338,8 @@
   "profileSetupUsernameTaken": "Username was just taken. Please choose another.",
   "profileSetupClaimFailed": "Failed to claim username. Please try again.",
   "profileSetupPublishFailed": "Failed to publish profile. Please try again.",
+  "profileSetupNoRelaysConnected": "Couldn't reach the network. Check your connection and try again.",
+  "profileSetupRetryLabel": "Retry",
   "profileSetupDisplayNameLabel": "Display Name",
   "profileSetupDisplayNameHint": "How should people know you?",
   "profileSetupDisplayNameHelper": "Any name or label you want. Doesn't have to be unique.",

@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Nazwa użytkownika została właśnie zajęta. Wybierz inną.",
     "profileSetupClaimFailed": "Nie udało się zarezerwować nazwy użytkownika. Spróbuj ponownie.",
     "profileSetupPublishFailed": "Nie udało się opublikować profilu. Spróbuj ponownie.",
+    "profileSetupNoRelaysConnected": "Nie można połączyć się z siecią. Sprawdź połączenie i spróbuj ponownie.",
+    "profileSetupRetryLabel": "Spróbuj ponownie",
     "profileSetupDisplayNameLabel": "Nazwa wyświetlana",
     "profileSetupDisplayNameHint": "Jak ludzie mają cię rozpoznawać?",
     "profileSetupDisplayNameHelper": "Dowolna nazwa lub etykieta. Nie musi być unikalna.",

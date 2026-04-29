@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Username baru saja diambil. Pilih yang lain.",
     "profileSetupClaimFailed": "Gagal mengklaim username. Silakan coba lagi.",
     "profileSetupPublishFailed": "Gagal mempublikasikan profil. Silakan coba lagi.",
+    "profileSetupNoRelaysConnected": "Tidak dapat menjangkau jaringan. Periksa koneksimu dan coba lagi.",
+    "profileSetupRetryLabel": "Coba lagi",
     "profileSetupDisplayNameLabel": "Nama Tampilan",
     "profileSetupDisplayNameHint": "Bagaimana orang harus mengenalmu?",
     "profileSetupDisplayNameHelper": "Nama atau label apa pun yang kamu mau. Tidak harus unik.",

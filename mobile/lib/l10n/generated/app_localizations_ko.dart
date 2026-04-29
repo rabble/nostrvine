@@ -583,6 +583,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupPublishFailed => '프로필을 게시하지 못했어요. 다시 시도해보세요.';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      '네트워크에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도해보세요.';
+
+  @override
+  String get profileSetupRetryLabel => '다시 시도';
+
+  @override
   String get profileSetupDisplayNameLabel => '표시 이름';
 
   @override

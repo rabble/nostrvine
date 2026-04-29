@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Esse nome de usuário acabou de ser pego. Escolha outro.",
     "profileSetupClaimFailed": "Falha ao reivindicar o nome de usuário. Tente novamente.",
     "profileSetupPublishFailed": "Falha ao publicar perfil. Tente novamente.",
+    "profileSetupNoRelaysConnected": "Não foi possível acessar a rede. Verifique sua conexão e tente novamente.",
+    "profileSetupRetryLabel": "Tentar novamente",
     "profileSetupDisplayNameLabel": "Nome de exibição",
     "profileSetupDisplayNameHint": "Como as pessoas devem te conhecer?",
     "profileSetupDisplayNameHelper": "Qualquer nome ou rótulo que você queira. Não precisa ser único.",

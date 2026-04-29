@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "Der Benutzername wurde gerade vergeben. Bitte wähl einen anderen.",
     "profileSetupClaimFailed": "Benutzername konnte nicht reserviert werden. Bitte versuch es nochmal.",
     "profileSetupPublishFailed": "Profil konnte nicht veröffentlicht werden. Bitte versuch es nochmal.",
+    "profileSetupNoRelaysConnected": "Netzwerk nicht erreichbar. Überprüfe deine Verbindung und versuch es nochmal.",
+    "profileSetupRetryLabel": "Wiederholen",
     "profileSetupDisplayNameLabel": "Anzeigename",
     "profileSetupDisplayNameHint": "Wie sollen dich die Leute kennen?",
     "profileSetupDisplayNameHelper": "Beliebiger Name oder Label. Muss nicht einzigartig sein.",

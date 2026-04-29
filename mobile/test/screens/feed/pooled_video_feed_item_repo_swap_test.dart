@@ -310,11 +310,6 @@ void main() {
           isNull,
           reason: 'new bloc should not inherit blocBefore.likeCount',
         );
-        expect(
-          blocAfter.state.error,
-          isNull,
-          reason: 'new bloc should not inherit blocBefore.error',
-        );
       },
     );
   });

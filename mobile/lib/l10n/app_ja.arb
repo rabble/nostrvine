@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "そのユーザー名はたった今取られちゃった。別の名前にしてみて。",
     "profileSetupClaimFailed": "ユーザー名の取得がうまくいかなかった。もう一回試してみて。",
     "profileSetupPublishFailed": "プロフィールの公開がうまくいかなかった。もう一回試してみて。",
+    "profileSetupNoRelaysConnected": "ネットワークに接続できなかった。接続を確認してもう一回試してみて。",
+    "profileSetupRetryLabel": "再試行",
     "profileSetupDisplayNameLabel": "表示名",
     "profileSetupDisplayNameHint": "みんなに何て呼ばれたい?",
     "profileSetupDisplayNameHelper": "好きな名前やラベルを使ってOK。一意じゃなくて大丈夫。",

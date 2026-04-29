@@ -642,6 +642,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile pubblicare il profilo. Riprova.';
 
   @override
+  String get profileSetupNoRelaysConnected =>
+      'Impossibile raggiungere la rete. Controlla la connessione e riprova.';
+
+  @override
+  String get profileSetupRetryLabel => 'Riprova';
+
+  @override
   String get profileSetupDisplayNameLabel => 'Nome visualizzato';
 
   @override

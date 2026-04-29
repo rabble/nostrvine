@@ -1427,10 +1427,33 @@ void main() {
               profileContent: any(named: 'profileContent'),
             ),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.connectedRelays,
+          ).thenReturn(['wss://relay.example.com']);
 
           await expectLater(
             profileRepository.saveProfileEvent(displayName: 'Test'),
             throwsA(isA<ProfilePublishFailedException>()),
+          );
+          verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+        },
+      );
+
+      test(
+        'throws NoRelaysConnectedException when no relays are connected',
+        () async {
+          when(
+            () => mockNostrClient.sendProfile(
+              profileContent: any(named: 'profileContent'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockNostrClient.connectedRelays,
+          ).thenReturn([]);
+
+          await expectLater(
+            profileRepository.saveProfileEvent(displayName: 'Test'),
+            throwsA(isA<NoRelaysConnectedException>()),
           );
           verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
         },
@@ -3062,6 +3085,13 @@ void main() {
 
         expect(e.message, isNull);
         expect(e.toString(), contains('ProfileRepositoryException'));
+      });
+
+      test('NoRelaysConnectedException has message and toString', () {
+        const e = NoRelaysConnectedException('no relays');
+
+        expect(e.message, equals('no relays'));
+        expect(e.toString(), equals('NoRelaysConnectedException: no relays'));
       });
     });
 

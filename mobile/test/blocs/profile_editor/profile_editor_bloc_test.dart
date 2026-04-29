@@ -473,6 +473,83 @@ void main() {
         );
       });
 
+      group('no relays connected', () {
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'emits [loading, failure] with noRelaysConnected error',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).thenThrow(const NoRelaysConnectedException('No relays'));
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+            ),
+          ),
+          expect: () => [
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.loading,
+            ),
+            isA<ProfileEditorState>()
+                .having((s) => s.status, 'status', ProfileEditorStatus.failure)
+                .having(
+                  (s) => s.error,
+                  'error',
+                  ProfileEditorError.noRelaysConnected,
+                ),
+          ],
+          errors: () => [isA<NoRelaysConnectedException>()],
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'does not attempt username claim when no relays are connected',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+              ),
+            ).thenThrow(const NoRelaysConnectedException('No relays'));
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              username: testUsername,
+            ),
+          ),
+          verify: (_) {
+            verifyNever(
+              () => mockProfileRepository.claimUsername(
+                username: any(named: 'username'),
+              ),
+            );
+          },
+        );
+      });
+
       group('username taken', () {
         blocTest<ProfileEditorBloc, ProfileEditorState>(
           'emits [loading, failure] with usernameTaken error',

@@ -163,6 +163,8 @@
     "profileSetupUsernameTaken": "이 사용자명은 방금 선점됐어요. 다른 이름을 고르세요.",
     "profileSetupClaimFailed": "사용자명을 가져오지 못했어요. 다시 시도해보세요.",
     "profileSetupPublishFailed": "프로필을 게시하지 못했어요. 다시 시도해보세요.",
+    "profileSetupNoRelaysConnected": "네트워크에 연결할 수 없어요. 연결 상태를 확인하고 다시 시도해보세요.",
+    "profileSetupRetryLabel": "다시 시도",
     "profileSetupDisplayNameLabel": "표시 이름",
     "profileSetupDisplayNameHint": "사람들에게 어떻게 불리고 싶으세요?",
     "profileSetupDisplayNameHelper": "원하는 아무 이름이나 라벨이요. 고유하지 않아도 돼요.",

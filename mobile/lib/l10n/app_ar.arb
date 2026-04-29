@@ -316,6 +316,8 @@
     "profileSetupUsernameTaken": "تم أخذ اسم المستخدم للتو. يرجى اختيار اسم آخر.",
     "profileSetupClaimFailed": "تعذّرت المطالبة باسم المستخدم. حاول مرّة أخرى.",
     "profileSetupPublishFailed": "تعذّر نشر الملف الشخصي. حاول مرّة أخرى.",
+    "profileSetupNoRelaysConnected": "لا يمكن الوصول إلى الشبكة. تحقق من اتصالك وحاول مرة أخرى.",
+    "profileSetupRetryLabel": "إعادة المحاولة",
     "profileSetupDisplayNameLabel": "الاسم المعروض",
     "profileSetupDisplayNameHint": "كيف يجب أن يعرفك الناس؟",
     "profileSetupDisplayNameHelper": "أي اسم أو لقب تريد. لا يلزم أن يكون فريدًا.",

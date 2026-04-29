@@ -19,6 +19,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
@@ -310,6 +311,26 @@ class _ProfileSetupScreenViewState
                     SnackBar(
                       content: Text(context.l10n.profileSetupPublishFailed),
                       backgroundColor: VineTheme.error,
+                    ),
+                  );
+                case ProfileEditorError.noRelaysConnected:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        context.l10n.profileSetupNoRelaysConnected,
+                      ),
+                      backgroundColor: VineTheme.error,
+                      duration: const Duration(seconds: 6),
+                      action: pubkey == null
+                          ? null
+                          : SnackBarAction(
+                              label: context.l10n.profileSetupRetryLabel,
+                              textColor: VineTheme.whiteText,
+                              onPressed: () => _retryAfterRelayReconnect(
+                                context,
+                                pubkey,
+                              ),
+                            ),
                     ),
                   );
                 case null:
@@ -1030,6 +1051,32 @@ class _ProfileSetupScreenViewState
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Attempts to reconnect relays and re-dispatches [ProfileSaved].
+  ///
+  /// Called from the retry CTA on the no-relays-connected SnackBar. Triggers
+  /// [NostrClient.retryDisconnectedRelays] before re-submitting so the relay
+  /// pool has a chance to reconnect before the publish is attempted again.
+  Future<void> _retryAfterRelayReconnect(
+    BuildContext context,
+    String pubkey,
+  ) async {
+    await ref.read(nostrServiceProvider).retryDisconnectedRelays();
+    if (!context.mounted) return;
+    context.read<ProfileEditorBloc>().add(
+      ProfileSaved(
+        pubkey: pubkey,
+        displayName: _nameController.text,
+        about: _bioController.text,
+        username: _nip05Controller.text,
+        externalNip05: _externalNip05Controller.text,
+        picture: _pictureController.text,
+        banner: _selectedProfileColor != null
+            ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
+            : null,
       ),
     );
   }
