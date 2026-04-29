@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/popular_now_feed_provider.dart';
+import 'package:openvine/providers/new_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -24,7 +24,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Tab widget displaying new/recent videos sorted by time.
 ///
 /// Handles its own:
-/// - Riverpod provider watching (popularNowFeedProvider)
+/// - Riverpod provider watching (newVideosFeedProvider)
 /// - Analytics tracking (optional, for testability)
 /// - Loading/error/data states
 /// - Full screen video navigation on tap
@@ -62,25 +62,25 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
 
   @override
   Widget build(BuildContext context) {
-    final popularNowAsync = ref.watch(popularNowFeedProvider);
+    final newVideosAsync = ref.watch(newVideosFeedProvider);
 
     Log.debug(
-      '🔍 NewVinesTab: AsyncValue state - isLoading: ${popularNowAsync.isLoading}, '
-      'hasValue: ${popularNowAsync.hasValue}, hasError: ${popularNowAsync.hasError}',
+      '🔍 NewVinesTab: AsyncValue state - isLoading: ${newVideosAsync.isLoading}, '
+      'hasValue: ${newVideosAsync.hasValue}, hasError: ${newVideosAsync.hasError}',
       name: 'NewVideosTab',
       category: LogCategory.video,
     );
 
     // Track feed loading start
-    if (popularNowAsync.isLoading && _feedLoadStartTime == null) {
+    if (newVideosAsync.isLoading && _feedLoadStartTime == null) {
       _feedLoadStartTime = DateTime.now();
       _feedTracker?.startFeedLoad('new_vines');
     }
 
     // CRITICAL: Check hasValue FIRST before isLoading
-    // StreamProviders can have both isLoading:true and hasValue:true during rebuilds
-    if (popularNowAsync.hasValue && popularNowAsync.value != null) {
-      final allVideos = popularNowAsync.value!.videos;
+    // Async providers can have both isLoading:true and hasValue:true during rebuilds
+    if (newVideosAsync.hasValue && newVideosAsync.value != null) {
+      final allVideos = newVideosAsync.value!.videos;
       // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
       final videos = allVideos
           .where((v) => v.isSupportedOnCurrentPlatform)
@@ -110,7 +110,7 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
       }
 
       // Get feed state for pagination info
-      final feedState = popularNowAsync.value!;
+      final feedState = newVideosAsync.value!;
       return _NewVideosContent(
         videos: videos,
         isLoadingMore: feedState.isLoadingMore,
@@ -118,9 +118,9 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
       );
     }
 
-    if (popularNowAsync.hasError) {
-      _trackErrorState(popularNowAsync.error);
-      return _NewVideosErrorState(error: popularNowAsync.error);
+    if (newVideosAsync.hasError) {
+      _trackErrorState(newVideosAsync.error);
+      return _NewVideosErrorState(error: newVideosAsync.error);
     }
 
     // Only show loading if we truly have no data yet
@@ -214,7 +214,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
   @override
   Widget build(BuildContext context) {
     // Listen to provider changes and push to stream for fullscreen updates
-    ref.listen(popularNowFeedProvider, (previous, next) {
+    ref.listen(newVideosFeedProvider, (previous, next) {
       if (next.hasValue) {
         final videos = next.value!.videos
             .where((v) => v.isSupportedOnCurrentPlatform)
@@ -223,7 +223,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
         _hasMoreStreamController.add(next.value!.hasMoreContent);
       }
     });
-    final popularNowFeedNotifier = ref.read(popularNowFeedProvider.notifier);
+    final newVideosFeedNotifier = ref.read(newVideosFeedProvider.notifier);
 
     return ComposableVideoGrid(
       videos: widget.videos,
@@ -243,7 +243,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           extra: PooledFullscreenVideoFeedArgs(
             videosStream: _videosStreamController.stream.startWith(videoList),
             initialIndex: index,
-            onLoadMore: popularNowFeedNotifier.loadMore,
+            onLoadMore: newVideosFeedNotifier.loadMore,
             hasMoreStream: _hasMoreStreamController.stream.startWith(
               widget.hasMoreContent,
             ),
@@ -263,12 +263,12 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
         // Rebuild the provider so the tab can re-query and repopulate even
         // from an empty-state screen. This mirrors other tab-level refresh
         // patterns in Explore and keeps pull-to-refresh available here.
-        ref.invalidate(popularNowFeedProvider);
-        await ref.read(popularNowFeedProvider.future);
+        ref.invalidate(newVideosFeedProvider);
+        await ref.read(newVideosFeedProvider.future);
       },
       onLoadMore: () async {
         Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);
-        await popularNowFeedNotifier.loadMore();
+        await newVideosFeedNotifier.loadMore();
       },
       isLoadingMore: widget.isLoadingMore,
       hasMoreContent: widget.hasMoreContent,
