@@ -15,6 +15,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/collaborator_invite_parser.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
@@ -260,6 +261,18 @@ class _MessageList extends StatelessWidget {
         final invite = CollaboratorInviteParser.parse(message);
         if (invite != null) {
           return CollaboratorInviteCard(invite: invite, isSent: isSent);
+        }
+
+        // Suppress legacy NIP-04 invite plaintext duplicates (#3559).
+        // Phase 1 stopped new sends from emitting this fallback, but
+        // older app builds and cross-client senders can still produce
+        // bubbles that read "Open diVine to review and accept" — useless
+        // copy inside diVine, and the structured fields needed to render
+        // an actionable card are not recoverable from plaintext alone.
+        if (message.content.endsWith(
+          CollaboratorInviteService.invitePlaintextSuffix,
+        )) {
+          return const SizedBox.shrink();
         }
 
         // Grouping: in a reversed list, index 0 is newest (bottom of screen).

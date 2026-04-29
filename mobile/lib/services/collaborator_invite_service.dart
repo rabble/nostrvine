@@ -41,6 +41,13 @@ class CollaboratorInviteService {
   final DmRepository _dmRepository;
   final String defaultRelayHint;
 
+  /// Suffix that uniquely identifies the plaintext fallback body of a
+  /// collaborator invite DM — kept in sync with [_buildContent]. The
+  /// conversation view uses this to suppress legacy NIP-04 invite
+  /// duplicates that cannot be turned into actionable cards (#3559).
+  static const String invitePlaintextSuffix =
+      'Open diVine to review and accept.';
+
   Future<CollaboratorInviteResult> sendInvite({
     required String collaboratorPubkey,
     required String creatorPubkey,
@@ -102,7 +109,7 @@ class CollaboratorInviteService {
         ? 'a diVine video'
         : title.trim();
     return 'You were invited to collaborate on $videoLabel. '
-        'Open diVine to review and accept.';
+        '$invitePlaintextSuffix';
   }
 
   List<List<String>> _buildTags({

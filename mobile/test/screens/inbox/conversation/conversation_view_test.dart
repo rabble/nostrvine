@@ -310,6 +310,81 @@ void main() {
           verifyNever(() => mockInviteActionsCubit.loadInvites(any()));
         },
       );
+
+      // #3559 Phase 2 — sender-side suppression handles the inviter's
+      // own outgoing card. This test covers the recipient-side legacy
+      // NIP-04 plaintext duplicate: when an older sender (or another
+      // Nostr client) emits an invite as a plain DM with no Divine
+      // structured tags, the bubble must not render — it would tell the
+      // user to "open diVine" inside diVine itself, with no actionable
+      // affordance.
+      testWidgets(
+        'suppresses legacy NIP-04 invite plaintext duplicates with no '
+        'structured tags',
+        (tester) async {
+          final message = DmMessage(
+            id: '7777777777777777777777777777777777777777777777777777777777777777',
+            conversationId:
+                'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            senderPubkey: otherPubkey,
+            content:
+                'You were invited to collaborate on Skate loop. '
+                'Open diVine to review and accept.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'ccccccccddddddddeeeeeeeeffffffff00000000111111112222222233333333',
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(CollaboratorInviteCard), findsNothing);
+          expect(find.byType(MessageBubble), findsNothing);
+          expect(
+            find.textContaining('Open diVine to review and accept'),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'still renders plain text DMs that do not match the invite suffix',
+        (tester) async {
+          final message = DmMessage(
+            id: '6666666666666666666666666666666666666666666666666666666666666666',
+            conversationId:
+                'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            senderPubkey: otherPubkey,
+            content: 'Hey, want to ride together this weekend?',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'ddddddddeeeeeeeeffffffff0000000011111111222222223333333344444444',
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(MessageBubble), findsOneWidget);
+          expect(
+            find.text('Hey, want to ride together this weekend?'),
+            findsOneWidget,
+          );
+        },
+      );
     });
   });
 }

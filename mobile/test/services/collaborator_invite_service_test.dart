@@ -100,6 +100,54 @@ void main() {
     expect(skipNip04Fallback, isTrue);
   });
 
+  test(
+    'content endsWith invitePlaintextSuffix (contract for UI suppression)',
+    () async {
+      when(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          additionalTags: any(named: 'additionalTags'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'rumor-id',
+          messageEventId: 'message-id',
+          recipientPubkey: collaboratorPubkey,
+        ),
+      );
+
+      await service.sendInvite(
+        collaboratorPubkey: collaboratorPubkey,
+        creatorPubkey: creatorPubkey,
+        videoAddress: videoAddress,
+        title: 'Skate loop',
+      );
+
+      final captured =
+          verify(
+                () => dmRepository.sendMessage(
+                  recipientPubkey: collaboratorPubkey,
+                  content: captureAny(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  additionalTags: any(named: 'additionalTags'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                ),
+              ).captured.single
+              as String;
+
+      expect(
+        captured.endsWith(CollaboratorInviteService.invitePlaintextSuffix),
+        isTrue,
+        reason:
+            '_buildContent must end with invitePlaintextSuffix so the '
+            'conversation view can suppress legacy NIP-04 duplicates (#3559)',
+      );
+    },
+  );
+
   test('returns failure when encrypted DM send fails', () async {
     when(
       () => dmRepository.sendMessage(
