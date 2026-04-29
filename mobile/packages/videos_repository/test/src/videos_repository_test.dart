@@ -682,6 +682,256 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
+        test(
+          'hydrates missing loops without replacing existing views',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => HomeFeedResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'event-1',
+                    pubkey: 'followed-user',
+                    dTag: 'dtag-1',
+                    videoUrl: 'https://example.com/video.mp4',
+                    views: 7,
+                  ),
+                ],
+              ),
+            );
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+            ).thenAnswer(
+              (_) async => const BulkVideoStatsResponse(
+                stats: {
+                  'event-1': BulkVideoStatsEntry(
+                    eventId: 'event-1',
+                    reactions: 0,
+                    comments: 0,
+                    reposts: 0,
+                    loops: 5,
+                    views: 42,
+                  ),
+                },
+              ),
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getHomeFeedVideos(
+              authors: ['followed-user'],
+              userPubkey: 'my-pubkey',
+            );
+
+            expect(result.videos, hasLength(1));
+            expect(result.videos.first.rawTags['views'], equals('7'));
+            expect(result.videos.first.totalLoops, equals(12));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+            ).called(1);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
+
+        test('chunks bulk stat hydration for large API result sets', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: List.generate(
+                101,
+                (index) => _createVideoStats(
+                  id: 'event-$index',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-$index',
+                  videoUrl: 'https://example.com/video-$index.mp4',
+                  loops: 0,
+                ),
+              ),
+            ),
+          );
+          when(() => mockFunnelcakeClient.getBulkVideoStats(any())).thenAnswer((
+            invocation,
+          ) async {
+            final ids = invocation.positionalArguments.single as List<String>;
+            return BulkVideoStatsResponse(
+              stats: {
+                for (final id in ids)
+                  id: BulkVideoStatsEntry(
+                    eventId: id,
+                    reactions: 0,
+                    comments: 0,
+                    reposts: 0,
+                    views: int.parse(id.split('-').last) + 1,
+                  ),
+              },
+            );
+          });
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(101));
+          final firstVideo = result.videos.firstWhere(
+            (video) => video.id == 'event-0',
+          );
+          final lastVideo = result.videos.firstWhere(
+            (video) => video.id == 'event-100',
+          );
+          expect(firstVideo.totalLoops, equals(1));
+          expect(lastVideo.totalLoops, equals(101));
+          final captured = verify(
+            () => mockFunnelcakeClient.getBulkVideoStats(captureAny()),
+          ).captured;
+          expect(captured, hasLength(2));
+          expect(captured.first as List<String>, hasLength(100));
+          expect(captured.last as List<String>, hasLength(1));
+          expect(
+            captured.expand((ids) => ids as List<String>),
+            containsAll(['event-0', 'event-100']),
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test(
+          'skips bulk stats when API results already include loops and views',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => HomeFeedResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'event-1',
+                    pubkey: 'followed-user',
+                    dTag: 'dtag-1',
+                    videoUrl: 'https://example.com/video.mp4',
+                    loops: 5,
+                    views: 7,
+                  ),
+                ],
+              ),
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getHomeFeedVideos(
+              authors: ['followed-user'],
+              userPubkey: 'my-pubkey',
+            );
+
+            expect(result.videos, hasLength(1));
+            expect(result.videos.first.rawTags['views'], equals('7'));
+            expect(result.videos.first.totalLoops, equals(12));
+            verifyNever(() => mockFunnelcakeClient.getBulkVideoStats(any()));
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
+
+        test(
+          'leaves videos unchanged when bulk stats omit their event id',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => HomeFeedResponse(
+                videos: [
+                  _createVideoStats(
+                    id: 'event-1',
+                    pubkey: 'followed-user',
+                    dTag: 'dtag-1',
+                    videoUrl: 'https://example.com/video-1.mp4',
+                    loops: 0,
+                  ),
+                  _createVideoStats(
+                    id: 'event-2',
+                    pubkey: 'followed-user',
+                    dTag: 'dtag-2',
+                    videoUrl: 'https://example.com/video-2.mp4',
+                    loops: 0,
+                  ),
+                ],
+              ),
+            );
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats([
+                'event-1',
+                'event-2',
+              ]),
+            ).thenAnswer(
+              (_) async => const BulkVideoStatsResponse(
+                stats: {
+                  'event-1': BulkVideoStatsEntry(
+                    eventId: 'event-1',
+                    reactions: 0,
+                    comments: 0,
+                    reposts: 0,
+                    views: 42,
+                  ),
+                },
+              ),
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getHomeFeedVideos(
+              authors: ['followed-user'],
+              userPubkey: 'my-pubkey',
+            );
+
+            expect(result.videos, hasLength(2));
+            expect(result.videos.first.rawTags['views'], equals('42'));
+            expect(result.videos.first.totalLoops, equals(42));
+            expect(result.videos.last.id, equals('event-2'));
+            expect(result.videos.last.rawTags['views'], isNull);
+            expect(result.videos.last.totalLoops, equals(0));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats([
+                'event-1',
+                'event-2',
+              ]),
+            ).called(1);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
+
         test('maps REST moderation labels to moderationLabels '
             '(not contentWarningLabels) and does not apply warn', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -6357,6 +6607,7 @@ VideoStats _createVideoStats({
   String title = 'Test Video',
   String thumbnail = 'https://example.com/thumb.jpg',
   int? loops,
+  int? views,
   List<String> moderationLabels = const [],
   List<String> collaboratorPubkeys = const [],
 }) {
@@ -6374,6 +6625,7 @@ VideoStats _createVideoStats({
     reposts: 0,
     engagementScore: 0,
     loops: loops,
+    views: views,
     moderationLabels: moderationLabels,
     collaboratorPubkeys: collaboratorPubkeys,
   );
