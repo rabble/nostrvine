@@ -172,6 +172,16 @@ class ProfileFeed extends _$ProfileFeed {
     );
   }
 
+  @visibleForTesting
+  static Map<String, String> mergeRawTagsForVideoMerge(
+    Map<String, String> primary,
+    Map<String, String> secondary,
+  ) {
+    // Preserve REST-only analytics tags like `views` while still letting the
+    // primary video win on collisions for actual event metadata.
+    return {...secondary, ...primary};
+  }
+
   /// Refresh state - uses REST API when available, otherwise Nostr with metadata preservation
   /// Call this after a video is updated to sync the provider's state
   void refreshFromService() {
@@ -785,7 +795,7 @@ class ProfileFeed extends _$ProfileFeed {
       publishedAt: primaryHasPublishedAt
           ? primary.publishedAt
           : secondary.publishedAt,
-      rawTags: primary.rawTags.isNotEmpty ? primary.rawTags : secondary.rawTags,
+      rawTags: mergeRawTagsForVideoMerge(primary.rawTags, secondary.rawTags),
       contentWarningLabels: primary.contentWarningLabels.isNotEmpty
           ? primary.contentWarningLabels
           : secondary.contentWarningLabels,

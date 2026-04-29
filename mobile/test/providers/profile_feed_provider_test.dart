@@ -163,6 +163,45 @@ void main() {
         expect(key2, equals('pubkey1:stableid'));
       });
     });
+
+    group('rawTags merge behavior', () {
+      test('preserves REST views when relay copy wins merge precedence', () {
+        final merged = ProfileFeed.mergeRawTagsForVideoMerge(
+          {'d': 'stable1', 'title': 'Relay title'},
+          {'views': '42'},
+        );
+
+        expect(merged['d'], equals('stable1'));
+        expect(merged['title'], equals('Relay title'));
+        expect(merged['views'], equals('42'));
+      });
+
+      test('merged tags keep loop totals available on profile videos', () {
+        final relayVideo = createTestVideo(
+          'id1',
+          'pubkey1',
+          'stable1',
+          baseTime,
+        );
+        final restVideo = createTestVideo(
+          'id2',
+          'pubkey1',
+          'stable1',
+          baseTime.subtract(const Duration(seconds: 1)),
+        ).copyWith(rawTags: {'views': '42'});
+
+        final mergedVideo = relayVideo.copyWith(
+          rawTags: ProfileFeed.mergeRawTagsForVideoMerge(
+            relayVideo.rawTags,
+            restVideo.rawTags,
+          ),
+          originalLoops: relayVideo.originalLoops ?? restVideo.originalLoops,
+        );
+
+        expect(mergedVideo.rawTags['views'], equals('42'));
+        expect(mergedVideo.totalLoops, equals(42));
+      });
+    });
   });
 }
 
