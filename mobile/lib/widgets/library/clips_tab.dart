@@ -261,7 +261,6 @@ class _MasonryLayout extends StatelessWidget {
         borderRadius: clips.length >= _columnCount
             ? const .vertical(top: _radius)
             : .zero,
-        clipBehavior: .hardEdge,
         child: MasonryGridView.count(
           controller: scrollController,
           padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
