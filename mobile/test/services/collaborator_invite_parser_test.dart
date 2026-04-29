@@ -103,5 +103,44 @@ void main() {
 
       expect(CollaboratorInviteParser.parse(message), isNull);
     });
+
+    // #3661 — NIP-17 rumors arrive with the recipient p tag at index 0
+    // (injected by NIP17MessageService.sendPrivateMessage). The creator
+    // p tag the invite service appends comes after. Match by membership.
+    test('parses invite when recipient p tag precedes creator p tag', () {
+      const recipientPubkey =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      final message = messageWithTags([
+        ['divine', 'collab-invite'],
+        ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+        // Order matches what the wire actually delivers.
+        ['p', recipientPubkey],
+        ['p', creatorPubkey],
+        ['role', 'Collaborator'],
+        ['title', 'Skate loop'],
+      ]);
+
+      final invite = CollaboratorInviteParser.parse(message);
+
+      expect(invite, isNotNull);
+      expect(invite!.creatorPubkey, creatorPubkey);
+      expect(invite.title, 'Skate loop');
+    });
+
+    test('rejects invite when no p tag matches the address creator', () {
+      const recipientPubkey =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+      const otherPubkey =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      final message = messageWithTags([
+        ['divine', 'collab-invite'],
+        ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+        ['p', recipientPubkey],
+        ['p', otherPubkey],
+        ['role', 'Collaborator'],
+      ]);
+
+      expect(CollaboratorInviteParser.parse(message), isNull);
+    });
   });
 }

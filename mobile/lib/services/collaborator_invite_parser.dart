@@ -19,14 +19,18 @@ class CollaboratorInviteParser {
     final address = _parseAddress(addressTag[1]);
     if (address == null) return null;
 
-    final creatorTag = _firstWhereOrNull<String>(
-      tags
-          .where((tag) => tag.length >= 2 && tag[0] == 'p')
-          .map((tag) => tag[1]),
-      _isPubkey,
-    );
+    // NIP-17 rumors carry the recipient as their first `p` tag (added by
+    // the gift-wrap layer in NIP17MessageService.sendPrivateMessage), so a
+    // collaborator invite typically arrives with at least two p tags:
+    // recipient + creator. Match by membership rather than by first-hit
+    // so the recipient p tag does not silently reject the invite (#3661).
+    final pTagValues = tags
+        .where((tag) => tag.length >= 2 && tag[0] == 'p')
+        .map((tag) => tag[1])
+        .where(_isPubkey)
+        .toList(growable: false);
 
-    if (creatorTag != null && creatorTag != address.creatorPubkey) {
+    if (pTagValues.isNotEmpty && !pTagValues.contains(address.creatorPubkey)) {
       return null;
     }
 
@@ -37,7 +41,7 @@ class CollaboratorInviteParser {
       messageId: message.id,
       videoAddress: address.videoAddress,
       videoKind: address.videoKind,
-      creatorPubkey: creatorTag ?? address.creatorPubkey,
+      creatorPubkey: address.creatorPubkey,
       videoDTag: address.videoDTag,
       role: role,
       relayHint: _nonEmpty(addressTag.length >= 3 ? addressTag[2] : null),
