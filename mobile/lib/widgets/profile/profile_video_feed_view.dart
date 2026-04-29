@@ -126,8 +126,10 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView> {
             ?.betterDisplayName(context.l10n.profileTitle);
 
     return PooledFullscreenVideoFeedScreen(
-      // Pass the raw broadcast stream — seeding happened in initState.
-      videosStream: _videosController.stream,
+      // Seed the fullscreen route with the latest effective videos at
+      // subscription time so the first list can't be lost on a broadcast
+      // stream before FullscreenFeedBloc attaches.
+      videosStream: _videosController.stream.startWith(effectiveVideos),
       initialIndex: resolvedIndex,
       trafficSource: ViewTrafficSource.profile,
       contextTitle: contextTitle,
