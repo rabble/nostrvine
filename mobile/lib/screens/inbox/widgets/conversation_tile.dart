@@ -97,6 +97,7 @@ class ConversationTile extends ConsumerWidget {
                   child: UserAvatar(
                     imageUrl: imageUrl,
                     name: displayName,
+                    placeholderSeed: otherPubkey,
                     size: 40,
                   ),
                 ),

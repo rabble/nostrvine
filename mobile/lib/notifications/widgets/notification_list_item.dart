@@ -2,7 +2,6 @@
 // ABOUTME: NotificationItem model. Matches the Figma notifications design:
 // ABOUTME: type-icon column on the left, avatar group above the message text.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
@@ -10,6 +9,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 /// Row representing a single notification entry. Renders [SingleNotification]
 /// and [GroupedNotification] variants with the same outer structure.
@@ -208,68 +208,14 @@ class _SingleAvatarTap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: 'View ${actor.displayName} profile',
-      button: true,
-      child: GestureDetector(
-        onTap: onProfileTap,
-        child: SingleNotificationAvatar(actor: actor),
-      ),
-    );
-  }
-}
-
-/// Single 32×32 rounded-square avatar matching the Figma design.
-class SingleNotificationAvatar extends StatelessWidget {
-  const SingleNotificationAvatar({required this.actor, super.key});
-
-  final ActorInfo actor;
-
-  static const double _size = 32;
-  static const double _radius = 12.8;
-
-  @override
-  Widget build(BuildContext context) {
-    final pictureUrl = actor.pictureUrl;
-    final clip = ClipRRect(
-      borderRadius: BorderRadius.circular(_radius),
-      child: pictureUrl != null
-          ? CachedNetworkImage(
-              imageUrl: pictureUrl,
-              width: _size,
-              height: _size,
-              fit: BoxFit.cover,
-              placeholder: (context, _) => const _DefaultAvatarFill(),
-              errorWidget: (context, _, _) => const _DefaultAvatarFill(),
-            )
-          : const _DefaultAvatarFill(),
-    );
-
-    return Container(
-      width: _size,
-      height: _size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_radius),
-        border: Border.all(
-          color: VineTheme.onSurface.withValues(alpha: 0.25),
-          width: 0.8,
-        ),
-      ),
-      child: clip,
-    );
-  }
-}
-
-class _DefaultAvatarFill extends StatelessWidget {
-  const _DefaultAvatarFill();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.surfaceContainer,
-      child: Center(
-        child: Icon(Icons.person, color: VineTheme.lightText, size: 18),
-      ),
+    return UserAvatar(
+      imageUrl: actor.pictureUrl,
+      name: actor.displayName,
+      placeholderSeed: actor.pubkey,
+      size: 32,
+      cornerRadius: 12.8,
+      onTap: onProfileTap,
+      semanticLabel: 'View ${actor.displayName} profile',
     );
   }
 }

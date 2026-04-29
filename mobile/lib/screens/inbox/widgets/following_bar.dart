@@ -82,7 +82,12 @@ class _FollowingUserButton extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 8,
           children: [
-            UserAvatar(imageUrl: imageUrl, name: displayName, size: 48),
+            UserAvatar(
+              imageUrl: imageUrl,
+              name: displayName,
+              placeholderSeed: pubkey,
+              size: 48,
+            ),
             Text(
               displayName,
               textScaler: TextScaler.noScaling,

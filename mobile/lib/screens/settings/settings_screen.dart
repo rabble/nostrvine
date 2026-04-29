@@ -457,7 +457,12 @@ class _AccountHeaderProfile extends ConsumerWidget {
 
     return Column(
       children: [
-        UserAvatar(imageUrl: profile?.picture, name: displayName, size: 96),
+        UserAvatar(
+          imageUrl: profile?.picture,
+          name: displayName,
+          placeholderSeed: pubkey,
+          size: 96,
+        ),
         const SizedBox(height: 16),
         Text(
           displayName,
@@ -654,6 +659,7 @@ class _AccountSwitchTile extends ConsumerWidget {
                 UserAvatar(
                   imageUrl: profile?.picture,
                   name: displayName,
+                  placeholderSeed: account.pubkeyHex,
                   size: 40,
                 ),
                 Expanded(

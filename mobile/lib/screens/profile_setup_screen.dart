@@ -396,6 +396,7 @@ class _ProfileSetupScreenViewState
                                         imageProvider:
                                             _buildProfilePictureProvider(),
                                         name: _nameController.text.trim(),
+                                        placeholderSeed: pubkey,
                                         size: 144,
                                         semanticLabel: context
                                             .l10n

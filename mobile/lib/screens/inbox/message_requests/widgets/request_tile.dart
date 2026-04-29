@@ -85,6 +85,7 @@ class RequestTile extends ConsumerWidget {
                   child: UserAvatar(
                     imageUrl: imageUrl,
                     name: displayName,
+                    placeholderSeed: otherPubkey,
                     size: 40,
                   ),
                 ),

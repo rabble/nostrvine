@@ -8,8 +8,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:unified_logger/unified_logger.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 class NotificationListItem extends StatelessWidget {
   const NotificationListItem({
@@ -164,7 +163,8 @@ class _Content extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Avatar (single 32×32 rounded square).
+// Avatar — uses the shared UserAvatar so the deterministic placeholder
+// matches what the profile screen shows for users without a picture.
 // ---------------------------------------------------------------------------
 
 class _AvatarTap extends StatelessWidget {
@@ -178,70 +178,14 @@ class _AvatarTap extends StatelessWidget {
     final displayName =
         notification.actorName ??
         UserProfile.defaultDisplayNameFor(notification.actorPubkey);
-    return Semantics(
-      label: 'View $displayName profile',
-      button: true,
-      child: GestureDetector(
-        onTap: onProfileTap,
-        child: _Avatar(pictureUrl: notification.actorPictureUrl),
-      ),
-    );
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({this.pictureUrl});
-
-  final String? pictureUrl;
-
-  static const double _size = 32;
-  static const double _radius = 12.8;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: _size,
-      height: _size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(_radius),
-        border: Border.all(
-          color: VineTheme.onSurface.withValues(alpha: 0.25),
-          width: 0.8,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_radius),
-        child: pictureUrl != null
-            ? VineCachedImage(
-                imageUrl: pictureUrl!,
-                width: _size,
-                height: _size,
-                placeholder: (context, _) => const _DefaultAvatarFill(),
-                errorWidget: (context, url, error) {
-                  Log.debug(
-                    'Notification avatar load failed: $url - $error',
-                    name: 'NotificationListItem',
-                    category: LogCategory.ui,
-                  );
-                  return const _DefaultAvatarFill();
-                },
-              )
-            : const _DefaultAvatarFill(),
-      ),
-    );
-  }
-}
-
-class _DefaultAvatarFill extends StatelessWidget {
-  const _DefaultAvatarFill();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.surfaceContainer,
-      child: Center(
-        child: Icon(Icons.person, color: VineTheme.lightText, size: 18),
-      ),
+    return UserAvatar(
+      imageUrl: notification.actorPictureUrl,
+      name: displayName,
+      placeholderSeed: notification.actorPubkey,
+      size: 32,
+      cornerRadius: 12.8,
+      onTap: onProfileTap,
+      semanticLabel: 'View $displayName profile',
     );
   }
 }

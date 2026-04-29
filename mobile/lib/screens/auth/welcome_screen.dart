@@ -349,6 +349,7 @@ class _ReturningUserProfile extends StatelessWidget {
         _AvatarWithSwitchButton(
           imageUrl: profile?.picture,
           displayName: displayName,
+          pubkeyHex: pubkeyHex,
         ),
         const SizedBox(height: 16),
         Text(
@@ -371,16 +372,23 @@ class _AvatarWithSwitchButton extends StatelessWidget {
   const _AvatarWithSwitchButton({
     required this.imageUrl,
     required this.displayName,
+    required this.pubkeyHex,
   });
 
   final String? imageUrl;
   final String displayName;
+  final String pubkeyHex;
 
   static const double _avatarSize = 144;
 
   @override
   Widget build(BuildContext context) {
-    return UserAvatar(imageUrl: imageUrl, name: displayName, size: _avatarSize);
+    return UserAvatar(
+      imageUrl: imageUrl,
+      name: displayName,
+      placeholderSeed: pubkeyHex,
+      size: _avatarSize,
+    );
   }
 }
 

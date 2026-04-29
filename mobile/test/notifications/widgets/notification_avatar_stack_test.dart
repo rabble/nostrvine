@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 void main() {
   const actor1 = ActorInfo(
@@ -49,18 +50,15 @@ void main() {
       expect(find.byType(CachedNetworkImage), findsNWidgets(2));
     });
 
-    testWidgets('renders three positioned items for three actors', (
-      tester,
-    ) async {
+    testWidgets('renders three avatars for three actors', (tester) async {
       await tester.pumpWidget(
         buildSubject(actors: const [actor1, actor2, actorNoPhoto]),
       );
       await tester.pump();
 
+      expect(find.byType(UserAvatar), findsNWidgets(3));
       // actor1 and actor2 have URLs => CachedNetworkImage
       expect(find.byType(CachedNetworkImage), findsNWidgets(2));
-      // 3 Positioned widgets for the 3 avatars
-      expect(find.byType(Positioned), findsNWidgets(3));
     });
 
     testWidgets('renders overflow circle when overflowCount > 0', (
@@ -95,10 +93,9 @@ void main() {
       );
       await tester.pump();
 
-      // Only first 3 actors shown; actor1 and actor2 have URLs
+      // Only first 3 actors shown (not 4); actor1 and actor2 have URLs.
+      expect(find.byType(UserAvatar), findsNWidgets(3));
       expect(find.byType(CachedNetworkImage), findsNWidgets(2));
-      // 3 Positioned widgets (not 4)
-      expect(find.byType(Positioned), findsNWidgets(3));
     });
   });
 }

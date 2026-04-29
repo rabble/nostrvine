@@ -94,7 +94,11 @@ class _MentionSuggestionItem extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
-            UserAvatar(size: 32, imageUrl: profile?.picture),
+            UserAvatar(
+              size: 32,
+              imageUrl: profile?.picture,
+              placeholderSeed: suggestion.pubkey,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

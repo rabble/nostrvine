@@ -277,6 +277,7 @@ class _UserTile extends StatelessWidget {
             UserAvatar(
               imageUrl: profile.picture,
               name: profile.bestDisplayName,
+              placeholderSeed: profile.pubkey,
               size: 40,
             ),
             const SizedBox(width: 16),

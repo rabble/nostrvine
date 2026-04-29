@@ -250,6 +250,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                 Center(
                   child: _ProfileAvatarWithColor(
                     imageUrl: profilePictureUrl,
+                    userIdHex: widget.userIdHex,
                     profileColor: profileColor,
                     pendingActions: pendingActions,
                     onActionTap: pendingActions.isNotEmpty
@@ -733,12 +734,17 @@ class _StatDivider extends StatelessWidget {
 class _ProfileAvatarWithColor extends StatelessWidget {
   const _ProfileAvatarWithColor({
     required this.imageUrl,
+    required this.userIdHex,
     this.profileColor,
     this.pendingActions = const [],
     this.onActionTap,
   });
 
   final String? imageUrl;
+
+  /// Hex pubkey used as the placeholder tone seed so the same user gets
+  /// the same accent color here as in notifications and other surfaces.
+  final String userIdHex;
   final Color? profileColor;
 
   /// Ordered list of pending profile actions. The first action determines
@@ -752,7 +758,11 @@ class _ProfileAvatarWithColor extends StatelessWidget {
   Widget build(BuildContext context) {
     const avatarSize = 144.0;
     final hasAvatar = imageUrl != null && imageUrl!.isNotEmpty;
-    final avatarWidget = UserAvatar(imageUrl: imageUrl, size: avatarSize);
+    final avatarWidget = UserAvatar(
+      imageUrl: imageUrl,
+      placeholderSeed: userIdHex,
+      size: avatarSize,
+    );
     final avatar = hasAvatar
         ? GestureDetector(
             onTap: () => _showAvatarLightbox(context, imageUrl),

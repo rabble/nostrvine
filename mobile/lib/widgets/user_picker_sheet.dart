@@ -305,6 +305,7 @@ class _UserSearchTile extends StatelessWidget {
             child: UserAvatar(
               imageUrl: profile.picture,
               name: profile.bestDisplayName,
+              placeholderSeed: profile.pubkey,
               size: 40,
             ),
           ),

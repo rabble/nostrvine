@@ -2258,6 +2258,7 @@ class _EditCollaboratorChip extends ConsumerWidget {
           UserAvatar(
             imageUrl: profileAsync.value?.picture,
             name: profileAsync.value?.bestDisplayName,
+            placeholderSeed: pubkey,
             size: 20,
           ),
           const SizedBox(width: 4),
@@ -2399,9 +2400,11 @@ class _EditInspiredByDisplay extends ConsumerWidget {
     // Resolve the pubkey to display
     String? displayName;
     String? avatarUrl;
+    String? avatarPubkey;
 
     if (inspiredByVideo != null) {
       final pubkey = inspiredByVideo!.creatorPubkey;
+      avatarPubkey = pubkey;
       final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
       displayName = profileAsync.value?.bestDisplayName;
       avatarUrl = profileAsync.value?.picture;
@@ -2418,6 +2421,7 @@ class _EditInspiredByDisplay extends ConsumerWidget {
           UserAvatar(
             imageUrl: avatarUrl,
             name: displayName ?? inspiredByNpub,
+            placeholderSeed: avatarPubkey ?? inspiredByNpub,
             size: 24,
           ),
           const SizedBox(width: 6),

@@ -164,6 +164,7 @@ class _VinerAvatar extends ConsumerWidget {
                   child: UserAvatar(
                     imageUrl: avatarUrl,
                     name: displayName,
+                    placeholderSeed: viner.pubkey,
                     size: 56,
                   ),
                 ),

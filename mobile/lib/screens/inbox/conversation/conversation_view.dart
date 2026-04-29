@@ -113,6 +113,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
           Expanded(
             child: _ConversationContent(
               currentPubkey: currentPubkey,
+              otherPubkey: otherPubkey,
               displayName: displayName,
               imageUrl: profile?.picture,
               nip05: profile?.displayNip05,
@@ -161,6 +162,7 @@ class _SendBar extends StatelessWidget {
 class _ConversationContent extends StatelessWidget {
   const _ConversationContent({
     required this.currentPubkey,
+    required this.otherPubkey,
     required this.displayName,
     this.imageUrl,
     this.nip05,
@@ -168,6 +170,7 @@ class _ConversationContent extends StatelessWidget {
   });
 
   final String currentPubkey;
+  final String otherPubkey;
   final String displayName;
   final String? imageUrl;
   final String? nip05;
@@ -197,6 +200,7 @@ class _ConversationContent extends StatelessWidget {
             selected.messages.isEmpty
                 ? EmptyConversation(
                     displayName: displayName,
+                    pubkey: otherPubkey,
                     imageUrl: imageUrl,
                     nip05: nip05,
                     onViewProfile: onViewProfile,

@@ -415,6 +415,7 @@ class _AuthorAvatar extends StatelessWidget {
         children: [
           UserAvatar(
             imageUrl: avatarUrl,
+            placeholderSeed: pubkey,
             size: 48,
             semanticLabel: 'Author avatar',
             onTap: () {

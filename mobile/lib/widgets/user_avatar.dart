@@ -29,6 +29,7 @@ class UserAvatar extends StatelessWidget {
     this.onTap,
     this.semanticLabel,
     this.placeholderTone = UserAvatarPlaceholderTone.auto,
+    this.placeholderSeed,
     this.cornerRadius,
   });
 
@@ -39,6 +40,12 @@ class UserAvatar extends StatelessWidget {
   final VoidCallback? onTap;
   final String? semanticLabel;
   final UserAvatarPlaceholderTone placeholderTone;
+
+  /// Stable seed used to pick the placeholder tone. When non-empty this
+  /// takes precedence over [name] / [imageUrl] / [semanticLabel] so the
+  /// same user produces the same accent color across every surface
+  /// (notifications, profile header, lists). Pass the user's pubkey.
+  final String? placeholderSeed;
 
   /// Optional override for the avatar's corner radius. When null the radius
   /// is computed from [size] (see [_cornerRadius] default). Used by the
@@ -273,11 +280,13 @@ class UserAvatar extends StatelessWidget {
       return placeholderTone;
     }
 
-    final seed = [
-      name,
-      imageUrl,
-      semanticLabel,
-    ].whereType<String>().where((value) => value.trim().isNotEmpty).join('|');
+    final stableSeed = placeholderSeed?.trim();
+    final seed = stableSeed != null && stableSeed.isNotEmpty
+        ? stableSeed
+        : [name, imageUrl, semanticLabel]
+              .whereType<String>()
+              .where((value) => value.trim().isNotEmpty)
+              .join('|');
 
     if (seed.isEmpty) return UserAvatarPlaceholderTone.yellow;
 

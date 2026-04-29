@@ -386,7 +386,11 @@ class _PeopleAvatarItem extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              UserAvatar(imageUrl: profile?.picture, size: 56),
+              UserAvatar(
+                imageUrl: profile?.picture,
+                placeholderSeed: pubkey,
+                size: 56,
+              ),
               const SizedBox(height: 4),
               SizedBox(
                 width: 70,

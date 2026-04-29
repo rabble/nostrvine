@@ -1,10 +1,10 @@
 // ABOUTME: Overlapping rounded-square avatar stack for grouped notifications.
 // ABOUTME: Shows 1-3 actor avatars with optional overflow count indicator.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 /// Renders 1-3 overlapping rounded-square avatars for grouped notifications.
 ///
@@ -65,48 +65,12 @@ class _AvatarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pictureUrl = actor.pictureUrl;
-    return Container(
-      width: NotificationAvatarStack._tileSize,
-      height: NotificationAvatarStack._tileSize,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(
-          NotificationAvatarStack._tileRadius,
-        ),
-        border: Border.all(
-          color: VineTheme.onSurface.withValues(alpha: 0.25),
-          width: 0.8,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          NotificationAvatarStack._tileRadius,
-        ),
-        child: pictureUrl != null
-            ? CachedNetworkImage(
-                imageUrl: pictureUrl,
-                width: NotificationAvatarStack._tileSize,
-                height: NotificationAvatarStack._tileSize,
-                fit: BoxFit.cover,
-                placeholder: (context, _) => const _DefaultAvatar(),
-                errorWidget: (context, _, _) => const _DefaultAvatar(),
-              )
-            : const _DefaultAvatar(),
-      ),
-    );
-  }
-}
-
-class _DefaultAvatar extends StatelessWidget {
-  const _DefaultAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: VineTheme.surfaceContainer,
-      child: Center(
-        child: Icon(Icons.person, color: VineTheme.lightText, size: 18),
-      ),
+    return UserAvatar(
+      imageUrl: actor.pictureUrl,
+      name: actor.displayName,
+      placeholderSeed: actor.pubkey,
+      size: NotificationAvatarStack._tileSize,
+      cornerRadius: NotificationAvatarStack._tileRadius,
     );
   }
 }

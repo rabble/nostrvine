@@ -295,7 +295,11 @@ class _UserResultTile extends ConsumerWidget {
     final displayId = nip05 ?? normalizeToNpub(user.pubkey) ?? user.pubkey;
 
     return ListTile(
-      leading: UserAvatar(imageUrl: user.picture, size: 48),
+      leading: UserAvatar(
+        imageUrl: user.picture,
+        placeholderSeed: user.pubkey,
+        size: 48,
+      ),
       title: Text(
         user.displayName ?? 'Anonymous',
         style: const TextStyle(

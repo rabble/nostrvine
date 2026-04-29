@@ -90,6 +90,7 @@ class UserProfileTile extends ConsumerWidget {
               UserAvatar(
                 imageUrl: profile?.picture,
                 name: displayName,
+                placeholderSeed: pubkey,
                 size: 48,
               ),
               const SizedBox(width: 12),

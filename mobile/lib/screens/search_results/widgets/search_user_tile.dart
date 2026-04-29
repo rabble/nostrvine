@@ -46,7 +46,11 @@ class SearchUserTile extends ConsumerWidget {
           child: Row(
             spacing: 16,
             children: [
-              UserAvatar(imageUrl: profile.picture, size: 40),
+              UserAvatar(
+                imageUrl: profile.picture,
+                placeholderSeed: profile.pubkey,
+                size: 40,
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

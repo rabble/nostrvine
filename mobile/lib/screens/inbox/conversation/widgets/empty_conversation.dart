@@ -13,6 +13,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 class EmptyConversation extends StatelessWidget {
   const EmptyConversation({
     required this.displayName,
+    required this.pubkey,
     this.imageUrl,
     this.nip05,
     this.onViewProfile,
@@ -20,6 +21,7 @@ class EmptyConversation extends StatelessWidget {
   });
 
   final String displayName;
+  final String pubkey;
   final String? imageUrl;
   final String? nip05;
   final VoidCallback? onViewProfile;
@@ -31,7 +33,12 @@ class EmptyConversation extends StatelessWidget {
       child: Column(
         children: [
           // Avatar
-          UserAvatar(imageUrl: imageUrl, name: displayName, size: 96),
+          UserAvatar(
+            imageUrl: imageUrl,
+            name: displayName,
+            placeholderSeed: pubkey,
+            size: 96,
+          ),
           const SizedBox(height: 32),
           // User info
           Text(
