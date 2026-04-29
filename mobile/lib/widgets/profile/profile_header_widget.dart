@@ -1,6 +1,7 @@
 // ABOUTME: Profile header widget showing avatar, stats, name, and bio
 // ABOUTME: Reusable between own profile and others' profile screens
 
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -30,6 +31,7 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerStatefulWidget {
@@ -654,59 +656,100 @@ class _BannerImage extends StatelessWidget {
 }
 
 /// Stats row displaying Followers, Following, Likes, and Loops with dividers.
-class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow({required this.userIdHex, this.profileStats});
+///
+/// Shows a skeleton for up to [_skeletonTimeout] while stats are being fetched.
+/// After the timeout the row collapses to nothing if stats still haven't arrived,
+/// rather than showing a skeleton indefinitely.
+class _ProfileStatsRow extends StatefulWidget {
+  const _ProfileStatsRow({
+    required this.userIdHex,
+    this.profileStats,
+  });
 
   final String userIdHex;
   final ProfileStats? profileStats;
 
   @override
+  State<_ProfileStatsRow> createState() => _ProfileStatsRowState();
+}
+
+class _ProfileStatsRowState extends State<_ProfileStatsRow> {
+  static const _skeletonTimeout = Duration(seconds: 7);
+
+  Timer? _timer;
+  bool _timeoutExpired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.profileStats == null) {
+      _timer = Timer(_skeletonTimeout, () {
+        if (mounted) setState(() => _timeoutExpired = true);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasFollowers = profileStats?.followers != null;
-    final hasFollowing = profileStats?.following != null;
-    final hasLikes = profileStats?.totalLikes != null;
-    final hasLoops = profileStats?.totalViews != null;
+    final isLoading = widget.profileStats == null && !_timeoutExpired;
+
+    final hasFollowers = widget.profileStats?.followers != null;
+    final hasFollowing = widget.profileStats?.following != null;
+    final hasLikes = widget.profileStats?.totalLikes != null;
+    final hasLoops = widget.profileStats?.totalViews != null;
 
     final l10n = context.l10n;
     final columns = <Widget>[
-      if (hasLoops)
+      if (hasLoops || isLoading)
         ProfileStatColumn(
-          count: profileStats!.totalViews,
+          count: isLoading ? 99 : widget.profileStats!.totalViews,
           label: l10n.profileLoopsLabel,
-          isLoading: false,
+          isLoading: isLoading,
         ),
-      if (hasLikes)
+      if (hasLikes || isLoading)
         ProfileStatColumn(
-          count: profileStats!.totalLikes,
+          count: isLoading ? 99 : widget.profileStats!.totalLikes,
           label: l10n.profileLikesLabel,
-          isLoading: false,
+          isLoading: isLoading,
         ),
-      if (hasFollowing)
+      if (hasFollowing || isLoading)
         ProfileStatColumn(
-          count: profileStats!.following,
+          count: isLoading ? 99 : widget.profileStats!.following,
           label: l10n.profileFollowingLabel,
-          isLoading: false,
-          onTap: () =>
-              context.push(FollowingScreenRouter.pathForPubkey(userIdHex)),
+          isLoading: isLoading,
+          onTap: () => context.push(
+            FollowingScreenRouter.pathForPubkey(widget.userIdHex),
+          ),
         ),
-      if (hasFollowers)
+      if (hasFollowers || isLoading)
         ProfileStatColumn(
-          count: profileStats!.followers,
+          count: isLoading ? 99 : widget.profileStats!.followers,
           label: l10n.profileFollowersLabel,
-          isLoading: false,
-          onTap: () =>
-              context.push(FollowersScreenRouter.pathForPubkey(userIdHex)),
+          isLoading: isLoading,
+          onTap: () => context.push(
+            FollowersScreenRouter.pathForPubkey(widget.userIdHex),
+          ),
         ),
     ];
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        for (int i = 0; i < columns.length; i++) ...[
-          if (i > 0) const _StatDivider(),
-          columns[i],
+    return Skeletonizer(
+      enabled: isLoading,
+      enableSwitchAnimation: true,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (int i = 0; i < columns.length; i++) ...[
+            if (i > 0) const _StatDivider(),
+            columns[i],
+          ],
         ],
-      ],
+      ),
     );
   }
 }

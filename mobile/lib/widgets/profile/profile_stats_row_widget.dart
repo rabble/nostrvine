@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 /// Individual stat column widget for followers/following/likes/loops counts.
 ///
@@ -42,9 +43,11 @@ class ProfileStatColumn extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          label,
-          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+        Skeleton.keep(
+          child: Text(
+            label,
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+          ),
         ),
       ],
     );
