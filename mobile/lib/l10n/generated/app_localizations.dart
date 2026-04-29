@@ -8162,6 +8162,12 @@ abstract class AppLocalizations {
   /// **'Invitation sent'**
   String get inboxCollabInviteSentStatus;
 
+  /// Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborator invite'**
+  String get inboxConversationCollabInvitePreview;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:

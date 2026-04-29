@@ -4705,6 +4705,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxCollabInviteSentStatus => 'Zaproszenie wysłane';
 
   @override
+  String get inboxConversationCollabInvitePreview => 'Collaborator invite';
+
+  @override
   String get reportDialogCancel => 'Anuluj';
 
   @override

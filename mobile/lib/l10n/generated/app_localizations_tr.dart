@@ -4564,6 +4564,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxCollabInviteSentStatus => 'Davet gönderildi';
 
   @override
+  String get inboxConversationCollabInvitePreview => 'Collaborator invite';
+
+  @override
   String get reportDialogCancel => 'İptal';
 
   @override

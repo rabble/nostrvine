@@ -2269,6 +2269,10 @@
     "inboxCollabInviteCardTitle": "Undangan kolaborasi",
     "inboxCollabInviteIgnoreButton": "Abaikan",
     "inboxCollabInviteIgnoredStatus": "Diabaikan",
+    "inboxConversationCollabInvitePreview": "Collaborator invite",
+    "@inboxConversationCollabInvitePreview": {
+        "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
+    },
     "inboxCollabInviteSentStatus": "Undangan terkirim",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."

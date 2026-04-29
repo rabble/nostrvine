@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -134,9 +135,12 @@ class ConversationTile extends ConsumerWidget {
                       if (conversation.lastMessageContent != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          conversation.lastMessageContent!,
+                          _previewText(
+                            context,
+                            conversation.lastMessageContent!,
+                          ),
                           style: VineTheme.bodyMediumFont(
-                            color: VineTheme.onSurfaceVariant,
+                            color: VineTheme.onSurfaceMuted,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -152,6 +156,17 @@ class ConversationTile extends ConsumerWidget {
       ),
     );
   }
+}
+
+String _previewText(BuildContext context, String content) {
+  // The structured collaborator-invite card carries a deterministic
+  // plaintext fallback ("...Open diVine to review and accept.") so old
+  // clients can still see something. Inside diVine that copy is misleading
+  // — show a localized label instead (#3662, follows up on #3559 Phase 2).
+  if (content.endsWith(CollaboratorInviteService.invitePlaintextSuffix)) {
+    return context.l10n.inboxConversationCollabInvitePreview;
+  }
+  return content;
 }
 
 class _UnreadDot extends StatelessWidget {
