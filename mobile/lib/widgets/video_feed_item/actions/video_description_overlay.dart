@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -10,15 +11,15 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_shee
 
 /// Video description overlay showing title/content and loop count.
 ///
-/// Displays the video content or title with clickable hashtags.
+/// Caption uses [ClickableHashtagText] with inline hashtag options (#1602).
 /// Also shows the original loop count if available.
-class VideoDescriptionOverlay extends StatelessWidget {
+class VideoDescriptionOverlay extends ConsumerWidget {
   const VideoDescriptionOverlay({required this.video, super.key});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -29,7 +30,6 @@ class VideoDescriptionOverlay extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Video title with clickable hashtags
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: () => MetadataExpandedSheet.show(context, video),
@@ -69,12 +69,6 @@ class VideoDescriptionOverlay extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          // Show the loop count row whenever the video carries any loop
-          // metadata AND the combined count is non-zero. Using
-          // [hasLoopMetadata] instead of a raw originalLoops check keeps
-          // this in sync with the fullscreen author label and avoids
-          // hiding legitimate live-view counts (rawTags['views']) just
-          // because the classic Vine loop field is null.
           if (video.hasLoopMetadata && video.totalLoops > 0) ...[
             Semantics(
               identifier: 'loop_count',

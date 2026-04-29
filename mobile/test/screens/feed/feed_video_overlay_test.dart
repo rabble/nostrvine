@@ -458,18 +458,18 @@ void main() {
         expect(find.text('Likes'), findsOneWidget);
       });
 
-      testWidgets('renders hashtags with vine styling and options control', (
+      testWidgets('description renders hashtags as plain caption text', (
         tester,
       ) async {
         testVideo = testVideo.copyWith(content: 'Hello #world caption');
         await tester.pumpWidget(buildSubject());
         await tester.pump();
 
-        expect(find.text('#world'), findsOneWidget);
+        expect(find.text('Hello #world caption'), findsOneWidget);
         final l10n = _l10n(tester);
         expect(
           find.bySemanticsLabel(l10n.hashtagOptionsMoreTooltip),
-          findsOneWidget,
+          findsNothing,
         );
       });
 
