@@ -11,9 +11,9 @@ environment:
   flutter: ^3.41.1
 
 dependencies:
+  content_policy:
   flutter:
     sdk: flutter
-  content_policy:
   models:
     path: ../models
   nostr_client:
