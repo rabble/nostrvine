@@ -24,8 +24,7 @@ import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 
 import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
@@ -464,13 +463,14 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // FollowingBar uses fetchUserProfileProvider for names.
-        // The truncateNpub will be used if profile is not found.
-        final truncatedNpub = NostrKeyUtils.truncateNpub('user123');
+        // FollowingBar uses fetchUserProfileProvider for names. When the
+        // profile is not found, it falls back to the deterministic
+        // generated name from UserProfile.defaultDisplayNameFor.
+        final fallbackName = UserProfile.defaultDisplayNameFor('user123');
 
-        expect(find.text(truncatedNpub), findsOneWidget);
+        expect(find.text(fallbackName), findsOneWidget);
 
-        await tester.tap(find.text(truncatedNpub));
+        await tester.tap(find.text(fallbackName));
         await tester.pump();
 
         verify(

@@ -59,6 +59,16 @@ const _knownUntranslatedDebt = {
   'videoActionAboutLabel',
   'videoOverlayOpenMetadataFromTitle',
   'videoOverlayOpenMetadataFromDescription',
+  // Added by the notifications redesign / avatar lightbox a11y pass.
+  // Translators will pick these up in a follow-up pass; until then the
+  // generated l10n APIs fall back to the English source.
+  'profileAvatarLightboxBarrierLabel',
+  'profileAvatarLightboxCloseSemanticLabel',
+  'notificationsViewProfileSemanticLabel',
+  'notificationsViewProfilesSemanticLabel',
+  'notificationRepliedToYourComment',
+  'notificationAndConnector',
+  'notificationOthersCount',
 };
 
 Map<String, Object?> _readArb(File file) {
