@@ -626,6 +626,62 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
+        test('hydrates sparse API results with bulk loop stats', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                  loops: 0,
+                ),
+              ],
+            ),
+          );
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+          ).thenAnswer(
+            (_) async => const BulkVideoStatsResponse(
+              stats: {
+                'event-1': BulkVideoStatsEntry(
+                  eventId: 'event-1',
+                  reactions: 0,
+                  comments: 0,
+                  reposts: 0,
+                  views: 42,
+                ),
+              },
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.rawTags['views'], equals('42'));
+          expect(result.videos.first.totalLoops, equals(42));
+          verify(
+            () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+          ).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
         test('maps REST moderation labels to moderationLabels '
             '(not contentWarningLabels) and does not apply warn', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);

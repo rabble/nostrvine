@@ -183,7 +183,8 @@ class VideosRepository {
         );
 
         final videos = _transformVideoStats(response.videos);
-        return (videos: videos, rawBody: response.rawBody);
+        final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
+        return (videos: hydratedVideos, rawBody: response.rawBody);
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -202,7 +203,64 @@ class VideosRepository {
 
     final events = await _nostrClient.queryEvents([filter]);
 
-    return (videos: _transformAndFilter(events), rawBody: null);
+    final videos = _transformAndFilter(events);
+    final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
+    return (videos: hydratedVideos, rawBody: null);
+  }
+
+  Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
+    List<VideoEvent> videos,
+  ) async {
+    if (videos.isEmpty ||
+        _funnelcakeApiClient == null ||
+        !_funnelcakeApiClient.isAvailable) {
+      return videos;
+    }
+
+    final videosNeedingStats = videos
+        .where(
+          (video) =>
+              video.id.isNotEmpty &&
+              (video.originalLoops == null || video.rawTags['views'] == null),
+        )
+        .toList();
+    if (videosNeedingStats.isEmpty) return videos;
+
+    try {
+      final statsById = <String, BulkVideoStatsEntry>{};
+      for (var i = 0; i < videosNeedingStats.length; i += 100) {
+        final end = i + 100 > videosNeedingStats.length
+            ? videosNeedingStats.length
+            : i + 100;
+        final chunk = videosNeedingStats.sublist(i, end);
+        final response = await _funnelcakeApiClient.getBulkVideoStats(
+          chunk.map((video) => video.id).toList(),
+        );
+        statsById.addAll(response.stats);
+      }
+
+      if (statsById.isEmpty) return videos;
+
+      return videos.map((video) {
+        final stats = statsById[video.id];
+        if (stats == null) return video;
+
+        return video.copyWith(
+          originalLoops: stats.loops ?? video.originalLoops,
+          rawTags: video.rawTags['views'] == null && stats.views != null
+              ? {...video.rawTags, 'views': stats.views.toString()}
+              : video.rawTags,
+        );
+      }).toList();
+    } on Object catch (e, stackTrace) {
+      developer.log(
+        'Failed to hydrate home feed videos with bulk stats',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return videos;
+    }
   }
 
   /// Merges list videos with following videos and builds attribution.
