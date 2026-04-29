@@ -53,13 +53,6 @@ class ProfileFeed extends _$ProfileFeed {
   /// Guard against duplicate listener registration from retained-state path.
   bool _listenersRegistered = false;
 
-  /// Guard against duplicate Funnelcake availability listener registration.
-  bool _availabilityListenerRegistered = false;
-
-  /// Tracks a late availability flip that happened before the notifier had
-  /// published its first state.
-  bool _pendingAvailabilityRefresh = false;
-
   /// Cached [VideoEventService] captured at build() time.
   ///
   /// Both [videoEventServiceProvider] and this notifier are keepAlive, so
@@ -86,7 +79,6 @@ class ProfileFeed extends _$ProfileFeed {
     );
 
     _videoEventService = ref.watch(videoEventServiceProvider);
-    _registerFunnelcakeAvailabilityListener();
     List<VideoEvent> authorVideos = [];
 
     // Try REST API first if available (use centralized availability check)
@@ -119,7 +111,7 @@ class ProfileFeed extends _$ProfileFeed {
     unawaited(
       Future(() async {
         await _refreshFromNostrSource();
-        if (funnelcakeAvailable) {
+        if (funnelcakeAvailable || await _awaitFunnelcakeAvailability()) {
           await _refreshFromRestApi(clientOverride: funnelcakeClient);
         }
       }),
@@ -146,14 +138,6 @@ class ProfileFeed extends _$ProfileFeed {
       totalVideoCount: _totalVideoCount,
     );
     _cacheSnapshot(initialState);
-    if (_pendingAvailabilityRefresh) {
-      _pendingAvailabilityRefresh = false;
-      unawaited(refresh(retainedState: initialState));
-      return initialState.copyWith(
-        isRefreshing: true,
-        isFetchingTotalCount: true,
-      );
-    }
     return initialState;
   }
 
@@ -220,31 +204,6 @@ class ProfileFeed extends _$ProfileFeed {
   /// Call this after a video is updated to sync the provider's state
   void refreshFromService() {
     unawaited(refresh());
-  }
-
-  void _registerFunnelcakeAvailabilityListener() {
-    if (_availabilityListenerRegistered) return;
-    _availabilityListenerRegistered = true;
-
-    ref.listen<AsyncValue<bool>>(funnelcakeAvailableProvider, (previous, next) {
-      final wasAvailable = previous?.asData?.value ?? false;
-      final isAvailable = next.asData?.value ?? false;
-      if (wasAvailable || !isAvailable || !ref.mounted) return;
-
-      final currentState = state.asData?.value;
-      if (currentState == null) {
-        _pendingAvailabilityRefresh = true;
-        return;
-      }
-
-      if (_usingRestApi || _isRefreshing) return;
-      unawaited(refresh(retainedState: currentState));
-    });
-
-    ref.onDispose(() {
-      _availabilityListenerRegistered = false;
-      _pendingAvailabilityRefresh = false;
-    });
   }
 
   /// Optimistically add a newly published video to the profile feed state.
@@ -385,6 +344,16 @@ class ProfileFeed extends _$ProfileFeed {
       if (currentState != null && currentState.isFetchingTotalCount) {
         _emitState(currentState.copyWith(isFetchingTotalCount: false));
       }
+    }
+  }
+
+  Future<bool> _awaitFunnelcakeAvailability() async {
+    try {
+      return await ref
+          .read(funnelcakeAvailableProvider.future)
+          .timeout(const Duration(seconds: 4));
+    } catch (_) {
+      return false;
     }
   }
 
@@ -608,7 +577,22 @@ class ProfileFeed extends _$ProfileFeed {
 
     final refreshFutures = <Future<void>>[
       _refreshFromNostrSource(),
-      if (funnelcakeAvailable) _refreshFromRestApi(),
+      if (funnelcakeAvailable)
+        _refreshFromRestApi()
+      else
+        () async {
+          final becameAvailable = await _awaitFunnelcakeAvailability();
+          if (becameAvailable && ref.mounted) {
+            await _refreshFromRestApi();
+          } else if (currentState != null && ref.mounted) {
+            final latestState = state.asData?.value;
+            if (latestState != null && latestState.isFetchingTotalCount) {
+              state = AsyncData(
+                latestState.copyWith(isFetchingTotalCount: false),
+              );
+            }
+          }
+        }(),
     ];
 
     await Future.wait(refreshFutures);
