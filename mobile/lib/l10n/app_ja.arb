@@ -2255,7 +2255,21 @@
             }
         }
     },
-    "inboxCollabInviteSentStatus": "Invitation sent",
+    "inboxCollabInviteAcceptButton": "承認",
+    "inboxCollabInviteAcceptError": "承認できなかったよ。もう一度試してね。",
+    "inboxCollabInviteAcceptedStatus": "承認済み",
+    "inboxCollabInviteCardRoleLabel": "この投稿で{role}",
+    "@inboxCollabInviteCardRoleLabel": {
+        "placeholders": {
+            "role": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxCollabInviteCardTitle": "コラボ招待",
+    "inboxCollabInviteIgnoreButton": "無視",
+    "inboxCollabInviteIgnoredStatus": "無視済み",
+    "inboxCollabInviteSentStatus": "招待を送ったよ",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
     },

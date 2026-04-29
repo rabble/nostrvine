@@ -4344,7 +4344,30 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxConversationUnmuted => '会話のミュートを解除したよ';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => 'コラボ招待';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return 'この投稿で$role';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => '承認';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => '無視';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => '承認済み';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => '無視済み';
+
+  @override
+  String get inboxCollabInviteAcceptError => '承認できなかったよ。もう一度試してね。';
+
+  @override
+  String get inboxCollabInviteSentStatus => '招待を送ったよ';
 
   @override
   String get reportDialogCancel => 'キャンセル';

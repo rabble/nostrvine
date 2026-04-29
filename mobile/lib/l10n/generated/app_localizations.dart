@@ -8084,6 +8084,48 @@ abstract class AppLocalizations {
   /// **'Conversation unmuted'**
   String get inboxConversationUnmuted;
 
+  /// Header label on a collaborator invite card in the DM conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborator invite'**
+  String get inboxCollabInviteCardTitle;
+
+  /// Subtitle on the collaborator invite card describing the offered collaborator role.
+  ///
+  /// In en, this message translates to:
+  /// **'{role} on this post'**
+  String inboxCollabInviteCardRoleLabel(String role);
+
+  /// No description provided for @inboxCollabInviteAcceptButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get inboxCollabInviteAcceptButton;
+
+  /// No description provided for @inboxCollabInviteIgnoreButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore'**
+  String get inboxCollabInviteIgnoreButton;
+
+  /// No description provided for @inboxCollabInviteAcceptedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get inboxCollabInviteAcceptedStatus;
+
+  /// No description provided for @inboxCollabInviteIgnoredStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Ignored'**
+  String get inboxCollabInviteIgnoredStatus;
+
+  /// No description provided for @inboxCollabInviteAcceptError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not accept. Try again.'**
+  String get inboxCollabInviteAcceptError;
+
   /// Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions.
   ///
   /// In en, this message translates to:

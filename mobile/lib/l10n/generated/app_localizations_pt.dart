@@ -4565,7 +4565,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxConversationUnmuted => 'Conversa com som ativado';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => 'Convite para colaborar';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return '$role nesta publicação';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => 'Aceitar';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => 'Ignorar';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => 'Aceito';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => 'Ignorado';
+
+  @override
+  String get inboxCollabInviteAcceptError =>
+      'Não foi possível aceitar. Tente novamente.';
+
+  @override
+  String get inboxCollabInviteSentStatus => 'Convite enviado';
 
   @override
   String get reportDialogCancel => 'Cancelar';

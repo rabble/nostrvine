@@ -4580,7 +4580,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxConversationUnmuted => 'Conversación sin silenciar';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => 'Invitación a colaborar';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return '$role en esta publicación';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => 'Aceptar';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => 'Ignorar';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => 'Aceptada';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => 'Ignorada';
+
+  @override
+  String get inboxCollabInviteAcceptError =>
+      'No se pudo aceptar. Inténtalo de nuevo.';
+
+  @override
+  String get inboxCollabInviteSentStatus => 'Invitación enviada';
 
   @override
   String get reportDialogCancel => 'Cancelar';

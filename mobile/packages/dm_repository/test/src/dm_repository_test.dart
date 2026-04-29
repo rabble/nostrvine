@@ -578,9 +578,12 @@ void main() {
           skipNip04Fallback: true,
         );
 
-        // Allow any unawaited microtasks to settle. The NIP-04 fallback
-        // would be enqueued via `unawaited(...)` if the skip flag leaked.
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        // Drain pending microtasks so an unawaited `_sendNip04Message`
+        // — the only way the fallback can fire when `skipNip04Fallback`
+        // leaks — has the chance to call `publishEvent` before we
+        // assert it never did. `pumpEventQueue` (default 20 ticks) is
+        // the canonical drain in flutter_test.
+        await pumpEventQueue();
 
         expect(result.success, isTrue);
         verifyNever(() => mockNostrClient.publishEvent(any()));

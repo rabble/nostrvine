@@ -4552,7 +4552,31 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxConversationUnmuted => 'Gesprek niet meer gedempt';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => 'Uitnodiging om samen te werken';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return '$role bij deze post';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => 'Accepteren';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => 'Negeren';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => 'Geaccepteerd';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => 'Genegeerd';
+
+  @override
+  String get inboxCollabInviteAcceptError =>
+      'Accepteren is niet gelukt. Probeer het opnieuw.';
+
+  @override
+  String get inboxCollabInviteSentStatus => 'Uitnodiging verzonden';
 
   @override
   String get reportDialogCancel => 'Annuleren';

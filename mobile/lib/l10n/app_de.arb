@@ -2256,7 +2256,21 @@
             }
         }
     },
-    "inboxCollabInviteSentStatus": "Invitation sent",
+    "inboxCollabInviteAcceptButton": "Annehmen",
+    "inboxCollabInviteAcceptError": "Annahme fehlgeschlagen. Erneut versuchen.",
+    "inboxCollabInviteAcceptedStatus": "Angenommen",
+    "inboxCollabInviteCardRoleLabel": "{role} bei diesem Beitrag",
+    "@inboxCollabInviteCardRoleLabel": {
+        "placeholders": {
+            "role": {
+                "type": "String"
+            }
+        }
+    },
+    "inboxCollabInviteCardTitle": "Einladung zur Zusammenarbeit",
+    "inboxCollabInviteIgnoreButton": "Ignorieren",
+    "inboxCollabInviteIgnoredStatus": "Ignoriert",
+    "inboxCollabInviteSentStatus": "Einladung gesendet",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
     },

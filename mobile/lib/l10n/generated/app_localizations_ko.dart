@@ -4359,7 +4359,30 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxConversationUnmuted => '대화 알림을 다시 켰어요';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => '콜라보 초대';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return '이 게시물의 $role';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => '수락';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => '무시';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => '수락됨';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => '무시됨';
+
+  @override
+  String get inboxCollabInviteAcceptError => '수락하지 못했어요. 다시 시도해 주세요.';
+
+  @override
+  String get inboxCollabInviteSentStatus => '초대를 보냈어요';
 
   @override
   String get reportDialogCancel => '취소';

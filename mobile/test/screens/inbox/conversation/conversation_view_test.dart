@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
@@ -50,6 +51,7 @@ void main() {
   );
 
   final now = DateTime.now();
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   group(ConversationView, () {
     late _MockConversationBloc mockBloc;
@@ -241,13 +243,13 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.text('Collaborator invite'), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
           expect(find.textContaining('Skate loop'), findsOneWidget);
-          expect(find.text('Accept'), findsOneWidget);
-          expect(find.text('Ignore'), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteAcceptButton), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsOneWidget);
           expect(find.text('You were invited to collaborate.'), findsNothing);
 
-          await tester.tap(find.text('Accept'));
+          await tester.tap(find.text(l10n.inboxCollabInviteAcceptButton));
           await tester.pump();
 
           verify(
@@ -297,11 +299,11 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.text('Collaborator invite'), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
           expect(find.textContaining('Skate loop'), findsOneWidget);
-          expect(find.text('Invitation sent'), findsOneWidget);
-          expect(find.text('Accept'), findsNothing);
-          expect(find.text('Ignore'), findsNothing);
+          expect(find.text(l10n.inboxCollabInviteSentStatus), findsOneWidget);
+          expect(find.text(l10n.inboxCollabInviteAcceptButton), findsNothing);
+          expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsNothing);
           expect(find.text('You were invited to collaborate.'), findsNothing);
 
           // Stronger assertion than "no acceptInvite call": sender-side

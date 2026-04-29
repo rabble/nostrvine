@@ -93,16 +93,15 @@ class _CardChrome extends StatelessWidget {
   final bool isSent;
   final Widget action;
 
-  String get _titleText {
+  String _titleText() {
     final title = invite.title?.trim();
     if (title != null && title.isNotEmpty) return title;
     return invite.videoDTag;
   }
 
-  String get _detailText => '${invite.role} on this post';
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
@@ -124,19 +123,19 @@ class _CardChrome extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Collaborator invite',
+                l10n.inboxCollabInviteCardTitle,
                 style: VineTheme.labelLargeFont(color: VineTheme.primary),
               ),
               const SizedBox(height: 8),
               Text(
-                _titleText,
+                _titleText(),
                 style: VineTheme.titleMediumFont(),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Text(
-                _detailText,
+                l10n.inboxCollabInviteCardRoleLabel(invite.role),
                 style: VineTheme.bodySmallFont(
                   color: VineTheme.onSurfaceMuted,
                 ),
@@ -162,21 +161,22 @@ class _InviteActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return switch (state) {
-      CollaboratorInviteState.accepted => const _StatusText(
-        label: 'Accepted',
+      CollaboratorInviteState.accepted => _StatusText(
+        label: l10n.inboxCollabInviteAcceptedStatus,
         color: VineTheme.primary,
       ),
-      CollaboratorInviteState.ignored => const _StatusText(
-        label: 'Ignored',
+      CollaboratorInviteState.ignored => _StatusText(
+        label: l10n.inboxCollabInviteIgnoredStatus,
         color: VineTheme.onSurfaceMuted,
       ),
       CollaboratorInviteState.failed => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const _StatusText(
-            label: 'Could not accept. Try again.',
+          _StatusText(
+            label: l10n.inboxCollabInviteAcceptError,
             color: VineTheme.error,
           ),
           const SizedBox(height: 12),
@@ -206,11 +206,12 @@ class _ActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Row(
       children: [
         Expanded(
           child: DivineButton(
-            label: 'Accept',
+            label: l10n.inboxCollabInviteAcceptButton,
             size: DivineButtonSize.small,
             isLoading: isAccepting,
             onPressed: isAccepting
@@ -225,7 +226,7 @@ class _ActionRow extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: DivineButton(
-            label: 'Ignore',
+            label: l10n.inboxCollabInviteIgnoreButton,
             type: DivineButtonType.secondary,
             size: DivineButtonSize.small,
             onPressed: isAccepting

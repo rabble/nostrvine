@@ -4510,7 +4510,30 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxConversationUnmuted => 'Bisu percakapan dibatalkan';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => 'Undangan kolaborasi';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return '$role di postingan ini';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => 'Terima';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => 'Abaikan';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => 'Diterima';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => 'Diabaikan';
+
+  @override
+  String get inboxCollabInviteAcceptError => 'Tidak bisa menerima. Coba lagi.';
+
+  @override
+  String get inboxCollabInviteSentStatus => 'Undangan terkirim';
 
   @override
   String get reportDialogCancel => 'Batal';

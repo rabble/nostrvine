@@ -4491,7 +4491,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxConversationUnmuted => 'تم إلغاء كتم المحادثة';
 
   @override
-  String get inboxCollabInviteSentStatus => 'Invitation sent';
+  String get inboxCollabInviteCardTitle => 'دعوة للتعاون';
+
+  @override
+  String inboxCollabInviteCardRoleLabel(String role) {
+    return '$role على هذا المنشور';
+  }
+
+  @override
+  String get inboxCollabInviteAcceptButton => 'قبول';
+
+  @override
+  String get inboxCollabInviteIgnoreButton => 'تجاهل';
+
+  @override
+  String get inboxCollabInviteAcceptedStatus => 'تم القبول';
+
+  @override
+  String get inboxCollabInviteIgnoredStatus => 'تم التجاهل';
+
+  @override
+  String get inboxCollabInviteAcceptError => 'تعذر القبول. حاول مرة أخرى.';
+
+  @override
+  String get inboxCollabInviteSentStatus => 'تم إرسال الدعوة';
 
   @override
   String get reportDialogCancel => 'إلغاء';

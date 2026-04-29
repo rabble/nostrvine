@@ -2294,6 +2294,24 @@
   "inboxConversationMuted": "Conversation muted",
   "inboxConversationUnmuted": "Conversation unmuted",
 
+  "inboxCollabInviteCardTitle": "Collaborator invite",
+  "@inboxCollabInviteCardTitle": {
+    "description": "Header label on a collaborator invite card in the DM conversation."
+  },
+  "inboxCollabInviteCardRoleLabel": "{role} on this post",
+  "@inboxCollabInviteCardRoleLabel": {
+    "description": "Subtitle on the collaborator invite card describing the offered collaborator role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxCollabInviteAcceptButton": "Accept",
+  "inboxCollabInviteIgnoreButton": "Ignore",
+  "inboxCollabInviteAcceptedStatus": "Accepted",
+  "inboxCollabInviteIgnoredStatus": "Ignored",
+  "inboxCollabInviteAcceptError": "Could not accept. Try again.",
   "inboxCollabInviteSentStatus": "Invitation sent",
   "@inboxCollabInviteSentStatus": {
     "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."

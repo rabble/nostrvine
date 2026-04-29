@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
 import 'package:openvine/blocs/dm/message_requests/request_preview_cubit.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -63,6 +64,8 @@ void main() {
     videoDTag: 'skate-loop',
     role: 'Collaborator',
   );
+
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   group(RequestPreviewView, () {
     late _MockMessageRequestActionsCubit mockActionsCubit;
@@ -226,14 +229,16 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Collaborator invite'), findsOneWidget);
-        expect(find.text('Accept'), findsOneWidget);
-        expect(find.text('Ignore'), findsOneWidget);
+        expect(find.text(l10n.inboxCollabInviteCardTitle), findsOneWidget);
+        expect(find.text(l10n.inboxCollabInviteAcceptButton), findsOneWidget);
+        expect(find.text(l10n.inboxCollabInviteIgnoreButton), findsOneWidget);
         expect(find.text('You were invited to collaborate.'), findsNothing);
 
-        await tester.ensureVisible(find.text('Ignore'));
+        await tester.ensureVisible(
+          find.text(l10n.inboxCollabInviteIgnoreButton),
+        );
         await tester.pump();
-        await tester.tap(find.text('Ignore'));
+        await tester.tap(find.text(l10n.inboxCollabInviteIgnoreButton));
         await tester.pump();
 
         verify(
