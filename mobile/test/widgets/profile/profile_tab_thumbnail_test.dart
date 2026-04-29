@@ -2,13 +2,18 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
 void main() {
   group(ProfileTabThumbnail, () {
-    Widget buildSubject({String? thumbnailUrl, bool isPrecached = false}) {
+    Widget buildSubject({
+      String? thumbnailUrl,
+      String? blurhash,
+      bool isPrecached = false,
+    }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -19,6 +24,7 @@ void main() {
             height: 100,
             child: ProfileTabThumbnail(
               thumbnailUrl: thumbnailUrl,
+              blurhash: blurhash,
               isPrecached: isPrecached,
             ),
           ),
@@ -93,6 +99,41 @@ void main() {
         expect(image.fadeInDuration, equals(Duration.zero));
         expect(image.fadeOutDuration, equals(Duration.zero));
       });
+    });
+
+    group('blurhash fallback', () {
+      const validBlurhash = 'LEHV6nWB2yk8pyo0adR*.7kCMdnj';
+
+      testWidgets(
+        '$BlurhashDisplay when thumbnailUrl is null and blurhash is provided',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(blurhash: validBlurhash));
+
+          expect(find.byType(BlurhashDisplay), findsOneWidget);
+          expect(find.byType(ProfileTabThumbnailPlaceholder), findsNothing);
+        },
+      );
+
+      testWidgets(
+        '$ProfileTabThumbnailPlaceholder when thumbnailUrl and blurhash are '
+        'both null',
+        (tester) async {
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(ProfileTabThumbnailPlaceholder), findsOneWidget);
+          expect(find.byType(BlurhashDisplay), findsNothing);
+        },
+      );
+
+      testWidgets(
+        '$ProfileTabThumbnailPlaceholder when blurhash is empty string',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(blurhash: ''));
+
+          expect(find.byType(ProfileTabThumbnailPlaceholder), findsOneWidget);
+          expect(find.byType(BlurhashDisplay), findsNothing);
+        },
+      );
     });
   });
 }

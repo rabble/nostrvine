@@ -388,6 +388,7 @@ class _VideoGridTile extends StatelessWidget {
           decoration: const BoxDecoration(color: VineTheme.cardBackground),
           child: ProfileTabThumbnail(
             thumbnailUrl: videoEvent.thumbnailUrl,
+            blurhash: videoEvent.blurhash,
             isPrecached: isPrecached,
           ),
         ),

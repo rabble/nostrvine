@@ -189,7 +189,10 @@ class _VideoReplyTile extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              ProfileTabThumbnail(thumbnailUrl: comment.thumbnailUrl),
+              ProfileTabThumbnail(
+                thumbnailUrl: comment.thumbnailUrl,
+                blurhash: comment.videoBlurhash,
+              ),
               // Play icon overlay
               const Center(
                 child: Icon(

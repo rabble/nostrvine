@@ -183,7 +183,10 @@ class _CollabGridTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
         decoration: const BoxDecoration(color: VineTheme.cardBackground),
-        child: ProfileTabThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+        child: ProfileTabThumbnail(
+          thumbnailUrl: videoEvent.thumbnailUrl,
+          blurhash: videoEvent.blurhash,
+        ),
       ),
     ),
   );
