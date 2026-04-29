@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Video borttagen",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Stäng avatar",
+    "profileAvatarLightboxCloseSemanticLabel": "Stäng avatarförhandsvisning",
+    "notificationsUnreadPrefix": "Oläst avisering",
+    "notificationsViewProfileSemanticLabel": "Visa {displayName}s profil",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Visa profiler",
+    "notificationRepliedToYourComment": "svarade på din kommentar",
+    "notificationAndConnector": "och",
+    "notificationOthersCount": "{count, plural, =1{1 till} other{{count} till}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

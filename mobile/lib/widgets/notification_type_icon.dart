@@ -36,10 +36,8 @@ class NotificationTypeIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const slack = _dotBorder; // room for the dot to extend past the icon
-    return SizedBox(
-      width: _containerSize + slack,
-      height: _containerSize + slack,
+    return SizedBox.square(
+      dimension: _containerSize + _dotBorder,
       child: Stack(
         clipBehavior: Clip.none,
         children: [

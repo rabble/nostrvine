@@ -1,4 +1,3 @@
-// TODO(notifications-refactor): Remove after migration is verified
 // ABOUTME: Notifications screen displaying user's social interactions and system updates
 // ABOUTME: Shows likes, comments, follows, mentions, reposts with filtering and read state
 
@@ -132,7 +131,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
             const SizedBox(height: 12),
             // Transparent Material so surfaceContainerHigh shows through.
             Material(
-              color: VineTheme.transparent,
+              type: .transparency,
               child: Stack(
                 children: [
                   TabBar(
@@ -160,7 +159,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                     ],
                   ),
                   // Right-edge fade gradient shim to hint scrollability.
-                  Positioned(
+                  const Positioned(
                     top: 0,
                     bottom: 0,
                     right: 0,
@@ -173,9 +172,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                             end: Alignment.centerLeft,
                             colors: [
                               VineTheme.surfaceContainerHigh,
-                              VineTheme.surfaceContainerHigh.withValues(
-                                alpha: 0,
-                              ),
+                              VineTheme.transparent,
                             ],
                           ),
                         ),

@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Video dihapus",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Tutup avatar",
+    "profileAvatarLightboxCloseSemanticLabel": "Tutup pratinjau avatar",
+    "notificationsUnreadPrefix": "Notifikasi belum dibaca",
+    "notificationsViewProfileSemanticLabel": "Lihat profil {displayName}",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Lihat profil",
+    "notificationRepliedToYourComment": "membalas komentar Anda",
+    "notificationAndConnector": "dan",
+    "notificationOthersCount": "{count, plural, other{{count} lainnya}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

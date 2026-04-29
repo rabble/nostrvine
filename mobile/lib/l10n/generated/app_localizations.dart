@@ -6026,6 +6026,12 @@ abstract class AppLocalizations {
   /// **'When people interact with your content, you\'ll see it here'**
   String get notificationsEmptyDescription;
 
+  /// Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread notification'**
+  String get notificationsUnreadPrefix;
+
   /// Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.
   ///
   /// In en, this message translates to:

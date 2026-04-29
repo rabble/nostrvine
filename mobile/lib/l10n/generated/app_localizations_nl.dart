@@ -292,10 +292,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileMoreSemanticLabel => 'Meer opties';
 
   @override
-  String get profileAvatarLightboxBarrierLabel => 'Close avatar';
+  String get profileAvatarLightboxBarrierLabel => 'Avatar sluiten';
 
   @override
-  String get profileAvatarLightboxCloseSemanticLabel => 'Close avatar preview';
+  String get profileAvatarLightboxCloseSemanticLabel =>
+      'Avatarvoorbeeld sluiten';
 
   @override
   String get profileFollowingLabel => 'Volgend';
@@ -3437,12 +3438,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Als mensen met je inhoud interacteren, zie je het hier';
 
   @override
+  String get notificationsUnreadPrefix => 'Ongelezen melding';
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
-    return 'View $displayName profile';
+    return 'Profiel van $displayName bekijken';
   }
 
   @override
-  String get notificationsViewProfilesSemanticLabel => 'View profiles';
+  String get notificationsViewProfilesSemanticLabel => 'Profielen bekijken';
 
   @override
   String notificationsLoadingType(String type) {
@@ -5055,18 +5059,19 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'replied to your comment';
+  String get notificationRepliedToYourComment =>
+      'heeft op je reactie gereageerd';
 
   @override
-  String get notificationAndConnector => 'and';
+  String get notificationAndConnector => 'en';
 
   @override
   String notificationOthersCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count others',
-      one: '1 other',
+      other: '$count anderen',
+      one: '1 ander',
     );
     return '$_temp0';
   }

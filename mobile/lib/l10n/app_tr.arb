@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Video kaldırıldı",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Avatarı kapat",
+    "profileAvatarLightboxCloseSemanticLabel": "Avatar önizlemesini kapat",
+    "notificationsUnreadPrefix": "Okunmamış bildirim",
+    "notificationsViewProfileSemanticLabel": "{displayName} profilini görüntüle",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Profilleri görüntüle",
+    "notificationRepliedToYourComment": "yorumuna yanıt verdi",
+    "notificationAndConnector": "ve",
+    "notificationOthersCount": "{count, plural, =1{1 kişi daha} other{{count} kişi daha}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

@@ -36,7 +36,7 @@ class NotificationListItem extends StatelessWidget {
     };
 
     return Material(
-      color: VineTheme.transparent,
+      type: .transparency,
       child: InkWell(
         onTap: onTap,
         child: DecoratedBox(

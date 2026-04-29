@@ -260,10 +260,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileMoreSemanticLabel => '더 많은 옵션';
 
   @override
-  String get profileAvatarLightboxBarrierLabel => 'Close avatar';
+  String get profileAvatarLightboxBarrierLabel => '아바타 닫기';
 
   @override
-  String get profileAvatarLightboxCloseSemanticLabel => 'Close avatar preview';
+  String get profileAvatarLightboxCloseSemanticLabel => '아바타 미리보기 닫기';
 
   @override
   String get profileFollowingLabel => '팔로잉';
@@ -3267,12 +3267,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsEmptyDescription => '다른 사람들이 내 콘텐츠에 반응하면 여기에 표시돼요';
 
   @override
+  String get notificationsUnreadPrefix => '읽지 않은 알림';
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
-    return 'View $displayName profile';
+    return '$displayName님의 프로필 보기';
   }
 
   @override
-  String get notificationsViewProfilesSemanticLabel => 'View profiles';
+  String get notificationsViewProfilesSemanticLabel => '프로필 보기';
 
   @override
   String notificationsLoadingType(String type) {
@@ -4850,18 +4853,17 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'replied to your comment';
+  String get notificationRepliedToYourComment => '님이 회원님의 댓글에 답글을 남겼습니다';
 
   @override
-  String get notificationAndConnector => 'and';
+  String get notificationAndConnector => '및';
 
   @override
   String notificationOthersCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count others',
-      one: '1 other',
+      other: '외 $count명',
     );
     return '$_temp0';
   }

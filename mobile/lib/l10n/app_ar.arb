@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "إغلاق الصورة الرمزية",
+    "profileAvatarLightboxCloseSemanticLabel": "إغلاق معاينة الصورة الرمزية",
+    "notificationsUnreadPrefix": "إشعار غير مقروء",
+    "notificationsViewProfileSemanticLabel": "عرض ملف {displayName}",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "عرض الملفات الشخصية",
+    "notificationRepliedToYourComment": "ردّ على تعليقك",
+    "notificationAndConnector": "و",
+    "notificationOthersCount": "{count, plural, =1{شخص آخر} other{{count} أشخاص آخرين}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

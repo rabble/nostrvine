@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "動画を削除しました",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "アバターを閉じる",
+    "profileAvatarLightboxCloseSemanticLabel": "アバタープレビューを閉じる",
+    "notificationsUnreadPrefix": "未読の通知",
+    "notificationsViewProfileSemanticLabel": "{displayName}さんのプロフィールを開く",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "プロフィールを開く",
+    "notificationRepliedToYourComment": "があなたのコメントに返信しました",
+    "notificationAndConnector": "と",
+    "notificationOthersCount": "{count, plural, other{他{count}人}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

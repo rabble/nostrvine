@@ -250,13 +250,13 @@ class _CommentHeader extends ConsumerWidget {
         currentUserPubkey.isNotEmpty && currentUserPubkey == authorPubkey;
 
     return Row(
+      spacing: 8,
       children: [
         UserAvatar(
           size: avatarSize,
           imageUrl: profile?.picture,
           placeholderSeed: authorPubkey,
         ),
-        const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -1768,6 +1768,10 @@
     }
   },
   "notificationsEmptyDescription": "When people interact with your content, you'll see it here",
+  "notificationsUnreadPrefix": "Unread notification",
+  "@notificationsUnreadPrefix": {
+    "description": "Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself."
+  },
   "notificationsViewProfileSemanticLabel": "View {displayName} profile",
   "@notificationsViewProfileSemanticLabel": {
     "description": "Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.",

@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Video verwijderd",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Avatar sluiten",
+    "profileAvatarLightboxCloseSemanticLabel": "Avatarvoorbeeld sluiten",
+    "notificationsUnreadPrefix": "Ongelezen melding",
+    "notificationsViewProfileSemanticLabel": "Profiel van {displayName} bekijken",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Profielen bekijken",
+    "notificationRepliedToYourComment": "heeft op je reactie gereageerd",
+    "notificationAndConnector": "en",
+    "notificationOthersCount": "{count, plural, =1{1 ander} other{{count} anderen}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

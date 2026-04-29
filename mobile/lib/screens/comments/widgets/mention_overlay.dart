@@ -93,13 +93,13 @@ class _MentionSuggestionItem extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
+          spacing: 10,
           children: [
             UserAvatar(
               size: 32,
               imageUrl: profile?.picture,
               placeholderSeed: suggestion.pubkey,
             ),
-            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

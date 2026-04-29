@@ -3427,6 +3427,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'When people interact with your content, you\'ll see it here';
 
   @override
+  String get notificationsUnreadPrefix => 'Unread notification';
+
+  @override
   String notificationsViewProfileSemanticLabel(String displayName) {
     return 'View $displayName profile';
   }

@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Videoclip eliminat",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Închide avatarul",
+    "profileAvatarLightboxCloseSemanticLabel": "Închide previzualizarea avatarului",
+    "notificationsUnreadPrefix": "Notificare necitită",
+    "notificationsViewProfileSemanticLabel": "Vezi profilul {displayName}",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Vezi profilurile",
+    "notificationRepliedToYourComment": "a răspuns la comentariul tău",
+    "notificationAndConnector": "și",
+    "notificationOthersCount": "{count, plural, =1{încă 1 persoană} other{încă {count} persoane}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

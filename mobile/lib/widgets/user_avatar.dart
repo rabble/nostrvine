@@ -53,6 +53,124 @@ class UserAvatar extends StatelessWidget {
   /// instead of the size-derived default.
   final double? cornerRadius;
 
+  @override
+  Widget build(BuildContext context) {
+    final avatar = SizedBox.square(
+      dimension: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(_cornerRadius),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildContent(),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_cornerRadius),
+                border: Border.all(
+                  color: VineTheme.onSurfaceDisabled,
+                  width: _borderWidth,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return Semantics(
+      label: semanticLabel ?? (name != null ? '$name avatar' : 'User avatar'),
+      button: onTap != null,
+      child: onTap == null
+          ? avatar
+          : GestureDetector(onTap: onTap, child: avatar),
+    );
+  }
+
+  double get _cornerRadius =>
+      cornerRadius ?? (size <= 24 ? size / 3 : math.min(size * 0.4, 56));
+
+  double get _borderWidth => size >= 120 ? 3 : 1;
+
+  Widget _buildContent() {
+    if (imageProvider != null) {
+      return Image(
+        image: imageProvider!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _Placeholder(
+          size: size,
+          placeholderTone: placeholderTone,
+          placeholderSeed: placeholderSeed,
+          semanticLabel: semanticLabel,
+          imageUrl: imageUrl,
+          name: name,
+        ),
+      );
+    }
+
+    if (imageUrl != null && imageUrl!.isNotEmpty) {
+      return VineCachedImage(
+        imageUrl: imageUrl!,
+        placeholder: (context, url) => _Placeholder(
+          size: size,
+          placeholderTone: placeholderTone,
+          placeholderSeed: placeholderSeed,
+          semanticLabel: semanticLabel,
+          imageUrl: imageUrl,
+          name: name,
+        ),
+        errorWidget: (context, url, error) {
+          if (error.toString().contains('Invalid image data') ||
+              error.toString().contains('Image codec failed')) {
+            UnifiedLogger.warning(
+              '🖼️ Invalid image data for avatar URL: $url - Error: $error',
+              name: 'UserAvatar',
+            );
+          } else {
+            UnifiedLogger.debug(
+              'Avatar image failed to load URL: $url - Error: $error',
+              name: 'UserAvatar',
+            );
+          }
+          return _Placeholder(
+            size: size,
+            placeholderTone: placeholderTone,
+            placeholderSeed: placeholderSeed,
+            semanticLabel: semanticLabel,
+            imageUrl: imageUrl,
+            name: name,
+          );
+        },
+      );
+    }
+
+    return _Placeholder(
+      size: size,
+      placeholderTone: placeholderTone,
+      placeholderSeed: placeholderSeed,
+      semanticLabel: semanticLabel,
+      imageUrl: imageUrl,
+      name: name,
+    );
+  }
+}
+
+class _Placeholder extends StatelessWidget {
+  const _Placeholder({
+    required this.size,
+    required this.placeholderTone,
+    required this.placeholderSeed,
+    required this.semanticLabel,
+    required this.imageUrl,
+    required this.name,
+  });
+
+  final double size;
+  final UserAvatarPlaceholderTone placeholderTone;
+  final String? placeholderSeed;
+  final String? semanticLabel;
+  final String? imageUrl;
+  final String? name;
+
   static const List<UserAvatarPlaceholderTone> _paletteOrder = [
     UserAvatarPlaceholderTone.yellow,
     UserAvatarPlaceholderTone.lime,
@@ -101,79 +219,35 @@ class UserAvatar extends StatelessWidget {
     ),
   };
 
+  static Color _lighten(Color color, double amount) =>
+      Color.lerp(color, VineTheme.whiteText, amount) ?? color;
+
+  static Color _darken(Color color, double amount) =>
+      Color.lerp(color, VineTheme.backgroundColor, amount) ?? color;
+
+  UserAvatarPlaceholderTone get _effectiveTone {
+    if (placeholderTone != UserAvatarPlaceholderTone.auto) {
+      return placeholderTone;
+    }
+
+    final stableSeed = placeholderSeed?.trim();
+    final seed = stableSeed != null && stableSeed.isNotEmpty
+        ? stableSeed
+        : [name, imageUrl, semanticLabel]
+              .whereType<String>()
+              .where((value) => value.trim().isNotEmpty)
+              .join('|');
+
+    if (seed.isEmpty) return UserAvatarPlaceholderTone.yellow;
+
+    final index =
+        seed.runes.fold<int>(0, (sum, rune) => sum + rune) %
+        _paletteOrder.length;
+    return _paletteOrder[index];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final avatar = SizedBox.square(
-      dimension: size,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(_cornerRadius),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildContent(),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(_cornerRadius),
-                border: Border.all(
-                  color: VineTheme.onSurfaceDisabled,
-                  width: _borderWidth,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    return Semantics(
-      label: semanticLabel ?? (name != null ? '$name avatar' : 'User avatar'),
-      button: onTap != null,
-      child: onTap == null
-          ? avatar
-          : GestureDetector(onTap: onTap, child: avatar),
-    );
-  }
-
-  double get _cornerRadius =>
-      cornerRadius ?? (size <= 24 ? size / 3 : math.min(size * 0.4, 56));
-
-  double get _borderWidth => size >= 120 ? 3 : 1;
-
-  Widget _buildContent() {
-    if (imageProvider != null) {
-      return Image(
-        image: imageProvider!,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-      );
-    }
-
-    if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: imageUrl!,
-        placeholder: (context, url) => _buildPlaceholder(),
-        errorWidget: (context, url, error) {
-          if (error.toString().contains('Invalid image data') ||
-              error.toString().contains('Image codec failed')) {
-            UnifiedLogger.warning(
-              '🖼️ Invalid image data for avatar URL: $url - Error: $error',
-              name: 'UserAvatar',
-            );
-          } else {
-            UnifiedLogger.debug(
-              'Avatar image failed to load URL: $url - Error: $error',
-              name: 'UserAvatar',
-            );
-          }
-          return _buildPlaceholder();
-        },
-      );
-    }
-
-    return _buildPlaceholder();
-  }
-
-  Widget _buildPlaceholder() {
     final palette = _palettes[_effectiveTone] ?? _palettes.values.first;
     // Geometry tuned to match the Figma profile-setup avatar (node 11251:229419):
     // a single silhouette where the head is ~46% of the box, sits in the upper
@@ -355,33 +429,6 @@ class UserAvatar extends StatelessWidget {
       ),
     );
   }
-
-  UserAvatarPlaceholderTone get _effectiveTone {
-    if (placeholderTone != UserAvatarPlaceholderTone.auto) {
-      return placeholderTone;
-    }
-
-    final stableSeed = placeholderSeed?.trim();
-    final seed = stableSeed != null && stableSeed.isNotEmpty
-        ? stableSeed
-        : [name, imageUrl, semanticLabel]
-              .whereType<String>()
-              .where((value) => value.trim().isNotEmpty)
-              .join('|');
-
-    if (seed.isEmpty) return UserAvatarPlaceholderTone.yellow;
-
-    final index =
-        seed.runes.fold<int>(0, (sum, rune) => sum + rune) %
-        _paletteOrder.length;
-    return _paletteOrder[index];
-  }
-
-  static Color _lighten(Color color, double amount) =>
-      Color.lerp(color, VineTheme.whiteText, amount) ?? color;
-
-  static Color _darken(Color color, double amount) =>
-      Color.lerp(color, VineTheme.backgroundColor, amount) ?? color;
 }
 
 class _AvatarPalette {

@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Film usunięty",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Zamknij awatar",
+    "profileAvatarLightboxCloseSemanticLabel": "Zamknij podgląd awatara",
+    "notificationsUnreadPrefix": "Nieprzeczytane powiadomienie",
+    "notificationsViewProfileSemanticLabel": "Zobacz profil użytkownika {displayName}",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Zobacz profile",
+    "notificationRepliedToYourComment": "odpowiedział(a) na Twój komentarz",
+    "notificationAndConnector": "i",
+    "notificationOthersCount": "{count, plural, =1{1 inna osoba} other{{count} innych osób}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

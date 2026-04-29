@@ -91,7 +91,7 @@ class _OverflowTile extends StatelessWidget {
           NotificationAvatarStack._tileRadius,
         ),
         border: Border.all(
-          color: VineTheme.onSurface.withValues(alpha: 0.25),
+          color: VineTheme.onSurfaceDisabled,
           width: 0.8,
         ),
       ),

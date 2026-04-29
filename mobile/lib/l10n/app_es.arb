@@ -2931,5 +2931,27 @@
   "fullscreenFeedRemovedMessage": "Video eliminado",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "Cerrar avatar",
+    "profileAvatarLightboxCloseSemanticLabel": "Cerrar vista previa del avatar",
+    "notificationsUnreadPrefix": "Notificación no leída",
+    "notificationsViewProfileSemanticLabel": "Ver perfil de {displayName}",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "Ver perfiles",
+    "notificationRepliedToYourComment": "respondió a tu comentario",
+    "notificationAndConnector": "y",
+    "notificationOthersCount": "{count, plural, =1{1 persona más} other{{count} personas más}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }

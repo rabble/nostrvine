@@ -25,32 +25,39 @@ class NotificationListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: VineTheme.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: VineTheme.outlineDisabled),
+      type: .transparency,
+      child: Semantics(
+        button: true,
+        container: true,
+        label: notification.isRead
+            ? null
+            : context.l10n.notificationsUnreadPrefix,
+        child: InkWell(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: VineTheme.outlineDisabled),
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _LeadingTypeIcon(
-                  type: notification.type,
-                  showUnreadDot: !notification.isRead,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _Content(
-                    notification: notification,
-                    onProfileTap: onProfileTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                spacing: 16,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _LeadingTypeIcon(
+                    type: notification.type,
+                    showUnreadDot: !notification.isRead,
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: _Content(
+                      notification: notification,
+                      onProfileTap: onProfileTap,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

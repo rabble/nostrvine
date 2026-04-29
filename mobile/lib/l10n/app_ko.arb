@@ -2220,5 +2220,27 @@
   "fullscreenFeedRemovedMessage": "동영상이 삭제됐어요",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
   "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite"
+  "invitesGenerateButtonLabel": "Generate invite",
+    "profileAvatarLightboxBarrierLabel": "아바타 닫기",
+    "profileAvatarLightboxCloseSemanticLabel": "아바타 미리보기 닫기",
+    "notificationsUnreadPrefix": "읽지 않은 알림",
+    "notificationsViewProfileSemanticLabel": "{displayName}님의 프로필 보기",
+    "@notificationsViewProfileSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsViewProfilesSemanticLabel": "프로필 보기",
+    "notificationRepliedToYourComment": "님이 회원님의 댓글에 답글을 남겼습니다",
+    "notificationAndConnector": "및",
+    "notificationOthersCount": "{count, plural, other{외 {count}명}}",
+    "@notificationOthersCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    }
 }
