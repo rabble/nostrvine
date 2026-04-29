@@ -306,6 +306,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileMoreSemanticLabel => 'Mai multe opțiuni';
 
   @override
+  String get profileAvatarLightboxBarrierLabel => 'Close avatar';
+
+  @override
+  String get profileAvatarLightboxCloseSemanticLabel => 'Close avatar preview';
+
+  @override
   String get profileFollowingLabel => 'Urmărit';
 
   @override

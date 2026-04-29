@@ -260,6 +260,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileMoreSemanticLabel => '더 많은 옵션';
 
   @override
+  String get profileAvatarLightboxBarrierLabel => 'Close avatar';
+
+  @override
+  String get profileAvatarLightboxCloseSemanticLabel => 'Close avatar preview';
+
+  @override
   String get profileFollowingLabel => '팔로잉';
 
   @override

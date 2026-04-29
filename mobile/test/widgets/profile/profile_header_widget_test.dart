@@ -261,6 +261,38 @@ void main() {
     });
 
     testWidgets(
+      'avatar lightbox seeds placeholder with the pubkey so the '
+      'fallback colour matches the rest of the app when the image fails',
+      (tester) async {
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          picture: 'https://example.com/broken.jpg',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Only the header avatar is in the tree before the lightbox opens.
+        expect(find.byType(UserAvatar), findsOneWidget);
+
+        await tester.tap(find.byType(UserAvatar));
+        await tester.pumpAndSettle();
+
+        // After opening, the lightbox adds a second UserAvatar at size 288.
+        final lightboxAvatar = tester
+            .widgetList<UserAvatar>(find.byType(UserAvatar))
+            .firstWhere((avatar) => avatar.size == 288);
+        expect(lightboxAvatar.placeholderSeed, equals(testUserHex));
+      },
+    );
+
+    testWidgets(
       'uses parent-supplied profile for other users while fallback provider is unresolved',
       (tester) async {
         final suppliedProfile = createTestProfile(

@@ -166,6 +166,14 @@
   "profileRefreshSemanticLabel": "Refresh profile",
   "profileMoreTooltip": "More",
   "profileMoreSemanticLabel": "More options",
+  "profileAvatarLightboxBarrierLabel": "Close avatar",
+  "@profileAvatarLightboxBarrierLabel": {
+    "description": "Screen-reader label for the dismissable scrim behind the maximized profile-avatar dialog. Read aloud when focus lands on the barrier."
+  },
+  "profileAvatarLightboxCloseSemanticLabel": "Close avatar preview",
+  "@profileAvatarLightboxCloseSemanticLabel": {
+    "description": "Screen-reader label for the maximized profile-avatar dialog's tap-to-close gesture detector."
+  },
   "profileFollowingLabel": "Following",
   "profileFollowLabel": "Follow",
   "profileBlockedLabel": "Blocked",

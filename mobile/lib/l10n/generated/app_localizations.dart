@@ -580,6 +580,18 @@ abstract class AppLocalizations {
   /// **'More options'**
   String get profileMoreSemanticLabel;
 
+  /// Screen-reader label for the dismissable scrim behind the maximized profile-avatar dialog. Read aloud when focus lands on the barrier.
+  ///
+  /// In en, this message translates to:
+  /// **'Close avatar'**
+  String get profileAvatarLightboxBarrierLabel;
+
+  /// Screen-reader label for the maximized profile-avatar dialog's tap-to-close gesture detector.
+  ///
+  /// In en, this message translates to:
+  /// **'Close avatar preview'**
+  String get profileAvatarLightboxCloseSemanticLabel;
+
   /// No description provided for @profileFollowingLabel.
   ///
   /// In en, this message translates to:

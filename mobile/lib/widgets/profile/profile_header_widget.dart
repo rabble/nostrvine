@@ -890,7 +890,7 @@ void _showAvatarLightbox(
     context: context,
     barrierColor: VineTheme.transparent,
     barrierDismissible: true,
-    barrierLabel: 'Close avatar',
+    barrierLabel: context.l10n.profileAvatarLightboxBarrierLabel,
     pageBuilder: (context, _, _) => _AvatarLightbox(
       imageUrl: imageUrl,
       userIdHex: userIdHex,
@@ -912,7 +912,7 @@ class _AvatarLightbox extends StatelessWidget {
     final safeAreaTop = MediaQuery.of(context).padding.top;
 
     return Semantics(
-      label: 'Close avatar preview',
+      label: context.l10n.profileAvatarLightboxCloseSemanticLabel,
       button: true,
       child: GestureDetector(
         onTap: () => Navigator.of(context).pop(),
