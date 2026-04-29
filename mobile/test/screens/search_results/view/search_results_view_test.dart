@@ -146,7 +146,7 @@ void main() {
       expect(find.byType(VideosSection, skipOffstage: false), findsNothing);
     });
 
-    testWidgets('renders $ColoredBox with search canvas background', (
+    testWidgets('renders $ColoredBox with search surface background', (
       tester,
     ) async {
       when(() => mockFilterCubit.state).thenReturn(SearchResultsFilter.all);
@@ -154,7 +154,7 @@ void main() {
 
       expect(
         find.byWidgetPredicate(
-          (w) => w is ColoredBox && w.color == VineTheme.backgroundColor,
+          (w) => w is ColoredBox && w.color == VineTheme.surfaceBackground,
         ),
         findsOneWidget,
       );
