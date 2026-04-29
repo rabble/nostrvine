@@ -606,7 +606,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           // Handle new videos from pagination
           BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
             listenWhen: (prev, curr) =>
-                prev.videos.length != curr.videos.length,
+                prev.videoUpdateSignature != curr.videoUpdateSignature,
             listener: (context, state) => _handleVideosChanged(state),
           ),
           BlocListener<FullscreenFeedBloc, FullscreenFeedState>(

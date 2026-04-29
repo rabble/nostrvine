@@ -73,6 +73,21 @@ final class FullscreenFeedState extends Equatable {
   /// [VideoFeedController].
   List<VideoItem> get pooledVideos => videos.toPooledVideoItems();
 
+  /// Metadata-sensitive signature for detecting updates to videos that keep
+  /// the same IDs and order but change user-visible fields like loop counts.
+  List<String> get videoUpdateSignature => videos
+      .map(
+        (video) => [
+          video.id,
+          video.stableId,
+          video.videoUrl ?? '',
+          video.thumbnailUrl ?? '',
+          '${video.originalLoops ?? ''}',
+          video.rawTags['views'] ?? '',
+        ].join('|'),
+      )
+      .toList(growable: false);
+
   /// Whether we have pooled videos ready for playback.
   bool get hasPooledVideos => pooledVideos.isNotEmpty;
 
@@ -106,6 +121,7 @@ final class FullscreenFeedState extends Equatable {
   List<Object?> get props => [
     status,
     videos,
+    videoUpdateSignature,
     currentIndex,
     isLoadingMore,
     canLoadMore,

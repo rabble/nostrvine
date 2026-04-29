@@ -216,12 +216,46 @@ void main() {
         expect(state.props, [
           FullscreenFeedStatus.ready,
           [video],
+          [
+            '${video.id}|${video.stableId}|${video.videoUrl ?? ''}|${video.thumbnailUrl ?? ''}|${video.originalLoops ?? ''}|${video.rawTags['views'] ?? ''}',
+          ],
           2,
           true,
           false,
           <String>{},
           null,
         ]);
+      });
+
+      test('videoUpdateSignature changes when loop metadata changes', () {
+        final now = DateTime.now();
+        final baseVideo = VideoEvent(
+          id: 'video1',
+          pubkey: '0' * 64,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          content: '',
+          timestamp: now,
+          videoUrl: 'https://example.com/video1.mp4',
+          rawTags: const {'views': '0'},
+        );
+        final updatedVideo = baseVideo.copyWith(
+          rawTags: const {'views': '42'},
+        );
+
+        final baseState = FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [baseVideo],
+        );
+        final updatedState = FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [updatedVideo],
+        );
+
+        expect(
+          baseState.videoUpdateSignature,
+          isNot(updatedState.videoUpdateSignature),
+        );
+        expect(baseState, isNot(updatedState));
       });
     });
 

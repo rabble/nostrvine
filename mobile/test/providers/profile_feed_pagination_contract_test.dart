@@ -129,6 +129,12 @@ void main() {
       mockNostrClient = _MockNostrClient();
 
       when(
+        () => mockFunnelcakeApiClient.getBulkVideoStats(any()),
+      ).thenAnswer((_) async => const BulkVideoStatsResponse(stats: {}));
+      when(
+        () => mockFunnelcakeApiClient.getVideoViews(any()),
+      ).thenAnswer((_) async => 0);
+      when(
         () => mockNostrClient.queryEvents(any()),
       ).thenAnswer((_) async => []);
       when(
