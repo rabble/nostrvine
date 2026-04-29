@@ -48,7 +48,8 @@ class RequestPreviewView extends ConsumerWidget {
     final profile = profileAsync.asData?.value;
 
     final displayName =
-        profile?.bestDisplayName ?? NostrKeyUtils.truncateNpub(otherPubkey);
+        profile?.bestDisplayName ??
+        UserProfile.defaultDisplayNameFor(otherPubkey);
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,

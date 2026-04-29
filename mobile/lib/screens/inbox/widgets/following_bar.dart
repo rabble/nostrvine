@@ -6,9 +6,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Horizontal scrollable bar showing following users.
@@ -63,10 +63,9 @@ class _FollowingUserButton extends ConsumerWidget {
     final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
 
     final displayName = profileAsync.maybeWhen(
-      data: (profile) => profile?.displayName?.isNotEmpty == true
-          ? profile!.displayName!
-          : profile?.name ?? NostrKeyUtils.truncateNpub(pubkey),
-      orElse: () => NostrKeyUtils.truncateNpub(pubkey),
+      data: (profile) =>
+          profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey),
+      orElse: () => UserProfile.defaultDisplayNameFor(pubkey),
     );
 
     final imageUrl = profileAsync.maybeWhen(

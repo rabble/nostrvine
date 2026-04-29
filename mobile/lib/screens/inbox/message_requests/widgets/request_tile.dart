@@ -8,7 +8,6 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -39,8 +38,9 @@ class RequestTile extends ConsumerWidget {
 
     final displayName = profileAsync.maybeWhen(
       data: (profile) =>
-          profile?.bestDisplayName ?? NostrKeyUtils.truncateNpub(otherPubkey),
-      orElse: () => NostrKeyUtils.truncateNpub(otherPubkey),
+          profile?.bestDisplayName ??
+          UserProfile.defaultDisplayNameFor(otherPubkey),
+      orElse: () => UserProfile.defaultDisplayNameFor(otherPubkey),
     );
 
     final imageUrl = profileAsync.maybeWhen(
