@@ -819,6 +819,12 @@ class DmRepository {
             ownerPubkey: _userPubkey,
           );
           protocol = existingSend?.dmProtocol;
+          // Mark the conversation as NIP-17 once we successfully publish
+          // a NIP-17 message ourselves. Without this, `dmProtocol` only
+          // ever flips when the peer sends us a NIP-17 message, so a
+          // send-first conversation stayed `null` forever and every
+          // subsequent send fired the NIP-04 fallback (#3663).
+          final nextProtocol = protocol ?? 'nip17';
           await _conversationsDao.upsertConversation(
             id: conversationId,
             participantPubkeys: jsonEncode(participants),
@@ -829,7 +835,7 @@ class DmRepository {
             lastMessageSenderPubkey: _userPubkey,
             currentUserHasSent: true,
             ownerPubkey: _userPubkey,
-            dmProtocol: protocol,
+            dmProtocol: nextProtocol,
           );
         });
 
