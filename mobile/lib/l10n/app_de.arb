@@ -1812,7 +1812,7 @@
     "feedForYouEmpty": "Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creator:innen, um ihn zu personalisieren.",
     "feedFollowingEmpty": "Noch keine Videos von Personen, denen du folgst.\nFinde Creator:innen, die dir gefallen, und folge ihnen.",
     "feedLatestEmpty": "Noch keine neuen Videos.\nSchau bald wieder vorbei.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Noch keine Videos zu diesem Hashtag.\nSchau bald wieder vorbei.",
     "feedExploreVideos": "Videos entdecken",
     "feedExternalVideoSlow": "Externes Video lädt langsam",
     "feedSkip": "Überspringen",
@@ -2521,49 +2521,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listen",
-  "searchListsLoadingLabel": "Listenergebnisse werden geladen",
-  "searchResultsCategoryAll": "Alle",
-  "searchResultsCategoryPeople": "Personen",
-  "searchResultsCategoryLists": "Listen",
-  "searchResultsCategoryTags": "Tags",
-  "searchResultsCategoryVideos": "Videos",
-  "searchResultsFilterSemantic": "Filter: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Keine Ergebnisse für „{query}“",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Probiere einen anderen Suchbegriff",
-  "searchResultsTagsLoadingSemantic": "Tag-Ergebnisse werden geladen",
-  "hashtagFeedLoadingMessage": "Videos zu #{hashtag} werden geladen…",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "Das kann einen Moment dauern",
-  "hashtagFeedEmptyTitle": "Keine Videos zu #{hashtag} gefunden",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Sei der Erste, der ein Video mit diesem Hashtag postet!",
-  "followingHashtagPageTitleSemantic": "Hashtag-Feed für {title} öffnen",
+    "searchListsLoadingLabel": "Listenergebnisse werden geladen",
+    "searchResultsCategoryAll": "Alle",
+    "searchResultsCategoryPeople": "Personen",
+    "searchResultsCategoryLists": "Listen",
+    "searchResultsCategoryTags": "Tags",
+    "searchResultsCategoryVideos": "Videos",
+    "searchResultsFilterSemantic": "Filter: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Keine Ergebnisse für „{query}“",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Probiere einen anderen Suchbegriff",
+    "searchResultsTagsLoadingSemantic": "Tag-Ergebnisse werden geladen",
+    "hashtagFeedLoadingMessage": "Videos zu #{hashtag} werden geladen…",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Das kann einen Moment dauern",
+    "hashtagFeedEmptyTitle": "Keine Videos zu #{hashtag} gefunden",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Sei der Erste, der ein Video mit diesem Hashtag postet!",
+    "followingHashtagPageTitleSemantic": "Hashtag-Feed für {title} öffnen",
     "searchForLists": "Nach Listen suchen",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

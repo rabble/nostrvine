@@ -69,6 +69,9 @@ mixin ScrollToHideMixin<T extends StatefulWidget> on State<T> {
   /// [NotificationListener<ScrollNotification>].
   bool handleScrollNotification(ScrollNotification notification) {
     if (notification is ScrollUpdateNotification) {
+      // Header not measured yet; skip scroll handling
+      if (_headerHeight == 0) return false;
+
       final delta = notification.scrollDelta ?? 0;
       final pixels = notification.metrics.pixels;
 

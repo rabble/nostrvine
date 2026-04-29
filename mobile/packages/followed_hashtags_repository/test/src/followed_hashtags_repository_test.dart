@@ -22,6 +22,7 @@ void main() {
       expect(repo.profileSavedHashtags, isEmpty);
       expect(repo.followingFeedHashtagLabels, isEmpty);
       expect(repo.hasProfileSavedHashtag('#vine'), isFalse);
+      await repo.dispose();
     });
 
     test(

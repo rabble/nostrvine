@@ -604,7 +604,8 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videoclipuri',
+      other: '$count de videoclipuri',
+      few: '$count videoclipuri',
       one: '1 videoclip',
     );
     return '$_temp0';
@@ -621,7 +622,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get hashtagRemovedFromProfileSnackbar =>
-      'Eliminat din tagurile salvate';
+      'Eliminat din etichetele salvate';
 
   @override
   String get hashtagOptionAddToFollowingFeed => 'Adaugă la fluxurile mele';
@@ -4294,7 +4295,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get feedHomeHashtagEmpty =>
-      'No videos for this hashtag yet.\nCheck back soon.';
+      'Încă niciun videoclip pentru acest hashtag.\nRevino curând.';
 
   @override
   String get feedExploreVideos => 'Explorează videoclipuri';

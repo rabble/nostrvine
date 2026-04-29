@@ -1802,7 +1802,7 @@
     "feedForYouEmpty": "おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。",
     "feedFollowingEmpty": "フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。",
     "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "このハッシュタグの動画はまだありません。\nまた後で確認してください。",
     "feedExploreVideos": "動画を探しに行こう",
     "feedExternalVideoSlow": "外部動画の読み込みに時間がかかってる",
     "feedSkip": "スキップ",
@@ -2513,49 +2513,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "リスト",
-  "searchListsLoadingLabel": "リスト結果を読み込み中",
-  "searchResultsCategoryAll": "すべて",
-  "searchResultsCategoryPeople": "ユーザー",
-  "searchResultsCategoryLists": "リスト",
-  "searchResultsCategoryTags": "タグ",
-  "searchResultsCategoryVideos": "動画",
-  "searchResultsFilterSemantic": "フィルター: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "「{query}」の結果はありません",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "別のキーワードを試してください",
-  "searchResultsTagsLoadingSemantic": "タグの結果を読み込み中",
-  "hashtagFeedLoadingMessage": "#{hashtag}の動画を読み込み中…",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "しばらくかかることがあります",
-  "hashtagFeedEmptyTitle": "#{hashtag}の動画はありません",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "このハッシュタグで最初の動画を投稿しよう！",
-  "followingHashtagPageTitleSemantic": "{title}のハッシュタグフィードを開く",
+    "searchListsLoadingLabel": "リスト結果を読み込み中",
+    "searchResultsCategoryAll": "すべて",
+    "searchResultsCategoryPeople": "ユーザー",
+    "searchResultsCategoryLists": "リスト",
+    "searchResultsCategoryTags": "タグ",
+    "searchResultsCategoryVideos": "動画",
+    "searchResultsFilterSemantic": "フィルター: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "「{query}」の結果はありません",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "別のキーワードを試してください",
+    "searchResultsTagsLoadingSemantic": "タグの結果を読み込み中",
+    "hashtagFeedLoadingMessage": "#{hashtag}の動画を読み込み中…",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "しばらくかかることがあります",
+    "hashtagFeedEmptyTitle": "#{hashtag}の動画はありません",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "このハッシュタグで最初の動画を投稿しよう！",
+    "followingHashtagPageTitleSemantic": "{title}のハッシュタグフィードを開く",
     "searchForLists": "リストを検索",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

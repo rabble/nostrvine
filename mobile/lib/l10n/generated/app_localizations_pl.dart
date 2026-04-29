@@ -4275,7 +4275,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get feedHomeHashtagEmpty =>
-      'No videos for this hashtag yet.\nCheck back soon.';
+      'Brak filmów dla tego hashtagu.\nSprawdź ponownie wkrótce.';
 
   @override
   String get feedExploreVideos => 'Odkrywaj filmy';

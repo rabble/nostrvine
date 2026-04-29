@@ -210,11 +210,14 @@ class ClipThumbnailManager {
   }
 
   static void _deleteFiles(List<StripThumbnail> thumbnails) {
-    for (final thumb in thumbnails) {
-      try {
-        File(thumb.path).deleteSync();
-      } catch (_) {}
-    }
+    // Fire-and-forget — non-blocking cleanup
+    Future.sync(() async {
+      for (final thumb in thumbnails) {
+        try {
+          await File(thumb.path).delete();
+        } catch (_) {}
+      }
+    });
   }
 
   /// Cancels all subscriptions and disposes all notifiers.

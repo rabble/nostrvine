@@ -3968,8 +3968,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedLatestEmpty => '新しい動画はまだありません。\nしばらくしてからもう一度確認してください。';
 
   @override
-  String get feedHomeHashtagEmpty =>
-      'No videos for this hashtag yet.\nCheck back soon.';
+  String get feedHomeHashtagEmpty => 'このハッシュタグの動画はまだありません。\nまた後で確認してください。';
 
   @override
   String get feedExploreVideos => '動画を探しに行こう';

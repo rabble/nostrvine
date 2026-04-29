@@ -1098,7 +1098,7 @@
     "feedForYouEmpty": "추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.",
     "feedFollowingEmpty": "아직 팔로우한 사람들의 동영상이 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.",
     "feedLatestEmpty": "아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "아직 이 해시태그에 대한 동영상이 없어요.\n나중에 다시 확인해 주세요.",
     "feedExploreVideos": "영상 둘러보기",
     "feedExternalVideoSlow": "외부 영상 로딩이 느려요",
     "feedSkip": "건너뛰기",
@@ -1809,49 +1809,56 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "목록",
-  "searchListsLoadingLabel": "목록 결과 불러오는 중",
-  "searchResultsCategoryAll": "전체",
-  "searchResultsCategoryPeople": "사람",
-  "searchResultsCategoryLists": "리스트",
-  "searchResultsCategoryTags": "태그",
-  "searchResultsCategoryVideos": "동영상",
-  "searchResultsFilterSemantic": "필터: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "‘{query}’에 대한 결과가 없어요",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "다른 검색어를 써 보세요",
-  "searchResultsTagsLoadingSemantic": "태그 결과 불러오는 중",
-  "hashtagFeedLoadingMessage": "#{hashtag} 동영상 불러오는 중…",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "잠시만 기다려 주세요",
-  "hashtagFeedEmptyTitle": "#{hashtag} 동영상이 없어요",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "이 해시태그로 올리는 첫 동영상이 되어 보세요!",
-  "followingHashtagPageTitleSemantic": "{title} 해시태그 피드 열기",
+    "searchListsLoadingLabel": "목록 결과 불러오는 중",
+    "searchResultsCategoryAll": "전체",
+    "searchResultsCategoryPeople": "사람",
+    "searchResultsCategoryLists": "리스트",
+    "searchResultsCategoryTags": "태그",
+    "searchResultsCategoryVideos": "동영상",
+    "searchResultsFilterSemantic": "필터: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "‘{query}’에 대한 결과가 없어요",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "다른 검색어를 써 보세요",
+    "searchResultsTagsLoadingSemantic": "태그 결과 불러오는 중",
+    "hashtagFeedLoadingMessage": "#{hashtag} 동영상 불러오는 중…",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "잠시만 기다려 주세요",
+    "hashtagFeedEmptyTitle": "#{hashtag} 동영상이 없어요",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "이 해시태그로 올리는 첫 동영상이 되어 보세요!",
+    "followingHashtagPageTitleSemantic": "{title} 해시태그 피드 열기",
+    "@followingHashtagPageTitleSemantic": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
     "searchForLists": "목록 검색",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

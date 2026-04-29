@@ -271,7 +271,7 @@
     "hashtagFavoriteSaveTooltip": "Salvează eticheta",
     "hashtagFavoriteRemoveTooltip": "Elimină din etichetele salvate",
     "hashtagOptionsMoreTooltip": "Opțiuni etichetă",
-    "hashtagMenuVideoCount": "{count, plural, =1{1 videoclip} other{{count} videoclipuri}}",
+    "hashtagMenuVideoCount": "{count, plural, one{1 videoclip} few{{count} videoclipuri} other{{count} de videoclipuri}}",
     "@hashtagMenuVideoCount": {
         "placeholders": {
             "count": {
@@ -282,7 +282,7 @@
     "hashtagOptionSaveToProfile": "Salvează",
     "hashtagOptionRemoveFromProfile": "Elimină din etichetele salvate",
     "hashtagSavedToProfileSnackbar": "Salvat în profil",
-    "hashtagRemovedFromProfileSnackbar": "Eliminat din tagurile salvate",
+    "hashtagRemovedFromProfileSnackbar": "Eliminat din etichetele salvate",
     "hashtagOptionAddToFollowingFeed": "Adaugă la fluxurile mele",
     "hashtagOptionRemoveFromFollowingFeed": "Elimină din fluxurile mele",
     "hashtagAddedToFollowingFeedSnackbar": "Adăugat la fluxurile mele",
@@ -1812,7 +1812,7 @@
     "feedForYouEmpty": "Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.",
     "feedFollowingEmpty": "Încă nu există videoclipuri de la persoanele pe care le urmărești.\nGăsește creatori care îți plac și urmărește-i.",
     "feedLatestEmpty": "Încă nu există videoclipuri noi.\nRevino curând.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Încă niciun videoclip pentru acest hashtag.\nRevino curând.",
     "feedExploreVideos": "Explorează videoclipuri",
     "feedExternalVideoSlow": "Videoclipul extern se încarcă încet",
     "feedSkip": "Sari peste",
@@ -2521,49 +2521,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Liste",
-  "searchListsLoadingLabel": "Se încarcă rezultatele listelor",
-  "searchResultsCategoryAll": "Tot",
-  "searchResultsCategoryPeople": "Persoane",
-  "searchResultsCategoryLists": "Liste",
-  "searchResultsCategoryTags": "Etichete",
-  "searchResultsCategoryVideos": "Videoclipuri",
-  "searchResultsFilterSemantic": "Filtru: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Niciun rezultat pentru „{query}”",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Încearcă un alt termen de căutare",
-  "searchResultsTagsLoadingSemantic": "Se încarcă rezultatele pentru etichete",
-  "hashtagFeedLoadingMessage": "Se încarcă videoclipuri despre #{hashtag}...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "Poate dura câteva momente",
-  "hashtagFeedEmptyTitle": "Niciun videoclip pentru #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Fii primul care publică un videoclip cu acest hashtag!",
-  "followingHashtagPageTitleSemantic": "Deschide fluxul hashtag pentru {title}",
+    "searchListsLoadingLabel": "Se încarcă rezultatele listelor",
+    "searchResultsCategoryAll": "Tot",
+    "searchResultsCategoryPeople": "Persoane",
+    "searchResultsCategoryLists": "Liste",
+    "searchResultsCategoryTags": "Etichete",
+    "searchResultsCategoryVideos": "Videoclipuri",
+    "searchResultsFilterSemantic": "Filtru: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Niciun rezultat pentru „{query}”",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Încearcă un alt termen de căutare",
+    "searchResultsTagsLoadingSemantic": "Se încarcă rezultatele pentru etichete",
+    "hashtagFeedLoadingMessage": "Se încarcă videoclipuri despre #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Poate dura câteva momente",
+    "hashtagFeedEmptyTitle": "Niciun videoclip pentru #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Fii primul care publică un videoclip cu acest hashtag!",
+    "followingHashtagPageTitleSemantic": "Deschide fluxul hashtag pentru {title}",
     "searchForLists": "Caută liste",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

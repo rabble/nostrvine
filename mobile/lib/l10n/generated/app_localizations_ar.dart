@@ -557,8 +557,12 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count فيديوهات',
+      other: '$count فيديو',
+      many: '$count فيديو',
+      few: '$count فيديوهات',
+      two: 'فيديوان',
       one: 'فيديو واحد',
+      zero: 'لا فيديوهات',
     );
     return '$_temp0';
   }
@@ -4125,7 +4129,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get feedHomeHashtagEmpty =>
-      'No videos for this hashtag yet.\nCheck back soon.';
+      'لا توجد فيديوهات لهذا الوسم بعد.\nعد لاحقاً.';
 
   @override
   String get feedExploreVideos => 'استكشاف مقاطع الفيديو';

@@ -1812,7 +1812,7 @@
     "feedForYouEmpty": "Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.",
     "feedFollowingEmpty": "Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.",
     "feedLatestEmpty": "Brak nowych filmów.\nWróć tu wkrótce.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Brak filmów dla tego hashtagu.\nSprawdź ponownie wkrótce.",
     "feedExploreVideos": "Odkrywaj filmy",
     "feedExternalVideoSlow": "Zewnętrzny film wczytuje się powoli",
     "feedSkip": "Pomiń",
@@ -2521,49 +2521,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listy",
-  "searchListsLoadingLabel": "Ładowanie wyników list",
-  "searchResultsCategoryAll": "Wszystko",
-  "searchResultsCategoryPeople": "Ludzie",
-  "searchResultsCategoryLists": "Listy",
-  "searchResultsCategoryTags": "Tagi",
-  "searchResultsCategoryVideos": "Filmy",
-  "searchResultsFilterSemantic": "Filtr: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Brak wyników dla „{query}”",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Spróbuj innego wyszukiwania",
-  "searchResultsTagsLoadingSemantic": "Ładowanie wyników tagów",
-  "hashtagFeedLoadingMessage": "Ładowanie filmów o #{hashtag}...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "To może chwilę potrwać",
-  "hashtagFeedEmptyTitle": "Brak filmów dla #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Bądź pierwszy i opublikuj film z tym hashtagiem!",
-  "followingHashtagPageTitleSemantic": "Otwórz kanał hashtagu dla {title}",
+    "searchListsLoadingLabel": "Ładowanie wyników list",
+    "searchResultsCategoryAll": "Wszystko",
+    "searchResultsCategoryPeople": "Ludzie",
+    "searchResultsCategoryLists": "Listy",
+    "searchResultsCategoryTags": "Tagi",
+    "searchResultsCategoryVideos": "Filmy",
+    "searchResultsFilterSemantic": "Filtr: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Brak wyników dla „{query}”",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Spróbuj innego wyszukiwania",
+    "searchResultsTagsLoadingSemantic": "Ładowanie wyników tagów",
+    "hashtagFeedLoadingMessage": "Ładowanie filmów o #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "To może chwilę potrwać",
+    "hashtagFeedEmptyTitle": "Brak filmów dla #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Bądź pierwszy i opublikuj film z tym hashtagiem!",
+    "followingHashtagPageTitleSemantic": "Otwórz kanał hashtagu dla {title}",
     "searchForLists": "Szukaj list",
     "commentReplyToPrefix": "Odp.:",
     "commentHideKeyboard": "Hide keyboard",

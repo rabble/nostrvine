@@ -1812,7 +1812,7 @@
     "feedForYouEmpty": "Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.",
     "feedFollowingEmpty": "Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.",
     "feedLatestEmpty": "Inga nya videor än.\nTitta in igen snart.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Inga videor för den här hashtaggen än.\nTitta in igen snart.",
     "feedExploreVideos": "Upptäck videor",
     "feedExternalVideoSlow": "Extern video laddar långsamt",
     "feedSkip": "Hoppa över",
@@ -2521,49 +2521,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listor",
-  "searchListsLoadingLabel": "Laddar listresultat",
-  "searchResultsCategoryAll": "Allt",
-  "searchResultsCategoryPeople": "Personer",
-  "searchResultsCategoryLists": "Listor",
-  "searchResultsCategoryTags": "Taggar",
-  "searchResultsCategoryVideos": "Videor",
-  "searchResultsFilterSemantic": "Filter: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Inga resultat för \"{query}\"",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Prova ett annat sökord",
-  "searchResultsTagsLoadingSemantic": "Laddar tagresultat",
-  "hashtagFeedLoadingMessage": "Laddar videor om #{hashtag}...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "Det kan ta några ögonblick",
-  "hashtagFeedEmptyTitle": "Inga videor för #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Bli den första som publicerar en video med den här hashtagen!",
-  "followingHashtagPageTitleSemantic": "Öppna hashtagflöde för {title}",
+    "searchListsLoadingLabel": "Laddar listresultat",
+    "searchResultsCategoryAll": "Allt",
+    "searchResultsCategoryPeople": "Personer",
+    "searchResultsCategoryLists": "Listor",
+    "searchResultsCategoryTags": "Taggar",
+    "searchResultsCategoryVideos": "Videor",
+    "searchResultsFilterSemantic": "Filter: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Inga resultat för \"{query}\"",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Prova ett annat sökord",
+    "searchResultsTagsLoadingSemantic": "Laddar tagresultat",
+    "hashtagFeedLoadingMessage": "Laddar videor om #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Det kan ta några ögonblick",
+    "hashtagFeedEmptyTitle": "Inga videor för #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Bli den första som publicerar en video med den här hashtagen!",
+    "followingHashtagPageTitleSemantic": "Öppna hashtagflöde för {title}",
     "searchForLists": "Sök efter listor",
     "commentReplyToPrefix": "Sv:",
     "commentHideKeyboard": "Hide keyboard",

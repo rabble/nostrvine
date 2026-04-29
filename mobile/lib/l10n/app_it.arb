@@ -1812,7 +1812,7 @@
     "feedForYouEmpty": "Il tuo feed Per te è vuoto.\nEsplora i video e segui i creator per personalizzarlo.",
     "feedFollowingEmpty": "Ancora nessun video dalle persone che segui.\nTrova creator che ti piacciono e seguili.",
     "feedLatestEmpty": "Ancora nessun nuovo video.\nTorna a controllare a breve.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Ancora nessun video per questo hashtag.\nRicontrolla a breve.",
     "feedExploreVideos": "Esplora video",
     "feedExternalVideoSlow": "Video esterno in caricamento lento",
     "feedSkip": "Salta",
@@ -2521,49 +2521,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Liste",
-  "searchListsLoadingLabel": "Caricamento risultati liste",
-  "searchResultsCategoryAll": "Tutti",
-  "searchResultsCategoryPeople": "Persone",
-  "searchResultsCategoryLists": "Liste",
-  "searchResultsCategoryTags": "Tag",
-  "searchResultsCategoryVideos": "Video",
-  "searchResultsFilterSemantic": "Filtro: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Nessun risultato per \"{query}\"",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Prova un altro termine di ricerca",
-  "searchResultsTagsLoadingSemantic": "Caricamento risultati tag",
-  "hashtagFeedLoadingMessage": "Caricamento video su #{hashtag}...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "Potrebbe richiedere qualche istante",
-  "hashtagFeedEmptyTitle": "Nessun video per #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Sii il primo a pubblicare un video con questo hashtag!",
-  "followingHashtagPageTitleSemantic": "Apri il feed hashtag per {title}",
+    "searchListsLoadingLabel": "Caricamento risultati liste",
+    "searchResultsCategoryAll": "Tutti",
+    "searchResultsCategoryPeople": "Persone",
+    "searchResultsCategoryLists": "Liste",
+    "searchResultsCategoryTags": "Tag",
+    "searchResultsCategoryVideos": "Video",
+    "searchResultsFilterSemantic": "Filtro: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Nessun risultato per \"{query}\"",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Prova un altro termine di ricerca",
+    "searchResultsTagsLoadingSemantic": "Caricamento risultati tag",
+    "hashtagFeedLoadingMessage": "Caricamento video su #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Potrebbe richiedere qualche istante",
+    "hashtagFeedEmptyTitle": "Nessun video per #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Sii il primo a pubblicare un video con questo hashtag!",
+    "followingHashtagPageTitleSemantic": "Apri il feed hashtag per {title}",
     "searchForLists": "Cerca liste",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

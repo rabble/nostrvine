@@ -1812,7 +1812,7 @@
     "feedForYouEmpty": "Je Voor jou-feed is leeg.\nVerken video's en volg makers om hem vorm te geven.",
     "feedFollowingEmpty": "Nog geen video's van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.",
     "feedLatestEmpty": "Nog geen nieuwe video's.\nKom binnenkort terug.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Nog geen video's voor deze hashtag.\nKijk binnenkort nog eens.",
     "feedExploreVideos": "Video's verkennen",
     "feedExternalVideoSlow": "Externe video laadt traag",
     "feedSkip": "Overslaan",
@@ -2521,49 +2521,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Lijsten",
-  "searchListsLoadingLabel": "Lijstresultaten laden",
-  "searchResultsCategoryAll": "Alles",
-  "searchResultsCategoryPeople": "Mensen",
-  "searchResultsCategoryLists": "Lijsten",
-  "searchResultsCategoryTags": "Tags",
-  "searchResultsCategoryVideos": "Video's",
-  "searchResultsFilterSemantic": "Filter: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Geen resultaten voor \"{query}\"",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Probeer een andere zoekterm",
-  "searchResultsTagsLoadingSemantic": "Tagresultaten laden",
-  "hashtagFeedLoadingMessage": "Video's over #{hashtag} laden...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "Dit kan even duren",
-  "hashtagFeedEmptyTitle": "Geen video's voor #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Wees de eerste die een video met deze hashtag plaatst!",
-  "followingHashtagPageTitleSemantic": "Hashtag-feed openen voor {title}",
+    "searchListsLoadingLabel": "Lijstresultaten laden",
+    "searchResultsCategoryAll": "Alles",
+    "searchResultsCategoryPeople": "Mensen",
+    "searchResultsCategoryLists": "Lijsten",
+    "searchResultsCategoryTags": "Tags",
+    "searchResultsCategoryVideos": "Video's",
+    "searchResultsFilterSemantic": "Filter: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Geen resultaten voor \"{query}\"",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Probeer een andere zoekterm",
+    "searchResultsTagsLoadingSemantic": "Tagresultaten laden",
+    "hashtagFeedLoadingMessage": "Video's over #{hashtag} laden...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Dit kan even duren",
+    "hashtagFeedEmptyTitle": "Geen video's voor #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Wees de eerste die een video met deze hashtag plaatst!",
+    "followingHashtagPageTitleSemantic": "Hashtag-feed openen voor {title}",
     "searchForLists": "Zoek naar lijsten",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",

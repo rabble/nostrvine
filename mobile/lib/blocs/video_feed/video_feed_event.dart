@@ -28,7 +28,11 @@ final class VideoFeedStarted extends VideoFeedEvent {
 /// Triggers loading of videos for the new mode. Previous videos
 /// are cleared and fresh data is fetched.
 final class VideoFeedModeChanged extends VideoFeedEvent {
-  const VideoFeedModeChanged(this.mode, {this.homeHashtagLabel});
+  const VideoFeedModeChanged(this.mode, {this.homeHashtagLabel})
+    : assert(
+        mode != FeedMode.homeHashtag || homeHashtagLabel != null,
+        'homeHashtagLabel is required when mode is FeedMode.homeHashtag',
+      );
 
   /// The new feed mode to switch to.
   final FeedMode mode;

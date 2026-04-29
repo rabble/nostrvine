@@ -1809,7 +1809,7 @@
     "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
     "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
     "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "Belum ada video untuk hashtag ini.\nCek lagi nanti.",
     "feedExploreVideos": "Jelajahi Video",
     "feedExternalVideoSlow": "Video eksternal memuat lambat",
     "feedSkip": "Lewati",
@@ -2520,49 +2520,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Daftar",
-  "searchListsLoadingLabel": "Memuat hasil daftar",
-  "searchResultsCategoryAll": "Semua",
-  "searchResultsCategoryPeople": "Orang",
-  "searchResultsCategoryLists": "Daftar",
-  "searchResultsCategoryTags": "Tag",
-  "searchResultsCategoryVideos": "Video",
-  "searchResultsFilterSemantic": "Filter: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "Tidak ada hasil untuk \"{query}\"",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "Coba kata pencarian lain",
-  "searchResultsTagsLoadingSemantic": "Memuat hasil tag",
-  "hashtagFeedLoadingMessage": "Memuat video tentang #{hashtag}...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "Ini mungkin membutuhkan beberapa saat",
-  "hashtagFeedEmptyTitle": "Tidak ada video untuk #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "Jadilah yang pertama memposting video dengan hashtag ini!",
-  "followingHashtagPageTitleSemantic": "Buka feed hashtag untuk {title}",
+    "searchListsLoadingLabel": "Memuat hasil daftar",
+    "searchResultsCategoryAll": "Semua",
+    "searchResultsCategoryPeople": "Orang",
+    "searchResultsCategoryLists": "Daftar",
+    "searchResultsCategoryTags": "Tag",
+    "searchResultsCategoryVideos": "Video",
+    "searchResultsFilterSemantic": "Filter: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "Tidak ada hasil untuk \"{query}\"",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "Coba kata pencarian lain",
+    "searchResultsTagsLoadingSemantic": "Memuat hasil tag",
+    "hashtagFeedLoadingMessage": "Memuat video tentang #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "Ini mungkin membutuhkan beberapa saat",
+    "hashtagFeedEmptyTitle": "Tidak ada video untuk #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "Jadilah yang pertama memposting video dengan hashtag ini!",
+    "followingHashtagPageTitleSemantic": "Buka feed hashtag untuk {title}",
     "searchForLists": "Cari daftar",
     "commentReplyToPrefix": "Bls:",
     "commentHideKeyboard": "Hide keyboard",

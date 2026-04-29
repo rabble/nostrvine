@@ -64,6 +64,13 @@ void main() {
       expect(find.text('Videos'), findsOneWidget);
     });
 
+    testWidgets('renders "Lists" label when filter is lists', (tester) async {
+      when(() => mockCubit.state).thenReturn(SearchResultsFilter.lists);
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.text('Lists'), findsOneWidget);
+    });
+
     testWidgets('does not render caret down icon', (tester) async {
       when(() => mockCubit.state).thenReturn(SearchResultsFilter.all);
       await tester.pumpWidget(buildSubject());

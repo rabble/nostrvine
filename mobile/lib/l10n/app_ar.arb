@@ -271,7 +271,7 @@
     "hashtagFavoriteSaveTooltip": "حفظ الوسم",
     "hashtagFavoriteRemoveTooltip": "إزالة من الوسوم المحفوظة",
     "hashtagOptionsMoreTooltip": "خيارات الوسم",
-    "hashtagMenuVideoCount": "{count, plural, =1{فيديو واحد} other{{count} فيديوهات}}",
+    "hashtagMenuVideoCount": "{count, plural, zero{لا فيديوهات} one{فيديو واحد} two{فيديوان} few{{count} فيديوهات} many{{count} فيديو} other{{count} فيديو}}",
     "@hashtagMenuVideoCount": {
         "placeholders": {
             "count": {
@@ -1802,7 +1802,7 @@
     "feedForYouEmpty": "خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.",
     "feedFollowingEmpty": "لا توجد مقاطع بعد من الأشخاص الذين تتابعهم.\nاعثر على صناع محتوى يعجبونك وتابعهم.",
     "feedLatestEmpty": "لا توجد مقاطع جديدة بعد.\nعد لاحقًا.",
-  "feedHomeHashtagEmpty": "No videos for this hashtag yet.\nCheck back soon.",
+    "feedHomeHashtagEmpty": "لا توجد فيديوهات لهذا الوسم بعد.\nعد لاحقاً.",
     "feedExploreVideos": "استكشاف مقاطع الفيديو",
     "feedExternalVideoSlow": "الفيديو الخارجي يُحمَّل ببطء",
     "feedSkip": "تخطي",
@@ -2513,49 +2513,49 @@
     "searchVideosSectionHeader": "Videos",
     "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "القوائم",
-  "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
-  "searchResultsCategoryAll": "الكل",
-  "searchResultsCategoryPeople": "الأشخاص",
-  "searchResultsCategoryLists": "القوائم",
-  "searchResultsCategoryTags": "الوسوم",
-  "searchResultsCategoryVideos": "الفيديوهات",
-  "searchResultsFilterSemantic": "تصفية: {category}",
-  "@searchResultsFilterSemantic": {
-    "placeholders": {
-      "category": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsNoMatchesForQuery": "لا توجد نتائج لـ «{query}»",
-  "@searchResultsNoMatchesForQuery": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
-  "searchResultsTryDifferentTerm": "جرّب عبارة بحث أخرى",
-  "searchResultsTagsLoadingSemantic": "جارٍ تحميل نتائج الوسوم",
-  "hashtagFeedLoadingMessage": "جارٍ تحميل فيديوهات عن #{hashtag}...",
-  "@hashtagFeedLoadingMessage": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedLoadingSubtitle": "قد يستغرق هذا لحظات",
-  "hashtagFeedEmptyTitle": "لا توجد فيديوهات لـ #{hashtag}",
-  "@hashtagFeedEmptyTitle": {
-    "placeholders": {
-      "hashtag": {
-        "type": "String"
-      }
-    }
-  },
-  "hashtagFeedEmptySubtitle": "كن أول من ينشر فيديو بهذا الوسم!",
-  "followingHashtagPageTitleSemantic": "فتح موجز الهاشتاغ لـ {title}",
+    "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
+    "searchResultsCategoryAll": "الكل",
+    "searchResultsCategoryPeople": "الأشخاص",
+    "searchResultsCategoryLists": "القوائم",
+    "searchResultsCategoryTags": "الوسوم",
+    "searchResultsCategoryVideos": "الفيديوهات",
+    "searchResultsFilterSemantic": "تصفية: {category}",
+    "@searchResultsFilterSemantic": {
+        "placeholders": {
+            "category": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsNoMatchesForQuery": "لا توجد نتائج لـ «{query}»",
+    "@searchResultsNoMatchesForQuery": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "searchResultsTryDifferentTerm": "جرّب عبارة بحث أخرى",
+    "searchResultsTagsLoadingSemantic": "جارٍ تحميل نتائج الوسوم",
+    "hashtagFeedLoadingMessage": "جارٍ تحميل فيديوهات عن #{hashtag}...",
+    "@hashtagFeedLoadingMessage": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedLoadingSubtitle": "قد يستغرق هذا لحظات",
+    "hashtagFeedEmptyTitle": "لا توجد فيديوهات لـ #{hashtag}",
+    "@hashtagFeedEmptyTitle": {
+        "placeholders": {
+            "hashtag": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagFeedEmptySubtitle": "كن أول من ينشر فيديو بهذا الوسم!",
+    "followingHashtagPageTitleSemantic": "فتح موجز الهاشتاغ لـ {title}",
     "searchForLists": "البحث عن قوائم",
     "commentReplyToPrefix": "رد:",
     "commentHideKeyboard": "Hide keyboard",

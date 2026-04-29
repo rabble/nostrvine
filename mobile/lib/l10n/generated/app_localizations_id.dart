@@ -4140,7 +4140,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get feedHomeHashtagEmpty =>
-      'No videos for this hashtag yet.\nCheck back soon.';
+      'Belum ada video untuk hashtag ini.\nCek lagi nanti.';
 
   @override
   String get feedExploreVideos => 'Jelajahi Video';
