@@ -249,17 +249,12 @@ class _Placeholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = _palettes[_effectiveTone] ?? _palettes.values.first;
-    // Geometry tuned to match the Figma profile-setup avatar (node 11251:229419):
-    // a single silhouette where the head is ~46% of the box, sits in the upper
-    // third, and the body is a near-full-width circle whose lower half is
-    // clipped by the avatar bounding box.
+    // Geometry matches Figma node 11251:229419 (profile-setup avatar).
     final headSize = size * 0.46;
     final headHorizontalInset = (size - headSize) / 2;
     final headTopInset = size * 0.20;
 
-    // Body is a horizontal ellipse — wider than tall — that sits low and is
-    // partly clipped by the avatar bounding box. Width > size means the sides
-    // extend past the box and get clipped by the outer rounded corners.
+    // Body is a wide ellipse; its lower half is clipped by the avatar box.
     final bodyWidth = size * 0.76;
     final bodyHeight = size * 0.56;
     final bodyHorizontalInset = (size - bodyWidth) / 2;
