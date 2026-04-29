@@ -202,6 +202,23 @@ void main() {
         expect(mergedVideo.totalLoops, equals(42));
       });
 
+      test('cached metadata rehydrates views onto relay profile videos', () {
+        final relayVideo = createTestVideo(
+          'id1',
+          'pubkey1',
+          'stable1',
+          baseTime,
+        );
+
+        final hydrated = ProfileFeed.applyCachedMetadataForVideo(
+          relayVideo,
+          views: '42',
+        );
+
+        expect(hydrated.rawTags['views'], equals('42'));
+        expect(hydrated.totalLoops, equals(42));
+      });
+
       test(
         'sequence comparison treats views-only metadata changes as updates',
         () {

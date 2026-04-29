@@ -571,11 +571,13 @@ class ProfileFeed extends _$ProfileFeed {
   void _cacheVideoMetadata(List<VideoEvent> videos) {
     for (final video in videos) {
       if (video.originalLoops != null ||
+          video.rawTags['views'] != null ||
           video.originalLikes != null ||
           video.originalComments != null ||
           video.originalReposts != null) {
         _metadataCache[video.id.toLowerCase()] = _VideoMetadataCache(
           originalLoops: video.originalLoops,
+          views: video.rawTags['views'],
           originalLikes: video.originalLikes,
           originalComments: video.originalComments,
           originalReposts: video.originalReposts,
@@ -589,21 +591,45 @@ class ProfileFeed extends _$ProfileFeed {
     return videos.map((video) {
       final cached = _metadataCache[video.id.toLowerCase()];
       if (cached == null) return video;
-
-      // Only apply if video is missing metadata but cache has it
-      if (video.originalLoops == null && cached.originalLoops != null ||
-          video.originalLikes == null && cached.originalLikes != null ||
-          video.originalComments == null && cached.originalComments != null ||
-          video.originalReposts == null && cached.originalReposts != null) {
-        return video.copyWith(
-          originalLoops: video.originalLoops ?? cached.originalLoops,
-          originalLikes: video.originalLikes ?? cached.originalLikes,
-          originalComments: video.originalComments ?? cached.originalComments,
-          originalReposts: video.originalReposts ?? cached.originalReposts,
-        );
-      }
-      return video;
+      return applyCachedMetadataForVideo(
+        video,
+        originalLoops: cached.originalLoops,
+        views: cached.views,
+        originalLikes: cached.originalLikes,
+        originalComments: cached.originalComments,
+        originalReposts: cached.originalReposts,
+      );
     }).toList();
+  }
+
+  @visibleForTesting
+  static VideoEvent applyCachedMetadataForVideo(
+    VideoEvent video, {
+    int? originalLoops,
+    String? views,
+    int? originalLikes,
+    int? originalComments,
+    int? originalReposts,
+  }) {
+    final currentViews = video.rawTags['views'];
+    final shouldApply =
+        (video.originalLoops == null && originalLoops != null) ||
+        (currentViews == null && views != null) ||
+        (video.originalLikes == null && originalLikes != null) ||
+        (video.originalComments == null && originalComments != null) ||
+        (video.originalReposts == null && originalReposts != null);
+
+    if (!shouldApply) return video;
+
+    return video.copyWith(
+      originalLoops: video.originalLoops ?? originalLoops,
+      rawTags: currentViews == null && views != null
+          ? {...video.rawTags, 'views': views}
+          : video.rawTags,
+      originalLikes: video.originalLikes ?? originalLikes,
+      originalComments: video.originalComments ?? originalComments,
+      originalReposts: video.originalReposts ?? originalReposts,
+    );
   }
 
   void _registerRetainedRealtimeListeners() {
@@ -905,12 +931,14 @@ class ProfileFeed extends _$ProfileFeed {
 class _VideoMetadataCache {
   const _VideoMetadataCache({
     this.originalLoops,
+    this.views,
     this.originalLikes,
     this.originalComments,
     this.originalReposts,
   });
 
   final int? originalLoops;
+  final String? views;
   final int? originalLikes;
   final int? originalComments;
   final int? originalReposts;
