@@ -21,6 +21,7 @@ void main() {
       expect(find.text(l10n.videoEditorTextLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorDrawLabel), findsOneWidget);
       expect(find.text(l10n.videoEditorFilterLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorStickers), findsOneWidget);
     });
 
     testWidgets('tap on Clips triggers onOpenClipsEditor', (tester) async {
@@ -52,12 +53,28 @@ void main() {
 
       expect(openedMusic, isTrue);
     });
+
+    testWidgets('tap on Stickers triggers onAddStickers', (tester) async {
+      var addedStickers = false;
+
+      await tester.pumpWidget(
+        _buildWidget(onAddStickers: () => addedStickers = true),
+      );
+
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoEditorOpenStickerSemanticLabel),
+      );
+      await tester.pumpAndSettle();
+
+      expect(addedStickers, isTrue);
+    });
   });
 }
 
 Widget _buildWidget({
   VoidCallback? onOpenClipsEditor,
   VoidCallback? onOpenMusicLibrary,
+  VoidCallback? onAddStickers,
 }) {
   final editorKey = GlobalKey<ProImageEditorState>();
   final removeAreaKey = GlobalKey();
@@ -66,7 +83,7 @@ Widget _buildWidget({
     editorKey: editorKey,
     removeAreaKey: removeAreaKey,
     onOpenCamera: () {},
-    onAddStickers: () {},
+    onAddStickers: onAddStickers ?? () {},
     onAdjustVolume: () {},
     onOpenClipsEditor: onOpenClipsEditor ?? () {},
     onAddEditTextLayer: ([layer]) async => null,

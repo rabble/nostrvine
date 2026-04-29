@@ -54,12 +54,6 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                       icon: .scribble,
                       onTap: () => scope.editor?.openPaintEditor(),
                     ),
-                    /* TODO(hm21): uncomment stickers once we have a license for them
-                    _ActionButton(
-                      label: 'Stickers',
-                      icon: .sticker,
-                      onTap: scope.onAddStickers,
-                    ),*/
                     _ActionButton(
                       label: context.l10n.videoEditorVolumeLabel,
                       icon: .speakerHigh,

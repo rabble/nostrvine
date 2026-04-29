@@ -54,6 +54,8 @@ void main() {
     tearDown(() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', null);
+      // rootBundle caches strings — clear so each test gets a fresh load.
+      rootBundle.evict('assets/stickers/stickers.json');
     });
 
     test('initial state is VideoEditorStickerInitial', () async {
@@ -85,6 +87,36 @@ void main() {
           expect(state.stickers[0].tags, testStickers[0].tags);
           expect(state.stickers[0].assetPath, testStickers[0].assetPath);
           expect(state.stickers[2].networkUrl, testStickers[2].networkUrl);
+        },
+      );
+
+      blocTest<VideoEditorStickerBloc, VideoEditorStickerState>(
+        'falls back to StickerPackData.fallback when JSON omits packData',
+        setUp: () {
+          // Mirror the production shipping shape of stickers.json today,
+          // which has no `packData` keys.
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMessageHandler('flutter/assets', (
+                ByteData? message,
+              ) async {
+                final jsonString = json.encode([
+                  {
+                    'assetPath': 'assets/stickers/no_pack.png',
+                    'description': 'No pack sticker',
+                    'tags': ['none'],
+                  },
+                ]);
+                return ByteData.view(
+                  Uint8List.fromList(utf8.encode(jsonString)).buffer,
+                );
+              });
+        },
+        build: () => VideoEditorStickerBloc(onPrecacheStickers: (_) {}),
+        act: (bloc) => bloc.add(const VideoEditorStickerLoad()),
+        verify: (bloc) {
+          final state = bloc.state as VideoEditorStickerLoaded;
+          expect(state.stickers, hasLength(1));
+          expect(state.stickers.first.packData, StickerPackData.fallback);
         },
       );
     });

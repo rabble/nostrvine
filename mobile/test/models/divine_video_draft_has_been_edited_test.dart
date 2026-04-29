@@ -121,6 +121,41 @@ void main() {
         expect(draft.hasBeenEdited, isTrue);
       });
 
+      test(
+        'returns true when editorStateHistory contains a widget layer with '
+        'exportConfigs.id (sticker)',
+        () {
+          // Regression guard: hasEditorStateEdits parses the history with a
+          // dummy widgetLoader so saved drafts containing sticker layers can
+          // be rehydrated. Without the loader, WidgetLayer.fromMap asserts
+          // when exportConfigs.id is set.
+          final draft = _minimalDraft().copyWith(
+            editorStateHistory: const {
+              'position': 0,
+              'history': [
+                {
+                  'layers': [
+                    {
+                      'x': 0,
+                      'y': 0,
+                      'rotation': 0,
+                      'scale': 1,
+                      'flipX': false,
+                      'flipY': false,
+                      'type': 'widget',
+                      'exportConfigs': {'id': 'sticker-1'},
+                    },
+                  ],
+                },
+              ],
+            },
+            skipUpdateLastModified: true,
+          );
+
+          expect(draft.hasBeenEdited, isTrue);
+        },
+      );
+
       test('returns false when draft has editorEditingParameters only', () {
         final draft = _minimalDraft().copyWith(
           editorEditingParameters: const {'param': 'value'},
