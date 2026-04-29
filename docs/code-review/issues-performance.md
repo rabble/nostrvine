@@ -69,13 +69,15 @@ The code has a comment (lines 229–234) acknowledging the `downloadFile` placem
 
 ### Untracked `Future.delayed` calls in VideoFeedItem
 
-**Problem**: `_triggerPauseButtonFade()` fires two `Future.delayed` calls that cannot be cancelled when the widget is disposed. Although both check `mounted` before calling `setState`, the futures themselves remain alive in memory until they complete.
+**Problem**: `_triggerPauseButtonFade()` fires two `Future.delayed` calls that cannot be cancelled when the widget is disposed. If the user scrolls past the video quickly, both futures outlive the widget. Under rapid scrolling, dozens of orphaned futures can accumulate.
 
-**Evidence**: `video_feed_item.dart` lines 182–196: Two `Future.delayed` calls (50ms and 550ms) drive a fade animation. If the user scrolls past the video quickly, both futures outlive the widget and run their `mounted` check uselessly. Under rapid scrolling, dozens of orphaned futures can accumulate.
+**Evidence**: `video_feed_item.dart` lines 182–196: Two `Future.delayed` calls (50ms and 550ms) drive a fade animation. Both check `mounted` before calling `setState`, but the futures themselves stay alive in memory until they complete.
 
-**Impact**: Low. The `mounted` guard prevents crashes, but orphaned futures add unnecessary work to the event loop during fast scrolling. A minor contributor to scroll jank on lower-end devices.
+**Impact**: Low. Orphaned futures add unnecessary work to the event loop during fast scrolling. A minor contributor to scroll jank on lower-end devices.
 
-**Effort**: Low. Store the futures or use a `Timer` and cancel in `dispose()`. Alternatively, replace with an `AnimationController` which integrates with the widget lifecycle.
+**Effort**: Low. Replace with `Timer` instances and cancel them in `dispose()`. This gives explicit lifecycle control, no orphaned work, no `mounted` checks needed.
+
+See also: [Code Quality — `Future.delayed` in app code](issues-code-quality.md) for the broader pattern across 22 files.
 
 **GitHub ticket**: TBD
 
