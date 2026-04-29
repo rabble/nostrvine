@@ -247,7 +247,7 @@ class _MasonryLayout extends StatelessWidget {
   final double? targetAspectRatio;
 
   static const _columnCount = 3;
-  static const _radius = Radius.circular(32);
+  static const _radius = Radius.circular(VineTheme.shellInnerCornerRadius);
 
   @override
   Widget build(BuildContext context) {
@@ -255,39 +255,38 @@ class _MasonryLayout extends StatelessWidget {
       for (var i = 0; i < selectedClipIds.length; i++)
         selectedClipIds.elementAt(i): i + 1,
     };
-    return MasonryGridView.count(
-      controller: scrollController,
-      padding: .fromSTEB(8, 0, 8, MediaQuery.viewPaddingOf(context).bottom),
-      crossAxisCount: _columnCount,
-      mainAxisSpacing: 4,
-      crossAxisSpacing: 4,
-      cacheExtent: MediaQuery.sizeOf(context).height * 2,
-      itemCount: clips.length,
-      itemBuilder: (context, index) {
-        final clip = clips[index];
-        final selectionIndex = selectionIndexById[clip.id] ?? -1;
-        final firstRowLastIndex = clips.length < _columnCount
-            ? clips.length - 1
-            : _columnCount - 1;
-        final isLastInFirstRow = index == firstRowLastIndex;
-        final borderRadius = BorderRadius.only(
-          topLeft: index == 0 ? _radius : Radius.zero,
-          topRight: isLastInFirstRow ? _radius : Radius.zero,
-        );
-        return ClipRRect(
-          borderRadius: borderRadius,
-          child: VideoClipThumbnailCard(
-            clip: clip,
-            selectionIndex: selectionIndex,
-            disabled:
-                disabledClipIds.contains(clip.id) ||
-                (targetAspectRatio != null &&
-                    targetAspectRatio != clip.targetAspectRatio.value),
-            onTap: () => onTapClip(clip),
-            onLongPress: () => onLongPressClip(clip),
-          ),
-        );
-      },
+    return Padding(
+      padding: const .symmetric(horizontal: 8),
+      child: ClipRRect(
+        borderRadius: clips.length >= _columnCount
+            ? const .vertical(top: _radius)
+            : .zero,
+        clipBehavior: .hardEdge,
+        child: MasonryGridView.count(
+          controller: scrollController,
+          padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
+          crossAxisCount: _columnCount,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          cacheExtent: MediaQuery.sizeOf(context).height * 2,
+          itemCount: clips.length,
+          itemBuilder: (context, index) {
+            final clip = clips[index];
+            final selectionIndex = selectionIndexById[clip.id] ?? -1;
+
+            return VideoClipThumbnailCard(
+              clip: clip,
+              selectionIndex: selectionIndex,
+              disabled:
+                  disabledClipIds.contains(clip.id) ||
+                  (targetAspectRatio != null &&
+                      targetAspectRatio != clip.targetAspectRatio.value),
+              onTap: () => onTapClip(clip),
+              onLongPress: () => onLongPressClip(clip),
+            );
+          },
+        ),
+      ),
     );
   }
 }
