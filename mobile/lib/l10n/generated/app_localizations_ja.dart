@@ -5000,6 +5000,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorOpenFilterSemanticLabel => 'フィルターエディタを開く';
 
   @override
+  String get videoEditorOpenStickerSemanticLabel => 'スタンプエディタを開く';
+
+  @override
   String get videoEditorSaveDraftTitle => '下書きを保存しますか？';
 
   @override
@@ -5202,6 +5205,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoEditorFeedPreviewContent => 'これらのエリアの後ろにコンテンツを配置しないでください。';
+
+  @override
+  String get videoEditorStickersDivineOriginals => 'Divine オリジナル';
 
   @override
   String get videoEditorStickerSearchHint => 'ステッカーを検索...';

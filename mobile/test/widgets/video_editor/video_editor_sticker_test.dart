@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show StickerData;
+import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 
@@ -14,12 +14,14 @@ void main() {
       'assets/stickers/test.svg',
       description: 'Test sticker',
       tags: ['test'],
+      packData: StickerPackData.fallback,
     );
 
     const networkSticker = StickerData.network(
       'https://example.com/sticker.png',
       description: 'Network sticker',
       tags: ['network'],
+      packData: StickerPackData.fallback,
     );
 
     Widget buildTestWidget({

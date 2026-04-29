@@ -15,10 +15,13 @@ class VideoEditorSticker extends StatelessWidget {
   const VideoEditorSticker({
     required this.sticker,
     super.key,
+    this.onTap,
     this.enableLimitCacheSize = true,
   });
 
   final StickerData sticker;
+
+  final VoidCallback? onTap;
 
   /// Whether to limit the image cache size based on the widget's constraints.
   ///
@@ -30,33 +33,39 @@ class VideoEditorSticker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SVG assets don't need raster cache sizing.
-    if (sticker.networkUrl == null) {
-      return Center(child: _SvgAssetImage(sticker: sticker));
-    }
+    return Semantics(
+      label: sticker.description,
+      button: onTap != null,
+      child: GestureDetector(
+        behavior: .translucent,
+        onTap: onTap,
+        child: Center(
+          child: sticker.networkUrl == null
+              ? _SvgAssetImage(sticker: sticker)
+              : enableLimitCacheSize
+              ? LayoutBuilder(
+                  builder: (_, constraints) {
+                    if (!constraints.hasBoundedWidth ||
+                        !constraints.hasBoundedHeight) {
+                      return _NetworkImage(sticker: sticker);
+                    }
 
-    return Center(
-      child: enableLimitCacheSize
-          ? LayoutBuilder(
-              builder: (_, constraints) {
-                if (!constraints.hasBoundedWidth ||
-                    !constraints.hasBoundedHeight) {
-                  return _NetworkImage(sticker: sticker);
-                }
+                    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+                    final cacheWidth = (constraints.maxWidth * pixelRatio)
+                        .toInt();
+                    final cacheHeight = (constraints.maxHeight * pixelRatio)
+                        .toInt();
 
-                final pixelRatio = MediaQuery.devicePixelRatioOf(context);
-                final cacheWidth = (constraints.maxWidth * pixelRatio).toInt();
-                final cacheHeight = (constraints.maxHeight * pixelRatio)
-                    .toInt();
-
-                return _NetworkImage(
-                  sticker: sticker,
-                  cacheWidth: cacheWidth,
-                  cacheHeight: cacheHeight,
-                );
-              },
-            )
-          : _NetworkImage(sticker: sticker),
+                    return _NetworkImage(
+                      sticker: sticker,
+                      cacheWidth: cacheWidth,
+                      cacheHeight: cacheHeight,
+                    );
+                  },
+                )
+              : _NetworkImage(sticker: sticker),
+        ),
+      ),
     );
   }
 }
@@ -105,8 +114,8 @@ class _ErrorImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(
-      Icons.broken_image_outlined,
+    return const DivineIcon(
+      icon: DivineIconName.warningCircle,
       size: 48,
       color: VineTheme.lightText,
     );

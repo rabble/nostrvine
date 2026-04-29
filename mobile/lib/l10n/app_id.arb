@@ -2688,6 +2688,7 @@
     "videoEditorOpenLibrarySemanticLabel": "Buka perpustakaan",
     "videoEditorOpenDrawSemanticLabel": "Buka editor gambar",
     "videoEditorOpenFilterSemanticLabel": "Buka editor filter",
+    "videoEditorOpenStickerSemanticLabel": "Buka editor stiker",
     "videoEditorOpenTextSemanticLabel": "Buka editor teks",
     "videoEditorPauseSemanticLabel": "Jeda",
     "videoEditorPickColorTitle": "Pilih warna",
@@ -2727,6 +2728,7 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "Bagi klip yang dipilih",
+    "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",
     "videoEditorTextAlignmentSemanticLabel": "Perataan teks",
     "videoEditorTextBackgroundSemanticLabel": "Latar belakang teks",

@@ -105,6 +105,15 @@ class VideoEditorMainActionsSheet extends StatelessWidget {
                   scope.editor?.openPaintEditor();
                 },
               ),
+              _ItemButton(
+                icon: .sticker,
+                label: context.l10n.videoEditorStickers,
+                semanticLabel: context.l10n.videoEditorOpenStickerSemanticLabel,
+                onTap: () {
+                  Navigator.pop(context);
+                  scope.onAddStickers();
+                },
+              ),
             ],
           ),
         ],

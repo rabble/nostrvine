@@ -1977,6 +1977,7 @@
     "videoEditorOpenLibrarySemanticLabel": "라이브러리 열기",
     "videoEditorOpenDrawSemanticLabel": "그리기 편집기 열기",
     "videoEditorOpenFilterSemanticLabel": "필터 편집기 열기",
+    "videoEditorOpenStickerSemanticLabel": "스티커 편집기 열기",
     "videoEditorOpenTextSemanticLabel": "텍스트 편집기 열기",
     "videoEditorPauseSemanticLabel": "일시 정지",
     "videoEditorPickColorTitle": "색상 선택",
@@ -2016,6 +2017,7 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "선택한 클립 분할",
+    "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",
     "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",
     "videoEditorTextBackgroundSemanticLabel": "텍스트 배경",

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show StickerData;
+import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -25,16 +25,19 @@ void main() {
         assetPath: 'assets/stickers/happy.png',
         description: 'Happy face',
         tags: ['happy', 'smile'],
+        packData: StickerPackData.fallback,
       ),
       const StickerData(
         assetPath: 'assets/stickers/sad.png',
         description: 'Sad face',
         tags: ['sad', 'cry'],
+        packData: StickerPackData.fallback,
       ),
       const StickerData(
         assetPath: 'assets/stickers/star.png',
         description: 'Golden star',
         tags: ['star', 'gold'],
+        packData: StickerPackData.fallback,
       ),
     ];
 
@@ -54,7 +57,9 @@ void main() {
         home: Scaffold(
           body: BlocProvider<VideoEditorStickerBloc>.value(
             value: mockBloc,
-            child: const VideoEditorStickerSheet(),
+            child: const VideoEditorStickerSheet(
+              enableSearchBar: true,
+            ),
           ),
         ),
       );
@@ -123,7 +128,7 @@ void main() {
     group('error state', () {
       testWidgets('shows error message when loading fails', (tester) async {
         await tester.pumpWidget(
-          buildSubject(state: const VideoEditorStickerError('Load failed')),
+          buildSubject(state: const VideoEditorStickerError()),
         );
 
         expect(find.text('Failed to load stickers'), findsOneWidget);

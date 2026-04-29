@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:models/models.dart' show StickerData;
+import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:unified_logger/unified_logger.dart';
 
 part 'video_editor_sticker_event.dart';
@@ -44,9 +44,13 @@ class VideoEditorStickerBloc
       );
       final jsonList = json.decode(jsonString) as List<dynamic>;
 
-      _allStickers = jsonList
-          .map((e) => StickerData.fromJson(e as Map<String, dynamic>))
-          .toList();
+      _allStickers = jsonList.map((e) {
+        final sticker = StickerData.fromJson(e as Map<String, dynamic>);
+        if (sticker.packData.packId.isEmpty) {
+          return sticker.copyWith(packData: StickerPackData.fallback);
+        }
+        return sticker;
+      }).toList();
 
       Log.debug(
         '🌟 Loaded ${_allStickers.length} stickers',
@@ -56,13 +60,14 @@ class VideoEditorStickerBloc
 
       emit(VideoEditorStickerLoaded(stickers: _allStickers));
       onPrecacheStickers(_allStickers.take(maxPrecacheCount).toList());
-    } catch (e) {
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         '🌟 Failed to load stickers: $e',
         name: 'VideoEditorStickerBloc',
         category: LogCategory.video,
       );
-      emit(VideoEditorStickerError(e.toString()));
+      emit(const VideoEditorStickerError());
     }
   }
 

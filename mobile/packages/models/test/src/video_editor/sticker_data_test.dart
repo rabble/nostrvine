@@ -14,6 +14,7 @@ void main() {
           description: description,
           tags: tags,
           networkUrl: networkUrl,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData.description, description);
@@ -27,6 +28,7 @@ void main() {
           description: description,
           tags: tags,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData.description, description);
@@ -41,6 +43,7 @@ void main() {
           tags: tags,
           networkUrl: networkUrl,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData.description, description);
@@ -56,6 +59,7 @@ void main() {
           networkUrl,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData.description, description);
@@ -69,11 +73,13 @@ void main() {
           networkUrl,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
         const fromConstructor = StickerData(
           description: description,
           tags: tags,
           networkUrl: networkUrl,
+          packData: StickerPackData.fallback,
         );
 
         expect(fromFactory.props, equals(fromConstructor.props));
@@ -86,6 +92,7 @@ void main() {
           assetPath,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData.description, description);
@@ -99,11 +106,13 @@ void main() {
           assetPath,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
         const fromConstructor = StickerData(
           description: description,
           tags: tags,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
 
         expect(fromFactory.props, equals(fromConstructor.props));
@@ -116,6 +125,7 @@ void main() {
         tags: tags,
         networkUrl: networkUrl,
         assetPath: assetPath,
+        packData: StickerPackData.fallback,
       );
 
       test('returns same values when no arguments provided', () {
@@ -185,29 +195,44 @@ void main() {
           tags: tags,
           networkUrl: networkUrl,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
         const stickerData2 = StickerData(
           description: description,
           tags: tags,
           networkUrl: networkUrl,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData1, equals(stickerData2));
       });
 
       test('two instances with different description are not equal', () {
-        const stickerData1 = StickerData(description: description, tags: tags);
-        const stickerData2 = StickerData(description: 'Other', tags: tags);
+        const stickerData1 = StickerData(
+          description: description,
+          tags: tags,
+          packData: StickerPackData.fallback,
+        );
+        const stickerData2 = StickerData(
+          description: 'Other',
+          tags: tags,
+          packData: StickerPackData.fallback,
+        );
 
         expect(stickerData1, isNot(equals(stickerData2)));
       });
 
       test('two instances with different tags are not equal', () {
-        const stickerData1 = StickerData(description: description, tags: tags);
+        const stickerData1 = StickerData(
+          description: description,
+          tags: tags,
+          packData: StickerPackData.fallback,
+        );
         const stickerData2 = StickerData(
           description: description,
           tags: ['other'],
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData1, isNot(equals(stickerData2)));
@@ -218,11 +243,13 @@ void main() {
           description: description,
           tags: tags,
           networkUrl: networkUrl,
+          packData: StickerPackData.fallback,
         );
         const stickerData2 = StickerData(
           description: description,
           tags: tags,
           networkUrl: 'https://other.com',
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData1, isNot(equals(stickerData2)));
@@ -233,11 +260,13 @@ void main() {
           description: description,
           tags: tags,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
         const stickerData2 = StickerData(
           description: description,
           tags: tags,
           assetPath: 'assets/other.png',
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData1, isNot(equals(stickerData2)));
@@ -251,13 +280,18 @@ void main() {
           tags: tags,
           networkUrl: networkUrl,
           assetPath: assetPath,
+          packData: StickerPackData.fallback,
         );
 
         expect(stickerData.props, [networkUrl, assetPath, description, tags]);
       });
 
       test('contains null values when not provided', () {
-        const stickerData = StickerData(description: description, tags: tags);
+        const stickerData = StickerData(
+          description: description,
+          tags: tags,
+          packData: StickerPackData.fallback,
+        );
 
         expect(stickerData.props, [null, null, description, tags]);
       });
@@ -339,6 +373,7 @@ void main() {
           assetPath: assetPath,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         final json = stickerData.toJson();
@@ -356,6 +391,7 @@ void main() {
           assetPath: assetPath,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         final json = stickerData.toJson();
@@ -373,6 +409,7 @@ void main() {
           networkUrl: networkUrl,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         final json = stickerData.toJson();
@@ -389,6 +426,7 @@ void main() {
         const stickerData = StickerData(
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         final json = stickerData.toJson();
@@ -409,6 +447,7 @@ void main() {
           assetPath: assetPath,
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         final json = original.toJson();
@@ -421,6 +460,7 @@ void main() {
         const original = StickerData(
           description: description,
           tags: tags,
+          packData: StickerPackData.fallback,
         );
 
         final json = original.toJson();

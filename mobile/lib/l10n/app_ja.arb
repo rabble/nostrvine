@@ -2688,6 +2688,7 @@
     "videoEditorOpenLibrarySemanticLabel": "ライブラリを開く",
     "videoEditorOpenDrawSemanticLabel": "描画エディタを開く",
     "videoEditorOpenFilterSemanticLabel": "フィルターエディタを開く",
+    "videoEditorOpenStickerSemanticLabel": "スタンプエディタを開く",
     "videoEditorOpenTextSemanticLabel": "テキストエディタを開く",
     "videoEditorPauseSemanticLabel": "一時停止",
     "videoEditorPickColorTitle": "色を選択",
@@ -2727,6 +2728,7 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "選択したクリップを分割",
+    "videoEditorStickersDivineOriginals": "Divine オリジナル",
     "videoEditorStickerSearchHint": "ステッカーを検索...",
     "videoEditorTextAlignmentSemanticLabel": "テキストの配置",
     "videoEditorTextBackgroundSemanticLabel": "テキストの背景",

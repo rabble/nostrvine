@@ -5022,6 +5022,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorOpenFilterSemanticLabel => '필터 편집기 열기';
 
   @override
+  String get videoEditorOpenStickerSemanticLabel => '스티커 편집기 열기';
+
+  @override
   String get videoEditorSaveDraftTitle => '임시저장 하시겠어요?';
 
   @override
@@ -5224,6 +5227,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorFeedPreviewContent => '이 영역 뒤에 콘텐츠를 배치하지 마세요.';
+
+  @override
+  String get videoEditorStickersDivineOriginals => 'Divine 오리지널';
 
   @override
   String get videoEditorStickerSearchHint => '스티커 검색...';

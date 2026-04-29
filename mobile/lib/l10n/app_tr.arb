@@ -2688,6 +2688,7 @@
     "videoEditorOpenLibrarySemanticLabel": "Kütüphaneyi aç",
     "videoEditorOpenDrawSemanticLabel": "Çizim düzenleyiciyi aç",
     "videoEditorOpenFilterSemanticLabel": "Filtre düzenleyiciyi aç",
+    "videoEditorOpenStickerSemanticLabel": "Stiker düzenleyiciyi aç",
     "videoEditorOpenTextSemanticLabel": "Metin düzenleyiciyi aç",
     "videoEditorPauseSemanticLabel": "Duraklat",
     "videoEditorPickColorTitle": "Renk seç",
@@ -2727,6 +2728,7 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "Seçili klibi böl",
+    "videoEditorStickersDivineOriginals": "Divine Orijinaller",
     "videoEditorStickerSearchHint": "Çıkartma ara...",
     "videoEditorTextAlignmentSemanticLabel": "Metin hizalama",
     "videoEditorTextBackgroundSemanticLabel": "Metin arka planı",

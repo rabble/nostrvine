@@ -2688,6 +2688,7 @@
     "videoEditorOpenLibrarySemanticLabel": "فتح المكتبة",
     "videoEditorOpenDrawSemanticLabel": "فتح محرر الرسم",
     "videoEditorOpenFilterSemanticLabel": "فتح محرر الفلاتر",
+    "videoEditorOpenStickerSemanticLabel": "فتح محرر الملصقات",
     "videoEditorOpenTextSemanticLabel": "فتح محرر النص",
     "videoEditorPauseSemanticLabel": "إيقاف مؤقت",
     "videoEditorPickColorTitle": "اختيار لون",
@@ -2727,6 +2728,7 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "تقسيم المقطع المحدد",
+    "videoEditorStickersDivineOriginals": "Divine الأصلية",
     "videoEditorStickerSearchHint": "البحث في الملصقات...",
     "videoEditorTextAlignmentSemanticLabel": "محاذاة النص",
     "videoEditorTextBackgroundSemanticLabel": "خلفية النص",

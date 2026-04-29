@@ -31,6 +31,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_feed_prev
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
+import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:pro_image_editor/pro_image_editor.dart'
     hide AudioTrack, VideoClip;
 import 'package:unified_logger/unified_logger.dart';
@@ -1057,7 +1058,19 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         configs: ProImageEditorConfigs(
           stateHistory: StateHistoryConfigs(
             initStateHistory: editorStateHistory.isNotEmpty
-                ? .fromMap(editorStateHistory)
+                ? .fromMap(
+                    editorStateHistory,
+                    configs: ImportEditorConfigs(
+                      widgetLoader: (id, {meta}) {
+                        if (meta == null) return const SizedBox.shrink();
+
+                        return VideoEditorSticker(
+                          sticker: .fromJson(meta),
+                          enableLimitCacheSize: false,
+                        );
+                      },
+                    ),
+                  )
                 : null,
           ),
           imageGeneration: ImageGenerationConfigs(

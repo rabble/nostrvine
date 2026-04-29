@@ -9224,6 +9224,12 @@ abstract class AppLocalizations {
   /// **'Open filter editor'**
   String get videoEditorOpenFilterSemanticLabel;
 
+  /// No description provided for @videoEditorOpenStickerSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open sticker editor'**
+  String get videoEditorOpenStickerSemanticLabel;
+
   /// No description provided for @videoEditorSaveDraftTitle.
   ///
   /// In en, this message translates to:
@@ -9619,6 +9625,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Avoid placing content behind these areas.'**
   String get videoEditorFeedPreviewContent;
+
+  /// No description provided for @videoEditorStickersDivineOriginals.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine Originals'**
+  String get videoEditorStickersDivineOriginals;
 
   /// No description provided for @videoEditorStickerSearchHint.
   ///

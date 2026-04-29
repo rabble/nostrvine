@@ -5289,6 +5289,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Ouvrir l\'éditeur de filtres';
 
   @override
+  String get videoEditorOpenStickerSemanticLabel =>
+      'Ouvrir l\'éditeur de stickers';
+
+  @override
   String get videoEditorSaveDraftTitle => 'Enregistrer votre brouillon ?';
 
   @override
@@ -5506,6 +5510,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get videoEditorFeedPreviewContent =>
       'Évitez de placer du contenu derrière ces zones.';
+
+  @override
+  String get videoEditorStickersDivineOriginals => 'Divine Originaux';
 
   @override
   String get videoEditorStickerSearchHint => 'Rechercher des stickers...';

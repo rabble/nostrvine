@@ -41,10 +41,5 @@ class VideoEditorStickerLoaded extends VideoEditorStickerState {
 
 /// Error loading stickers.
 class VideoEditorStickerError extends VideoEditorStickerState {
-  const VideoEditorStickerError(this.message);
-
-  final String message;
-
-  @override
-  List<Object?> get props => [message];
+  const VideoEditorStickerError();
 }

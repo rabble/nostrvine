@@ -64,7 +64,7 @@ abstract class TimelineConstants {
   // --- Overlay strips (layers / filters / sounds) ---
 
   /// Height of a single row in an overlay strip.
-  static const double overlayRowHeight = 40;
+  static const double overlayRowHeight = 48;
 
   /// Height of a single row in the sound overlay strip.
   ///

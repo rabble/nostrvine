@@ -152,7 +152,7 @@ class _TimelineOverlayStripsState extends State<TimelineOverlayStrips> {
         items: _layerItems,
         rowCount: _layerRowCount,
         type: TimelineOverlayType.layer,
-        color: VineTheme.primary,
+        color: VineTheme.accentVioletBackground,
         rowHeight: TimelineConstants.overlayRowHeight,
       ),
     ];

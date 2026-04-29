@@ -5353,6 +5353,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorOpenFilterSemanticLabel => 'Otwórz edytor filtrów';
 
   @override
+  String get videoEditorOpenStickerSemanticLabel => 'Otwórz edytor naklejek';
+
+  @override
   String get videoEditorSaveDraftTitle => 'Zapisać wersję roboczą?';
 
   @override
@@ -5567,6 +5570,9 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get videoEditorFeedPreviewContent =>
       'Unikaj umieszczania treści za tymi obszarami.';
+
+  @override
+  String get videoEditorStickersDivineOriginals => 'Divine Oryginały';
 
   @override
   String get videoEditorStickerSearchHint => 'Szukaj naklejek...';

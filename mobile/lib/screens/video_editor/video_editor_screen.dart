@@ -334,17 +334,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       final layer = WidgetLayer(
         width: stickerWidth,
-        widget: Semantics(
-          label: sticker.description,
-          child: VideoEditorSticker(
-            sticker: sticker,
-            enableLimitCacheSize: false,
-          ),
+        widget: VideoEditorSticker(
+          sticker: sticker,
+          enableLimitCacheSize: false,
         ),
+        meta: sticker.toJson(),
         exportConfigs: WidgetLayerExportConfigs(
-          assetPath: sticker.assetPath,
-          networkUrl: sticker.networkUrl,
-          meta: {'description': sticker.description, 'tags': sticker.tags},
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          meta: sticker.toJson(),
         ),
       );
       _editor!.addLayer(layer, blockSelectLayer: true);

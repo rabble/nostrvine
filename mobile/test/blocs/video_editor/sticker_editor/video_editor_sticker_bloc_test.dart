@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' show StickerData;
+import 'package:models/models.dart' show StickerData, StickerPackData;
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 
 void main() {
@@ -32,16 +32,19 @@ void main() {
           'assets/stickers/happy.png',
           description: 'Happy face',
           tags: ['happy', 'smile', 'emoji'],
+          packData: StickerPackData.fallback,
         ),
         StickerData.asset(
           'assets/stickers/sad.png',
           description: 'Sad face',
           tags: ['sad', 'cry', 'emoji'],
+          packData: StickerPackData.fallback,
         ),
         StickerData.network(
           'https://example.com/star.png',
           description: 'Golden star',
           tags: ['star', 'gold', 'award'],
+          packData: StickerPackData.fallback,
         ),
       ];
 
@@ -234,15 +237,6 @@ void main() {
           expect(state1, isNot(equals(state3)));
         },
       );
-
-      test('VideoEditorStickerError props include message', () {
-        const state1 = VideoEditorStickerError('Error 1');
-        const state2 = VideoEditorStickerError('Error 1');
-        const state3 = VideoEditorStickerError('Error 2');
-
-        expect(state1, equals(state2));
-        expect(state1, isNot(equals(state3)));
-      });
 
       test('hasSearchQuery returns correct value', () {
         final withQuery = VideoEditorStickerLoaded(

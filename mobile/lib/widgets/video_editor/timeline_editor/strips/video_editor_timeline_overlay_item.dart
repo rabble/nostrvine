@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:models/models.dart';
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
@@ -106,6 +107,8 @@ class TimelineOverlayItemTile extends StatelessWidget {
                       padding: const .symmetric(horizontal: 6),
                       child: item.layer is PaintLayer
                           ? _PaintPreview(layer: item.layer! as PaintLayer)
+                          : item.layer is WidgetLayer
+                          ? _StickerPreview(item: item)
                           : Text(
                               item.label,
                               style: VineTheme.labelMediumFont(
@@ -135,6 +138,38 @@ class _PaintPreview extends StatelessWidget {
       child: CustomPaint(
         size: layer.size,
         painter: DrawPaintItem(item: layer.item, scale: layer.scale),
+      ),
+    );
+  }
+}
+
+class _StickerPreview extends StatelessWidget {
+  const _StickerPreview({required this.item});
+
+  final TimelineOverlayItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final layer = item.layer as WidgetLayer?;
+    final sticker = layer?.meta != null
+        ? StickerData.fromJson(layer!.meta!)
+        : null;
+
+    return OverflowBox(
+      maxWidth: double.infinity,
+      alignment: Alignment.centerLeft,
+      child: Row(
+        mainAxisSize: .min,
+        children: [
+          if (layer != null) layer.widget,
+          Text(
+            sticker?.layerName ?? item.label,
+            style: VineTheme.labelMediumFont(
+              color: VineTheme.accentVioletVariant,
+            ),
+            maxLines: 1,
+          ),
+        ],
       ),
     );
   }

@@ -5354,6 +5354,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Deschide editorul de filtre';
 
   @override
+  String get videoEditorOpenStickerSemanticLabel =>
+      'Deschide editorul de stickere';
+
+  @override
   String get videoEditorSaveDraftTitle => 'Salvezi schița?';
 
   @override
@@ -5571,6 +5575,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get videoEditorFeedPreviewContent =>
       'Evită să plasezi conținut în spatele acestor zone.';
+
+  @override
+  String get videoEditorStickersDivineOriginals => 'Divine Originale';
 
   @override
   String get videoEditorStickerSearchHint => 'Caută stickere...';

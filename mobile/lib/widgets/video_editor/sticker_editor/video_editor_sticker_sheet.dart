@@ -15,9 +15,14 @@ import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticke
 /// Returns the selected [StickerData] via [context.pop] when a sticker is
 /// tapped.
 class VideoEditorStickerSheet extends StatelessWidget {
-  const VideoEditorStickerSheet({super.key, this.scrollController});
+  const VideoEditorStickerSheet({
+    this.enableSearchBar = false,
+    super.key,
+    this.scrollController,
+  });
 
   final ScrollController? scrollController;
+  final bool enableSearchBar;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +36,19 @@ class VideoEditorStickerSheet extends StatelessWidget {
         controller: scrollController,
         slivers: [
           // Floating Search Bar Header
-          const _SearchBar(),
+          if (enableSearchBar) const _SearchBar(),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const .all(16),
+              child: Text(
+                context.l10n.videoEditorStickersDivineOriginals,
+                style: VineTheme.titleSmallFont(
+                  color: VineTheme.onSurfaceMuted,
+                ),
+              ),
+            ),
+          ),
           // Grid with Sticker Icons
           SliverPadding(
             padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomInset),
@@ -77,18 +94,14 @@ class _StickerGrid extends StatelessWidget {
     return SliverGrid(
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 120,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
       ),
       delegate: SliverChildBuilderDelegate((context, index) {
         final sticker = stickers[index];
-        return Semantics(
-          label: sticker.description,
-          button: true,
-          child: GestureDetector(
-            onTap: () => context.pop(sticker),
-            child: VideoEditorSticker(sticker: sticker),
-          ),
+        return VideoEditorSticker(
+          onTap: () => context.pop(sticker),
+          sticker: sticker,
         );
       }, childCount: stickers.length),
     );
