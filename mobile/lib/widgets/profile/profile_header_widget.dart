@@ -702,7 +702,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading = widget.profileStats == null && !_timeoutExpired;
+    final isLoading = widget.profileStats == null;
 
     final hasFollowers = widget.profileStats?.followers != null;
     final hasFollowing = widget.profileStats?.following != null;
@@ -717,7 +717,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
               ? _skeletonPlaceholderCount
               : widget.profileStats!.totalViews,
           label: l10n.profileLoopsLabel,
-          isLoading: isLoading,
+          isLoading: isLoading && _timeoutExpired,
         ),
       if (hasLikes || isLoading)
         ProfileStatColumn(
@@ -725,7 +725,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
               ? _skeletonPlaceholderCount
               : widget.profileStats!.totalLikes,
           label: l10n.profileLikesLabel,
-          isLoading: isLoading,
+          isLoading: isLoading && _timeoutExpired,
         ),
       if (hasFollowing || isLoading)
         ProfileStatColumn(
@@ -733,7 +733,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
               ? _skeletonPlaceholderCount
               : widget.profileStats!.following,
           label: l10n.profileFollowingLabel,
-          isLoading: isLoading,
+          isLoading: isLoading && _timeoutExpired,
           onTap: () => context.push(
             FollowingScreenRouter.pathForPubkey(widget.userIdHex),
           ),
@@ -744,7 +744,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
               ? _skeletonPlaceholderCount
               : widget.profileStats!.followers,
           label: l10n.profileFollowersLabel,
-          isLoading: isLoading,
+          isLoading: isLoading && _timeoutExpired,
           onTap: () => context.push(
             FollowersScreenRouter.pathForPubkey(widget.userIdHex),
           ),
@@ -752,7 +752,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
     ];
 
     return Skeletonizer(
-      enabled: isLoading,
+      enabled: isLoading && !_timeoutExpired,
       enableSwitchAnimation: true,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
