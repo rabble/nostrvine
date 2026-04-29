@@ -82,6 +82,16 @@ Note: `VineTheme` is adopted across 194 files, 1,251+ `context.l10n` usages supp
 
 **Evidence**: Zero matches for `ExcludeSemantics` or `MergeSemantics` across the entire `mobile/lib/` directory. Decorative gradients (e.g., video overlay at `video_feed_item.dart` lines 1406–1429), background images, dividers, and icons used alongside text all add noise to the semantics tree. Semantics usage is concentrated in the video feed overlay (87 files with `Semantics()`), but screens like settings, inbox, auth, and notifications have zero or minimal semantic annotations.
 
+**Examples needing `ExcludeSemantics`** (decorative icons next to text — the icon is redundant with the adjacent label):
+
+- `audio_attribution_row.dart`: The music note icon and caret-right icon next to `"$soundName · $creatorName"` are purely visual.
+- `video_feed_item.dart` content warning badge: A `warning_amber_rounded` icon next to the warning label text.
+
+**Examples needing `MergeSemantics`** (related widgets that form one logical unit):
+
+- `collaborator_avatar_row.dart`: The people icon, stacked avatars, and collaborator count label form a single concept ("3 collaborators") but are read as separate nodes.
+- `video_feed_item.dart` author row: The avatar, display name, NIP-05 badge, and loop count form one unit ("Author: displayName, verified, 5 loops") but are read individually.
+
 **Impact**: Medium. Screen readers traverse every decorative element, making navigation slow and confusing.
 
 **Effort**: High. Requires a systematic pass through all screens to identify decorative vs. meaningful content.
