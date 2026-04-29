@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Im Profil speichern",
+    "hashtagOptionSaveToProfile": "Speichern",
     "hashtagOptionRemoveFromProfile": "Aus gespeicherten Tags entfernen",
     "hashtagSavedToProfileSnackbar": "In deinem Profil gespeichert",
     "hashtagRemovedFromProfileSnackbar": "Aus gespeicherten Tags entfernt",
-    "hashtagOptionAddToFollowingFeed": "Zu Start-Feeds hinzufügen",
-    "hashtagOptionRemoveFromFollowingFeed": "Aus Start-Feeds entfernen",
-    "hashtagAddedToFollowingFeedSnackbar": "Zu Start-Feeds hinzugefügt",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Aus Start-Feeds entfernt",
+    "hashtagOptionAddToFollowingFeed": "Zu meinen Feeds hinzufügen",
+    "hashtagOptionRemoveFromFollowingFeed": "Aus meinen Feeds entfernen",
+    "hashtagAddedToFollowingFeedSnackbar": "Zu meinen Feeds hinzugefügt",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Aus meinen Feeds entfernt",
     "profileFollowedTagRemoveTitle": "Diesen Tag entfernen?",
     "profileFollowedTagRemoveMessage": "{displayTag} aus deinen gespeicherten Tags entfernen? Du kannst ihn jederzeit wieder auf der Hashtag-Seite hinzufügen.",
     "@profileFollowedTagRemoveMessage": {

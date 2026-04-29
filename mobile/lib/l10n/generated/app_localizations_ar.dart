@@ -564,7 +564,7 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'حفظ في الملف الشخصي';
+  String get hashtagOptionSaveToProfile => 'حفظ';
 
   @override
   String get hashtagOptionRemoveFromProfile => 'إزالة من الوسوم المحفوظة';
@@ -577,20 +577,16 @@ class AppLocalizationsAr extends AppLocalizations {
       'تمت الإزالة من الوسوم المحفوظة';
 
   @override
-  String get hashtagOptionAddToFollowingFeed =>
-      'إضافة إلى تغذيات الصفحة الرئيسية';
+  String get hashtagOptionAddToFollowingFeed => 'إضافة إلى خلاصاتي';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed =>
-      'إزالة من تغذيات الصفحة الرئيسية';
+  String get hashtagOptionRemoveFromFollowingFeed => 'إزالة من خلاصاتي';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'أُضيف إلى تغذيات الصفحة الرئيسية';
+  String get hashtagAddedToFollowingFeedSnackbar => 'أُضيف إلى خلاصاتي';
 
   @override
-  String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'أُزيل من تغذيات الصفحة الرئيسية';
+  String get hashtagRemovedFromFollowingFeedSnackbar => 'أُزيل من خلاصاتي';
 
   @override
   String get profileFollowedTagRemoveTitle => 'إزالة هذا الوسم؟';

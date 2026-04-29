@@ -566,7 +566,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Profile kaydet';
+  String get hashtagOptionSaveToProfile => 'Kaydet';
 
   @override
   String get hashtagOptionRemoveFromProfile => 'Kayıtlı etiketlerden kaldır';
@@ -579,19 +579,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kayıtlı etiketlerden kaldırıldı';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Ana ekran akışlarına ekle';
+  String get hashtagOptionAddToFollowingFeed => 'Akışlarıma ekle';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed =>
-      'Ana ekran akışlarından kaldır';
+  String get hashtagOptionRemoveFromFollowingFeed => 'Akışlarımdan kaldır';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'Ana ekran akışlarına eklendi';
+  String get hashtagAddedToFollowingFeedSnackbar => 'Akışlarıma eklendi';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Ana ekran akışlarından kaldırıldı';
+      'Akışlarımdan kaldırıldı';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Bu etiket kaldırılsın mı?';

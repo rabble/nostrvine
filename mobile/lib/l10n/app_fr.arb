@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Enregistrer sur le profil",
+    "hashtagOptionSaveToProfile": "Enregistrer",
     "hashtagOptionRemoveFromProfile": "Retirer des tags enregistrés",
     "hashtagSavedToProfileSnackbar": "Enregistré sur ton profil",
     "hashtagRemovedFromProfileSnackbar": "Retiré des tags enregistrés",
-    "hashtagOptionAddToFollowingFeed": "Ajouter aux fils d'accueil",
-    "hashtagOptionRemoveFromFollowingFeed": "Retirer des fils d'accueil",
-    "hashtagAddedToFollowingFeedSnackbar": "Ajouté aux fils d'accueil",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Retiré des fils d'accueil",
+    "hashtagOptionAddToFollowingFeed": "Ajouter à mes fils d'accueil",
+    "hashtagOptionRemoveFromFollowingFeed": "Retirer de mes fils d'accueil",
+    "hashtagAddedToFollowingFeedSnackbar": "Ajouté à mes fils d'accueil",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Retiré de mes fils d'accueil",
     "profileFollowedTagRemoveTitle": "Retirer ce tag ?",
     "profileFollowedTagRemoveMessage": "Retirer {displayTag} de tes tags enregistrés ? Tu pourras l’ajouter à nouveau depuis la page du hashtag.",
     "@profileFollowedTagRemoveMessage": {

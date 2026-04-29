@@ -318,14 +318,14 @@
       }
     }
   },
-  "hashtagOptionSaveToProfile": "Save to profile",
+  "hashtagOptionSaveToProfile": "Save",
   "hashtagOptionRemoveFromProfile": "Remove from saved tags",
   "hashtagSavedToProfileSnackbar": "Saved to your profile",
   "hashtagRemovedFromProfileSnackbar": "Removed from saved tags",
-  "hashtagOptionAddToFollowingFeed": "Add to home feeds",
-  "hashtagOptionRemoveFromFollowingFeed": "Remove from home feeds",
-  "hashtagAddedToFollowingFeedSnackbar": "Added to home feeds",
-  "hashtagRemovedFromFollowingFeedSnackbar": "Removed from home feeds",
+  "hashtagOptionAddToFollowingFeed": "Add to my feeds",
+  "hashtagOptionRemoveFromFollowingFeed": "Remove from my feeds",
+  "hashtagAddedToFollowingFeedSnackbar": "Added to my feeds",
+  "hashtagRemovedFromFollowingFeedSnackbar": "Removed from my feeds",
   "profileFollowedTagRemoveTitle": "Remove this tag?",
   "profileFollowedTagRemoveMessage": "Remove {displayTag} from your saved tags? You can add it again anytime from that hashtag page.",
   "@profileFollowedTagRemoveMessage": {

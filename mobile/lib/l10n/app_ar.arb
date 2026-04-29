@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "حفظ في الملف الشخصي",
+    "hashtagOptionSaveToProfile": "حفظ",
     "hashtagOptionRemoveFromProfile": "إزالة من الوسوم المحفوظة",
     "hashtagSavedToProfileSnackbar": "تم الحفظ في ملفك الشخصي",
     "hashtagRemovedFromProfileSnackbar": "تمت الإزالة من الوسوم المحفوظة",
-    "hashtagOptionAddToFollowingFeed": "إضافة إلى تغذيات الصفحة الرئيسية",
-    "hashtagOptionRemoveFromFollowingFeed": "إزالة من تغذيات الصفحة الرئيسية",
-    "hashtagAddedToFollowingFeedSnackbar": "أُضيف إلى تغذيات الصفحة الرئيسية",
-    "hashtagRemovedFromFollowingFeedSnackbar": "أُزيل من تغذيات الصفحة الرئيسية",
+    "hashtagOptionAddToFollowingFeed": "إضافة إلى خلاصاتي",
+    "hashtagOptionRemoveFromFollowingFeed": "إزالة من خلاصاتي",
+    "hashtagAddedToFollowingFeedSnackbar": "أُضيف إلى خلاصاتي",
+    "hashtagRemovedFromFollowingFeedSnackbar": "أُزيل من خلاصاتي",
     "profileFollowedTagRemoveTitle": "إزالة هذا الوسم؟",
     "profileFollowedTagRemoveMessage": "إزالة {displayTag} من وسومك المحفوظة؟ يمكنك إضافته مجدداً من صفحة الوسم.",
     "@profileFollowedTagRemoveMessage": {

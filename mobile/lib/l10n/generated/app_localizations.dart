@@ -1087,7 +1087,7 @@ abstract class AppLocalizations {
   /// No description provided for @hashtagOptionSaveToProfile.
   ///
   /// In en, this message translates to:
-  /// **'Save to profile'**
+  /// **'Save'**
   String get hashtagOptionSaveToProfile;
 
   /// No description provided for @hashtagOptionRemoveFromProfile.
@@ -1111,25 +1111,25 @@ abstract class AppLocalizations {
   /// No description provided for @hashtagOptionAddToFollowingFeed.
   ///
   /// In en, this message translates to:
-  /// **'Add to home feeds'**
+  /// **'Add to my feeds'**
   String get hashtagOptionAddToFollowingFeed;
 
   /// No description provided for @hashtagOptionRemoveFromFollowingFeed.
   ///
   /// In en, this message translates to:
-  /// **'Remove from home feeds'**
+  /// **'Remove from my feeds'**
   String get hashtagOptionRemoveFromFollowingFeed;
 
   /// No description provided for @hashtagAddedToFollowingFeedSnackbar.
   ///
   /// In en, this message translates to:
-  /// **'Added to home feeds'**
+  /// **'Added to my feeds'**
   String get hashtagAddedToFollowingFeedSnackbar;
 
   /// No description provided for @hashtagRemovedFromFollowingFeedSnackbar.
   ///
   /// In en, this message translates to:
-  /// **'Removed from home feeds'**
+  /// **'Removed from my feeds'**
   String get hashtagRemovedFromFollowingFeedSnackbar;
 
   /// No description provided for @profileFollowedTagRemoveTitle.

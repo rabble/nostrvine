@@ -571,7 +571,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Spara på profilen';
+  String get hashtagOptionSaveToProfile => 'Spara';
 
   @override
   String get hashtagOptionRemoveFromProfile => 'Ta bort från sparade taggar';
@@ -584,17 +584,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Borttaget från sparade taggar';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Lägg till i hemflöden';
+  String get hashtagOptionAddToFollowingFeed => 'Lägg till i mina flöden';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'Ta bort från hemflöden';
+  String get hashtagOptionRemoveFromFollowingFeed => 'Ta bort från mina flöden';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'Tillagt i hemflöden';
+  String get hashtagAddedToFollowingFeedSnackbar => 'Tillagt i mina flöden';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Borttaget från hemflöden';
+      'Borttaget från mina flöden';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Ta bort den här taggen?';

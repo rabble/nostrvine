@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Spara på profilen",
+    "hashtagOptionSaveToProfile": "Spara",
     "hashtagOptionRemoveFromProfile": "Ta bort från sparade taggar",
     "hashtagSavedToProfileSnackbar": "Sparat på din profil",
     "hashtagRemovedFromProfileSnackbar": "Borttaget från sparade taggar",
-    "hashtagOptionAddToFollowingFeed": "Lägg till i hemflöden",
-    "hashtagOptionRemoveFromFollowingFeed": "Ta bort från hemflöden",
-    "hashtagAddedToFollowingFeedSnackbar": "Tillagt i hemflöden",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Borttaget från hemflöden",
+    "hashtagOptionAddToFollowingFeed": "Lägg till i mina flöden",
+    "hashtagOptionRemoveFromFollowingFeed": "Ta bort från mina flöden",
+    "hashtagAddedToFollowingFeedSnackbar": "Tillagt i mina flöden",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Borttaget från mina flöden",
     "profileFollowedTagRemoveTitle": "Ta bort den här taggen?",
     "profileFollowedTagRemoveMessage": "Ta bort {displayTag} från dina sparade taggar? Du kan lägga till den igen när som helst från hashtagsidan.",
     "@profileFollowedTagRemoveMessage": {

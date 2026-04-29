@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Guardar en el perfil",
+    "hashtagOptionSaveToProfile": "Guardar",
     "hashtagOptionRemoveFromProfile": "Quitar de etiquetas guardadas",
     "hashtagSavedToProfileSnackbar": "Guardado en tu perfil",
     "hashtagRemovedFromProfileSnackbar": "Quitado de etiquetas guardadas",
-    "hashtagOptionAddToFollowingFeed": "Añadir a feeds de inicio",
-    "hashtagOptionRemoveFromFollowingFeed": "Quitar de feeds de inicio",
-    "hashtagAddedToFollowingFeedSnackbar": "Añadido a feeds de inicio",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Quitado de feeds de inicio",
+    "hashtagOptionAddToFollowingFeed": "Añadir a mis feeds",
+    "hashtagOptionRemoveFromFollowingFeed": "Quitar de mis feeds",
+    "hashtagAddedToFollowingFeedSnackbar": "Añadido a mis feeds",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Quitado de mis feeds",
     "profileFollowedTagRemoveTitle": "¿Quitar este tag?",
     "profileFollowedTagRemoveMessage": "¿Quitar {displayTag} de tus tags guardados? Podés volver a agregarlo cuando quieras desde la página del hashtag.",
     "@profileFollowedTagRemoveMessage": {

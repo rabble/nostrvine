@@ -611,7 +611,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Salvează eticheta în profil';
+  String get hashtagOptionSaveToProfile => 'Salvează';
 
   @override
   String get hashtagOptionRemoveFromProfile => 'Elimină din etichetele salvate';
@@ -624,20 +624,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eliminat din tagurile salvate';
 
   @override
-  String get hashtagOptionAddToFollowingFeed =>
-      'Adaugă la fluxurile ecranului principal';
+  String get hashtagOptionAddToFollowingFeed => 'Adaugă la fluxurile mele';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Elimină din fluxurile ecranului principal';
+      'Elimină din fluxurile mele';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'Adăugat la fluxurile ecranului principal';
+  String get hashtagAddedToFollowingFeedSnackbar => 'Adăugat la fluxurile mele';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Eliminat din fluxurile ecranului principal';
+      'Eliminat din fluxurile mele';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Elimini această etichetă?';

@@ -140,14 +140,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "프로필에 저장",
+    "hashtagOptionSaveToProfile": "저장",
     "hashtagOptionRemoveFromProfile": "저장한 태그에서 제거",
     "hashtagSavedToProfileSnackbar": "프로필에 저장했어요",
     "hashtagRemovedFromProfileSnackbar": "저장한 태그에서 뺐어요",
-    "hashtagOptionAddToFollowingFeed": "홈 피드 목록에 추가",
-    "hashtagOptionRemoveFromFollowingFeed": "홈 피드 목록에서 제거",
-    "hashtagAddedToFollowingFeedSnackbar": "홈 피드 목록에 추가했어요",
-    "hashtagRemovedFromFollowingFeedSnackbar": "홈 피드 목록에서 뺐어요",
+    "hashtagOptionAddToFollowingFeed": "내 피드에 추가",
+    "hashtagOptionRemoveFromFollowingFeed": "내 피드에서 제거",
+    "hashtagAddedToFollowingFeedSnackbar": "내 피드에 추가했어요",
+    "hashtagRemovedFromFollowingFeedSnackbar": "내 피드에서 뺐어요",
     "profileFollowedTagRemoveTitle": "이 태그를 지울까요?",
     "profileFollowedTagRemoveMessage": "저장한 태그에서 {displayTag}를 지울까요? 해시태그 페이지에서 언제든 다시 추가할 수 있어요.",
     "@profileFollowedTagRemoveMessage": {

@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Zapisz w profilu",
+    "hashtagOptionSaveToProfile": "Zapisz",
     "hashtagOptionRemoveFromProfile": "Usuń z zapisanych tagów",
     "hashtagSavedToProfileSnackbar": "Zapisane w profilu",
     "hashtagRemovedFromProfileSnackbar": "Usunięto z zapisanych tagów",
-    "hashtagOptionAddToFollowingFeed": "Dodaj do kanałów strony głównej",
-    "hashtagOptionRemoveFromFollowingFeed": "Usuń z kanałów strony głównej",
-    "hashtagAddedToFollowingFeedSnackbar": "Dodano do kanałów strony głównej",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Usunięto z kanałów strony głównej",
+    "hashtagOptionAddToFollowingFeed": "Dodaj do moich kanałów",
+    "hashtagOptionRemoveFromFollowingFeed": "Usuń z moich kanałów",
+    "hashtagAddedToFollowingFeedSnackbar": "Dodano do moich kanałów",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Usunięto z moich kanałów",
     "profileFollowedTagRemoveTitle": "Usunąć ten tag?",
     "profileFollowedTagRemoveMessage": "Usunąć {displayTag} z zapisanych tagów? Zawsze możesz dodać go z powrotem ze strony hashtagu.",
     "@profileFollowedTagRemoveMessage": {

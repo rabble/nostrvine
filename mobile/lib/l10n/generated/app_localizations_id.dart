@@ -568,7 +568,7 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'Simpan ke profil';
+  String get hashtagOptionSaveToProfile => 'Simpan';
 
   @override
   String get hashtagOptionRemoveFromProfile => 'Hapus dari tag tersimpan';
@@ -580,18 +580,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get hashtagRemovedFromProfileSnackbar => 'Dihapus dari tag tersimpan';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Tambahkan ke feed beranda';
+  String get hashtagOptionAddToFollowingFeed => 'Tambahkan ke feed saya';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'Hapus dari feed beranda';
+  String get hashtagOptionRemoveFromFollowingFeed => 'Hapus dari feed saya';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'Ditambahkan ke feed beranda';
+  String get hashtagAddedToFollowingFeedSnackbar => 'Ditambahkan ke feed saya';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Dihapus dari feed beranda';
+      'Dihapus dari feed saya';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Hapus tag ini?';

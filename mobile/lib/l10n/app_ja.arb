@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "プロフィールに保存",
+    "hashtagOptionSaveToProfile": "保存",
     "hashtagOptionRemoveFromProfile": "保存済みタグから削除",
     "hashtagSavedToProfileSnackbar": "プロフィールに保存しました",
     "hashtagRemovedFromProfileSnackbar": "保存済みタグから削除しました",
-    "hashtagOptionAddToFollowingFeed": "ホームフィードに追加",
-    "hashtagOptionRemoveFromFollowingFeed": "ホームフィードから削除",
-    "hashtagAddedToFollowingFeedSnackbar": "ホームフィードに追加したよ",
-    "hashtagRemovedFromFollowingFeedSnackbar": "ホームフィードから削除したよ",
+    "hashtagOptionAddToFollowingFeed": "マイフィードに追加",
+    "hashtagOptionRemoveFromFollowingFeed": "マイフィードから削除",
+    "hashtagAddedToFollowingFeedSnackbar": "マイフィードに追加したよ",
+    "hashtagRemovedFromFollowingFeedSnackbar": "マイフィードから削除したよ",
     "profileFollowedTagRemoveTitle": "このタグを削除する？",
     "profileFollowedTagRemoveMessage": "保存済みから{displayTag}を削除する？ハッシュタグページからいつでも追加し直せるよ。",
     "@profileFollowedTagRemoveMessage": {

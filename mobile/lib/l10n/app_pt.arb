@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Salvar no perfil",
+    "hashtagOptionSaveToProfile": "Salvar",
     "hashtagOptionRemoveFromProfile": "Remover das tags salvas",
     "hashtagSavedToProfileSnackbar": "Salvo no seu perfil",
     "hashtagRemovedFromProfileSnackbar": "Removido das tags salvas",
-    "hashtagOptionAddToFollowingFeed": "Adicionar aos feeds da página inicial",
-    "hashtagOptionRemoveFromFollowingFeed": "Remover dos feeds da página inicial",
-    "hashtagAddedToFollowingFeedSnackbar": "Adicionado aos feeds da página inicial",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Removido dos feeds da página inicial",
+    "hashtagOptionAddToFollowingFeed": "Adicionar aos meus feeds",
+    "hashtagOptionRemoveFromFollowingFeed": "Remover dos meus feeds",
+    "hashtagAddedToFollowingFeedSnackbar": "Adicionado aos meus feeds",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Removido dos meus feeds",
     "profileFollowedTagRemoveTitle": "Remover esta tag?",
     "profileFollowedTagRemoveMessage": "Remover {displayTag} das tags salvas? Você pode adicionar de novo na página da hashtag.",
     "@profileFollowedTagRemoveMessage": {

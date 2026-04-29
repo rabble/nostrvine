@@ -24,10 +24,10 @@ class HashtagActionMenuHeader extends StatelessWidget {
   final String hashtag;
   final int? videoCount;
 
-  static const double _iconSize = 52;
-  static const double _iconRadius = 14;
+  static const double _iconSize = 40;
+  static const double _iconRadius = 10;
   static const double _gapChipToText = 16;
-  static const double _titleToCountGap = 6;
+  static const double _titleToCountGap = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +59,7 @@ class HashtagActionMenuHeader extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '#',
-                  style: VineTheme.headlineSmallFont(),
+                  style: VineTheme.titleLargeFont(),
                 ),
               ),
               Expanded(
@@ -137,7 +137,7 @@ void showHashtagMoreMenu(
   if (FollowedHashtagsRepository.separateFollowingFeedHashtagsEnabled) {
     options.add(
       VineBottomSheetActionData(
-        iconPath: DivineIconName.list.assetPath,
+        iconPath: DivineIconName.house.assetPath,
         label: isInFollowingFeed
             ? l10n.hashtagOptionRemoveFromFollowingFeed
             : l10n.hashtagOptionAddToFollowingFeed,

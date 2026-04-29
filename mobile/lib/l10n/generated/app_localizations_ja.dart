@@ -538,7 +538,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get hashtagOptionSaveToProfile => 'プロフィールに保存';
+  String get hashtagOptionSaveToProfile => '保存';
 
   @override
   String get hashtagOptionRemoveFromProfile => '保存済みタグから削除';
@@ -550,16 +550,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get hashtagRemovedFromProfileSnackbar => '保存済みタグから削除しました';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'ホームフィードに追加';
+  String get hashtagOptionAddToFollowingFeed => 'マイフィードに追加';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'ホームフィードから削除';
+  String get hashtagOptionRemoveFromFollowingFeed => 'マイフィードから削除';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'ホームフィードに追加したよ';
+  String get hashtagAddedToFollowingFeedSnackbar => 'マイフィードに追加したよ';
 
   @override
-  String get hashtagRemovedFromFollowingFeedSnackbar => 'ホームフィードから削除したよ';
+  String get hashtagRemovedFromFollowingFeedSnackbar => 'マイフィードから削除したよ';
 
   @override
   String get profileFollowedTagRemoveTitle => 'このタグを削除する？';

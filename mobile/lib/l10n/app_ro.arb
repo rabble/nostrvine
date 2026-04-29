@@ -279,14 +279,14 @@
             }
         }
     },
-    "hashtagOptionSaveToProfile": "Salvează eticheta în profil",
+    "hashtagOptionSaveToProfile": "Salvează",
     "hashtagOptionRemoveFromProfile": "Elimină din etichetele salvate",
     "hashtagSavedToProfileSnackbar": "Salvat în profil",
     "hashtagRemovedFromProfileSnackbar": "Eliminat din tagurile salvate",
-    "hashtagOptionAddToFollowingFeed": "Adaugă la fluxurile ecranului principal",
-    "hashtagOptionRemoveFromFollowingFeed": "Elimină din fluxurile ecranului principal",
-    "hashtagAddedToFollowingFeedSnackbar": "Adăugat la fluxurile ecranului principal",
-    "hashtagRemovedFromFollowingFeedSnackbar": "Eliminat din fluxurile ecranului principal",
+    "hashtagOptionAddToFollowingFeed": "Adaugă la fluxurile mele",
+    "hashtagOptionRemoveFromFollowingFeed": "Elimină din fluxurile mele",
+    "hashtagAddedToFollowingFeedSnackbar": "Adăugat la fluxurile mele",
+    "hashtagRemovedFromFollowingFeedSnackbar": "Eliminat din fluxurile mele",
     "profileFollowedTagRemoveTitle": "Elimini această etichetă?",
     "profileFollowedTagRemoveMessage": "Elimini {displayTag} din etichetele salvate? O poți adăuga oricând din pagina hashtagului.",
     "@profileFollowedTagRemoveMessage": {
