@@ -21,6 +21,7 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -387,6 +388,14 @@ void main() {
         expect(find.text('Likes'), findsOneWidget);
         expect(find.text('Loops'), findsOneWidget);
         expect(find.text('—'), findsNWidgets(4));
+
+        // Skeleton must be disabled after timeout — data is shown as-is.
+        // bySubtype is required because Skeletonizer is abstract; the
+        // concrete widget in the tree is the private _Skeletonizer subclass.
+        final s = tester.widget<Skeletonizer>(
+          find.bySubtype<Skeletonizer>(),
+        );
+        expect(s.enabled, isFalse);
       },
     );
 
@@ -412,6 +421,14 @@ void main() {
           expect(find.text('Following'), findsOneWidget);
           expect(find.text('Likes'), findsOneWidget);
           expect(find.text('Loops'), findsOneWidget);
+
+          // Skeleton must be active — not just present in the tree.
+          // bySubtype is required because Skeletonizer is abstract; the
+          // concrete widget in the tree is the private _Skeletonizer subclass.
+          final s = tester.widget<Skeletonizer>(
+            find.bySubtype<Skeletonizer>(),
+          );
+          expect(s.enabled, isTrue);
         },
       );
 

@@ -756,6 +756,7 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
     return Skeletonizer(
       enabled: isLoading && !_timeoutExpired,
       enableSwitchAnimation: true,
+      effect: vineSkeletonEffect,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
