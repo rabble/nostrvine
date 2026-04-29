@@ -145,8 +145,27 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     await ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
   }
 
-  void _onVideoTapped(int index, {required VoidCallback onLoadMore}) {
-    final videos = widget.videos;
+  void _onVideoTapped(
+    VideoEvent tappedVideo, {
+    required int fallbackIndex,
+    required List<VideoEvent> displayedVideos,
+    required VoidCallback onLoadMore,
+  }) {
+    final currentFeedVideos = ref
+        .read(profileFeedProvider(widget.userIdHex))
+        .asData
+        ?.value
+        .videos;
+    final videos = currentFeedVideos != null && currentFeedVideos.isNotEmpty
+        ? currentFeedVideos
+        : displayedVideos;
+    final index = videos.indexWhere(
+      (video) =>
+          video.id == tappedVideo.id ||
+          (video.pubkey == tappedVideo.pubkey &&
+              video.stableId == tappedVideo.stableId),
+    );
+    final resolvedIndex = index >= 0 ? index : fallbackIndex;
     final hasMoreContent =
         ref
             .read(profileFeedProvider(widget.userIdHex))
@@ -155,19 +174,19 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
             .hasMoreContent ??
         false;
     Log.info(
-      '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
-      'videoId=${videos[index].id}',
+      '🎯 ProfileVideosGrid TAP: gridIndex=$resolvedIndex, '
+      'videoId=${tappedVideo.id}',
       category: LogCategory.video,
     );
 
     // Pre-warm adjacent videos before navigation
-    prefetchAroundIndex(index, videos);
+    prefetchAroundIndex(resolvedIndex, videos);
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: _videosStreamController.stream.startWith(videos),
-        initialIndex: index,
+        initialIndex: resolvedIndex,
         onLoadMore: onLoadMore,
         hasMoreStream: _hasMoreStreamController.stream.startWith(
           hasMoreContent,
@@ -329,8 +348,11 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                     // Adjust index to account for uploading videos at the top
                     final publishedIndex = index - uploadingCount;
                     if (publishedIndex >= 0) {
+                      final displayedVideos = filteredVideos;
                       _onVideoTapped(
-                        publishedIndex,
+                        eventEntry.videoEvent,
+                        fallbackIndex: publishedIndex,
+                        displayedVideos: displayedVideos,
                         onLoadMore: loadMoreProfileVideos,
                       );
                     }
