@@ -144,7 +144,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (widget.video.blurhash != null && !widget.showPlayIcon)
+        if (widget.video.blurhash != null)
           BlurhashDisplay(
             blurhash: widget.video.blurhash!,
             width: widget.width,

@@ -104,7 +104,7 @@ class BlurhashService {
 
       final bytes = byteData.buffer.asUint8List();
       return generateBlurhash(bytes);
-    } on Exception catch (e) {
+    } on Object catch (e) {
       Log.error(
         'Failed to generate blurhash from image: $e',
         name: 'BlurhashService',

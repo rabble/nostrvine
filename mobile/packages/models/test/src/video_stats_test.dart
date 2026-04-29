@@ -705,6 +705,88 @@ void main() {
       });
     });
 
+    group('blurhash from imeta tag', () {
+      Map<String, dynamic> jsonWithImetaTag(List<dynamic> imetaTag) => {
+        'event': {
+          'id': 'event-id',
+          'pubkey': 'event-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'tags': [imetaTag],
+        },
+        'reactions': 0,
+        'comments': 0,
+        'reposts': 0,
+        'engagement_score': 0,
+      };
+
+      test('extracts blurhash from space-separated imeta format', () {
+        final stats = VideoStats.fromJson(
+          jsonWithImetaTag([
+            'imeta',
+            'url https://example.com/video.mp4',
+            'blurhash LEHV6nWB2yk8pyo0adR*.7kCMdnj',
+          ]),
+        );
+
+        expect(stats.blurhash, equals('LEHV6nWB2yk8pyo0adR*.7kCMdnj'));
+      });
+
+      test('extracts blurhash from positional imeta format', () {
+        final stats = VideoStats.fromJson(
+          jsonWithImetaTag([
+            'imeta',
+            'url',
+            'https://example.com/video.mp4',
+            'blurhash',
+            'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
+          ]),
+        );
+
+        expect(stats.blurhash, equals('LEHV6nWB2yk8pyo0adR*.7kCMdnj'));
+      });
+
+      test('ignores empty blurhash value in imeta', () {
+        final stats = VideoStats.fromJson(
+          jsonWithImetaTag([
+            'imeta',
+            'blurhash ',
+          ]),
+        );
+
+        expect(stats.blurhash, isNull);
+      });
+
+      test('standalone blurhash tag wins over imeta when both present', () {
+        final stats = VideoStats.fromJson(const {
+          'event': {
+            'id': 'event-id',
+            'pubkey': 'event-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag': 'video-1',
+            'title': 'Test',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'tags': [
+              ['blurhash', 'STANDALONE_HASH'],
+              ['imeta', 'blurhash IMETA_HASH'],
+            ],
+          },
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        });
+
+        expect(stats.blurhash, equals('STANDALONE_HASH'));
+      });
+    });
+
     group('text-track fields', () {
       test('parses text_track_ref from top-level JSON', () {
         final json = {

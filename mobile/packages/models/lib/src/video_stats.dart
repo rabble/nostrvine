@@ -219,16 +219,24 @@ class VideoStats {
             blurhashFromTag = tagValue;
           }
           if (tagName == 'imeta') {
-            // Parse space-separated imeta components to extract blurhash
-            // (publisher embeds blurhash inside imeta, not as a standalone tag)
+            // Extract blurhash from imeta. Two formats are seen in the wild:
+            //   - space-separated: ['imeta', 'blurhash <hash>', ...]
+            //   - positional:      ['imeta', 'blurhash', '<hash>', ...]
             for (var i = 1; i < tag.length; i++) {
               final element = tag[i].toString();
               final spaceIndex = element.indexOf(' ');
-              if (spaceIndex <= 0) continue;
-              final key = element.substring(0, spaceIndex);
-              final value = element.substring(spaceIndex + 1);
+              String? key;
+              String? value;
+              if (spaceIndex > 0) {
+                key = element.substring(0, spaceIndex);
+                value = element.substring(spaceIndex + 1);
+              } else if (element == 'blurhash' && i + 1 < tag.length) {
+                key = element;
+                value = tag[i + 1].toString();
+              }
               if (key == 'blurhash' &&
                   blurhashFromTag == null &&
+                  value != null &&
                   value.isNotEmpty) {
                 blurhashFromTag = value;
               }
