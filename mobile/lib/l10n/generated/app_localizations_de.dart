@@ -605,19 +605,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aus gespeicherten Tags entfernt';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Zum Following-Feed hinzufügen';
+  String get hashtagOptionAddToFollowingFeed => 'Zu Start-Feeds hinzufügen';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Aus Following-Feed entfernen';
+      'Aus Start-Feeds entfernen';
 
   @override
   String get hashtagAddedToFollowingFeedSnackbar =>
-      'Zum Following-Feed hinzugefügt';
+      'Zu Start-Feeds hinzugefügt';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Aus Following-Feed entfernt';
+      'Aus Start-Feeds entfernt';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Diesen Tag entfernen?';

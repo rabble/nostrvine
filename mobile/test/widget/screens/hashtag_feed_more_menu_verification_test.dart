@@ -85,7 +85,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Save to profile'), findsOneWidget);
-      expect(find.text('Add to Following feed'), findsOneWidget);
+      expect(find.text('Add to home feeds'), findsOneWidget);
     });
 
     testWidgets('Save to profile persists tag and shows remove on next open', (
@@ -108,16 +108,16 @@ void main() {
       expect(find.text('Remove from saved tags'), findsOneWidget);
     });
 
-    testWidgets('Add to Following feed sets feed list', (tester) async {
+    testWidgets('Add to home feeds sets feed list', (tester) async {
       await pumpScreen(tester);
       await tester.tap(find.bySemanticsLabel('Hashtag options'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Add to Following feed'));
+      await tester.tap(find.text('Add to home feeds'));
       await tester.pumpAndSettle();
 
       expect(repo.hasFollowingFeedHashtag('plan6test'), isTrue);
-      expect(find.text('Added to your Following feed'), findsOneWidget);
+      expect(find.text('Added to home feeds'), findsOneWidget);
     });
 
     testWidgets('embedded toolbar uses same a11y label for More', (

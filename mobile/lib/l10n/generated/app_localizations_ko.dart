@@ -552,16 +552,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get hashtagRemovedFromProfileSnackbar => '저장한 태그에서 뺐어요';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Following 피드에 추가';
+  String get hashtagOptionAddToFollowingFeed => '홈 피드 목록에 추가';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'Following 피드에서 제거';
+  String get hashtagOptionRemoveFromFollowingFeed => '홈 피드 목록에서 제거';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'Following 피드에 추가했어요';
+  String get hashtagAddedToFollowingFeedSnackbar => '홈 피드 목록에 추가했어요';
 
   @override
-  String get hashtagRemovedFromFollowingFeedSnackbar => 'Following 피드에서 뺐어요';
+  String get hashtagRemovedFromFollowingFeedSnackbar => '홈 피드 목록에서 뺐어요';
 
   @override
   String get profileFollowedTagRemoveTitle => '이 태그를 지울까요?';

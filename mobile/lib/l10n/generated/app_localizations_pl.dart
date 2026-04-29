@@ -608,17 +608,20 @@ class AppLocalizationsPl extends AppLocalizations {
   String get hashtagRemovedFromProfileSnackbar => 'Usunięto z zapisanych tagów';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Dodaj do feedu Following';
+  String get hashtagOptionAddToFollowingFeed =>
+      'Dodaj do kanałów strony głównej';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'Usuń z feedu Following';
+  String get hashtagOptionRemoveFromFollowingFeed =>
+      'Usuń z kanałów strony głównej';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'Dodano do feedu Following';
+  String get hashtagAddedToFollowingFeedSnackbar =>
+      'Dodano do kanałów strony głównej';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Usunięto z feedu Following';
+      'Usunięto z kanałów strony głównej';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Usunąć ten tag?';

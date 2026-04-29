@@ -1111,25 +1111,25 @@ abstract class AppLocalizations {
   /// No description provided for @hashtagOptionAddToFollowingFeed.
   ///
   /// In en, this message translates to:
-  /// **'Add to Following feed'**
+  /// **'Add to home feeds'**
   String get hashtagOptionAddToFollowingFeed;
 
   /// No description provided for @hashtagOptionRemoveFromFollowingFeed.
   ///
   /// In en, this message translates to:
-  /// **'Remove from Following feed'**
+  /// **'Remove from home feeds'**
   String get hashtagOptionRemoveFromFollowingFeed;
 
   /// No description provided for @hashtagAddedToFollowingFeedSnackbar.
   ///
   /// In en, this message translates to:
-  /// **'Added to your Following feed'**
+  /// **'Added to home feeds'**
   String get hashtagAddedToFollowingFeedSnackbar;
 
   /// No description provided for @hashtagRemovedFromFollowingFeedSnackbar.
   ///
   /// In en, this message translates to:
-  /// **'Removed from your Following feed'**
+  /// **'Removed from home feeds'**
   String get hashtagRemovedFromFollowingFeedSnackbar;
 
   /// No description provided for @profileFollowedTagRemoveTitle.

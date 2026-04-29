@@ -624,19 +624,20 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eliminat din tagurile salvate';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Adaugă la feed-ul Following';
+  String get hashtagOptionAddToFollowingFeed =>
+      'Adaugă la fluxurile ecranului principal';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Elimină din feed-ul Following';
+      'Elimină din fluxurile ecranului principal';
 
   @override
   String get hashtagAddedToFollowingFeedSnackbar =>
-      'Adăugat la feed-ul Following';
+      'Adăugat la fluxurile ecranului principal';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Eliminat din feed-ul Following';
+      'Eliminat din fluxurile ecranului principal';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Elimini această etichetă?';

@@ -604,19 +604,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Quitado de etiquetas guardadas';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Añadir al feed Following';
+  String get hashtagOptionAddToFollowingFeed => 'Añadir a feeds de inicio';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Quitar del feed Following';
+      'Quitar de feeds de inicio';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'Añadido a tu feed Following';
+  String get hashtagAddedToFollowingFeedSnackbar => 'Añadido a feeds de inicio';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Quitado de tu feed Following';
+      'Quitado de feeds de inicio';
 
   @override
   String get profileFollowedTagRemoveTitle => '¿Quitar este tag?';

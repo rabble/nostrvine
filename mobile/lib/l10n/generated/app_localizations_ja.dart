@@ -550,16 +550,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get hashtagRemovedFromProfileSnackbar => '保存済みタグから削除しました';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Followingフィードに追加';
+  String get hashtagOptionAddToFollowingFeed => 'ホームフィードに追加';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'Followingフィードから削除';
+  String get hashtagOptionRemoveFromFollowingFeed => 'ホームフィードから削除';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'Followingフィードに追加したよ';
+  String get hashtagAddedToFollowingFeedSnackbar => 'ホームフィードに追加したよ';
 
   @override
-  String get hashtagRemovedFromFollowingFeedSnackbar => 'Followingフィードから削除したよ';
+  String get hashtagRemovedFromFollowingFeedSnackbar => 'ホームフィードから削除したよ';
 
   @override
   String get profileFollowedTagRemoveTitle => 'このタグを削除する？';

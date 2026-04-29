@@ -601,19 +601,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verwijderd uit opgeslagen tags';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Toevoegen aan Following-feed';
+  String get hashtagOptionAddToFollowingFeed => 'Toevoegen aan start-feeds';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Verwijderen uit Following-feed';
+      'Verwijderen uit start-feeds';
 
   @override
   String get hashtagAddedToFollowingFeedSnackbar =>
-      'Toegevoegd aan je Following-feed';
+      'Toegevoegd aan start-feeds';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Verwijderd uit je Following-feed';
+      'Verwijderd uit start-feeds';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Deze tag verwijderen?';

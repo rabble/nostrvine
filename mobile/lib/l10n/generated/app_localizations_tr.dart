@@ -579,18 +579,19 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kayıtlı etiketlerden kaldırıldı';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Following akışına ekle';
+  String get hashtagOptionAddToFollowingFeed => 'Ana ekran akışlarına ekle';
 
   @override
   String get hashtagOptionRemoveFromFollowingFeed =>
-      'Following akışından kaldır';
+      'Ana ekran akışlarından kaldır';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'Following akışına eklendi';
+  String get hashtagAddedToFollowingFeedSnackbar =>
+      'Ana ekran akışlarına eklendi';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Following akışından kaldırıldı';
+      'Ana ekran akışlarından kaldırıldı';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Bu etiket kaldırılsın mı?';

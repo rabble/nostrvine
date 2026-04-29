@@ -580,19 +580,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get hashtagRemovedFromProfileSnackbar => 'Dihapus dari tag tersimpan';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Tambahkan ke feed Following';
+  String get hashtagOptionAddToFollowingFeed => 'Tambahkan ke feed beranda';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed =>
-      'Hapus dari feed Following';
+  String get hashtagOptionRemoveFromFollowingFeed => 'Hapus dari feed beranda';
 
   @override
   String get hashtagAddedToFollowingFeedSnackbar =>
-      'Ditambahkan ke feed Following';
+      'Ditambahkan ke feed beranda';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Dihapus dari feed Following';
+      'Dihapus dari feed beranda';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Hapus tag ini?';

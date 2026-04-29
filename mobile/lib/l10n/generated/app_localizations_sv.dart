@@ -584,19 +584,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Borttaget från sparade taggar';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'Lägg till i Following-flödet';
+  String get hashtagOptionAddToFollowingFeed => 'Lägg till i hemflöden';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed =>
-      'Ta bort från Following-flödet';
+  String get hashtagOptionRemoveFromFollowingFeed => 'Ta bort från hemflöden';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar =>
-      'Tillagt i ditt Following-flöde';
+  String get hashtagAddedToFollowingFeedSnackbar => 'Tillagt i hemflöden';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'Borttaget från Following-flödet';
+      'Borttaget från hemflöden';
 
   @override
   String get profileFollowedTagRemoveTitle => 'Ta bort den här taggen?';

@@ -1,4 +1,4 @@
-// ABOUTME: Bottom sheet for saving a hashtag to profile / following feed (#1602).
+// ABOUTME: Bottom sheet for saving a hashtag to profile / home feed list (#1602).
 // ABOUTME: Shared by hashtag feed screen and inline video description hashtag actions.
 // ABOUTME: Header layout matches `docs/images/tag_menu.png` (icon + two-line block).
 
@@ -99,7 +99,7 @@ class HashtagActionMenuHeader extends StatelessWidget {
   }
 }
 
-/// Opens the hashtag options menu (save to profile, add to following feed when enabled).
+/// Opens the hashtag options menu (save to profile, add to home feed list when enabled).
 void showHashtagMoreMenu(
   BuildContext context,
   WidgetRef ref, {

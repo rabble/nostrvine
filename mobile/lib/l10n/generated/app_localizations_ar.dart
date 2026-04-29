@@ -577,17 +577,20 @@ class AppLocalizationsAr extends AppLocalizations {
       'تمت الإزالة من الوسوم المحفوظة';
 
   @override
-  String get hashtagOptionAddToFollowingFeed => 'إضافة إلى تغذية Following';
+  String get hashtagOptionAddToFollowingFeed =>
+      'إضافة إلى تغذيات الصفحة الرئيسية';
 
   @override
-  String get hashtagOptionRemoveFromFollowingFeed => 'إزالة من تغذية Following';
+  String get hashtagOptionRemoveFromFollowingFeed =>
+      'إزالة من تغذيات الصفحة الرئيسية';
 
   @override
-  String get hashtagAddedToFollowingFeedSnackbar => 'أُضيف إلى تغذية Following';
+  String get hashtagAddedToFollowingFeedSnackbar =>
+      'أُضيف إلى تغذيات الصفحة الرئيسية';
 
   @override
   String get hashtagRemovedFromFollowingFeedSnackbar =>
-      'أُزيل من تغذية Following';
+      'أُزيل من تغذيات الصفحة الرئيسية';
 
   @override
   String get profileFollowedTagRemoveTitle => 'إزالة هذا الوسم؟';
