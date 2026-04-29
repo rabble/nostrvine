@@ -1,5 +1,5 @@
 // ABOUTME: Shared cached thumbnail widget for profile tab grids
-// ABOUTME: Wraps VineCachedImage with placeholder and error fallbacks
+// ABOUTME: Wraps VineCachedImage with blurhash and placeholder fallbacks
 
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/blurhash_display.dart';
@@ -37,7 +37,6 @@ class ProfileTabThumbnail extends StatelessWidget {
         fadeOutDuration: isPrecached
             ? Duration.zero
             : const Duration(milliseconds: 1000),
-
         placeholder: (context, url) => _Fallback(blurhash: blurhash),
         errorWidget: (context, url, error) => _Fallback(blurhash: blurhash),
       );
