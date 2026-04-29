@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Impossible de mettre à jour la couverture. Réessayez."
+  "videoMetadataEditCoverFailedSnackbar": "Impossible de mettre à jour la couverture. Réessayez.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Couverture mise à jour"
 }

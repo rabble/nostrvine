@@ -725,8 +725,7 @@ void main() {
           await tester.tap(find.text('Open'));
           await tester.pumpAndSettle();
 
-          // Header renders the action plus a hidden placeholder copy.
-          expect(find.byKey(const Key('leading')), findsNWidgets(2));
+          expect(find.byKey(const Key('leading')), findsOneWidget);
         },
       );
 
@@ -760,7 +759,7 @@ void main() {
           await tester.tap(find.text('Open'));
           await tester.pumpAndSettle();
 
-          expect(find.byKey(const Key('trailing')), findsNWidgets(2));
+          expect(find.byKey(const Key('trailing')), findsOneWidget);
         },
       );
 
@@ -795,7 +794,7 @@ void main() {
           await tester.tap(find.text('Open Fixed'));
           await tester.pumpAndSettle();
 
-          expect(find.byKey(const Key('fixed_leading')), findsNWidgets(2));
+          expect(find.byKey(const Key('fixed_leading')), findsOneWidget);
         },
       );
 

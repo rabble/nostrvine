@@ -5028,6 +5028,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '커버를 업데이트하지 못했습니다. 다시 시도하세요.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => '커버 업데이트됨';
+
+  @override
   String get videoMetadataTags => '태그';
 
   @override

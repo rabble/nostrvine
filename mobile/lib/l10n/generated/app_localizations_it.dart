@@ -5273,6 +5273,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile aggiornare la copertina. Riprova.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement =>
+      'Copertina aggiornata';
+
+  @override
   String get videoMetadataTags => 'Tag';
 
   @override

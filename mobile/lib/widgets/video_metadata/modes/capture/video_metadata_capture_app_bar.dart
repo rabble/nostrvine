@@ -76,6 +76,7 @@ class VideoMetadataCaptureAppBar extends ConsumerWidget
               icon: .eye,
               type: .ghostSecondary,
               size: .small,
+              semanticLabel: context.l10n.videoMetadataOpenPreviewSemanticLabel,
               onPressed: isReady
                   ? () => _openPreview(context, state.finalRenderedClip!)
                   : null,

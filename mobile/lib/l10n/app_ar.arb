@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "تعذر تحديث الغلاف. حاول مرة أخرى."
+  "videoMetadataEditCoverFailedSnackbar": "تعذر تحديث الغلاف. حاول مرة أخرى.",
+  "videoMetadataEditCoverSuccessAnnouncement": "تم تحديث الغلاف"
 }

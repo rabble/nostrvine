@@ -117,8 +117,12 @@ class _VideoMetadataFormFieldsState
                   },
                 ),
                 Positioned(
-                  top: 15,
-                  right: 16,
+                  // Align the counter to the field's content padding so a
+                  // future tweak to [DivineTextField.defaultContentPadding]
+                  // keeps it in sync. The -1 nudges the baseline up to match
+                  // the floating label.
+                  top: DivineTextField.defaultContentPadding.top - 1,
+                  right: DivineTextField.defaultContentPadding.right,
                   child: ValueListenableBuilder(
                     valueListenable: _descriptionController,
                     builder: (context, value, child) {

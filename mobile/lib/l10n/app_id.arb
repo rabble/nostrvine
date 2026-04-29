@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Tidak dapat memperbarui sampul. Coba lagi."
+  "videoMetadataEditCoverFailedSnackbar": "Tidak dapat memperbarui sampul. Coba lagi.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Sampul diperbarui"
 }

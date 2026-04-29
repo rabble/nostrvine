@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "カバーを更新できませんでした。もう一度お試しください。"
+  "videoMetadataEditCoverFailedSnackbar": "カバーを更新できませんでした。もう一度お試しください。",
+  "videoMetadataEditCoverSuccessAnnouncement": "カバーを更新しました"
 }

@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Impossibile aggiornare la copertina. Riprova."
+  "videoMetadataEditCoverFailedSnackbar": "Impossibile aggiornare la copertina. Riprova.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Copertina aggiornata"
 }

@@ -510,7 +510,7 @@ void main() {
           l10n,
           BlossomUploadFailureReason.unknown,
         ),
-        l10n.profileSetupUploadFailedGeneric,
+        l10n.profileSetupUploadFailedGeneric(''),
       );
     });
 
@@ -521,7 +521,7 @@ void main() {
 
       expect(
         profileSetupUploadErrorMessage(l10n, null),
-        l10n.profileSetupUploadFailedGeneric,
+        l10n.profileSetupUploadFailedGeneric(''),
       );
     });
   });

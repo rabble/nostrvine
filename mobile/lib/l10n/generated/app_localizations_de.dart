@@ -5289,6 +5289,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Cover konnte nicht aktualisiert werden. Versuche es erneut.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Cover aktualisiert';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

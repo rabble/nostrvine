@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Nie udało się zaktualizować okładki. Spróbuj ponownie."
+  "videoMetadataEditCoverFailedSnackbar": "Nie udało się zaktualizować okładki. Spróbuj ponownie.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Zaktualizowano okładkę"
 }

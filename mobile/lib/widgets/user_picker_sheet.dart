@@ -98,7 +98,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   /// When provided, tapping a user calls this callback instead of popping
   /// the sheet. Use this for multi-select flows where the sheet should stay
   /// open. Selected users should be tracked by the caller and reflected via
-  /// [excludePubkeys] (they will appear in the checked/disabled state).
+  /// [excludePubkeys] (they will appear in the checked state).
   final ValueChanged<UserProfile>? onUserToggled;
 
   /// Profiles pre-selected when the sheet opens.
@@ -291,6 +291,9 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         (_useLocalSearch
             ? context.l10n.userPickerFilterByNameHint
             : context.l10n.userPickerSearchByNameHint);
+    final disabledPubkeys = widget.onUserToggled == null
+        ? widget.excludePubkeys
+        : const <String>{};
 
     return Column(
       crossAxisAlignment: .stretch,
@@ -411,7 +414,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                     followProfiles: _followProfiles,
                     filteredFollowProfiles: _filteredFollowProfiles,
                     onUserSelected: _onUserSelected,
-                    excludePubkeys: widget.excludePubkeys,
+                    excludePubkeys: disabledPubkeys,
                     selectedPubkeys: _selectedPubkeys,
                     hidePubkeys: {for (final p in _selectedProfiles) p.pubkey},
                   )
@@ -419,7 +422,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                     searchBloc: _searchBloc!,
                     scrollController: widget.scrollController,
                     onUserSelected: _onUserSelected,
-                    excludePubkeys: widget.excludePubkeys,
+                    excludePubkeys: disabledPubkeys,
                     selectedPubkeys: _selectedPubkeys,
                     hidePubkeys: {for (final p in _selectedProfiles) p.pubkey},
                   ),

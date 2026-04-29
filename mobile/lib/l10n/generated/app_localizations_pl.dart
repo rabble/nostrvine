@@ -5357,6 +5357,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się zaktualizować okładki. Spróbuj ponownie.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement =>
+      'Zaktualizowano okładkę';
+
+  @override
   String get videoMetadataTags => 'Tagi';
 
   @override

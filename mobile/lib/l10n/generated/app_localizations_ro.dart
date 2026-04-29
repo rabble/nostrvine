@@ -5373,6 +5373,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Coperta nu a putut fi actualizată. Încearcă din nou.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement =>
+      'Coperta a fost actualizată';
+
+  @override
   String get videoMetadataTags => 'Etichete';
 
   @override

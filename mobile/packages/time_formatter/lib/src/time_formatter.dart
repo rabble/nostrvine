@@ -109,7 +109,7 @@ abstract class TimeFormatter {
     final date = DateTime.fromMillisecondsSinceEpoch(
       unixSeconds * 1000,
       isUtc: true,
-    ).toLocal();
+    );
     return DateFormat.yMMMd(locale).format(date);
   }
 

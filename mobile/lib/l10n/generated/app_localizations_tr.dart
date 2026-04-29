@@ -5207,6 +5207,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kapak güncellenemedi. Tekrar dene.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Kapak güncellendi';
+
+  @override
   String get videoMetadataTags => 'Etiketler';
 
   @override

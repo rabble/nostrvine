@@ -47,7 +47,7 @@ String profileSetupUploadErrorMessage(
       l10n.profileSetupUploadFileTooLarge,
     BlossomUploadFailureReason.server => l10n.profileSetupUploadServerError,
     BlossomUploadFailureReason.unknown ||
-    null => l10n.profileSetupUploadFailedGeneric,
+    null => l10n.profileSetupUploadFailedGeneric(''),
   };
 }
 

@@ -128,6 +128,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -219,6 +220,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
               followRepositoryProvider.overrideWithValue(
                 _createMockFollowRepository(),
               ),
@@ -263,6 +265,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -299,6 +302,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
               followRepositoryProvider.overrideWithValue(
                 _createMockFollowRepository(),
               ),

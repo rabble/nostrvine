@@ -9258,6 +9258,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t update the cover. Try again.'**
   String get videoMetadataEditCoverFailedSnackbar;
 
+  /// Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover updated'**
+  String get videoMetadataEditCoverSuccessAnnouncement;
+
   /// No description provided for @videoMetadataTags.
   ///
   /// In en, this message translates to:

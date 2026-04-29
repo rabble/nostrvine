@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Kan de cover niet bijwerken. Probeer het opnieuw."
+  "videoMetadataEditCoverFailedSnackbar": "Kan de cover niet bijwerken. Probeer het opnieuw.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Omslag bijgewerkt"
 }

@@ -5198,6 +5198,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak dapat memperbarui sampul. Coba lagi.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Sampul diperbarui';
+
+  @override
   String get videoMetadataTags => 'Tag';
 
   @override

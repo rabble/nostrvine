@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Cover konnte nicht aktualisiert werden. Versuche es erneut."
+  "videoMetadataEditCoverFailedSnackbar": "Cover konnte nicht aktualisiert werden. Versuche es erneut.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Cover aktualisiert"
 }

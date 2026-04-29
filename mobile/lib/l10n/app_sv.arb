@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Det gick inte att uppdatera omslaget. Försök igen."
+  "videoMetadataEditCoverFailedSnackbar": "Det gick inte att uppdatera omslaget. Försök igen.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Omslag uppdaterat"
 }

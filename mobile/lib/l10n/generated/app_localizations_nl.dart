@@ -5245,6 +5245,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kan de cover niet bijwerken. Probeer het opnieuw.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Omslag bijgewerkt';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

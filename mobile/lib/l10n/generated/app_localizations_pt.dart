@@ -5257,6 +5257,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível atualizar a capa. Tente novamente.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Capa atualizada';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

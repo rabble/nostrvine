@@ -10,7 +10,9 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_app_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../helpers/go_router.dart';
 
@@ -19,8 +21,11 @@ void main() {
 
   group(VideoMetadataCaptureAppBar, () {
     late GoRouter router;
+    late SharedPreferences prefs;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
       router = GoRouter(
         initialLocation: '/test',
         routes: [
@@ -41,6 +46,7 @@ void main() {
 
     Widget buildTestWidget() {
       return ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: MaterialApp.router(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -99,6 +105,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: MockGoRouterProvider(
             goRouter: mockGoRouter,
             child: const MaterialApp(

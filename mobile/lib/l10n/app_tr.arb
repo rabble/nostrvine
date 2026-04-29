@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Kapak güncellenemedi. Tekrar dene."
+  "videoMetadataEditCoverFailedSnackbar": "Kapak güncellenemedi. Tekrar dene.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Kapak güncellendi"
 }

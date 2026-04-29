@@ -2760,6 +2760,10 @@
   "@videoMetadataEditCoverFailedSnackbar": {
     "description": "Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again."
   },
+  "videoMetadataEditCoverSuccessAnnouncement": "Cover updated",
+  "@videoMetadataEditCoverSuccessAnnouncement": {
+    "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
+  },
   "videoMetadataTags": "Tags",
   "videoMetadataExpiration": "Expiration",
   "videoMetadataExpirationNotExpire": "Does not expire",

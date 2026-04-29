@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "No se pudo actualizar la portada. Inténtalo de nuevo."
+  "videoMetadataEditCoverFailedSnackbar": "No se pudo actualizar la portada. Inténtalo de nuevo.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Portada actualizada"
 }

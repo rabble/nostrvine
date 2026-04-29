@@ -3595,5 +3595,26 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "userPickerRemoveSelectionSemantics": "Remove {name}",
+  "@userPickerRemoveSelectionSemantics": {
+    "description": "Semantic label for the remove button on a selected user chip in the user picker. {name} is the user's display name.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataEditCoverFailedSnackbar": "Couldn't update the cover. Try again.",
+  "@videoMetadataEditCoverFailedSnackbar": {
+    "description": "Snackbar message shown when saving the chosen cover thumbnail fails on the cover-edit screen. The user can dismiss and try again."
+  },
+  "videoMetadataEditCoverSuccessAnnouncement": "Cover updated",
+  "@videoMetadataEditCoverSuccessAnnouncement": {
+    "description": "Screen-reader announcement spoken after the user confirms a new cover thumbnail and the screen is about to close. Visual users get the screen pop as feedback; this is the audio equivalent."
+  },
+  "videoMetadataEditCoverTitle": "Edit cover",
+  "videoMetadataEditCoverCloseSemanticLabel": "Close cover editor",
+  "videoMetadataEditCoverConfirmSemanticLabel": "Confirm cover selection",
+  "videoMetadataEditCoverStripSemanticLabel": "Seek through video to select cover frame"
 }

@@ -296,7 +296,7 @@ void main() {
               DateTime.fromMillisecondsSinceEpoch(
                 ts * 1000,
                 isUtc: true,
-              ).toLocal(),
+              ),
             ),
           ),
         );

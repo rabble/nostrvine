@@ -307,5 +307,14 @@ void main() {
         },
       );
     });
+
+    group('defaultContentPadding', () {
+      test('exposes a 16px-all default for overlay alignment', () {
+        expect(
+          DivineTextField.defaultContentPadding,
+          const EdgeInsets.all(16),
+        );
+      });
+    });
   });
 }

@@ -3471,5 +3471,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "Coperta nu a putut fi actualizată. Încearcă din nou."
+  "videoMetadataEditCoverFailedSnackbar": "Coperta nu a putut fi actualizată. Încearcă din nou.",
+  "videoMetadataEditCoverSuccessAnnouncement": "Coperta a fost actualizată"
 }

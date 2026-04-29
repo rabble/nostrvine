@@ -5012,6 +5012,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'カバーを更新できませんでした。もう一度お試しください。';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'カバーを更新しました';
+
+  @override
   String get videoMetadataTags => 'タグ';
 
   @override

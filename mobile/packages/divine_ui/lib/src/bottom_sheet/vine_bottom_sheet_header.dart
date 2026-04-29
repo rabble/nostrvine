@@ -56,6 +56,10 @@ class VineBottomSheetHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasTitle = title != null && title is! SizedBox;
+    final hasLeadingSlot = leadingAction != null || leading != null;
+    final hasTrailingSlot = trailingAction != null || trailing != null;
+    final hasHeaderRow = hasTitle || hasLeadingSlot || hasTrailingSlot;
+    const placeholder = SizedBox(width: 40, height: 40);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -79,16 +83,7 @@ class VineBottomSheetHeader extends StatelessWidget {
                 ),
 
               Padding(
-                padding: .only(
-                  bottom:
-                      hasTitle ||
-                          leadingAction != null ||
-                          leading != null ||
-                          trailing != null ||
-                          trailingAction != null
-                      ? 14
-                      : 0,
-                ),
+                padding: .only(bottom: hasHeaderRow ? 14 : 0),
                 child: Row(
                   mainAxisAlignment: .spaceBetween,
                   spacing: 12,
@@ -97,46 +92,28 @@ class VineBottomSheetHeader extends StatelessWidget {
                       leadingAction!
                     else if (leading != null)
                       leading!
-                    else if (trailingAction != null || trailing != null)
-                      IgnorePointer(
-                        child: Opacity(
-                          opacity: 0,
-                          child: trailingAction ?? trailing,
-                        ),
-                      ),
+                    else if (hasTrailingSlot)
+                      placeholder,
 
                     if (hasTitle)
-                      // Title (centered) + optional trailing actions
                       Flexible(
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Centered title
-                            Center(
-                              child: DefaultTextStyle(
-                                style: VineTheme.titleMediumFont(),
-                                textAlign: .center,
-                                child: title!,
-                              ),
-                            ),
-
-                            // Trailing widget positioned on the right
-                            if (trailing != null)
-                              Positioned(right: 0, child: trailing!),
-                          ],
+                        child: Center(
+                          child: DefaultTextStyle(
+                            style: VineTheme.titleMediumFont(),
+                            textAlign: .center,
+                            child: title!,
+                          ),
                         ),
-                      ),
+                      )
+                    else
+                      const Spacer(),
 
                     if (trailingAction != null)
                       trailingAction!
                     else if (trailing != null)
                       trailing!
-                    else if (leadingAction != null)
-                      IgnorePointer(
-                        child: Opacity(opacity: 0, child: leadingAction),
-                      )
-                    else if (leading != null)
-                      IgnorePointer(child: Opacity(opacity: 0, child: leading)),
+                    else if (hasLeadingSlot)
+                      placeholder,
                   ],
                 ),
               ),

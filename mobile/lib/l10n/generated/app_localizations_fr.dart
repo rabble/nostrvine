@@ -5296,6 +5296,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible de mettre à jour la couverture. Réessayez.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement =>
+      'Couverture mise à jour';
+
+  @override
   String get videoMetadataTags => 'Tags';
 
   @override

@@ -5223,6 +5223,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att uppdatera omslaget. Försök igen.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Omslag uppdaterat';
+
+  @override
   String get videoMetadataTags => 'Taggar';
 
   @override

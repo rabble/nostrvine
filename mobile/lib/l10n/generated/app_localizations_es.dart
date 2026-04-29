@@ -5274,6 +5274,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo actualizar la portada. Inténtalo de nuevo.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'Portada actualizada';
+
+  @override
   String get videoMetadataTags => 'Etiquetas';
 
   @override

@@ -17,7 +17,7 @@ class DivineTextField extends StatelessWidget {
     this.obscureText = false,
     this.canRequestFocus = true,
     this.expands = false,
-    this.contentPadding = const .all(16),
+    this.contentPadding = defaultContentPadding,
     this.focusNode,
     this.controller,
     this.keyboardType = .text,
@@ -30,6 +30,10 @@ class DivineTextField extends StatelessWidget {
     this.onChanged,
     this.primaryWhenFilled = false,
   });
+
+  /// Default content padding around the input. Exposed so overlays
+  /// (e.g. character counters) can stay aligned with the field's edges.
+  static const EdgeInsets defaultContentPadding = EdgeInsets.all(16);
 
   /// Label text shown inside the field when empty, floats above when focused.
   final String? labelText;
@@ -129,6 +133,10 @@ class DivineTextField extends StatelessWidget {
         filled: false,
         contentPadding: contentPadding,
         floatingLabelStyle: WidgetStateTextStyle.resolveWith((states) {
+          // Why: the resolver reads `controller?.text` synchronously on each
+          // Material rebuild without subscribing to the controller. Safe
+          // because Flutter's [TextField] re-resolves this style whenever
+          // its text changes, so the read happens at the right moment.
           final isFilled =
               primaryWhenFilled && (controller?.text.isNotEmpty ?? false);
           return VineTheme.labelSmallFont(

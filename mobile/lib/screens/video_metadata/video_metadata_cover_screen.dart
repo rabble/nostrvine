@@ -216,6 +216,11 @@ class _VideoMetadataCoverScreenState
 
     if (!mounted) return;
     if (didSucceed) {
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.l10n.videoMetadataEditCoverSuccessAnnouncement,
+        Directionality.of(context),
+      );
       context.pop();
       return;
     }

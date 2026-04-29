@@ -75,13 +75,8 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     if (blocklistRepository.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: VineTheme.transparent,
-          elevation: 0,
-          behavior: .floating,
-          content: DivineSnackbarContainer(
-            label: context.l10n.videoMetadataCreatorCannotBeReferencedSnackbar,
-          ),
+        DivineSnackbarContainer.snackBar(
+          context.l10n.videoMetadataCreatorCannotBeReferencedSnackbar,
         ),
       );
       return;

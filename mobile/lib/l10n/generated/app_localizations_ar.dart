@@ -5180,6 +5180,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'تعذر تحديث الغلاف. حاول مرة أخرى.';
 
   @override
+  String get videoMetadataEditCoverSuccessAnnouncement => 'تم تحديث الغلاف';
+
+  @override
   String get videoMetadataTags => 'الوسوم';
 
   @override

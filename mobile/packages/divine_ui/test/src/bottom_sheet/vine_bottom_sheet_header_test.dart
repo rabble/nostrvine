@@ -108,7 +108,7 @@ void main() {
       expect(find.byKey(const Key('leading')), findsOneWidget);
     });
 
-    testWidgets('renders leading action and trailing placeholder', (
+    testWidgets('renders leading action with a trailing placeholder', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -126,12 +126,13 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const Key('leading_action')), findsNWidgets(2));
+      expect(find.byKey(const Key('leading_action')), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(VineBottomSheetHeader),
           matching: find.byWidgetPredicate(
-            (widget) => widget is IgnorePointer && widget.ignoring,
+            (widget) =>
+                widget is SizedBox && widget.width == 40 && widget.height == 40,
           ),
         ),
         findsOneWidget,
@@ -140,14 +141,14 @@ void main() {
         find.descendant(
           of: find.byType(VineBottomSheetHeader),
           matching: find.byWidgetPredicate(
-            (widget) => widget is Opacity && widget.opacity == 0,
+            (widget) => widget is IgnorePointer || widget is Opacity,
           ),
         ),
-        findsOneWidget,
+        findsNothing,
       );
     });
 
-    testWidgets('renders trailing action and leading placeholder', (
+    testWidgets('renders trailing action with a leading placeholder', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -165,12 +166,13 @@ void main() {
         ),
       );
 
-      expect(find.byKey(const Key('trailing_action')), findsNWidgets(2));
+      expect(find.byKey(const Key('trailing_action')), findsOneWidget);
       expect(
         find.descendant(
           of: find.byType(VineBottomSheetHeader),
           matching: find.byWidgetPredicate(
-            (widget) => widget is IgnorePointer && widget.ignoring,
+            (widget) =>
+                widget is SizedBox && widget.width == 40 && widget.height == 40,
           ),
         ),
         findsOneWidget,
@@ -179,10 +181,10 @@ void main() {
         find.descendant(
           of: find.byType(VineBottomSheetHeader),
           matching: find.byWidgetPredicate(
-            (widget) => widget is Opacity && widget.opacity == 0,
+            (widget) => widget is IgnorePointer || widget is Opacity,
           ),
         ),
-        findsOneWidget,
+        findsNothing,
       );
     });
   });

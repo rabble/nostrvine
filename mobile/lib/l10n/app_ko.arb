@@ -2760,5 +2760,6 @@
       }
     }
   },
-  "videoMetadataEditCoverFailedSnackbar": "커버를 업데이트하지 못했습니다. 다시 시도하세요."
+  "videoMetadataEditCoverFailedSnackbar": "커버를 업데이트하지 못했습니다. 다시 시도하세요.",
+  "videoMetadataEditCoverSuccessAnnouncement": "커버 업데이트됨"
 }
