@@ -375,9 +375,9 @@ void main() {
             profile: testProfile,
           ),
         );
-        // Advance past the 4-second skeleton timeout, then settle any
+        // Advance past the 7-second skeleton timeout, then settle any
         // remaining switch animations.
-        await tester.pump(const Duration(seconds: 5));
+        await tester.pump(const Duration(seconds: 8));
         await tester.pumpAndSettle();
 
         expect(find.text('Followers'), findsNothing);
@@ -401,7 +401,7 @@ void main() {
               // profileStats deliberately omitted (null)
             ),
           );
-          // One frame only — the 4-second skeleton timer has not fired yet.
+          // One frame only — the 7-second skeleton timer has not fired yet.
           await tester.pump();
 
           // All four column labels are in the tree, rendered as skeletons.

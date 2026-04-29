@@ -676,6 +676,11 @@ class _ProfileStatsRow extends StatefulWidget {
 class _ProfileStatsRowState extends State<_ProfileStatsRow> {
   static const _skeletonTimeout = Duration(seconds: 7);
 
+  /// Two-digit placeholder painted behind the Skeletonizer shimmer while the
+  /// real stats load. The number itself is never visible — it only sets the
+  /// width of the skeleton bar.
+  static const _skeletonPlaceholderCount = 99;
+
   Timer? _timer;
   bool _timeoutExpired = false;
 
@@ -708,19 +713,25 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
     final columns = <Widget>[
       if (hasLoops || isLoading)
         ProfileStatColumn(
-          count: isLoading ? 99 : widget.profileStats!.totalViews,
+          count: isLoading
+              ? _skeletonPlaceholderCount
+              : widget.profileStats!.totalViews,
           label: l10n.profileLoopsLabel,
           isLoading: isLoading,
         ),
       if (hasLikes || isLoading)
         ProfileStatColumn(
-          count: isLoading ? 99 : widget.profileStats!.totalLikes,
+          count: isLoading
+              ? _skeletonPlaceholderCount
+              : widget.profileStats!.totalLikes,
           label: l10n.profileLikesLabel,
           isLoading: isLoading,
         ),
       if (hasFollowing || isLoading)
         ProfileStatColumn(
-          count: isLoading ? 99 : widget.profileStats!.following,
+          count: isLoading
+              ? _skeletonPlaceholderCount
+              : widget.profileStats!.following,
           label: l10n.profileFollowingLabel,
           isLoading: isLoading,
           onTap: () => context.push(
@@ -729,7 +740,9 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
         ),
       if (hasFollowers || isLoading)
         ProfileStatColumn(
-          count: isLoading ? 99 : widget.profileStats!.followers,
+          count: isLoading
+              ? _skeletonPlaceholderCount
+              : widget.profileStats!.followers,
           label: l10n.profileFollowersLabel,
           isLoading: isLoading,
           onTap: () => context.push(
