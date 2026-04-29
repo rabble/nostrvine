@@ -151,9 +151,14 @@ class _StickerPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layer = item.layer as WidgetLayer?;
-    final sticker = layer?.meta != null
-        ? StickerData.fromJson(layer!.meta!)
-        : null;
+    StickerData? sticker;
+    if (layer?.meta != null) {
+      try {
+        sticker = StickerData.fromJson(layer!.meta!);
+      } catch (_) {
+        // Non-sticker WidgetLayer — fall back to item.label below.
+      }
+    }
 
     return OverflowBox(
       maxWidth: double.infinity,
