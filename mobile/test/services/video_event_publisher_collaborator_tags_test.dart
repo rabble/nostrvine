@@ -138,7 +138,7 @@ void main() {
   }
 
   test(
-    'publishes collaborator p-tags with explicit Collaborator role',
+    'publishes collaborator p-tags with lowercase collaborator marker',
     () async {
       stubSignAndPublish();
 
@@ -153,9 +153,19 @@ void main() {
           'p',
           collaboratorPubkey,
           'wss://relay.divine.video',
-          'Collaborator',
+          'collaborator',
         ]),
         isTrue,
+      );
+      // Verify no capitalized form is emitted
+      expect(
+        _containsTag(capturedTags, const [
+          'p',
+          collaboratorPubkey,
+          'wss://relay.divine.video',
+          'Collaborator',
+        ]),
+        isFalse,
       );
     },
   );
