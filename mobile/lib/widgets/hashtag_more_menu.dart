@@ -1,6 +1,6 @@
 // ABOUTME: Bottom sheet for saving a hashtag to profile / home feed list (#1602).
 // ABOUTME: Shared by hashtag feed screen and inline video description hashtag actions.
-// ABOUTME: Header layout matches `docs/images/tag_menu.png` (icon + two-line block).
+// ABOUTME: Header follows Chardot visual review (#1602): chip + headline + count.
 
 import 'dart:async';
 
@@ -12,8 +12,8 @@ import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-/// Hashtag block: rounded purple `#` mark + [tag name] and optional video count
-/// (see `docs/images/tag_menu.png` in the divine repo).
+/// Hashtag block: rounded accent `#` tile + tag label and optional video count
+/// (visual review #1602 / design QA — token alignment with `VineTheme`).
 class HashtagActionMenuHeader extends StatelessWidget {
   const HashtagActionMenuHeader({
     required this.hashtag,
@@ -24,31 +24,30 @@ class HashtagActionMenuHeader extends StatelessWidget {
   final String hashtag;
   final int? videoCount;
 
-  /// Horizontal inset subtracted from screen width when constraining the header
-  /// row (sheet side margins + gutter vs. edge-to-edge title art in mocks).
-  static const double horizontalInsetTotal = 64;
-
-  static const double _iconSize = 48;
-  static const double _iconRadius = 12;
+  static const double _iconSize = 52;
+  static const double _iconRadius = 14;
+  static const double _gapChipToText = 16;
+  static const double _titleToCountGap = 6;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final body = normalizeHashtagLabel(hashtag);
-    final maxW = MediaQuery.sizeOf(context).width - horizontalInsetTotal;
     final tileColor = hashtagTileBackgroundForLabel(hashtag);
-    return DefaultTextStyle(
-      style: const TextStyle(),
-      child: Semantics(
-        label: body.isEmpty
-            ? l10n.hashtagOptionsMoreTooltip
-            : (videoCount != null
-                  ? '$body. ${l10n.hashtagMenuVideoCount(videoCount!)}'
-                  : body),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxW),
+    final semanticTag = body.isEmpty ? '' : formatHashtagForDisplay(body);
+    return SizedBox(
+      width: double.infinity,
+      child: DefaultTextStyle(
+        style: const TextStyle(),
+        child: Semantics(
+          label: body.isEmpty
+              ? l10n.hashtagOptionsMoreTooltip
+              : (videoCount != null
+                    ? '$semanticTag. ${l10n.hashtagMenuVideoCount(videoCount!)}'
+                    : semanticTag),
           child: Row(
-            spacing: 12,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: _gapChipToText,
             children: [
               Container(
                 width: _iconSize,
@@ -60,22 +59,18 @@ class HashtagActionMenuHeader extends StatelessWidget {
                 alignment: Alignment.center,
                 child: Text(
                   '#',
-                  style: VineTheme.titleLargeFont(
-                    color: VineTheme.primaryDarkGreen,
-                  ),
+                  style: VineTheme.headlineSmallFont(),
                 ),
               ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  spacing: 4,
+                  spacing: _titleToCountGap,
                   children: [
                     Text(
                       body.isEmpty ? '…' : body,
-                      style: VineTheme.titleLargeFont(
-                        color: VineTheme.onSurface,
-                      ),
+                      style: VineTheme.headlineSmallFont(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -83,7 +78,7 @@ class HashtagActionMenuHeader extends StatelessWidget {
                       Text(
                         l10n.hashtagMenuVideoCount(videoCount!),
                         style: VineTheme.bodySmallFont(
-                          color: VineTheme.secondaryText,
+                          color: VineTheme.onSurfaceMuted55,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
