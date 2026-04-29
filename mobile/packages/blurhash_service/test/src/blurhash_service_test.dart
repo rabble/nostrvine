@@ -1,8 +1,17 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blurhash_service/blurhash_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
+
+/// Creates a solid-colour JPEG with the given [width] and [height].
+Uint8List _makeJpeg({required int width, required int height}) {
+  final image = img.Image(width: width, height: height);
+  img.fill(image, color: img.ColorRgb8(100, 149, 237));
+  return Uint8List.fromList(img.encodeJpg(image));
+}
 
 void main() {
   group('BlurhashService', () {
@@ -21,7 +30,6 @@ void main() {
 
       expect(blurhash1, isNotNull);
       expect(blurhash1, equals(blurhash2)); // Should be deterministic
-      expect(blurhash1!.startsWith('L'), isTrue);
     });
 
     test('decodes blurhash to color data', () {
@@ -75,6 +83,54 @@ void main() {
 
       expect(data, isNotNull);
       expect(data!.isValid, isTrue);
+    });
+
+    group('generateBlurhash aspect-ratio component selection', () {
+      // Blurhash length = 6 + 2 * (compX * compY - 1)
+      // Portrait 4×7 → 6 + 2*27 = 60 chars
+      // Square   4×4 → 6 + 2*15 = 36 chars
+
+      test('uses 4×7 components for 9:16 portrait image', () async {
+        final bytes = _makeJpeg(width: 90, height: 160);
+        final hash = await BlurhashService.generateBlurhash(bytes);
+        expect(hash, isNotNull);
+        expect(hash!.length, equals(60));
+      });
+
+      test('uses 4×4 components for 1:1 square image', () async {
+        final bytes = _makeJpeg(width: 100, height: 100);
+        final hash = await BlurhashService.generateBlurhash(bytes);
+        expect(hash, isNotNull);
+        expect(hash!.length, equals(36));
+      });
+
+      test('real fixture (720×1280) uses portrait components', () async {
+        final thumbnailFile = File('test/fixtures/test_thumbnail.jpg');
+        if (!thumbnailFile.existsSync()) {
+          fail('Test thumbnail not found at test/fixtures/test_thumbnail.jpg.');
+        }
+        final hash = await BlurhashService.generateBlurhash(
+          await thumbnailFile.readAsBytes(),
+        );
+        expect(hash, isNotNull);
+        expect(hash!.length, equals(60));
+      });
+
+      test('runs encoding in a background isolate '
+          '(result is still deterministic)', () async {
+        final bytes = _makeJpeg(width: 90, height: 160);
+        final hash1 = await BlurhashService.generateBlurhash(bytes);
+        final hash2 = await BlurhashService.generateBlurhash(bytes);
+        expect(hash1, isNotNull);
+        expect(hash1, equals(hash2));
+      });
+
+      test('returns null for invalid image bytes', () async {
+        final hash = await BlurhashService.generateBlurhash(
+          Uint8List.fromList([0, 1, 2, 3]),
+        );
+        expect(hash, isNull);
+      });
     });
 
     group('getBlurhashForContentType', () {

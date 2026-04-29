@@ -3,7 +3,6 @@
 // ABOUTME: Creates compact representations of images
 // for better UX during vine loading
 
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:blurhash_dart/blurhash_dart.dart' as blurhash_dart;
@@ -11,60 +10,72 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:unified_logger/unified_logger.dart';
 
+/// Isolate worker for [BlurhashService.generateBlurhash].
+///
+/// Top-level so [compute] can pass it to a background isolate.
+String? _generateBlurhashSync(Uint8List imageBytes) {
+  final image = img.decodeImage(imageBytes);
+  if (image == null) return null;
+
+  final (componentX, componentY) = BlurhashService._componentsForAspectRatio(
+    image.width,
+    image.height,
+  );
+
+  final resized = image.width > BlurhashService._encodeMaxWidth
+      ? img.copyResize(image, width: BlurhashService._encodeMaxWidth)
+      : image;
+
+  return blurhash_dart.BlurHash.encode(
+    resized,
+    numCompX: componentX,
+    numCompY: componentY,
+  ).hash;
+}
+
 /// Service for generating and decoding Blurhash
 /// placeholders.
 class BlurhashService {
-  /// Default horizontal component count.
-  static const int defaultComponentX = 4;
+  /// Components for 9:16 portrait videos (4:7 ≈ 0.57, matches 9:16 ≈ 0.5625).
+  static const int _portraitComponentX = 4;
+  static const int _portraitComponentY = 7;
 
-  /// Default vertical component count.
-  static const int defaultComponentY = 3;
+  /// Components for 1:1 square videos (balanced).
+  static const int _squareComponentX = 4;
+  static const int _squareComponentY = 4;
+
+  /// Max width used when downscaling before encoding.
+  static const int _encodeMaxWidth = 128;
 
   /// Default punch (contrast) value.
   static const double defaultPunch = 1;
 
-  /// Generate blurhash from image bytes using
-  /// blurhash_dart.
+  /// Returns component counts suited to the image's aspect ratio.
+  /// Supports 9:16 portrait and 1:1 square; falls back to portrait.
+  static (int compX, int compY) _componentsForAspectRatio(
+    int width,
+    int height,
+  ) {
+    if (width == 0 || height == 0) {
+      return (_portraitComponentX, _portraitComponentY);
+    }
+    final ratio = width / height;
+    // Square: ratio ≥ 0.9 (covers 1:1 with rounding tolerance)
+    if (ratio >= 0.9) return (_squareComponentX, _squareComponentY);
+    // Portrait 9:16 (and any other tall format)
+    return (_portraitComponentX, _portraitComponentY);
+  }
+
+  /// Generate blurhash from image bytes.
+  ///
+  /// Encoding runs in a background isolate via [compute] to avoid
+  /// blocking the UI thread.
   static Future<String?> generateBlurhash(
-    Uint8List imageBytes, {
-    int componentX = defaultComponentX,
-    int componentY = defaultComponentY,
-  }) async {
+    Uint8List imageBytes,
+  ) async {
     try {
-      // Decode image to get dimensions and pixel data
-      final image = img.decodeImage(imageBytes);
-      if (image == null) {
-        // coverage:ignore-start
-        Log.error(
-          'Failed to decode image for blurhash '
-          'generation',
-          name: 'BlurhashService',
-          category: LogCategory.system,
-        );
-        return null;
-        // coverage:ignore-end
-      }
-
-      // Encode blurhash using blurhash_dart library
-      final blurhash = blurhash_dart.BlurHash.encode(
-        image,
-        numCompX: componentX,
-        numCompY: componentY,
-      );
-
-      final hashString = blurhash.hash;
-
-      Log.verbose(
-        'Generated blurhash: $hashString '
-        '(${image.width}x${image.height}, '
-        '${componentX}x$componentY components)',
-        name: 'BlurhashService',
-        category: LogCategory.system,
-      );
-
-      return hashString;
-      // coverage:ignore-start
-    } on Exception catch (e, stackTrace) {
+      return await compute(_generateBlurhashSync, imageBytes);
+    } on Object catch (e, stackTrace) {
       Log.error(
         'Failed to generate blurhash: $e',
         name: 'BlurhashService',
@@ -77,16 +88,13 @@ class BlurhashService {
       );
       return null;
     }
-    // coverage:ignore-end
   }
 
   /// Generate blurhash from a [ui.Image] instance.
   // coverage:ignore-start
   static Future<String?> generateBlurhashFromImage(
-    ui.Image image, {
-    int componentX = defaultComponentX,
-    int componentY = defaultComponentY,
-  }) async {
+    ui.Image image,
+  ) async {
     try {
       // Convert image to bytes
       final byteData = await image.toByteData(
@@ -95,11 +103,7 @@ class BlurhashService {
       if (byteData == null) return null;
 
       final bytes = byteData.buffer.asUint8List();
-      return generateBlurhash(
-        bytes,
-        componentX: componentX,
-        componentY: componentY,
-      );
+      return generateBlurhash(bytes);
     } on Exception catch (e) {
       Log.error(
         'Failed to generate blurhash from image: $e',
