@@ -4510,6 +4510,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get inboxConversationUnmuted => 'Bisu percakapan dibatalkan';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Batal';
 
   @override

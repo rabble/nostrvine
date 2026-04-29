@@ -39,6 +39,7 @@ void main() {
         content: any(named: 'content'),
         replyToId: any(named: 'replyToId'),
         additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
       ),
     ).thenAnswer(
       (_) async => NIP17SendResult.success(
@@ -64,11 +65,13 @@ void main() {
         content: captureAny(named: 'content'),
         replyToId: any(named: 'replyToId'),
         additionalTags: captureAny(named: 'additionalTags'),
+        skipNip04Fallback: captureAny(named: 'skipNip04Fallback'),
       ),
     );
 
     final content = verification.captured[0] as String;
     final tags = verification.captured[1] as List<List<String>>;
+    final skipNip04Fallback = verification.captured[2] as bool;
 
     expect(content, contains('Skate loop'));
     expect(content, contains('collaborate'));
@@ -92,6 +95,9 @@ void main() {
       ]),
       isTrue,
     );
+    // Structured invites must skip the NIP-04 legacy fallback — the
+    // fallback would publish a duplicate plaintext message (#3559).
+    expect(skipNip04Fallback, isTrue);
   });
 
   test('returns failure when encrypted DM send fails', () async {
@@ -101,6 +107,7 @@ void main() {
         content: any(named: 'content'),
         replyToId: any(named: 'replyToId'),
         additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
       ),
     ).thenAnswer((_) async => NIP17SendResult.failure('relay unavailable'));
 

@@ -62,6 +62,10 @@ class CollaboratorInviteService {
       recipientPubkey: collaboratorPubkey,
       content: content,
       additionalTags: tags,
+      // Structured invites cannot be represented in NIP-04; the legacy
+      // fallback would publish a duplicate plaintext message that reads
+      // "Open diVine to review and accept" inside diVine itself (#3559).
+      skipNip04Fallback: true,
     );
 
     return CollaboratorInviteResult(

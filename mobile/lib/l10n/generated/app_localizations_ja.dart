@@ -4344,6 +4344,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxConversationUnmuted => '会話のミュートを解除したよ';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'キャンセル';
 
   @override

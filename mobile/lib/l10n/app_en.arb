@@ -2294,6 +2294,11 @@
   "inboxConversationMuted": "Conversation muted",
   "inboxConversationUnmuted": "Conversation unmuted",
 
+  "inboxCollabInviteSentStatus": "Invitation sent",
+  "@inboxCollabInviteSentStatus": {
+    "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
+  },
+
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
 

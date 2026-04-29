@@ -4491,6 +4491,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get inboxConversationUnmuted => 'تم إلغاء كتم المحادثة';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'إلغاء';
 
   @override

@@ -4660,6 +4660,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get inboxConversationUnmuted => 'Wyłączono wyciszenie rozmowy';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Anuluj';
 
   @override

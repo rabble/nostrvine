@@ -4565,6 +4565,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get inboxConversationUnmuted => 'Conversa com som ativado';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Cancelar';
 
   @override

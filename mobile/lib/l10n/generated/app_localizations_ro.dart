@@ -4666,6 +4666,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxConversationUnmuted => 'Conversație reactivată';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Anulează';
 
   @override

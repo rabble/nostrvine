@@ -178,5 +178,62 @@ void main() {
         verifyNever(() => responseService.acceptInvite(any()));
       },
     );
+
+    // #3559 — defense-in-depth. The render layer should not surface
+    // accept/ignore for sender-side (self-creator) invites; if it ever
+    // does, the cubit's assert fails loudly in debug and the runtime
+    // guard suppresses any side effect in release.
+    test(
+      'acceptInvite no-ops when current user is the invite creator',
+      () async {
+        final selfCreatorCubit = CollaboratorInviteActionsCubit(
+          stateStore: store,
+          responseService: responseService,
+          currentUserPubkey: creatorPubkey,
+        );
+        addTearDown(selfCreatorCubit.close);
+
+        await expectLater(
+          selfCreatorCubit.acceptInvite(invite),
+          throwsA(isA<AssertionError>()),
+        );
+
+        verifyNever(() => responseService.acceptInvite(any()));
+        verifyNever(
+          () => store.setState(
+            videoAddress: any(named: 'videoAddress'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            collaboratorPubkey: any(named: 'collaboratorPubkey'),
+            state: any(named: 'state'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'ignoreInvite no-ops when current user is the invite creator',
+      () async {
+        final selfCreatorCubit = CollaboratorInviteActionsCubit(
+          stateStore: store,
+          responseService: responseService,
+          currentUserPubkey: creatorPubkey,
+        );
+        addTearDown(selfCreatorCubit.close);
+
+        await expectLater(
+          selfCreatorCubit.ignoreInvite(invite),
+          throwsA(isA<AssertionError>()),
+        );
+
+        verifyNever(
+          () => store.setState(
+            videoAddress: any(named: 'videoAddress'),
+            creatorPubkey: any(named: 'creatorPubkey'),
+            collaboratorPubkey: any(named: 'collaboratorPubkey'),
+            state: any(named: 'state'),
+          ),
+        );
+      },
+    );
   });
 }

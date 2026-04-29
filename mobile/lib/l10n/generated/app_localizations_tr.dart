@@ -4520,6 +4520,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get inboxConversationUnmuted => 'Sohbet sessizden çıkarıldı';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'İptal';
 
   @override

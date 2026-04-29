@@ -4552,6 +4552,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get inboxConversationUnmuted => 'Gesprek niet meer gedempt';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Annuleren';
 
   @override

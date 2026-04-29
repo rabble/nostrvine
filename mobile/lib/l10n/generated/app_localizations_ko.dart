@@ -4359,6 +4359,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get inboxConversationUnmuted => '대화 알림을 다시 켰어요';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => '취소';
 
   @override

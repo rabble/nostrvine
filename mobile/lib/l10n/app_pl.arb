@@ -2256,6 +2256,10 @@
             }
         }
     },
+    "inboxCollabInviteSentStatus": "Invitation sent",
+    "@inboxCollabInviteSentStatus": {
+        "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
+    },
     "inboxConversationMuted": "Wyciszono rozmowę",
     "inboxConversationUnmuted": "Wyłączono wyciszenie rozmowy",
     "inboxEmptySubtitle": "Ten przycisk + nie gryzie.",

@@ -4530,6 +4530,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inboxConversationUnmuted => 'Konversation inte tystad';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Avbryt';
 
   @override

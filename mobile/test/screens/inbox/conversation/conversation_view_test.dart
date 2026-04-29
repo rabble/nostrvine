@@ -58,6 +58,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(fallbackInvite);
+      registerFallbackValue(<CollaboratorInvite>[]);
     });
 
     setUp(() {
@@ -252,6 +253,61 @@ void main() {
           verify(
             () => mockInviteActionsCubit.acceptInvite(any()),
           ).called(1);
+        },
+      );
+
+      // #3559 — NIP-17 echoes a sender's gift wrap back to themselves,
+      // so the inviter's own outgoing collab invite shows up in their
+      // conversation feed. The renderer must surface it as a static
+      // "Invitation sent" status, not Accept/Ignore (the inviter
+      // accepting their own invite is nonsensical and would publish a
+      // malformed kind-34238 with creator==responder).
+      testWidgets(
+        'renders sender-direction invite as Sent status, no Accept/Ignore',
+        (tester) async {
+          final message = DmMessage(
+            id: '8888888888888888888888888888888888888888888888888888888888888888',
+            conversationId:
+                'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+            senderPubkey: currentPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'bbbbbbbbccccccccddddddddeeeeeeeebbbbbbbbccccccccddddddddeeeeeeee',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:$currentPubkey:skate-loop',
+                'wss://relay.divine.video',
+              ],
+              ['p', currentPubkey],
+              ['role', 'Collaborator'],
+              ['title', 'Skate loop'],
+            ],
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('Collaborator invite'), findsOneWidget);
+          expect(find.textContaining('Skate loop'), findsOneWidget);
+          expect(find.text('Invitation sent'), findsOneWidget);
+          expect(find.text('Accept'), findsNothing);
+          expect(find.text('Ignore'), findsNothing);
+          expect(find.text('You were invited to collaborate.'), findsNothing);
+
+          // Stronger assertion than "no acceptInvite call": sender-side
+          // cards do not subscribe to the cubit at all, so loadInvites
+          // is never invoked. Prevents state-store pollution.
+          verifyNever(() => mockInviteActionsCubit.loadInvites(any()));
         },
       );
     });

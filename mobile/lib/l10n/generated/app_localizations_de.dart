@@ -4589,6 +4589,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Unterhaltung nicht mehr stummgeschaltet';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Abbrechen';
 
   @override

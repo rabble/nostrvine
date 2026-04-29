@@ -67,7 +67,13 @@ class CollaboratorInviteActionsCubit
   }
 
   Future<void> acceptInvite(CollaboratorInvite invite) async {
+    assert(
+      _currentUserPubkey != invite.creatorPubkey,
+      'CollaboratorInviteCard should not surface accept for sender-side '
+      'invites (#3559)',
+    );
     if (_currentUserPubkey.isEmpty) return;
+    if (_currentUserPubkey == invite.creatorPubkey) return;
 
     await _setInviteState(invite, CollaboratorInviteState.accepting);
 
@@ -81,7 +87,13 @@ class CollaboratorInviteActionsCubit
   }
 
   Future<void> ignoreInvite(CollaboratorInvite invite) async {
+    assert(
+      _currentUserPubkey != invite.creatorPubkey,
+      'CollaboratorInviteCard should not surface ignore for sender-side '
+      'invites (#3559)',
+    );
     if (_currentUserPubkey.isEmpty) return;
+    if (_currentUserPubkey == invite.creatorPubkey) return;
     await _setInviteState(invite, CollaboratorInviteState.ignored);
   }
 

@@ -500,6 +500,91 @@ void main() {
           ),
         );
       });
+
+      test('skipNip04Fallback: true suppresses NIP-04 publish', () async {
+        when(
+          () => mockMessageService.sendPrivateMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            eventKind: any(named: 'eventKind'),
+            additionalTags: any(named: 'additionalTags'),
+          ),
+        ).thenAnswer(
+          (_) async => NIP17SendResult.success(
+            rumorEventId: _rumorEventId,
+            messageEventId: _giftWrapEventId,
+            recipientPubkey: _validPubkeyB,
+          ),
+        );
+        when(
+          () => mockDirectMessagesDao.insertMessage(
+            id: any(named: 'id'),
+            conversationId: any(named: 'conversationId'),
+            senderPubkey: any(named: 'senderPubkey'),
+            content: any(named: 'content'),
+            createdAt: any(named: 'createdAt'),
+            giftWrapId: any(named: 'giftWrapId'),
+            messageKind: any(named: 'messageKind'),
+            replyToId: any(named: 'replyToId'),
+            subject: any(named: 'subject'),
+            fileType: any(named: 'fileType'),
+            encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+            decryptionKey: any(named: 'decryptionKey'),
+            decryptionNonce: any(named: 'decryptionNonce'),
+            fileHash: any(named: 'fileHash'),
+            originalFileHash: any(named: 'originalFileHash'),
+            fileSize: any(named: 'fileSize'),
+            dimensions: any(named: 'dimensions'),
+            blurhash: any(named: 'blurhash'),
+            thumbnailUrl: any(named: 'thumbnailUrl'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            tagsJson: any(named: 'tagsJson'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.upsertConversation(
+            id: any(named: 'id'),
+            participantPubkeys: any(named: 'participantPubkeys'),
+            isGroup: any(named: 'isGroup'),
+            createdAt: any(named: 'createdAt'),
+            lastMessageContent: any(named: 'lastMessageContent'),
+            lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+            lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+            subject: any(named: 'subject'),
+            isRead: any(named: 'isRead'),
+            currentUserHasSent: any(named: 'currentUserHasSent'),
+            ownerPubkey: any(named: 'ownerPubkey'),
+            dmProtocol: any(named: 'dmProtocol'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.getConversation(
+            any(),
+            ownerPubkey: any(named: 'ownerPubkey'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenAnswer((_) async => null);
+
+        final repository = createRepository();
+
+        final result = await repository.sendMessage(
+          recipientPubkey: _validPubkeyB,
+          content: 'Invited you to collaborate',
+          additionalTags: const [
+            ['divine', 'collab-invite'],
+          ],
+          skipNip04Fallback: true,
+        );
+
+        // Allow any unawaited microtasks to settle. The NIP-04 fallback
+        // would be enqueued via `unawaited(...)` if the skip flag leaked.
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(result.success, isTrue);
+        verifyNever(() => mockNostrClient.publishEvent(any()));
+      });
     });
 
     group('sendGroupMessage', () {

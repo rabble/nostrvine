@@ -772,6 +772,7 @@ class DmRepository {
     required String content,
     String? replyToId,
     List<List<String>> additionalTags = const [],
+    bool skipNip04Fallback = false,
   }) async {
     _assertInitialized();
     validatePubkey(recipientPubkey);
@@ -838,9 +839,12 @@ class DmRepository {
           category: LogCategory.system,
         );
 
-        // Fire NIP-04 fallback for interop with legacy clients.
-        // Skip when the conversation is known to be NIP-17-only.
-        if (protocol != 'nip17') {
+        // Fire NIP-04 fallback for interop with legacy clients. Skip
+        // when the conversation is known NIP-17-only, or when the caller
+        // opts out — structured DMs that cannot be represented in NIP-04
+        // (e.g. collaborator invites) would degrade to a plaintext
+        // duplicate.
+        if (protocol != 'nip17' && !skipNip04Fallback) {
           unawaited(
             _sendNip04Message(
               recipientPubkey: recipientPubkey,

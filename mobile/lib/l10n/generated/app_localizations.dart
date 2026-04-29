@@ -8084,6 +8084,12 @@ abstract class AppLocalizations {
   /// **'Conversation unmuted'**
   String get inboxConversationUnmuted;
 
+  /// Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation sent'**
+  String get inboxCollabInviteSentStatus;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:

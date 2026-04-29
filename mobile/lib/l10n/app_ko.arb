@@ -1544,6 +1544,10 @@
             }
         }
     },
+    "inboxCollabInviteSentStatus": "Invitation sent",
+    "@inboxCollabInviteSentStatus": {
+        "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
+    },
     "inboxConversationMuted": "대화 알림을 껐어요",
     "inboxConversationUnmuted": "대화 알림을 다시 켰어요",
     "inboxEmptySubtitle": "+ 버튼, 물지 않아요.",

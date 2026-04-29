@@ -4580,6 +4580,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inboxConversationUnmuted => 'Conversación sin silenciar';
 
   @override
+  String get inboxCollabInviteSentStatus => 'Invitation sent';
+
+  @override
   String get reportDialogCancel => 'Cancelar';
 
   @override
