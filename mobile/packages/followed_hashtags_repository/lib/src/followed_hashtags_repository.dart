@@ -34,9 +34,12 @@ class FollowedHashtagsRepository {
     required SharedPreferences prefs,
     String? profileStorageKey,
     String? followingFeedStorageKey,
+    bool separateFollowingFeedHashtagsEnabled = true,
   }) : _prefs = prefs,
        _profileKey = profileStorageKey ?? preferencesKey,
        _feedKey = followingFeedStorageKey ?? followingFeedPreferencesKey,
+       _separateFollowingFeedHashtagsEnabled =
+           separateFollowingFeedHashtagsEnabled,
        _profile = BehaviorSubject<List<String>>.seeded(
          const [],
          sync: true,
@@ -56,18 +59,22 @@ class FollowedHashtagsRepository {
 
   /// When `false`, feed and profile lists are kept in sync (no separate
   /// “Add to Following” product surface).
+  ///
+  /// The constructor parameter `separateFollowingFeedHashtagsEnabled`
+  /// defaults to this value.
   static const bool separateFollowingFeedHashtagsEnabled = true;
 
   final SharedPreferences _prefs;
   final String _profileKey;
   final String _feedKey;
+  final bool _separateFollowingFeedHashtagsEnabled;
   final BehaviorSubject<List<String>> _profile;
   final BehaviorSubject<List<String>> _feed;
 
   Future<void> _bootstrapLists() async {
     await _migrateFeedFromProfileIfNeeded();
     final profile = _readNonEmptyList(_profileKey);
-    if (!separateFollowingFeedHashtagsEnabled) {
+    if (!_separateFollowingFeedHashtagsEnabled) {
       _subjectProfile(profile);
       await _setFeedToMatchProfile(profile, persist: true);
     } else {
@@ -113,7 +120,7 @@ class FollowedHashtagsRepository {
     final next = List<String>.from(_profile.value)..add(tag);
     await _prefs.setStringList(_profileKey, next);
     _subjectProfile(next);
-    if (!separateFollowingFeedHashtagsEnabled) {
+    if (!_separateFollowingFeedHashtagsEnabled) {
       await _setFeedToMatchProfile(next, persist: true);
     }
   }
@@ -132,7 +139,7 @@ class FollowedHashtagsRepository {
     final next = List<String>.from(_profile.value)..remove(tag);
     await _prefs.setStringList(_profileKey, next);
     _subjectProfile(next);
-    if (!separateFollowingFeedHashtagsEnabled) {
+    if (!_separateFollowingFeedHashtagsEnabled) {
       await _setFeedToMatchProfile(next, persist: true);
     }
   }
@@ -170,7 +177,7 @@ class FollowedHashtagsRepository {
   /// delegates to [addProfileSavedHashtag] (the feed list is kept in sync
   /// with the profile list).
   Future<void> addFollowingFeedHashtag(String rawLabel) async {
-    if (!separateFollowingFeedHashtagsEnabled) {
+    if (!_separateFollowingFeedHashtagsEnabled) {
       return addProfileSavedHashtag(rawLabel);
     }
     final tag = normalizeHashtagLabel(rawLabel);
@@ -190,7 +197,7 @@ class FollowedHashtagsRepository {
   /// delegates to [removeProfileSavedHashtag] (the feed list is kept in sync
   /// with the profile list).
   Future<void> removeFollowingFeedHashtag(String rawLabel) async {
-    if (!separateFollowingFeedHashtagsEnabled) {
+    if (!_separateFollowingFeedHashtagsEnabled) {
       return removeProfileSavedHashtag(rawLabel);
     }
     final tag = normalizeHashtagLabel(rawLabel);
@@ -208,7 +215,7 @@ class FollowedHashtagsRepository {
   Future<void> reloadFromPrefs() async {
     final profile = _readNonEmptyList(_profileKey);
     _subjectProfile(profile);
-    if (separateFollowingFeedHashtagsEnabled) {
+    if (_separateFollowingFeedHashtagsEnabled) {
       _subjectFeed(_readNonEmptyList(_feedKey));
     } else {
       await _setFeedToMatchProfile(profile, persist: true);

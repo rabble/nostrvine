@@ -115,6 +115,158 @@ void main() {
       await repo.dispose();
     });
 
+    test(
+      'followingFeedHashtagLabelsStream emits updates',
+      () async {
+        final prefs = await SharedPreferences.getInstance();
+        final repo = FollowedHashtagsRepository(prefs: prefs);
+        await _afterRepoOpen();
+
+        final emissions = <List<String>>[];
+        final sub = repo.followingFeedHashtagLabelsStream.listen(emissions.add);
+
+        await repo.addFollowingFeedHashtag('a');
+        await repo.addFollowingFeedHashtag('b');
+        await repo.removeFollowingFeedHashtag('a');
+
+        expect(emissions.last, ['b']);
+        expect(emissions, [
+          <String>[],
+          ['a'],
+          ['a', 'b'],
+          ['b'],
+        ]);
+
+        await sub.cancel();
+        await repo.dispose();
+      },
+    );
+
+    test('hasFollowingFeedHashtag normalizes and respects empties', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final repo = FollowedHashtagsRepository(prefs: prefs);
+      await _afterRepoOpen();
+
+      expect(repo.hasFollowingFeedHashtag(''), isFalse);
+      expect(repo.hasFollowingFeedHashtag('   '), isFalse);
+
+      await repo.addFollowingFeedHashtag('#Tag');
+      expect(repo.hasFollowingFeedHashtag('tag'), isTrue);
+      expect(repo.hasFollowingFeedHashtag('#TAG'), isTrue);
+
+      await repo.dispose();
+    });
+
+    group(
+      'combined profile and feed list '
+      '(separateFollowingFeedHashtagsEnabled: false)',
+      () {
+        test('bootstrap keeps feed aligned with profile', () async {
+          SharedPreferences.setMockInitialValues({
+            FollowedHashtagsRepository.preferencesKey: ['one', 'two'],
+          });
+          final prefs = await SharedPreferences.getInstance();
+          final repo = FollowedHashtagsRepository(
+            prefs: prefs,
+            separateFollowingFeedHashtagsEnabled: false,
+          );
+          await _afterRepoOpen();
+
+          expect(repo.profileSavedHashtags, ['one', 'two']);
+          expect(repo.followingFeedHashtagLabels, ['one', 'two']);
+          expect(
+            prefs.getStringList(
+              FollowedHashtagsRepository.followingFeedPreferencesKey,
+            ),
+            ['one', 'two'],
+          );
+          await repo.dispose();
+        });
+
+        test('addProfileSavedHashtag updates feed list', () async {
+          final prefs = await SharedPreferences.getInstance();
+          final repo = FollowedHashtagsRepository(
+            prefs: prefs,
+            separateFollowingFeedHashtagsEnabled: false,
+          );
+          await _afterRepoOpen();
+
+          await repo.addProfileSavedHashtag('#new');
+
+          expect(repo.profileSavedHashtags, ['new']);
+          expect(repo.followingFeedHashtagLabels, ['new']);
+          expect(
+            prefs.getStringList(
+              FollowedHashtagsRepository.followingFeedPreferencesKey,
+            ),
+            ['new'],
+          );
+          await repo.dispose();
+        });
+
+        test('removeProfileSavedHashtag updates feed list', () async {
+          SharedPreferences.setMockInitialValues({
+            FollowedHashtagsRepository.preferencesKey: ['x', 'y'],
+          });
+          final prefs = await SharedPreferences.getInstance();
+          final repo = FollowedHashtagsRepository(
+            prefs: prefs,
+            separateFollowingFeedHashtagsEnabled: false,
+          );
+          await _afterRepoOpen();
+
+          await repo.removeProfileSavedHashtag('x');
+
+          expect(repo.profileSavedHashtags, ['y']);
+          expect(repo.followingFeedHashtagLabels, ['y']);
+          await repo.dispose();
+        });
+
+        test(
+          'addFollowingFeedHashtag and removeFollowingFeedHashtag delegate '
+          'to profile methods',
+          () async {
+            final prefs = await SharedPreferences.getInstance();
+            final repo = FollowedHashtagsRepository(
+              prefs: prefs,
+              separateFollowingFeedHashtagsEnabled: false,
+            );
+            await _afterRepoOpen();
+
+            await repo.addFollowingFeedHashtag('delegated');
+            expect(repo.profileSavedHashtags, ['delegated']);
+            expect(repo.followingFeedHashtagLabels, ['delegated']);
+
+            await repo.removeFollowingFeedHashtag('delegated');
+            expect(repo.profileSavedHashtags, isEmpty);
+            expect(repo.followingFeedHashtagLabels, isEmpty);
+            await repo.dispose();
+          },
+        );
+
+        test('reloadFromPrefs syncs feed from profile', () async {
+          SharedPreferences.setMockInitialValues({
+            FollowedHashtagsRepository.preferencesKey: ['alpha'],
+          });
+          final prefs = await SharedPreferences.getInstance();
+          final repo = FollowedHashtagsRepository(
+            prefs: prefs,
+            separateFollowingFeedHashtagsEnabled: false,
+          );
+          await _afterRepoOpen();
+
+          await prefs.setStringList(FollowedHashtagsRepository.preferencesKey, [
+            'beta',
+          ]);
+          await repo.reloadFromPrefs();
+
+          expect(repo.profileSavedHashtags, ['beta']);
+          expect(repo.followingFeedHashtagLabels, ['beta']);
+          await repo.dispose();
+        });
+      },
+    );
+
     test('profileSavedHashtagsStream emits updates', () async {
       final prefs = await SharedPreferences.getInstance();
       final repo = FollowedHashtagsRepository(prefs: prefs);
