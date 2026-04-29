@@ -174,7 +174,10 @@ void main() {
       });
 
       test('updates packData when provided', () {
-        const newPackData = StickerPackData(packId: 'new', packName: 'New Pack');
+        const newPackData = StickerPackData(
+          packId: 'new',
+          packName: 'New Pack',
+        );
         final copy = original.copyWith(packData: newPackData);
 
         expect(copy.packData, equals(newPackData));
@@ -194,7 +197,10 @@ void main() {
         expect(copy.tags, ['updated']);
         expect(copy.networkUrl, 'https://updated.com');
         expect(copy.assetPath, 'assets/updated.png');
-        expect(copy.packData, const StickerPackData(packId: 'x', packName: 'X'));
+        expect(
+          copy.packData,
+          const StickerPackData(packId: 'x', packName: 'X'),
+        );
       });
     });
 
