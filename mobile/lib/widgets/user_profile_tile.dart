@@ -58,7 +58,7 @@ class UserProfileTile extends ConsumerWidget {
   final int? index;
 
   /// Which entry point to attribute the "Add to list" action to when the
-  /// curated-lists feature flag is on. Defaults to followers-list context.
+  /// profile-list-features flag is on. Defaults to followers-list context.
   final PeopleListEntryPoint addToListEntryPoint;
 
   @override
@@ -66,10 +66,10 @@ class UserProfileTile extends ConsumerWidget {
     final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
     final authService = ref.watch(authServiceProvider);
     final isCurrentUser = pubkey == authService.currentPublicKeyHex;
-    final curatedListsEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    final profileListFeaturesEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
     );
-    final showAddToList = curatedListsEnabled && !isCurrentUser;
+    final showAddToList = profileListFeaturesEnabled && !isCurrentUser;
 
     // Get display name or truncated npub (fallback for users without Kind 0)
     final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);

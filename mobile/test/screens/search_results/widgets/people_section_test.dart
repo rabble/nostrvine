@@ -44,7 +44,7 @@ void main() {
       return testProviderScope(
         additionalOverrides: [
           isFeatureEnabledProvider(
-            FeatureFlag.curatedLists,
+            FeatureFlag.profileListFeatures,
           ).overrideWithValue(false),
         ],
         child: MaterialApp(
@@ -98,6 +98,62 @@ void main() {
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'hides add-to-list action on search user tiles when profile list '
+        'features flag is disabled',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              query: 'test',
+              results: [testProfile],
+            ),
+          );
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byIcon(Icons.playlist_add), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows add-to-list action on search user tiles when profile list '
+        'features flag is enabled',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            UserSearchState(
+              status: UserSearchStatus.success,
+              query: 'test',
+              results: [testProfile],
+            ),
+          );
+
+          await tester.pumpWidget(
+            testProviderScope(
+              additionalOverrides: [
+                isFeatureEnabledProvider(
+                  FeatureFlag.profileListFeatures,
+                ).overrideWithValue(true),
+              ],
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
+                  body: BlocProvider<UserSearchBloc>.value(
+                    value: mockBloc,
+                    child: const CustomScrollView(
+                      slivers: [PeopleSection()],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          expect(find.byIcon(Icons.playlist_add), findsOneWidget);
+        },
+      );
 
       testWidgets('renders $SearchSectionErrorState on failure', (
         tester,

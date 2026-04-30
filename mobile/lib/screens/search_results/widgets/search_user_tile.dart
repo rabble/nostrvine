@@ -40,11 +40,12 @@ class SearchUserTile extends ConsumerWidget {
         ? claimedNip05
         : profile.truncatedNpub;
 
-    final curatedListsEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    final profileListFeaturesEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.profileListFeatures),
     );
     final ownPubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
-    final showAddToList = curatedListsEnabled && profile.pubkey != ownPubkey;
+    final showAddToList =
+        profileListFeaturesEnabled && profile.pubkey != ownPubkey;
 
     return Semantics(
       identifier: 'search_user_tile_${profile.pubkey}',
