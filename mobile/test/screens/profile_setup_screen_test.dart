@@ -4,6 +4,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -169,6 +170,89 @@ void main() {
       );
 
       expect(find.text('Username must be 3-20 characters'), findsOneWidget);
+    });
+  });
+
+  group('LowercaseTextInputFormatter', () {
+    const formatter = LowercaseTextInputFormatter();
+
+    TextEditingValue value(String text, {int? selection}) {
+      return TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: selection ?? text.length),
+      );
+    }
+
+    test('lowercases newly typed uppercase letters', () {
+      final result = formatter.formatEditUpdate(value(''), value('Alice'));
+
+      expect(result.text, 'alice');
+      expect(result.selection.baseOffset, 5);
+    });
+
+    test('preserves all-lowercase input unchanged (returns same instance)', () {
+      final next = value('alice');
+      final result = formatter.formatEditUpdate(value(''), next);
+
+      expect(identical(result, next), isTrue);
+    });
+
+    test('preserves caret position when editing in the middle', () {
+      // User has "abcde" with caret at offset 2, types capital "X" — newValue
+      // is "abXcde" with caret at 3.
+      final result = formatter.formatEditUpdate(
+        value('abcde', selection: 2),
+        value('abXcde', selection: 3),
+      );
+
+      expect(result.text, 'abxcde');
+      expect(result.selection.baseOffset, 3);
+    });
+
+    test('lowercases pasted mixed-case text', () {
+      final result = formatter.formatEditUpdate(value(''), value('MrBeast123'));
+
+      expect(result.text, 'mrbeast123');
+    });
+  });
+
+  group('username field input formatters', () {
+    Widget buildField(TextEditingController controller) {
+      return MaterialApp(
+        home: Scaffold(
+          body: TextField(
+            controller: controller,
+            inputFormatters: [
+              const LowercaseTextInputFormatter(),
+              FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
+            ],
+          ),
+        ),
+      );
+    }
+
+    testWidgets('uppercase typed by user is normalized to lowercase', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      await tester.pumpWidget(buildField(controller));
+
+      await tester.enterText(find.byType(TextField), 'Alice');
+
+      expect(controller.text, 'alice');
+    });
+
+    testWidgets('disallowed characters are stripped, others lowercased', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      await tester.pumpWidget(buildField(controller));
+
+      // Underscore, dot, and space are not in [a-z0-9-]; capitals get
+      // lowercased.
+      await tester.enterText(find.byType(TextField), 'Mr Beast.123_xyz');
+
+      expect(controller.text, 'mrbeast123xyz');
     });
   });
 
