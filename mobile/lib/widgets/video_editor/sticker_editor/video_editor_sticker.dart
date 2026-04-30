@@ -7,6 +7,25 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/widgets/vine_cached_image.dart';
 
+/// Rehydrates a [VideoEditorSticker] from a serialized
+/// [StickerData] map produced during state-history export.
+///
+/// Used as the `widgetLoader` for `ImportStateHistory.fromMap` and
+/// `WidgetLayer.fromMap` so sticker layers survive the editor's
+/// export/reopen round-trip. Returns an empty box when [meta] is
+/// `null` (legacy widget layers without sticker metadata).
+Widget videoEditorStickerWidgetLoader(
+  String id, {
+  Map<String, dynamic>? meta,
+}) {
+  if (meta == null) return const SizedBox.shrink();
+
+  return VideoEditorSticker(
+    sticker: StickerData.fromJson(meta),
+    enableLimitCacheSize: false,
+  );
+}
+
 /// A sticker widget that displays an image from either an asset or URL.
 ///
 /// Local asset stickers are rendered as SVGs using [SvgPicture.asset].

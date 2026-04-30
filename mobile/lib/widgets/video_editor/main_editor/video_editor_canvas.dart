@@ -1060,15 +1060,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             initStateHistory: editorStateHistory.isNotEmpty
                 ? .fromMap(
                     editorStateHistory,
-                    configs: ImportEditorConfigs(
-                      widgetLoader: (id, {meta}) {
-                        if (meta == null) return const SizedBox.shrink();
-
-                        return VideoEditorSticker(
-                          sticker: .fromJson(meta),
-                          enableLimitCacheSize: false,
-                        );
-                      },
+                    configs: const ImportEditorConfigs(
+                      widgetLoader: videoEditorStickerWidgetLoader,
                     ),
                   )
                 : null,
