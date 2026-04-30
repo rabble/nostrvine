@@ -71,10 +71,16 @@ void main() {
     }
 
     // Helper to create repository with standard setup
-    LikesRepository createRepository({bool withLocalStorage = true}) {
+    LikesRepository createRepository({
+      bool withLocalStorage = true,
+      IsOnlineCallback? isOnline,
+      QueueOfflineActionCallback? queueOfflineAction,
+    }) {
       return LikesRepository(
         nostrClient: mockNostrClient,
         localStorage: withLocalStorage ? mockLocalStorage : null,
+        isOnline: isOnline,
+        queueOfflineAction: queueOfflineAction,
       );
     }
 
@@ -455,6 +461,114 @@ void main() {
         verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
         expect(await repository.isLiked(testEventId), isFalse);
       });
+
+      // Defense-in-depth: when the publish fails but the offline-action
+      // callback is wired, the optimistic state must be preserved and the
+      // action queued for retry. This covers the "device says online but
+      // relays are unhealthy" case where the existing `if (!_isOnline())`
+      // guard at the top of likeEvent does not fire.
+      test(
+        'queues offline action and preserves optimistic state when '
+        'sendLike returns null and queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+
+          var queueCalls = 0;
+          String? queuedEventId;
+          bool? queuedIsLike;
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {
+                  queueCalls++;
+                  queuedEventId = eventId;
+                  queuedIsLike = isLike;
+                },
+          );
+
+          final result = await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          expect(
+            result,
+            equals('pending_like_$testEventId'),
+            reason: 'must return placeholder ID, not throw',
+          );
+          expect(queueCalls, equals(1));
+          expect(queuedEventId, equals(testEventId));
+          expect(queuedIsLike, isTrue);
+          expect(
+            await repository.isLiked(testEventId),
+            isTrue,
+            reason: 'optimistic state must be preserved across the failure',
+          );
+          verifyNever(
+            () => mockLocalStorage.deleteLikeRecord(any()),
+          );
+        },
+      );
+
+      test(
+        'queues offline action when sendLike throws and '
+        'queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockNostrClient.sendLike(
+              any(),
+              content: any(named: 'content'),
+              addressableId: any(named: 'addressableId'),
+              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenThrow(Exception('relay closed'));
+          when(
+            () => mockLocalStorage.saveLikeRecord(any()),
+          ).thenAnswer((_) async {});
+
+          var queueCalls = 0;
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {
+                  queueCalls++;
+                },
+          );
+
+          final result = await repository.likeEvent(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
+          );
+
+          expect(result, equals('pending_like_$testEventId'));
+          expect(queueCalls, equals(1));
+          expect(await repository.isLiked(testEventId), isTrue);
+        },
+      );
     });
 
     group('unlikeEvent', () {
@@ -625,6 +739,91 @@ void main() {
         verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
         expect(await repository.isLiked(testEventId), isTrue);
       });
+
+      // Defense-in-depth (mirror of likeEvent): when the kind-5 deletion
+      // fails but the offline-action callback is wired, the optimistic
+      // removal must be preserved and the unlike queued for retry.
+      test(
+        'queues offline action and preserves optimistic removal when '
+        'deleteEvent returns null and queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenAnswer((_) async => [createLikeRecord()]);
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+
+          var queueCalls = 0;
+          bool? queuedIsLike;
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {
+                  queueCalls++;
+                  queuedIsLike = isLike;
+                },
+          );
+          await repository.isLiked(testEventId); // Initialize cache
+
+          await repository.unlikeEvent(testEventId);
+
+          expect(queueCalls, equals(1));
+          expect(queuedIsLike, isFalse);
+          expect(
+            await repository.isLiked(testEventId),
+            isFalse,
+            reason: 'optimistic removal must be preserved',
+          );
+          verifyNever(() => mockLocalStorage.saveLikeRecord(any()));
+        },
+      );
+
+      test(
+        'queues offline action when deleteEvent throws and '
+        'queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockLocalStorage.getAllLikeRecords(),
+          ).thenAnswer((_) async => [createLikeRecord()]);
+          when(
+            () => mockNostrClient.deleteEvent(testReactionEventId),
+          ).thenThrow(Exception('relay closed'));
+          when(
+            () => mockLocalStorage.deleteLikeRecord(testEventId),
+          ).thenAnswer((_) async => true);
+
+          var queueCalls = 0;
+          repository = createRepository(
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isLike,
+                  required eventId,
+                  required authorPubkey,
+                  addressableId,
+                  targetKind,
+                }) async {
+                  queueCalls++;
+                },
+          );
+          await repository.isLiked(testEventId); // Initialize cache
+
+          await repository.unlikeEvent(testEventId);
+
+          expect(queueCalls, equals(1));
+          expect(await repository.isLiked(testEventId), isFalse);
+        },
+      );
     });
 
     group('toggleLike', () {

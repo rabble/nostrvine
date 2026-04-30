@@ -294,8 +294,14 @@ class LikesRepository {
       return placeholderId;
     }
 
-    // 3. Online → publish kind 7; on success swap placeholder for real id,
-    // on failure roll back memory + DB + count + stream.
+    // 3. Online → publish kind 7; on success swap placeholder for real id.
+    // On failure, prefer queuing via [_queueOfflineAction] when wired so the
+    // optimistic state survives transient relay-pool problems (e.g. all
+    // configured relays in `disconnected` state at publish time but
+    // [ConnectionStatusService] still reports online because at least one
+    // relay is technically connected). Without a wired callback, fall back
+    // to rollback + rethrow to preserve the original contract for tests
+    // and non-app embedders.
     try {
       final reactionEvent = await _nostrClient.sendLike(
         eventId,
@@ -319,6 +325,16 @@ class LikesRepository {
 
       return reactionEvent.id;
     } catch (_) {
+      if (_queueOfflineAction != null) {
+        await _queueOfflineAction(
+          isLike: true,
+          eventId: eventId,
+          authorPubkey: authorPubkey,
+          addressableId: addressableId,
+          targetKind: targetKind,
+        );
+        return placeholderId;
+      }
       _likeRecords.remove(eventId);
       await _localStorage?.deleteLikeRecord(eventId);
       if (previousCount != null) _likeCountCache[eventId] = previousCount;
@@ -411,8 +427,11 @@ class LikesRepository {
       return;
     }
 
-    // 3. Online → publish kind 5 (skipped for never-synced placeholders);
-    // on failure roll back memory + DB + count + stream.
+    // 3. Online → publish kind 5 (skipped for never-synced placeholders).
+    // On failure, prefer queuing via [_queueOfflineAction] when wired so the
+    // optimistic unlike survives transient relay-pool problems (mirror of
+    // [likeEvent]). Without a wired callback, fall back to rollback +
+    // rethrow to preserve the original contract.
     if (snapshotRecord.reactionEventId.startsWith('pending_')) {
       // Pending like never reached the relay; nothing to delete on the wire.
       return;
@@ -426,6 +445,14 @@ class LikesRepository {
         throw const UnlikeFailedException('Failed to publish unlike deletion');
       }
     } catch (_) {
+      if (_queueOfflineAction != null) {
+        await _queueOfflineAction(
+          isLike: false,
+          eventId: eventId,
+          authorPubkey: '', // Not needed for unlike
+        );
+        return;
+      }
       _likeRecords[eventId] = snapshotRecord;
       await _localStorage?.saveLikeRecord(snapshotRecord);
       if (previousCount != null) _likeCountCache[eventId] = previousCount;

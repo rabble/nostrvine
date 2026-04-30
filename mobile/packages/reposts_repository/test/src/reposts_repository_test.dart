@@ -516,6 +516,110 @@ void main() {
           expect(count, equals(4));
         },
       );
+
+      // Defense-in-depth: when the publish fails but the offline-action
+      // callback is wired, the optimistic repost must be preserved and
+      // the action queued for retry. Mirror of the LikesRepository test.
+      test(
+        'queues offline action and preserves optimistic state when '
+        'sendGenericRepost returns null and queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockNostrClient.sendGenericRepost(
+              addressableId: any(named: 'addressableId'),
+              targetKind: any(named: 'targetKind'),
+              authorPubkey: any(named: 'authorPubkey'),
+              content: any(named: 'content'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          var queueCalls = 0;
+          String? queuedAddressableId;
+          bool? queuedIsRepost;
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isRepost,
+                  required addressableId,
+                  required originalAuthorPubkey,
+                  eventId,
+                }) async {
+                  queueCalls++;
+                  queuedAddressableId = addressableId;
+                  queuedIsRepost = isRepost;
+                },
+          );
+
+          final result = await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          expect(
+            result,
+            equals('pending_repost_$testAddressableId'),
+            reason: 'must return placeholder ID, not throw',
+          );
+          expect(queueCalls, equals(1));
+          expect(queuedAddressableId, equals(testAddressableId));
+          expect(queuedIsRepost, isTrue);
+          expect(
+            repository.isRepostedSync(testAddressableId),
+            isTrue,
+            reason: 'optimistic state must be preserved across the failure',
+          );
+          verifyNever(
+            () => mockLocalStorage.deleteRepostRecord(any()),
+          );
+        },
+      );
+
+      test(
+        'queues offline action when sendGenericRepost throws and '
+        'queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockNostrClient.sendGenericRepost(
+              addressableId: any(named: 'addressableId'),
+              targetKind: any(named: 'targetKind'),
+              authorPubkey: any(named: 'authorPubkey'),
+              content: any(named: 'content'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenThrow(Exception('relay closed'));
+
+          var queueCalls = 0;
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isRepost,
+                  required addressableId,
+                  required originalAuthorPubkey,
+                  eventId,
+                }) async {
+                  queueCalls++;
+                },
+          );
+
+          final result = await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          expect(result, equals('pending_repost_$testAddressableId'));
+          expect(queueCalls, equals(1));
+          expect(repository.isRepostedSync(testAddressableId), isTrue);
+        },
+      );
     });
 
     group('unrepostVideo', () {
@@ -725,6 +829,87 @@ void main() {
           expect(repository.isRepostedSync(testAddressableId), isTrue);
           final count = await repository.getRepostCount(testAddressableId);
           expect(count, equals(8));
+        },
+      );
+
+      // Defense-in-depth (mirror of repostVideo): when the kind-5 deletion
+      // fails but the offline-action callback is wired, the optimistic
+      // unrepost must be preserved and the action queued for retry.
+      test(
+        'queues offline action and preserves optimistic removal when '
+        'deleteEvent returns null and queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenAnswer((_) async => null);
+
+          var queueCalls = 0;
+          bool? queuedIsRepost;
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isRepost,
+                  required addressableId,
+                  required originalAuthorPubkey,
+                  eventId,
+                }) async {
+                  queueCalls++;
+                  queuedIsRepost = isRepost;
+                },
+          );
+          // Establish a real (non-pending) repost record to delete.
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await repository.unrepostVideo(testAddressableId);
+
+          expect(queueCalls, equals(1));
+          expect(queuedIsRepost, isFalse);
+          expect(
+            repository.isRepostedSync(testAddressableId),
+            isFalse,
+            reason: 'optimistic removal must be preserved',
+          );
+        },
+      );
+
+      test(
+        'queues offline action when deleteEvent throws and '
+        'queueOfflineAction is wired',
+        () async {
+          when(
+            () => mockNostrClient.deleteEvent(any()),
+          ).thenThrow(Exception('relay closed'));
+
+          var queueCalls = 0;
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            isOnline: () => true,
+            queueOfflineAction:
+                ({
+                  required isRepost,
+                  required addressableId,
+                  required originalAuthorPubkey,
+                  eventId,
+                }) async {
+                  queueCalls++;
+                },
+          );
+          await repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          );
+
+          await repository.unrepostVideo(testAddressableId);
+
+          expect(queueCalls, equals(1));
+          expect(repository.isRepostedSync(testAddressableId), isFalse);
         },
       );
     });
