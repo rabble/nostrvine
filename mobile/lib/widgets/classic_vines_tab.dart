@@ -12,12 +12,14 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
+import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:rxdart/rxdart.dart';
@@ -64,7 +66,11 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
 
     // If REST API not available (or still checking), show unavailable state
     if (!isAvailable) {
-      return const _ClassicVinesUnavailableState();
+      return RefreshableFeedStateView(
+        autoRefresh: true,
+        onRefresh: _refreshClassics,
+        child: const _ClassicVinesUnavailableState(),
+      );
     }
 
     // Track feed loading start
@@ -85,7 +91,12 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
         errorMessage: classicVinesAsync.error.toString(),
       );
       _feedLoadStartTime = null;
-      return _ClassicVinesErrorState(error: classicVinesAsync.error.toString());
+      return RefreshableFeedStateView(
+        onRefresh: _refreshClassics,
+        child: _ClassicVinesErrorState(
+          error: classicVinesAsync.error.toString(),
+        ),
+      );
     }
 
     // Show loading state
@@ -110,7 +121,11 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
 
     if (videos.isEmpty) {
       _feedTracker?.trackEmptyFeed('classics');
-      return const _ClassicVinesEmptyState();
+      return RefreshableFeedStateView(
+        autoRefresh: true,
+        onRefresh: _refreshClassics,
+        child: const _ClassicVinesEmptyState(),
+      );
     }
 
     return _ClassicVinesContent(
@@ -118,6 +133,14 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
       isLoadingMore: feedState.isLoadingMore,
       hasMoreContent: feedState.hasMoreContent,
     );
+  }
+
+  Future<void> _refreshClassics() async {
+    ref.read(funnelcakeAvailableProvider.notifier).refresh();
+    await ref.read(funnelcakeAvailableProvider.future);
+    ref.invalidate(classicVinesAvailableProvider);
+    await ref.read(classicVinesAvailableProvider.future);
+    await ref.read(classicVinesFeedProvider.notifier).refresh();
   }
 }
 
@@ -194,20 +217,21 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
       classicVinesFeedProvider.notifier,
     );
 
-    return RefreshIndicator(
-      color: VineTheme.onPrimary,
-      backgroundColor: VineTheme.vineGreen,
+    return FeedRefreshControl(
+      scrollController: _scrollController,
       onRefresh: () async {
         Log.info(
           '🔄 ClassicVinesTab: Spinning to next batch of classics',
           name: 'ClassicVinesTab',
           category: LogCategory.video,
         );
-        // Only refresh classics feed (roulette to next page)
+        ref.read(funnelcakeAvailableProvider.notifier).refresh();
+        await ref.read(funnelcakeAvailableProvider.future);
         await classicVinesFeedNotifier.refresh();
       },
       child: CustomScrollView(
         controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           // Viners slider at top
           const SliverToBoxAdapter(child: ClassicVinersSlider()),

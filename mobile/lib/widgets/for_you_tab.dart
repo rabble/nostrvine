@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -16,6 +17,7 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -61,7 +63,11 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
 
     // If not available, show unavailable state
     if (!isAvailable) {
-      return const _ForYouUnavailableState();
+      return RefreshableFeedStateView(
+        autoRefresh: true,
+        onRefresh: _refreshForYou,
+        child: const _ForYouUnavailableState(),
+      );
     }
 
     // Track feed loading start
@@ -82,7 +88,10 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
         errorMessage: forYouAsync.error.toString(),
       );
       _feedLoadStartTime = null;
-      return _ForYouErrorState(error: forYouAsync.error.toString());
+      return RefreshableFeedStateView(
+        onRefresh: _refreshForYou,
+        child: _ForYouErrorState(error: forYouAsync.error.toString()),
+      );
     }
 
     // Show loading state
@@ -107,7 +116,6 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
 
     if (videos.isEmpty) {
       _feedTracker?.trackEmptyFeed('for_you');
-      return const _ForYouEmptyState();
     }
 
     return _ForYouContent(
@@ -115,6 +123,12 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
       isLoadingMore: feedState.isLoadingMore,
       hasMoreContent: feedState.hasMoreContent,
     );
+  }
+
+  Future<void> _refreshForYou() async {
+    ref.read(funnelcakeAvailableProvider.notifier).refresh();
+    await ref.read(funnelcakeAvailableProvider.future);
+    await ref.read(forYouFeedProvider.notifier).refresh();
   }
 }
 

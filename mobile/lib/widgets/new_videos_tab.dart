@@ -18,6 +18,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -120,12 +121,20 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
 
     if (newVideosAsync.hasError) {
       _trackErrorState(newVideosAsync.error);
-      return _NewVideosErrorState(error: newVideosAsync.error);
+      return RefreshableFeedStateView(
+        onRefresh: _refreshNewVideos,
+        child: _NewVideosErrorState(error: newVideosAsync.error),
+      );
     }
 
     // Only show loading if we truly have no data yet
     _trackLoadingState();
     return const _NewVideosLoadingState();
+  }
+
+  Future<void> _refreshNewVideos() async {
+    ref.invalidate(newVideosFeedProvider);
+    await ref.read(newVideosFeedProvider.future);
   }
 
   void _trackLoadingState() {

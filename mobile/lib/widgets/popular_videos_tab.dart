@@ -18,6 +18,7 @@ import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/feed_refresh_control.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:rxdart/rxdart.dart';
@@ -89,12 +90,19 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 
     if (feedAsync.hasError) {
       _trackErrorState(feedAsync.error);
-      return const _PopularVideosErrorState();
+      return RefreshableFeedStateView(
+        onRefresh: _refreshPopularVideos,
+        child: const _PopularVideosErrorState(),
+      );
     }
 
     // Only show loading if we truly have no data yet
     _trackLoadingState();
     return const _PopularVideosLoadingState();
+  }
+
+  Future<void> _refreshPopularVideos() async {
+    await ref.read(popularVideosFeedProvider.notifier).refresh();
   }
 
   Widget _buildDataState(List<VideoEvent> videos) {
