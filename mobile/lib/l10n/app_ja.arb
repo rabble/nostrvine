@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileAddToListDisplayName": "{displayName}をリストに追加",
     "profileUserBlockedTitle": "ブロックしたよ",
     "profileUserBlockedContent": "このユーザーのコンテンツはフィードに出なくなるよ。",
     "profileUserBlockedUnblockHint": "いつでもプロフィールか [設定] > [安全] からブロック解除できるよ。",
@@ -1948,6 +1949,10 @@
         }
     },
     "listCreateNewList": "新しいリストを作る",
+    "listNewPeopleList": "新しい人リスト",
+    "listCollaboratorsNone": "なし",
+    "listAddCollaboratorTitle": "コラボレーターを追加",
+    "listCollaboratorSearchHint": "diVineを検索...",
     "listNameLabel": "リスト名",
     "listDescriptionLabel": "説明 (任意)",
     "listPublicList": "公開リスト",

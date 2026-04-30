@@ -395,6 +395,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return 'Add $displayName to a list';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'User Blocked';
 
   @override
@@ -4099,6 +4104,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get listCreateNewList => 'Create New List';
+
+  @override
+  String get listNewPeopleList => 'New people list';
+
+  @override
+  String get listCollaboratorsNone => 'None';
+
+  @override
+  String get listAddCollaboratorTitle => 'Add a collaborator';
+
+  @override
+  String get listCollaboratorSearchHint => 'Search diVine...';
 
   @override
   String get listNameLabel => 'List Name';

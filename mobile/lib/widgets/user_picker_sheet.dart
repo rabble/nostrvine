@@ -31,7 +31,9 @@ Future<UserProfile?> showUserPickerSheet(
   required String title,
   bool autoFocus = false,
   String? searchText,
+  String? searchHint,
   Set<String> excludePubkeys = const {},
+  ValueChanged<UserProfile>? onUserToggled,
 }) {
   final resolvedSearchText = searchText ?? context.l10n.userPickerSearchByName;
 
@@ -52,6 +54,8 @@ Future<UserProfile?> showUserPickerSheet(
       scrollController: scrollController,
       autoFocus: autoFocus,
       excludePubkeys: excludePubkeys,
+      searchHint: searchHint,
+      onUserToggled: onUserToggled,
     ),
   );
 }
@@ -64,6 +68,8 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     this.scrollController,
     this.autoFocus = false,
     this.excludePubkeys = const {},
+    this.searchHint,
+    this.onUserToggled,
     super.key,
   });
 
@@ -77,6 +83,15 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Pubkeys to exclude from search results (already selected users).
   final Set<String> excludePubkeys;
+
+  /// Optional override for the search field hint text.
+  final String? searchHint;
+
+  /// When provided, tapping a user calls this callback instead of popping
+  /// the sheet. Use this for multi-select flows where the sheet should stay
+  /// open. Selected users should be tracked by the caller and reflected via
+  /// [excludePubkeys] (they will appear in the checked/disabled state).
+  final ValueChanged<UserProfile>? onUserToggled;
 
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
@@ -94,12 +109,18 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   /// Whether the profile repository was unavailable at init time.
   bool _profileRepoMissing = false;
 
+  /// Tracks selected pubkeys locally so toggling is reflected immediately.
+  /// Initialised from [widget.excludePubkeys] so pre-selected users show
+  /// as checked from the start.
+  late Set<String> _selectedPubkeys;
+
   bool get _useLocalSearch =>
       widget.filterMode == UserPickerFilterMode.mutualFollowsOnly;
 
   @override
   void initState() {
     super.initState();
+    _selectedPubkeys = Set.of(widget.excludePubkeys);
     final profileRepo = ref.read(profileRepositoryProvider);
     if (profileRepo == null) {
       _profileRepoMissing = true;
@@ -188,7 +209,18 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   }
 
   void _onUserSelected(UserProfile profile) {
-    Navigator.of(context).pop(profile);
+    if (widget.onUserToggled != null) {
+      setState(() {
+        if (_selectedPubkeys.contains(profile.pubkey)) {
+          _selectedPubkeys.remove(profile.pubkey);
+        } else {
+          _selectedPubkeys.add(profile.pubkey);
+        }
+      });
+      widget.onUserToggled!(profile);
+    } else {
+      Navigator.of(context).pop(profile);
+    }
   }
 
   @override
@@ -197,9 +229,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       return const _ProfileRepoUnavailable();
     }
 
-    final hintText = _useLocalSearch
-        ? context.l10n.userPickerFilterByNameHint
-        : context.l10n.userPickerSearchByNameHint;
+    final hintText =
+        widget.searchHint ??
+        (_useLocalSearch
+            ? context.l10n.userPickerFilterByNameHint
+            : context.l10n.userPickerSearchByNameHint);
 
     return Column(
       children: [
@@ -259,13 +293,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   followProfiles: _followProfiles,
                   filteredFollowProfiles: _filteredFollowProfiles,
                   onUserSelected: _onUserSelected,
-                  excludePubkeys: widget.excludePubkeys,
+                  excludePubkeys: _selectedPubkeys,
                 )
               : _NetworkResults(
                   searchBloc: _searchBloc!,
                   scrollController: widget.scrollController,
                   onUserSelected: _onUserSelected,
-                  excludePubkeys: widget.excludePubkeys,
+                  excludePubkeys: _selectedPubkeys,
                 ),
         ),
 
@@ -281,6 +315,7 @@ class _UserSearchTile extends StatelessWidget {
     required this.profile,
     required this.onTap,
     this.isDisabled = false,
+    super.key,
   });
 
   final UserProfile profile;
@@ -340,7 +375,7 @@ class _UserSearchTile extends StatelessWidget {
                     profile.bestDisplayName,
                   ),
             child: InkWell(
-              onTap: isDisabled ? null : onTap,
+              onTap: onTap,
               child: Container(
                 padding: const .all(8),
                 decoration: ShapeDecoration(
@@ -520,6 +555,7 @@ class _ResultsList extends StatelessWidget {
         final profile = results[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
+          key: ValueKey('${profile.pubkey}_$isDisabled'),
           profile: profile,
           onTap: () => onUserSelected(profile),
           isDisabled: isDisabled,
@@ -628,6 +664,7 @@ class _LocalResults extends StatelessWidget {
         final profile = filteredFollowProfiles[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
+          key: ValueKey('${profile.pubkey}_$isDisabled'),
           profile: profile,
           onTap: () => onUserSelected(profile),
           isDisabled: isDisabled,

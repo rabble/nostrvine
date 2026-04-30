@@ -379,6 +379,11 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return 'Tambahkan $displayName ke daftar';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'Pengguna Diblokir';
 
   @override
@@ -4070,6 +4075,18 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get listCreateNewList => 'Buat Daftar Baru';
+
+  @override
+  String get listNewPeopleList => 'Daftar orang baru';
+
+  @override
+  String get listCollaboratorsNone => 'Tidak ada';
+
+  @override
+  String get listAddCollaboratorTitle => 'Tambah kolaborator';
+
+  @override
+  String get listCollaboratorSearchHint => 'Cari di diVine...';
 
   @override
   String get listNameLabel => 'Nama Daftar';

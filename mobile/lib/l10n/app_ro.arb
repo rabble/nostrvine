@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileAddToListDisplayName": "Adaugă {displayName} la o listă",
     "profileUserBlockedTitle": "Utilizator blocat",
     "profileUserBlockedContent": "Nu vei mai vedea conținut de la acest utilizator în feedurile tale.",
     "profileUserBlockedUnblockHint": "Îl poți debloca oricând din profilul lui sau din Setări > Siguranță.",
@@ -1949,6 +1950,10 @@
         }
     },
     "listCreateNewList": "Creează o listă nouă",
+    "listNewPeopleList": "Listă nouă de persoane",
+    "listCollaboratorsNone": "Niciunul",
+    "listAddCollaboratorTitle": "Adaugă un colaborator",
+    "listCollaboratorSearchHint": "Caută în diVine...",
     "listNameLabel": "Numele listei",
     "listDescriptionLabel": "Descriere (opțional)",
     "listPublicList": "Listă publică",

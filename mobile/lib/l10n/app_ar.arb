@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileAddToListDisplayName": "أضف {displayName} إلى قائمة",
     "profileUserBlockedTitle": "تم حظر المستخدم",
     "profileUserBlockedContent": "لن ترى محتوى من هذا المستخدم في تغذياتك.",
     "profileUserBlockedUnblockHint": "يمكنك إلغاء حظره في أي وقت من ملفه الشخصي أو من الإعدادات > الأمان.",
@@ -1948,6 +1949,10 @@
         }
     },
     "listCreateNewList": "إنشاء قائمة جديدة",
+    "listNewPeopleList": "قائمة أشخاص جديدة",
+    "listCollaboratorsNone": "لا أحد",
+    "listAddCollaboratorTitle": "إضافة متعاون",
+    "listCollaboratorSearchHint": "ابحث في diVine...",
     "listNameLabel": "اسم القائمة",
     "listDescriptionLabel": "الوصف (اختياري)",
     "listPublicList": "قائمة عامة",

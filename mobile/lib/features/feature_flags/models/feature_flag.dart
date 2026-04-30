@@ -47,9 +47,9 @@ enum FeatureFlag {
     'Route web video playback through hls.js with NIP-98 auth headers so '
         'age-gated and other 401-protected media can be viewed on web',
   ),
-  peopleListSearch(
-    'People List Search',
-    'Show people list (kind 30000) results alongside video lists in search',
+  profileListFeatures(
+    'Profile List Features',
+    'Enable people list creation from profiles and people list results in search (NIP-51 kind 30000)',
   ),
   contentPolicyV2(
     'Content Policy v2',

@@ -102,6 +102,7 @@
     "profileUnfollowDisplayName": "{displayName}님 언팔로우",
     "profileBlockDisplayName": "{displayName}님 차단",
     "profileUnblockDisplayName": "{displayName}님 차단 해제",
+    "profileAddToListDisplayName": "{displayName}을(를) 목록에 추가",
     "profileUserBlockedTitle": "사용자를 차단했어요",
     "profileUserBlockedContent": "이 사용자의 콘텐츠는 피드에서 보이지 않아요.",
     "profileUserBlockedUnblockHint": "언제든 프로필이나 설정 > 안전에서 차단을 해제할 수 있어요.",
@@ -1237,6 +1238,10 @@
         }
     },
     "listCreateNewList": "새 목록 만들기",
+    "listNewPeopleList": "새 사람 목록",
+    "listCollaboratorsNone": "없음",
+    "listAddCollaboratorTitle": "협업자 추가",
+    "listCollaboratorSearchHint": "diVine 검색...",
     "listNameLabel": "목록 이름",
     "listDescriptionLabel": "설명 (선택)",
     "listPublicList": "공개 목록",

@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileAddToListDisplayName": "{displayName} aan een lijst toevoegen",
     "profileUserBlockedTitle": "Gebruiker geblokkeerd",
     "profileUserBlockedContent": "Je ziet geen inhoud meer van deze gebruiker in je feeds.",
     "profileUserBlockedUnblockHint": "Je kunt ze altijd deblokkeren via hun profiel of bij Instellingen > Veiligheid.",
@@ -1949,6 +1950,10 @@
         }
     },
     "listCreateNewList": "Nieuwe lijst maken",
+    "listNewPeopleList": "Nieuwe personenlijst",
+    "listCollaboratorsNone": "Geen",
+    "listAddCollaboratorTitle": "Medewerker toevoegen",
+    "listCollaboratorSearchHint": "Zoek in diVine...",
     "listNameLabel": "Lijstnaam",
     "listDescriptionLabel": "Beschrijving (optioneel)",
     "listPublicList": "Openbare lijst",

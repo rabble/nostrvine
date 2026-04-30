@@ -241,6 +241,7 @@
             }
         }
     },
+    "profileAddToListDisplayName": "{displayName} zu einer Liste hinzufügen",
     "profileUserBlockedTitle": "Nutzer blockiert",
     "profileUserBlockedContent": "Du siehst keine Inhalte von diesem Nutzer mehr in deinen Feeds.",
     "profileUserBlockedUnblockHint": "Du kannst ihn jederzeit über sein Profil oder unter Einstellungen > Sicherheit entsperren.",
@@ -1949,6 +1950,10 @@
         }
     },
     "listCreateNewList": "Neue Liste erstellen",
+    "listNewPeopleList": "Neue Personenliste",
+    "listCollaboratorsNone": "Keine",
+    "listAddCollaboratorTitle": "Mitarbeiter hinzufügen",
+    "listCollaboratorSearchHint": "diVine durchsuchen...",
     "listNameLabel": "Listenname",
     "listDescriptionLabel": "Beschreibung (optional)",
     "listPublicList": "Öffentliche Liste",

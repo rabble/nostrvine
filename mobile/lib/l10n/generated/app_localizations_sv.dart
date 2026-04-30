@@ -385,6 +385,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String profileAddToListDisplayName(String displayName) {
+    return 'Lägg till $displayName i en lista';
+  }
+
+  @override
   String get profileUserBlockedTitle => 'Användare blockerad';
 
   @override
@@ -4091,6 +4096,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get listCreateNewList => 'Skapa ny lista';
+
+  @override
+  String get listNewPeopleList => 'Ny personlista';
+
+  @override
+  String get listCollaboratorsNone => 'Inga';
+
+  @override
+  String get listAddCollaboratorTitle => 'Lägg till medarbetare';
+
+  @override
+  String get listCollaboratorSearchHint => 'Sök i diVine...';
 
   @override
   String get listNameLabel => 'Listnamn';

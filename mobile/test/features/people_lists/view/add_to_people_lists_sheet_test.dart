@@ -6,13 +6,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/people_lists/bloc/people_lists_bloc.dart';
 import 'package:openvine/features/people_lists/models/people_list_entry_point.dart';
 import 'package:openvine/features/people_lists/view/add_to_people_lists_sheet.dart';
-import 'package:openvine/features/people_lists/view/create_people_list_page.dart';
 import 'package:openvine/features/people_lists/view/widgets/people_list_row.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 
@@ -189,7 +187,7 @@ void main() {
 
     group('empty state', () {
       testWidgets(
-        'offers a Create list action when there are no editable lists',
+        'shows hint text when there are no editable lists',
         (tester) async {
           when(() => bloc.state).thenReturn(_stateWith(lists: const []));
 
@@ -198,12 +196,10 @@ void main() {
           );
 
           expect(find.text('No lists yet'), findsOneWidget);
-          expect(find.byType(DivineButton), findsOneWidget);
-          final button = tester.widget<DivineButton>(
-            find.byType(DivineButton),
-          );
-          expect(button.label, equals('Create list'));
-          expect(button.onPressed, isNotNull);
+          // The Create list button lives in the VineBottomSheet bottomInput
+          // slot, not inside the sheet body widget — so it is not present
+          // when rendering AddToPeopleListsSheet directly.
+          expect(find.byType(DivineButton), findsNothing);
         },
       );
 
@@ -223,26 +219,25 @@ void main() {
           );
 
           expect(find.text('No lists yet'), findsOneWidget);
-          expect(find.byType(DivineButton), findsOneWidget);
+          expect(find.byType(DivineButton), findsNothing);
         },
       );
 
       testWidgets(
-        'Create list empty-state button navigates to /people-lists/new '
-        'with the untruncated target pubkey as a query param, and pops '
-        'the sheet',
+        'Create list button is present in the modal sheet and opens the '
+        'new people list sheet when tapped',
         (tester) async {
           when(() => bloc.state).thenReturn(_stateWith(lists: const []));
 
-          // Build a GoRouter with two routes: a launcher that opens the
-          // sheet, and the create page itself. The sheet must capture the
-          // router before popping so the push still navigates after pop.
-          final router = GoRouter(
-            initialLocation: '/launcher',
-            routes: [
-              GoRoute(
-                path: '/launcher',
-                builder: (context, state) => Scaffold(
+          // BlocProvider must sit above the navigator so the bloc is
+          // reachable from the modal route.
+          await tester.pumpWidget(
+            BlocProvider<PeopleListsBloc>.value(
+              value: bloc,
+              child: MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(
                   body: Builder(
                     builder: (innerContext) => ElevatedButton(
                       onPressed: () => AddToPeopleListsSheet.show(
@@ -255,45 +250,28 @@ void main() {
                   ),
                 ),
               ),
-              GoRoute(
-                path: CreatePeopleListPage.path,
-                name: CreatePeopleListPage.routeName,
-                builder: (context, state) => CreatePeopleListPage(
-                  initialPubkey: state.uri.queryParameters['initialPubkey'],
-                ),
-              ),
-            ],
-          );
-
-          await tester.pumpWidget(
-            BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: MaterialApp.router(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                routerConfig: router,
-              ),
             ),
           );
 
           await tester.tap(find.text('open'));
           await tester.pumpAndSettle();
 
-          // The empty-state Create button lives in the modal sheet.
+          // The Create list button is pinned in the bottomInput slot of
+          // the VineBottomSheet.
+          expect(
+            find.widgetWithText(DivineButton, 'Create list'),
+            findsOneWidget,
+          );
+
+          // Tap opens the new people list sheet (another modal on top).
           await tester.tap(find.widgetWithText(DivineButton, 'Create list'));
           await tester.pumpAndSettle();
 
-          // Sheet popped.
-          expect(find.byType(AddToPeopleListsSheet), findsNothing);
-          // Create page opened with the pubkey threaded through.
-          expect(find.byType(CreatePeopleListPage), findsOneWidget);
-          final page = tester.widget<CreatePeopleListPage>(
-            find.byType(CreatePeopleListPage),
+          // The new list sheet is shown — identified by its title key.
+          expect(
+            find.text('New people list'),
+            findsOneWidget,
           );
-          // Full untruncated pubkey — the URL-level contract is that
-          // the query param carries the exact hex pubkey so the route
-          // is reloadable from the URL alone.
-          expect(page.initialPubkey, equals(_targetPubkey));
         },
       );
     });

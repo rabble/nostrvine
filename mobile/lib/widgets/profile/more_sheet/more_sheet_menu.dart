@@ -49,6 +49,35 @@ class MoreSheetMenu extends StatelessWidget {
       key: const ValueKey('menu'),
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Add to list action (curated lists feature flag gated by the caller)
+        if (onAddToList != null)
+          InkWell(
+            onTap: onAddToList,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 16,
+                horizontal: 16,
+              ),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    DivineIconName.listPlus.assetPath,
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.whiteText,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    context.l10n.profileAddToListDisplayName(displayName),
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                ],
+              ),
+            ),
+          ),
         // Copy public key action
         InkWell(
           onTap: onCopy,
@@ -74,31 +103,6 @@ class MoreSheetMenu extends StatelessWidget {
             ),
           ),
         ),
-        // Add to list action (curated lists feature flag gated by the caller)
-        if (onAddToList != null)
-          InkWell(
-            onTap: onAddToList,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: 16,
-                horizontal: 16,
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.playlist_add,
-                    size: 24,
-                    color: VineTheme.whiteText,
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    context.l10n.peopleListsAddToList,
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ],
-              ),
-            ),
-          ),
         // Unfollow action (only if following)
         if (isFollowing)
           InkWell(

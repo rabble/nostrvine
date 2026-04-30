@@ -2,6 +2,7 @@
 // ABOUTME: Supports both scrollable (draggable) and fixed modes
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// A reusable bottom sheet component following Vine's design system.
@@ -30,6 +31,7 @@ class VineBottomSheet extends StatelessWidget {
     this.body,
     this.buildScrollBody,
     this.trailing,
+    this.onComplete,
     this.bottomInput,
     this.expanded = true,
     this.showHeaderDivider = true,
@@ -83,6 +85,14 @@ class VineBottomSheet extends StatelessWidget {
   /// Optional trailing widget in header (e.g., badge, button)
   final Widget? trailing;
 
+  /// Optional callback invoked when the complete/check button is tapped.
+  ///
+  /// When provided, the header automatically shows a close (X) button on the
+  /// left and a check button on the right. The close button dismisses the
+  /// sheet; the check button awaits [onComplete] then dismisses the sheet.
+  /// The check button shows a loading indicator while [onComplete] is running.
+  final AsyncCallback? onComplete;
+
   /// Optional bottom input section (e.g., comment input)
   final Widget? bottomInput;
 
@@ -134,6 +144,7 @@ class VineBottomSheet extends StatelessWidget {
     Widget? body,
     Widget Function(ScrollController scrollController)? buildScrollBody,
     Widget? trailing,
+    AsyncCallback? onComplete,
     Widget? bottomInput,
     bool expanded = true,
     bool showHeaderDivider = true,
@@ -196,6 +207,7 @@ class VineBottomSheet extends StatelessWidget {
               scrollController: scrollController,
               buildScrollBody: buildScrollBody,
               trailing: trailing,
+              onComplete: onComplete,
               bottomInput: bottomInput,
               expanded: expanded,
               showHeaderDivider: showHeaderDivider,
@@ -280,6 +292,7 @@ class VineBottomSheet extends StatelessWidget {
             title: title,
             contentTitle: contentTitle,
             trailing: trailing,
+            onComplete: onComplete,
             bottomInput: bottomInput,
             expanded: expanded,
             showHeaderDivider: showHeaderDivider,
@@ -306,6 +319,7 @@ class VineBottomSheet extends StatelessWidget {
                 showHeader: showHeader,
                 title: title,
                 trailing: trailing,
+                onComplete: onComplete,
                 body: body,
                 buildScrollBody: buildScrollBody,
                 scrollController: scrollController,
@@ -319,6 +333,7 @@ class VineBottomSheet extends StatelessWidget {
                 showHeader: showHeader,
                 title: title,
                 trailing: trailing,
+                onComplete: onComplete,
                 body: body,
                 contentTitle: contentTitle,
                 bottomInput: bottomInput,
@@ -349,6 +364,7 @@ class _ScrollableContent extends StatelessWidget {
     required this.showHeader,
     required this.title,
     required this.trailing,
+    required this.onComplete,
     required this.body,
     required this.buildScrollBody,
     required this.scrollController,
@@ -362,6 +378,7 @@ class _ScrollableContent extends StatelessWidget {
   final bool showHeader;
   final Widget? title;
   final Widget? trailing;
+  final AsyncCallback? onComplete;
   final Widget? body;
   final Widget Function(ScrollController scrollController)? buildScrollBody;
   final ScrollController? scrollController;
@@ -379,7 +396,15 @@ class _ScrollableContent extends StatelessWidget {
           // Header with drag handle, title, trailing actions, and divider
           VineBottomSheetHeader(
             title: title,
-            trailing: trailing,
+            leading: onComplete != null
+                ? _CloseButton(onClose: () => Navigator.of(context).pop())
+                : null,
+            trailing: onComplete != null
+                ? _CompleteButton(
+                    onComplete: onComplete!,
+                    onDismiss: () => Navigator.of(context).pop(),
+                  )
+                : trailing,
             showDivider: showHeaderDivider,
             padding: headerPadding,
           )
@@ -432,6 +457,7 @@ class _FixedContent extends StatelessWidget {
     required this.showHeader,
     required this.title,
     required this.trailing,
+    required this.onComplete,
     required this.body,
     required this.contentTitle,
     required this.children,
@@ -443,6 +469,7 @@ class _FixedContent extends StatelessWidget {
   final bool showHeader;
   final Widget? title;
   final Widget? trailing;
+  final AsyncCallback? onComplete;
   final Widget? body;
   final String? contentTitle;
   final List<Widget>? children;
@@ -461,7 +488,15 @@ class _FixedContent extends StatelessWidget {
             // Header with drag handle and divider
             VineBottomSheetHeader(
               title: title,
-              trailing: trailing,
+              leading: onComplete != null
+                  ? _CloseButton(onClose: () => Navigator.of(context).pop())
+                  : null,
+              trailing: onComplete != null
+                  ? _CompleteButton(
+                      onComplete: onComplete!,
+                      onDismiss: () => Navigator.of(context).pop(),
+                    )
+                  : trailing,
               showDivider: showHeaderDivider,
               padding:
                   headerPadding ??
@@ -510,6 +545,84 @@ class _FixedContent extends StatelessWidget {
           ?bottomInput,
         ],
       ),
+    );
+  }
+}
+
+/// Close (X) button used in the header when [VineBottomSheet.onComplete]
+/// is set.
+class _CloseButton extends StatelessWidget {
+  const _CloseButton({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return DivineIconButton(
+      icon: DivineIconName.x,
+      type: DivineIconButtonType.secondary,
+      size: DivineIconButtonSize.small,
+      onPressed: onClose,
+    );
+  }
+}
+
+/// Check button used in the header when [VineBottomSheet.onComplete] is set.
+///
+/// Shows a loading indicator while the async [onComplete] callback runs,
+/// then calls [onDismiss] to close the sheet.
+class _CompleteButton extends StatefulWidget {
+  const _CompleteButton({
+    required this.onComplete,
+    required this.onDismiss,
+  });
+
+  final AsyncCallback onComplete;
+  final VoidCallback onDismiss;
+
+  @override
+  State<_CompleteButton> createState() => _CompleteButtonState();
+}
+
+class _CompleteButtonState extends State<_CompleteButton> {
+  bool _loading = false;
+
+  Future<void> _handleTap() async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await widget.onComplete();
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+        widget.onDismiss();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const SizedBox(
+        width: 40,
+        height: 40,
+        child: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: VineTheme.primary,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return DivineIconButton(
+      icon: DivineIconName.check,
+      size: DivineIconButtonSize.small,
+      onPressed: _handleTap,
     );
   }
 }
