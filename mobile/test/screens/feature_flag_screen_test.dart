@@ -245,7 +245,6 @@ void main() {
 
       // Find switches by looking for the flag display names
       expect(find.text('New Camera UI'), findsOneWidget);
-      expect(find.text('Enhanced Video Player'), findsOneWidget);
       // TOOD(any): Fix and re-enable these tests
     }, skip: true);
 

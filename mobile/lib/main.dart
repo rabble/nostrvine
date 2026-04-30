@@ -318,7 +318,7 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
 
   coordinator.registerService(
     name: 'VideoCacheManifest',
-    phase: StartupPhase.deferred,
+    phase: StartupPhase.essential,
     initialize: _initializeVideoCacheManifest,
     optional: true,
   );

@@ -43,7 +43,7 @@ void main() {
         await service.initialize();
 
         expect(service.isEnabled(FeatureFlag.newCameraUI), isTrue);
-        expect(service.isEnabled(FeatureFlag.enhancedVideoPlayer), isFalse);
+        expect(service.isEnabled(FeatureFlag.newVideoFeedPlayer), isFalse);
       });
 
       test('should use build defaults when no saved preference', () async {
@@ -100,7 +100,7 @@ void main() {
         when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
 
         await service.setFlag(FeatureFlag.newCameraUI, true);
-        await service.setFlag(FeatureFlag.enhancedVideoPlayer, true);
+        await service.setFlag(FeatureFlag.newVideoFeedPlayer, true);
 
         await service.resetAllFlags();
 
@@ -119,7 +119,7 @@ void main() {
 
         expect(service.hasUserOverride(FeatureFlag.newCameraUI), isTrue);
         expect(
-          service.hasUserOverride(FeatureFlag.enhancedVideoPlayer),
+          service.hasUserOverride(FeatureFlag.newVideoFeedPlayer),
           isFalse,
         );
       });

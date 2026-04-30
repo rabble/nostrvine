@@ -13,8 +13,6 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_NEW_CAMERA_UI');
       case FeatureFlag.newVideoFeedPlayer:
         return const bool.fromEnvironment('FF_NEW_VIDEO_FEED_PLAYER');
-      case FeatureFlag.enhancedVideoPlayer:
-        return const bool.fromEnvironment('FF_ENHANCED_VIDEO_PLAYER');
       case FeatureFlag.enhancedAnalytics:
         return const bool.fromEnvironment('FF_ENHANCED_ANALYTICS');
       case FeatureFlag.newProfileLayout:
@@ -70,8 +68,6 @@ class BuildConfiguration {
         return 'FF_NEW_CAMERA_UI';
       case FeatureFlag.newVideoFeedPlayer:
         return 'FF_NEW_VIDEO_FEED_PLAYER';
-      case FeatureFlag.enhancedVideoPlayer:
-        return 'FF_ENHANCED_VIDEO_PLAYER';
       case FeatureFlag.enhancedAnalytics:
         return 'FF_ENHANCED_ANALYTICS';
       case FeatureFlag.newProfileLayout:

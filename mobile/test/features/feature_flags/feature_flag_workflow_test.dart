@@ -133,11 +133,6 @@ void main() {
                     disabled: Text('Standard Camera'),
                     child: Text('Enhanced Camera'),
                   ),
-                  const FeatureFlagWidget(
-                    flag: FeatureFlag.enhancedVideoPlayer,
-                    disabled: Text('Standard Player'),
-                    child: Text('Enhanced Player'),
-                  ),
                   Builder(
                     builder: (context) => ElevatedButton(
                       onPressed: () => Navigator.push(
@@ -185,7 +180,6 @@ void main() {
 
       // Verify the feature flag list items are present
       expect(find.text('New Camera UI'), findsOneWidget);
-      expect(find.text('Enhanced Video Player'), findsOneWidget);
     });
 
     testWidgets('should persist flag changes across app restarts', (

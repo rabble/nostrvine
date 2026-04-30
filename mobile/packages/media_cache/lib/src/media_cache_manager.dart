@@ -278,53 +278,30 @@ class MediaCacheManager extends CacheManager {
     }
 
     try {
-      // Query the cache database to get key → filepath mappings
-      // flutter_cache_manager stores metadata in sqflite, NOT in filenames
-      final dbPath = await _databasePathProvider();
-      final cacheDbPath = path.join(dbPath, '${_config.cacheKey}.db');
-
-      // Check if database exists
-      if (!File(cacheDbPath).existsSync()) {
+      // Read cache metadata via the Config's CacheInfoRepository
+      // (JsonCacheInfoRepository wrapped by SafeCacheInfoRepository).
+      final repo = config.repo;
+      if (!await repo.open()) {
         _manifestInitialized = true;
         return;
       }
 
-      final database = await _databaseOpener(cacheDbPath, readOnly: true);
+      final objects = await repo.getAllObjects();
+      final tempDir = await _tempDirectoryProvider();
+      final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
 
-      try {
-        // Query all cache objects from the cacheObject table
-        final List<Map<String, dynamic>> maps = await database.query(
-          'cacheObject',
-        );
+      for (final obj in objects) {
+        final fullPath = path.join(baseCacheDir, obj.relativePath);
+        final file = File(fullPath);
 
-        // Get the base cache directory for constructing full paths
-        final tempDir = await _tempDirectoryProvider();
-        final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
-
-        // Populate manifest with verified cache entries
-        for (final map in maps) {
-          final cacheKey = map['key'] as String?;
-          final relativePath = map['relativePath'] as String?;
-
-          if (cacheKey == null || relativePath == null) continue;
-
-          // Construct full file path
-          final fullPath = path.join(baseCacheDir, relativePath);
-          final file = File(fullPath);
-
-          // Only add to manifest if file actually exists
-          if (file.existsSync()) {
-            _cacheManifest[cacheKey] = fullPath;
-          }
+        if (file.existsSync()) {
+          _cacheManifest[obj.key] = fullPath;
         }
-      } finally {
-        await database.close();
       }
 
       _manifestInitialized = true;
     } on Exception catch (_) {
       // Don't throw - degraded functionality is better than crash
-      // Also handles cases where sqflite isn't initialized (e.g., in tests)
       _manifestInitialized = true;
     }
   }
@@ -433,11 +410,17 @@ class MediaCacheManager extends CacheManager {
   /// `CancellableCacheOperation.cancel()`, freeing bandwidth for
   /// higher-priority downloads.
   ///
+  /// If [stallTimeout] is non-null, the download is cancelled when the
+  /// underlying HTTP stream stops emitting events (progress or
+  /// completion) for that duration. Use this to detect hung connections
+  /// without penalising slow but steadily-progressing downloads.
+  ///
   /// Returns a completed operation instantly if the file is already cached.
   CancellableCacheOperation cacheFileCancellable(
     String url, {
     required String key,
     Map<String, String>? authHeaders,
+    Duration? stallTimeout,
   }) {
     // Fast path: already cached on disk.
     if (_config.enableSyncManifest) {
@@ -449,8 +432,14 @@ class MediaCacheManager extends CacheManager {
     metrics.prefetchedTotal++;
 
     return CancellableCacheOperation.fromStream(
-      getFileStream(url, key: key, headers: authHeaders ?? {}),
+      getFileStream(
+        url,
+        key: key,
+        headers: authHeaders ?? {},
+        withProgress: true,
+      ),
       cacheKey: key,
+      stallTimeout: stallTimeout,
       onCached: _config.enableSyncManifest
           ? (k, path) => _cacheManifest[k] = path
           : null,

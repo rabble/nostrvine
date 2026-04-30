@@ -45,7 +45,7 @@ void main() {
           startIndex: 0,
           endIndex: 0,
           videos: videos,
-          resolveUrl: (v) => v.videoUrl,
+          resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
         );
 
         verifyNever(
@@ -54,7 +54,7 @@ void main() {
         expect(logs.any((l) => l.contains('already cached')), isTrue);
       });
 
-      test('skips entries with null URL from resolver', () async {
+      test('skips entries with empty URL list from resolver', () async {
         when(() => cache.getCachedFileSync(any())).thenReturn(null);
 
         final videos = [_makeVideo('id2')];
@@ -63,13 +63,13 @@ void main() {
           startIndex: 0,
           endIndex: 0,
           videos: videos,
-          resolveUrl: (_) => null,
+          resolveUrls: (_) => [],
         );
 
         verifyNever(
           () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
         );
-        expect(logs.any((l) => l.contains('no URL')), isTrue);
+        expect(logs.any((l) => l.contains('no URLs')), isTrue);
       });
 
       test('downloads uncached entries', () async {
@@ -87,7 +87,7 @@ void main() {
           startIndex: 0,
           endIndex: 0,
           videos: videos,
-          resolveUrl: (v) => v.videoUrl,
+          resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
         );
 
         verify(() => cache.cacheFileCancellable(url, key: 'id3')).called(1);
@@ -107,7 +107,7 @@ void main() {
           startIndex: 0,
           endIndex: 5,
           videos: videos,
-          resolveUrl: (v) => v.videoUrl,
+          resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
         );
 
         // Only id4 at index 0 is valid; no exception thrown.
@@ -138,30 +138,30 @@ void main() {
             return _PendingOperation(downloadCompleter.future);
           });
 
-          final videos = [
-            _makeVideo('slow', url: 'http://example.com/slow.m3u8'),
-            _makeVideo('fast', url: 'http://example.com/fast.m3u8'),
-          ];
+          final videos = List.generate(
+            5,
+            (i) => _makeVideo('v$i', url: 'http://example.com/$i.m3u8'),
+          );
 
-          // Start first run (will stall on the slow operation).
+          // Start first run (will stall on the slow operation at index 0).
           final firstRun = slowPrefetcher.run(
             startIndex: 0,
             endIndex: 0,
             videos: videos,
-            resolveUrl: (v) => v.videoUrl,
+            resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
           );
 
           // Allow first run to start.
           await Future<void>.delayed(Duration.zero);
           expect(secondRunStarted, isTrue);
 
-          // Second run cancels first.
+          // Second run with a range far from index 0 — should cancel.
           unawaited(
             slowPrefetcher.run(
-              startIndex: 1,
-              endIndex: 1,
+              startIndex: 3,
+              endIndex: 4,
               videos: videos,
-              resolveUrl: (v) => v.videoUrl,
+              resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
             ),
           );
 
@@ -174,6 +174,68 @@ void main() {
             logs2.any((l) => l.contains('aborted') || l.contains('cancelled')),
             isTrue,
           );
+          slowPrefetcher.dispose();
+        },
+      );
+
+      test(
+        'skips restart when active download index is within new range',
+        () async {
+          final slowCache = _MockMediaCacheManager();
+          final logs2 = <String>[];
+          final slowPrefetcher = DiskPrefetcher(
+            cache: slowCache,
+            log: logs2.add,
+          );
+
+          final downloadCompleter = _ManualCompleter<File?>();
+          when(() => slowCache.getCachedFileSync(any())).thenReturn(null);
+          when(
+            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+          ).thenAnswer(
+            (_) => _PendingOperation(downloadCompleter.future),
+          );
+
+          final videos = List.generate(
+            10,
+            (i) => _makeVideo('v$i', url: 'http://example.com/$i.m3u8'),
+          );
+
+          // Start cycle downloading index 3..8.
+          unawaited(
+            slowPrefetcher.run(
+              startIndex: 3,
+              endIndex: 8,
+              videos: videos,
+              resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
+            ),
+          );
+
+          // Let the first download start (index 3).
+          await Future<void>.delayed(Duration.zero);
+
+          // Second run with overlapping range — active index 3 is within
+          // [2..7], so the cycle should NOT restart.
+          unawaited(
+            slowPrefetcher.run(
+              startIndex: 2,
+              endIndex: 7,
+              videos: videos,
+              resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
+            ),
+          );
+
+          expect(
+            logs2.any((l) => l.contains('still active')),
+            isTrue,
+          );
+
+          // Only one cacheFileCancellable call — the second run skipped.
+          verify(
+            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+          ).called(1);
+
+          downloadCompleter.complete(null);
           slowPrefetcher.dispose();
         },
       );

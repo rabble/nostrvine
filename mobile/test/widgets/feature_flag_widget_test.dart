@@ -186,7 +186,7 @@ void main() {
                   child: Text('Camera UI Enabled'),
                 ),
                 FeatureFlagWidget(
-                  flag: FeatureFlag.enhancedVideoPlayer,
+                  flag: FeatureFlag.newVideoFeedPlayer,
                   disabled: Text('Video Player Disabled'),
                   child: Text('Video Player Enabled'),
                 ),

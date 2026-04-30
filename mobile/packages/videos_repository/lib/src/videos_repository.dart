@@ -23,8 +23,7 @@ export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 const int _videoKind = EventKind.videoVertical;
 
 /// Default number of videos to fetch per page.
-/// Kept small to stay "a couple videos ahead" in the buffer.
-const int _defaultLimit = 5;
+const int _defaultLimit = 25;
 
 /// Timeout for relay search queries.
 ///

@@ -24,7 +24,7 @@ void main() {
 
       // When FF_NEW_CAMERA_UI is not set, should default to false
       expect(config.getDefault(FeatureFlag.newCameraUI), isFalse);
-      expect(config.getDefault(FeatureFlag.enhancedVideoPlayer), isFalse);
+      expect(config.getDefault(FeatureFlag.newVideoFeedPlayer), isFalse);
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
       expect(config.getDefault(FeatureFlag.newProfileLayout), isFalse);
       expect(config.getDefault(FeatureFlag.livestreamingBeta), isFalse);
@@ -75,10 +75,6 @@ void main() {
       expect(
         config.getEnvironmentKey(FeatureFlag.debugTools),
         equals('FF_DEBUG_TOOLS'),
-      );
-      expect(
-        config.getEnvironmentKey(FeatureFlag.enhancedVideoPlayer),
-        equals('FF_ENHANCED_VIDEO_PLAYER'),
       );
     });
 

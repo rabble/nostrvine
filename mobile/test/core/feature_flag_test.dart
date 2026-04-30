@@ -8,16 +8,11 @@ void main() {
   group('FeatureFlag enum', () {
     test('should have display names', () {
       expect(FeatureFlag.newCameraUI.displayName, equals('New Camera UI'));
-      expect(
-        FeatureFlag.enhancedVideoPlayer.displayName,
-        equals('Enhanced Video Player'),
-      );
       expect(FeatureFlag.debugTools.displayName, equals('Debug Tools'));
     });
 
     test('should have descriptions', () {
       expect(FeatureFlag.newCameraUI.description, isNotEmpty);
-      expect(FeatureFlag.enhancedVideoPlayer.description, isNotEmpty);
       expect(FeatureFlag.debugTools.description, isNotEmpty);
     });
 
@@ -33,7 +28,7 @@ void main() {
 
     test('should include expected flags for OpenVine', () {
       expect(FeatureFlag.values, contains(FeatureFlag.newCameraUI));
-      expect(FeatureFlag.values, contains(FeatureFlag.enhancedVideoPlayer));
+      expect(FeatureFlag.values, contains(FeatureFlag.newVideoFeedPlayer));
       expect(FeatureFlag.values, contains(FeatureFlag.enhancedAnalytics));
       expect(FeatureFlag.values, contains(FeatureFlag.newProfileLayout));
       expect(FeatureFlag.values, contains(FeatureFlag.livestreamingBeta));

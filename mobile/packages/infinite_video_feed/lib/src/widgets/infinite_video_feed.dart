@@ -421,7 +421,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       startIndex: prefetchStart,
       endIndex: prefetchEnd,
       videos: widget.videos,
-      resolveUrl: _resolveUrl,
+      resolveUrls: (video) => resolvePlaybackSources(
+        video,
+        urlResolver: widget.urlResolver,
+      ).where((url) => !url.contains('.m3u8')).toList(),
     );
     // coverage:ignore-end
   }

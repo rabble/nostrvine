@@ -3,10 +3,6 @@
 
 enum FeatureFlag {
   newCameraUI('New Camera UI', 'Enhanced camera interface with new controls'),
-  enhancedVideoPlayer(
-    'Enhanced Video Player',
-    'Improved video playback engine with better performance',
-  ),
   newVideoFeedPlayer(
     'New video player',
     'Improve the feed with a better video player',
