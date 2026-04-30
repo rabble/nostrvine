@@ -495,6 +495,9 @@ class _VersionTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
     final environmentService = ref.watch(environmentServiceProvider);
+    // Watch the tap counter to keep the auto-dispose provider alive
+    // between taps while this widget is mounted.
+    ref.watch(developerModeTapCounterProvider);
 
     return Semantics(
       button: true,
