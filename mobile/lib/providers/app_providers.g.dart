@@ -990,7 +990,7 @@ final class AudioSharingPreferenceServiceProvider
 }
 
 String _$audioSharingPreferenceServiceHash() =>
-    r'6d09af615c19937bc2842079c368161b513dd323';
+    r'e63c48c60864949925db6eeed76f7e8a67e5444a';
 
 /// AI training opt-out preference service. Controls whether the
 /// CAWG training-mining assertion is embedded in C2PA manifests.

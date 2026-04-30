@@ -81,7 +81,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         category: LogCategory.video,
       );
     });
-    return VideoEditorProviderState();
+    final audioSharingEnabled = ref
+        .read(audioSharingPreferenceServiceProvider)
+        .isAudioSharingEnabled;
+    return VideoEditorProviderState(allowAudioReuse: audioSharingEnabled);
   }
 
   /// Invalidate the final rendered clip when content changes.
@@ -121,7 +124,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// and metadata.
   Future<void> initialize({String? draftId}) async {
     // Reset old editing states but keep metadata
-    state = state.copyWith(isProcessing: false, isSavingDraft: false);
+    final audioSharingEnabled = ref
+        .read(audioSharingPreferenceServiceProvider)
+        .isAudioSharingEnabled;
+    state = state.copyWith(
+      isProcessing: false,
+      isSavingDraft: false,
+      allowAudioReuse: audioSharingEnabled,
+    );
 
     // If the editor screen is opened from a draft, we initialize it here.
     if (draftId != null && draftId.isNotEmpty) {
@@ -161,7 +171,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    state = VideoEditorProviderState();
+    final audioSharingEnabled = ref
+        .read(audioSharingPreferenceServiceProvider)
+        .isAudioSharingEnabled;
+    state = VideoEditorProviderState(allowAudioReuse: audioSharingEnabled);
     _autosaveTimer?.cancel();
     draftId = null;
     if (!keepAutosavedDraft) {

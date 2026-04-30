@@ -644,9 +644,8 @@ ModerationLabelService moderationLabelService(Ref ref) {
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
 @Riverpod(keepAlive: true)
 AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
-  final service = AudioSharingPreferenceService();
-  service.initialize(); // Initialize asynchronously
-  return service;
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return AudioSharingPreferenceService(prefs);
 }
 
 /// AI training opt-out preference service. Controls whether the

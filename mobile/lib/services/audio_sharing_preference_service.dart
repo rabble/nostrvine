@@ -8,37 +8,22 @@ import 'package:unified_logger/unified_logger.dart';
 /// for reuse by other users. This is a global setting that can be overridden
 /// on a per-video basis during publishing.
 class AudioSharingPreferenceService {
+  AudioSharingPreferenceService(this._prefs)
+    : _isAudioSharingEnabled = _prefs.getBool(prefsKey) ?? false;
+
   /// SharedPreferences key for the audio sharing preference
   static const String prefsKey = 'audio_sharing_enabled';
 
-  bool _isAudioSharingEnabled = false;
+  final SharedPreferences _prefs;
+  bool _isAudioSharingEnabled;
 
   /// Whether the user has enabled audio sharing by default
   bool get isAudioSharingEnabled => _isAudioSharingEnabled;
 
-  /// Initialize the service by loading the saved preference
-  Future<void> initialize() async {
-    await _loadPreference();
-  }
-
-  Future<void> _loadPreference() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _isAudioSharingEnabled = prefs.getBool(prefsKey) ?? false;
-    } catch (e) {
-      Log.error(
-        'Error loading audio sharing preference: $e',
-        name: 'AudioSharingPreferenceService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
   /// Set the audio sharing preference
   Future<void> setAudioSharingEnabled(bool enabled) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(prefsKey, enabled);
+      await _prefs.setBool(prefsKey, enabled);
       _isAudioSharingEnabled = enabled;
 
       Log.debug(

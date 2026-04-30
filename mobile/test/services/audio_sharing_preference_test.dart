@@ -11,35 +11,34 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      service = AudioSharingPreferenceService();
-      await service.initialize();
+      final prefs = await SharedPreferences.getInstance();
+      service = AudioSharingPreferenceService(prefs);
     });
 
     test('default preference is false (OFF)', () {
-      expect(service.isAudioSharingEnabled, false);
+      expect(service.isAudioSharingEnabled, isFalse);
     });
 
     test('can enable audio sharing', () async {
       await service.setAudioSharingEnabled(true);
-      expect(service.isAudioSharingEnabled, true);
+      expect(service.isAudioSharingEnabled, isTrue);
     });
 
     test('can disable audio sharing', () async {
       await service.setAudioSharingEnabled(true);
-      expect(service.isAudioSharingEnabled, true);
+      expect(service.isAudioSharingEnabled, isTrue);
 
       await service.setAudioSharingEnabled(false);
-      expect(service.isAudioSharingEnabled, false);
+      expect(service.isAudioSharingEnabled, isFalse);
     });
 
     test('preference persists after reinitialization', () async {
       await service.setAudioSharingEnabled(true);
 
-      // Create new instance and reinitialize
-      final newService = AudioSharingPreferenceService();
-      await newService.initialize();
+      final prefs = await SharedPreferences.getInstance();
+      final newService = AudioSharingPreferenceService(prefs);
 
-      expect(newService.isAudioSharingEnabled, true);
+      expect(newService.isAudioSharingEnabled, isTrue);
     });
 
     test('preference key is correct', () {
