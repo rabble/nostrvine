@@ -320,6 +320,48 @@ void main() {
       },
     );
 
+    testWidgets(
+      'rejects nip44.decrypt bridge messages with a mismatched nonce as unauthorized',
+      (tester) async {
+        Future<void> Function(String message)? bridgeHandler;
+        final executedScripts = <String>[];
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              sandboxBuilder: (_) => const SizedBox.shrink(),
+              javaScriptRunnerOverride: (script) async {
+                executedScripts.add(script);
+              },
+              onBridgeMessageHandlerReady: (handler) => bridgeHandler = handler,
+              bridgeNonceOverride: 'expected-nonce',
+              currentUserPubkeyOverride: 'f' * 64,
+            ),
+          ),
+        );
+
+        await bridgeHandler!(
+          jsonEncode({
+            'id': 'subframe-3',
+            'method': 'nip44.decrypt',
+            'args': <String, dynamic>{
+              'pubkey': 'f' * 64,
+              'ciphertext': 'ciphertext',
+            },
+            'nonce': 'attacker-guessed-nonce',
+          }),
+        );
+        await tester.pump();
+
+        expect(executedScripts, hasLength(1));
+        expect(executedScripts.single, contains('subframe-3'));
+        expect(executedScripts.single, contains('subframe_or_unauthorized'));
+      },
+    );
+
     group('bridge bootstrap script', () {
       test('includes eager pubkey when provided', () {
         final script = buildBridgeBootstrapScript(
