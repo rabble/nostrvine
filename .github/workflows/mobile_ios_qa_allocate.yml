@@ -1,0 +1,639 @@
+# ABOUTME: Trusted iOS QA slot allocator. Mirrors trusted PR heads to base
+# ABOUTME: branches and triggers Codemagic Ad Hoc builds. Uses pull_request_target
+# ABOUTME: but never checks out or executes PR-controlled code (pwn-request safe).
+
+name: Mobile iOS QA Allocate
+
+on:
+  pull_request_target:
+    branches: [main]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+      - converted_to_draft
+      - closed
+      - labeled
+      - unlabeled
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to allocate
+        required: false
+        type: number
+  schedule:
+    # Daily reconciliation pass to clean up stale PRs, promote queued PRs
+    # into freed slots, and refresh the directory issue.
+    - cron: "17 15 * * *"
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: ios-qa-slot-allocator
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  SLOTS_FILE: .github/ios_qa_slots.json
+  ALLOCATOR_SCRIPT: .github/scripts/ios_qa_slots.py
+
+jobs:
+  allocate:
+    if: github.event_name != 'schedule'
+    name: Allocate iOS QA slot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base scripts only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Resolve target PR number
+        id: target
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISPATCH_INPUT: ${{ github.event.inputs.pr_number }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DISPATCH_INPUT}" ]; then
+            number="${DISPATCH_INPUT}"
+          else
+            number="${EVENT_PR_NUMBER}"
+          fi
+          if [ -z "${number}" ]; then
+            echo "::error::No target PR number resolved"; exit 1
+          fi
+          echo "number=${number}" >> "$GITHUB_OUTPUT"
+
+      - name: Bootstrap labels (idempotent)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 "${ALLOCATOR_SCRIPT}" render-label-bootstrap \
+            --slots-file "${SLOTS_FILE}" \
+            > "${RUNNER_TEMP}/labels.json"
+          python3 - "${RUNNER_TEMP}/labels.json" <<'PY'
+          import json, os, subprocess, sys
+          labels = json.load(open(sys.argv[1], encoding="utf-8"))
+          repo = os.environ["GITHUB_REPOSITORY"]
+          for label in labels:
+              subprocess.run(
+                  [
+                      "gh", "label", "create", label["name"],
+                      "--repo", repo,
+                      "--color", label["color"],
+                      "--description", label["description"],
+                      "--force",
+                  ],
+                  check=False,
+              )
+          PY
+
+      - name: Build open PR context
+        id: context
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_TOKEN: ${{ secrets.DIVINEVIDEO_ORG_READ_TOKEN }}
+          TARGET_NUMBER: ${{ steps.target.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            > "${RUNNER_TEMP}/open-prs.json"
+          # Always include the target PR even if closed (cleanup).
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${TARGET_NUMBER}" \
+            > "${RUNNER_TEMP}/target-pr.json"
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls/${TARGET_NUMBER}/files?per_page=300" \
+            > "${RUNNER_TEMP}/target-files.json"
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+
+          tmp = os.environ["RUNNER_TEMP"]
+          target_number = int(os.environ["TARGET_NUMBER"])
+          org_token = os.environ.get("ORG_TOKEN", "")
+          gh_token = os.environ["GH_TOKEN"]
+
+          open_prs = json.load(open(f"{tmp}/open-prs.json", encoding="utf-8"))
+          target_raw = json.load(open(f"{tmp}/target-pr.json", encoding="utf-8"))
+          target_files = json.load(open(f"{tmp}/target-files.json", encoding="utf-8"))
+
+          def is_org_member(login: str, token: str) -> bool:
+              if not token or not login:
+                  return False
+              url = f"https://api.github.com/orgs/divinevideo/members/{login}"
+              req = urllib.request.Request(url)
+              req.add_header("Authorization", f"Bearer {token}")
+              req.add_header("Accept", "application/vnd.github+json")
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      return resp.status == 204
+              except urllib.error.HTTPError as exc:
+                  if exc.code == 302:
+                      return False
+                  return False
+              except urllib.error.URLError:
+                  return False
+
+          def to_pr_record(raw, files):
+              head = raw.get("head") or {}
+              repo = head.get("repo") or {}
+              owner = (repo.get("owner") or {}).get("login", "")
+              author = (raw.get("user") or {}).get("login", "")
+              labels = [l["name"] for l in raw.get("labels", []) or []]
+              return {
+                  "number": raw["number"],
+                  "is_draft": bool(raw.get("draft")),
+                  "is_closed": raw.get("state") == "closed",
+                  "labels": labels,
+                  "head_sha": head.get("sha", ""),
+                  "head_repo": repo.get("full_name", ""),
+                  "head_repo_owner": owner,
+                  "head_ref": head.get("ref", ""),
+                  "author": author,
+                  "author_is_org_member": (
+                      owner == "divinevideo"
+                      or is_org_member(author, org_token)
+                  ),
+                  "changed_files": [f["filename"] for f in (files or [])],
+                  "eligibility_at": raw.get("created_at", ""),
+              }
+
+          # Build records for all open PRs by re-fetching their files in batch
+          # only if they hold a slot label or are the target. Other open PRs
+          # don't need files because we only need their slot/label state.
+          target_record = to_pr_record(target_raw, target_files)
+          records = [target_record]
+          for raw in open_prs:
+              if raw["number"] == target_number:
+                  continue
+              # For non-target PRs we still need to know if they hold slots.
+              # Skip the changed_files fetch — they already won/lost slots in
+              # a prior allocator run, so an empty list is sufficient context.
+              records.append(to_pr_record(raw, []))
+
+          json.dump(records, open(f"{tmp}/all-prs.json", "w", encoding="utf-8"))
+          json.dump(target_record, open(f"{tmp}/target-record.json", "w", encoding="utf-8"))
+          PY
+
+      - name: Compute action
+        id: action
+        env:
+          TARGET_NUMBER: ${{ steps.target.outputs.number }}
+        run: |
+          set -euo pipefail
+          # Fallback labels: pulled from target-record so cleanup works even
+          # if the PR vanished from the open list between fetches.
+          fallback="$(python3 -c "import json; print(','.join(json.load(open('${RUNNER_TEMP}/target-record.json'))['labels']))")"
+          python3 "${ALLOCATOR_SCRIPT}" allocate \
+            --slots-file "${SLOTS_FILE}" \
+            --prs-file "${RUNNER_TEMP}/all-prs.json" \
+            --target-number "${TARGET_NUMBER}" \
+            --target-labels "${fallback}" \
+            > "${RUNNER_TEMP}/allocation.json"
+          action=$(python3 -c "import json; print(json.load(open('${RUNNER_TEMP}/allocation.json'))['action'])")
+          status=$(python3 -c "import json; d=json.load(open('${RUNNER_TEMP}/allocation.json')); print(d.get('status',''))")
+          slot=$(python3 -c "import json; d=json.load(open('${RUNNER_TEMP}/allocation.json')); s=d.get('slot') or {}; print(s.get('slot',''))")
+          slot_label=$(python3 -c "import json; d=json.load(open('${RUNNER_TEMP}/allocation.json')); s=d.get('slot') or {}; print(s.get('label',''))")
+          {
+            echo "action=${action}"
+            echo "status=${status}"
+            echo "slot=${slot}"
+            echo "slot_label=${slot_label}"
+          } >> "$GITHUB_OUTPUT"
+          cat "${RUNNER_TEMP}/allocation.json"
+
+      - name: Cleanup PR
+        if: steps.action.outputs.action == 'cleanup'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_NUMBER: ${{ steps.target.outputs.number }}
+        run: |
+          set -euo pipefail
+          # Remove iOS QA labels.
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          alloc = json.load(open(f"{os.environ['RUNNER_TEMP']}/allocation.json"))
+          repo = os.environ["GITHUB_REPOSITORY"]
+          number = os.environ["TARGET_NUMBER"]
+          for label in alloc.get("labels_to_remove", []):
+              subprocess.run(
+                  ["gh", "issue", "edit", number, "--repo", repo,
+                   "--remove-label", label],
+                  check=False,
+              )
+          PY
+          # Delete mirror branch.
+          mirror=$(python3 -c "import json; print(json.load(open('${RUNNER_TEMP}/allocation.json')).get('mirror_branch',''))")
+          if [ -n "${mirror}" ]; then
+            git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+              ":refs/heads/${mirror}" || true
+          fi
+
+      - name: Mirror PR head to base repo
+        if: steps.action.outputs.action == 'allocate' && steps.action.outputs.status == 'building'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_NUMBER: ${{ steps.target.outputs.number }}
+        run: |
+          set -euo pipefail
+          # Fetch PR head (read-only) and push to a base-repo branch. We never
+          # checkout, build, or otherwise execute FETCH_HEAD's contents here.
+          git fetch --no-tags origin "pull/${TARGET_NUMBER}/head"
+          git push --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "FETCH_HEAD:refs/heads/ios-qa/pr-${TARGET_NUMBER}"
+
+      - name: Trigger Codemagic build
+        if: steps.action.outputs.action == 'allocate' && steps.action.outputs.status == 'building'
+        id: codemagic
+        env:
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          DEFAULT_ENV: ${{ vars.IOS_QA_DEFAULT_ENV || 'STAGING' }}
+          TARGET_NUMBER: ${{ steps.target.outputs.number }}
+        run: |
+          set -euo pipefail
+          # Extract slot and target PR record into separate files.
+          python3 -c "import json; d=json.load(open('${RUNNER_TEMP}/allocation.json')); json.dump(d['slot'], open('${RUNNER_TEMP}/slot.json','w'))"
+          python3 -c "import json; r=json.load(open('${RUNNER_TEMP}/target-record.json')); json.dump({'number': r['number'], 'head_sha': r['head_sha'], 'head_repo': r['head_repo'], 'head_ref': r['head_ref']}, open('${RUNNER_TEMP}/pr.json','w'))"
+          python3 "${ALLOCATOR_SCRIPT}" render-codemagic-payload \
+            --app-id "${CODEMAGIC_APP_ID}" \
+            --workflow-id ios-qa-pr-build \
+            --branch "ios-qa/pr-${TARGET_NUMBER}" \
+            --pr-json "${RUNNER_TEMP}/pr.json" \
+            --slot-json "${RUNNER_TEMP}/slot.json" \
+            --default-env "${DEFAULT_ENV}" \
+            > "${RUNNER_TEMP}/codemagic-payload.json"
+          curl --fail-with-body \
+            -H "Content-Type: application/json" \
+            -H "x-auth-token: ${CODEMAGIC_API_TOKEN}" \
+            --data @"${RUNNER_TEMP}/codemagic-payload.json" \
+            -X POST https://api.codemagic.io/builds \
+            > "${RUNNER_TEMP}/codemagic-response.json"
+          build_id=$(python3 -c "import json; print(json.load(open('${RUNNER_TEMP}/codemagic-response.json')).get('buildId',''))")
+          echo "build_id=${build_id}" >> "$GITHUB_OUTPUT"
+          echo "build_url=https://codemagic.io/app/${CODEMAGIC_APP_ID}/build/${build_id}" >> "$GITHUB_OUTPUT"
+
+      - name: Apply slot + state labels and update sticky comment
+        if: steps.action.outputs.action == 'allocate'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_NUMBER: ${{ steps.target.outputs.number }}
+          SLOT_LABEL: ${{ steps.action.outputs.slot_label }}
+          ALLOC_STATUS: ${{ steps.action.outputs.status }}
+          CM_BUILD_ID: ${{ steps.codemagic.outputs.build_id }}
+          CM_BUILD_URL: ${{ steps.codemagic.outputs.build_url }}
+        run: |
+          set -euo pipefail
+          repo="${GITHUB_REPOSITORY}"
+          # Remove competing state labels so we never have two states.
+          for stale in ios-qa:building ios-qa:ready ios-qa:queued ios-qa:failed; do
+            gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
+              --remove-label "${stale}" || true
+          done
+          for stale_slot in $(python3 -c "import json; print(' '.join(json.load(open('${RUNNER_TEMP}/allocation.json')).get('labels_to_remove', [])))"); do
+            gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
+              --remove-label "${stale_slot}" || true
+          done
+          if [ -n "${SLOT_LABEL}" ]; then
+            gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
+              --add-label "${SLOT_LABEL}"
+          fi
+          if [ "${ALLOC_STATUS}" = "building" ]; then
+            gh issue edit "${TARGET_NUMBER}" --repo "${repo}" --add-label "ios-qa:building"
+          else
+            gh issue edit "${TARGET_NUMBER}" --repo "${repo}" --add-label "ios-qa:queued"
+          fi
+          # Build sticky comment.
+          head_sha=$(python3 -c "import json; print(json.load(open('${RUNNER_TEMP}/target-record.json'))['head_sha'])")
+          slot_arg=$(python3 -c "import json; d=json.load(open('${RUNNER_TEMP}/allocation.json')); s=d.get('slot') or {}; print(s.get('slot','unassigned'))")
+          updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          python3 "${ALLOCATOR_SCRIPT}" render-comment \
+            --status "${ALLOC_STATUS}" \
+            --pr-number "${TARGET_NUMBER}" \
+            --slot "${slot_arg}" \
+            --sha "${head_sha}" \
+            --codemagic-build-id "${CM_BUILD_ID}" \
+            --codemagic-build-url "${CM_BUILD_URL}" \
+            --updated-at "${updated_at}" \
+            > "${RUNNER_TEMP}/comment.md"
+          GH_TOKEN_FOR_LIB="${GH_TOKEN}" \
+          python3 "${ALLOCATOR_SCRIPT}" upsert-comment \
+            --repo "${repo}" \
+            --issue-number "${TARGET_NUMBER}" \
+            --body-file "${RUNNER_TEMP}/comment.md" \
+            --token-env GH_TOKEN_FOR_LIB
+
+  reconcile:
+    if: github.event_name == 'schedule'
+    name: Reconcile iOS QA slots
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base scripts only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Bootstrap labels (idempotent)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 "${ALLOCATOR_SCRIPT}" render-label-bootstrap \
+            --slots-file "${SLOTS_FILE}" \
+            > "${RUNNER_TEMP}/labels.json"
+          python3 - "${RUNNER_TEMP}/labels.json" <<'PY'
+          import json, os, subprocess, sys
+          labels = json.load(open(sys.argv[1], encoding="utf-8"))
+          repo = os.environ["GITHUB_REPOSITORY"]
+          for label in labels:
+              subprocess.run(
+                  [
+                      "gh", "label", "create", label["name"],
+                      "--repo", repo,
+                      "--color", label["color"],
+                      "--description", label["description"],
+                      "--force",
+                  ],
+                  check=False,
+              )
+          PY
+
+      - name: Build all-PR context with changed files
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG_TOKEN: ${{ secrets.DIVINEVIDEO_ORG_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" \
+            > "${RUNNER_TEMP}/open-prs.json"
+          python3 - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import subprocess
+          import urllib.error
+          import urllib.request
+
+          tmp = os.environ["RUNNER_TEMP"]
+          gh_token = os.environ["GH_TOKEN"]
+          org_token = os.environ.get("ORG_TOKEN", "")
+          repo_slug = os.environ["GITHUB_REPOSITORY"]
+          script_path = os.environ["ALLOCATOR_SCRIPT"]
+          spec = importlib.util.spec_from_file_location("ios_qa_slots", script_path)
+          slot_lib = importlib.util.module_from_spec(spec)
+          assert spec.loader is not None
+          spec.loader.exec_module(slot_lib)
+
+          def is_org_member(login: str) -> bool:
+              if not org_token or not login:
+                  return False
+              url = f"https://api.github.com/orgs/divinevideo/members/{login}"
+              req = urllib.request.Request(url)
+              req.add_header("Authorization", f"Bearer {org_token}")
+              req.add_header("Accept", "application/vnd.github+json")
+              try:
+                  with urllib.request.urlopen(req) as resp:
+                      return resp.status == 204
+              except urllib.error.HTTPError:
+                  return False
+              except urllib.error.URLError:
+                  return False
+
+          def fetch_files(number: int) -> list[str]:
+              out = subprocess.check_output(
+                  [
+                      "gh", "api", "--paginate",
+                      f"repos/{repo_slug}/pulls/{number}/files?per_page=300",
+                  ],
+                  text=True,
+              )
+              return [f["filename"] for f in json.loads(out)]
+
+          def fetch_qa_comment_state(number: int):
+              out = subprocess.check_output(
+                  [
+                      "gh", "api",
+                      f"repos/{repo_slug}/issues/{number}/comments?per_page=100",
+                  ],
+                  text=True,
+              )
+              for comment in json.loads(out):
+                  state = slot_lib.parse_state_marker(comment.get("body") or "")
+                  if state:
+                      return state
+              return None
+
+          open_prs = json.load(open(f"{tmp}/open-prs.json", encoding="utf-8"))
+          records = []
+          for raw in open_prs:
+              head = raw.get("head") or {}
+              repo = head.get("repo") or {}
+              owner = (repo.get("owner") or {}).get("login", "")
+              author = (raw.get("user") or {}).get("login", "")
+              labels = [l["name"] for l in raw.get("labels", []) or []]
+              records.append({
+                  "number": raw["number"],
+                  "is_draft": bool(raw.get("draft")),
+                  "is_closed": False,
+                  "labels": labels,
+                  "head_sha": head.get("sha", ""),
+                  "head_repo": repo.get("full_name", ""),
+                  "head_repo_owner": owner,
+                  "head_ref": head.get("ref", ""),
+                  "author": author,
+                  "author_is_org_member": (
+                      owner == "divinevideo" or is_org_member(author)
+                  ),
+                  "changed_files": fetch_files(raw["number"]),
+                  "qa_comment_state": fetch_qa_comment_state(raw["number"]),
+                  "eligibility_at": raw.get("created_at", ""),
+              })
+          json.dump(records, open(f"{tmp}/all-prs.json", "w", encoding="utf-8"))
+          PY
+
+      - name: Compute reconciliation
+        run: |
+          set -euo pipefail
+          python3 "${ALLOCATOR_SCRIPT}" reconcile \
+            --slots-file "${SLOTS_FILE}" \
+            --prs-file "${RUNNER_TEMP}/all-prs.json" \
+            > "${RUNNER_TEMP}/reconcile.json"
+          cat "${RUNNER_TEMP}/reconcile.json"
+
+      - name: Apply reconciliation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          DEFAULT_ENV: ${{ vars.IOS_QA_DEFAULT_ENV || 'STAGING' }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, subprocess, urllib.request
+
+          tmp = os.environ["RUNNER_TEMP"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          gh_token = os.environ["GH_TOKEN"]
+          cm_app_id = os.environ.get("CODEMAGIC_APP_ID", "")
+          cm_token = os.environ.get("CODEMAGIC_API_TOKEN", "")
+          default_env = os.environ.get("DEFAULT_ENV", "STAGING")
+
+          reconcile = json.load(open(f"{tmp}/reconcile.json", encoding="utf-8"))
+          all_prs = {p["number"]: p for p in json.load(
+              open(f"{tmp}/all-prs.json", encoding="utf-8"),
+          )}
+          state_labels = {"ios-qa:building", "ios-qa:ready", "ios-qa:queued", "ios-qa:failed"}
+
+          def gh_label(action, number, label):
+              flag = "--add-label" if action == "add" else "--remove-label"
+              subprocess.run(
+                  ["gh", "issue", "edit", str(number), "--repo", repo, flag, label],
+                  check=False,
+              )
+
+          def has_label(pr, label):
+              return label in pr.get("labels", [])
+
+          for number_str, decision in reconcile.items():
+              number = int(number_str)
+              pr = all_prs.get(number)
+              action = decision.get("action")
+              if action == "skip":
+                  continue
+              if action == "cleanup":
+                  for label in decision.get("labels_to_remove", []):
+                      gh_label("remove", number, label)
+                  mirror = decision.get("mirror_branch")
+                  if mirror:
+                      subprocess.run(
+                          [
+                              "git", "push",
+                              f"https://x-access-token:{gh_token}@github.com/{repo}.git",
+                              f":refs/heads/{mirror}",
+                          ],
+                          check=False,
+                      )
+                  continue
+              if action == "allocate":
+                  status = decision.get("status")
+                  slot = decision.get("slot") or {}
+                  slot_label = slot.get("label")
+                  for stale_slot in decision.get("labels_to_remove", []):
+                      if has_label(pr, stale_slot):
+                          gh_label("remove", number, stale_slot)
+                  # Drop competing state labels.
+                  for sl in state_labels:
+                      if has_label(pr, sl) and sl != f"ios-qa:{status}":
+                          gh_label("remove", number, sl)
+                  if status == "queued":
+                      if not has_label(pr, "ios-qa:queued"):
+                          gh_label("add", number, "ios-qa:queued")
+                      continue
+                  if status != "building":
+                      continue
+                  # Building.
+                  if slot_label and not has_label(pr, slot_label):
+                      gh_label("add", number, slot_label)
+                  already_in_flight = any(
+                      has_label(pr, sl)
+                      for sl in ("ios-qa:building", "ios-qa:ready")
+                  )
+                  if already_in_flight:
+                      continue
+                  if not (cm_app_id and cm_token):
+                      continue
+                  # Newly promoted PR — trigger Codemagic.
+                  payload = {
+                      "appId": cm_app_id,
+                      "workflowId": "ios-qa-pr-build",
+                      "branch": f"ios-qa/pr-{number}",
+                      "labels": [f"pr-{number}", slot["slot"]],
+                      "environment": {
+                          "variables": {
+                              "PR_NUMBER": str(number),
+                              "PR_HEAD_SHA": pr["head_sha"],
+                              "PR_HEAD_REPO": pr["head_repo"],
+                              "PR_HEAD_REF": pr["head_ref"],
+                              "QA_SLOT": slot["slot"],
+                              "QA_BUNDLE_ID": slot["bundleId"],
+                              "QA_EXTENSION_BUNDLE_ID": slot["extensionBundleId"],
+                              "QA_APP_GROUP": slot["appGroup"],
+                              "QA_DISPLAY_NAME": slot["displayName"],
+                              "QA_FIREBASE_APP_ID": slot["firebaseAppId"],
+                              "DEFAULT_ENV": default_env,
+                              "CODEMAGIC_APP_ID": cm_app_id,
+                          },
+                      },
+                  }
+                  # Mirror branch in case it was deleted previously.
+                  subprocess.run(
+                      [
+                          "git", "fetch", "--no-tags", "origin",
+                          f"pull/{number}/head",
+                      ],
+                      check=True,
+                  )
+                  subprocess.run(
+                      [
+                          "git", "push", "--force",
+                          f"https://x-access-token:{gh_token}@github.com/{repo}.git",
+                          f"FETCH_HEAD:refs/heads/ios-qa/pr-{number}",
+                      ],
+                      check=True,
+                  )
+                  req = urllib.request.Request(
+                      "https://api.codemagic.io/builds",
+                      data=json.dumps(payload).encode("utf-8"),
+                      method="POST",
+                  )
+                  req.add_header("Content-Type", "application/json")
+                  req.add_header("x-auth-token", cm_token)
+                  with urllib.request.urlopen(req) as resp:
+                      resp_body = json.loads(resp.read().decode("utf-8"))
+                  gh_label("add", number, "ios-qa:building")
+          PY
+
+      - name: Render and upsert directory
+        if: ${{ vars.IOS_QA_DIRECTORY_ISSUE_NUMBER != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DIRECTORY_ISSUE: ${{ vars.IOS_QA_DIRECTORY_ISSUE_NUMBER }}
+        run: |
+          set -euo pipefail
+          python3 "${ALLOCATOR_SCRIPT}" render-directory-rows \
+            --reconcile-file "${RUNNER_TEMP}/reconcile.json" \
+            --prs-file "${RUNNER_TEMP}/all-prs.json" \
+            > "${RUNNER_TEMP}/rows.json"
+          updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          python3 "${ALLOCATOR_SCRIPT}" render-directory \
+            --rows-file "${RUNNER_TEMP}/rows.json" \
+            --updated-at "${updated_at}" \
+            > "${RUNNER_TEMP}/directory.md"
+          GH_TOKEN_FOR_LIB="${GH_TOKEN}" \
+          python3 "${ALLOCATOR_SCRIPT}" upsert-comment \
+            --repo "${GITHUB_REPOSITORY}" \
+            --issue-number "${DIRECTORY_ISSUE}" \
+            --body-file "${RUNNER_TEMP}/directory.md" \
+            --marker-prefix "<!-- divine-ios-qa-directory:v1 " \
+            --token-env GH_TOKEN_FOR_LIB

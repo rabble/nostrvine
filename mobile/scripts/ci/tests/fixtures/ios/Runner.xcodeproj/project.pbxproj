@@ -1,0 +1,78 @@
+// !$*UTF8*$!
+{
+/* Begin XCBuildConfiguration section */
+		97C147061CF9000F007C117D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = divine;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		97C147071CF9000F007C117D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = divine;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
+			};
+			name = Release;
+		};
+		97C147081CF9000F007C117D /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
+				INFOPLIST_KEY_CFBundleDisplayName = divine;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app;
+			};
+			name = Profile;
+		};
+		331C8088294A63A400263BE5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.RunnerTests;
+			};
+			name = Debug;
+		};
+		331C8089294A63A400263BE5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.RunnerTests;
+			};
+			name = Release;
+		};
+		331C808A294A63A400263BE5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.RunnerTests;
+			};
+			name = Profile;
+		};
+		AB1C147061CF9000F007C117E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
+			};
+			name = Debug;
+		};
+		AB1C147071CF9000F007C117E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
+			};
+			name = Release;
+		};
+		AB1C147081CF9000F007C117E /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = NotificationServiceExtension/NotificationServiceExtension.entitlements;
+				PRODUCT_BUNDLE_IDENTIFIER = co.openvine.app.NotificationServiceExtension;
+			};
+			name = Profile;
+		};
+/* End XCBuildConfiguration section */
+}
