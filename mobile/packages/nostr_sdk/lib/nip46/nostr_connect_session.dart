@@ -5,6 +5,8 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
+
 import '../event.dart';
 import '../event_kind.dart';
 import '../filter.dart';
@@ -404,8 +406,9 @@ class NostrConnectSession {
     }
 
     log(
-      '[NostrConnectSession] Decrypted response: '
-      'id=${response.id}, result=${response.result}, error=${response.error}',
+      '[NostrConnectSession] Decrypted response: id=${response.id}, '
+      'hasResult=${response.result.isNotEmpty}, '
+      'hasError=${(response.error ?? '').isNotEmpty}',
     );
 
     // Check for auth_url challenge (bunker needs approval)
@@ -417,42 +420,49 @@ class NostrConnectSession {
       return;
     }
 
-    // Validate the secret - CRITICAL for nostrconnect:// security
-    // Per NIP-46, the response.result must equal our secret
-    final expectedSecret = _info?.optionalSecret;
-    if (expectedSecret == null || expectedSecret.isEmpty) {
-      log('[NostrConnectSession] No expected secret - cannot validate');
-      _errorMessage = 'Invalid session state: no secret to validate';
-      _setState(NostrConnectState.error);
-      return;
-    }
+    // Validate the secret per NIP-46. Accept ONLY an exact match;
+    // "ack"/"connect" belong to the bunker:// flow's connect method
+    // and are not valid for nostrconnect://. Non-matching, non-error
+    // responses are dropped silently — treating them as terminal would
+    // let any pubkey on the listening relays DoS pairing by racing
+    // a junk response in front of the legitimate signer's reply.
+    final validation = validateConnectResponse(
+      response: response,
+      expectedSecret: _info?.optionalSecret,
+    );
 
-    // For connect response, result should be "ack" or the secret itself
-    // depending on bunker implementation
-    final isValidSecret =
-        response.result == expectedSecret ||
-        response.result == 'ack' ||
-        response.result == 'connect';
+    switch (validation) {
+      case NostrConnectResponseValidation.invalidSession:
+        log('[NostrConnectSession] No expected secret - cannot validate');
+        _errorMessage = 'Invalid session state: no secret to validate';
+        _setState(NostrConnectState.error);
+        return;
 
-    // Also check if this is an error response
-    if (response.error != null && response.error!.isNotEmpty) {
-      log('[NostrConnectSession] Bunker returned error: ${response.error}');
-      _errorMessage = 'Bunker rejected connection: ${response.error}';
-      _setState(NostrConnectState.error);
-      if (_connectionCompleter != null && !_connectionCompleter!.isCompleted) {
-        _connectionCompleter!.complete(null);
-      }
-      return;
-    }
+      case NostrConnectResponseValidation.rejectedByBunker:
+        log(
+          '[NostrConnectSession] Bunker rejected connection from '
+          '${event.pubkey}',
+        );
+        _errorMessage = 'Bunker rejected connection';
+        _setState(NostrConnectState.error);
+        if (_connectionCompleter != null &&
+            !_connectionCompleter!.isCompleted) {
+          _connectionCompleter!.complete(null);
+        }
+        return;
 
-    if (!isValidSecret) {
-      // Be lenient - some bunkers may respond differently
-      // Just log and continue if we got a response at all
-      log(
-        '[NostrConnectSession] Warning: Response result "${response.result}" '
-        'does not match expected secret "$expectedSecret", '
-        'but accepting anyway as bunker connected',
-      );
+      case NostrConnectResponseValidation.ignore:
+        // Drop silently and keep listening; the hard timeout in
+        // waitForConnection terminates the wait if no valid response
+        // ever arrives.
+        log(
+          '[NostrConnectSession] Ignoring response from ${event.pubkey}: '
+          'result did not match the expected secret',
+        );
+        return;
+
+      case NostrConnectResponseValidation.match:
+        break; // fall through to the success path below
     }
 
     // Success! Extract remote signer pubkey from the event
@@ -489,4 +499,59 @@ class NostrConnectSession {
     // Clean up relays - NostrRemoteSigner will create its own connections
     _cleanup();
   }
+}
+
+/// Outcome of validating a `nostrconnect://` connect response per NIP-46.
+@visibleForTesting
+enum NostrConnectResponseValidation {
+  /// `response.result` exactly matches the expected secret. Proceed to
+  /// bind the session.
+  match,
+
+  /// `response.error` is set; the signer explicitly rejected the
+  /// connection. Surface a terminal error to the user.
+  rejectedByBunker,
+
+  /// Programmer error: the session is missing an expected secret.
+  /// Surface a terminal error.
+  invalidSession,
+
+  /// `response.result` did not match and `response.error` is empty.
+  /// Drop silently per the policy decision in #3355 — treating this
+  /// as terminal would let any pubkey on the listening relays DoS
+  /// pairing by racing junk responses in front of the legitimate
+  /// signer's reply.
+  ignore,
+}
+
+/// Pure validation of a NIP-46 nostrconnect:// connect response against
+/// the expected secret. Public-by-test so the security-critical decision
+/// is exhaustively unit-testable.
+@visibleForTesting
+NostrConnectResponseValidation validateConnectResponse({
+  required NostrRemoteResponse response,
+  required String? expectedSecret,
+}) {
+  if (expectedSecret == null || expectedSecret.isEmpty) {
+    return NostrConnectResponseValidation.invalidSession;
+  }
+  final error = response.error;
+  if (error != null && error.isNotEmpty) {
+    return NostrConnectResponseValidation.rejectedByBunker;
+  }
+  if (_constantTimeEqual(response.result, expectedSecret)) {
+    return NostrConnectResponseValidation.match;
+  }
+  return NostrConnectResponseValidation.ignore;
+}
+
+bool _constantTimeEqual(String a, String b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  var diff = 0;
+  for (var i = 0; i < a.length; i++) {
+    diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+  }
+  return diff == 0;
 }

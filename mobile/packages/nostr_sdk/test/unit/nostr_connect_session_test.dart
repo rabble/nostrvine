@@ -1,6 +1,9 @@
 // ABOUTME: Unit tests for NostrConnectSession class
 // ABOUTME: Tests state machine transitions and URL generation
 
+import 'dart:io';
+
+import 'package:nostr_sdk/nip46/nostr_remote_response.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:test/test.dart';
 
@@ -330,5 +333,123 @@ void main() {
 
       expect(result.userPubkey, isNull);
     });
+  });
+
+  group('validateConnectResponse', () {
+    NostrRemoteResponse buildResponse(String result, {String? error}) {
+      return NostrRemoteResponse('req-id', result, error: error);
+    }
+
+    test('returns match when response.result equals the secret exactly', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('s3cret'),
+        expectedSecret: 's3cret',
+      );
+      expect(validation, equals(NostrConnectResponseValidation.match));
+    });
+
+    test(
+      'returns ignore when response.result is "ack" (bunker:// flow token)',
+      () {
+        final validation = validateConnectResponse(
+          response: buildResponse('ack'),
+          expectedSecret: 's3cret',
+        );
+        expect(validation, equals(NostrConnectResponseValidation.ignore));
+      },
+    );
+
+    test('returns ignore when response.result is "connect"', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('connect'),
+        expectedSecret: 's3cret',
+      );
+      expect(validation, equals(NostrConnectResponseValidation.ignore));
+    });
+
+    test('returns ignore on any other non-matching result', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('attacker-guess'),
+        expectedSecret: 's3cret',
+      );
+      expect(validation, equals(NostrConnectResponseValidation.ignore));
+    });
+
+    test('returns ignore on an empty result string', () {
+      final validation = validateConnectResponse(
+        response: buildResponse(''),
+        expectedSecret: 's3cret',
+      );
+      expect(validation, equals(NostrConnectResponseValidation.ignore));
+    });
+
+    test('returns rejectedByBunker when response.error is non-empty', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('', error: 'user denied'),
+        expectedSecret: 's3cret',
+      );
+      expect(
+        validation,
+        equals(NostrConnectResponseValidation.rejectedByBunker),
+      );
+    });
+
+    test('returns rejectedByBunker even when result happens to match — '
+        'an explicit error must always win', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('s3cret', error: 'user denied'),
+        expectedSecret: 's3cret',
+      );
+      expect(
+        validation,
+        equals(NostrConnectResponseValidation.rejectedByBunker),
+      );
+    });
+
+    test('returns invalidSession when expectedSecret is null', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('anything'),
+        expectedSecret: null,
+      );
+      expect(validation, equals(NostrConnectResponseValidation.invalidSession));
+    });
+
+    test('returns invalidSession when expectedSecret is empty', () {
+      final validation = validateConnectResponse(
+        response: buildResponse('anything'),
+        expectedSecret: '',
+      );
+      expect(validation, equals(NostrConnectResponseValidation.invalidSession));
+    });
+
+    test(
+      'returns ignore on equal-length secret with one differing character '
+      '(constant-time compare path runs to end without short-circuiting)',
+      () {
+        final validation = validateConnectResponse(
+          response: buildResponse('s3cretA'),
+          expectedSecret: 's3cretB',
+        );
+        expect(validation, equals(NostrConnectResponseValidation.ignore));
+      },
+    );
+  });
+
+  group('nostr_connect_session.dart log redaction', () {
+    test(
+      'source file does not log the response.result or the expected secret',
+      () {
+        final source = File(
+          'lib/nip46/nostr_connect_session.dart',
+        ).readAsStringSync();
+        // The pre-fix code logged both `result=${response.result}` in the
+        // up-front decoded-response line and `"$expectedSecret"` in the
+        // mismatch warning. Pin the absence of those substrings so any
+        // future regression that re-introduces secret material into logs
+        // fails this test loudly.
+        expect(source, isNot(contains(r'result=${response.result}')));
+        expect(source, isNot(contains(r'"$expectedSecret"')));
+      },
+    );
   });
 }
