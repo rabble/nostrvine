@@ -22,8 +22,9 @@ void main() {
       });
 
       test('trackColor resolves to onPrimary when selected', () {
-        final color = switchTheme.trackColor!
-            .resolve(<WidgetState>{WidgetState.selected});
+        final color = switchTheme.trackColor!.resolve(<WidgetState>{
+          WidgetState.selected,
+        });
         expect(color, equals(VineTheme.onPrimary));
       });
 
@@ -36,8 +37,9 @@ void main() {
       );
 
       test('trackOutlineColor resolves to outlineVariant when selected', () {
-        final color = switchTheme.trackOutlineColor!
-            .resolve(<WidgetState>{WidgetState.selected});
+        final color = switchTheme.trackOutlineColor!.resolve(<WidgetState>{
+          WidgetState.selected,
+        });
         expect(color, equals(VineTheme.outlineVariant));
       });
     });
