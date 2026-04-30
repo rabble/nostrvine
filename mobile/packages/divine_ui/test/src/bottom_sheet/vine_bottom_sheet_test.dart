@@ -804,9 +804,10 @@ void main() {
       );
 
       testWidgets(
-        'shows close and check buttons in scrollable mode when onComplete '
-        'is provided',
+        'check button in scrollable mode invokes onComplete then dismisses',
         (tester) async {
+          var completed = false;
+
           await tester.pumpWidget(
             MaterialApp(
               home: Scaffold(
@@ -815,7 +816,9 @@ void main() {
                     onPressed: () => VineBottomSheet.show<void>(
                       context: context,
                       title: const Text('Create'),
-                      onComplete: () async {},
+                      onComplete: () async {
+                        completed = true;
+                      },
                       body: const Text('Sheet body'),
                     ),
                     child: const Text('Open'),
@@ -830,6 +833,13 @@ void main() {
 
           // Both close (X) and check buttons present in scrollable mode.
           expect(find.byType(DivineIconButton), findsNWidgets(2));
+
+          // Tap check button — last DivineIconButton is the check.
+          await tester.tap(find.byType(DivineIconButton).last);
+          await tester.pumpAndSettle();
+
+          expect(completed, isTrue);
+          expect(find.text('Sheet body'), findsNothing);
         },
       );
     });
