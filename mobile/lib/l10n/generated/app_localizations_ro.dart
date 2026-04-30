@@ -1264,7 +1264,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareFailedToRemoveBookmark =>
-      'Nu s-a putut elimina semnul de carte';
+      'N-am putut elimina semnul de carte';
 
   @override
   String get shareActionFailed => 'Acțiunea a eșuat';
@@ -3122,7 +3122,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get shareMenuFailedToRemoveBookmark =>
-      'Nu s-a putut elimina semnul de carte';
+      'N-am putut elimina semnul de carte';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {
