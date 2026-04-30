@@ -256,8 +256,23 @@ jobs:
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
             "FETCH_HEAD:refs/heads/ios-qa/pr-${TARGET_NUMBER}"
 
-      - name: Trigger Codemagic build
+      - name: Check Codemagic credentials
         if: steps.action.outputs.action == 'allocate' && steps.action.outputs.status == 'building'
+        id: codemagic_secrets
+        env:
+          CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CODEMAGIC_APP_ID}" ] || [ -z "${CODEMAGIC_API_TOKEN}" ]; then
+            echo "::warning::Codemagic credentials are unavailable for this run; leaving the PR queued."
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger Codemagic build
+        if: steps.action.outputs.action == 'allocate' && steps.action.outputs.status == 'building' && steps.codemagic_secrets.outputs.available == 'true'
         id: codemagic
         env:
           CODEMAGIC_APP_ID: ${{ secrets.CODEMAGIC_APP_ID }}
@@ -294,11 +309,16 @@ jobs:
           TARGET_NUMBER: ${{ steps.target.outputs.number }}
           SLOT_LABEL: ${{ steps.action.outputs.slot_label }}
           ALLOC_STATUS: ${{ steps.action.outputs.status }}
+          CODEMAGIC_SECRETS_AVAILABLE: ${{ steps.codemagic_secrets.outputs.available }}
           CM_BUILD_ID: ${{ steps.codemagic.outputs.build_id }}
           CM_BUILD_URL: ${{ steps.codemagic.outputs.build_url }}
         run: |
           set -euo pipefail
           repo="${GITHUB_REPOSITORY}"
+          effective_status="${ALLOC_STATUS}"
+          if [ "${ALLOC_STATUS}" = "building" ] && [ "${CODEMAGIC_SECRETS_AVAILABLE}" != "true" ]; then
+            effective_status="queued"
+          fi
           # Remove competing state labels so we never have two states.
           for stale in ios-qa:building ios-qa:ready ios-qa:queued ios-qa:failed; do
             gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
@@ -312,7 +332,7 @@ jobs:
             gh issue edit "${TARGET_NUMBER}" --repo "${repo}" \
               --add-label "${SLOT_LABEL}"
           fi
-          if [ "${ALLOC_STATUS}" = "building" ]; then
+          if [ "${effective_status}" = "building" ]; then
             gh issue edit "${TARGET_NUMBER}" --repo "${repo}" --add-label "ios-qa:building"
           else
             gh issue edit "${TARGET_NUMBER}" --repo "${repo}" --add-label "ios-qa:queued"
@@ -322,7 +342,7 @@ jobs:
           slot_arg=$(python3 -c "import json; d=json.load(open('${RUNNER_TEMP}/allocation.json')); s=d.get('slot') or {}; print(s.get('slot','unassigned'))")
           updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           python3 "${ALLOCATOR_SCRIPT}" render-comment \
-            --status "${ALLOC_STATUS}" \
+            --status "${effective_status}" \
             --pr-number "${TARGET_NUMBER}" \
             --slot "${slot_arg}" \
             --sha "${head_sha}" \
