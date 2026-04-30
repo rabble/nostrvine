@@ -29,8 +29,6 @@ void main() {
           cacheKey: 'test_cache_${DateTime.now().millisecondsSinceEpoch}',
           enableSyncManifest: true,
         ),
-        // Use test paths so sqflite doesn't need to be initialized
-        databasePathProvider: () async => testTempPath,
       );
     });
 
@@ -80,8 +78,6 @@ void main() {
             cacheKey: 'failing_${DateTime.now().millisecondsSinceEpoch}',
             enableSyncManifest: true,
           ),
-          databasePathProvider: () async =>
-              throw Exception('Database path unavailable'),
         );
 
         // Should not throw - graceful degradation
@@ -130,8 +126,6 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
         );
 
         await dbCache.initialize();
@@ -175,8 +169,6 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
         );
 
         await dbCache.initialize();
@@ -214,8 +206,6 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
         );
 
         await dbCache.initialize();
@@ -246,8 +236,6 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
         );
 
         // Should not throw - graceful degradation
@@ -272,7 +260,6 @@ void main() {
             cacheKey: cacheKey,
             enableSyncManifest: true,
           ),
-          databasePathProvider: () async => testTempPath,
           tempDirectoryProvider: () async => Directory(testTempPath),
         );
 
@@ -345,8 +332,6 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-          databasePathProvider: () async => testTempPath,
-          databaseOpener: (path, {readOnly = false}) async => mockDb,
         );
 
         await staleCache.initialize();

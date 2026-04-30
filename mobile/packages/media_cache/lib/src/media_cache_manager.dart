@@ -185,12 +185,8 @@ class MediaCacheManager extends CacheManager {
   MediaCacheManager({
     required MediaCacheConfig config,
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
-    @visibleForTesting DatabasePathProvider? databasePathProvider,
-    @visibleForTesting DatabaseOpener? databaseOpener,
   }) : _config = config,
        _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
-       _databasePathProvider = databasePathProvider ?? sqflite.getDatabasesPath,
-       _databaseOpener = databaseOpener ?? _defaultDatabaseOpener,
        super(
          kIsWeb
              // coverage:ignore-start
@@ -211,8 +207,6 @@ class MediaCacheManager extends CacheManager {
 
   final MediaCacheConfig _config;
   final DirectoryProvider _tempDirectoryProvider;
-  final DatabasePathProvider _databasePathProvider;
-  final DatabaseOpener _databaseOpener;
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
@@ -235,11 +229,6 @@ class MediaCacheManager extends CacheManager {
 
   /// The configuration used by this cache manager.
   MediaCacheConfig get mediaConfig => _config;
-
-  static Future<sqflite.Database> _defaultDatabaseOpener(
-    String path, {
-    bool readOnly = false,
-  }) => sqflite.openDatabase(path, readOnly: readOnly);
 
   static HttpFileService _createHttpFileService(MediaCacheConfig config) {
     final httpClient = HttpClient()

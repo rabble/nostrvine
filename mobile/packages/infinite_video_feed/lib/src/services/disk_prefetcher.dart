@@ -37,6 +37,8 @@ class DiskPrefetcher {
   CancellableCacheOperation? _active;
   int _generation = 0;
   int? _activeIndex;
+
+  /// Whether [dispose] has been called. Once `true`, no new downloads start.
   bool isDisposed = false;
 
   // Mutable cycle parameters — the running loop reads these on each
@@ -61,8 +63,8 @@ class DiskPrefetcher {
   /// `[startIndex..endIndex]`, the cycle is kept alive and the new call
   /// returns immediately instead of cancelling the in-flight download.
   ///
-  /// Resolves each video's download URL via [resolveUrl]. Skips entries
-  /// that are already cached or that resolve to a missing URL.
+  /// Resolves each video's download URLs via [resolveUrls]. Skips entries
+  /// that are already cached or that resolve to an empty URL list.
   Future<void> run({
     required int startIndex,
     required int endIndex,
@@ -136,8 +138,8 @@ class DiskPrefetcher {
     _activeIndex = null;
   }
 
-  /// Tries each URL in [urls] with a per-URL timeout. Returns as soon as
-  /// one succeeds or all are exhausted.
+  /// Tries each URL in [urls] in sequence, applying a stall timeout per
+  /// attempt. Returns as soon as one succeeds or all URLs are exhausted.
   Future<void> _downloadWithFallbacks(
     int index,
     String videoId,

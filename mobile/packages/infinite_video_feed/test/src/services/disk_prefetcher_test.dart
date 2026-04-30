@@ -277,4 +277,7 @@ class _PendingOperation implements CancellableCacheOperation {
 
   @override
   void cancel() => _cancelled = true;
+
+  @override
+  bool get didStall => false;
 }
