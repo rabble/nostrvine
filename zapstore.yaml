@@ -1,13 +1,12 @@
 repository: https://github.com/divinevideo/divine-mobile
-release_source: https://github.com/divinevideo/divine-mobile/releases/tag/1.0.9
 name: Divine
 description: |
-  Divine is a new 6-second looping video app, inspired by Vine, with a
-  commitment to preserving authentic human creativity. AI slop is not
-  permitted in the app. Built on Nostr, you can create, share and discover
-  short form videos, with full ownership of your content, followers and
-  user name. Note: the app is currently in beta. We'd love your feedback
-  - please share via Support in the app.
+    Divine is a new 6-second looping video app, inspired by Vine, with a
+    commitment to preserving authentic human creativity. AI slop is not
+    permitted in the app. Built on Nostr, you can create, share and discover
+    short form videos, with full ownership of your content, followers and
+    user name. Note: the app is currently in beta. We'd love your feedback
+    - please share via Support in the app.
 tags:
     - social
     - video
@@ -16,7 +15,6 @@ tags:
 license: MPL-2.0
 website: https://divine.video
 match: ".*arm64.*\\.apk$"
-icon: ./mobile/assets/icon/app_icon.png
 supported_nips:
     - "01"
     - "02"
@@ -27,3 +25,4 @@ supported_nips:
     - "94"
 metadata_sources:
     - github
+    - playstore
