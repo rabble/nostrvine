@@ -625,11 +625,10 @@ class VineTheme {
         return onSurfaceDisabled;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return primary;
+        if (states.contains(WidgetState.selected)) return onPrimary;
         return surfaceContainer;
       }),
       trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-        if (states.contains(WidgetState.selected)) return Colors.transparent;
         return outlineVariant;
       }),
     ),
