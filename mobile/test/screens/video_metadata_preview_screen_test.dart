@@ -14,8 +14,8 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoPublishNotifier extends VideoPublishNotifier {
   _MockVideoPublishNotifier(this._initialState);

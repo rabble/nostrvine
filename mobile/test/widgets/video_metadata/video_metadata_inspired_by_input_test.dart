@@ -72,18 +72,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoMetadataInspiredByInput, () {
-    late SharedPreferences _prefs;
+    late SharedPreferences prefs;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      _prefs = await SharedPreferences.getInstance();
+      prefs = await SharedPreferences.getInstance();
     });
 
     testWidgets('renders "Inspired by" label', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -106,7 +106,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -131,7 +131,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -157,7 +157,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -193,7 +193,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -292,7 +292,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),

@@ -12,17 +12,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('VideoMetadataTagsInput', () {
-    late SharedPreferences _prefs;
+    late SharedPreferences prefs;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      _prefs = await SharedPreferences.getInstance();
+      prefs = await SharedPreferences.getInstance();
     });
 
     testWidgets('displays empty state initially', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(_prefs)],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -270,7 +270,7 @@ void main() {
     testWidgets('focuses input when tapped outside', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(_prefs)],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,

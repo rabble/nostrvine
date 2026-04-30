@@ -23,11 +23,11 @@ String _expirationLabel(VideoMetadataExpiration exp) {
 
 void main() {
   group('VideoMetadataExpirationSelector', () {
-    late SharedPreferences _prefs;
+    late SharedPreferences prefs;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      _prefs = await SharedPreferences.getInstance();
+      prefs = await SharedPreferences.getInstance();
     });
 
     testWidgets('displays default expiration option', (tester) async {
@@ -35,7 +35,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(_prefs)],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -83,7 +83,7 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(_prefs)],
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
           child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,

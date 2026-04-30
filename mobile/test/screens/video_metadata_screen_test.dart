@@ -17,10 +17,10 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_stack.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_stack.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 DivineVideoClip _createTestClip({String id = 'test-clip'}) {
   return DivineVideoClip(
@@ -36,11 +36,11 @@ DivineVideoClip _createTestClip({String id = 'test-clip'}) {
 void main() {
   group(VideoMetadataScreen, () {
     late DivineVideoClip testClip;
-    late SharedPreferences _prefs;
+    late SharedPreferences prefs;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      _prefs = await SharedPreferences.getInstance();
+      prefs = await SharedPreferences.getInstance();
       testClip = _createTestClip();
     });
 
@@ -50,7 +50,7 @@ void main() {
       ) async {
         final container = ProviderContainer(
           overrides: [
-            sharedPreferencesProvider.overrideWithValue(_prefs),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             clipManagerProvider.overrideWith(
               () => _MockClipManagerNotifier([testClip]),
             ),
@@ -91,7 +91,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              sharedPreferencesProvider.overrideWithValue(_prefs),
+              sharedPreferencesProvider.overrideWithValue(prefs),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
               ),
@@ -117,7 +117,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              sharedPreferencesProvider.overrideWithValue(_prefs),
+              sharedPreferencesProvider.overrideWithValue(prefs),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
               ),
@@ -146,7 +146,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              sharedPreferencesProvider.overrideWithValue(_prefs),
+              sharedPreferencesProvider.overrideWithValue(prefs),
               clipManagerProvider.overrideWith(
                 () => _MockClipManagerNotifier([testClip]),
               ),
