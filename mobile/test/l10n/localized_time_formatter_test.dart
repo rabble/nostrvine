@@ -176,7 +176,8 @@ void main() {
 
       testWidgets('uses passed locale for older dates', (tester) async {
         final en = await _loadL10n(tester, const Locale('en'));
-        final ts = _unixSecondsAgo(const Duration(days: 30));
+        // Fixed date so en ("January 15") and de ("15. Januar") always differ.
+        const ts = 1579046400;
 
         final enResult = LocalizedTimeFormatter.formatDateLabel(
           en,
