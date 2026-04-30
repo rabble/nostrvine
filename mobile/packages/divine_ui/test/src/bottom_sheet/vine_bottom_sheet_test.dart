@@ -802,6 +802,36 @@ void main() {
           expect(find.text('Sheet body'), findsNothing);
         },
       );
+
+      testWidgets(
+        'shows close and check buttons in scrollable mode when onComplete '
+        'is provided',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      title: const Text('Create'),
+                      onComplete: () async {},
+                      body: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          // Both close (X) and check buttons present in scrollable mode.
+          expect(find.byType(DivineIconButton), findsNWidgets(2));
+        },
+      );
     });
   });
 }
