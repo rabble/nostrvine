@@ -215,6 +215,7 @@ void main() {
               executedScripts.add(script);
             },
             onBridgeMessageHandlerReady: (handler) => bridgeHandler = handler,
+            bridgeNonceOverride: 'test-nonce',
           ),
         ),
       );
@@ -224,6 +225,7 @@ void main() {
           'id': 'req-1',
           'method': 'getPublicKey',
           'args': <String, dynamic>{},
+          'nonce': 'test-nonce',
         }),
       );
       await tester.pump();
@@ -233,25 +235,113 @@ void main() {
       expect(executedScripts.single, contains('f' * 64));
     });
 
+    testWidgets('rejects bridge messages with no nonce as unauthorized', (
+      tester,
+    ) async {
+      Future<void> Function(String message)? bridgeHandler;
+      final executedScripts = <String>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: NostrAppSandboxScreen(
+            app: _fixtureApp(),
+            sandboxBuilder: (_) => const SizedBox.shrink(),
+            javaScriptRunnerOverride: (script) async {
+              executedScripts.add(script);
+            },
+            onBridgeMessageHandlerReady: (handler) => bridgeHandler = handler,
+            bridgeNonceOverride: 'expected-nonce',
+            currentUserPubkeyOverride: 'f' * 64,
+          ),
+        ),
+      );
+
+      await bridgeHandler!(
+        jsonEncode({
+          'id': 'subframe-1',
+          'method': 'signEvent',
+          'args': <String, dynamic>{
+            'event': {'kind': 1},
+          },
+          // Note: no 'nonce' field — simulates an iframe calling
+          // divineSandboxBridge.postMessage directly without the
+          // main-frame bootstrap context.
+        }),
+      );
+      await tester.pump();
+
+      expect(executedScripts, hasLength(1));
+      expect(executedScripts.single, contains('subframe-1'));
+      expect(executedScripts.single, contains('subframe_or_unauthorized'));
+      expect(
+        executedScripts.single,
+        isNot(contains('"success":true')),
+      );
+    });
+
+    testWidgets(
+      'rejects bridge messages with a mismatched nonce as unauthorized',
+      (tester) async {
+        Future<void> Function(String message)? bridgeHandler;
+        final executedScripts = <String>[];
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NostrAppSandboxScreen(
+              app: _fixtureApp(),
+              sandboxBuilder: (_) => const SizedBox.shrink(),
+              javaScriptRunnerOverride: (script) async {
+                executedScripts.add(script);
+              },
+              onBridgeMessageHandlerReady: (handler) => bridgeHandler = handler,
+              bridgeNonceOverride: 'expected-nonce',
+              currentUserPubkeyOverride: 'f' * 64,
+            ),
+          ),
+        );
+
+        await bridgeHandler!(
+          jsonEncode({
+            'id': 'subframe-2',
+            'method': 'getPublicKey',
+            'args': <String, dynamic>{},
+            'nonce': 'attacker-guessed-nonce',
+          }),
+        );
+        await tester.pump();
+
+        expect(executedScripts, hasLength(1));
+        expect(executedScripts.single, contains('subframe-2'));
+        expect(executedScripts.single, contains('subframe_or_unauthorized'));
+      },
+    );
+
     group('bridge bootstrap script', () {
       test('includes eager pubkey when provided', () {
-        final script = buildBridgeBootstrapScript(pubkey: 'abc123');
+        final script = buildBridgeBootstrapScript(
+          nonce: 'n',
+          pubkey: 'abc123',
+        );
         expect(script, contains("_pubkey: 'abc123'"));
       });
 
       test('sets pubkey to null when not provided', () {
-        final script = buildBridgeBootstrapScript();
+        final script = buildBridgeBootstrapScript(nonce: 'n');
         expect(script, contains("_pubkey: '' || null"));
       });
 
       test('includes provider metadata', () {
-        final script = buildBridgeBootstrapScript();
+        final script = buildBridgeBootstrapScript(nonce: 'n');
         expect(script, contains("name: 'diVine'"));
         expect(script, contains("'nip04', 'nip44'"));
       });
 
       test('dispatches nostr:ready event', () {
-        final script = buildBridgeBootstrapScript();
+        final script = buildBridgeBootstrapScript(nonce: 'n');
         expect(
           script,
           contains("window.dispatchEvent(new Event('nostr:ready'))"),
@@ -259,7 +349,7 @@ void main() {
       });
 
       test('dispatches nlAuth event for nostr-login compat', () {
-        final script = buildBridgeBootstrapScript();
+        final script = buildBridgeBootstrapScript(nonce: 'n');
         expect(
           script,
           contains("document.dispatchEvent(new CustomEvent('nlAuth'"),
@@ -268,6 +358,7 @@ void main() {
 
       test('injects auto-login script with pubkey substituted', () {
         final script = buildBridgeBootstrapScript(
+          nonce: 'n',
           pubkey: 'deadbeef',
           autoLoginScript: "localStorage.setItem('pubkey', '{{PUBKEY}}');",
         );
@@ -276,28 +367,54 @@ void main() {
       });
 
       test('skips auto-login when script is null', () {
-        final script = buildBridgeBootstrapScript(pubkey: 'abc');
+        final script = buildBridgeBootstrapScript(nonce: 'n', pubkey: 'abc');
         expect(script, isNot(contains('localStorage.setItem')));
       });
 
       test('escapes single quotes in pubkey', () {
-        final script = buildBridgeBootstrapScript(pubkey: "a'b");
+        final script = buildBridgeBootstrapScript(nonce: 'n', pubkey: "a'b");
         expect(script, contains(r"_pubkey: 'a\'b'"));
       });
 
       test('escapes backslashes in pubkey', () {
-        final script = buildBridgeBootstrapScript(pubkey: r'a\b');
+        final script = buildBridgeBootstrapScript(nonce: 'n', pubkey: r'a\b');
         expect(script, contains(r"_pubkey: 'a\\b'"));
       });
 
       test('escapes backticks in pubkey', () {
-        final script = buildBridgeBootstrapScript(pubkey: 'a`b');
+        final script = buildBridgeBootstrapScript(nonce: 'n', pubkey: 'a`b');
         expect(script, contains(r"_pubkey: 'a\`b'"));
       });
 
       test('escapes newlines in pubkey', () {
-        final script = buildBridgeBootstrapScript(pubkey: 'a\nb');
+        final script = buildBridgeBootstrapScript(nonce: 'n', pubkey: 'a\nb');
         expect(script, contains(r"_pubkey: 'a\nb'"));
+      });
+
+      test('refuses to install in non-main frames', () {
+        final script = buildBridgeBootstrapScript(nonce: 'n');
+        expect(script, contains('window.top !== window.self'));
+      });
+
+      test('embeds the per-mount nonce in the bootstrap closure', () {
+        final script = buildBridgeBootstrapScript(nonce: 'NONCE-XYZ');
+        expect(
+          script,
+          contains("const __divineBridgeNonce = 'NONCE-XYZ';"),
+        );
+      });
+
+      test('includes the nonce on every outgoing bridge request', () {
+        final script = buildBridgeBootstrapScript(nonce: 'n');
+        expect(script, contains('nonce: __divineBridgeNonce'));
+      });
+
+      test('escapes single quotes in the nonce', () {
+        final script = buildBridgeBootstrapScript(nonce: "a'b");
+        expect(
+          script,
+          contains(r"const __divineBridgeNonce = 'a\'b';"),
+        );
       });
     });
 
@@ -305,6 +422,7 @@ void main() {
       test('inserts bridge after head tag', () {
         final html = injectBridgeBootstrapIntoHtml(
           '<html><head></head><body></body></html>',
+          nonce: 'n',
           pubkey: 'abc',
         );
         expect(html, contains('<!-- divine-nostr-bridge -->'));
@@ -315,12 +433,25 @@ void main() {
       test('includes auto-login in injected HTML', () {
         final html = injectBridgeBootstrapIntoHtml(
           '<html><head></head><body></body></html>',
+          nonce: 'n',
           pubkey: 'abc',
           autoLoginScript: "localStorage.setItem('loginType', 'extension');",
         );
         expect(
           html,
           contains("localStorage.setItem('loginType', 'extension')"),
+        );
+      });
+
+      test('forwards the nonce into the embedded bootstrap script', () {
+        final html = injectBridgeBootstrapIntoHtml(
+          '<html><head></head><body></body></html>',
+          nonce: 'NONCE-XYZ',
+          pubkey: 'abc',
+        );
+        expect(
+          html,
+          contains("const __divineBridgeNonce = 'NONCE-XYZ';"),
         );
       });
     });

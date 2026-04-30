@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
@@ -35,6 +36,7 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
     this.javaScriptRunnerOverride,
     this.onBridgeMessageHandlerReady,
     this.currentUserPubkeyOverride,
+    this.bridgeNonceOverride,
     super.key,
   });
 
@@ -48,6 +50,8 @@ class NostrAppSandboxScreen extends ConsumerStatefulWidget {
   onBridgeMessageHandlerReady;
   @visibleForTesting
   final String? currentUserPubkeyOverride;
+  @visibleForTesting
+  final String? bridgeNonceOverride;
 
   static String pathForAppId(String appId) =>
       '/apps/${Uri.encodeComponent(appId)}/sandbox';
@@ -63,6 +67,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   Uri? _blockedUri;
   Uri? _currentPageUri;
   http.Client? _ownedBootstrapHttpClient;
+  late final String _bridgeNonce;
 
   String? get _currentUserPubkey =>
       widget.currentUserPubkeyOverride ??
@@ -72,6 +77,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   void initState() {
     super.initState();
     _currentPageUri = Uri.parse(widget.app.launchUrl);
+    _bridgeNonce = widget.bridgeNonceOverride ?? _generateBridgeNonce();
     widget.onNavigationHandlerReady?.call(_handleNavigationAttempt);
     widget.onBridgeMessageHandlerReady?.call(_handleBridgeMessage);
 
@@ -114,6 +120,12 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
       final parsedAllowed = Uri.tryParse(allowedOrigin);
       return parsedAllowed != null && parsedAllowed.origin == uri.origin;
     });
+  }
+
+  static String _generateBridgeNonce() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(24, (_) => random.nextInt(256));
+    return base64Url.encode(bytes);
   }
 
   NostrAppBridgeService get _bridgeService =>
@@ -261,13 +273,14 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
     final contentController = await configuration.getUserContentController();
     final fullScript = buildBridgeBootstrapScript(
+      nonce: _bridgeNonce,
       pubkey: _currentUserPubkey,
       autoLoginScript: widget.app.autoLoginScript,
     );
     final userScript = WKUserScript(
       source: fullScript,
       injectionTime: UserScriptInjectionTime.atDocumentStart,
-      isForMainFrameOnly: false,
+      isForMainFrameOnly: true,
     );
 
     await contentController.addUserScript(userScript);
@@ -298,6 +311,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         baseUri: resolvedUri,
         html: injectBridgeBootstrapIntoHtml(
           response.body,
+          nonce: _bridgeNonce,
           pubkey: _currentUserPubkey,
           autoLoginScript: widget.app.autoLoginScript,
         ),
@@ -314,6 +328,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
     }
 
     final fullScript = buildBridgeBootstrapScript(
+      nonce: _bridgeNonce,
       pubkey: _currentUserPubkey,
       autoLoginScript: widget.app.autoLoginScript,
     );
@@ -333,6 +348,17 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         (key, value) => MapEntry(key.toString(), value),
       );
       responseId = request['id']?.toString() ?? 'unknown';
+      final nonce = request['nonce']?.toString();
+      if (nonce == null || nonce != _bridgeNonce) {
+        // Bridge message arrived without (or with the wrong) per-mount
+        // nonce — most likely an iframe calling the JS channel directly,
+        // bypassing the bootstrap script. Refuse before evaluating.
+        await _emitBridgeResponse(
+          id: responseId,
+          result: const BridgeResult.error('subframe_or_unauthorized'),
+        );
+        return;
+      }
       final method = request['method']?.toString();
       final args = request['args'];
 
@@ -488,11 +514,22 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
 /// Builds the bridge bootstrap JavaScript with optional eager pubkey,
 /// provider metadata, ready-event dispatch, and per-app auto-login.
+///
+/// [nonce] is a per-mount secret embedded in every outgoing bridge
+/// request. The host rejects messages whose nonce does not match,
+/// which prevents iframes that bypass `window.nostr` and call the
+/// `divineSandboxBridge` channel directly from impersonating the main
+/// frame.
 @visibleForTesting
-String buildBridgeBootstrapScript({String? pubkey, String? autoLoginScript}) {
+String buildBridgeBootstrapScript({
+  required String nonce,
+  String? pubkey,
+  String? autoLoginScript,
+}) {
   final escapedPubkey = pubkey != null && pubkey.isNotEmpty
       ? _escapeJs(pubkey)
       : '';
+  final escapedNonce = _escapeJs(nonce);
   final loginJs = autoLoginScript != null && autoLoginScript.isNotEmpty
       ? autoLoginScript.replaceAll('{{PUBKEY}}', escapedPubkey)
       : '';
@@ -503,6 +540,17 @@ String buildBridgeBootstrapScript({String? pubkey, String? autoLoginScript}) {
     return;
   }
 
+  // Refuse to install in non-main frames. Cross-origin access to
+  // window.top throws; treat that as "not main frame" and bail.
+  try {
+    if (window.top !== window.self) {
+      return;
+    }
+  } catch (_) {
+    return;
+  }
+
+  const __divineBridgeNonce = '$escapedNonce';
   const pending = new Map();
   let nextId = 0;
 
@@ -512,6 +560,7 @@ String buildBridgeBootstrapScript({String? pubkey, String? autoLoginScript}) {
       id,
       method,
       args: args ?? {},
+      nonce: __divineBridgeNonce,
     });
 
     return new Promise((resolve, reject) => {
@@ -667,10 +716,12 @@ class _BootstrappedSandboxPage {
 @visibleForTesting
 String injectBridgeBootstrapIntoHtml(
   String html, {
+  required String nonce,
   String? pubkey,
   String? autoLoginScript,
 }) {
   final script = buildBridgeBootstrapScript(
+    nonce: nonce,
     pubkey: pubkey,
     autoLoginScript: autoLoginScript,
   );
