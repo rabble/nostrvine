@@ -15,6 +15,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
@@ -102,8 +103,12 @@ void main() {
   group('VideoRecorderScreen Tests', () {
     late ProviderContainer container;
 
-    setUp(() {
-      container = ProviderContainer();
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
     });
 
     tearDown(() {
@@ -469,6 +474,7 @@ void main() {
       ) async {
         // Skip the "why six seconds" prompt
         SharedPreferences.setMockInitialValues({'why_six_seconds_shown': true});
+        final prefs = await SharedPreferences.getInstance();
 
         final mockDraftStorage = _MockDraftStorageService();
         final editedDraft = DivineVideoDraft(
@@ -502,6 +508,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
               clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],
@@ -532,6 +539,7 @@ void main() {
         tester,
       ) async {
         SharedPreferences.setMockInitialValues({'why_six_seconds_shown': true});
+        final prefs = await SharedPreferences.getInstance();
 
         final mockDraftStorage = _MockDraftStorageService();
         // Draft with clips but no metadata edits → hasBeenEdited = false
@@ -566,6 +574,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
               clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],
@@ -592,6 +601,7 @@ void main() {
         tester,
       ) async {
         SharedPreferences.setMockInitialValues({'why_six_seconds_shown': true});
+        final prefs = await SharedPreferences.getInstance();
 
         final mockDraftStorage = _MockDraftStorageService();
         when(
@@ -604,6 +614,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(prefs),
               draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
               clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
             ],

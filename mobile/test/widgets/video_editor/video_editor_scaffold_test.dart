@@ -10,10 +10,12 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_scaffold.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group(VideoEditorScaffold, () {
@@ -21,8 +23,11 @@ void main() {
     late TimelineOverlayBloc overlayBloc;
     late ClipEditorBloc clipBloc;
     late VideoEditorFilterBloc filterBloc;
+    late SharedPreferences prefs;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
       mainBloc = VideoEditorMainBloc();
       overlayBloc = TimelineOverlayBloc();
       clipBloc = ClipEditorBloc(onFinalClipInvalidated: () {});
@@ -41,6 +46,7 @@ void main() {
       final removeAreaKey = GlobalKey();
 
       return ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
         child: VideoEditorScope(
           editorKey: editorKey,
           removeAreaKey: removeAreaKey,

@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../mocks/mock_camera_service.dart';
 
@@ -15,8 +17,11 @@ void main() {
 
   group('VideoRecorderTopBar Widget Tests', () {
     late MockCameraService mockCamera;
+    late SharedPreferences prefs;
 
     setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
       mockCamera = MockCameraService.create(
         onUpdateState: ({forceCameraRebuild}) {},
         onAutoStopped: (_) {},
@@ -27,6 +32,7 @@ void main() {
     Widget buildTestWidget() {
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           videoRecorderProvider.overrideWith(
             () => VideoRecorderNotifier(mockCamera),
           ),

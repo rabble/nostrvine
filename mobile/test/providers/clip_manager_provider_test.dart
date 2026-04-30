@@ -9,9 +9,11 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
@@ -23,7 +25,9 @@ void main() {
     late _MockDraftStorageService mockDraftStorageService;
     late _MockClipLibraryService mockClipLibraryService;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       mockDraftStorageService = _MockDraftStorageService();
       mockClipLibraryService = _MockClipLibraryService();
       when(
@@ -34,6 +38,7 @@ void main() {
       ).thenAnswer((_) async {});
       container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           draftStorageServiceProvider.overrideWithValue(
             mockDraftStorageService,
           ),

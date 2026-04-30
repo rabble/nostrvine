@@ -5,6 +5,7 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/modes/classic/video_metadata_classic_bottom_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -12,14 +13,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group(VideoMetadataClassicBottomBar, () {
-    setUp(() {
+    late SharedPreferences prefs;
+
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
     });
 
     testWidgets('renders Post button labeled "Done"', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),
@@ -31,8 +36,9 @@ void main() {
 
     testWidgets('button is disabled when metadata is invalid', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),
@@ -116,8 +122,9 @@ void main() {
 
     testWidgets('button has correct semantics identifier', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataClassicBottomBar()),

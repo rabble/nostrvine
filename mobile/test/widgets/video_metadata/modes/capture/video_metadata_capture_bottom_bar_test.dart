@@ -14,6 +14,7 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/video_metadata/modes/capture/video_metadata_capture_bottom_bar.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
@@ -55,9 +56,11 @@ void main() {
   group(VideoMetadataCaptureBottomBar, () {
     late _MockGallerySaveService mockGallerySaveService;
     late _MockPermissionsService mockPermissionsService;
+    late SharedPreferences prefs;
 
-    setUp(() {
+    setUp(() async {
       SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
       mockGallerySaveService = _MockGallerySaveService();
       mockPermissionsService = _MockPermissionsService();
       when(
@@ -76,8 +79,9 @@ void main() {
 
     testWidgets('renders both Save draft and Post buttons', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataCaptureBottomBar()),
@@ -92,8 +96,9 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataCaptureBottomBar()),

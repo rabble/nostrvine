@@ -7,9 +7,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Mock for FollowRepository
 class _MockFollowRepository extends Mock implements FollowRepository {}
@@ -58,10 +60,18 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group(VideoMetadataCollaboratorsInput, () {
+    late SharedPreferences _prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      _prefs = await SharedPreferences.getInstance();
+    });
+
     testWidgets('renders Collaborators label', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(_prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -81,6 +91,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(_prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -138,6 +149,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(_prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -160,6 +172,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(_prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -192,6 +205,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(_prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),
@@ -291,6 +305,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(_prefs),
             followRepositoryProvider.overrideWithValue(
               _createMockFollowRepository(),
             ),

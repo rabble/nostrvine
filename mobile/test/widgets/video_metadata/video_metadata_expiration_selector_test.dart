@@ -4,8 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // English labels matching app_en.arb values.
 String _expirationLabel(VideoMetadataExpiration exp) {
@@ -21,12 +23,20 @@ String _expirationLabel(VideoMetadataExpiration exp) {
 
 void main() {
   group('VideoMetadataExpirationSelector', () {
+    late SharedPreferences _prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      _prefs = await SharedPreferences.getInstance();
+    });
+
     testWidgets('displays default expiration option', (tester) async {
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(_prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataExpirationSelector()),
@@ -72,8 +82,9 @@ void main() {
       addTearDown(() => tester.view.resetPhysicalSize());
 
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(_prefs)],
+          child: const MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(body: VideoMetadataExpirationSelector()),

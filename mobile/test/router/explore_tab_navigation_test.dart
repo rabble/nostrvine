@@ -6,18 +6,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Explore Tab Navigation', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    });
+
     testWidgets(
       'tapping Explore tab after viewing a video should reset to grid mode, not feed mode',
       (tester) async {
         // ARRANGE: Set up providers to simulate navigation flow
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
             // Simulate URL changes: explore grid → explore feed → home → explore grid
             routerLocationStreamProvider.overrideWith((ref) {
               return Stream.fromIterable([
@@ -86,6 +96,7 @@ void main() {
         // ARRANGE: Set up providers for grid mode
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
             routerLocationStreamProvider.overrideWith(
               (ref) => Stream.value(ExploreScreen.path),
             ),

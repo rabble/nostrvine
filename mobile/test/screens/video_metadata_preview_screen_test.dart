@@ -11,8 +11,10 @@ import 'package:models/models.dart' as models;
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockVideoPublishNotifier extends VideoPublishNotifier {
@@ -38,7 +40,11 @@ DivineVideoClip _createTestClip({String id = 'test-clip'}) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
     DivineVideoPlayerController.resetIdCounterForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(const MethodChannel('divine_video_player'), (
@@ -66,6 +72,7 @@ void main() {
       // to the video_player → DivineVideoPlayer migration.
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           videoPublishProvider.overrideWith(
             () => _MockVideoPublishNotifier(const VideoPublishProviderState()),
           ),
