@@ -5,6 +5,7 @@
 // ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math';
 
 import 'package:nostr_client/nostr_client.dart';
@@ -323,8 +324,14 @@ class RepostsRepository {
       await _localStorage?.saveRepostRecord(confirmed);
 
       return sentEvent.id;
-    } catch (_) {
+    } catch (e, stackTrace) {
       if (_queueOfflineAction != null) {
+        developer.log(
+          'Repost publish failed; queuing optimistic action for retry',
+          name: 'RepostsRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
         await _queueOfflineAction(
           isRepost: true,
           addressableId: addressableId,
@@ -448,8 +455,14 @@ class RepostsRepository {
           'Failed to publish unrepost deletion',
         );
       }
-    } catch (_) {
+    } catch (e, stackTrace) {
       if (_queueOfflineAction != null) {
+        developer.log(
+          'Unrepost publish failed; queuing optimistic action for retry',
+          name: 'RepostsRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
         await _queueOfflineAction(
           isRepost: false,
           addressableId: addressableId,

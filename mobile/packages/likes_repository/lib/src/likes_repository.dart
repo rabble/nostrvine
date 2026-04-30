@@ -5,6 +5,7 @@
 // ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:math';
 
 import 'package:likes_repository/src/exceptions.dart';
@@ -324,8 +325,14 @@ class LikesRepository {
       await _localStorage?.saveLikeRecord(confirmed);
 
       return reactionEvent.id;
-    } catch (_) {
+    } catch (e, stackTrace) {
       if (_queueOfflineAction != null) {
+        developer.log(
+          'Like publish failed; queuing optimistic action for retry',
+          name: 'LikesRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
         await _queueOfflineAction(
           isLike: true,
           eventId: eventId,
@@ -444,8 +451,14 @@ class LikesRepository {
       if (deletionEvent == null) {
         throw const UnlikeFailedException('Failed to publish unlike deletion');
       }
-    } catch (_) {
+    } catch (e, stackTrace) {
       if (_queueOfflineAction != null) {
+        developer.log(
+          'Unlike publish failed; queuing optimistic action for retry',
+          name: 'LikesRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
         await _queueOfflineAction(
           isLike: false,
           eventId: eventId,
