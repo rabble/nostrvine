@@ -46,7 +46,9 @@ class DiskPrefetcher {
   // freshly-appended video list without restarting the download.
   int _cycleEndIndex = -1;
   List<VideoEvent> _cycleVideos = const [];
+  // coverage:ignore-start
   PrefetchUrlsResolver _cycleResolveUrls = (_) => const [];
+  // coverage:ignore-end
 
   /// Cancels the in-flight HTTP download (if any) and clears the active
   /// operation. Subsequent [run] calls start fresh.

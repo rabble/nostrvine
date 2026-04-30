@@ -1,10 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
@@ -87,38 +86,36 @@ void main() {
         failingCache.resetForTesting();
       });
 
-      test('completes successfully when no database exists', () async {
-        // With the sqflite-based manifest, if no database exists,
-        // initialization still succeeds (graceful degradation)
+      test('completes successfully when no existing cache entries', () async {
+        // JsonCacheInfoRepository starts empty on first use, so the manifest
+        // stays empty — initialization still succeeds.
         await cacheManager.initialize();
 
         expect(cacheManager.isInitialized, true);
-        // Manifest should be empty since no database was found
         expect(cacheManager.getCacheStats()['manifestSize'], 0);
       });
 
-      test('loads cache entries from database into manifest', () async {
-        // Create a database file so the code doesn't early-return
+      test('loads cache entries from repository into manifest', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'db_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
 
-        // Create cache directory with actual files
+        // Create cache directory with an actual file on disk.
         final cacheDir = Directory('$testTempPath/$cacheKey')
           ..createSync(recursive: true);
         final testFile = await createTestFile(cacheDir, 'test_video.mp4');
 
-        // Mock database that returns cache entries
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenAnswer(
           (_) async => [
-            {
-              'key': 'video_key_1',
-              'relativePath': 'test_video.mp4',
-            },
+            CacheObject(
+              'https://example.com/test_video.mp4',
+              relativePath: 'test_video.mp4',
+              validTill: DateTime(2099),
+              key: 'video_key_1',
+            ),
           ],
         );
-        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -126,6 +123,7 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
+          repoOverride: mockRepo,
         );
 
         await dbCache.initialize();
@@ -133,35 +131,34 @@ void main() {
         expect(dbCache.isInitialized, true);
         expect(dbCache.getCacheStats()['manifestSize'], 1);
 
-        // Should be able to get the cached file synchronously
         final cachedFile = dbCache.getCachedFileSync('video_key_1');
         expect(cachedFile, isNotNull);
         expect(cachedFile!.path, testFile.path);
 
-        // Clean up
         dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
         if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
 
       test('skips entries with missing files', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'missing_file_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
 
-        // Create cache directory but NOT the actual file
-        Directory('$testTempPath/$cacheKey').createSync(recursive: true);
+        // Create cache directory but NOT the actual file.
+        final cacheDir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
 
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenAnswer(
           (_) async => [
-            {
-              'key': 'missing_video',
-              'relativePath': 'nonexistent.mp4',
-            },
+            CacheObject(
+              'https://example.com/nonexistent.mp4',
+              relativePath: 'nonexistent.mp4',
+              validTill: DateTime(2099),
+              key: 'missing_video',
+            ),
           ],
         );
-        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -169,43 +166,7 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
-        );
-
-        await dbCache.initialize();
-
-        expect(dbCache.isInitialized, true);
-        // Entry should not be added since file doesn't exist
-        expect(dbCache.getCacheStats()['manifestSize'], 0);
-
-        // Clean up
-        dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
-        Directory('$testTempPath/$cacheKey').deleteSync(recursive: true);
-      });
-
-      test('skips entries with null key or relativePath', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'null_entries_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
-
-        Directory('$testTempPath/$cacheKey').createSync(recursive: true);
-
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
-          (_) async => [
-            {'key': null, 'relativePath': 'video.mp4'},
-            {'key': 'valid_key', 'relativePath': null},
-            <String, Object?>{}, // Empty map
-          ],
-        );
-        when(mockDb.close).thenAnswer((_) async {});
-
-        final dbCache = MediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: cacheKey,
-            enableSyncManifest: true,
-          ),
-          tempDirectoryProvider: () async => Directory(testTempPath),
+          repoOverride: mockRepo,
         );
 
         await dbCache.initialize();
@@ -213,62 +174,60 @@ void main() {
         expect(dbCache.isInitialized, true);
         expect(dbCache.getCacheStats()['manifestSize'], 0);
 
-        // Clean up
         dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
-        Directory('$testTempPath/$cacheKey').deleteSync(recursive: true);
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
 
-      test('handles database query error gracefully', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'db_error_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
-
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenThrow(
-          Exception('Database corrupted'),
-        );
-        when(mockDb.close).thenAnswer((_) async {});
+      test('skips initialization when repository.open returns false', () async {
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => false);
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
-            cacheKey: cacheKey,
+            cacheKey: 'open_false_${DateTime.now().millisecondsSinceEpoch}',
             enableSyncManifest: true,
           ),
-          tempDirectoryProvider: () async => Directory(testTempPath),
+          repoOverride: mockRepo,
         );
 
-        // Should not throw - graceful degradation
+        await dbCache.initialize();
+
+        expect(dbCache.isInitialized, true);
+        expect(dbCache.getCacheStats()['manifestSize'], 0);
+        verifyNever(mockRepo.getAllObjects);
+
+        dbCache.resetForTesting();
+      });
+
+      test('handles repository query error gracefully', () async {
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenThrow(
+          Exception('Repository corrupted'),
+        );
+
+        final dbCache = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'error_test_${DateTime.now().millisecondsSinceEpoch}',
+            enableSyncManifest: true,
+          ),
+          repoOverride: mockRepo,
+        );
+
         await dbCache.initialize();
         expect(dbCache.isInitialized, true);
 
-        // Clean up
         dbCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
       });
 
-      test('uses default database opener when cache database exists', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'default_opener_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
+      test('uses config.repo when no repoOverride is provided', () async {
+        // Without repoOverride the manager uses SafeCacheInfoRepository
+        // (wrapping JsonCacheInfoRepository). On first use that repo is empty,
+        // so the manifest stays empty but initialization still succeeds.
+        await cacheManager.initialize();
 
-        sqfliteFfiInit();
-        sqflite.databaseFactory = databaseFactoryFfi;
-
-        final defaultOpenerCache = MediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: cacheKey,
-            enableSyncManifest: true,
-          ),
-          tempDirectoryProvider: () async => Directory(testTempPath),
-        );
-
-        await defaultOpenerCache.initialize();
-
-        expect(defaultOpenerCache.isInitialized, true);
-
-        defaultOpenerCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
+        expect(cacheManager.isInitialized, true);
+        expect(cacheManager.getCacheStats()['manifestSize'], 0);
       });
     });
 
@@ -290,9 +249,9 @@ void main() {
       });
 
       test('returns null when file exists on disk but'
-          ' not in database', () async {
-        // With sqflite-based manifest, files must be registered in the database
-        // to appear in the manifest. Files on disk alone are not discovered.
+          ' not in manifest', () async {
+        // Files on disk are not automatically discovered — they must be
+        // registered in the repository before initialize() is called.
         final cacheDir = Directory(
           '$testTempPath/${cacheManager.mediaConfig.cacheKey}',
         )..createSync(recursive: true);
@@ -300,7 +259,7 @@ void main() {
 
         await cacheManager.initialize();
 
-        // File exists on disk but not in database, so returns null
+        // File exists on disk but not in manifest, so returns null.
         final file = cacheManager.getCachedFileSync('orphan_file');
         expect(file, isNull);
 
@@ -311,20 +270,26 @@ void main() {
       test('removes stale entry when file no longer exists', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
         final cacheKey = 'stale_test_$timestamp';
-        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
 
-        // Create cache directory with a file
         final cacheDir = Directory('$testTempPath/$cacheKey')
           ..createSync(recursive: true);
-        final testFile = await createTestFile(cacheDir, 'will_be_deleted.mp4');
+        final testFile = await createTestFile(
+          cacheDir,
+          'will_be_deleted.mp4',
+        );
 
-        final mockDb = MockDatabase();
-        when(() => mockDb.query('cacheObject')).thenAnswer(
+        final mockRepo = MockCacheInfoRepository();
+        when(mockRepo.open).thenAnswer((_) async => true);
+        when(mockRepo.getAllObjects).thenAnswer(
           (_) async => [
-            {'key': 'stale_key', 'relativePath': 'will_be_deleted.mp4'},
+            CacheObject(
+              'https://example.com/will_be_deleted.mp4',
+              relativePath: 'will_be_deleted.mp4',
+              validTill: DateTime(2099),
+              key: 'stale_key',
+            ),
           ],
         );
-        when(mockDb.close).thenAnswer((_) async {});
 
         final staleCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -332,26 +297,24 @@ void main() {
             enableSyncManifest: true,
           ),
           tempDirectoryProvider: () async => Directory(testTempPath),
+          repoOverride: mockRepo,
         );
 
         await staleCache.initialize();
 
-        // Verify file is in manifest
         expect(staleCache.getCacheStats()['manifestSize'], 1);
         var file = staleCache.getCachedFileSync('stale_key');
         expect(file, isNotNull);
 
-        // Delete the file externally
         testFile.deleteSync();
 
-        // Should return null and remove stale entry from manifest
+        // getCachedFileSync detects the file is gone and evicts the stale
+        // entry.
         file = staleCache.getCachedFileSync('stale_key');
         expect(file, isNull);
         expect(staleCache.getCacheStats()['manifestSize'], 0);
 
-        // Clean up
         staleCache.resetForTesting();
-        if (dbFile.existsSync()) dbFile.deleteSync();
         if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
     });

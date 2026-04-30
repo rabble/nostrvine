@@ -8,7 +8,6 @@ import 'package:media_cache/src/cancellable_cache_operation.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:sqflite/sqflite.dart' as sqflite;
 
 /// {@template media_cache_config}
 /// Configuration for [MediaCacheManager].
@@ -169,24 +168,16 @@ class CacheMetrics {
 /// ```
 /// {@endtemplate}
 
-/// Provides the path to the sqflite databases directory.
-typedef DatabasePathProvider = Future<String> Function();
-
-/// Opens a sqflite database at the given path.
-typedef DatabaseOpener =
-    Future<sqflite.Database> Function(
-      String path, {
-      bool readOnly,
-    });
-
 /// {@macro media_cache_manager}
 class MediaCacheManager extends CacheManager {
   /// {@macro media_cache_manager}
   MediaCacheManager({
     required MediaCacheConfig config,
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
+    @visibleForTesting CacheInfoRepository? repoOverride,
   }) : _config = config,
        _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
+       _repoOverride = repoOverride,
        super(
          kIsWeb
              // coverage:ignore-start
@@ -207,6 +198,7 @@ class MediaCacheManager extends CacheManager {
 
   final MediaCacheConfig _config;
   final DirectoryProvider _tempDirectoryProvider;
+  final CacheInfoRepository? _repoOverride;
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
@@ -269,7 +261,9 @@ class MediaCacheManager extends CacheManager {
     try {
       // Read cache metadata via the Config's CacheInfoRepository
       // (JsonCacheInfoRepository wrapped by SafeCacheInfoRepository).
-      final repo = config.repo;
+      // In tests a repo override may be injected to pre-populate the manifest
+      // without needing a real JSON file on disk.
+      final repo = _repoOverride ?? config.repo;
       if (!await repo.open()) {
         _manifestInitialized = true;
         return;
@@ -420,19 +414,26 @@ class MediaCacheManager extends CacheManager {
     _prefetchedKeys.add(key);
     metrics.prefetchedTotal++;
 
-    return CancellableCacheOperation.fromStream(
-      getFileStream(
-        url,
-        key: key,
-        headers: authHeaders ?? {},
-        withProgress: true,
-      ),
-      cacheKey: key,
+    return CancellableCacheOperation.fromFuture(
+      _downloadToFile(url, key, authHeaders ?? {}),
       stallTimeout: stallTimeout,
-      onCached: _config.enableSyncManifest
-          ? (k, path) => _cacheManifest[k] = path
-          : null,
     );
+  }
+
+  Future<File?> _downloadToFile(
+    String url,
+    String key,
+    Map<String, String> headers,
+  ) async {
+    try {
+      final info = await downloadFile(url, key: key, authHeaders: headers);
+      if (_config.enableSyncManifest) {
+        _cacheManifest[key] = info.file.path;
+      }
+      return info.file;
+    } on Exception {
+      return null;
+    }
   }
 
   /// Checks if a file is cached (async version).

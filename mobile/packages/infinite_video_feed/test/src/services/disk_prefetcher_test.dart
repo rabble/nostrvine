@@ -77,7 +77,13 @@ void main() {
         const url = 'http://example.com/video.m3u8';
 
         when(() => cache.getCachedFileSync('id3')).thenReturn(null);
-        when(() => cache.cacheFileCancellable(url, key: 'id3')).thenReturn(
+        when(
+          () => cache.cacheFileCancellable(
+            url,
+            key: 'id3',
+            stallTimeout: any(named: 'stallTimeout'),
+          ),
+        ).thenReturn(
           CancellableCacheOperation.completed(mockFile),
         );
 
@@ -90,7 +96,13 @@ void main() {
           resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
         );
 
-        verify(() => cache.cacheFileCancellable(url, key: 'id3')).called(1);
+        verify(
+          () => cache.cacheFileCancellable(
+            url,
+            key: 'id3',
+            stallTimeout: any(named: 'stallTimeout'),
+          ),
+        ).called(1);
         expect(logs.any((l) => l.contains('completed')), isTrue);
       });
 
@@ -100,7 +112,11 @@ void main() {
         // endIndex 5 is out of bounds; should not throw.
         when(() => cache.getCachedFileSync(any())).thenReturn(null);
         when(
-          () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
+          () => cache.cacheFileCancellable(
+            any(),
+            key: any(named: 'key'),
+            stallTimeout: any(named: 'stallTimeout'),
+          ),
         ).thenReturn(CancellableCacheOperation.completed(_MockFile()));
 
         await prefetcher.run(
@@ -112,7 +128,11 @@ void main() {
 
         // Only id4 at index 0 is valid; no exception thrown.
         verify(
-          () => cache.cacheFileCancellable(any(), key: any(named: 'key')),
+          () => cache.cacheFileCancellable(
+            any(),
+            key: any(named: 'key'),
+            stallTimeout: any(named: 'stallTimeout'),
+          ),
         ).called(1);
       });
 
@@ -132,7 +152,11 @@ void main() {
           final downloadCompleter = _ManualCompleter<File?>();
           when(() => slowCache.getCachedFileSync(any())).thenReturn(null);
           when(
-            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+            () => slowCache.cacheFileCancellable(
+              any(),
+              key: any(named: 'key'),
+              stallTimeout: any(named: 'stallTimeout'),
+            ),
           ).thenAnswer((_) {
             secondRunStarted = true;
             return _PendingOperation(downloadCompleter.future);
@@ -191,7 +215,11 @@ void main() {
           final downloadCompleter = _ManualCompleter<File?>();
           when(() => slowCache.getCachedFileSync(any())).thenReturn(null);
           when(
-            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+            () => slowCache.cacheFileCancellable(
+              any(),
+              key: any(named: 'key'),
+              stallTimeout: any(named: 'stallTimeout'),
+            ),
           ).thenAnswer(
             (_) => _PendingOperation(downloadCompleter.future),
           );
@@ -232,13 +260,69 @@ void main() {
 
           // Only one cacheFileCancellable call — the second run skipped.
           verify(
-            () => slowCache.cacheFileCancellable(any(), key: any(named: 'key')),
+            () => slowCache.cacheFileCancellable(
+              any(),
+              key: any(named: 'key'),
+              stallTimeout: any(named: 'stallTimeout'),
+            ),
           ).called(1);
 
           downloadCompleter.complete(null);
           slowPrefetcher.dispose();
         },
       );
+
+      test('logs stall and continues when download stalls', () async {
+        const url = 'http://example.com/video.m3u8';
+
+        when(() => cache.getCachedFileSync('id_stall')).thenReturn(null);
+        when(
+          () => cache.cacheFileCancellable(
+            url,
+            key: 'id_stall',
+            stallTimeout: any(named: 'stallTimeout'),
+          ),
+        ).thenReturn(_StalledOperation());
+
+        final videos = [_makeVideo('id_stall', url: url)];
+
+        await prefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
+        );
+
+        expect(logs.any((l) => l.contains('stalled')), isTrue);
+      });
+
+      test('logs failure when download returns null', () async {
+        const url = 'http://example.com/video.m3u8';
+        final failCompleter = _ManualCompleter<File?>();
+
+        when(() => cache.getCachedFileSync('id_fail')).thenReturn(null);
+        when(
+          () => cache.cacheFileCancellable(
+            url,
+            key: 'id_fail',
+            stallTimeout: any(named: 'stallTimeout'),
+          ),
+        ).thenAnswer((_) => _PendingOperation(failCompleter.future));
+
+        final videos = [_makeVideo('id_fail', url: url)];
+
+        final runFuture = prefetcher.run(
+          startIndex: 0,
+          endIndex: 0,
+          videos: videos,
+          resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
+        );
+
+        failCompleter.complete(null);
+        await runFuture;
+
+        expect(logs.any((l) => l.contains('failed')), isTrue);
+      });
     });
 
     group('cancelActive', () {
@@ -280,4 +364,19 @@ class _PendingOperation implements CancellableCacheOperation {
 
   @override
   bool get didStall => false;
+}
+
+/// A [CancellableCacheOperation] that immediately reports a stall.
+class _StalledOperation implements CancellableCacheOperation {
+  @override
+  Future<File?> get file async => null;
+
+  @override
+  bool get isCancelled => false;
+
+  @override
+  bool get didStall => true;
+
+  @override
+  void cancel() {}
 }

@@ -421,36 +421,11 @@ void main() {
         },
       );
 
-      test('returns stream operation and increments prefetchedTotal', () async {
-        final controller = StreamController<FileResponse>();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-        cacheManager = TestableMediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: 'cancellable_stream_$timestamp',
-            enableSyncManifest: true,
-          ),
-          mockGetFileStream: (url, {key, headers, withProgress = false}) =>
-              controller.stream,
-        );
-
-        final op = cacheManager.cacheFileCancellable(
-          'https://example.com/video.mp4',
-          key: 'stream_key',
-        );
-
-        expect(cacheManager.metrics.prefetchedTotal, equals(1));
-        expect(op.isCancelled, isFalse);
-
-        await controller.close();
-      });
-
-      test('uses null onCached when enableSyncManifest is false', () async {
-        final controller = StreamController<FileResponse>();
+      test('returns pending operation and increments prefetchedTotal', () async {
+        final downloadCompleter = Completer<FileInfo>();
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();
         final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final cacheKey = 'cancellable_no_manifest_$timestamp';
 
         when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/video.mp4');
@@ -458,41 +433,150 @@ void main() {
 
         cacheManager = TestableMediaCacheManager(
           config: MediaCacheConfig(
+            cacheKey: 'cancellable_pending_$timestamp',
+            enableSyncManifest: true,
+          ),
+          mockDownloadFile: (url, {key, authHeaders}) =>
+              downloadCompleter.future,
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'pending_key',
+        );
+
+        expect(cacheManager.metrics.prefetchedTotal, equals(1));
+        expect(op.isCancelled, isFalse);
+
+        // Clean up.
+        downloadCompleter.complete(mockFileInfo);
+        await op.file;
+      });
+
+      test('manifest is updated after download completes', () async {
+        final mockFile = MockFile();
+        final mockFileInfo = MockFileInfo();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'cancellable_manifest_$timestamp';
+        final cacheDir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
+        final cachedFile = await createTestFile(cacheDir, 'video.mp4');
+
+        when(mockFile.existsSync).thenReturn(true);
+        when(() => mockFile.path).thenReturn(cachedFile.path);
+        when(() => mockFileInfo.file).thenReturn(mockFile);
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
             cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          mockDownloadFile: (url, {key, authHeaders}) async => mockFileInfo,
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'manifest_key',
+        );
+        await op.file;
+
+        final synced = cacheManager.getCachedFileSync('manifest_key');
+        expect(synced, isNotNull);
+        expect(synced!.path, equals(cachedFile.path));
+
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+      });
+
+      test('manifest is NOT updated when enableSyncManifest is false',
+          () async {
+        final mockFile = MockFile();
+        final mockFileInfo = MockFileInfo();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+        when(mockFile.existsSync).thenReturn(true);
+        when(() => mockFile.path).thenReturn('/test/video.mp4');
+        when(() => mockFileInfo.file).thenReturn(mockFile);
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancellable_no_manifest_$timestamp',
             // enableSyncManifest defaults to false
           ),
-          mockGetFileStream: (url, {key, headers, withProgress = false}) =>
-              controller.stream,
+          mockDownloadFile: (url, {key, authHeaders}) async => mockFileInfo,
         );
 
         final op = cacheManager.cacheFileCancellable(
           'https://example.com/video.mp4',
           key: 'no_manifest_key',
         );
+        await op.file;
 
-        // Emit a FileInfo – the null onCached means no manifest update.
-        controller.add(mockFileInfo);
-        await controller.close();
-
-        final result = await op.file;
-        expect(result, isNotNull);
         expect(cacheManager.getCachedFileSync('no_manifest_key'), isNull);
       });
 
+      test('passes auth headers to downloadFile', () async {
+        final mockFile = MockFile();
+        final mockFileInfo = MockFileInfo();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        Map<String, String>? capturedHeaders;
+
+        when(mockFile.existsSync).thenReturn(true);
+        when(() => mockFile.path).thenReturn('/test/video.mp4');
+        when(() => mockFileInfo.file).thenReturn(mockFile);
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancellable_auth_$timestamp',
+          ),
+          mockDownloadFile: (url, {key, authHeaders}) async {
+            capturedHeaders = authHeaders;
+            return mockFileInfo;
+          },
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'auth_key',
+          authHeaders: {'Authorization': 'Bearer token123'},
+        );
+        await op.file;
+
+        expect(
+          capturedHeaders,
+          equals({'Authorization': 'Bearer token123'}),
+        );
+      });
+
+      test('returns null when downloadFile throws', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancellable_error_$timestamp',
+          ),
+          mockDownloadFile: (url, {key, authHeaders}) async {
+            throw Exception('network failure');
+          },
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'error_key',
+        );
+
+        expect(await op.file, isNull);
+      });
+
       test(
-        'onCached callback updates manifest when enableSyncManifest is true',
+        'prefetchedUsed increments when prefetched key is hit via getCachedFileSync',
         () async {
-          final controller = StreamController<FileResponse>();
           final mockFile = MockFile();
           final mockFileInfo = MockFileInfo();
           final timestamp = DateTime.now().millisecondsSinceEpoch;
-          final cacheKey = 'cancellable_manifest_update_$timestamp';
+          final cacheKey = 'prefetched_used_$timestamp';
           final cacheDir = Directory('$testTempPath/$cacheKey')
             ..createSync(recursive: true);
-          final cachedFile = await createTestFile(
-            cacheDir,
-            'video_manifest.mp4',
-          );
+          final cachedFile = await createTestFile(cacheDir, 'video.mp4');
 
           when(mockFile.existsSync).thenReturn(true);
           when(() => mockFile.path).thenReturn(cachedFile.path);
@@ -503,54 +587,25 @@ void main() {
               cacheKey: cacheKey,
               enableSyncManifest: true,
             ),
-            mockGetFileStream: (url, {key, headers, withProgress = false}) =>
-                controller.stream,
+            mockDownloadFile: (url, {key, authHeaders}) async => mockFileInfo,
           );
 
+          // Download adds the key to _prefetchedKeys.
           final op = cacheManager.cacheFileCancellable(
             'https://example.com/video.mp4',
-            key: 'manifest_update_key',
+            key: 'prefetched_key',
           );
-
-          controller.add(mockFileInfo);
-          await controller.close();
-
           await op.file;
 
-          // The onCached callback should have updated the manifest.
-          final synced = cacheManager.getCachedFileSync('manifest_update_key');
-          expect(synced, isNotNull);
-          expect(synced!.path, equals(cachedFile.path));
+          // getCachedFileSync on a prefetched key should increment the counter.
+          final file = cacheManager.getCachedFileSync('prefetched_key');
+          expect(file, isNotNull);
+          expect(cacheManager.metrics.prefetchedUsed, equals(1));
 
-          if (cacheDir.existsSync()) {
-            cacheDir.deleteSync(recursive: true);
-          }
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
         },
       );
-
-      test('passes auth headers to getFileStream', () async {
-        final controller = StreamController<FileResponse>();
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        Map<String, String>? capturedHeaders;
-
-        cacheManager =
-            TestableMediaCacheManager(
-              config: MediaCacheConfig(
-                cacheKey: 'cancellable_auth_$timestamp',
-              ),
-              mockGetFileStream: (url, {key, headers, withProgress = false}) {
-                capturedHeaders = headers;
-                return controller.stream;
-              },
-            )..cacheFileCancellable(
-              'https://example.com/video.mp4',
-              key: 'auth_key',
-              authHeaders: {'Authorization': 'Bearer token123'},
-            );
-
-        expect(capturedHeaders, equals({'Authorization': 'Bearer token123'}));
-        await controller.close();
-      });
     });
   });
 }
+

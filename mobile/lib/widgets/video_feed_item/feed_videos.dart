@@ -471,14 +471,6 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         trigger: _heartTrigger,
                       ),
                     ),
-                    // TODO(#0): Add slow-load banner for externally hosted
-                    // videos (non-Divine server). Old path uses
-                    // `_SlowExternalVideoOverlay` backed by
-                    // `VideoPoolProvider.getIndexNotifier().isSlowLoad`.
-                    // New path needs a timeout-based stall detector on
-                    // `DivineVideoPlayerController.stateStream` that fires
-                    // when the video is buffering but position doesn't
-                    // advance for N seconds.
                   ],
                 ),
               ),
