@@ -39,13 +39,16 @@ class VideoRepostersCubit extends Cubit<VideoRepostersState> {
 
   Future<void> _fetch() async {
     if (_videoId.isEmpty) {
+      if (isClosed) return;
       emit(const VideoRepostersState(isLoading: false));
       return;
     }
     try {
       final pubkeys = await _videoEventService.getRepostersForVideo(_videoId);
+      if (isClosed) return;
       emit(VideoRepostersState(pubkeys: pubkeys, isLoading: false));
     } catch (e, stackTrace) {
+      if (isClosed) return;
       addError(e, stackTrace);
       emit(const VideoRepostersState(isLoading: false));
     }
