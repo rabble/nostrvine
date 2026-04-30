@@ -630,6 +630,7 @@
     "metadataLikesLabel": "Aprecieri",
     "metadataCommentsLabel": "Comentarii",
     "metadataRepostsLabel": "Redistribuiri",
+    "metadataPostedDateSemantics": "Publicat pe {date}",
     "devOptionsTitle": "Opțiuni dezvoltator",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

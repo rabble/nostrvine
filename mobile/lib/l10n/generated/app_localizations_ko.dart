@@ -1295,7 +1295,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String metadataPostedDateSemantics(String date) {
-    return 'Posted on $date';
+    return '$date에 게시됨';
   }
 
   @override

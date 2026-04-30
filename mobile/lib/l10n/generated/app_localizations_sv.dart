@@ -1369,7 +1369,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String metadataPostedDateSemantics(String date) {
-    return 'Posted on $date';
+    return 'Publicerat den $date';
   }
 
   @override

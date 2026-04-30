@@ -1356,7 +1356,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String metadataPostedDateSemantics(String date) {
-    return 'Posted on $date';
+    return '$date tarihinde paylaşıldı';
   }
 
   @override

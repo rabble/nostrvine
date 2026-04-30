@@ -627,6 +627,7 @@
     "metadataLikesLabel": "いいね",
     "metadataCommentsLabel": "コメント",
     "metadataRepostsLabel": "リポスト",
+    "metadataPostedDateSemantics": "{date}に投稿",
     "devOptionsTitle": "開発者オプション",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

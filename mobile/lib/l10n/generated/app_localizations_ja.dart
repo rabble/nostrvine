@@ -1288,7 +1288,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String metadataPostedDateSemantics(String date) {
-    return 'Posted on $date';
+    return '$dateに投稿';
   }
 
   @override

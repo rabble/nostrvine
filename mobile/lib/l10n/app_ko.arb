@@ -366,6 +366,7 @@
     "metadataLikesLabel": "좋아요",
     "metadataCommentsLabel": "댓글",
     "metadataRepostsLabel": "리포스트",
+    "metadataPostedDateSemantics": "{date}에 게시됨",
     "devOptionsTitle": "개발자 옵션",
     "devOptionsPageLoadTimes": "페이지 로딩 시간",
     "devOptionsNoPageLoads": "아직 기록된 페이지 로드가 없어요.\n앱을 둘러보며 타이밍 데이터를 쌓아보세요.",

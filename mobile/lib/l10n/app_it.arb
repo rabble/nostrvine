@@ -630,6 +630,7 @@
     "metadataLikesLabel": "Mi piace",
     "metadataCommentsLabel": "Commenti",
     "metadataRepostsLabel": "Repost",
+    "metadataPostedDateSemantics": "Pubblicato il {date}",
     "devOptionsTitle": "Opzioni sviluppatore",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

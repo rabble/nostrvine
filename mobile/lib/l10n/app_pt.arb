@@ -630,6 +630,7 @@
     "metadataLikesLabel": "Curtidas",
     "metadataCommentsLabel": "Comentários",
     "metadataRepostsLabel": "Reposts",
+    "metadataPostedDateSemantics": "Publicado em {date}",
     "devOptionsTitle": "Opções do desenvolvedor",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

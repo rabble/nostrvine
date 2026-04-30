@@ -627,6 +627,7 @@
     "metadataLikesLabel": "Suka",
     "metadataCommentsLabel": "Komentar",
     "metadataRepostsLabel": "Repost",
+    "metadataPostedDateSemantics": "Diposting pada {date}",
     "devOptionsTitle": "Opsi Pengembang",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

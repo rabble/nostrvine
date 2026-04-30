@@ -1357,7 +1357,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String metadataPostedDateSemantics(String date) {
-    return 'Posted on $date';
+    return 'نُشر في $date';
   }
 
   @override

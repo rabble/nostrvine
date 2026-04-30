@@ -627,6 +627,7 @@
     "metadataLikesLabel": "Beğeniler",
     "metadataCommentsLabel": "Yorumlar",
     "metadataRepostsLabel": "Yeniden Paylaşımlar",
+    "metadataPostedDateSemantics": "{date} tarihinde paylaşıldı",
     "devOptionsTitle": "Geliştirici Seçenekleri",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

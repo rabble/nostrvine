@@ -1381,7 +1381,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String metadataPostedDateSemantics(String date) {
-    return 'Posted on $date';
+    return 'Geplaatst op $date';
   }
 
   @override
