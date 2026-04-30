@@ -1239,6 +1239,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareAddedToBookmarks => 'Zu Lesezeichen hinzugefügt';
 
   @override
+  String get shareRemovedFromBookmarks => 'Aus Lesezeichen entfernt';
+
+  @override
   String get shareFailedToAddBookmark =>
       'Lesezeichen konnte nicht hinzugefügt werden';
 

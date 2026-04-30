@@ -579,6 +579,7 @@
     },
     "shareFailedToSend": "Nie udało się wysłać filmu",
     "shareAddedToBookmarks": "Dodano do zakładek",
+    "shareRemovedFromBookmarks": "Usunięto z zakładek",
     "shareFailedToAddBookmark": "Nie udało się dodać zakładki",
     "shareActionFailed": "Akcja nieudana",
     "shareWithTitle": "Udostępnij z",

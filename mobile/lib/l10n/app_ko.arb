@@ -332,6 +332,7 @@
     "sharePostSharedWith": "{recipientName}님과 게시물을 공유했어요",
     "shareFailedToSend": "영상을 보내지 못했어요",
     "shareAddedToBookmarks": "북마크에 추가했어요",
+    "shareRemovedFromBookmarks": "북마크에서 뺐어요",
     "shareFailedToAddBookmark": "북마크 추가에 실패했어요",
     "shareActionFailed": "작업에 실패했어요",
     "shareWithTitle": "공유 대상",

@@ -2194,6 +2194,12 @@ abstract class AppLocalizations {
   /// **'Added to bookmarks'**
   String get shareAddedToBookmarks;
 
+  /// Snackbar shown after removing a video from global bookmarks via Save on the share sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from bookmarks'**
+  String get shareRemovedFromBookmarks;
+
   /// No description provided for @shareFailedToAddBookmark.
   ///
   /// In en, this message translates to:

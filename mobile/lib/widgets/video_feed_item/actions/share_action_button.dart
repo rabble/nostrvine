@@ -203,13 +203,15 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             error: true,
           ),
         );
-      case ShareSheetSaveResult(:final succeeded):
+      case ShareSheetSaveResult(:final succeeded, :final removed):
         _safePop(context);
         messenger.showSnackBar(
           DivineSnackbarContainer.snackBar(
-            succeeded
-                ? context.l10n.shareAddedToBookmarks
-                : context.l10n.shareFailedToAddBookmark,
+            !succeeded
+                ? context.l10n.shareFailedToAddBookmark
+                : removed
+                ? context.l10n.shareRemovedFromBookmarks
+                : context.l10n.shareAddedToBookmarks,
             error: !succeeded,
           ),
         );

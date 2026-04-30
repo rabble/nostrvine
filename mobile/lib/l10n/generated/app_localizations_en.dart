@@ -1223,6 +1223,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareAddedToBookmarks => 'Added to bookmarks';
 
   @override
+  String get shareRemovedFromBookmarks => 'Removed from bookmarks';
+
+  @override
   String get shareFailedToAddBookmark => 'Failed to add bookmark';
 
   @override

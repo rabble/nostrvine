@@ -579,6 +579,7 @@
     },
     "shareFailedToSend": "動画の送信がうまくいかなかった",
     "shareAddedToBookmarks": "ブックマークに追加したよ",
+    "shareRemovedFromBookmarks": "ブックマークから外したよ",
     "shareFailedToAddBookmark": "ブックマークの追加がうまくいかなかった",
     "shareActionFailed": "操作がうまくいかなかった",
     "shareWithTitle": "共有先",

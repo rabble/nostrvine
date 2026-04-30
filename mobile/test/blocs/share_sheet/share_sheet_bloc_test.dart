@@ -601,10 +601,13 @@ void main() {
 
     group('ShareSheetSaveRequested', () {
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'emits $ShareSheetSaveResult with succeeded=true when bookmark succeeds',
+        'emits $ShareSheetSaveResult with succeeded=true, removed=false when adding bookmark',
         setUp: () {
           when(
-            () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) async => true);
         },
         build: createBloc,
@@ -613,11 +616,32 @@ void main() {
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>().having(
-              (r) => r.succeeded,
-              'succeeded',
-              isTrue,
-            ),
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isTrue)
+                .having((r) => r.removed, 'removed', isFalse),
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits $ShareSheetSaveResult with succeeded=true, removed=true when removing bookmark',
+        setUp: () {
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(true);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer((_) async => true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isTrue)
+                .having((r) => r.removed, 'removed', isTrue),
           ),
         ],
       );
@@ -626,7 +650,10 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=false when bookmark fails',
         setUp: () {
           when(
-            () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
           ).thenAnswer((_) async => false);
         },
         build: createBloc,
@@ -635,11 +662,9 @@ void main() {
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>().having(
-              (r) => r.succeeded,
-              'succeeded',
-              isFalse,
-            ),
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isFalse)
+                .having((r) => r.removed, 'removed', isFalse),
           ),
         ],
       );
@@ -648,7 +673,10 @@ void main() {
         'emits $ShareSheetSaveResult with succeeded=false when bookmark throws',
         setUp: () {
           when(
-            () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(false);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
           ).thenThrow(Exception('offline'));
         },
         build: createBloc,
@@ -657,11 +685,9 @@ void main() {
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>().having(
-              (r) => r.succeeded,
-              'succeeded',
-              isFalse,
-            ),
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isFalse)
+                .having((r) => r.removed, 'removed', isFalse),
           ),
         ],
       );
@@ -675,11 +701,9 @@ void main() {
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>().having(
-              (r) => r.succeeded,
-              'succeeded',
-              isFalse,
-            ),
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isFalse)
+                .having((r) => r.removed, 'removed', isFalse),
           ),
         ],
       );
@@ -687,9 +711,16 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'consecutive saves emit distinct states via identity equality',
         setUp: () {
+          var inGlobalBookmarks = false;
           when(
-            () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
-          ).thenAnswer((_) async => true);
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenAnswer((_) => inGlobalBookmarks);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer((_) async {
+            inGlobalBookmarks = !inGlobalBookmarks;
+            return true;
+          });
         },
         build: createBloc,
         act: (bloc) async {
@@ -701,12 +732,20 @@ void main() {
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>(),
+            isA<ShareSheetSaveResult>().having(
+              (r) => r.removed,
+              'removed',
+              isFalse,
+            ),
           ),
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>(),
+            isA<ShareSheetSaveResult>().having(
+              (r) => r.removed,
+              'removed',
+              isTrue,
+            ),
           ),
         ],
       );

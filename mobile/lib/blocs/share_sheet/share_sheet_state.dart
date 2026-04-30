@@ -43,10 +43,16 @@ class ShareSheetSendFailure extends ShareSheetActionResult {
 
 /// Consolidates the former ShareSheetSaveSuccess and ShareSheetSaveFailure
 /// into a single class, using [succeeded] to distinguish the outcome.
+///
+/// When [succeeded] is true, [removed] tells the UI whether the video was
+/// removed from global bookmarks (toggle off) vs added (toggle on).
 class ShareSheetSaveResult extends ShareSheetActionResult {
-  ShareSheetSaveResult({required this.succeeded});
+  ShareSheetSaveResult({required this.succeeded, this.removed = false});
 
   final bool succeeded;
+
+  /// Meaningful only when [succeeded] is true: user turned the bookmark off.
+  final bool removed;
 }
 
 class ShareSheetClassicVineClipImportResult extends ShareSheetActionResult {

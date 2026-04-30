@@ -579,6 +579,7 @@
     },
     "shareFailedToSend": "Impossibile inviare il video",
     "shareAddedToBookmarks": "Aggiunto ai segnalibri",
+    "shareRemovedFromBookmarks": "Rimosso dai segnalibri",
     "shareFailedToAddBookmark": "Impossibile aggiungere ai segnalibri",
     "shareActionFailed": "Azione fallita",
     "shareWithTitle": "Condividi con",

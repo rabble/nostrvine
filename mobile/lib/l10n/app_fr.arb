@@ -579,6 +579,7 @@
     },
     "shareFailedToSend": "Échec de l'envoi de la vidéo",
     "shareAddedToBookmarks": "Ajouté aux favoris",
+    "shareRemovedFromBookmarks": "Retiré des favoris",
     "shareFailedToAddBookmark": "Échec de l'ajout aux favoris",
     "shareActionFailed": "Action échouée",
     "shareWithTitle": "Partager avec",

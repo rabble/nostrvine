@@ -579,6 +579,7 @@
     },
     "shareFailedToSend": "N-am putut trimite videoclipul",
     "shareAddedToBookmarks": "Adăugat la semne de carte",
+    "shareRemovedFromBookmarks": "Eliminat din semne de carte",
     "shareFailedToAddBookmark": "N-am putut adăuga semnul de carte",
     "shareActionFailed": "Acțiunea a eșuat",
     "shareWithTitle": "Partajează cu",

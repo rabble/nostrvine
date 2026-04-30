@@ -601,6 +601,10 @@
   },
   "shareFailedToSend": "Failed to send video",
   "shareAddedToBookmarks": "Added to bookmarks",
+  "shareRemovedFromBookmarks": "Removed from bookmarks",
+  "@shareRemovedFromBookmarks": {
+    "description": "Snackbar shown after removing a video from global bookmarks via Save on the share sheet."
+  },
   "shareFailedToAddBookmark": "Failed to add bookmark",
   "shareActionFailed": "Action failed",
   "shareWithTitle": "Share with",

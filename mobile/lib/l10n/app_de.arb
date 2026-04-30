@@ -579,6 +579,7 @@
     },
     "shareFailedToSend": "Video konnte nicht gesendet werden",
     "shareAddedToBookmarks": "Zu Lesezeichen hinzugefügt",
+    "shareRemovedFromBookmarks": "Aus Lesezeichen entfernt",
     "shareFailedToAddBookmark": "Lesezeichen konnte nicht hinzugefügt werden",
     "shareActionFailed": "Aktion fehlgeschlagen",
     "shareWithTitle": "Teilen mit",
