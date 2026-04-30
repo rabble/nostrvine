@@ -41,6 +41,13 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
       unawaited(_subscription?.cancel());
       _hasStartedPlaying = false;
       _subscribe();
+      return;
+    }
+    // Reset the latch on visibility transitions so the overlay doesn't
+    // flash when swiping back to an already-loaded video that is briefly
+    // paused before playback resumes.
+    if (oldWidget.isVisible != widget.isVisible && _hasStartedPlaying) {
+      setState(() => _hasStartedPlaying = false);
     }
   }
 
