@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "ブックマークに追加したよ",
     "shareRemovedFromBookmarks": "ブックマークから外したよ",
     "shareFailedToAddBookmark": "ブックマークの追加がうまくいかなかった",
+    "shareFailedToRemoveBookmark": "ブックマークを外せなかった",
     "shareActionFailed": "操作がうまくいかなかった",
     "shareWithTitle": "共有先",
     "shareFindPeople": "ユーザーを検索",

@@ -1145,6 +1145,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareFailedToAddBookmark => 'ブックマークの追加がうまくいかなかった';
 
   @override
+  String get shareFailedToRemoveBookmark => 'ブックマークを外せなかった';
+
+  @override
   String get shareActionFailed => '操作がうまくいかなかった';
 
   @override

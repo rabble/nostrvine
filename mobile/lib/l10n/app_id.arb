@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Ditambahkan ke bookmark",
     "shareRemovedFromBookmarks": "Dihapus dari bookmark",
     "shareFailedToAddBookmark": "Gagal menambahkan bookmark",
+    "shareFailedToRemoveBookmark": "Gagal menghapus bookmark",
     "shareActionFailed": "Aksi gagal",
     "shareWithTitle": "Bagikan dengan",
     "shareFindPeople": "Cari orang",

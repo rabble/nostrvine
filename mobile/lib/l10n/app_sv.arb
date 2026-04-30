@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Tillagd i bokmärken",
     "shareRemovedFromBookmarks": "Borttagen från bokmärken",
     "shareFailedToAddBookmark": "Kunde inte lägga till bokmärke",
+    "shareFailedToRemoveBookmark": "Kunde inte ta bort bokmärket",
     "shareActionFailed": "Åtgärden misslyckades",
     "shareWithTitle": "Dela med",
     "shareFindPeople": "Hitta personer",

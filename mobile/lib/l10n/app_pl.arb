@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Dodano do zakładek",
     "shareRemovedFromBookmarks": "Usunięto z zakładek",
     "shareFailedToAddBookmark": "Nie udało się dodać zakładki",
+    "shareFailedToRemoveBookmark": "Nie udało się usunąć zakładki",
     "shareActionFailed": "Akcja nieudana",
     "shareWithTitle": "Udostępnij z",
     "shareFindPeople": "Znajdź ludzi",

@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Adicionado aos favoritos",
     "shareRemovedFromBookmarks": "Removido dos favoritos",
     "shareFailedToAddBookmark": "Falha ao adicionar aos favoritos",
+    "shareFailedToRemoveBookmark": "Falha ao remover dos favoritos",
     "shareActionFailed": "A ação falhou",
     "shareWithTitle": "Compartilhar com",
     "shareFindPeople": "Encontrar pessoas",

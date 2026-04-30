@@ -1224,6 +1224,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareFailedToAddBookmark => 'Kunde inte lägga till bokmärke';
 
   @override
+  String get shareFailedToRemoveBookmark => 'Kunde inte ta bort bokmärket';
+
+  @override
   String get shareActionFailed => 'Åtgärden misslyckades';
 
   @override

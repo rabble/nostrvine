@@ -313,8 +313,9 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       return;
     }
 
+    var wasBookmarked = false;
     try {
-      final wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(
+      wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(
         _video.id,
       );
       final succeeded = await bookmarkService.toggleVideoInGlobalBookmarks(
@@ -325,6 +326,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           actionResult: ShareSheetSaveResult(
             succeeded: succeeded,
             removed: succeeded && wasBookmarked,
+            wasBookmarkedBeforeToggle: wasBookmarked,
           ),
         ),
       );
@@ -335,7 +337,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         category: LogCategory.ui,
       );
       emit(
-        state.copyWith(actionResult: ShareSheetSaveResult(succeeded: false)),
+        state.copyWith(
+          actionResult: ShareSheetSaveResult(
+            succeeded: false,
+            wasBookmarkedBeforeToggle: wasBookmarked,
+          ),
+        ),
       );
     }
   }

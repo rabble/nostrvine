@@ -2206,6 +2206,12 @@ abstract class AppLocalizations {
   /// **'Failed to add bookmark'**
   String get shareFailedToAddBookmark;
 
+  /// Snackbar when toggling Save off (remove from bookmarks) fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove bookmark'**
+  String get shareFailedToRemoveBookmark;
+
   /// No description provided for @shareActionFailed.
   ///
   /// In en, this message translates to:

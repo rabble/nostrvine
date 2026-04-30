@@ -1205,6 +1205,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareFailedToAddBookmark => 'Gagal menambahkan bookmark';
 
   @override
+  String get shareFailedToRemoveBookmark => 'Gagal menghapus bookmark';
+
+  @override
   String get shareActionFailed => 'Aksi gagal';
 
   @override

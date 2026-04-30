@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Adăugat la semne de carte",
     "shareRemovedFromBookmarks": "Eliminat din semne de carte",
     "shareFailedToAddBookmark": "N-am putut adăuga semnul de carte",
+    "shareFailedToRemoveBookmark": "Nu s-a putut elimina semnul de carte",
     "shareActionFailed": "Acțiunea a eșuat",
     "shareWithTitle": "Partajează cu",
     "shareFindPeople": "Găsește oameni",

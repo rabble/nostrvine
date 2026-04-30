@@ -1152,6 +1152,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareFailedToAddBookmark => '북마크 추가에 실패했어요';
 
   @override
+  String get shareFailedToRemoveBookmark => '북마크를 지우지 못했어요';
+
+  @override
   String get shareActionFailed => '작업에 실패했어요';
 
   @override

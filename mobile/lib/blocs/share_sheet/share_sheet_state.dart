@@ -46,13 +46,23 @@ class ShareSheetSendFailure extends ShareSheetActionResult {
 ///
 /// When [succeeded] is true, [removed] tells the UI whether the video was
 /// removed from global bookmarks (toggle off) vs added (toggle on).
+///
+/// [wasBookmarkedBeforeToggle] is set for every attempt. When [succeeded]
+/// is false, the UI uses it to show an add-specific vs remove-specific error.
 class ShareSheetSaveResult extends ShareSheetActionResult {
-  ShareSheetSaveResult({required this.succeeded, this.removed = false});
+  ShareSheetSaveResult({
+    required this.succeeded,
+    this.removed = false,
+    this.wasBookmarkedBeforeToggle = false,
+  });
 
   final bool succeeded;
 
   /// Meaningful only when [succeeded] is true: user turned the bookmark off.
   final bool removed;
+
+  /// Whether the video was already globally bookmarked before this toggle.
+  final bool wasBookmarkedBeforeToggle;
 }
 
 class ShareSheetClassicVineClipImportResult extends ShareSheetActionResult {

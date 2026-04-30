@@ -1213,6 +1213,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareFailedToAddBookmark => 'فشل إضافة الإشارة المرجعية';
 
   @override
+  String get shareFailedToRemoveBookmark => 'فشل إزالة الإشارة المرجعية';
+
+  @override
   String get shareActionFailed => 'فشل الإجراء';
 
   @override

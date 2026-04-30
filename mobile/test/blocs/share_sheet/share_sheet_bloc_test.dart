@@ -618,7 +618,12 @@ void main() {
             'actionResult',
             isA<ShareSheetSaveResult>()
                 .having((r) => r.succeeded, 'succeeded', isTrue)
-                .having((r) => r.removed, 'removed', isFalse),
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isFalse,
+                ),
           ),
         ],
       );
@@ -641,7 +646,12 @@ void main() {
             'actionResult',
             isA<ShareSheetSaveResult>()
                 .having((r) => r.succeeded, 'succeeded', isTrue)
-                .having((r) => r.removed, 'removed', isTrue),
+                .having((r) => r.removed, 'removed', isTrue)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isTrue,
+                ),
           ),
         ],
       );
@@ -664,7 +674,41 @@ void main() {
             'actionResult',
             isA<ShareSheetSaveResult>()
                 .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse),
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isFalse,
+                ),
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits failure with wasBookmarkedBeforeToggle true when removing '
+        'bookmark fails',
+        setUp: () {
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(true);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenAnswer((_) async => false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isFalse)
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isTrue,
+                ),
           ),
         ],
       );
@@ -687,7 +731,41 @@ void main() {
             'actionResult',
             isA<ShareSheetSaveResult>()
                 .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse),
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isFalse,
+                ),
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits failure with wasBookmarkedBeforeToggle true when toggle '
+        'throws while bookmarked',
+        setUp: () {
+          when(
+            () => mockBookmarkService.isVideoBookmarkedGlobally(any()),
+          ).thenReturn(true);
+          when(
+            () => mockBookmarkService.toggleVideoInGlobalBookmarks(any()),
+          ).thenThrow(Exception('offline'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.succeeded, 'succeeded', isFalse)
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isTrue,
+                ),
           ),
         ],
       );
@@ -703,7 +781,12 @@ void main() {
             'actionResult',
             isA<ShareSheetSaveResult>()
                 .having((r) => r.succeeded, 'succeeded', isFalse)
-                .having((r) => r.removed, 'removed', isFalse),
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isFalse,
+                ),
           ),
         ],
       );
@@ -732,20 +815,24 @@ void main() {
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>().having(
-              (r) => r.removed,
-              'removed',
-              isFalse,
-            ),
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.removed, 'removed', isFalse)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isFalse,
+                ),
           ),
           isA<ShareSheetState>().having(
             (s) => s.actionResult,
             'actionResult',
-            isA<ShareSheetSaveResult>().having(
-              (r) => r.removed,
-              'removed',
-              isTrue,
-            ),
+            isA<ShareSheetSaveResult>()
+                .having((r) => r.removed, 'removed', isTrue)
+                .having(
+                  (r) => r.wasBookmarkedBeforeToggle,
+                  'wasBookmarkedBeforeToggle',
+                  isTrue,
+                ),
           ),
         ],
       );

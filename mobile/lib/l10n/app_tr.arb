@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Yer imlerine eklendi",
     "shareRemovedFromBookmarks": "Yer imlerinden kaldırıldı",
     "shareFailedToAddBookmark": "Yer imi eklenemedi",
+    "shareFailedToRemoveBookmark": "Yer imi kaldırılamadı",
     "shareActionFailed": "İşlem başarısız",
     "shareWithTitle": "Şununla paylaş",
     "shareFindPeople": "Kişi bul",

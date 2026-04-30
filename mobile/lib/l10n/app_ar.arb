@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "تمت الإضافة إلى الإشارات المرجعية",
     "shareRemovedFromBookmarks": "تمت الإزالة من الإشارات المرجعية",
     "shareFailedToAddBookmark": "فشل إضافة الإشارة المرجعية",
+    "shareFailedToRemoveBookmark": "فشل إزالة الإشارة المرجعية",
     "shareActionFailed": "فشل الإجراء",
     "shareWithTitle": "المشاركة مع",
     "shareFindPeople": "ابحث عن أشخاص",

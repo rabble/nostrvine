@@ -606,6 +606,10 @@
     "description": "Snackbar shown after removing a video from global bookmarks via Save on the share sheet."
   },
   "shareFailedToAddBookmark": "Failed to add bookmark",
+  "shareFailedToRemoveBookmark": "Failed to remove bookmark",
+  "@shareFailedToRemoveBookmark": {
+    "description": "Snackbar when toggling Save off (remove from bookmarks) fails."
+  },
   "shareActionFailed": "Action failed",
   "shareWithTitle": "Share with",
   "shareFindPeople": "Find people",

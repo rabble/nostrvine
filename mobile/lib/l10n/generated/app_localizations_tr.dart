@@ -1211,6 +1211,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareFailedToAddBookmark => 'Yer imi eklenemedi';
 
   @override
+  String get shareFailedToRemoveBookmark => 'Yer imi kaldırılamadı';
+
+  @override
   String get shareActionFailed => 'İşlem başarısız';
 
   @override

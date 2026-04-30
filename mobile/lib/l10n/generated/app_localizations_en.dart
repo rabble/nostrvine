@@ -1229,6 +1229,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareFailedToAddBookmark => 'Failed to add bookmark';
 
   @override
+  String get shareFailedToRemoveBookmark => 'Failed to remove bookmark';
+
+  @override
   String get shareActionFailed => 'Action failed';
 
   @override

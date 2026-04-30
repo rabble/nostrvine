@@ -1246,6 +1246,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Lesezeichen konnte nicht hinzugefügt werden';
 
   @override
+  String get shareFailedToRemoveBookmark =>
+      'Lesezeichen konnte nicht entfernt werden';
+
+  @override
   String get shareActionFailed => 'Aktion fehlgeschlagen';
 
   @override

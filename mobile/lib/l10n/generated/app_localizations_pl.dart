@@ -1249,6 +1249,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareFailedToAddBookmark => 'Nie udało się dodać zakładki';
 
   @override
+  String get shareFailedToRemoveBookmark => 'Nie udało się usunąć zakładki';
+
+  @override
   String get shareActionFailed => 'Akcja nieudana';
 
   @override

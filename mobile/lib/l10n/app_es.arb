@@ -581,6 +581,7 @@
     "shareAddedToBookmarks": "Agregado a marcadores",
     "shareRemovedFromBookmarks": "Quitado de marcadores",
     "shareFailedToAddBookmark": "No se pudo agregar el marcador",
+    "shareFailedToRemoveBookmark": "No se pudo quitar el marcador",
     "shareActionFailed": "Falló la acción",
     "shareWithTitle": "Compartir con",
     "shareFindPeople": "Buscar personas",
