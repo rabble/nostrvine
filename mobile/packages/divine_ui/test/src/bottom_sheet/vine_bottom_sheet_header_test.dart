@@ -90,5 +90,22 @@ void main() {
 
       expect(padding.padding, customPadding);
     });
+    testWidgets('renders with leading widget', (tester) async {
+      const leadingWidget = Icon(Icons.close, key: Key('leading'));
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheetHeader(
+              title: Text('Test Title'),
+              leading: leadingWidget,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Test Title'), findsOneWidget);
+      expect(find.byKey(const Key('leading')), findsOneWidget);
+    });
   });
 }

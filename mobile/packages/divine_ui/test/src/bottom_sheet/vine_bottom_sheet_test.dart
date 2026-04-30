@@ -652,10 +652,159 @@ void main() {
         },
       );
     });
+    group('onComplete', () {
+      testWidgets(
+        'shows close and check buttons in header when onComplete is provided',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: VineBottomSheet(
+                  scrollable: false,
+                  title: const Text('Create'),
+                  onComplete: () async {},
+                  body: const Text('Body'),
+                ),
+              ),
+            ),
+          );
+
+          // Close (X) button and check button should both be present.
+          expect(find.byType(DivineIconButton), findsNWidgets(2));
+          // Trailing slot is not used when onComplete overrides it.
+          expect(find.byType(VineBottomSheetHeader), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'close button dismisses the sheet',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Create'),
+                      onComplete: () async {},
+                      body: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet body'), findsOneWidget);
+
+          // The first DivineIconButton is the close (X) button.
+          await tester.tap(find.byType(DivineIconButton).first);
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet body'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'check button invokes onComplete then dismisses the sheet',
+        (tester) async {
+          var completed = false;
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Create'),
+                      onComplete: () async {
+                        completed = true;
+                      },
+                      body: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet body'), findsOneWidget);
+
+          // The last DivineIconButton is the check button.
+          await tester.tap(find.byType(DivineIconButton).last);
+          await tester.pumpAndSettle();
+
+          expect(completed, isTrue);
+          expect(find.text('Sheet body'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'check button shows loading indicator while onComplete runs',
+        (tester) async {
+          // Use a completer so we can pause mid-callback and inspect UI.
+          var resumeCallback = false;
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Create'),
+                      onComplete: () async {
+                        // Spin until test unblocks us.
+                        while (!resumeCallback) {
+                          await Future<void>.delayed(
+                            const Duration(milliseconds: 10),
+                          );
+                        }
+                      },
+                      body: const Text('Sheet body'),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          // Tap the check button — callback starts but doesn't finish yet.
+          await tester.tap(find.byType(DivineIconButton).last);
+          await tester.pump();
+
+          // Loading indicator should be visible instead of the check button.
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          // Only one DivineIconButton remains (the close button).
+          expect(find.byType(DivineIconButton), findsOneWidget);
+
+          // Unblock the callback and let the sheet dismiss.
+          resumeCallback = true;
+          await tester.pumpAndSettle();
+
+          expect(find.text('Sheet body'), findsNothing);
+        },
+      );
+    });
   });
 }
-
-/// Marker widget used to verify that `contentWrapper` wraps the sheet
 /// in the widget tree exactly once.
 class _WrapperMarker extends StatelessWidget {
   const _WrapperMarker({required this.child});
