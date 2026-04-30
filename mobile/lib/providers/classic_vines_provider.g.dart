@@ -219,7 +219,7 @@ final class ClassicVinesAvailableProvider
 }
 
 String _$classicVinesAvailableHash() =>
-    r'39ee4ffc7ab9d5494577f0ef017908bc6103f394';
+    r'617a64b91dcb7896bcc986e4a7af0f0db6544825';
 
 /// Provider for top classic Viners derived from classic videos
 ///

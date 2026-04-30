@@ -88,6 +88,10 @@ class _FeedRefreshControlState extends State<FeedRefreshControl> {
   }
 
   Future<void> _showRefreshFromPointerSignal() async {
+    await showRefreshIndicator();
+  }
+
+  Future<void> showRefreshIndicator() async {
     if (_isPointerRefreshRunning) {
       return;
     }
@@ -174,6 +178,12 @@ class _RefreshableFeedStateViewState extends State<RefreshableFeedStateView> {
     _autoRefreshStarted = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final refreshControlState = context
+          .findAncestorStateOfType<_FeedRefreshControlState>();
+      if (refreshControlState != null) {
+        unawaited(refreshControlState.showRefreshIndicator());
+        return;
+      }
       unawaited(widget.onRefresh());
     });
   }

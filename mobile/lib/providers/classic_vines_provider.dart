@@ -287,8 +287,7 @@ int classicVinesFeedCount(Ref ref) {
 /// Classic vines require Funnelcake REST API to be available.
 @riverpod
 Future<bool> classicVinesAvailable(Ref ref) async {
-  final funnelcakeAsync = ref.watch(funnelcakeAvailableProvider);
-  return funnelcakeAsync.asData?.value ?? false;
+  return ref.watch(funnelcakeAvailableProvider.future);
 }
 
 /// Data model for a top classic Viner

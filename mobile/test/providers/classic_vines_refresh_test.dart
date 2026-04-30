@@ -1,6 +1,8 @@
 // ABOUTME: Tests ClassicVines refresh recovery after transient API failures
 // ABOUTME: Verifies refresh does not strand the feed without existing data
 
+import 'dart:async';
+
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -25,6 +27,13 @@ class _MockContentBlocklistRepository extends Mock
 class _TestFunnelcakeAvailable extends FunnelcakeAvailable {
   @override
   Future<bool> build() async => true;
+}
+
+Completer<bool>? _loadingAvailabilityCompleter;
+
+class _LoadingFunnelcakeAvailable extends FunnelcakeAvailable {
+  @override
+  Future<bool> build() async => _loadingAvailabilityCompleter!.future;
 }
 
 void main() {
@@ -151,6 +160,24 @@ void main() {
         expect(refreshedState.error, contains('returned no videos'));
       },
     );
+
+    test('stays loading while funnelcake availability is still resolving', () {
+      _loadingAvailabilityCompleter = Completer<bool>();
+
+      final container = ProviderContainer(
+        overrides: [
+          funnelcakeAvailableProvider.overrideWith(
+            _LoadingFunnelcakeAvailable.new,
+          ),
+        ],
+      );
+      addTearDown(() {
+        _loadingAvailabilityCompleter = null;
+        container.dispose();
+      });
+
+      expect(container.read(classicVinesAvailableProvider).isLoading, isTrue);
+    });
   });
 }
 
