@@ -133,6 +133,16 @@ void main() {
       });
     });
 
+    group('generateBlurhash fallback behavior', () {
+      test('returns null when encoding throws an exception', () async {
+        // Empty bytes cause `img.decodeImage` to throw a RangeError rather
+        // than return null, which exercises the broad `on Object catch`
+        // branch in `BlurhashService.generateBlurhash`.
+        final hash = await BlurhashService.generateBlurhash(Uint8List(0));
+        expect(hash, isNull);
+      });
+    });
+
     group('getBlurhashForContentType', () {
       test('returns unique blurhash for each content type', () {
         final results = <VineContentType, String>{};
