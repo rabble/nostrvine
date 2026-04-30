@@ -44,6 +44,16 @@ internal class DivineVideoPlayerPlatformView(
     override fun getView(): View = playerView
 
     override fun dispose() {
+        // Stop the decoder and detach the surface BEFORE the PlatformView's
+        // ImageReader is torn down. ExoPlayer's MediaCodec produces frames
+        // asynchronously; without this, an in-flight frame can land in a
+        // detached `ImageReaderSurfaceProducer` and call `FlutterJNI.
+        // scheduleFrame()` after the engine detached. See issue #3416.
+        val player = playerView.player
         playerView.player = null
+        player?.let {
+            it.stop()
+            it.clearVideoSurface()
+        }
     }
 }

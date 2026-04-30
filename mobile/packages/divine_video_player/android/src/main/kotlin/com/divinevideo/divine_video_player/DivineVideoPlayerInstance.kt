@@ -590,6 +590,21 @@ internal class DivineVideoPlayerInstance(
 
     fun getPlayer(): ExoPlayer? = player
 
+    /**
+     * Stops decoding and detaches the video surface without releasing the
+     * player. Used during Activity teardown so in-flight decoder frames
+     * can't reach a Hybrid-Composition `ImageReaderSurfaceProducer` after
+     * `FlutterJNI` has detached. The full [dispose] runs later, on engine
+     * detach.
+     */
+    fun stopForActivityDetach() {
+        player?.let {
+            it.stop()
+            it.clearVideoSurface()
+        }
+        audioOverlayManager.pauseAll()
+    }
+
     fun dispose() {
         mainHandler.removeCallbacks(positionUpdater)
         mainHandler.removeCallbacks(seekTimeoutRunnable)
@@ -597,9 +612,16 @@ internal class DivineVideoPlayerInstance(
         seekCompletionResult = null
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
-        player?.removeListener(playerListener)
-        player?.setVideoSurface(null)
-        player?.release()
+        player?.let {
+            it.removeListener(playerListener)
+            // Stop the decoder and explicitly drop the surface BEFORE
+            // releasing the player. setVideoSurface(null) does the same
+            // thing as clearVideoSurface() in Media3, but the explicit
+            // form documents intent: "no more frames go to this surface".
+            it.stop()
+            it.clearVideoSurface()
+            it.release()
+        }
         player = null
         textureSurface?.release()
         textureSurface = null
