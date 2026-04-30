@@ -1252,8 +1252,10 @@ void main() {
 
           expect(result.videos, hasLength(1));
           verify(
-            () =>
-                mockFunnelcakeClient.getHomeFeed(pubkey: 'my-pubkey', limit: 5),
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: 'my-pubkey',
+              limit: 25,
+            ),
           ).called(1);
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
@@ -2153,7 +2155,7 @@ void main() {
         ).captured;
         final filters = captured.first as List<Filter>;
 
-        expect(filters.first.limit, equals(5));
+        expect(filters.first.limit, equals(25));
       });
     });
 
@@ -2460,7 +2462,7 @@ void main() {
           expect(filters.first.search, equals('sort:hot'));
           expect(
             filters.first.limit,
-            equals(5),
+            equals(25),
           ); // Default limit, not multiplied
           expect(useCache, isFalse);
           expect(result, hasLength(1));
@@ -2620,14 +2622,14 @@ void main() {
 
           // First call: NIP-50 with exact limit
           final nip50Filters = captured[0] as List<Filter>;
-          expect(nip50Filters.first.limit, equals(5));
+          expect(nip50Filters.first.limit, equals(25));
           expect(nip50Filters.first.search, equals('sort:hot'));
 
           // Second call: fallback with multiplied limit
           // captured[1] contains filters from second call
           // (only filters are captured)
           final fallbackFilters = captured[1] as List<Filter>;
-          expect(fallbackFilters.first.limit, equals(20)); // 5 * 4
+          expect(fallbackFilters.first.limit, equals(100)); // 25 * 4
           expect(fallbackFilters.first.search, isNull);
         });
 
@@ -2652,7 +2654,7 @@ void main() {
           // captured[1] contains filters from second call
           // (only filters are captured)
           final fallbackFilters = captured[1] as List<Filter>;
-          expect(fallbackFilters.first.limit, equals(10)); // 5 * 2
+          expect(fallbackFilters.first.limit, equals(50)); // 25 * 2
         });
 
         test('fallback sorts by engagement score (highest first)', () async {
