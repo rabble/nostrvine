@@ -1355,6 +1355,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get metadataRepostsLabel => 'Yeniden Paylaşımlar';
 
   @override
+  String metadataPostedDateSemantics(String date) {
+    return '$date tarihinde paylaşıldı';
+  }
+
+  @override
   String get devOptionsTitle => 'Geliştirici Seçenekleri';
 
   @override

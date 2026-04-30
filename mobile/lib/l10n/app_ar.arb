@@ -627,6 +627,7 @@
     "metadataLikesLabel": "الإعجابات",
     "metadataCommentsLabel": "التعليقات",
     "metadataRepostsLabel": "إعادات النشر",
+    "metadataPostedDateSemantics": "نُشر في {date}",
     "devOptionsTitle": "خيارات المطور",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

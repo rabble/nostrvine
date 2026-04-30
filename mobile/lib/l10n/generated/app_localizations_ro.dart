@@ -1406,6 +1406,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get metadataRepostsLabel => 'Redistribuiri';
 
   @override
+  String metadataPostedDateSemantics(String date) {
+    return 'Publicat pe $date';
+  }
+
+  @override
   String get devOptionsTitle => 'Opțiuni dezvoltator';
 
   @override

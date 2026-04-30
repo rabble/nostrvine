@@ -1294,6 +1294,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get metadataRepostsLabel => '리포스트';
 
   @override
+  String metadataPostedDateSemantics(String date) {
+    return '$date에 게시됨';
+  }
+
+  @override
   String get devOptionsTitle => '개발자 옵션';
 
   @override

@@ -630,6 +630,7 @@
     "metadataLikesLabel": "Gillamarkeringar",
     "metadataCommentsLabel": "Kommentarer",
     "metadataRepostsLabel": "Återpubliceringar",
+    "metadataPostedDateSemantics": "Publicerat den {date}",
     "devOptionsTitle": "Utvecklaralternativ",
     "@devOptionsTitle": {
         "description": "Developer options screen app bar title"

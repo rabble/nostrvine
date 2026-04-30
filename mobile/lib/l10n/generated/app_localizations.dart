@@ -2464,6 +2464,12 @@ abstract class AppLocalizations {
   /// **'Reposts'**
   String get metadataRepostsLabel;
 
+  /// Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted on {date}'**
+  String metadataPostedDateSemantics(String date);
+
   /// Developer options screen app bar title
   ///
   /// In en, this message translates to:

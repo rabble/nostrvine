@@ -893,10 +893,17 @@ class _ProfileSetupScreenViewState
                                           ),
                                           errorMaxLines: 2,
                                         ),
-                                        // Only allow valid subdomain characters
+                                        // Lowercase as the user types and
+                                        // restrict to canonical subdomain
+                                        // characters. The name server stores
+                                        // and resolves usernames as lowercase,
+                                        // so normalizing here avoids a
+                                        // confusing "invalid format" error
+                                        // for a typed capital letter.
                                         inputFormatters: [
+                                          const LowercaseTextInputFormatter(),
                                           FilteringTextInputFormatter.allow(
-                                            RegExp('[a-zA-Z0-9-]'),
+                                            RegExp('[a-z0-9-]'),
                                           ),
                                         ],
                                         textInputAction: TextInputAction.next,
@@ -1483,6 +1490,26 @@ class UsernameStatusIndicator extends StatelessWidget {
         message: errorText ?? 'Failed to check availability',
       ),
     };
+  }
+}
+
+/// Lowercases input text on every edit.
+///
+/// Composes with `FilteringTextInputFormatter` on the username field so that
+/// typed capital letters are normalized in place rather than triggering the
+/// lowercase-only validator. Lowercasing ASCII is a 1:1 character mapping so
+/// the existing selection offsets remain valid.
+class LowercaseTextInputFormatter extends TextInputFormatter {
+  const LowercaseTextInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final lowered = newValue.text.toLowerCase();
+    if (lowered == newValue.text) return newValue;
+    return newValue.copyWith(text: lowered);
   }
 }
 

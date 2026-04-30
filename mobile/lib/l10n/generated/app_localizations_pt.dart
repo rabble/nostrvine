@@ -1390,6 +1390,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get metadataRepostsLabel => 'Reposts';
 
   @override
+  String metadataPostedDateSemantics(String date) {
+    return 'Publicado em $date';
+  }
+
+  @override
   String get devOptionsTitle => 'Opções do desenvolvedor';
 
   @override

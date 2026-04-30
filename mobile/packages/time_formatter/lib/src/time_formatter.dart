@@ -99,6 +99,20 @@ abstract class TimeFormatter {
     return _formatByDayDiff(dayDiff, date, now);
   }
 
+  /// Formats a Unix timestamp (seconds) into a locale-aware absolute
+  /// date — e.g. "Apr 22, 2003".
+  ///
+  /// Always includes the year regardless of recency. Classic Vine
+  /// archives (2013–2017) need their original year visible to
+  /// distinguish them from new posts.
+  static String formatAbsoluteDate(int unixSeconds, {String? locale}) {
+    final date = DateTime.fromMillisecondsSinceEpoch(
+      unixSeconds * 1000,
+      isUtc: true,
+    ).toLocal();
+    return DateFormat.yMMMd(locale).format(date);
+  }
+
   /// Returns the number of calendar days between [now] and [date].
   static int _calendarDayDiff(DateTime now, DateTime date) {
     final today = DateTime(now.year, now.month, now.day);

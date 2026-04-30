@@ -1368,6 +1368,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get metadataRepostsLabel => 'Återpubliceringar';
 
   @override
+  String metadataPostedDateSemantics(String date) {
+    return 'Publicerat den $date';
+  }
+
+  @override
   String get devOptionsTitle => 'Utvecklaralternativ';
 
   @override

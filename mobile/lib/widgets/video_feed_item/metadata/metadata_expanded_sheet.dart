@@ -20,6 +20,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+import 'package:time_formatter/time_formatter.dart';
 
 /// Expanded metadata bottom sheet for a video.
 ///
@@ -166,7 +167,13 @@ class _CaptionsSettingSection extends ConsumerWidget {
   }
 }
 
-/// Title and description section at the top of the sheet.
+/// Title, description, and posted-date cluster at the top of the sheet.
+///
+/// Layout mirrors the Figma frame hierarchy: title and description form
+/// an inner cluster (8 px gap), and the posted date is a sibling
+/// separated by 16 px. The date renders independently of title and
+/// description so classic Vine archives without captions still show
+/// their original Vine-era publish year.
 class _TitleSection extends StatelessWidget {
   const _TitleSection({required this.video});
 
@@ -174,12 +181,16 @@ class _TitleSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final title = video.displayTitle;
     final description = video.displayContent;
-    final hasContent =
+    final hasTitleOrDescription =
         (title != null && title.isNotEmpty) || description.isNotEmpty;
 
-    if (!hasContent) return const SizedBox.shrink();
+    final formattedDate = TimeFormatter.formatAbsoluteDate(
+      video.createdAt,
+      locale: Localizations.localeOf(context).toString(),
+    );
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -189,17 +200,34 @@ class _TitleSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: 8,
           children: [
-            if (title != null && title.isNotEmpty)
-              Text(title, style: VineTheme.titleMediumFont()),
-            if (description.isNotEmpty)
-              ClickableHashtagText(
-                text: description,
-                style: VineTheme.bodyLargeFont(
+            if (hasTitleOrDescription) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 8,
+                children: [
+                  if (title != null && title.isNotEmpty)
+                    Text(title, style: VineTheme.titleMediumFont()),
+                  if (description.isNotEmpty)
+                    ClickableHashtagText(
+                      text: description,
+                      style: VineTheme.bodyLargeFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+            Semantics(
+              label: l10n.metadataPostedDateSemantics(formattedDate),
+              child: Text(
+                formattedDate,
+                style: VineTheme.labelMediumFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
               ),
+            ),
           ],
         ),
       ),
