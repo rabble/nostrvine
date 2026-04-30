@@ -176,6 +176,42 @@ errors: () => [
 `T`, so Crashlytics still groups by the actual inner type even when
 `T == Object`.
 
+### Naming `context` identifiers
+
+The `context` parameter is a free-form `String?` — same shape as
+`Log.error(name: 'XxxBloc')` used elsewhere in the codebase. For a single
+migrated site in a feature, a string literal at the call site is fine:
+
+```dart
+addError(Reportable(e, context: '_publishLike'), stackTrace);
+```
+
+Once a feature accumulates **2+ migrated sites**, lift the identifiers
+into a per-feature constants class colocated with the bloc:
+
+```dart
+abstract class VideoInteractionsReportableSites {
+  static const publishLike = '_publishLike';
+  static const publishRepost = '_publishRepost';
+}
+
+addError(
+  Reportable(e, context: VideoInteractionsReportableSites.publishLike),
+  stackTrace,
+);
+```
+
+Class naming: `<FeatureNoun>ReportableSites`. Members are
+`static const String`.
+
+Per-feature constants (rather than a global enum) keep PR-stack
+parallelism — each feature-area migration PR edits only its own constants
+file, not a shared hot-spot. Crashlytics groups by `error.runtimeType`
+and the observer's `Bloc.addError $runtimeType` reason; `context` is
+supplementary triage text, not a dashboard branching key, so the
+typed-vs-string choice is a call-site discoverability decision rather
+than a dashboard-taxonomy decision.
+
 ### PII
 
 `Reportable.toString()` strips Nostr `npub1…` and `nsec1…` identifiers
