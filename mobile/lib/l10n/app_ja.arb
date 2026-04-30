@@ -1485,7 +1485,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "ブックマークに追加したよ！",
+    "shareMenuRemovedFromBookmarks": "ブックマークから外したよ！",
     "shareMenuFailedToAddBookmark": "ブックマークの追加がうまくいかなかった",
+    "shareMenuFailedToRemoveBookmark": "ブックマークを外せなかった",
     "shareMenuCreatedListAndAddedVideo": "リスト「{name}」を作って動画を追加したよ",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

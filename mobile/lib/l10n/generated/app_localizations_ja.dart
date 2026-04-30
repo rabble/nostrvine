@@ -2871,7 +2871,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'ブックマークに追加したよ！';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'ブックマークから外したよ！';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'ブックマークの追加がうまくいかなかった';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'ブックマークを外せなかった';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

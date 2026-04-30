@@ -3115,7 +3115,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Dodano do zakładek!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Usunięto z zakładek!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Nie udało się dodać zakładki';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'Nie udało się usunąć zakładki';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

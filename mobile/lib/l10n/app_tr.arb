@@ -1485,7 +1485,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Yer imlerine eklendi!",
+    "shareMenuRemovedFromBookmarks": "Yer imlerinden kaldırıldı!",
     "shareMenuFailedToAddBookmark": "Yer imi eklenemedi",
+    "shareMenuFailedToRemoveBookmark": "Yer imi kaldırılamadı",
     "shareMenuCreatedListAndAddedVideo": "\"{name}\" listesi oluşturuldu ve video eklendi",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

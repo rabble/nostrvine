@@ -5336,11 +5336,23 @@ abstract class AppLocalizations {
   /// **'Added to bookmarks!'**
   String get shareMenuAddedToBookmarks;
 
+  /// Share menu snackbar after removing video from global bookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from bookmarks!'**
+  String get shareMenuRemovedFromBookmarks;
+
   /// No description provided for @shareMenuFailedToAddBookmark.
   ///
   /// In en, this message translates to:
   /// **'Failed to add bookmark'**
   String get shareMenuFailedToAddBookmark;
+
+  /// Share menu snackbar when removing from global bookmarks fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove bookmark'**
+  String get shareMenuFailedToRemoveBookmark;
 
   /// No description provided for @shareMenuCreatedListAndAddedVideo.
   ///

@@ -3037,7 +3037,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Toegevoegd aan bladwijzers!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Verwijderd uit bladwijzers!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Bladwijzer toevoegen mislukt';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark =>
+      'Verwijderen uit bladwijzers mislukt';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

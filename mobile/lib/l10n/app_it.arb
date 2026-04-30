@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Aggiunto ai segnalibri!",
+    "shareMenuRemovedFromBookmarks": "Rimosso dai segnalibri!",
     "shareMenuFailedToAddBookmark": "Impossibile aggiungere ai segnalibri",
+    "shareMenuFailedToRemoveBookmark": "Impossibile rimuovere dai segnalibri",
     "shareMenuCreatedListAndAddedVideo": "Creata la lista \"{name}\" e aggiunto il video",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

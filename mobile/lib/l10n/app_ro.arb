@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Adăugat la semnele de carte!",
+    "shareMenuRemovedFromBookmarks": "Eliminat din semne de carte!",
     "shareMenuFailedToAddBookmark": "N-am putut adăuga semnul de carte",
+    "shareMenuFailedToRemoveBookmark": "Nu s-a putut elimina semnul de carte",
     "shareMenuCreatedListAndAddedVideo": "Lista \"{name}\" creată și videoclipul adăugat",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

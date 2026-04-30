@@ -3010,7 +3010,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Yer imlerine eklendi!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Yer imlerinden kaldırıldı!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Yer imi eklenemedi';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'Yer imi kaldırılamadı';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

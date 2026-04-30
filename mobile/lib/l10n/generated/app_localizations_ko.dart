@@ -2883,7 +2883,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shareMenuAddedToBookmarks => '북마크에 추가했어요!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => '북마크에서 뺐어요!';
+
+  @override
   String get shareMenuFailedToAddBookmark => '북마크 추가에 실패했어요';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => '북마크를 지우지 못했어요';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

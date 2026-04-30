@@ -3059,8 +3059,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Aggiunto ai segnalibri!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Rimosso dai segnalibri!';
+
+  @override
   String get shareMenuFailedToAddBookmark =>
       'Impossibile aggiungere ai segnalibri';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark =>
+      'Impossibile rimuovere dai segnalibri';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

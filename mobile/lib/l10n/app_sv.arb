@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Tillagd i bokmärken!",
+    "shareMenuRemovedFromBookmarks": "Borttagen från bokmärken!",
     "shareMenuFailedToAddBookmark": "Kunde inte lägga till bokmärke",
+    "shareMenuFailedToRemoveBookmark": "Kunde inte ta bort bokmärket",
     "shareMenuCreatedListAndAddedVideo": "Skapade listan \"{name}\" och la till videon",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

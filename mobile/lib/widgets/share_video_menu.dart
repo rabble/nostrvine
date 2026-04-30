@@ -804,20 +804,30 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   // === BOOKMARK ACTIONS ===
 
   Future<void> _addToGlobalBookmarks() async {
+    var wasBookmarked = false;
     try {
       final bookmarkService = await ref.read(bookmarkServiceProvider.future);
-      final success = await bookmarkService.addVideoToGlobalBookmarks(
+      wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(
+        widget.video.id,
+      );
+      final success = await bookmarkService.toggleVideoInGlobalBookmarks(
         widget.video.id,
       );
 
       if (mounted) {
+        final String message;
+        if (success) {
+          message = wasBookmarked
+              ? context.l10n.shareMenuRemovedFromBookmarks
+              : context.l10n.shareMenuAddedToBookmarks;
+        } else {
+          message = wasBookmarked
+              ? context.l10n.shareMenuFailedToRemoveBookmark
+              : context.l10n.shareMenuFailedToAddBookmark;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              success
-                  ? context.l10n.shareMenuAddedToBookmarks
-                  : context.l10n.shareMenuFailedToAddBookmark,
-            ),
+            content: Text(message),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -825,7 +835,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       }
     } catch (e) {
       Log.error(
-        'Failed to add bookmark: $e',
+        'Failed to toggle bookmark: $e',
         name: 'ShareVideoMenu',
         category: LogCategory.ui,
       );
@@ -833,7 +843,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.shareMenuFailedToAddBookmark),
+            content: Text(
+              wasBookmarked
+                  ? context.l10n.shareMenuFailedToRemoveBookmark
+                  : context.l10n.shareMenuFailedToAddBookmark,
+            ),
             duration: const Duration(seconds: 2),
           ),
         );

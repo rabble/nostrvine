@@ -3049,7 +3049,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Adicionado aos favoritos!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Removido dos favoritos!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Falha ao adicionar aos favoritos';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark =>
+      'Falha ao remover dos favoritos';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

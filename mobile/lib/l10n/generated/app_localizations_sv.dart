@@ -3021,7 +3021,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Tillagd i bokmärken!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Borttagen från bokmärken!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Kunde inte lägga till bokmärke';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'Kunde inte ta bort bokmärket';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Zu Lesezeichen hinzugefügt!",
+    "shareMenuRemovedFromBookmarks": "Aus Lesezeichen entfernt!",
     "shareMenuFailedToAddBookmark": "Lesezeichen konnte nicht hinzugefügt werden",
+    "shareMenuFailedToRemoveBookmark": "Lesezeichen konnte nicht entfernt werden",
     "shareMenuCreatedListAndAddedVideo": "Liste \"{name}\" erstellt und Video hinzugefügt",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

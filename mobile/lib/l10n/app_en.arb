@@ -1556,7 +1556,15 @@
     }
   },
   "shareMenuAddedToBookmarks": "Added to bookmarks!",
+  "shareMenuRemovedFromBookmarks": "Removed from bookmarks!",
+  "@shareMenuRemovedFromBookmarks": {
+    "description": "Share menu snackbar after removing video from global bookmarks."
+  },
   "shareMenuFailedToAddBookmark": "Failed to add bookmark",
+  "shareMenuFailedToRemoveBookmark": "Failed to remove bookmark",
+  "@shareMenuFailedToRemoveBookmark": {
+    "description": "Share menu snackbar when removing from global bookmarks fails."
+  },
   "shareMenuCreatedListAndAddedVideo": "Created list \"{name}\" and added video",
   "@shareMenuCreatedListAndAddedVideo": {
     "placeholders": {

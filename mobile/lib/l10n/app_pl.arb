@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Dodano do zakładek!",
+    "shareMenuRemovedFromBookmarks": "Usunięto z zakładek!",
     "shareMenuFailedToAddBookmark": "Nie udało się dodać zakładki",
+    "shareMenuFailedToRemoveBookmark": "Nie udało się usunąć zakładki",
     "shareMenuCreatedListAndAddedVideo": "Utworzono listę \"{name}\" i dodano film",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

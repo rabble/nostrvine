@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Adicionado aos favoritos!",
+    "shareMenuRemovedFromBookmarks": "Removido dos favoritos!",
     "shareMenuFailedToAddBookmark": "Falha ao adicionar aos favoritos",
+    "shareMenuFailedToRemoveBookmark": "Falha ao remover dos favoritos",
     "shareMenuCreatedListAndAddedVideo": "Lista \"{name}\" criada e vídeo adicionado",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

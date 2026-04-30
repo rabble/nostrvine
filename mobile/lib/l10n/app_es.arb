@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "¡Agregado a marcadores!",
+    "shareMenuRemovedFromBookmarks": "¡Quitado de marcadores!",
     "shareMenuFailedToAddBookmark": "No se pudo agregar el marcador",
+    "shareMenuFailedToRemoveBookmark": "No se pudo quitar el marcador",
     "shareMenuCreatedListAndAddedVideo": "Se creó la lista \"{name}\" y se agregó el video",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

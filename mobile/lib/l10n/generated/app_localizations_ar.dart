@@ -2995,7 +2995,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'تمت الإضافة إلى الإشارات المرجعية!';
 
   @override
+  String get shareMenuRemovedFromBookmarks =>
+      'تمت الإزالة من الإشارات المرجعية!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'فشل إضافة الإشارة المرجعية';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'فشل إزالة الإشارة المرجعية';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

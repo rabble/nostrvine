@@ -1488,7 +1488,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "Toegevoegd aan bladwijzers!",
+    "shareMenuRemovedFromBookmarks": "Verwijderd uit bladwijzers!",
     "shareMenuFailedToAddBookmark": "Bladwijzer toevoegen mislukt",
+    "shareMenuFailedToRemoveBookmark": "Verwijderen uit bladwijzers mislukt",
     "shareMenuCreatedListAndAddedVideo": "Lijst \"{name}\" aangemaakt en video toegevoegd",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

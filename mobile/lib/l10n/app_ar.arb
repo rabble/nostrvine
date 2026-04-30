@@ -1485,7 +1485,9 @@
         }
     },
     "shareMenuAddedToBookmarks": "تمت الإضافة إلى الإشارات المرجعية!",
+    "shareMenuRemovedFromBookmarks": "تمت الإزالة من الإشارات المرجعية!",
     "shareMenuFailedToAddBookmark": "فشل إضافة الإشارة المرجعية",
+    "shareMenuFailedToRemoveBookmark": "فشل إزالة الإشارة المرجعية",
     "shareMenuCreatedListAndAddedVideo": "تم إنشاء القائمة \"{name}\" وإضافة الفيديو",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {

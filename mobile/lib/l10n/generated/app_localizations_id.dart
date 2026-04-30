@@ -3000,7 +3000,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Ditambahkan ke bookmark!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Dihapus dari bookmark!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Gagal menambahkan bookmark';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'Gagal menghapus bookmark';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

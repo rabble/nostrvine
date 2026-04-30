@@ -3026,7 +3026,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Added to bookmarks!';
 
   @override
+  String get shareMenuRemovedFromBookmarks => 'Removed from bookmarks!';
+
+  @override
   String get shareMenuFailedToAddBookmark => 'Failed to add bookmark';
+
+  @override
+  String get shareMenuFailedToRemoveBookmark => 'Failed to remove bookmark';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {
