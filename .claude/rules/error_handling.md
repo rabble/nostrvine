@@ -155,6 +155,11 @@ If the matrix says YES, wrap the inner error at the `addError` call site:
 }
 ```
 
+Important: anything that reaches the generic `catch (e, stackTrace)` block is
+being implicitly classified as reportable. If you add a new expected/domain
+failure path that should stay out of Crashlytics, add a specific
+`on FooException catch` handler above the generic catch and handle it there.
+
 `Reportable<T>` is an `Exception` (via the `ReportableError` marker), so
 existing `errors: () => [isA<Exception>()]` `blocTest` assertions stay
 green. Tests that pin a specific inner type — e.g. `isA<StateError>()` —
