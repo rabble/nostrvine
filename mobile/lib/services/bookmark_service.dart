@@ -218,6 +218,32 @@ class BookmarkService with NostrListServiceMixin {
     );
   }
 
+  /// Remove a video event from global bookmarks (kind 10003 `e` tag).
+  Future<bool> removeVideoFromGlobalBookmarks(String videoEventId) async {
+    return removeFromGlobalBookmarks(
+      BookmarkItem(type: 'e', id: videoEventId),
+    );
+  }
+
+  /// If [videoEventId] is globally bookmarked, removes it; otherwise adds it.
+  ///
+  /// Uses the same persistence and Nostr publish path as
+  /// [addVideoToGlobalBookmarks] / [removeVideoFromGlobalBookmarks].
+  Future<bool> toggleVideoInGlobalBookmarks(
+    String videoEventId, {
+    String? relay,
+    String? petname,
+  }) async {
+    if (isVideoBookmarkedGlobally(videoEventId)) {
+      return removeVideoFromGlobalBookmarks(videoEventId);
+    }
+    return addVideoToGlobalBookmarks(
+      videoEventId,
+      relay: relay,
+      petname: petname,
+    );
+  }
+
   /// Add an item to global bookmarks
   Future<bool> addToGlobalBookmarks(BookmarkItem item) async {
     try {
