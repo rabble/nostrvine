@@ -34,15 +34,17 @@ void main() {
         expect(await op.file, equals(mockFile));
       });
 
-      test('file future completes with null when future resolves null',
-          () async {
-        final completer = Completer<File?>();
-        final op = CancellableCacheOperation.fromFuture(completer.future);
+      test(
+        'file future completes with null when future resolves null',
+        () async {
+          final completer = Completer<File?>();
+          final op = CancellableCacheOperation.fromFuture(completer.future);
 
-        completer.complete(null);
+          completer.complete(null);
 
-        expect(await op.file, isNull);
-      });
+          expect(await op.file, isNull);
+        },
+      );
 
       test('file future completes with null on error', () async {
         final completer = Completer<File?>();
@@ -94,17 +96,17 @@ void main() {
 
     group('cancel', () {
       test('sets isCancelled to true', () {
-        final op =
-            CancellableCacheOperation.fromFuture(Completer<File?>().future)
-              ..cancel();
+        final op = CancellableCacheOperation.fromFuture(
+          Completer<File?>().future,
+        )..cancel();
 
         expect(op.isCancelled, isTrue);
       });
 
       test('file future completes with null', () async {
-        final op =
-            CancellableCacheOperation.fromFuture(Completer<File?>().future)
-              ..cancel();
+        final op = CancellableCacheOperation.fromFuture(
+          Completer<File?>().future,
+        )..cancel();
 
         expect(await op.file, isNull);
       });
