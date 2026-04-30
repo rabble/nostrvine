@@ -1,3 +1,4 @@
+import CoreImage
 import Flutter
 import ImageIO
 import MobileCoreServices
@@ -64,60 +65,38 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
         return
       }
 
-      // Read EXIF orientation from source image properties
+      // Read EXIF orientation from source image properties.
       let properties = CGImageSourceCopyPropertiesAtIndex(
         imageSource, 0, nil
       ) as? [CFString: Any]
       let orientation = properties?[kCGImagePropertyOrientation]
         as? UInt32 ?? 1
 
-      let srcWidth = srcImage.width
-      let srcHeight = srcImage.height
-
-      // Orientations 5-8 swap width/height
-      let swapsWidthHeight = orientation >= 5 && orientation <= 8
-      let outWidth = swapsWidthHeight ? srcHeight : srcWidth
-      let outHeight = swapsWidthHeight ? srcWidth : srcHeight
-
-      let colorSpace =
-        srcImage.colorSpace ?? CGColorSpaceCreateDeviceRGB()
-      guard let ctx = CGContext(
-        data: nil,
-        width: outWidth,
-        height: outHeight,
-        bitsPerComponent: 8,
-        bytesPerRow: 0,
-        space: colorSpace,
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-      ) else {
-        DispatchQueue.main.async {
-          result(FlutterError(
-            code: "DECODE_FAILED",
-            message: "Could not create bitmap context",
-            details: nil
-          ))
+      // Bake the EXIF orientation into the pixel data via Core Image.
+      // CIImage.oriented(forExifOrientation:) handles the transform
+      // identically on iOS and macOS, avoiding the Y-axis pitfalls of
+      // doing it manually with a Y-up CGContext (which produced
+      // upside-down output before).
+      let cleanImage: CGImage
+      if orientation != 1 {
+        let ciImage = CIImage(cgImage: srcImage)
+          .oriented(forExifOrientation: Int32(orientation))
+        let ciContext = CIContext(options: nil)
+        guard let rendered = ciContext.createCGImage(
+          ciImage, from: ciImage.extent
+        ) else {
+          DispatchQueue.main.async {
+            result(FlutterError(
+              code: "DECODE_FAILED",
+              message: "Could not apply EXIF orientation",
+              details: nil
+            ))
+          }
+          return
         }
-        return
-      }
-
-      // Apply EXIF orientation transform
-      Self.applyOrientation(
-        ctx, orientation: orientation,
-        width: outWidth, height: outHeight
-      )
-      ctx.draw(
-        srcImage,
-        in: CGRect(x: 0, y: 0, width: srcWidth, height: srcHeight)
-      )
-      guard let cleanImage = ctx.makeImage() else {
-        DispatchQueue.main.async {
-          result(FlutterError(
-            code: "DECODE_FAILED",
-            message: "Could not create clean image from context",
-            details: nil
-          ))
-        }
-        return
+        cleanImage = rendered
+      } else {
+        cleanImage = srcImage
       }
 
       let isPng = inputPath.lowercased().hasSuffix(".png")
@@ -137,7 +116,11 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
         return
       }
 
-      var destProperties: [CFString: Any] = [:]
+      // Pixels are already oriented; write with orientation = 1 so no
+      // viewer applies a second rotation.
+      var destProperties: [CFString: Any] = [
+        kCGImagePropertyOrientation: 1,
+      ]
       if !isPng {
         destProperties[kCGImageDestinationLossyCompressionQuality] =
           0.85
@@ -160,45 +143,6 @@ public class ImageMetadataStripperPlugin: NSObject, FlutterPlugin {
       DispatchQueue.main.async {
         result(nil)
       }
-    }
-  }
-
-  /// Applies an EXIF orientation transform to a CGContext.
-  /// The context must already be sized for the output dimensions.
-  private static func applyOrientation(
-    _ ctx: CGContext,
-    orientation: UInt32,
-    width: Int,
-    height: Int
-  ) {
-    let w = CGFloat(width)
-    let h = CGFloat(height)
-    switch orientation {
-    case 1: break // Normal
-    case 2: // Horizontal flip
-      ctx.translateBy(x: w, y: 0)
-      ctx.scaleBy(x: -1, y: 1)
-    case 3: // 180°
-      ctx.translateBy(x: w, y: h)
-      ctx.rotate(by: .pi)
-    case 4: // Vertical flip
-      ctx.translateBy(x: 0, y: h)
-      ctx.scaleBy(x: 1, y: -1)
-    case 5: // Transpose (flip + 90° CW)
-      ctx.translateBy(x: 0, y: h)
-      ctx.rotate(by: -.pi / 2)
-      ctx.scaleBy(x: -1, y: 1)
-    case 6: // 90° CW
-      ctx.translateBy(x: w, y: 0)
-      ctx.rotate(by: .pi / 2)
-    case 7: // Transverse (flip + 90° CCW)
-      ctx.translateBy(x: w, y: 0)
-      ctx.rotate(by: .pi / 2)
-      ctx.scaleBy(x: -1, y: 1)
-    case 8: // 90° CCW
-      ctx.translateBy(x: 0, y: h)
-      ctx.rotate(by: -.pi / 2)
-    default: break
     }
   }
 }
