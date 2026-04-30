@@ -110,7 +110,6 @@ void main() {
         List<XFile>? result;
         await tester.pumpWidget(
           buildTestWidget(
-            maxImages: 3,
             onChanged: (files) => result = files,
           ),
         );
@@ -139,7 +138,7 @@ void main() {
           ),
         ).thenAnswer((_) async => threeFiles);
 
-        await tester.pumpWidget(buildTestWidget(maxImages: 3));
+        await tester.pumpWidget(buildTestWidget());
 
         await tester.tap(find.byIcon(Icons.add_photo_alternate_outlined));
         await tester.pumpAndSettle();
