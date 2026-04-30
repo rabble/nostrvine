@@ -19,6 +19,7 @@ class DeveloperModeTapCounter extends _$DeveloperModeTapCounter {
     return 0;
   }
 
+  /// Increments the counter and returns the updated tap count.
   int tap() {
     _resetTimer?.cancel();
     _resetTimer = Timer(const Duration(seconds: 2), () {
