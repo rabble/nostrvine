@@ -1891,6 +1891,8 @@
     "reportCancel": "Anulează",
     "reportSubmit": "Raportează",
     "reportSelectReason": "Alege un motiv pentru raportarea acestui conținut",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam sau conținut nedorit",
     "reportReasonHarassment": "Hărțuire, bullying sau amenințări",
     "reportReasonViolence": "Conținut violent sau extremist",

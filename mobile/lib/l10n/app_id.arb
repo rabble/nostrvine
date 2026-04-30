@@ -1890,6 +1890,8 @@
     "reportCancel": "Batal",
     "reportSubmit": "Laporkan",
     "reportSelectReason": "Silakan pilih alasan untuk melaporkan konten ini",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam atau Konten Tidak Diinginkan",
     "reportReasonHarassment": "Pelecehan, Perundungan, atau Ancaman",
     "reportReasonViolence": "Konten Kekerasan atau Ekstremis",

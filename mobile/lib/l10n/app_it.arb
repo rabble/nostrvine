@@ -1891,6 +1891,8 @@
     "reportCancel": "Annulla",
     "reportSubmit": "Segnala",
     "reportSelectReason": "Seleziona un motivo per segnalare questo contenuto",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam o contenuto indesiderato",
     "reportReasonHarassment": "Molestie, bullismo o minacce",
     "reportReasonViolence": "Contenuto violento o estremista",

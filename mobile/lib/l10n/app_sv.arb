@@ -1891,6 +1891,8 @@
     "reportCancel": "Avbryt",
     "reportSubmit": "Rapportera",
     "reportSelectReason": "Välj en anledning för att rapportera det här innehållet",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Skräppost eller ovälkommet innehåll",
     "reportReasonHarassment": "Trakasserier, mobbning eller hot",
     "reportReasonViolence": "Våldsamt eller extremistiskt innehåll",

@@ -1890,6 +1890,8 @@
     "reportCancel": "İptal",
     "reportSubmit": "Bildir",
     "reportSelectReason": "Lütfen bu içeriği bildirmek için bir sebep seç",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam veya İstenmeyen İçerik",
     "reportReasonHarassment": "Taciz, Zorbalık veya Tehdit",
     "reportReasonViolence": "Şiddet veya Aşırı İçerik",

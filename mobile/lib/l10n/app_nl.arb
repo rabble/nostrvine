@@ -1891,6 +1891,8 @@
     "reportCancel": "Annuleren",
     "reportSubmit": "Melden",
     "reportSelectReason": "Selecteer een reden om deze inhoud te melden",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam of ongewenste inhoud",
     "reportReasonHarassment": "Intimidatie, pesten of bedreigingen",
     "reportReasonViolence": "Gewelddadige of extremistische inhoud",

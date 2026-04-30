@@ -1179,6 +1179,8 @@
     "reportCancel": "취소",
     "reportSubmit": "신고",
     "reportSelectReason": "이 콘텐츠를 신고하는 이유를 선택해 주세요",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "스팸 또는 원치 않는 콘텐츠",
     "reportReasonHarassment": "괴롭힘, 따돌림, 협박",
     "reportReasonViolence": "폭력적이거나 극단적인 콘텐츠",

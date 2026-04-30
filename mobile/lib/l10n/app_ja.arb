@@ -1890,6 +1890,8 @@
     "reportCancel": "キャンセル",
     "reportSubmit": "報告",
     "reportSelectReason": "報告する理由を選んでね",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "スパムや迷惑なコンテンツ",
     "reportReasonHarassment": "嫌がらせ、いじめ、脅迫",
     "reportReasonViolence": "暴力的・過激なコンテンツ",

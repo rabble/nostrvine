@@ -1890,6 +1890,8 @@
     "reportCancel": "إلغاء",
     "reportSubmit": "إبلاغ",
     "reportSelectReason": "يُرجى اختيار سبب للإبلاغ عن هذا المحتوى",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "محتوى غير مرغوب فيه أو مزعج",
     "reportReasonHarassment": "تحرُّش أو تنمُّر أو تهديدات",
     "reportReasonViolence": "محتوى عنيف أو متطرف",
