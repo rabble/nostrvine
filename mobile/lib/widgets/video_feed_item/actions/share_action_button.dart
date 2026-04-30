@@ -23,6 +23,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
+import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -65,10 +66,13 @@ class ShareActionButton extends StatelessWidget {
     final profileRepository = container.read(profileRepositoryProvider);
     if (profileRepository == null) return;
 
+    final inheritedLookupContext = context;
+
     context.showVideoPausingVineBottomSheet<void>(
-      builder: (context) => _UnifiedShareSheet(
+      builder: (sheetContext) => _UnifiedShareSheet(
         video: video,
         profileRepository: profileRepository,
+        inheritedLookupContext: inheritedLookupContext,
       ),
     );
   }
@@ -101,10 +105,16 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
   const _UnifiedShareSheet({
     required this.video,
     required this.profileRepository,
+    required this.inheritedLookupContext,
   });
 
   final VideoEvent video;
   final ProfileRepository profileRepository;
+
+  /// Context from the widget that opened the sheet (not the modal builder).
+  /// Used to reach [ProfileSavedVideosBloc] under the profile grid, which a
+  /// modal route context may not inherit.
+  final BuildContext inheritedLookupContext;
 
   @override
   ConsumerState<_UnifiedShareSheet> createState() => _UnifiedShareSheetState();
@@ -222,6 +232,11 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
             error: !succeeded,
           ),
         );
+        if (succeeded) {
+          requestProfileSavedVideosSyncIfAvailable(
+            widget.inheritedLookupContext,
+          );
+        }
       case ShareSheetClassicVineClipImportResult(:final succeeded):
         _safePop(context);
         messenger.showSnackBar(

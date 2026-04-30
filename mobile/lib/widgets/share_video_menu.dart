@@ -24,6 +24,7 @@ import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
+import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -824,6 +825,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           message = wasBookmarked
               ? context.l10n.shareMenuFailedToRemoveBookmark
               : context.l10n.shareMenuFailedToAddBookmark;
+        }
+        if (success) {
+          requestProfileSavedVideosSyncIfAvailable(context);
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
