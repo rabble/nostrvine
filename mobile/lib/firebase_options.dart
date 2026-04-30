@@ -4,7 +4,6 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
-import 'package:openvine/config/build_identity.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -61,11 +60,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyChiPGndRdZwsMoLqnel2WSocROmoKLdB4',
-    appId: BuildIdentity.firebaseIosAppId,
+    appId: '1:972941478875:ios:f61272b3cf485df244b5fe',
     messagingSenderId: '972941478875',
     projectId: 'openvine-co',
     storageBucket: 'openvine-co.firebasestorage.app',
-    iosBundleId: BuildIdentity.iosBundleId,
+    iosBundleId: 'co.openvine.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

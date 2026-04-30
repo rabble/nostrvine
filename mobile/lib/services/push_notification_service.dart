@@ -7,7 +7,6 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/config/build_identity.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -35,7 +34,7 @@ class PushNotificationService {
   static const pushPreferencesKind = 3083;
 
   /// App bundle identifier used in registration events.
-  static const String pushAppIdentifier = BuildIdentity.pushAppIdentifier;
+  static const pushAppIdentifier = 'co.openvine.app';
 
   /// Number of days until a registration event expires.
   static const pushTokenExpirationDays = 90;
