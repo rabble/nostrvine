@@ -145,8 +145,7 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
 
   bool _isAutoAdvanceAvailable() {
     if (!mounted) return false;
-    if (MediaQuery.disableAnimationsOf(context)) return false;
-    return ref.read(isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance));
+    return !MediaQuery.disableAnimationsOf(context);
   }
 
   void _toggleAutoAdvance() {
@@ -360,11 +359,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
     // Gate the rail + runtime on both the feature flag and the
     // user's reduced-motion preference. When Auto is unavailable,
     // force it "off" at the view layer regardless of cubit state.
-    final autoAdvanceAvailable =
-        ref.watch(
-          isFeatureEnabledProvider(FeatureFlag.feedAutoAdvance),
-        ) &&
-        !MediaQuery.disableAnimationsOf(context);
+    final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(context);
     final effectiveAutoEnabled = autoAdvanceAvailable && autoState.enabled;
 
     final overlayLabels = contentWarningOverlayLabels(
