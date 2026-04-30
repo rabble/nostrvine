@@ -1348,6 +1348,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get metadataRepostsLabel => 'Repost';
 
   @override
+  String metadataPostedDateSemantics(String date) {
+    return 'Posted on $date';
+  }
+
+  @override
   String get devOptionsTitle => 'Opsi Pengembang';
 
   @override

@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -74,12 +75,13 @@ VideoEvent _makeVideo({
   String content = '',
   Map<String, String> rawTags = const {},
   int originalLoops = 1500,
+  int createdAt = 1700000000,
 }) => VideoEvent(
   id: 'test_video_id_00000000000000000000000000000000000000000000000000',
   pubkey: _creatorPubkey,
-  createdAt: 1700000000,
+  createdAt: createdAt,
   content: content,
-  timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+  timestamp: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
   title: title,
   videoUrl: 'https://example.com/video.mp4',
   hashtags: hashtags,
@@ -197,17 +199,97 @@ void main() {
       expect(find.byType(ClickableHashtagText), findsOneWidget);
     });
 
-    testWidgets('hides title section when both are empty', (tester) async {
+    testWidgets('still renders the section without title or description', (
+      tester,
+    ) async {
       final video = _makeVideo();
 
       await tester.pumpWidget(
         buildSubject(child: MetadataExpandedSheet(video: video)),
       );
 
-      // Stats row is always visible, so the sheet renders.
+      // Stats row is always visible.
       expect(find.byType(MetadataStatsRow), findsOneWidget);
-      // No title text should appear.
+      // The title text must not appear since the video has no title.
       expect(find.text('Who knew?'), findsNothing);
+      // The date sibling renders even with no title or description.
+      final expectedDate = DateFormat.yMMMd(
+        'en',
+      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      expect(find.text(expectedDate), findsOneWidget);
+    });
+
+    testWidgets('renders posted date for a recent post', (tester) async {
+      final video = _makeVideo(title: 'Who knew?', content: 'A description');
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      final expectedDate = DateFormat.yMMMd(
+        'en',
+      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      expect(find.text(expectedDate), findsOneWidget);
+    });
+
+    testWidgets('renders Vine-era date for a classic vine timestamp', (
+      tester,
+    ) async {
+      // 2012-12-11 21:38 UTC — a classic Vine-era timestamp.
+      final video = _makeVideo(
+        title: 'Classic vine',
+        content: 'From the archives',
+        createdAt: 1355261891,
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      // Year 2012 must be visible regardless of locale-specific month name.
+      expect(find.textContaining('2012'), findsWidgets);
+    });
+
+    testWidgets('applies labelMedium typography with onSurfaceVariant color', (
+      tester,
+    ) async {
+      final video = _makeVideo(title: 'Who knew?');
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      final expectedDate = DateFormat.yMMMd(
+        'en',
+      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      final dateText = tester.widget<Text>(find.text(expectedDate));
+      expect(dateText.style?.fontSize, equals(12));
+      expect(dateText.style?.fontWeight, equals(FontWeight.w600));
+      expect(dateText.style?.color, equals(VineTheme.onSurfaceVariant));
+    });
+
+    testWidgets('wraps the date in a Semantics with the localized label', (
+      tester,
+    ) async {
+      final video = _makeVideo(title: 'Who knew?');
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      final expectedDate = DateFormat.yMMMd(
+        'en',
+      ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
+      final l10n = _l10n(tester);
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label ==
+                  l10n.metadataPostedDateSemantics(expectedDate),
+        ),
+        findsOneWidget,
+      );
     });
   });
 

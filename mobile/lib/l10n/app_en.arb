@@ -683,6 +683,15 @@
   "metadataLikesLabel": "Likes",
   "metadataCommentsLabel": "Comments",
   "metadataRepostsLabel": "Reposts",
+  "metadataPostedDateSemantics": "Posted on {date}",
+  "@metadataPostedDateSemantics": {
+    "description": "Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "devOptionsTitle": "Developer Options",
   "@devOptionsTitle": {
     "description": "Developer options screen app bar title"
