@@ -12,12 +12,10 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
-import 'package:openvine/services/video_stats_hydration_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -217,23 +215,19 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       return;
     }
 
-    // Get video from video event service.
-    var video = videoEventService.getVideoById(resolvedVideoEventId);
-
-    // If not found in cache, try fetching from Nostr.
-    if (video == null) {
-      try {
-        final event = await nostrService.fetchEventById(resolvedVideoEventId);
-        if (event != null) {
-          video = VideoEvent.fromNostrEvent(event);
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to fetch video from Nostr: $e',
-          name: 'NotificationsView',
-          category: LogCategory.ui,
-        );
-      }
+    // fetchVideoWithStats handles cache→relay lookup and bulk-stats
+    // hydration in one call, matching what feed providers do.
+    VideoEvent? video;
+    try {
+      video = await ref
+          .read(videosRepositoryProvider)
+          .fetchVideoWithStats(resolvedVideoEventId);
+    } catch (e) {
+      Log.error(
+        'Failed to fetch video: $e',
+        name: 'NotificationsView',
+        category: LogCategory.ui,
+      );
     }
 
     if (!context.mounted) return;
@@ -258,26 +252,6 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       return;
     }
 
-    // Hydrate REST-side stats (loop counts, views) before navigating.
-    // Notification taps fetch the raw Nostr event which has no REST stats.
-    VideoEvent videoForNav = video;
-    try {
-      final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
-      final hydrated = await VideoStatsHydrationService.hydrateVideo(
-        video,
-        client: funnelcakeClient,
-      );
-      if (hydrated != null) videoForNav = hydrated;
-    } catch (e) {
-      Log.warning(
-        'Stats hydration failed for ${video.id}: $e',
-        name: 'NotificationsView',
-        category: LogCategory.ui,
-      );
-    }
-
-    if (!context.mounted) return;
-
     final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply ||
@@ -286,7 +260,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([videoForNav]),
+        videosStream: Stream.value([video]),
         initialIndex: 0,
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,

@@ -9,11 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/video_stats_hydration_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -62,65 +59,20 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         category: LogCategory.video,
       );
 
-      final videoEventService = ref.read(videoEventServiceProvider);
+      // fetchVideoWithStats handles cache→relay lookup and bulk-stats
+      // hydration in one call, matching what feed providers do.
+      final videosRepository = ref.read(videosRepositoryProvider);
+      final video = await videosRepository.fetchVideoWithStats(widget.videoId);
 
-      // Try to find video in existing loaded events first
-      final cached = videoEventService.getVideoById(widget.videoId);
-
-      if (cached != null) {
+      if (video != null) {
         Log.info(
-          '✅ Found video in cache: ${cached.title}',
+          '✅ Loaded video: ${video.title}',
           name: 'VideoDetailScreen',
           category: LogCategory.video,
         );
-        // Hydrate stats before showing the player — cached events from the
-        // deep-link path may not have loop counts populated, and the
-        // FullscreenFeedBloc cannot receive updates once its stream completes.
-        final hydratedCached = await _fetchHydratedStats(cached);
         if (mounted) {
           setState(() {
-            _video = hydratedCached;
-            _isLoading = false;
-          });
-          ScreenAnalyticsService().markDataLoaded('video_detail');
-        }
-        return;
-      }
-
-      // Video not in cache, fetch from Nostr
-      Log.info(
-        '🔍 Video not in cache, fetching from Nostr...',
-        name: 'VideoDetailScreen',
-        category: LogCategory.video,
-      );
-
-      final nostrService = ref.read(nostrServiceProvider);
-      final event = await nostrService.fetchEventById(widget.videoId);
-
-      if (event != null) {
-        final fetchedVideo = VideoEvent.fromNostrEvent(event);
-        if (videoEventService.shouldHideVideo(fetchedVideo)) {
-          if (mounted) {
-            setState(() {
-              _error = 'Video not found';
-              _isLoading = false;
-            });
-          }
-          return;
-        }
-
-        Log.info(
-          '✅ Fetched video from Nostr: ${fetchedVideo.title}',
-          name: 'VideoDetailScreen',
-          category: LogCategory.video,
-        );
-        // Hydrate stats before showing the player — Nostr events never carry
-        // REST-side stats, and the FullscreenFeedBloc cannot receive updates
-        // once its initial Stream.value has completed.
-        final hydratedFetched = await _fetchHydratedStats(fetchedVideo);
-        if (mounted) {
-          setState(() {
-            _video = hydratedFetched;
+            _video = video;
             _isLoading = false;
           });
           ScreenAnalyticsService().markDataLoaded('video_detail');
@@ -150,29 +102,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           _isLoading = false;
         });
       }
-    }
-  }
-
-  /// Fetches loop counts and view stats from the REST API.
-  ///
-  /// Returns the enriched [VideoEvent] on success, or [video] unchanged if the
-  /// API has no entry or if a network error occurs (errors are logged and
-  /// swallowed so they never surface as user-visible failures).
-  Future<VideoEvent> _fetchHydratedStats(VideoEvent video) async {
-    try {
-      final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
-      final hydrated = await VideoStatsHydrationService.hydrateVideo(
-        video,
-        client: funnelcakeClient,
-      );
-      return hydrated ?? video;
-    } catch (e) {
-      Log.warning(
-        'Stats hydration failed for ${video.id}: $e',
-        name: 'VideoDetailScreen',
-        category: LogCategory.video,
-      );
-      return video;
     }
   }
 

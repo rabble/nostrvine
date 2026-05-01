@@ -14,7 +14,6 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -22,7 +21,6 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/video_stats_hydration_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -669,33 +667,19 @@ class _NotificationTabContentState
       category: LogCategory.ui,
     );
 
-    // Get video from video event service (search all feed types)
-    final videoEventService = ref.read(videoEventServiceProvider);
-
-    // Use the service's built-in search across all subscription types
-    var video = videoEventService.getVideoById(videoEventId);
-
-    // If not found in cache, try fetching from Nostr
-    if (video == null) {
-      Log.info(
-        'Video not in cache, fetching from Nostr: $videoEventId',
+    // fetchVideoWithStats handles cache→relay lookup and bulk-stats
+    // hydration in one call, matching what feed providers do.
+    VideoEvent? video;
+    try {
+      video = await ref
+          .read(videosRepositoryProvider)
+          .fetchVideoWithStats(videoEventId);
+    } catch (e) {
+      Log.error(
+        'Failed to fetch video: $e',
         name: 'NotificationsScreen',
         category: LogCategory.ui,
       );
-
-      try {
-        final nostrService = ref.read(nostrServiceProvider);
-        final event = await nostrService.fetchEventById(videoEventId);
-        if (event != null) {
-          video = VideoEvent.fromNostrEvent(event);
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to fetch video from Nostr: $e',
-          name: 'NotificationsScreen',
-          category: LogCategory.ui,
-        );
-      }
     }
 
     if (!context.mounted) return;
@@ -710,6 +694,7 @@ class _NotificationTabContentState
       return;
     }
 
+    final videoEventService = ref.read(videoEventServiceProvider);
     if (videoEventService.shouldHideVideo(video)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -720,26 +705,6 @@ class _NotificationTabContentState
       return;
     }
 
-    // Hydrate REST-side stats (loop counts, views) before navigating.
-    // Notification taps fetch the raw Nostr event which has no REST stats.
-    VideoEvent videoForNav = video;
-    try {
-      final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
-      final hydrated = await VideoStatsHydrationService.hydrateVideo(
-        video,
-        client: funnelcakeClient,
-      );
-      if (hydrated != null) videoForNav = hydrated;
-    } catch (e) {
-      Log.warning(
-        'Stats hydration failed for ${video.id}: $e',
-        name: 'NotificationsScreen',
-        category: LogCategory.ui,
-      );
-    }
-
-    if (!context.mounted) return;
-
     final shouldAutoOpenComments =
         notificationType == NotificationType.comment ||
         notificationType == NotificationType.mention;
@@ -748,7 +713,7 @@ class _NotificationTabContentState
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([videoForNav]),
+        videosStream: Stream.value([video]),
         initialIndex: 0,
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,

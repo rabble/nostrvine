@@ -1347,6 +1347,30 @@ class VideosRepository {
     return _transformVideoStats(result.videos);
   }
 
+  /// Fetches a single video by event ID and enriches it with REST-side stats
+  /// (loop counts, view counts) from the Funnelcake bulk-stats endpoint.
+  ///
+  /// Strategy:
+  /// 1. Delegates to [getVideosByIds] for the cache→relay lookup and content
+  ///    filtering (same path used by all feed providers).
+  /// 2. Calls [_hydrateVideosWithBulkStats] on the result so the returned
+  ///    [VideoEvent] carries accurate [VideoEvent.originalLoops] and view
+  ///    counts — identical to what home/profile feeds receive.
+  ///
+  /// Returns `null` when the event is not found, fails content filtering, or
+  /// the Funnelcake API is unavailable (stats are omitted but the video is
+  /// still returned in that case via the hydration fallback).
+  ///
+  /// Intended for code paths that fetch a single video by ID outside of a
+  /// feed context: notification taps and `divine.video/video/:id` deep-links.
+  Future<VideoEvent?> fetchVideoWithStats(String eventId) async {
+    if (eventId.isEmpty) return null;
+    final videos = await getVideosByIds([eventId]);
+    if (videos.isEmpty) return null;
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return hydrated.firstOrNull;
+  }
+
   /// Fetches stats for a single video.
   ///
   /// Returns null if Funnelcake API is unavailable.
