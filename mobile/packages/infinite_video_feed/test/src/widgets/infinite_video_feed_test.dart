@@ -425,6 +425,83 @@ void main() {
       });
     });
 
+    group('setVolume', () {
+      testWidgets('applies volume when an active controller exists', (
+        tester,
+      ) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final notifiedValues = <double>[];
+        final videos = [_makeVideo('active_volume')];
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: videos,
+              cache: cache,
+              initialVolume: 0.2,
+              onVolumeChanged: notifiedValues.add,
+              prefetchCount: 0,
+              preloadGracePeriod: Duration.zero,
+            ),
+          ),
+        );
+
+        // Let initState schedule _onIndexChanged and create the active
+        // controller entry before invoking setVolume.
+        await tester.pump();
+
+        key.currentState!.setVolume(0.8);
+
+        expect(notifiedValues, equals(<double>[0.8]));
+      });
+
+      testWidgets('clamps value and notifies listeners', (tester) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        final notifiedValues = <double>[];
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: const [],
+              cache: cache,
+              initialVolume: 0.2,
+              onVolumeChanged: notifiedValues.add,
+            ),
+          ),
+        );
+
+        key.currentState!.setVolume(2.5);
+        key.currentState!.setVolume(-0.3);
+
+        expect(notifiedValues, equals(<double>[1.0, 0.0]));
+      });
+
+      testWidgets('does not notify when clamped value is unchanged', (
+        tester,
+      ) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+        var notifyCount = 0;
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: const [],
+              cache: cache,
+              initialVolume: 0.5,
+              onVolumeChanged: (_) => notifyCount++,
+            ),
+          ),
+        );
+
+        key.currentState!.setVolume(0.5);
+
+        expect(notifyCount, equals(0));
+      });
+    });
+
     group('prefetch', () {
       testWidgets('prefetchCount > 0 exercises _runPrefetch body', (
         tester,

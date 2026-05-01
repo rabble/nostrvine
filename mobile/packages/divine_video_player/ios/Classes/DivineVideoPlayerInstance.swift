@@ -160,12 +160,36 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.firstFrameRendered = false
 
                 let playerItem = AVPlayerItem(asset: composition)
+                // Validate render size up-front, but DO NOT install the
+                // AVVideoComposition on the player item. With certain
+                // HEVC sources, attaching `AVVideoComposition` to an
+                // `AVMutableComposition`-backed item causes
+                // `AVPlayerItemVideoOutput` to deadlock after the first
+                // frame: `hasNewPixelBuffer(forItemTime:)` returns
+                // `false` indefinitely while the player keeps decoding
+                // (audio plays, currentTime advances). Verified via
+                // displayLink instrumentation on 2026-05-01: every tick
+                // logged `hasNew=false copy=YES rate=1.0` with
+                // currentTime advancing — proving the output stuck on
+                // the first frame buffer. Only `outputSequenceWasFlushed`
+                // (loop restart) ever produced a new frame.
+                //
+                // Without `videoComposition`, the player uses the
+                // track's native decode path and the output produces
+                // fresh frames as expected. The composition's track
+                // transforms are still respected because we set
+                // `preferredTransform` on the inserted track in
+                // `buildComposition`.
                 let avComposition = AVVideoComposition(propertiesOf: composition)
                 guard avComposition.renderSize.isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
+<<<<<<< HEAD
                 playerItem.videoComposition = avComposition
                 self.templateItem = playerItem
+=======
+                self.textureOutput?.attach(to: playerItem)
+>>>>>>> 412359c3f (feat(video): improve video rendering and volume control handling)
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
                 // Many encoded videos in the feed have 1 black leading

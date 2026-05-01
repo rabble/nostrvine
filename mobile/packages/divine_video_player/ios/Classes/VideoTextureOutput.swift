@@ -22,6 +22,13 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     private weak var player: AVPlayer?
     /// Item the output is currently attached to, so we can detach cleanly.
     private weak var attachedItem: AVPlayerItem?
+    /// One-shot observation that triggers the initial frame pull as soon
+    /// as the freshly attached item reports `.readyToPlay`. Without this,
+    /// the first `copyPixelBuffer(forItemTime:)` can race the decoder
+    /// initialisation on HEVC 10-bit / HDR clips and return `nil`
+    /// indefinitely until something else (e.g. a loop restart) flushes
+    /// the output sequence.
+    private var itemStatusObservation: NSKeyValueObservation?
     /// Exact seek target from the most recent `forceRefresh`; preferred over
     /// `player.currentTime()` because a newer seek may already be in flight.
     private var pendingSeekTime: CMTime = .invalid
@@ -69,13 +76,20 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         if let old = videoOutput, let prev = attachedItem {
             prev.remove(old)
         }
+        itemStatusObservation?.invalidate()
+        itemStatusObservation = nil
 
+        // Request 32BGRA: Flutter's external-texture upload path expects
+        // a BGRA `CVPixelBuffer` and renders garbage / black on YpCbCr
+        // buffers. AVFoundation will color-convert 10-bit / HDR sources
+        // into BGRA for us — at the cost of HDR range, but that's the
+        // same tradeoff the official video_player plugin makes when it
+        // doesn't pass an explicit Metal renderer.
         let attrs: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String:
                 kCVPixelFormatType_32BGRA,
             // Force IOSurface backing so the buffer can be uploaded to
-            // the GPU as a Flutter texture without an extra copy. Same
-            // attribute set used by the official video_player plugin.
+            // the GPU as a Flutter texture without an extra copy.
             kCVPixelBufferIOSurfacePropertiesKey as String: [:],
         ]
         let output = AVPlayerItemVideoOutput(
@@ -87,6 +101,29 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         attachedItem = item
         hasDeliveredFirstFrame = false
         pendingSeekTime = .invalid
+
+        // The first `copyPixelBuffer` attempt right after attach often
+        // races decoder init (especially on HEVC 10-bit / HDR), and
+        // returns `nil` until something flushes the output sequence —
+        // which normally only happens on the next loop or seek. Watch
+        // for `.readyToPlay` and explicitly request a media-data-change
+        // notification so the decoder is forced to hand over the first
+        // frame as soon as it's available.
+        if item.status == .readyToPlay {
+            output.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+        } else {
+            itemStatusObservation = item.observe(
+                \.status,
+                options: [.new]
+            ) { [weak self, weak output] item, _ in
+                guard let self, let output, item.status == .readyToPlay else {
+                    return
+                }
+                output.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+                self.itemStatusObservation?.invalidate()
+                self.itemStatusObservation = nil
+            }
+        }
     }
 
     /// Attaches the display-link driven polling loop to the player.
@@ -133,10 +170,11 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         } else {
             return
         }
-        guard let pixelBuffer = videoOutput.copyPixelBuffer(
+        let pb = videoOutput.copyPixelBuffer(
             forItemTime: targetTime,
             itemTimeForDisplay: nil
-        ) else {
+        )
+        guard let pixelBuffer = pb else {
             videoOutput.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
             return
         }
@@ -149,6 +187,8 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Cleans up display link and unregisters the texture.
     func dispose() {
         stopDisplayLink()
+        itemStatusObservation?.invalidate()
+        itemStatusObservation = nil
         registry.unregisterTexture(textureId)
         videoOutput = nil
         latestPixelBuffer = nil
@@ -221,8 +261,15 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
             }
         }
 
-        guard output.hasNewPixelBuffer(forItemTime: itemTime) else { return }
-
+        // Skip `hasNewPixelBuffer(forItemTime:)` and just attempt the
+        // copy. With an `AVMutableComposition` + `AVVideoComposition`,
+        // the predicate returns `false` indefinitely on some HEVC
+        // sources even while the player is actively decoding — audio
+        // continues, time advances, but the texture stays on the first
+        // frame until a flush (loop restart) clears the deadlock.
+        // `copyPixelBuffer(forItemTime:)` is cheap when no new frame
+        // is ready (returns `nil`), so polling it on every display-link
+        // tick costs only the call itself.
         if let pixelBuffer = output.copyPixelBuffer(
             forItemTime: itemTime,
             itemTimeForDisplay: nil
