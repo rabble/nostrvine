@@ -169,6 +169,14 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     ? CMTime(value: startPositionMs, timescale: 1000)
                     : CMTime.zero
 
+                // Skip the leading black frame produced by the encoder
+                // before the first real I-frame. See iOS
+                // DivineVideoPlayerInstance.handleSetClips for the full
+                // diagnosis (#3242). Same pragmatic workaround applied
+                // here for parity until the backend trims leading
+                // black frames during transcoding.
+                let leadingBlackFrameSkip = CMTime(value: 1, timescale: 30)
+
                 if let existing = self.player {
                     self.configureQueue(with: playerItem)
                     await existing.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
@@ -445,7 +453,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard player.rate == 0 else { return }
         if player.status == .readyToPlay {
             player.preroll(atRate: 1.0) { [weak self] prerolled in
-                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+                guard let self, prerolled else { return }
+                self.nudgeOutputQueue()
+                self.textureOutput?.forceRefresh(for: time)
             }
             return
         }
@@ -459,8 +469,21 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             self?.pendingPrerollObservation = nil
             guard obsPlayer.rate == 0 else { return }
             obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
-                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+                guard let self, prerolled else { return }
+                self.nudgeOutputQueue()
+                self.textureOutput?.forceRefresh(for: time)
             }
+        }
+    }
+
+    /// Forces `AVPlayerItemVideoOutput` to populate its frame queue while
+    /// the player is paused. Mirrors the iOS implementation — see the
+    /// iOS `nudgeOutputQueue` doc comment for the full rationale.
+    private func nudgeOutputQueue() {
+        guard let item = player?.currentItem, item.canStepForward else { return }
+        item.step(byCount: 1)
+        if item.canStepBackward {
+            item.step(byCount: -1)
         }
     }
 

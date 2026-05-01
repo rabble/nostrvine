@@ -73,6 +73,10 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         let attrs: [String: Any] = [
             kCVPixelBufferPixelFormatTypeKey as String:
                 kCVPixelFormatType_32BGRA,
+            // Force IOSurface backing so the buffer can be uploaded to
+            // the GPU as a Flutter texture without an extra copy. Same
+            // attribute set used by the official video_player plugin.
+            kCVPixelBufferIOSurfacePropertiesKey as String: [:],
         ]
         let output = AVPlayerItemVideoOutput(
             pixelBufferAttributes: attrs

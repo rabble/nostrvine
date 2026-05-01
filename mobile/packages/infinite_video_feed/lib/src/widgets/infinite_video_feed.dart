@@ -34,6 +34,8 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.overlayBuilder,
     this.scrollPhysics,
     this.initialIndex = 0,
+    this.initialVolume = 1.0,
+    this.onVolumeChanged,
     this.scrollDirection = Axis.vertical,
     this.keepPreviousAlive = true,
     this.keepNextAlive = true,
@@ -90,6 +92,18 @@ class InfiniteVideoFeed extends StatefulWidget {
 
   /// The initial video index to display.
   final int initialIndex;
+
+  /// The initial playback volume (0.0 silent, 1.0 full).
+  ///
+  /// Defaults to `1.0`. Use [InfiniteVideoFeedState.setVolume] to change the
+  /// volume after the feed is mounted.
+  final double initialVolume;
+
+  /// Hook: Called when the playback volume changes (mute/unmute/setVolume).
+  ///
+  /// The callback receives the new volume value (0.0 = muted, 1.0 = full).
+  /// Use this to persist the mute/volume state outside the package.
+  final ValueChanged<double>? onVolumeChanged;
 
   /// The scroll direction of the feed.
   final Axis scrollDirection;
@@ -211,6 +225,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   final _loadedFromCache = <int>{};
   int _currentIndex = 0;
 
+  // Current playback volume applied to the active controller and all
+  // controllers that become active. Seeded from widget.initialVolume.
+  late double _volume;
+
   // Generation counter for the player window so async neighbour-init can
   // detect that the user scrolled away mid-load.
   int _playerWindowGeneration = 0;
@@ -238,6 +256,22 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     unawaited(_controllers[_currentIndex]?.play());
   }
 
+  /// Sets the playback volume (0.0 silent, 1.0 full).
+  ///
+  /// Only the active controller is updated immediately. Neighbour controllers
+  /// already receive the correct volume during their initialization via
+  /// [_initController], so there is no need to touch them here.
+  ///
+  /// Calls [InfiniteVideoFeed.onVolumeChanged] with the new value.
+  void setVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (_volume == clamped) return;
+    _volume = clamped;
+    final active = _controllers[_currentIndex];
+    if (active != null) unawaited(active.setVolume(clamped));
+    widget.onVolumeChanged?.call(clamped);
+  }
+
   /// Animate the page view to [index].
   Future<void> animateToPage(int index) async {
     if (!mounted || widget.videos.isEmpty) return;
@@ -256,6 +290,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    _volume = widget.initialVolume;
     _pageController = PageController(initialPage: _currentIndex);
 
     _sources = PlaybackSourceRegistry();
@@ -558,6 +593,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
 
       await controller.setLooping(looping: true);
+      await controller.setVolume(_volume);
 
       if (index == _currentIndex) {
         _log('Playing index $index (${video.id})');
@@ -643,6 +679,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       await controller.stop();
       await controller.setSource(VideoClip.network(nextSource));
       if (index == _currentIndex) {
+        await controller.setVolume(_volume);
         await controller.play();
         _watchdog.start(index, controller);
         _staleDetector.resetGrace();
@@ -806,6 +843,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // _initController will play it and start the watchdog + stale detector
     // once the source is ready.
     if (_controllers.containsKey(index)) {
+      unawaited(_controllers[index]!.setVolume(_volume));
       unawaited(_controllers[index]!.play());
       _watchdog.start(index, _controllers[index]);
       _staleDetector.start(index, _controllers[index]);

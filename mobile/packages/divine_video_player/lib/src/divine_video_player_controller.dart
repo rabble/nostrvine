@@ -266,8 +266,10 @@ class DivineVideoPlayerController {
   /// Sets the volume (0.0 silent, 1.0 full).
   Future<void> setVolume(double volume) async {
     _ensureInitialized();
+    final vol = volume.clamp(0.0, 1.0);
+    _stateController.add(_state.copyWith(volume: vol));
     await _methodChannel.invokeMethod<void>('setVolume', {
-      'volume': volume.clamp(0.0, 1.0),
+      'volume': vol,
     });
   }
 

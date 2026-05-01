@@ -168,9 +168,33 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 self.templateItem = playerItem
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
-                let startTime = startPositionMs > 0
-                    ? CMTime(value: startPositionMs, timescale: 1000)
-                    : CMTime.zero
+                // Many encoded videos in the feed have 1 black leading
+                // frame at exactly time 0 — produced by the encoder
+                // before the first real I-frame. Landing on that frame
+                // is what causes the "black until play" bug for
+                // preloaded items and the flash on loop restart.
+                //
+                // Diagnosed via composition.tracks segment.timeMapping
+                // inspection (#3242): segment.target.start == 0 and
+                // segment.source.start == 0, so this is encoder
+                // pre-roll inside the source asset, NOT a Composition
+                // gap. The fix is therefore a small forward seek when
+                // no explicit start position was requested.
+                //
+                // 33ms ≈ 1 frame @ 30fps; videos in the feed are
+                // ~29.9fps. `toleranceAfter` lets AVPlayer snap to the
+                // next sync sample so we land on real content.
+                //
+                // Backend-side fix (proper solution): trim leading
+                // black frames during transcoding. Tracked separately.
+                let leadingBlackFrameSkip = CMTime(value: 1, timescale: 30)
+                let startTime: CMTime
+                if startPositionMs > 0 {
+                    startTime = CMTime(value: startPositionMs, timescale: 1000)
+                } else {
+                    startTime = leadingBlackFrameSkip
+                }
+                let toleranceAfter = leadingBlackFrameSkip
 
                 if let existing = self.player {
                     self.configureQueue(with: playerItem)
@@ -510,7 +534,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard player.rate == 0 else { return }
         if player.status == .readyToPlay {
             player.preroll(atRate: 1.0) { [weak self] prerolled in
-                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+                guard let self, prerolled else { return }
+                self.nudgeOutputQueue()
+                self.textureOutput?.forceRefresh(for: time)
             }
             return
         }
@@ -524,8 +550,32 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             self?.pendingPrerollObservation = nil
             guard obsPlayer.rate == 0 else { return }
             obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
-                if prerolled { self?.textureOutput?.forceRefresh(for: time) }
+                guard let self, prerolled else { return }
+                self.nudgeOutputQueue()
+                self.textureOutput?.forceRefresh(for: time)
             }
+        }
+    }
+
+    /// Forces `AVPlayerItemVideoOutput` to populate its frame queue while
+    /// the player is paused.
+    ///
+    /// `preroll(atRate:)` warms the decoder buffer but does not push a
+    /// frame into the video-output queue — that queue only fills when the
+    /// player's timebase advances. On a paused player at rate=0, the
+    /// timebase never advances, so `copyPixelBuffer(forItemTime:)` keeps
+    /// returning `nil` and the Flutter `Texture` stays black until
+    /// `play()` is called.
+    ///
+    /// `step(byCount: 1)` followed by `step(byCount: -1)` advances the
+    /// timebase by one frame and back, netting to the same position but
+    /// causing the output to enqueue a frame in the process — the only
+    /// reliable way to produce the first paused frame on iOS.
+    private func nudgeOutputQueue() {
+        guard let item = player?.currentItem, item.canStepForward else { return }
+        item.step(byCount: 1)
+        if item.canStepBackward {
+            item.step(byCount: -1)
         }
     }
 

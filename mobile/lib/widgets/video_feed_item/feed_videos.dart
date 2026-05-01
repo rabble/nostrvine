@@ -10,6 +10,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -181,73 +182,84 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: _autoAdvanceCubit,
-      child: InfiniteVideoFeed(
-        key: _feedKey,
-        videos: widget.videos,
-        cache: ref.read(mediaCacheProvider),
-        urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
-        initialIndex: widget.currentIndex,
-        onNearEnd: widget.onNearEnd,
-        onActiveVideoChanged: (video, index) {
-          _resumeAutoAdvanceAfterSwipe();
-          widget.onActiveVideoChanged?.call(video, index);
+      child: BlocListener<VideoVolumeCubit, VideoVolumeState>(
+        // Sync volume when hardware buttons change system volume.
+        listener: (_, state) {
+          _feedKey.currentState?.setVolume(state.volume);
         },
-        onVideoLoopCompleted: _handleAutoAdvanceCompleted,
-        shouldPortraitExpand: widget.shouldPortraitExpand,
-        maxLoopDuration: VideoEditorConstants.maxDuration,
-        loadingBuilder: (context, index, {required bool isSquare}) {
-          if (index < 0 || index >= widget.videos.length) {
-            return const SizedBox.shrink();
-          }
-          final video = widget.videos[index];
-          return _FeedLoadingOrRestrictedOverlay(
-            video: video,
-            index: index,
-            feedMode: widget.contextTitle,
-            isSquare: isSquare,
-            shouldPortraitExpand: widget.shouldPortraitExpand,
-          );
-        },
-        errorBuilder: (context, index, onRetry, errorType) {
-          if (index < 0 || index >= widget.videos.length) {
-            return const SizedBox.shrink();
-          }
-          final video = widget.videos[index];
+        child: InfiniteVideoFeed(
+          key: _feedKey,
+          videos: widget.videos,
+          cache: ref.read(mediaCacheProvider),
+          urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
+          initialIndex: widget.currentIndex,
+          onNearEnd: widget.onNearEnd,
+          initialVolume: context.read<VideoVolumeCubit>().state.volume,
+          onVolumeChanged: context
+              .read<VideoVolumeCubit>()
+              .onPlaybackVolumeChanged,
+          onActiveVideoChanged: (video, index) {
+            _resumeAutoAdvanceAfterSwipe();
+            widget.onActiveVideoChanged?.call(video, index);
+          },
+          onVideoLoopCompleted: _handleAutoAdvanceCompleted,
+          shouldPortraitExpand: widget.shouldPortraitExpand,
+          maxLoopDuration: VideoEditorConstants.maxDuration,
+          loadingBuilder: (context, index, {required bool isSquare}) {
+            if (index < 0 || index >= widget.videos.length) {
+              return const SizedBox.shrink();
+            }
+            final video = widget.videos[index];
+            return _FeedLoadingOrRestrictedOverlay(
+              video: video,
+              index: index,
+              feedMode: widget.contextTitle,
+              isSquare: isSquare,
+              shouldPortraitExpand: widget.shouldPortraitExpand,
+            );
+          },
+          errorBuilder: (context, index, onRetry, errorType) {
+            if (index < 0 || index >= widget.videos.length) {
+              return const SizedBox.shrink();
+            }
+            final video = widget.videos[index];
 
-          // Capture the cubit eagerly so the post-frame callback doesn't
-          // walk the ancestor tree on a potentially-deactivated element.
-          final cubit = context.read<VideoPlaybackStatusCubit>();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            cubit.report(video.id, playbackStatusFromError(errorType));
-          });
-          // Mirror the BoxFit logic of VideoLoadingPlaceholder /
-          // VideoItemWidget so the error thumbnail respects the same
-          // square / portrait-expand rules as the live video.
-          final width = video.width;
-          final height = video.height;
-          final isSquare = width != null && height != null && width == height;
-          return PooledVideoErrorOverlay(
-            video: video,
-            onRetry: onRetry,
-            errorType: errorType,
-            shouldPortraitExpand: widget.shouldPortraitExpand,
-            isSquare: isSquare,
-          );
-        },
-        overlayBuilder: (context, index, controller, {required bool isActive}) {
-          if (index < 0 || index >= widget.videos.length) {
-            return const SizedBox.shrink();
-          }
-          return _Overlay(
-            controller: controller,
-            video: widget.videos[index],
-            index: index,
-            isActive: isActive,
-            contextTitle: widget.contextTitle,
-            onToggleAutoAdvance: _toggleAutoAdvance,
-            onSuppressAutoAdvance: _suppressAutoAdvance,
-          );
-        },
+            // Capture the cubit eagerly so the post-frame callback doesn't
+            // walk the ancestor tree on a potentially-deactivated element.
+            final cubit = context.read<VideoPlaybackStatusCubit>();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              cubit.report(video.id, playbackStatusFromError(errorType));
+            });
+            // Mirror the BoxFit logic of VideoLoadingPlaceholder /
+            // VideoItemWidget so the error thumbnail respects the same
+            // square / portrait-expand rules as the live video.
+            final width = video.width;
+            final height = video.height;
+            final isSquare = width != null && height != null && width == height;
+            return PooledVideoErrorOverlay(
+              video: video,
+              onRetry: onRetry,
+              errorType: errorType,
+              shouldPortraitExpand: widget.shouldPortraitExpand,
+              isSquare: isSquare,
+            );
+          },
+          overlayBuilder:
+              (context, index, controller, {required bool isActive}) {
+                if (index < 0 || index >= widget.videos.length) {
+                  return const SizedBox.shrink();
+                }
+                return _Overlay(
+                  controller: controller,
+                  video: widget.videos[index],
+                  index: index,
+                  isActive: isActive,
+                  contextTitle: widget.contextTitle,
+                  onToggleAutoAdvance: _toggleAutoAdvance,
+                  onSuppressAutoAdvance: _suppressAutoAdvance,
+                );
+              },
+        ),
       ),
     );
   }
@@ -443,6 +455,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
                       PausedVideoOverlay(
                         controller: widget.controller!,
                         isVisible: widget.isActive,
+                        onVolumeToggle: (v) => context
+                            .findAncestorStateOfType<InfiniteVideoFeedState>()
+                            ?.setVolume(v),
                       ),
                     ],
                     VideoOverlayActions(

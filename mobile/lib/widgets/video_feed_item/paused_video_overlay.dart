@@ -1,18 +1,28 @@
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 
 class PausedVideoOverlay extends StatefulWidget {
   const PausedVideoOverlay({
     required this.controller,
     this.isVisible = true,
+    this.onVolumeToggle,
     super.key,
   });
 
   final DivineVideoPlayerController controller;
   final bool isVisible;
+
+  /// Called when the user taps the mute/unmute button.
+  /// Receives the new volume (0.0 or 1.0). Route this to
+  /// [InfiniteVideoFeedState.setVolume] so the feed tracks the value.
+  final void Function(double volume)? onVolumeToggle;
 
   @override
   State<PausedVideoOverlay> createState() => _PausedVideoOverlayState();
@@ -75,38 +85,86 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<bool>(
+    return StreamBuilder<
+      ({bool isFirstFrameRendered, bool isMuted, bool isPaused})
+    >(
       stream: widget.controller.stateStream
-          .map((s) => s.isPaused && s.isFirstFrameRendered)
+          .map(
+            (s) => (
+              isPaused: s.isPaused,
+              isFirstFrameRendered: s.isFirstFrameRendered,
+              isMuted: s.volume == 0,
+            ),
+          )
           .distinct(),
       builder: (context, snapshot) {
-        final shouldShow =
-            widget.isVisible && _hasStartedPlaying && (snapshot.data ?? false);
+        final isFirstFrameRendered =
+            snapshot.data?.isFirstFrameRendered ?? false;
+        final isPaused = snapshot.data?.isPaused ?? false;
+        final isMuted = snapshot.data?.isMuted ?? false;
 
-        return IgnorePointer(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 180),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: ScaleTransition(
-                  scale: Tween<double>(
-                    begin: 0.92,
-                    end: 1,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: shouldShow
-                ? const CenterPlaybackControl(
-                    state: .play,
-                    semanticsLabel: 'Play video',
-                  )
-                : const SizedBox.shrink(),
-          ),
+        final shouldShow =
+            widget.isVisible &&
+            _hasStartedPlaying &&
+            isPaused &&
+            isFirstFrameRendered;
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(
+                  begin: 0.92,
+                  end: 1,
+                ).animate(animation),
+                child: child,
+              ),
+            );
+          },
+          child: shouldShow
+              ? Center(
+                  child: Column(
+                    mainAxisSize: .min,
+                    spacing: 16,
+                    children: [
+                      if (!kIsWeb)
+                        DivineIconButton(
+                          icon: isMuted
+                              ? DivineIconName.speakerSimpleX
+                              : DivineIconName.speakerHigh,
+                          size: DivineIconButtonSize.small,
+                          type: DivineIconButtonType.ghost,
+                          semanticLabel: isMuted
+                              ? context.l10n.videoPlayerUnmute
+                              : context.l10n.videoPlayerMute,
+                          onPressed: () {
+                            final newVolume = isMuted ? 1.0 : 0.0;
+                            if (widget.onVolumeToggle != null) {
+                              widget.onVolumeToggle!(newVolume);
+                            } else {
+                              widget.controller.setVolume(newVolume);
+                            }
+                            SemanticsService.sendAnnouncement(
+                              View.of(context),
+                              isMuted
+                                  ? context.l10n.videoPlayerUnmute
+                                  : context.l10n.videoPlayerMute,
+                              Directionality.of(context),
+                            );
+                          },
+                        ),
+                      const CenterPlaybackControl(
+                        state: .play,
+                        semanticsLabel: 'Play video',
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
         );
       },
     );
