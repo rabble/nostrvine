@@ -202,5 +202,24 @@ void main() {
         ).called(1);
       },
     );
+
+    testWidgets(
+      'shows malformed-URL message for empty-host wss://',
+      (tester) async {
+        // Self-review fix: a bare scheme like `wss://` previously surfaced
+        // the security-relevant insecure-URL message, which told the user
+        // to do exactly what they typed. After the fix it falls through to
+        // the malformed-URL message.
+        final nostrService = _MockNostrService();
+        await pumpScreen(tester, nostrService: nostrService);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openAddDialogAndSubmit(tester, 'wss://', l10n);
+
+        expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
+        expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
+        verifyNever(() => nostrService.addRelay(any()));
+      },
+    );
   });
 }

@@ -51,7 +51,13 @@ void main() {
           expect(
             () =>
                 NostrRemoteSignerInfo.parseBunkerUrl('bunker://pubkey?relay='),
-            throwsA(isA<InvalidBunkerRelayException>()),
+            throwsA(
+              isA<InvalidBunkerRelayException>().having(
+                (e) => e.relayUrl,
+                'relayUrl',
+                isEmpty,
+              ),
+            ),
           );
         });
 
@@ -142,6 +148,54 @@ void main() {
           } on InvalidBunkerRelayException catch (e) {
             expect(e.toString(), isNot(contains('attacker.example.com')));
             expect(e.relayUrl, equals('ws://attacker.example.com'));
+          }
+        });
+
+        test('toString() never embeds relayUrl for any reject reason', () {
+          // PII / log-hygiene contract: the rejected URL must only appear on
+          // the typed `relayUrl` field, never in `toString()`. Pinned over
+          // multiple rejection reasons so a future copy edit can't silently
+          // re-introduce the URL into log lines.
+          const insecureRelays = [
+            'ws://attacker.example.com',
+            'http://192.168.1.1',
+            'ws://localhost.attacker.com',
+            'http://relay.example.com:8080',
+            'gibberish',
+          ];
+          for (final relay in insecureRelays) {
+            try {
+              NostrRemoteSignerInfo.parseBunkerUrl(
+                'bunker://pubkey?relay=${Uri.encodeQueryComponent(relay)}',
+              );
+              fail('Expected InvalidBunkerRelayException for $relay');
+            } on InvalidBunkerRelayException catch (e) {
+              expect(
+                e.toString(),
+                isNot(contains(e.relayUrl)),
+                reason: 'toString must not embed relayUrl=${e.relayUrl}',
+              );
+            }
+          }
+        });
+
+        test('canonical loopback set (#3362 drift sentinel)', () {
+          // Mirrored in:
+          //  - mobile/test/utils/relay_url_utils_test.dart
+          //  - mobile/packages/nostr_client/test/src/relay_manager_test.dart
+          // and `mobile/android/app/src/main/res/xml/network_security_config.xml`.
+          // Diverging this set without updating the others is a security
+          // regression.
+          const loopbackHosts = ['localhost', '127.0.0.1', '10.0.2.2', '[::1]'];
+          for (final host in loopbackHosts) {
+            final info = NostrRemoteSignerInfo.parseBunkerUrl(
+              'bunker://pubkey?relay=ws://$host:8080',
+            );
+            expect(
+              info.relays,
+              contains('ws://$host:8080'),
+              reason: 'ws://$host should be accepted as loopback',
+            );
           }
         });
 

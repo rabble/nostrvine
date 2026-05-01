@@ -227,6 +227,45 @@ void main() {
         ).called(3);
       });
 
+      test(
+        'persists filtered list when storage contains insecure URLs (#3362)',
+        () async {
+          when(() => mockStorage.loadRelays()).thenAnswer(
+            (_) async => [
+              testCustomRelayUrl,
+              'ws://attacker.example.com',
+            ],
+          );
+          when(() => mockStorage.saveRelays(any())).thenAnswer((_) async {});
+
+          final managerWithStorage = RelayManager(
+            config: _createTestConfig(storage: mockStorage),
+            relayPool: mockRelayPool,
+          );
+
+          await managerWithStorage.initialize();
+
+          // The insecure URL must be dropped from the in-memory list AND
+          // re-saved to storage so it does not reappear on the next launch.
+          expect(
+            managerWithStorage.configuredRelays,
+            contains(testCustomRelayUrl),
+          );
+          expect(
+            managerWithStorage.configuredRelays,
+            isNot(contains('ws://attacker.example.com')),
+          );
+
+          final captured =
+              verify(
+                    () => mockStorage.saveRelays(captureAny()),
+                  ).captured.last
+                  as List<String>;
+          expect(captured, contains(testCustomRelayUrl));
+          expect(captured, isNot(contains('ws://attacker.example.com')));
+        },
+      );
+
       test('initializes status for all configured relays', () async {
         await manager.initialize();
 
@@ -396,6 +435,26 @@ void main() {
 
         expect(result, isTrue);
         expect(manager.configuredRelays, contains('ws://10.0.2.2:47777'));
+      });
+
+      test('canonical loopback set (#3362 drift sentinel)', () async {
+        // Mirrored in:
+        //  - mobile/test/utils/relay_url_utils_test.dart
+        //  - mobile/packages/nostr_sdk/test/unit/nostr_remote_signer_info_test.dart
+        // and `mobile/android/app/src/main/res/xml/network_security_config.xml`.
+        // Diverging this set without updating the others is a security
+        // regression.
+        const loopbackUrls = [
+          'ws://localhost:1',
+          'ws://127.0.0.1:2',
+          'ws://10.0.2.2:3',
+          'ws://[::1]:4',
+        ];
+        for (final url in loopbackUrls) {
+          final result = await manager.addRelay(url);
+          expect(result, isTrue, reason: '$url should be accepted');
+          expect(manager.configuredRelays, contains(url));
+        }
       });
 
       test('emits both connecting and final connected state', () async {

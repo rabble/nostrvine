@@ -864,12 +864,18 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     if (relayUrl == null || relayUrl.isEmpty) return;
 
     // Validate URL format. `relaySettingsInvalidUrl` covers structurally
-    // bad input (no scheme, malformed); `relaySettingsInsecureUrl` covers
-    // cleartext ws:// / http:// pointed at a non-loopback host (#3362).
+    // bad input (no scheme, missing host); `relaySettingsInsecureUrl`
+    // covers cleartext ws:// / http:// pointed at a non-loopback host
+    // (#3362).
     if (!relayUrl.startsWith('wss://') &&
         !relayUrl.startsWith('ws://') &&
         !relayUrl.startsWith('https://') &&
         !relayUrl.startsWith('http://')) {
+      _showError(invalidUrlMessage);
+      return;
+    }
+    final uri = Uri.tryParse(relayUrl);
+    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) {
       _showError(invalidUrlMessage);
       return;
     }

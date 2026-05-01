@@ -82,6 +82,20 @@ void main() {
       expect(isRelayUrlAllowed('wss://'), isFalse);
       expect(isRelayUrlAllowed('not a url'), isFalse);
     });
+
+    test('canonical loopback set (#3362 drift sentinel)', () {
+      // Mirrored in:
+      //  - mobile/packages/nostr_sdk/test/unit/nostr_remote_signer_info_test.dart
+      //  - mobile/packages/nostr_client/test/src/relay_manager_test.dart
+      // and `mobile/android/app/src/main/res/xml/network_security_config.xml`.
+      // Diverging this set without updating the others is a security
+      // regression.
+      expect(isRelayUrlAllowed('ws://localhost:1'), isTrue);
+      expect(isRelayUrlAllowed('ws://127.0.0.1:1'), isTrue);
+      expect(isRelayUrlAllowed('ws://10.0.2.2:1'), isTrue);
+      expect(isRelayUrlAllowed('ws://[::1]:1'), isTrue);
+      expect(isRelayUrlAllowed('ws://example.com'), isFalse);
+    });
   });
 
   group('relayWsToHttpBase', () {

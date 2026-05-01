@@ -146,11 +146,19 @@ class RelayManager {
     final storage = _config.storage;
     if (storage != null) {
       final savedRelays = await storage.loadRelays();
-      // Normalize loaded relays and filter out blocked/duplicate relays
+      // Normalize loaded relays and filter out blocked/duplicate/invalid
+      // relays.
       var blockedCount = 0;
+      var droppedCount = 0;
       for (final url in savedRelays) {
         final normalized = _normalizeUrl(url);
-        if (normalized == null) continue;
+        if (normalized == null) {
+          // URL is malformed or now disallowed by the loopback gate
+          // (#3362). Drop it from the in-memory list and re-save below so
+          // the entry doesn't linger in storage forever.
+          droppedCount++;
+          continue;
+        }
         if (_isBlockedRelay(normalized)) {
           blockedCount++;
           continue;
@@ -161,7 +169,13 @@ class RelayManager {
       }
       if (blockedCount > 0) {
         _log('Filtered $blockedCount blocked relays from storage');
-        // Persist the filtered list so blocked relays are permanently removed
+      }
+      if (droppedCount > 0) {
+        _log('Filtered $droppedCount invalid relay URLs from storage');
+      }
+      if (blockedCount > 0 || droppedCount > 0) {
+        // Persist the filtered list so removed entries don't reappear
+        // on the next launch.
         await storage.saveRelays(_configuredRelays);
         _log('Saved filtered relay list to storage');
       }
