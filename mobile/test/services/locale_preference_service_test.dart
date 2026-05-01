@@ -85,6 +85,7 @@ void main() {
           unorderedEquals(<String>[
             'en',
             'ar',
+            'bg',
             'de',
             'es',
             'fr',
@@ -102,6 +103,7 @@ void main() {
         );
         expect(LocalePreferenceService.supportedLocales['en'], 'English');
         expect(LocalePreferenceService.supportedLocales['ar'], 'العربية');
+        expect(LocalePreferenceService.supportedLocales['bg'], 'Български');
         expect(LocalePreferenceService.supportedLocales['ko'], '한국어');
       });
     });
