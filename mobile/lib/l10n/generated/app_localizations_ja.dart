@@ -2878,112 +2878,106 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'リストに追加';
 
   @override
-  String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+  String get peopleListsAddToListSubtitle => 'このクリエイターをリストに追加する';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'リストに追加';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'リストがありません';
 
   @override
-  String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+  String get peopleListsEmptySubtitle => 'リストを作成して人々をグループ化しましょう。';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'リストを作成';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => '新しいリスト';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'ピープルリスト';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'リスト名';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => '仲の良い友達';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => '作成';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'ユーザーを追加';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'ユーザーを追加';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => 'リストにユーザーを追加';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'リストが見つかりません';
 
   @override
-  String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+  String get peopleListsListNotFoundSubtitle => 'リストが見つかりません。削除された可能性があります。';
 
   @override
-  String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+  String get peopleListsListDeletedSubtitle => 'このリストは削除された可能性があります。';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'このリストにユーザーはいません';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle => '始めるにはユーザーを追加してください';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'まだ動画がありません';
 
   @override
-  String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+  String get peopleListsNoVideosSubtitle => 'リストメンバーの動画がここに表示されます';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => '利用可能な動画がありません';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => '動画の読み込みに失敗しました';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => '動画は利用できません';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'グリッドに戻る';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos => '動画の読み込みエラー';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd => '追加できるユーザーがいません。';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return '$nameに追加';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'ユーザーを検索';
 
   @override
-  String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+  String get peopleListsAddPeopleError => 'ユーザーを読み込めませんでした。もう一度お試しください。';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => '再試行';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => '追加';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return '$count人追加';
   }
 
   @override
@@ -2991,40 +2985,38 @@ class AppLocalizationsJa extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: '$count件のリストに含まれています',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return '$nameを削除しますか？';
   }
 
   @override
-  String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+  String get peopleListsRemoveConfirmBody => 'このリストから削除されます。';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => '削除';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return '$nameをリストから削除しました';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => '元に戻す';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return '$nameのプロフィール。長押しで削除。';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return '$nameのプロフィールを表示';
   }
 
   @override

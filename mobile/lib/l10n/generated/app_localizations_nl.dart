@@ -3044,112 +3044,113 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'Toevoegen aan lijst';
 
   @override
   String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+      'Voeg deze maker toe aan een van je lijsten';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'Toevoegen aan lijst';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'Nog geen lijsten';
 
   @override
   String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+      'Maak een lijst om mensen te groeperen.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'Lijst aanmaken';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => 'Nieuwe lijst';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'Personenlijst';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'Lijstnaam';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => 'Goede vrienden';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => 'Aanmaken';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'Mensen toevoegen';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'Mensen toevoegen';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => 'Mensen aan lijst toevoegen';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'Lijst niet gevonden';
 
   @override
   String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+      'Lijst niet gevonden. Mogelijk is deze verwijderd.';
 
   @override
   String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+      'Deze lijst is mogelijk verwijderd.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'Geen mensen in deze lijst';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle => 'Voeg mensen toe om te beginnen';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'Nog geen video\'s';
 
   @override
   String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+      'Video\'s van lijstleden verschijnen hier';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => 'Geen video\'s beschikbaar';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => 'Video\'s laden mislukt';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => 'Video niet beschikbaar';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'Terug naar raster';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos => 'Fout bij laden van video\'s';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd =>
+      'Geen mensen beschikbaar om toe te voegen.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return 'Toevoegen aan $name';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'Mensen zoeken';
 
   @override
   String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+      'Kon mensen niet laden. Probeer het opnieuw.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => 'Opnieuw proberen';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => 'Toevoegen';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return '$count toevoegen';
   }
 
   @override
@@ -3157,40 +3158,40 @@ class AppLocalizationsNl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: 'In $count lijsten',
+      one: 'In 1 lijst',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return '$name verwijderen?';
   }
 
   @override
   String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+      'Ze worden uit deze lijst verwijderd.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => 'Verwijderen';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return '$name verwijderd uit lijst';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => 'Ongedaan maken';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return 'Profiel van $name. Lang indrukken om te verwijderen.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return 'Profiel van $name bekijken';
   }
 
   @override

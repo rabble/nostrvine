@@ -3017,112 +3017,112 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'Listeye ekle';
 
   @override
   String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+      'Bu içerik üreticisini listelerinden birine ekle';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'Listeye ekle';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'Henüz liste yok';
 
   @override
   String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+      'Kişileri gruplamaya başlamak için bir liste oluştur.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'Liste oluştur';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => 'Yeni liste';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'Kişi listesi';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'Liste adı';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => 'Yakın arkadaşlar';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => 'Oluştur';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'Kişi ekle';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'Kişi ekle';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => 'Listeye kişi ekle';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'Liste bulunamadı';
 
   @override
   String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+      'Liste bulunamadı. Silinmiş olabilir.';
 
   @override
-  String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+  String get peopleListsListDeletedSubtitle => 'Bu liste silinmiş olabilir.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'Bu listede kişi yok';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle => 'Başlamak için kişi ekle';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'Henüz video yok';
 
   @override
   String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+      'Liste üyelerinin videoları burada görünecek';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => 'Kullanılabilir video yok';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => 'Videolar yüklenemedi';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => 'Video kullanılamıyor';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'Izgaraya dön';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos =>
+      'Videolar yüklenirken hata oluştu';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd => 'Eklenecek kişi bulunamadı.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return '$name listesine ekle';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'Kişi ara';
 
   @override
   String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+      'Kişiler yüklenemedi. Lütfen tekrar dene.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => 'Tekrar dene';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => 'Ekle';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return '$count ekle';
   }
 
   @override
@@ -3130,40 +3130,39 @@ class AppLocalizationsTr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: '$count listede',
+      one: '1 listede',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return '$name kaldırılsın mı?';
   }
 
   @override
-  String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+  String get peopleListsRemoveConfirmBody => 'Bu kişi listeden kaldırılacak.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => 'Kaldır';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return '$name listeden kaldırıldı';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => 'Geri al';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return '$name profili. Kaldırmak için uzun bas.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return '$name profilini görüntüle';
   }
 
   @override

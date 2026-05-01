@@ -3122,112 +3122,112 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'Dodaj do listy';
 
   @override
   String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+      'Dodaj tego twórcę do jednej ze swoich list';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'Dodaj do listy';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'Brak list';
 
   @override
   String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+      'Utwórz listę, aby zacząć grupować osoby.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'Utwórz listę';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => 'Nowa lista';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'Lista osób';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'Nazwa listy';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => 'Bliscy znajomi';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => 'Utwórz';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'Dodaj osoby';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'Dodaj osoby';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => 'Dodaj osoby do listy';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'Lista nie znaleziona';
 
   @override
   String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+      'Lista nie znaleziona. Mogła zostać usunięta.';
 
   @override
   String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+      'Ta lista mogła zostać usunięta.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'Brak osób na tej liście';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle => 'Dodaj osoby, aby zacząć';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'Brak filmów';
 
   @override
   String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+      'Filmy od członków listy pojawią się tutaj';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => 'Brak dostępnych filmów';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => 'Nie udało się załadować filmów';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => 'Film niedostępny';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'Powrót do siatki';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos => 'Błąd podczas ładowania filmów';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd => 'Brak osób dostępnych do dodania.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return 'Dodaj do $name';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'Szukaj osób';
 
   @override
   String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+      'Nie udało się załadować osób. Spróbuj ponownie.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => 'Spróbuj ponownie';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => 'Dodaj';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return 'Dodaj $count';
   }
 
   @override
@@ -3235,40 +3235,42 @@ class AppLocalizationsPl extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: 'Na $count listach',
+      many: 'Na $count listach',
+      few: 'Na $count listach',
+      one: 'Na 1 liście',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return 'Usunąć $name?';
   }
 
   @override
   String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+      'Osoba zostanie usunięta z tej listy.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => 'Usuń';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return 'Usunięto $name z listy';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => 'Cofnij';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return 'Profil $name. Przytrzymaj, aby usunąć.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return 'Zobacz profil $name';
   }
 
   @override

@@ -3028,112 +3028,115 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'Lägg till i lista';
 
   @override
   String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+      'Lägg till den här skaparen i en av dina listor';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'Lägg till i lista';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'Inga listor än';
 
   @override
   String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+      'Skapa en lista för att börja gruppera personer.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'Skapa lista';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => 'Ny lista';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'Personlista';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'Listnamn';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => 'Nära vänner';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => 'Skapa';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'Lägg till personer';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'Lägg till personer';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => 'Lägg till personer i listan';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'Listan hittades inte';
 
   @override
   String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+      'Listan hittades inte. Den kan ha tagits bort.';
 
   @override
   String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+      'Den här listan kan ha tagits bort.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'Inga personer i den här listan';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle =>
+      'Lägg till personer för att komma igång';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'Inga videor än';
 
   @override
   String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+      'Videor från listmedlemmar visas här';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => 'Inga videor tillgängliga';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos =>
+      'Det gick inte att läsa in videor';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => 'Video ej tillgänglig';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'Tillbaka till rutnät';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos => 'Fel vid inläsning av videor';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd =>
+      'Inga personer tillgängliga att lägga till.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return 'Lägg till i $name';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'Sök personer';
 
   @override
   String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+      'Det gick inte att läsa in personer. Försök igen.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => 'Försök igen';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => 'Lägg till';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return 'Lägg till $count';
   }
 
   @override
@@ -3141,40 +3144,40 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: 'I $count listor',
+      one: 'I 1 lista',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return 'Ta bort $name?';
   }
 
   @override
   String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+      'De kommer att tas bort från den här listan.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => 'Ta bort';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return '$name borttagen från listan';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => 'Ångra';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return 'Profil för $name. Håll intryckt för att ta bort.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return 'Visa profil för $name';
   }
 
   @override

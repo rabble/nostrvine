@@ -2890,112 +2890,106 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => '목록에 추가';
 
   @override
-  String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+  String get peopleListsAddToListSubtitle => '이 크리에이터를 목록 중 하나에 추가하세요';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => '목록에 추가';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => '목록이 없습니다';
 
   @override
-  String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+  String get peopleListsEmptySubtitle => '목록을 만들어 사람들을 그룹화하세요.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => '목록 만들기';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => '새 목록';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => '사람 목록';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => '목록 이름';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => '친한 친구들';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => '만들기';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => '사람 추가';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => '사람 추가';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => '목록에 사람 추가';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => '목록을 찾을 수 없음';
 
   @override
-  String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+  String get peopleListsListNotFoundSubtitle => '목록을 찾을 수 없습니다. 삭제되었을 수 있습니다.';
 
   @override
-  String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+  String get peopleListsListDeletedSubtitle => '이 목록은 삭제되었을 수 있습니다.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => '이 목록에 사람이 없습니다';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle => '시작하려면 사람을 추가하세요';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => '아직 동영상 없음';
 
   @override
-  String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+  String get peopleListsNoVideosSubtitle => '목록 구성원의 동영상이 여기에 표시됩니다';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => '사용 가능한 동영상 없음';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => '동영상을 불러오지 못했습니다';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => '동영상을 사용할 수 없습니다';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => '그리드로 돌아가기';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos => '동영상 불러오기 오류';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd => '추가할 수 있는 사람이 없습니다.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return '$name에 추가';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => '사람 검색';
 
   @override
-  String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+  String get peopleListsAddPeopleError => '사람을 불러올 수 없습니다. 다시 시도해 주세요.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => '다시 시도';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => '추가';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return '$count명 추가';
   }
 
   @override
@@ -3003,40 +2997,38 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: '$count개 목록에 포함',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return '$name을(를) 삭제하시겠습니까?';
   }
 
   @override
-  String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+  String get peopleListsRemoveConfirmBody => '이 목록에서 삭제됩니다.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => '삭제';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return '목록에서 $name 삭제됨';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => '실행 취소';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return '$name의 프로필. 길게 눌러 삭제하세요.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return '$name의 프로필 보기';
   }
 
   @override

@@ -3002,112 +3002,109 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'أضف إلى القائمة';
 
   @override
-  String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+  String get peopleListsAddToListSubtitle => 'ضع هذا المنشئ في إحدى قوائمك';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'أضف إلى القائمة';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'لا توجد قوائم بعد';
 
   @override
-  String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+  String get peopleListsEmptySubtitle => 'أنشئ قائمة لبدء تجميع الأشخاص.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'إنشاء قائمة';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => 'قائمة جديدة';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'قائمة الأشخاص';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'اسم القائمة';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => 'أصدقاء مقربون';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => 'إنشاء';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'إضافة أشخاص';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'إضافة أشخاص';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel => 'أضف أشخاصًا إلى القائمة';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'القائمة غير موجودة';
 
   @override
   String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+      'القائمة غير موجودة. ربما تم حذفها.';
 
   @override
-  String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+  String get peopleListsListDeletedSubtitle => 'ربما تم حذف هذه القائمة.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'لا يوجد أشخاص في هذه القائمة';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle => 'أضف بعض الأشخاص للبدء';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'لا توجد مقاطع فيديو بعد';
 
   @override
   String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+      'ستظهر هنا مقاطع الفيديو من أعضاء القائمة';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => 'لا تتوفر مقاطع فيديو';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => 'فشل تحميل مقاطع الفيديو';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => 'الفيديو غير متاح';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'العودة إلى الشبكة';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos => 'خطأ في تحميل مقاطع الفيديو';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd => 'لا يوجد أشخاص متاحون للإضافة.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return 'أضف إلى $name';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'البحث عن أشخاص';
 
   @override
   String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+      'تعذر تحميل الأشخاص. يرجى المحاولة مجددًا.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => 'حاول مجددًا';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => 'إضافة';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return 'إضافة $count';
   }
 
   @override
@@ -3115,40 +3112,44 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: 'في $count قوائم',
+      many: 'في $count قائمة',
+      few: 'في $count قوائم',
+      two: 'في قائمتين',
+      one: 'في قائمة واحدة',
+      zero: 'في صفر قوائم',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return 'هل تريد إزالة $name؟';
   }
 
   @override
   String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+      'سيتم إزالته/إزالتها من هذه القائمة.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => 'إزالة';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return 'تمت إزالة $name من القائمة';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => 'تراجع';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return 'ملف $name الشخصي. اضغط مطولًا للإزالة.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return 'عرض ملف $name الشخصي';
   }
 
   @override
