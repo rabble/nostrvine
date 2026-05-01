@@ -22,10 +22,17 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
     implementation("androidx.media3:media3-exoplayer:1.10.0")
     implementation("androidx.media3:media3-datasource:1.10.0")
     implementation("androidx.media3:media3-ui:1.10.0")
+
+    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("junit:junit:4.13.2")
 }

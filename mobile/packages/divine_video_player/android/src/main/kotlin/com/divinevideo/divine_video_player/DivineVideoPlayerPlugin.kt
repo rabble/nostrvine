@@ -76,15 +76,8 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
     }
 
     override fun onDetachedFromActivity() {
-        // Stop the decoder and clear the video surface on every live player
-        // before the Activity's view hierarchy unwinds. The lifecycle
-        // observer's `onPause` runs in the normal teardown path, but
-        // Activity.finish() and configuration-free destroys can race past
-        // it; either way, stopping at activity-detach guarantees no
-        // ExoPlayer decoder frame can reach a Hybrid-Composition
-        // ImageReaderSurfaceProducer after FlutterJNI starts detaching.
-        // The full dispose still happens on onDetachedFromEngine.
-        // See issue #3416.
+        // Stop every live player before the Activity unwinds; full release
+        // happens later on engine detach. See #3416.
         PlayerRegistry.forAll { it.stopForActivityDetach() }
     }
 

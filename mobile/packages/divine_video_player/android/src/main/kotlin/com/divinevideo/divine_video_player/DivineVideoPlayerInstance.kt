@@ -28,6 +28,17 @@ internal class DivineVideoPlayerInstance(
     messenger: BinaryMessenger,
     private val context: Context,
     private val playerId: Int,
+    private val playerFactory: (Context) -> ExoPlayer = { ctx ->
+        ExoPlayer.Builder(ctx)
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(VideoCache.dataSourceFactory(ctx)),
+            )
+            .build()
+    },
+    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
+    private val audioOverlayManagerFactory: (Context) -> AudioOverlayManager = { ctx ->
+        AudioOverlayManager(ctx)
+    },
 ) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
 
     private val methodChannel = MethodChannel(
@@ -41,7 +52,6 @@ internal class DivineVideoPlayerInstance(
 
     private var player: ExoPlayer? = null
     private var eventSink: EventChannel.EventSink? = null
-    private val mainHandler = Handler(Looper.getMainLooper())
 
     // Texture rendering (non-null when useTexture is enabled).
     private var textureEntry: TextureRegistry.SurfaceTextureEntry? = null
@@ -74,7 +84,7 @@ internal class DivineVideoPlayerInstance(
      */
     private var pendingGlobalStartMs: Long = 0L
 
-    private val audioOverlayManager = AudioOverlayManager(context)
+    private val audioOverlayManager = audioOverlayManagerFactory(context)
 
     /**
      * Pending result for an async seekTo call.
@@ -116,16 +126,12 @@ internal class DivineVideoPlayerInstance(
     }
 
     private fun ensurePlayer(): ExoPlayer {
-        return player ?: ExoPlayer.Builder(context)
-            .setMediaSourceFactory(
-                DefaultMediaSourceFactory(VideoCache.dataSourceFactory(context)),
-            )
-            .build().also { newPlayer ->
-                player = newPlayer
-                newPlayer.setSeekParameters(SeekParameters.EXACT)
-                newPlayer.addListener(playerListener)
-                textureSurface?.let { newPlayer.setVideoSurface(it) }
-            }
+        return player ?: playerFactory(context).also { newPlayer ->
+            player = newPlayer
+            newPlayer.setSeekParameters(SeekParameters.EXACT)
+            newPlayer.addListener(playerListener)
+            textureSurface?.let { newPlayer.setVideoSurface(it) }
+        }
     }
 
     // -- MethodCallHandler --
@@ -593,9 +599,12 @@ internal class DivineVideoPlayerInstance(
     /**
      * Stops decoding and detaches the video surface without releasing the
      * player. Used during Activity teardown so in-flight decoder frames
-     * can't reach a Hybrid-Composition `ImageReaderSurfaceProducer` after
-     * `FlutterJNI` has detached. The full [dispose] runs later, on engine
-     * detach.
+     * narrow the window where they can land in a detaching
+     * `ImageReaderSurfaceProducer`. The full [dispose] runs later, on
+     * engine detach.
+     *
+     * Asymmetric with [onAppBackgrounded] by design: no resume is expected
+     * after Activity detach, so [wasPlayingBeforePause] is not set.
      */
     fun stopForActivityDetach() {
         player?.let {
@@ -614,10 +623,7 @@ internal class DivineVideoPlayerInstance(
         eventChannel.setStreamHandler(null)
         player?.let {
             it.removeListener(playerListener)
-            // Stop the decoder and explicitly drop the surface BEFORE
-            // releasing the player. setVideoSurface(null) does the same
-            // thing as clearVideoSurface() in Media3, but the explicit
-            // form documents intent: "no more frames go to this surface".
+            // Stop decoder and detach surface before release. See #3416.
             it.stop()
             it.clearVideoSurface()
             it.release()
