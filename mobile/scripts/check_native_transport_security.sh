@@ -111,7 +111,11 @@ check_ats_plist() {
   fi
 }
 
+# List every Info.plist that ships in the app bundle or any extension /
+# widget. Add new entries here whenever a new target with its own plist is
+# introduced so the guard's coverage stays explicit at a glance.
 check_ats_plist "ios/Runner/Info.plist"
+check_ats_plist "ios/NotificationServiceExtension/Info.plist"
 check_ats_plist "macos/Runner/Info.plist"
 
 if [ "$fail" -ne 0 ]; then
