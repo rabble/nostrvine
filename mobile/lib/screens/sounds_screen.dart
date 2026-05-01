@@ -10,6 +10,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
@@ -99,8 +100,13 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     if (widget.onSoundSelected != null) {
       widget.onSoundSelected!(sound);
     } else {
-      // Use the provider and navigate back
+      // Keep the legacy selected sound state in sync for existing callers.
       ref.read(selectedSoundProvider.notifier).select(sound);
+      ref.read(videoEditorProvider.notifier)
+        ..selectSound(sound)
+        // Reused audio replaces the captured mic audio by default. Users can
+        // re-enable original audio later in the editor.
+        ..setOriginalAudioVolume(0);
       context.pop();
     }
   }

@@ -10,9 +10,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/sound_library_service.dart';
@@ -482,6 +484,60 @@ void main() {
     });
 
     group('Sound Selection', () {
+      testWidgets('tapping sound without callback selects it for recording', (
+        tester,
+      ) async {
+        final testSounds = [
+          createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
+        ];
+        final mockGoRouter = MockGoRouter();
+        when(() => mockGoRouter.pop<Object?>()).thenAnswer((_) {});
+        final container = ProviderContainer(
+          overrides: [
+            trendingSoundsProvider.overrideWith(
+              () => MockTrendingSoundsNotifier(sounds: testSounds),
+            ),
+            soundLibraryServiceProvider.overrideWith(
+              (_) async => SoundLibraryService(),
+            ),
+            videoEditorProvider.overrideWith(
+              _RecordingVideoEditorNotifier.new,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MockGoRouterProvider(
+              goRouter: mockGoRouter,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: SoundsScreen(),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        final soundTiles = find.byType(SoundTile);
+        expect(soundTiles, findsWidgets);
+
+        await tester.tap(soundTiles.last);
+        await tester.pumpAndSettle();
+
+        verify(() => mockGoRouter.pop<Object?>()).called(1);
+        expect(container.read(selectedSoundProvider)?.id, equals('sound1'));
+        expect(
+          container.read(videoEditorProvider).selectedSound?.id,
+          equals('sound1'),
+        );
+        expect(container.read(videoEditorProvider).originalAudioVolume, 0);
+      });
+
       testWidgets('tapping sound selects it and navigates back', (
         tester,
       ) async {
@@ -967,4 +1023,22 @@ void main() {
       });
     });
   });
+}
+
+class _RecordingVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState();
+
+  @override
+  void selectSound(AudioEvent? sound) {
+    state = state.copyWith(
+      selectedSound: sound,
+      clearSelectedSound: sound == null,
+    );
+  }
+
+  @override
+  void setOriginalAudioVolume(double volume) {
+    state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
+  }
 }

@@ -11,8 +11,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -664,24 +666,30 @@ void main() {
       });
 
       testWidgets(
-        'tapping Use Sound selects sound and calls context.pop(true)',
+        'tapping Use Sound selects sound for recording and calls context.pop(true)',
         (tester) async {
           final testSound = createTestAudioEvent(id: 'sound1');
-          AudioEvent? selectedSound;
+          final container = ProviderContainer(
+            overrides: [
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(
+                mockAudioService,
+              ),
+              videoEditorProvider.overrideWith(
+                _RecordingVideoEditorNotifier.new,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
 
           await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                soundUsageCountProvider(
-                  testSound.id,
-                ).overrideWith((ref) => Future.value(0)),
-                videosUsingSoundProvider(
-                  testSound.id,
-                ).overrideWith((ref) => Future.value(<String>[])),
-                audioPlaybackServiceProvider.overrideWithValue(
-                  mockAudioService,
-                ),
-              ],
+            UncontrolledProviderScope(
+              container: container,
               child: MockGoRouterProvider(
                 goRouter: mockGoRouter,
                 child: MaterialApp(
@@ -689,15 +697,7 @@ void main() {
                       AppLocalizations.localizationsDelegates,
                   supportedLocales: AppLocalizations.supportedLocales,
                   theme: VineTheme.theme,
-                  home: Consumer(
-                    builder: (context, ref, _) {
-                      // Watch the selected sound provider
-                      ref.listen<AudioEvent?>(selectedSoundProvider, (_, next) {
-                        selectedSound = next;
-                      });
-                      return SoundDetailScreen(sound: testSound);
-                    },
-                  ),
+                  home: SoundDetailScreen(sound: testSound),
                 ),
               ),
             ),
@@ -710,7 +710,15 @@ void main() {
 
           // Verify GoRouter.pop(true) was called
           verify(() => mockGoRouter.pop<bool>(true)).called(1);
-          expect(selectedSound?.id, equals(testSound.id));
+          expect(
+            container.read(selectedSoundProvider)?.id,
+            equals(testSound.id),
+          );
+          expect(
+            container.read(videoEditorProvider).selectedSound?.id,
+            equals(testSound.id),
+          );
+          expect(container.read(videoEditorProvider).originalAudioVolume, 0);
         },
       );
 
@@ -727,6 +735,9 @@ void main() {
                 testSound.id,
               ).overrideWith((ref) => Future.value(<String>[])),
               audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+              videoEditorProvider.overrideWith(
+                _RecordingVideoEditorNotifier.new,
+              ),
             ],
             child: MockGoRouterProvider(
               goRouter: mockGoRouter,
@@ -1046,6 +1057,9 @@ void main() {
                 testSound.id,
               ).overrideWith((ref) => Future.value(<String>[])),
               audioPlaybackServiceProvider.overrideWithValue(mockAudioService),
+              videoEditorProvider.overrideWith(
+                _RecordingVideoEditorNotifier.new,
+              ),
             ],
             child: MockGoRouterProvider(
               goRouter: mockGoRouter,
@@ -1108,4 +1122,22 @@ void main() {
       });
     });
   });
+}
+
+class _RecordingVideoEditorNotifier extends VideoEditorNotifier {
+  @override
+  VideoEditorProviderState build() => VideoEditorProviderState();
+
+  @override
+  void selectSound(AudioEvent? sound) {
+    state = state.copyWith(
+      selectedSound: sound,
+      clearSelectedSound: sound == null,
+    );
+  }
+
+  @override
+  void setOriginalAudioVolume(double volume) {
+    state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
+  }
 }

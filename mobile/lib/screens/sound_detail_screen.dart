@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -176,8 +177,14 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       _audioService!.stop();
     }
 
-    // Set the selected sound via provider
+    // Keep the legacy selected sound state in sync for existing callers.
     ref.read(selectedSoundProvider.notifier).select(widget.sound);
+
+    ref.read(videoEditorProvider.notifier)
+      ..selectSound(widget.sound)
+      // Reused audio replaces the captured mic audio by default. Users can
+      // re-enable original audio later in the editor.
+      ..setOriginalAudioVolume(0);
 
     // Pop with result indicating success
     context.pop(true);

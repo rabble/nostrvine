@@ -466,7 +466,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Create a VineDraft from the rendered clip with metadata.
   ///
-  /// When a sound is selected via [selectedSoundProvider], automatically
+  /// When a sound is selected into editor state, automatically
   /// populates [selectedAudioEventId] and [selectedAudioRelay] for the
   /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
   /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
