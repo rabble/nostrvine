@@ -24,7 +24,6 @@ import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
-import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -805,33 +804,20 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   // === BOOKMARK ACTIONS ===
 
   Future<void> _addToGlobalBookmarks() async {
-    var wasBookmarked = false;
     try {
       final bookmarkService = await ref.read(bookmarkServiceProvider.future);
-      wasBookmarked = bookmarkService.isVideoBookmarkedGlobally(
-        widget.video.id,
-      );
-      final success = await bookmarkService.toggleVideoInGlobalBookmarks(
+      final success = await bookmarkService.addVideoToGlobalBookmarks(
         widget.video.id,
       );
 
       if (mounted) {
-        final String message;
-        if (success) {
-          message = wasBookmarked
-              ? context.l10n.shareMenuRemovedFromBookmarks
-              : context.l10n.shareMenuAddedToBookmarks;
-        } else {
-          message = wasBookmarked
-              ? context.l10n.shareMenuFailedToRemoveBookmark
-              : context.l10n.shareMenuFailedToAddBookmark;
-        }
-        if (success) {
-          requestProfileSavedVideosSyncIfAvailable(context);
-        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text(
+              success
+                  ? context.l10n.shareMenuAddedToBookmarks
+                  : context.l10n.shareMenuFailedToAddBookmark,
+            ),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -839,7 +825,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       }
     } catch (e) {
       Log.error(
-        'Failed to toggle bookmark: $e',
+        'Failed to add bookmark: $e',
         name: 'ShareVideoMenu',
         category: LogCategory.ui,
       );
@@ -847,11 +833,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              wasBookmarked
-                  ? context.l10n.shareMenuFailedToRemoveBookmark
-                  : context.l10n.shareMenuFailedToAddBookmark,
-            ),
+            content: Text(context.l10n.shareMenuFailedToAddBookmark),
             duration: const Duration(seconds: 2),
           ),
         );

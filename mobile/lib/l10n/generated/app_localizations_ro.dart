@@ -3114,15 +3114,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Adăugat la semnele de carte!';
 
   @override
-  String get shareMenuRemovedFromBookmarks => 'Eliminat din semne de carte!';
-
-  @override
   String get shareMenuFailedToAddBookmark =>
       'N-am putut adăuga semnul de carte';
-
-  @override
-  String get shareMenuFailedToRemoveBookmark =>
-      'N-am putut elimina semnul de carte';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

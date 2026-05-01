@@ -3064,15 +3064,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareMenuAddedToBookmarks => 'Zu Lesezeichen hinzugefügt!';
 
   @override
-  String get shareMenuRemovedFromBookmarks => 'Aus Lesezeichen entfernt!';
-
-  @override
   String get shareMenuFailedToAddBookmark =>
       'Lesezeichen konnte nicht hinzugefügt werden';
-
-  @override
-  String get shareMenuFailedToRemoveBookmark =>
-      'Lesezeichen konnte nicht entfernt werden';
 
   @override
   String shareMenuCreatedListAndAddedVideo(String name) {

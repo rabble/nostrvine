@@ -1485,9 +1485,7 @@
         }
     },
     "shareMenuAddedToBookmarks": "Ditambahkan ke bookmark!",
-    "shareMenuRemovedFromBookmarks": "Dihapus dari bookmark!",
     "shareMenuFailedToAddBookmark": "Gagal menambahkan bookmark",
-    "shareMenuFailedToRemoveBookmark": "Gagal menghapus bookmark",
     "shareMenuCreatedListAndAddedVideo": "Daftar \"{name}\" dibuat dan video ditambahkan",
     "@shareMenuCreatedListAndAddedVideo": {
         "placeholders": {
