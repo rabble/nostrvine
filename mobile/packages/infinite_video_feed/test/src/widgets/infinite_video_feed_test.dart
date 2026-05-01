@@ -98,6 +98,55 @@ void main() {
     });
 
     group('with videos', () {
+      testWidgets(
+        'pagePositionListenable exposes initial page position',
+        (tester) async {
+          final key = GlobalKey<InfiniteVideoFeedState>();
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: List.generate(2, (i) => _makeVideo('p$i')),
+                cache: cache,
+                prefetchCount: 0,
+                preloadGracePeriod: Duration.zero,
+              ),
+            ),
+          );
+
+          expect(key.currentState!.pagePositionListenable.value, equals(0));
+        },
+      );
+
+      testWidgets('pagePositionListenable updates after page animation', (
+        tester,
+      ) async {
+        final key = GlobalKey<InfiniteVideoFeedState>();
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              key: key,
+              videos: List.generate(2, (i) => _makeVideo('u$i')),
+              cache: cache,
+              prefetchCount: 0,
+              preloadGracePeriod: Duration.zero,
+            ),
+          ),
+        );
+
+        // Small drag: updates the page controller's fractional position
+        // (exercising _syncPagePosition) without crossing to the next page.
+        await tester.drag(find.byType(PageView), const Offset(0, -80));
+        await tester.pump();
+        expect(key.currentState!.currentIndex, equals(0));
+        expect(
+          key.currentState!.pagePositionListenable.value,
+          greaterThan(0),
+        );
+      });
+
       testWidgets('renders PageView with correct item count', (tester) async {
         final videos = List.generate(5, (i) => _makeVideo('v$i'));
 

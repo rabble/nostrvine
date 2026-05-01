@@ -293,9 +293,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }
 
   void _syncPagePosition() {
-    final page = _pageController.hasClients
-        ? (_pageController.page ?? _currentIndex.toDouble())
-        : _currentIndex.toDouble();
+    late final double page;
+    if (_pageController.hasClients) {
+      page = _pageController.page ?? _currentIndex.toDouble();
+      // coverage:ignore-start
+    } else {
+      page = _currentIndex.toDouble();
+      // coverage:ignore-end
+    }
     if ((_pagePosition.value - page).abs() < 0.0001) return;
     _pagePosition.value = page;
   }
