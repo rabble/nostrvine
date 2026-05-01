@@ -623,7 +623,53 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         if let errorMessage {
             map["errorMessage"] = errorMessage
         }
+        if let errorCode = resolvedErrorCode() {
+            map["errorCode"] = errorCode
+        }
         sink(map)
+    }
+
+    /// Maps the current player error to a canonical error code string that
+    /// matches the values defined in `NativePlayerErrorCode` on the Dart side.
+    private func resolvedErrorCode() -> String? {
+        let nsError: NSError?
+        if let itemError = player?.currentItem?.error as NSError? {
+            nsError = itemError
+        } else if currentStatus == "error" {
+            nsError = nil
+        } else {
+            return nil
+        }
+
+        guard let err = nsError else { return currentStatus == "error" ? "unknown" : nil }
+
+        // HTTP errors carried inside AVFoundation errors.
+        if let httpResponse = err.userInfo["NSURLErrorFailingURLResponseErrorKey"] as? HTTPURLResponse {
+            return httpResponse.statusCode >= 500 ? "http_server_error" : "http_client_error"
+        }
+
+        switch (err.domain, err.code) {
+        case (NSURLErrorDomain, NSURLErrorNotConnectedToInternet),
+             (NSURLErrorDomain, NSURLErrorNetworkConnectionLost),
+             (NSURLErrorDomain, NSURLErrorDataNotAllowed):
+            return "network_error"
+        case (NSURLErrorDomain, NSURLErrorTimedOut):
+            return "timeout"
+        default:
+            // AVFoundation format / decoder errors.
+            if err.domain == AVFoundationErrorDomain {
+                let code = AVError.Code(rawValue: err.code)
+                switch code {
+                case .decodeFailed, .noCompatibleAlternatesForExternalDisplay:
+                    return "decoder_error"
+                case .fileFormatNotRecognized, .contentIsNotAuthorized:
+                    return "parse_error"
+                default:
+                    break
+                }
+            }
+            return "unknown"
+        }
     }
 
     // MARK: - FlutterStreamHandler
