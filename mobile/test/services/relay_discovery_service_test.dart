@@ -241,6 +241,59 @@ void main() {
     });
   });
 
+  group('parseRelayListFromJson (#3362 insecure URL filtering)', () {
+    late RelayDiscoveryService service;
+
+    setUp(() {
+      service = RelayDiscoveryService(indexerRelays: const ['wss://a']);
+    });
+
+    Map<String, dynamic> tagsJson(List<List<String>> tags) => {'tags': tags};
+
+    test('keeps wss:// relays', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'wss://relay.example.com'],
+        ]),
+      );
+      expect(relays, hasLength(1));
+      expect(relays.first.url, equals('wss://relay.example.com'));
+    });
+
+    test('keeps ws://localhost relays', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'ws://localhost:47777'],
+        ]),
+      );
+      expect(relays, hasLength(1));
+    });
+
+    test('drops ws:// non-loopback relays', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'ws://attacker.example.com'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
+
+    test('keeps mixed list filtered to allowed entries only', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'wss://good.example.com'],
+          ['r', 'ws://attacker.example.com'],
+          ['r', 'ws://localhost:8080'],
+        ]),
+      );
+      expect(relays, hasLength(2));
+      expect(
+        relays.map((r) => r.url),
+        containsAll(['wss://good.example.com', 'ws://localhost:8080']),
+      );
+    });
+  });
+
   group(IndexerRelayConfig, () {
     group('safeFallbackRelays (#2931)', () {
       test('is non-empty so DM reachability degrades gracefully', () {

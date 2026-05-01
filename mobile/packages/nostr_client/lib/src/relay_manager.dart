@@ -10,6 +10,20 @@ import 'package:nostr_client/src/models/relay_manager_config.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
 
+/// Hosts allowed to use cleartext (`ws://`) relay schemes.
+///
+/// Mirrors `isLoopbackHost` in `mobile/lib/utils/relay_url_utils.dart`. Any
+/// change here must be reflected there and in `network_security_config.xml`.
+const _relayLoopbackHosts = <String>{
+  'localhost',
+  '127.0.0.1',
+  '10.0.2.2',
+  '::1',
+};
+
+bool _isLoopbackHost(String host) =>
+    _relayLoopbackHosts.contains(host.toLowerCase());
+
 /// {@template relay_manager}
 /// Manages relay configuration and connection status.
 ///
@@ -625,7 +639,9 @@ class RelayManager {
   String? _normalizeUrl(String url) {
     var normalized = url.trim();
 
-    // Ensure wss:// prefix
+    // Ensure wss:// prefix when no scheme is present (security upgrade for
+    // bare hostnames). Explicit ws:// is preserved here; the loopback gate
+    // below decides whether it is permitted.
     if (!normalized.startsWith('wss://') && !normalized.startsWith('ws://')) {
       normalized = 'wss://$normalized';
     }
@@ -635,14 +651,15 @@ class RelayManager {
       normalized = normalized.substring(0, normalized.length - 1);
     }
 
-    // Basic validation
-    try {
-      final uri = Uri.parse(normalized);
-      if (uri.host.isEmpty) return null;
-      return normalized;
-    } on FormatException {
-      return null;
+    // Basic shape validation + loopback gate for cleartext schemes.
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || uri.host.isEmpty) return null;
+    final scheme = uri.scheme.toLowerCase();
+    if (scheme == 'wss') return normalized;
+    if (scheme == 'ws') {
+      return _isLoopbackHost(uri.host) ? normalized : null;
     }
+    return null;
   }
 
   void _log(String message) {

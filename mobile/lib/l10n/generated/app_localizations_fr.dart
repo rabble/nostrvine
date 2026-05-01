@@ -1688,6 +1688,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'URL du relay doit commencer par wss:// ou ws://';
 
   @override
+  String get relaySettingsInsecureUrl =>
+      'Relay URL must use wss:// (ws:// is allowed only for localhost)';
+
+  @override
   String relaySettingsRestoredDefault(String defaultRelay) {
     return 'Relay par défaut restauré : $defaultRelay';
   }
@@ -5165,6 +5169,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String keyImportError(String error) {
     return 'Erreur : $error';
   }
+
+  @override
+  String get keyImportInsecureBunkerRelay =>
+      'Bunker relay must use wss:// (ws:// is allowed only for localhost)';
 
   @override
   String get timeNow => 'maintenant';

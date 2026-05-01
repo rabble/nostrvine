@@ -51,46 +51,31 @@ void main() {
           expect(
             () =>
                 NostrRemoteSignerInfo.parseBunkerUrl('bunker://pubkey?relay='),
+            throwsA(isA<InvalidBunkerRelayException>()),
+          );
+        });
+
+        test('should throw when relay URL has no scheme', () {
+          expect(
+            () => NostrRemoteSignerInfo.parseBunkerUrl(
+              'bunker://pubkey?relay=bad',
+            ),
             throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('should start with wss:// or ws://'),
+              isA<InvalidBunkerRelayException>().having(
+                (e) => e.relayUrl,
+                'relayUrl',
+                'bad',
               ),
             ),
           );
         });
-
-        test(
-          'should throw when relay URL does not start with wss:// or ws://',
-          () {
-            expect(
-              () => NostrRemoteSignerInfo.parseBunkerUrl(
-                'bunker://pubkey?relay=bad',
-              ),
-              throwsA(
-                isA<Exception>().having(
-                  (e) => e.toString(),
-                  'message',
-                  contains('relay bad should start with wss:// or ws://'),
-                ),
-              ),
-            );
-          },
-        );
 
         test('should throw when relay URL is http://', () {
           expect(
             () => NostrRemoteSignerInfo.parseBunkerUrl(
               'bunker://pubkey?relay=http://relay.com',
             ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('should start with wss:// or ws://'),
-              ),
-            ),
+            throwsA(isA<InvalidBunkerRelayException>()),
           );
         });
 
@@ -99,13 +84,7 @@ void main() {
             () => NostrRemoteSignerInfo.parseBunkerUrl(
               'bunker://pubkey?relay=https://relay.com',
             ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('should start with wss:// or ws://'),
-              ),
-            ),
+            throwsA(isA<InvalidBunkerRelayException>()),
           );
         });
 
@@ -115,12 +94,93 @@ void main() {
               'bunker://pubkey?relay=wss://good.com&relay=bad',
             ),
             throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('relay bad should start with wss:// or ws://'),
+              isA<InvalidBunkerRelayException>().having(
+                (e) => e.relayUrl,
+                'relayUrl',
+                'bad',
               ),
             ),
+          );
+        });
+      });
+
+      group('insecure relay rejection (#3362)', () {
+        test('rejects ws:// to non-loopback host', () {
+          expect(
+            () => NostrRemoteSignerInfo.parseBunkerUrl(
+              'bunker://pubkey?relay=ws://attacker.example.com',
+            ),
+            throwsA(isA<InvalidBunkerRelayException>()),
+          );
+        });
+
+        test('rejects ws:// suffix-match attack on localhost', () {
+          expect(
+            () => NostrRemoteSignerInfo.parseBunkerUrl(
+              'bunker://pubkey?relay=ws://localhost.attacker.com',
+            ),
+            throwsA(isA<InvalidBunkerRelayException>()),
+          );
+        });
+
+        test('rejects mixed list when any relay is insecure', () {
+          expect(
+            () => NostrRemoteSignerInfo.parseBunkerUrl(
+              'bunker://pubkey?relay=wss://good.com'
+              '&relay=ws://attacker.example.com',
+            ),
+            throwsA(isA<InvalidBunkerRelayException>()),
+          );
+        });
+
+        test('toString() does not embed the rejected URL', () {
+          try {
+            NostrRemoteSignerInfo.parseBunkerUrl(
+              'bunker://pubkey?relay=ws://attacker.example.com',
+            );
+            fail('Expected InvalidBunkerRelayException');
+          } on InvalidBunkerRelayException catch (e) {
+            expect(e.toString(), isNot(contains('attacker.example.com')));
+            expect(e.relayUrl, equals('ws://attacker.example.com'));
+          }
+        });
+
+        test('accepts ws://localhost', () {
+          final info = NostrRemoteSignerInfo.parseBunkerUrl(
+            'bunker://pubkey?relay=ws://localhost:8080',
+          );
+          expect(info.relays, contains('ws://localhost:8080'));
+        });
+
+        test('accepts ws://127.0.0.1', () {
+          final info = NostrRemoteSignerInfo.parseBunkerUrl(
+            'bunker://pubkey?relay=ws://127.0.0.1:8080',
+          );
+          expect(info.relays, contains('ws://127.0.0.1:8080'));
+        });
+
+        test('accepts ws://10.0.2.2 (Android emulator host)', () {
+          final info = NostrRemoteSignerInfo.parseBunkerUrl(
+            'bunker://pubkey?relay=ws://10.0.2.2:47777',
+          );
+          expect(info.relays, contains('ws://10.0.2.2:47777'));
+        });
+
+        test('accepts nostrconnect:// with ws://localhost relay', () {
+          final info = NostrRemoteSignerInfo.parseBunkerUrl(
+            'nostrconnect://clientpubkey?relay=ws://localhost:8080'
+            '&secret=abc',
+          );
+          expect(info.relays, contains('ws://localhost:8080'));
+        });
+
+        test('rejects nostrconnect:// with ws:// non-loopback relay', () {
+          expect(
+            () => NostrRemoteSignerInfo.parseBunkerUrl(
+              'nostrconnect://clientpubkey'
+              '?relay=ws://attacker.example.com&secret=abc',
+            ),
+            throwsA(isA<InvalidBunkerRelayException>()),
           );
         });
       });

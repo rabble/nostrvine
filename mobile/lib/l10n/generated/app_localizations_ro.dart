@@ -1703,6 +1703,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'URL-ul relay-ului trebuie să înceapă cu wss:// sau ws://';
 
   @override
+  String get relaySettingsInsecureUrl =>
+      'Relay URL must use wss:// (ws:// is allowed only for localhost)';
+
+  @override
   String relaySettingsRestoredDefault(String defaultRelay) {
     return 'Relay-ul implicit a fost restabilit: $defaultRelay';
   }
@@ -5232,6 +5236,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String keyImportError(String error) {
     return 'Eroare: $error';
   }
+
+  @override
+  String get keyImportInsecureBunkerRelay =>
+      'Bunker relay must use wss:// (ws:// is allowed only for localhost)';
 
   @override
   String get timeNow => 'acum';

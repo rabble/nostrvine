@@ -868,6 +868,10 @@
   },
   "relaySettingsFailedToAddRelay": "Failed to add relay. Please check the URL and try again.",
   "relaySettingsInvalidUrl": "Relay URL must start with wss:// or ws://",
+  "relaySettingsInsecureUrl": "Relay URL must use wss:// (ws:// is allowed only for localhost)",
+  "@relaySettingsInsecureUrl": {
+    "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+  },
   "relaySettingsRestoredDefault": "Restored default relay: {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
@@ -2711,6 +2715,10 @@
         "type": "String"
       }
     }
+  },
+  "keyImportInsecureBunkerRelay": "Bunker relay must use wss:// (ws:// is allowed only for localhost)",
+  "@keyImportInsecureBunkerRelay": {
+    "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
   },
 
   "timeNow": "now",

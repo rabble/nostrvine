@@ -5,6 +5,85 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 
 void main() {
+  group('isLoopbackHost', () {
+    test('accepts canonical loopback names and addresses', () {
+      expect(isLoopbackHost('localhost'), isTrue);
+      expect(isLoopbackHost('127.0.0.1'), isTrue);
+      expect(isLoopbackHost('10.0.2.2'), isTrue);
+      expect(isLoopbackHost('::1'), isTrue);
+    });
+
+    test('is case-insensitive', () {
+      expect(isLoopbackHost('LOCALHOST'), isTrue);
+      expect(isLoopbackHost('LocalHost'), isTrue);
+    });
+
+    test('rejects non-loopback hosts', () {
+      expect(isLoopbackHost('relay.example.com'), isFalse);
+      expect(isLoopbackHost('attacker.example.com'), isFalse);
+      expect(isLoopbackHost(''), isFalse);
+    });
+
+    test('rejects suffix-match attacks on loopback hostname', () {
+      expect(isLoopbackHost('localhost.attacker.example.com'), isFalse);
+      expect(isLoopbackHost('mylocalhost'), isFalse);
+    });
+  });
+
+  group('isRelayUrlAllowed', () {
+    test('accepts wss:// for any host', () {
+      expect(isRelayUrlAllowed('wss://relay.divine.video'), isTrue);
+      expect(isRelayUrlAllowed('wss://relay.example.com:8443'), isTrue);
+      expect(isRelayUrlAllowed('wss://relay.divine.video/path'), isTrue);
+    });
+
+    test('accepts ws:// for loopback hosts only', () {
+      expect(isRelayUrlAllowed('ws://localhost:47777'), isTrue);
+      expect(isRelayUrlAllowed('ws://127.0.0.1:8080'), isTrue);
+      expect(isRelayUrlAllowed('ws://10.0.2.2:47777'), isTrue);
+      expect(isRelayUrlAllowed('ws://[::1]:8080'), isTrue);
+    });
+
+    test('accepts https:// and http://loopback for capability fetches', () {
+      expect(isRelayUrlAllowed('https://relay.divine.video'), isTrue);
+      expect(isRelayUrlAllowed('http://localhost:47777'), isTrue);
+      expect(isRelayUrlAllowed('http://10.0.2.2:8787'), isTrue);
+    });
+
+    test('rejects ws:// to non-loopback hosts', () {
+      expect(isRelayUrlAllowed('ws://attacker.example.com'), isFalse);
+      expect(isRelayUrlAllowed('ws://relay.example.com:8443'), isFalse);
+      // Suffix-match attack: must check exact host equality.
+      expect(isRelayUrlAllowed('ws://localhost.attacker.com'), isFalse);
+    });
+
+    test('rejects http:// to non-loopback hosts', () {
+      expect(isRelayUrlAllowed('http://attacker.example.com'), isFalse);
+    });
+
+    test('is case-insensitive on scheme and host', () {
+      expect(isRelayUrlAllowed('WSS://relay.example.com'), isTrue);
+      expect(isRelayUrlAllowed('WS://Localhost:8080'), isTrue);
+    });
+
+    test('trims surrounding whitespace', () {
+      expect(isRelayUrlAllowed('  wss://relay.example.com  '), isTrue);
+      expect(isRelayUrlAllowed('\tws://attacker.example.com\n'), isFalse);
+    });
+
+    test('rejects unsupported and missing schemes', () {
+      expect(isRelayUrlAllowed('ftp://relay.example.com'), isFalse);
+      expect(isRelayUrlAllowed('relay.example.com'), isFalse);
+      expect(isRelayUrlAllowed('bunker://pubkey'), isFalse);
+    });
+
+    test('rejects malformed and empty input', () {
+      expect(isRelayUrlAllowed(''), isFalse);
+      expect(isRelayUrlAllowed('wss://'), isFalse);
+      expect(isRelayUrlAllowed('not a url'), isFalse);
+    });
+  });
+
   group('relayWsToHttpBase', () {
     test('keeps generic relay host conversion unchanged', () {
       expect(

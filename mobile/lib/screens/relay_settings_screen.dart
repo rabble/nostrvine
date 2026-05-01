@@ -12,6 +12,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -780,6 +781,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     // Capture l10n strings before awaits to avoid
     // use_build_context_synchronously warnings.
     final invalidUrlMessage = context.l10n.relaySettingsInvalidUrl;
+    final insecureUrlMessage = context.l10n.relaySettingsInsecureUrl;
     final addedRelayFn = context.l10n.relaySettingsAddedRelay;
     final failedToAddMessage = context.l10n.relaySettingsFailedToAddRelay;
 
@@ -861,9 +863,18 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
     if (relayUrl == null || relayUrl.isEmpty) return;
 
-    // Validate URL format
-    if (!relayUrl.startsWith('wss://') && !relayUrl.startsWith('ws://')) {
+    // Validate URL format. `relaySettingsInvalidUrl` covers structurally
+    // bad input (no scheme, malformed); `relaySettingsInsecureUrl` covers
+    // cleartext ws:// / http:// pointed at a non-loopback host (#3362).
+    if (!relayUrl.startsWith('wss://') &&
+        !relayUrl.startsWith('ws://') &&
+        !relayUrl.startsWith('https://') &&
+        !relayUrl.startsWith('http://')) {
       _showError(invalidUrlMessage);
+      return;
+    }
+    if (!isRelayUrlAllowed(relayUrl)) {
+      _showError(insecureUrlMessage);
       return;
     }
 

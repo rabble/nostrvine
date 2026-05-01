@@ -355,6 +355,49 @@ void main() {
         expect(statusUpdates.length, greaterThan(0));
       });
 
+      // Insecure URL gating (#3362)
+      test('rejects ws:// to non-loopback host', () async {
+        final result = await manager.addRelay('ws://attacker.example.com');
+
+        expect(result, isFalse);
+        expect(
+          manager.configuredRelays,
+          isNot(contains('ws://attacker.example.com')),
+        );
+        // The attacker URL must never hit the relay pool, even though
+        // initialize() legitimately added the default relay.
+        verifyNever(
+          () => mockRelayPool.add(
+            any(
+              that: predicate<Relay>(
+                (r) => r.url.contains('attacker.example.com'),
+              ),
+            ),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        );
+      });
+
+      test('rejects ws:// suffix-match attack on localhost', () async {
+        final result = await manager.addRelay('ws://localhost.attacker.com');
+
+        expect(result, isFalse);
+      });
+
+      test('accepts ws://localhost', () async {
+        final result = await manager.addRelay('ws://localhost:47777');
+
+        expect(result, isTrue);
+        expect(manager.configuredRelays, contains('ws://localhost:47777'));
+      });
+
+      test('accepts ws://10.0.2.2 (Android emulator host)', () async {
+        final result = await manager.addRelay('ws://10.0.2.2:47777');
+
+        expect(result, isTrue);
+        expect(manager.configuredRelays, contains('ws://10.0.2.2:47777'));
+      });
+
       test('emits both connecting and final connected state', () async {
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);

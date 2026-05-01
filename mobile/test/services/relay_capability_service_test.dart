@@ -175,6 +175,45 @@ void main() {
       });
     });
 
+    group('insecure URL rejection (#3362)', () {
+      test('refuses NIP-11 fetch for ws:// non-loopback host', () async {
+        await expectLater(
+          service.getRelayCapabilities('ws://attacker.example.com'),
+          throwsA(isA<RelayCapabilityException>()),
+        );
+
+        verifyNever(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        );
+      });
+
+      test('refuses NIP-11 fetch for http:// non-loopback host', () async {
+        await expectLater(
+          service.getRelayCapabilities('http://attacker.example.com'),
+          throwsA(isA<RelayCapabilityException>()),
+        );
+
+        verifyNever(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        );
+      });
+
+      test('allows http://localhost for local Docker stack', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('http://localhost:47777'),
+            headers: {'Accept': 'application/nostr+json'},
+          ),
+        ).thenAnswer((_) async => http.Response('{"name": "Local"}', 200));
+
+        final capabilities = await service.getRelayCapabilities(
+          'ws://localhost:47777',
+        );
+
+        expect(capabilities.relayUrl, equals('ws://localhost:47777'));
+      });
+    });
+
     group('Caching', () {
       test('caches relay capabilities and reuses them', () async {
         const nip11Response = '{"name": "Test Relay"}';

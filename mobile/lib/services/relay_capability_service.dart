@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Exception thrown when relay capability detection fails
@@ -144,6 +145,18 @@ class RelayCapabilityService {
 
   /// Get capabilities for a relay (with caching)
   Future<RelayCapabilities> getRelayCapabilities(String relayWsUrl) async {
+    // Defense-in-depth: refuse cleartext NIP-11 fetches to non-loopback
+    // hosts so relay metadata never leaves the device unencrypted (#3362).
+    // Upstream validators should already block these URLs from being
+    // configured, but this guard keeps the HTTP request from firing if
+    // they ever miss one.
+    if (!isRelayUrlAllowed(relayWsUrl)) {
+      throw RelayCapabilityException(
+        'Relay URL is not a permitted scheme/host',
+        relayWsUrl,
+      );
+    }
+
     // Check cache first
     final cached = _cache[relayWsUrl];
     if (cached != null && !cached.isExpired) {
