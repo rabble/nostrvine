@@ -113,6 +113,10 @@ const _knownUntranslatedDebt = {
   'peopleListsUndo',
   'peopleListsVideoNotAvailable',
   'peopleListsViewProfileHint',
+  // Added by the #3362 relay-scheme security gate. English + Spanish are
+  // translated; other locales fall back to English until the next pass.
+  'relaySettingsInsecureUrl',
+  'keyImportInsecureBunkerRelay',
 };
 
 Map<String, Object?> _readArb(File file) {
