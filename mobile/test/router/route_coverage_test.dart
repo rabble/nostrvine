@@ -7,6 +7,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -106,6 +107,20 @@ void main() {
 
       test('${InvitesScreen.path} is treated as a non-tab route', () {
         expect(tabIndexFromLocation(InvitesScreen.path), -1);
+      });
+
+      test('${BadgesScreen.path} parses to RouteType.badges', () {
+        final context = parseRoute(BadgesScreen.path);
+        expect(context.type, RouteType.badges);
+      });
+
+      test('${BadgesScreen.path} builds from RouteType.badges', () {
+        final path = buildRoute(const RouteContext(type: RouteType.badges));
+        expect(path, BadgesScreen.path);
+      });
+
+      test('${BadgesScreen.path} is treated as a non-tab route', () {
+        expect(tabIndexFromLocation(BadgesScreen.path), -1);
       });
     });
 
@@ -406,6 +421,7 @@ void main() {
       'hashtag': HashtagScreenRouter.pathForTag('nostr'),
       'category gallery': CategoryGalleryScreen.locationFor('animals'),
       'settings': SettingsScreen.path,
+      'badges': BadgesScreen.path,
       'relay settings': RelaySettingsScreen.path,
       'invites': InvitesScreen.path,
       'people list create': CreatePeopleListPage.path,
@@ -444,6 +460,7 @@ void main() {
         RouteType.videoMetadata: VideoMetadataScreen.path,
         RouteType.importKey: KeyImportScreen.path,
         RouteType.invites: InvitesScreen.path,
+        RouteType.badges: BadgesScreen.path,
         RouteType.settings: SettingsScreen.path,
         RouteType.relaySettings: RelaySettingsScreen.path,
         RouteType.relayDiagnostic: RelayDiagnosticScreen.path,

@@ -33,6 +33,7 @@ import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -701,6 +702,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const SettingsScreen(),
       ),
       GoRoute(
+        path: BadgesScreen.path,
+        name: BadgesScreen.routeName,
+        builder: (_, _) => const BadgesScreen(),
+      ),
+      GoRoute(
         path: InvitesScreen.path,
         name: InvitesScreen.routeName,
         builder: (_, _) => const InvitesScreen(),
@@ -1163,6 +1169,7 @@ int tabIndexFromLocation(String loc) {
     case 'liked-videos':
       return 3; // Liked videos keeps profile tab active
     case 'search':
+    case 'badges':
     case 'apps':
     case 'invites':
     case 'settings':

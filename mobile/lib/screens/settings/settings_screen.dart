@@ -25,6 +25,7 @@ import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
@@ -239,6 +240,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: context.l10n.settingsNostrSettings,
                   divineIcon: DivineIconName.graph,
                   onTap: () => context.push(NostrSettingsScreen.path),
+                ),
+                _SettingsTile(
+                  title: 'Badges',
+                  icon: Icons.workspace_premium,
+                  subtitle: 'Accept awards and check issued badge status.',
+                  onTap: () => context.push(BadgesScreen.path),
                 ),
                 if (nostrAppsSandboxSupported)
                   _SettingsTile(
