@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:divine_video_player/divine_video_player.dart';
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
@@ -203,6 +204,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   static const _loopStartThreshold = Duration(seconds: 1);
 
   late final PageController _pageController;
+  late final ValueNotifier<double> _pagePosition;
 
   // Live controller window — read by build(). Stays on the State because
   // build() needs synchronous access to it.
@@ -246,6 +248,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   /// The feed index of the currently active (visible) video.
   int get currentIndex => _currentIndex;
 
+  /// Continuous page position for scroll-driven overlay effects.
+  ///
+  /// Value is 0-based and includes fractional positions while the page view
+  /// is between two items.
+  ValueListenable<double> get pagePositionListenable => _pagePosition;
+
   /// Pauses the currently active video without changing the page.
   void pauseActive() {
     unawaited(_controllers[_currentIndex]?.pause());
@@ -284,6 +292,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     );
   }
 
+  void _syncPagePosition() {
+    final page = _pageController.hasClients
+        ? (_pageController.page ?? _currentIndex.toDouble())
+        : _currentIndex.toDouble();
+    if ((_pagePosition.value - page).abs() < 0.0001) return;
+    _pagePosition.value = page;
+  }
+
   // ─── Lifecycle ──────────────────────────────────────────────────────────
 
   @override
@@ -291,7 +307,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _volume = widget.initialVolume;
-    _pageController = PageController(initialPage: _currentIndex);
+    _pagePosition = ValueNotifier<double>(_currentIndex.toDouble());
+    _pageController = PageController(initialPage: _currentIndex)
+      ..addListener(_syncPagePosition);
 
     _sources = PlaybackSourceRegistry();
     _prefetcher = DiskPrefetcher(cache: widget.cache, log: _log);
@@ -365,6 +383,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _staleDetector.disposeAll();
     _subscriptions.disposeAll();
     _sources.clear();
+    _pagePosition.dispose();
     _pageController.dispose();
     for (final controller in _controllers.values) {
       unawaited(controller.dispose());

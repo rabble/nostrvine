@@ -31,6 +31,40 @@ import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
 
+// Scroll-fraction constants for overlay opacity during page transitions.
+//
+// Opacity is scroll-driven: it changes continuously as the page scrolls,
+// tracking the finger position rather than running on a separate timer.
+// A small transition band around each threshold gives a smooth cross-fade.
+const double _kOverlayFullOpacityThreshold = 0.1; // fully visible below 10 %
+const double _kOverlayHideThreshold = 0.5; // fully hidden above 50 %
+const double _kOverlayDimmedOpacity = 0.5; // opacity while in the dim band
+// Half-width of the smooth cross-fade zone around each threshold.
+// e.g. 0.03 -> full<->dim transition spans 7 %–13 %, dim<->hidden spans
+// 47 %–53 %.
+const double _kOverlayFadeHalfWidth = 0.03;
+
+/// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
+/// opacity using smooth linear interpolation around each threshold.
+double _scrollDrivenOpacity(double distance) {
+  const dimLo = _kOverlayFullOpacityThreshold - _kOverlayFadeHalfWidth;
+  const dimHi = _kOverlayFullOpacityThreshold + _kOverlayFadeHalfWidth;
+  const hideLo = _kOverlayHideThreshold - _kOverlayFadeHalfWidth;
+  const hideHi = _kOverlayHideThreshold + _kOverlayFadeHalfWidth;
+
+  if (distance <= dimLo) return 1.0;
+  if (distance <= dimHi) {
+    final t = (distance - dimLo) / (dimHi - dimLo);
+    return 1.0 + (_kOverlayDimmedOpacity - 1.0) * t;
+  }
+  if (distance <= hideLo) return _kOverlayDimmedOpacity;
+  if (distance <= hideHi) {
+    final t = (distance - hideLo) / (hideHi - hideLo);
+    return _kOverlayDimmedOpacity * (1.0 - t);
+  }
+  return 0.0;
+}
+
 class FeedVideos extends ConsumerStatefulWidget {
   const FeedVideos({
     required this.videos,
@@ -352,6 +386,9 @@ class __OverlayState extends ConsumerState<_Overlay> {
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
+    final pagePositionListenable = context
+        .findAncestorStateOfType<InfiniteVideoFeedState>()
+        ?.pagePositionListenable;
 
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
@@ -460,26 +497,58 @@ class __OverlayState extends ConsumerState<_Overlay> {
                             ?.setVolume(v),
                       ),
                     ],
-                    VideoOverlayActions(
-                      video: video,
-                      isVisible: true,
-                      isActive: true,
-                      hasBottomNavigation: false,
-                      contextTitle: widget.contextTitle,
-                      isFullscreen: true,
-                      topOffset: isOwnVideo ? 64 : 8,
-                      showAutoButton: autoAdvanceAvailable,
-                      isAutoEnabled: effectiveAutoEnabled,
-                      onAutoPressed: widget.onToggleAutoAdvance,
-                      onInteracted: widget.onSuppressAutoAdvance,
-                      subtitleLayer:
-                          video.hasSubtitles && widget.controller != null
-                          ? _SubtitleLayer(
-                              video: video,
-                              controller: widget.controller!,
-                            )
-                          : null,
-                    ),
+                    if (pagePositionListenable != null)
+                      ValueListenableBuilder<double>(
+                        valueListenable: pagePositionListenable,
+                        builder: (context, page, _) {
+                          final distance = (page - widget.index).abs().clamp(
+                            0.0,
+                            1.0,
+                          );
+                          return VideoOverlayActions(
+                            video: video,
+                            isVisible: true,
+                            isActive: true,
+                            overlayOpacity: _scrollDrivenOpacity(distance),
+                            hasBottomNavigation: false,
+                            contextTitle: widget.contextTitle,
+                            isFullscreen: true,
+                            topOffset: isOwnVideo ? 64 : 8,
+                            showAutoButton: autoAdvanceAvailable,
+                            isAutoEnabled: effectiveAutoEnabled,
+                            onAutoPressed: widget.onToggleAutoAdvance,
+                            onInteracted: widget.onSuppressAutoAdvance,
+                            subtitleLayer:
+                                video.hasSubtitles && widget.controller != null
+                                ? _SubtitleLayer(
+                                    video: video,
+                                    controller: widget.controller!,
+                                  )
+                                : null,
+                          );
+                        },
+                      )
+                    else
+                      VideoOverlayActions(
+                        video: video,
+                        isVisible: true,
+                        isActive: true,
+                        hasBottomNavigation: false,
+                        contextTitle: widget.contextTitle,
+                        isFullscreen: true,
+                        topOffset: isOwnVideo ? 64 : 8,
+                        showAutoButton: autoAdvanceAvailable,
+                        isAutoEnabled: effectiveAutoEnabled,
+                        onAutoPressed: widget.onToggleAutoAdvance,
+                        onInteracted: widget.onSuppressAutoAdvance,
+                        subtitleLayer:
+                            video.hasSubtitles && widget.controller != null
+                            ? _SubtitleLayer(
+                                video: video,
+                                controller: widget.controller!,
+                              )
+                            : null,
+                      ),
                     Positioned.fill(
                       child: DoubleTapHeartOverlay(
                         trigger: _heartTrigger,

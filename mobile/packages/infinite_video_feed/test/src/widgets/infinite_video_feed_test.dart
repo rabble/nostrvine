@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/widgets/infinite_video_feed.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
@@ -429,6 +431,29 @@ void main() {
       testWidgets('applies volume when an active controller exists', (
         tester,
       ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        const globalChannel = MethodChannel('divine_video_player');
+        const playerChannel = MethodChannel('divine_video_player/player_0');
+        const eventChannel = MethodChannel(
+          'divine_video_player/player_0/events',
+        );
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          (call) async {
+            if (call.method == 'create') return <Object?, Object?>{};
+            return null;
+          },
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          (_) async => null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          eventChannel,
+          (_) async => null,
+        );
+
         final key = GlobalKey<InfiniteVideoFeedState>();
         final notifiedValues = <double>[];
         final videos = [_makeVideo('active_volume')];
@@ -454,6 +479,21 @@ void main() {
         key.currentState!.setVolume(0.8);
 
         expect(notifiedValues, equals(<double>[0.8]));
+
+        await tester.pumpAndSettle();
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          eventChannel,
+          null,
+        );
       });
 
       testWidgets('clamps value and notifies listeners', (tester) async {
