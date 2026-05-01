@@ -41,16 +41,19 @@ void main() {
       expect(newService.isAudioSharingEnabled, isTrue);
     });
 
-    test('saved false preference is restored on a new service instance', () async {
-      SharedPreferences.setMockInitialValues({
-        AudioSharingPreferenceService.prefsKey: false,
-      });
-      final prefs = await SharedPreferences.getInstance();
+    test(
+      'saved false preference is restored on a new service instance',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          AudioSharingPreferenceService.prefsKey: false,
+        });
+        final prefs = await SharedPreferences.getInstance();
 
-      final newService = AudioSharingPreferenceService(prefs);
+        final newService = AudioSharingPreferenceService(prefs);
 
-      expect(newService.isAudioSharingEnabled, isFalse);
-    });
+        expect(newService.isAudioSharingEnabled, isFalse);
+      },
+    );
 
     test('preference key is correct', () {
       expect(AudioSharingPreferenceService.prefsKey, 'audio_sharing_enabled');
