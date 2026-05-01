@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,17 @@ class _SynchronouslyThrowingStream extends Stream<FileResponse> {
     void Function()? onDone,
     bool? cancelOnError,
   }) => throw Exception('synchronous listen error');
+}
+
+class _ThrowingDownload implements CancellableDownload {
+  @override
+  Future<File?> get file => Future<File?>.error(Exception('download failed'));
+
+  @override
+  bool get isCancelled => false;
+
+  @override
+  void cancel() {}
 }
 
 void main() {
@@ -163,6 +175,17 @@ void main() {
 
         // File was already resolved; cancel must not override it.
         expect(await op.file, equals(mockFile));
+      });
+    });
+
+    group('fromDownload', () {
+      test('completes with null when download future throws', () async {
+        final op = CancellableCacheOperation.fromDownload(
+          _ThrowingDownload(),
+          cacheKey: 'failing_key',
+        );
+
+        expect(await op.file, isNull);
       });
     });
   });

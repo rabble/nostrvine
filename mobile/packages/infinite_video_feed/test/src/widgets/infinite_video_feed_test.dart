@@ -1,11 +1,11 @@
-import 'package:flutter/widgets.dart';
+import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/widgets/infinite_video_feed.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:divine_video_player/divine_video_player.dart';
 
 class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
@@ -515,7 +515,7 @@ void main() {
         key.currentState!.setVolume(2.5);
         key.currentState!.setVolume(-0.3);
 
-        expect(notifiedValues, equals(<double>[1.0, 0.0]));
+        expect(notifiedValues, equals(<double>[1, 0]));
       });
 
       testWidgets('does not notify when clamped value is unchanged', (

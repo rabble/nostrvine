@@ -8,6 +8,17 @@ import 'package:mocktail/mocktail.dart';
 import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
 
+class _ThrowingCancellableDownloader implements CancellableDownloader {
+  @override
+  CancellableDownload download({
+    required String url,
+    required File targetFile,
+    Map<String, String>? headers,
+  }) {
+    throw Exception('download setup failed');
+  }
+}
+
 void main() {
   setUpTestEnvironment();
 
@@ -765,6 +776,199 @@ void main() {
           if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
         },
       );
+
+      test('initialize ignores corrupt aliases.json gracefully', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'alias_corrupt_$timestamp';
+        final cacheDir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
+        final cachedFile = await createTestFile(cacheDir, 'video.mp4');
+        final aliasFile = File('${cacheDir.path}/aliases.json')
+          ..writeAsStringSync('{not-valid-json');
+
+        final repo = MockCacheInfoRepository();
+        final cacheObject = CacheObject(
+          'https://example.com/video.mp4',
+          key: 'actual_key',
+          relativePath: 'video.mp4',
+          validTill: DateTime.now().add(const Duration(days: 30)),
+          id: 1,
+        );
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => [cacheObject]);
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          tempDirectoryProvider: () async => Directory(testTempPath),
+        );
+
+        await cacheManager.initialize();
+
+        expect(cacheManager.isInitialized, isTrue);
+        expect(
+          cacheManager.getCachedFileSync('actual_key')?.path,
+          cachedFile.path,
+        );
+        // Corrupt alias file is ignored instead of crashing init.
+        expect(aliasFile.existsSync(), isTrue);
+
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+      });
+
+      test(
+        'cancel before deferred download starts sets operation cancelled',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloader = FakeCancellableDownloader();
+
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancellable_cancel_early_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          );
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'cancel_early_key',
+          )..cancel();
+          expect(op.isCancelled, isTrue);
+          expect(await op.file, isNull);
+        },
+      );
+
+      test('completes with null when downloader throws during start', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancellable_throw_start_$timestamp',
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: _ThrowingCancellableDownloader(),
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'throwing_key',
+        );
+
+        expect(await op.file, isNull);
+      });
+
+      test('uses default extension when URL has no extension', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final downloader = FakeCancellableDownloader();
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'default_ext_$timestamp',
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video_without_ext',
+          key: 'no_ext_key',
+        );
+
+        await pumpDownloads(downloader);
+        expect(downloader.downloads.single.targetFile.path, endsWith('.bin'));
+
+        downloader.downloads.single.completeNull();
+        await op.file;
+      });
+
+      test(
+        'recreates base cache dir before writing aliases.json when deleted',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'alias_recreate_dir_$timestamp';
+          final cacheDir = Directory('$testTempPath/$cacheKey');
+          final cachedFile = await createTestFile(
+            Directory.systemTemp.createTempSync('alias_source_'),
+            'video.mp4',
+          );
+
+          final downloader = FakeCancellableDownloader();
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+            tempDirectoryProvider: () async => Directory(testTempPath),
+          );
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'video_id__fb1',
+            aliasKey: 'video_id',
+          );
+
+          await pumpDownloads(downloader);
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+          downloader.downloads.single.completeWith(cachedFile);
+          await op.file;
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          expect(File('${cacheDir.path}/aliases.json').existsSync(), isTrue);
+
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+          final sourceDir = cachedFile.parent;
+          if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
+        },
+      );
+
+      test('ignores alias persistence write errors', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'alias_write_error_$timestamp';
+        final cacheDir = Directory('$testTempPath/$cacheKey');
+        final cachedFile = await createTestFile(
+          Directory.systemTemp.createTempSync('alias_err_src_'),
+          'video.mp4',
+        );
+
+        final downloader = FakeCancellableDownloader();
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+          tempDirectoryProvider: () async => Directory(testTempPath),
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'video_id__fb1',
+          aliasKey: 'video_id',
+        );
+
+        await pumpDownloads(downloader);
+        cacheDir.createSync(recursive: true);
+        // Force File.writeAsString to throw by occupying the file path
+        // with a directory.
+        Directory('${cacheDir.path}/aliases.json').createSync(recursive: true);
+
+        downloader.downloads.single.completeWith(cachedFile);
+        final result = await op.file;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(result, isNotNull);
+        // In-memory alias still resolves even if persistence failed.
+        expect(cacheManager.getCachedFileSync('video_id')?.path, result!.path);
+
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        final sourceDir = cachedFile.parent;
+        if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
+      });
     });
   });
 }
