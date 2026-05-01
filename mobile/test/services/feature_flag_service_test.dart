@@ -36,9 +36,6 @@ void main() {
     group('initialization', () {
       test('should load saved flags from preferences', () async {
         when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-        when(
-          () => mockPrefs.getBool('ff_enhancedVideoPlayer'),
-        ).thenReturn(false);
 
         await service.initialize();
 
@@ -113,9 +110,6 @@ void main() {
     group('state queries', () {
       test('should identify user overrides', () async {
         when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-        when(
-          () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-        ).thenReturn(false);
 
         expect(service.hasUserOverride(FeatureFlag.newCameraUI), isTrue);
         expect(

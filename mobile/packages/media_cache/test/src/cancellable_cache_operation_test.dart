@@ -1,10 +1,23 @@
 import 'dart:async';
-import 'dart:io';
 
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart';
 
 import 'helpers/mocks.dart';
+
+/// Stream that throws synchronously inside [listen], triggering the
+/// `on Object` catch block in [CancellableCacheOperation.fromStream].
+class _SynchronouslyThrowingStream extends Stream<FileResponse> {
+  @override
+  StreamSubscription<FileResponse> listen(
+    void Function(FileResponse event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => throw Exception('synchronous listen error');
+}
 
 void main() {
   group(CancellableCacheOperation, () {
@@ -23,101 +36,125 @@ void main() {
       });
     });
 
-    group('fromFuture', () {
-      test('file future completes with the file', () async {
-        final mockFile = MockFile();
-        final completer = Completer<File?>();
-        final op = CancellableCacheOperation.fromFuture(completer.future);
+    group('fromStream', () {
+      test(
+        'file future completes with file when FileInfo is received',
+        () async {
+          final controller = StreamController<FileResponse>();
+          final mockFile = MockFile();
+          final mockFileInfo = MockFileInfo();
+          when(() => mockFileInfo.file).thenReturn(mockFile);
 
-        completer.complete(mockFile);
+          final op = CancellableCacheOperation.fromStream(controller.stream);
+          controller.add(mockFileInfo);
+          await controller.close();
 
-        expect(await op.file, equals(mockFile));
+          expect(await op.file, equals(mockFile));
+        },
+      );
+
+      test(
+        'calls onCached with key and path when FileInfo is received',
+        () async {
+          final controller = StreamController<FileResponse>();
+          final mockFile = MockFile();
+          final mockFileInfo = MockFileInfo();
+          when(() => mockFileInfo.file).thenReturn(mockFile);
+          when(() => mockFile.path).thenReturn('/cached/video.mp4');
+
+          String? capturedKey;
+          String? capturedPath;
+
+          final op = CancellableCacheOperation.fromStream(
+            controller.stream,
+            cacheKey: 'video_key',
+            onCached: (key, path) {
+              capturedKey = key;
+              capturedPath = path;
+            },
+          );
+          controller.add(mockFileInfo);
+          await controller.close();
+          await op.file;
+
+          expect(capturedKey, equals('video_key'));
+          expect(capturedPath, equals('/cached/video.mp4'));
+        },
+      );
+
+      test('file future completes with null on stream error', () async {
+        final controller = StreamController<FileResponse>();
+        final op = CancellableCacheOperation.fromStream(controller.stream);
+
+        controller.addError(Exception('network failure'));
+
+        expect(await op.file, isNull);
       });
 
       test(
-        'file future completes with null when future resolves null',
+        'file future completes with null when stream closes without data',
         () async {
-          final completer = Completer<File?>();
-          final op = CancellableCacheOperation.fromFuture(completer.future);
+          final controller = StreamController<FileResponse>();
+          final op = CancellableCacheOperation.fromStream(controller.stream);
 
-          completer.complete(null);
+          await controller.close();
 
           expect(await op.file, isNull);
         },
       );
 
-      test('file future completes with null on error', () async {
-        final completer = Completer<File?>();
-        final op = CancellableCacheOperation.fromFuture(completer.future);
-
-        completer.completeError(Exception('download failed'));
-
-        expect(await op.file, isNull);
-      });
-
-      test('didStall is true when stallTimeout expires', () async {
-        final completer = Completer<File?>();
-        final op = CancellableCacheOperation.fromFuture(
-          completer.future,
-          stallTimeout: const Duration(milliseconds: 10),
-        );
-
-        // Let the stall timeout fire without completing the future.
-        expect(await op.file, isNull);
-        expect(op.didStall, isTrue);
-
-        // Clean up the dangling completer.
-        completer.complete(null);
-      });
-
-      test('didStall is false when completed before stallTimeout', () async {
-        final mockFile = MockFile();
-        final completer = Completer<File?>();
-        final op = CancellableCacheOperation.fromFuture(
-          completer.future,
-          stallTimeout: const Duration(seconds: 10),
-        );
-
-        completer.complete(mockFile);
-
-        expect(await op.file, equals(mockFile));
-        expect(op.didStall, isFalse);
-      });
-
       test('isCancelled is false before cancel is called', () async {
-        final completer = Completer<File?>();
-        final op = CancellableCacheOperation.fromFuture(completer.future);
+        final controller = StreamController<FileResponse>();
+        final op = CancellableCacheOperation.fromStream(controller.stream);
 
         expect(op.isCancelled, isFalse);
 
-        completer.complete(null);
+        await controller.close();
       });
+
+      test(
+        'file future completes with null when stream.listen throws '
+        'synchronously',
+        () async {
+          final op = CancellableCacheOperation.fromStream(
+            _SynchronouslyThrowingStream(),
+          );
+
+          expect(await op.file, isNull);
+        },
+      );
     });
 
     group('cancel', () {
-      test('sets isCancelled to true', () {
-        final op = CancellableCacheOperation.fromFuture(
-          Completer<File?>().future,
-        )..cancel();
+      test('sets isCancelled to true', () async {
+        final controller = StreamController<FileResponse>();
+        final op = CancellableCacheOperation.fromStream(controller.stream)
+          ..cancel();
 
         expect(op.isCancelled, isTrue);
+
+        await controller.close();
       });
 
       test('file future completes with null', () async {
-        final op = CancellableCacheOperation.fromFuture(
-          Completer<File?>().future,
-        )..cancel();
+        final controller = StreamController<FileResponse>();
+        final op = CancellableCacheOperation.fromStream(controller.stream)
+          ..cancel();
 
         expect(await op.file, isNull);
+
+        await controller.close();
       });
 
-      test('is idempotent when called multiple times', () {
-        final op =
-            CancellableCacheOperation.fromFuture(Completer<File?>().future)
-              ..cancel()
-              ..cancel();
+      test('is idempotent when called multiple times', () async {
+        final controller = StreamController<FileResponse>();
+        final op = CancellableCacheOperation.fromStream(controller.stream)
+          ..cancel()
+          ..cancel();
 
         expect(op.isCancelled, isTrue);
+
+        await controller.close();
       });
 
       test('is a no-op on an already-completed operation', () async {

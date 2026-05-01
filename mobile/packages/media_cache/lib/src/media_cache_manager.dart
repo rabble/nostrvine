@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -204,6 +205,17 @@ class MediaCacheManager extends CacheManager {
   /// Maps cache key to file path.
   final Map<String, String> _cacheManifest = {};
 
+  /// Persistent alias → actual cache key mapping.
+  ///
+  /// Survives app restarts so that successful fallback downloads
+  /// (cached under e.g. `<videoId>__fb1`) remain reachable via the
+  /// stable `aliasKey` (e.g. `<videoId>`) on the next launch instead
+  /// of forcing the prefetcher to retry the failing first-attempt URL.
+  final Map<String, String> _aliasMap = {};
+
+  /// Serialises writes to the on-disk alias map.
+  Future<void> _aliasWriteQueue = Future<void>.value();
+
   /// Tracks keys currently being cached to prevent duplicate requests.
   final Map<String, Future<File?>> _pendingCacheOperations = {};
 
@@ -282,11 +294,60 @@ class MediaCacheManager extends CacheManager {
         }
       }
 
+      // Restore persisted alias → actualKey mappings so successful
+      // fallback downloads from previous sessions remain reachable
+      // via the stable alias on this launch.
+      final aliasFile = File(path.join(baseCacheDir, 'aliases.json'));
+      if (aliasFile.existsSync()) {
+        try {
+          final decoded = jsonDecode(await aliasFile.readAsString());
+          if (decoded is Map<String, dynamic>) {
+            for (final entry in decoded.entries) {
+              final actualKey = entry.value;
+              if (actualKey is! String) continue;
+              final actualPath = _cacheManifest[actualKey];
+              if (actualPath != null) {
+                _aliasMap[entry.key] = actualKey;
+                _cacheManifest[entry.key] = actualPath;
+              }
+            }
+          }
+        } on Exception catch (_) {
+          // Corrupt alias file → ignore, will be overwritten on next write.
+        }
+      }
+
       _manifestInitialized = true;
     } on Exception catch (_) {
       // Don't throw - degraded functionality is better than crash
       _manifestInitialized = true;
     }
+  }
+
+  /// Persists the current [_aliasMap] to disk. Calls are serialised so
+  /// concurrent fallback successes never interleave writes.
+  Future<void> _persistAliasMap() {
+    // coverage:ignore-start
+    if (kIsWeb) return Future<void>.value();
+    // coverage:ignore-end
+    final snapshot = Map<String, String>.from(_aliasMap);
+    final next = _aliasWriteQueue.then((_) async {
+      try {
+        final tempDir = await _tempDirectoryProvider();
+        final baseCacheDir = Directory(
+          path.join(tempDir.path, _config.cacheKey),
+        );
+        if (!baseCacheDir.existsSync()) {
+          baseCacheDir.createSync(recursive: true);
+        }
+        final aliasFile = File(path.join(baseCacheDir.path, 'aliases.json'));
+        await aliasFile.writeAsString(jsonEncode(snapshot), flush: true);
+      } on Exception catch (_) {
+        // Best-effort; in-memory alias map still works for this session.
+      }
+    });
+    _aliasWriteQueue = next;
+    return next;
   }
 
   /// Gets a cached file synchronously using the in-memory manifest.
@@ -393,47 +454,52 @@ class MediaCacheManager extends CacheManager {
   /// `CancellableCacheOperation.cancel()`, freeing bandwidth for
   /// higher-priority downloads.
   ///
-  /// If [stallTimeout] is non-null, the download is cancelled when the
-  /// underlying HTTP stream stops emitting events (progress or
-  /// completion) for that duration. Use this to detect hung connections
-  /// without penalising slow but steadily-progressing downloads.
-  ///
   /// Returns a completed operation instantly if the file is already cached.
+  ///
+  /// When [aliasKey] is provided, the manifest also records the resulting
+  /// file path under [aliasKey] on success, and the fast-path lookup
+  /// considers both keys. This lets callers retry the same logical asset
+  /// under multiple cache keys (e.g. one per fallback URL) without
+  /// inheriting partially-cached or otherwise broken data from a previous
+  /// attempt, while still letting consumers look the file up by the
+  /// stable [aliasKey].
   CancellableCacheOperation cacheFileCancellable(
     String url, {
     required String key,
+    String? aliasKey,
     Map<String, String>? authHeaders,
-    Duration? stallTimeout,
   }) {
     // Fast path: already cached on disk.
     if (_config.enableSyncManifest) {
-      final cached = getCachedFileSync(key);
+      final cached =
+          getCachedFileSync(key) ??
+          (aliasKey != null ? getCachedFileSync(aliasKey) : null);
       if (cached != null) return CancellableCacheOperation.completed(cached);
     }
 
     _prefetchedKeys.add(key);
     metrics.prefetchedTotal++;
 
-    return CancellableCacheOperation.fromFuture(
-      _downloadToFile(url, key, authHeaders ?? {}),
-      stallTimeout: stallTimeout,
+    return CancellableCacheOperation.fromStream(
+      getFileStream(
+        url,
+        key: key,
+        headers: authHeaders ?? {},
+      ),
+      cacheKey: key,
+      onCached: _config.enableSyncManifest
+          ? (k, path) {
+              _cacheManifest[k] = path;
+              if (aliasKey != null) {
+                _cacheManifest[aliasKey] = path;
+                if (_aliasMap[aliasKey] != k) {
+                  _aliasMap[aliasKey] = k;
+                  unawaited(_persistAliasMap());
+                }
+              }
+            }
+          : null,
     );
-  }
-
-  Future<File?> _downloadToFile(
-    String url,
-    String key,
-    Map<String, String> headers,
-  ) async {
-    try {
-      final info = await downloadFile(url, key: key, authHeaders: headers);
-      if (_config.enableSyncManifest) {
-        _cacheManifest[key] = info.file.path;
-      }
-      return info.file;
-    } on Exception {
-      return null;
-    }
   }
 
   /// Checks if a file is cached (async version).

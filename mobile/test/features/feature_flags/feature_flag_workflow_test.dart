@@ -114,10 +114,6 @@ void main() {
       // Set up mixed initial state
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -162,8 +158,6 @@ void main() {
       // Verify independent flag states
       expect(find.text('Enhanced Camera'), findsOneWidget);
       expect(find.text('Standard Camera'), findsNothing);
-      expect(find.text('Standard Player'), findsOneWidget);
-      expect(find.text('Enhanced Player'), findsNothing);
 
       // Navigate to settings to verify switch states
       await tester.tap(find.text('Open Settings'));
@@ -246,10 +240,6 @@ void main() {
       // Set up flags with user overrides
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(

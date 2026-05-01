@@ -167,10 +167,6 @@ void main() {
       // Set up different states for different flags
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(
-        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
-      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(

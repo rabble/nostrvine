@@ -22,6 +22,7 @@ class MockCacheInfoRepository extends Mock implements CacheInfoRepository {}
 class TestableMediaCacheManager extends MediaCacheManager {
   TestableMediaCacheManager({
     required super.config,
+    super.repoOverride,
     this.mockGetFileFromCache,
     this.mockDownloadFile,
     this.mockRemoveFile,

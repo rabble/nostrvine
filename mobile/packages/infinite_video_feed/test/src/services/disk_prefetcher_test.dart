@@ -81,7 +81,6 @@ void main() {
           () => cache.cacheFileCancellable(
             url,
             key: 'id3',
-            stallTimeout: any(named: 'stallTimeout'),
           ),
         ).thenReturn(
           CancellableCacheOperation.completed(mockFile),
@@ -100,7 +99,6 @@ void main() {
           () => cache.cacheFileCancellable(
             url,
             key: 'id3',
-            stallTimeout: any(named: 'stallTimeout'),
           ),
         ).called(1);
         expect(logs.any((l) => l.contains('completed')), isTrue);
@@ -115,7 +113,6 @@ void main() {
           () => cache.cacheFileCancellable(
             any(),
             key: any(named: 'key'),
-            stallTimeout: any(named: 'stallTimeout'),
           ),
         ).thenReturn(CancellableCacheOperation.completed(_MockFile()));
 
@@ -131,7 +128,6 @@ void main() {
           () => cache.cacheFileCancellable(
             any(),
             key: any(named: 'key'),
-            stallTimeout: any(named: 'stallTimeout'),
           ),
         ).called(1);
       });
@@ -155,7 +151,6 @@ void main() {
             () => slowCache.cacheFileCancellable(
               any(),
               key: any(named: 'key'),
-              stallTimeout: any(named: 'stallTimeout'),
             ),
           ).thenAnswer((_) {
             secondRunStarted = true;
@@ -218,7 +213,6 @@ void main() {
             () => slowCache.cacheFileCancellable(
               any(),
               key: any(named: 'key'),
-              stallTimeout: any(named: 'stallTimeout'),
             ),
           ).thenAnswer(
             (_) => _PendingOperation(downloadCompleter.future),
@@ -263,7 +257,6 @@ void main() {
             () => slowCache.cacheFileCancellable(
               any(),
               key: any(named: 'key'),
-              stallTimeout: any(named: 'stallTimeout'),
             ),
           ).called(1);
 
@@ -271,30 +264,6 @@ void main() {
           slowPrefetcher.dispose();
         },
       );
-
-      test('logs stall and continues when download stalls', () async {
-        const url = 'http://example.com/video.m3u8';
-
-        when(() => cache.getCachedFileSync('id_stall')).thenReturn(null);
-        when(
-          () => cache.cacheFileCancellable(
-            url,
-            key: 'id_stall',
-            stallTimeout: any(named: 'stallTimeout'),
-          ),
-        ).thenReturn(_StalledOperation());
-
-        final videos = [_makeVideo('id_stall', url: url)];
-
-        await prefetcher.run(
-          startIndex: 0,
-          endIndex: 0,
-          videos: videos,
-          resolveUrls: (v) => [if (v.videoUrl != null) v.videoUrl!],
-        );
-
-        expect(logs.any((l) => l.contains('stalled')), isTrue);
-      });
 
       test('logs failure when download returns null', () async {
         const url = 'http://example.com/video.m3u8';
@@ -305,7 +274,6 @@ void main() {
           () => cache.cacheFileCancellable(
             url,
             key: 'id_fail',
-            stallTimeout: any(named: 'stallTimeout'),
           ),
         ).thenAnswer((_) => _PendingOperation(failCompleter.future));
 
@@ -323,6 +291,59 @@ void main() {
 
         expect(logs.any((l) => l.contains('failed')), isTrue);
       });
+
+      test(
+        'cancels stalled download after stallTimeout and tries next URL',
+        () async {
+          final stallCache = _MockMediaCacheManager();
+          final logs2 = <String>[];
+          final stallPrefetcher = DiskPrefetcher(
+            cache: stallCache,
+            log: logs2.add,
+            stallTimeout: const Duration(milliseconds: 50),
+          );
+
+          // First URL: never completes (simulates a silently-stalled
+          // HTTP stream — no FileInfo, no error event).
+          final stalledOp = _PendingOperation(Completer<File?>().future);
+          // Second URL: completes successfully.
+          final mockFile = _MockFile();
+          final completedOp = CancellableCacheOperation.completed(mockFile);
+
+          when(() => stallCache.getCachedFileSync(any())).thenReturn(null);
+          when(
+            () => stallCache.cacheFileCancellable(
+              'http://example.com/dead',
+              key: any(named: 'key'),
+              aliasKey: any(named: 'aliasKey'),
+            ),
+          ).thenReturn(stalledOp);
+          when(
+            () => stallCache.cacheFileCancellable(
+              'http://example.com/ok',
+              key: any(named: 'key'),
+              aliasKey: any(named: 'aliasKey'),
+            ),
+          ).thenReturn(completedOp);
+
+          final videos = [_makeVideo('id_stall')];
+
+          await stallPrefetcher.run(
+            startIndex: 0,
+            endIndex: 0,
+            videos: videos,
+            resolveUrls: (_) => const [
+              'http://example.com/dead',
+              'http://example.com/ok',
+            ],
+          );
+
+          expect(stalledOp.isCancelled, isTrue);
+          expect(logs2.any((l) => l.contains('stalled')), isTrue);
+          expect(logs2.any((l) => l.contains('completed')), isTrue);
+          stallPrefetcher.dispose();
+        },
+      );
     });
 
     group('cancelActive', () {
@@ -361,22 +382,4 @@ class _PendingOperation implements CancellableCacheOperation {
 
   @override
   void cancel() => _cancelled = true;
-
-  @override
-  bool get didStall => false;
-}
-
-/// A [CancellableCacheOperation] that immediately reports a stall.
-class _StalledOperation implements CancellableCacheOperation {
-  @override
-  Future<File?> get file async => null;
-
-  @override
-  bool get isCancelled => false;
-
-  @override
-  bool get didStall => true;
-
-  @override
-  void cancel() {}
 }
