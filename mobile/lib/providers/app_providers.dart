@@ -261,18 +261,7 @@ final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
     nostrClient: ref.watch(nostrServiceProvider),
     sharedPreferences: ref.watch(sharedPreferencesProvider),
     currentPubkey: () => authService.currentPublicKeyHex,
-    signEvent:
-        ({
-          required int kind,
-          required String content,
-          required List<List<String>> tags,
-        }) {
-          return authService.createAndSignEvent(
-            kind: kind,
-            content: content,
-            tags: tags,
-          );
-        },
+    signEvent: authService.createAndSignEvent,
   );
 });
 

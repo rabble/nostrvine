@@ -100,7 +100,6 @@ class BadgeRepository {
           award: award,
           definition: definition,
           isAccepted: _containsAward(profileBadges, award),
-          isHidden: false,
         ),
       );
     }
