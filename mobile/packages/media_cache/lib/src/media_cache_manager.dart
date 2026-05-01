@@ -30,6 +30,7 @@ class MediaCacheConfig {
     this.maxConnectionsPerHost = 6,
     this.enableSyncManifest = false,
     this.allowBadCertificatesInDebug = true,
+    this.defaultExtension = '.bin',
   });
 
   /// Creates a configuration optimized for video caching.
@@ -47,6 +48,12 @@ class MediaCacheConfig {
         idleTimeout: const Duration(minutes: 2),
         maxConnectionsPerHost: 4,
         enableSyncManifest: true,
+        // AVURLAsset / ExoPlayer probe the container from the file
+        // extension first. URLs that hash to a path with no extension
+        // (e.g. `https://media.divine.video/<sha>` for original
+        // uploads) would otherwise be cached as `.bin` and fail to
+        // open with `Cannot Open`.
+        defaultExtension: '.mp4',
       );
 
   /// Creates a configuration optimized for image caching.
@@ -64,6 +71,7 @@ class MediaCacheConfig {
         idleTimeout: const Duration(seconds: 30),
         maxConnectionsPerHost: 6,
         enableSyncManifest: false,
+        defaultExtension: '.jpg',
       );
 
   /// Unique key for this cache. Used as the cache directory name.
@@ -95,6 +103,16 @@ class MediaCacheConfig {
   ///
   /// Useful for local development with self-signed certificates.
   final bool allowBadCertificatesInDebug;
+
+  /// Extension applied to cached files when the source URL has none.
+  ///
+  /// Native media frameworks (`AVURLAsset`, ExoPlayer) probe the
+  /// container format from the file extension first. Hash-style URLs
+  /// such as `https://media.divine.video/<sha>` (used for original
+  /// uploads) would otherwise be cached as `.bin`, which AVFoundation
+  /// rejects with `Cannot Open`. Set to `.mp4` for video caches and
+  /// `.jpg` for image caches via the named factories.
+  final String defaultExtension;
 }
 
 /// Tracks cache hit/miss statistics for observability.
@@ -662,7 +680,7 @@ class MediaCacheManager extends CacheManager {
     } on Object catch (_) {
       // Fall through to default.
     }
-    return '.bin';
+    return _config.defaultExtension;
   }
 
   /// Checks if a file is cached (async version).
