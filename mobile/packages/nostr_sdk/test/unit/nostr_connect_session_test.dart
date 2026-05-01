@@ -406,6 +406,20 @@ void main() {
       );
     });
 
+    test('returns rejectedByBunker for auth_url challenge responses', () {
+      final validation = validateConnectResponse(
+        response: buildResponse(
+          'auth_url',
+          error: 'https://example.com/approve?token=untrusted',
+        ),
+        expectedSecret: 's3cret',
+      );
+      expect(
+        validation,
+        equals(NostrConnectResponseValidation.rejectedByBunker),
+      );
+    });
+
     test('returns invalidSession when expectedSecret is null', () {
       final validation = validateConnectResponse(
         response: buildResponse('anything'),
@@ -439,9 +453,13 @@ void main() {
     test(
       'source file does not log the response.result or the expected secret',
       () {
-        final source = File(
-          'lib/nip46/nostr_connect_session.dart',
-        ).readAsStringSync();
+        final sourceFile = File('lib/nip46/nostr_connect_session.dart');
+        expect(
+          sourceFile.existsSync(),
+          isTrue,
+          reason: 'Test must run from the nostr_sdk package root',
+        );
+        final source = sourceFile.readAsStringSync();
         // The pre-fix code logged both `result=${response.result}` in the
         // up-front decoded-response line and `"$expectedSecret"` in the
         // mismatch warning. Pin the absence of those substrings so any

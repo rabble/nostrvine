@@ -411,15 +411,6 @@ class NostrConnectSession {
       'hasError=${(response.error ?? '').isNotEmpty}',
     );
 
-    // Check for auth_url challenge (bunker needs approval)
-    if (response.result == 'auth_url' && response.error != null) {
-      log('[NostrConnectSession] Auth URL challenge: ${response.error}');
-      // For nostrconnect://, we typically don't expect auth_url since
-      // the user already scanned/pasted the URL in their signer app.
-      // But handle it just in case.
-      return;
-    }
-
     // Validate the secret per NIP-46. Accept ONLY an exact match;
     // "ack"/"connect" belong to the bunker:// flow's connect method
     // and are not valid for nostrconnect://. Non-matching, non-error
@@ -546,6 +537,9 @@ NostrConnectResponseValidation validateConnectResponse({
 }
 
 bool _constantTimeEqual(String a, String b) {
+  // This still leaks length, which is acceptable here because the
+  // compared value is an ephemeral per-session secret. We only need
+  // to avoid content-dependent early exit for equal-length strings.
   if (a.length != b.length) {
     return false;
   }
