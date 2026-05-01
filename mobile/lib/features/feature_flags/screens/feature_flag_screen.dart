@@ -2,6 +2,7 @@
 // ABOUTME: Provides UI for toggling flags, viewing descriptions, and resetting to defaults
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -51,6 +52,14 @@ class FeatureFlagScreen extends ConsumerWidget {
                     itemCount: FeatureFlag.values.length,
                     itemBuilder: (context, index) {
                       final flag = FeatureFlag.values[index];
+                      if (flag.mobileAndMacOsOnly &&
+                          (kIsWeb ||
+                              defaultTargetPlatform == TargetPlatform.linux ||
+                              defaultTargetPlatform ==
+                                  TargetPlatform.windows)) {
+                        return const SizedBox.shrink();
+                      }
+
                       final isEnabled = state[flag] ?? false;
                       final hasUserOverride = service.hasUserOverride(flag);
 

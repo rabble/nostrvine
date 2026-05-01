@@ -386,6 +386,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         totalDuration = 0
         firstFrameRendered = false
         currentStatus = "idle"
+        errorMessage = nil  // clear stale error so sendStateUpdate never emits
+                            // status="error" after media has been released.
         sendStateUpdate()
         result(nil)
     }

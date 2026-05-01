@@ -6,6 +6,7 @@ enum FeatureFlag {
   newVideoFeedPlayer(
     'New video player',
     'Improve the feed with a better video player',
+    mobileAndMacOsOnly: true,
   ),
   enhancedAnalytics(
     'Enhanced Analytics',
@@ -66,8 +67,16 @@ enum FeatureFlag {
     'Automatically advance to the next video when the current one finishes',
   );
 
-  const FeatureFlag(this.displayName, this.description);
+  const FeatureFlag(
+    this.displayName,
+    this.description, {
+    this.mobileAndMacOsOnly = false,
+  });
 
   final String displayName;
   final String description;
+
+  /// Whether this flag is only available on Android, iOS, and macOS.
+  /// On web, Linux, and Windows the flag is always disabled and hidden.
+  final bool mobileAndMacOsOnly;
 }
