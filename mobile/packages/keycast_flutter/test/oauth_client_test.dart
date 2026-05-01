@@ -71,32 +71,22 @@ void main() {
         expect(uri.queryParameters['default_register'], 'false');
       });
 
-      test('omits byok_pubkey when nsec not provided', () async {
-        final oauth = KeycastOAuth(config: config);
-        final (url, _) = await oauth.getAuthorizationUrl();
+      test(
+        'never sets byok_pubkey or embeds an nsec — leak-prevention guard',
+        () async {
+          // Phase 1 of divinevideo/divine-mobile#3359 removed the BYOK
+          // surface from this method. byok_pubkey is reintroduced in Phase 2
+          // paired with a proof-of-possession; until then the URL must not
+          // carry it and the verifier must not embed an nsec.
+          final oauth = KeycastOAuth(config: config);
+          final (url, verifier) = await oauth.getAuthorizationUrl();
 
-        final uri = Uri.parse(url);
-        expect(uri.queryParameters.containsKey('byok_pubkey'), isFalse);
-      });
-
-      test('includes byok_pubkey when nsec provided', () async {
-        final oauth = KeycastOAuth(config: config);
-        final (url, verifier) = await oauth.getAuthorizationUrl(
-          nsec:
-              'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5',
-        );
-
-        final uri = Uri.parse(url);
-        expect(uri.queryParameters.containsKey('byok_pubkey'), isTrue);
-        expect(uri.queryParameters['byok_pubkey']?.length, 64);
-        expect(verifier, contains('.nsec1'));
-      });
-
-      test('returns null URL for invalid nsec', () async {
-        final oauth = KeycastOAuth(config: config);
-        final (url, _) = await oauth.getAuthorizationUrl(nsec: 'invalid');
-        expect(url, isEmpty);
-      });
+          final uri = Uri.parse(url);
+          expect(uri.queryParameters.containsKey('byok_pubkey'), isFalse);
+          expect(verifier, isNot(contains('nsec1')));
+          expect(verifier, isNot(contains('.')));
+        },
+      );
     });
 
     group('parseCallback', () {
@@ -368,28 +358,36 @@ void main() {
         expect(result.success, isTrue);
       });
 
-      test('includes nsec in body when provided', () async {
-        final mockClient = MockClient((request) async {
-          final body = jsonDecode(request.body) as Map<String, dynamic>;
-          expect(body['nsec'], contains('nsec1'));
-          return http.Response(
-            jsonEncode({
-              'success': true,
-              'pubkey': 'byok_pubkey',
-              'verification_required': true,
-            }),
-            200,
-          );
-        });
+      test(
+        'never sends nsec in body or embeds it in the verifier '
+        '— leak-prevention guard',
+        () async {
+          // Phase 1 of divinevideo/divine-mobile#3359 removed the BYOK
+          // parameter from this method. The request body must not carry an
+          // `nsec` field and the returned verifier must not embed one.
+          final mockClient = MockClient((request) async {
+            final body = jsonDecode(request.body) as Map<String, dynamic>;
+            expect(body.containsKey('nsec'), isFalse);
+            expect(jsonEncode(body), isNot(contains('nsec1')));
+            return http.Response(
+              jsonEncode({
+                'success': true,
+                'pubkey': 'pubkey',
+                'verification_required': true,
+              }),
+              200,
+            );
+          });
 
-        final oauth = KeycastOAuth(config: config, httpClient: mockClient);
-        await oauth.headlessRegister(
-          email: 'test@example.com',
-          password: 'password123',
-          nsec:
-              'nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5',
-        );
-      });
+          final oauth = KeycastOAuth(config: config, httpClient: mockClient);
+          final (_, verifier) = await oauth.headlessRegister(
+            email: 'test@example.com',
+            password: 'password123',
+          );
+          expect(verifier, isNot(contains('nsec1')));
+          expect(verifier, isNot(contains('.')));
+        },
+      );
 
       test('includes state parameter when provided', () async {
         final mockClient = MockClient((request) async {

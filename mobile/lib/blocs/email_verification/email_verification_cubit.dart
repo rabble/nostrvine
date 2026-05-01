@@ -243,10 +243,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           if (result.code != null && _pendingVerifier != null) {
             await _exchangeCodeAndLogin(result.code!, _pendingVerifier!);
           } else {
-            // Edge case: completion detected but missing code or verifier
+            // Edge case: completion detected but missing code or verifier.
+            // Do NOT interpolate the verifier value: pre-Phase-1 builds may
+            // still hold a nsec-bearing verifier in memory and we must not
+            // forward it to the unified logger / Crashlytics
+            // (divinevideo/divine-mobile#3359).
             Log.error(
               'Verification complete but missing code or verifier! '
-              'code=${result.code}, verifier=$_pendingVerifier',
+              'hasCode=${result.code != null}, '
+              'hasVerifier=${_pendingVerifier != null}',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );

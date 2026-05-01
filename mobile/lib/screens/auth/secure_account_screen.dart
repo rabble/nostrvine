@@ -97,21 +97,16 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      // Use authService.exportNsec() which accesses keys from secure storage
-      // This works for both auto-generated and imported keys
-      final authService = ref.read(authServiceProvider);
-      final nsec = await authService.exportNsec();
-
-      if (nsec == null) {
-        _setGeneralError(l10n.authUnableToAccessKeys);
-        return;
-      }
-
+      // Phase 1 of divinevideo/divine-mobile#3359: do NOT export the local
+      // nsec or pass it to the OAuth client. Until the server-side
+      // proof-of-possession ceremony lands (divinevideo/keycast#197), the
+      // server will auto-generate a fresh keypair for this account, so the
+      // user's existing local pubkey identity is not preserved across the
+      // upgrade. Phase 2 restores BYOK identity binding.
       await _handleRegister(
         oauth: oauth,
         email: email,
         password: password,
-        nsec: nsec,
       );
     } catch (e) {
       Log.error(
@@ -131,11 +126,9 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     required KeycastOAuth oauth,
     required String email,
     required String password,
-    required String nsec,
   }) async {
     final (result, verifier) = await oauth.headlessRegister(
       email: email,
-      nsec: nsec,
       password: password,
       scope: 'policy:full',
     );

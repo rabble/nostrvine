@@ -1,5 +1,5 @@
 // ABOUTME: Tests for PKCE (Proof Key for Code Exchange) utilities
-// ABOUTME: Verifies verifier generation, challenge computation, and BYOK embedding
+// ABOUTME: Verifies verifier generation and challenge computation per RFC 7636
 
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
@@ -27,30 +27,16 @@ void main() {
         final verifier = Pkce.generateVerifier();
         expect(verifier.length, greaterThanOrEqualTo(43));
       });
-    });
 
-    group('generateVerifier with BYOK', () {
-      test('embeds nsec in format {random}.{nsec}', () {
-        const nsec = 'nsec1test123';
-        final verifier = Pkce.generateVerifier(nsec: nsec);
-        expect(verifier, contains('.'));
-        expect(verifier, endsWith('.nsec1test123'));
-      });
-
-      test('random part is base64url without padding', () {
-        const nsec = 'nsec1abc';
-        final verifier = Pkce.generateVerifier(nsec: nsec);
-        final parts = verifier.split('.');
-        expect(parts.length, 2);
-        final randomPart = parts[0];
-        expect(randomPart, isNot(contains('=')));
-        expect(randomPart, isNot(contains('+')));
-        expect(randomPart, isNot(contains('/')));
-      });
-
-      test('without nsec, returns plain verifier (no dot)', () {
-        final verifier = Pkce.generateVerifier();
-        expect(verifier, isNot(contains('.')));
+      test('never embeds an nsec — leak-prevention regression guard', () {
+        // Phase 1 of divinevideo/divine-mobile#3359 strips the legacy BYOK
+        // embedding (`<random>.<nsec1...>`). The verifier must never contain
+        // an `nsec1` substring or the `.` separator regardless of input.
+        for (var i = 0; i < 64; i++) {
+          final verifier = Pkce.generateVerifier();
+          expect(verifier, isNot(contains('nsec1')));
+          expect(verifier, isNot(contains('.')));
+        }
       });
     });
 
@@ -93,21 +79,6 @@ void main() {
         final challenge1 = Pkce.generateChallenge('verifier1');
         final challenge2 = Pkce.generateChallenge('verifier2');
         expect(challenge1, isNot(equals(challenge2)));
-      });
-    });
-
-    group('BYOK verifier with challenge', () {
-      test('challenge is computed on full verifier including nsec', () {
-        const nsec = 'nsec1secret';
-        final verifier = Pkce.generateVerifier(nsec: nsec);
-        final challenge = Pkce.generateChallenge(verifier);
-
-        final expectedHash = sha256.convert(utf8.encode(verifier));
-        final expectedChallenge = base64Url
-            .encode(expectedHash.bytes)
-            .replaceAll('=', '');
-
-        expect(challenge, equals(expectedChallenge));
       });
     });
   });

@@ -90,6 +90,18 @@ jobs:
         run: flutter pub get
       - name: 🕵️ Analyze code
         run: flutter analyze lib test integration_test
+  nsec-leak-guard:
+    name: NSec Leak Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🔧 Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: 🛡️ Verify production code does not use nsec as a payload key
+        # Locks in Phase 1 of divinevideo/divine-mobile#3359 — fails if any
+        # production .dart file under mobile/lib or mobile/packages
+        # re-introduces nsec as a JSON / map key in an HTTP body.
+        run: bash mobile/tools/ci/grep_for_nsec_payload.sh
   tests:
     name: Tests
     runs-on: ubuntu-latest

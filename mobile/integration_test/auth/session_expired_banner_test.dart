@@ -27,6 +27,19 @@ void main() {
     patrolTest(
       'tapping Sign in navigates to login options instead of bouncing home',
       ($) async {
+        // Phase 1 of divinevideo/divine-mobile#3359 disabled the BYOK
+        // identity-preservation flow this test depends on
+        // (`headlessRegister(nsec: ...)` no longer transmits the nsec, so
+        // the OAuth-registered pubkey no longer matches the locally
+        // generated one). Re-enable once the proof-of-possession contract
+        // from divinevideo/keycast#197 ships and Phase 2 lands the new
+        // BYOK preservation path.
+        markTestSkipped(
+          'Pending Phase 2 of divinevideo/divine-mobile#3359 — BYOK '
+          'identity preservation requires server-side proof-of-possession.',
+        );
+        return;
+        // ignore: dead_code
         final tester = $.tester;
         // ── Setup ──
         final originalOnError = suppressSetStateErrors();
@@ -66,7 +79,6 @@ void main() {
           () => oauthClient.headlessRegister(
             email: testEmail,
             password: testPassword,
-            nsec: nsec,
             scope: 'policy:full',
           ),
         ))!;

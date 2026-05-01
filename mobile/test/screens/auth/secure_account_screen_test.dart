@@ -32,14 +32,14 @@ void main() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
 
-      // Default stubs
+      // Default stubs. Note: exportNsec() is intentionally NOT stubbed —
+      // Phase 1 of divinevideo/divine-mobile#3359 removed the only call site
+      // that used it from this screen, and an accidental future call must
+      // fail loudly rather than silently exfiltrate the nsec.
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.isAnonymous).thenReturn(true);
       when(() => mockAuthService.isRegistered).thenReturn(false);
       when(() => mockAuthService.currentNpub).thenReturn('npub1test...');
-      when(
-        () => mockAuthService.exportNsec(),
-      ).thenAnswer((_) async => 'nsec1testabc123xyz');
     });
 
     setUpAll(() async {
@@ -270,7 +270,6 @@ void main() {
           () => mockOAuth.headlessRegister(
             email: any(named: 'email'),
             password: any(named: 'password'),
-            nsec: any(named: 'nsec'),
             scope: any(named: 'scope'),
           ),
         ).thenAnswer(
@@ -319,7 +318,6 @@ void main() {
           () => mockOAuth.headlessRegister(
             email: 'test@example.com',
             password: 'SecurePass123!',
-            nsec: any(named: 'nsec'),
             scope: 'policy:full',
           ),
         ).called(1);
@@ -332,7 +330,6 @@ void main() {
           () => mockOAuth.headlessRegister(
             email: any(named: 'email'),
             password: any(named: 'password'),
-            nsec: any(named: 'nsec'),
             scope: any(named: 'scope'),
           ),
         ).thenAnswer(
@@ -373,8 +370,28 @@ void main() {
         expect(find.text('Email already registered'), findsOneWidget);
       });
 
-      testWidgets('shows error when nsec export fails', (tester) async {
-        when(() => mockAuthService.exportNsec()).thenAnswer((_) async => null);
+      testWidgets('never exports the local nsec or forwards it to OAuth '
+          '— leak-prevention regression guard', (tester) async {
+        // Phase 1 of divinevideo/divine-mobile#3359: the screen must not
+        // call exportNsec() and must not pass any nsec-bearing argument to
+        // headlessRegister.
+        when(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            HeadlessRegisterResult(
+              success: true,
+              pubkey: 'test-pubkey',
+              verificationRequired: false,
+              email: 'test@example.com',
+            ),
+            'test-verifier',
+          ),
+        );
 
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
@@ -402,12 +419,10 @@ void main() {
         );
 
         await tester.tap(find.widgetWithText(DivineButton, 'Secure account'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-        expect(
-          find.text('Unable to access your keys. Please try again.'),
-          findsOneWidget,
-        );
+        verifyNever(() => mockAuthService.exportNsec());
       });
     });
 
@@ -422,7 +437,6 @@ void main() {
             () => mockOAuth.headlessRegister(
               email: any(named: 'email'),
               password: any(named: 'password'),
-              nsec: any(named: 'nsec'),
               scope: any(named: 'scope'),
             ),
           ).thenAnswer(
@@ -523,7 +537,6 @@ void main() {
           () => mockOAuth.headlessRegister(
             email: any(named: 'email'),
             password: any(named: 'password'),
-            nsec: any(named: 'nsec'),
             scope: any(named: 'scope'),
           ),
         ).thenAnswer(
@@ -611,7 +624,6 @@ void main() {
           () => mockOAuth.headlessRegister(
             email: any(named: 'email'),
             password: any(named: 'password'),
-            nsec: any(named: 'nsec'),
             scope: any(named: 'scope'),
           ),
         ).thenAnswer(
