@@ -472,8 +472,8 @@ class __OverlayState extends ConsumerState<_Overlay> {
                       isAutoEnabled: effectiveAutoEnabled,
                       onAutoPressed: widget.onToggleAutoAdvance,
                       onInteracted: widget.onSuppressAutoAdvance,
-                      subtitleLayer: video.hasSubtitles &&
-                              widget.controller != null
+                      subtitleLayer:
+                          video.hasSubtitles && widget.controller != null
                           ? _SubtitleLayer(
                               video: video,
                               controller: widget.controller!,
