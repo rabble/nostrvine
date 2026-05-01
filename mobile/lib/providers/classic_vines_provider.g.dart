@@ -11,9 +11,10 @@ part of 'classic_vines_provider.dart';
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
 ///
-/// Pull-to-refresh spins to the next page of classics.
+/// Pull-to-refresh selects a fresh random slice of classics while retrying
+/// transient failures and empty pages.
 
 @ProviderFor(ClassicVinesFeed)
 const classicVinesFeedProvider = ClassicVinesFeedProvider._();
@@ -21,17 +22,19 @@ const classicVinesFeedProvider = ClassicVinesFeedProvider._();
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
 ///
-/// Pull-to-refresh spins to the next page of classics.
+/// Pull-to-refresh selects a fresh random slice of classics while retrying
+/// transient failures and empty pages.
 final class ClassicVinesFeedProvider
     extends $AsyncNotifierProvider<ClassicVinesFeed, VideoFeedState> {
   /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
   ///
   /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-  /// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+  /// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
   ///
-  /// Pull-to-refresh spins to the next page of classics.
+  /// Pull-to-refresh selects a fresh random slice of classics while retrying
+  /// transient failures and empty pages.
   const ClassicVinesFeedProvider._()
     : super(
         from: null,
@@ -51,14 +54,15 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'31af899ba468acb15c63498bf119caf3426fa295';
+String _$classicVinesFeedHash() => r'cd35b0b76fad98102f6750eb1a6ed3d67263e717';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
 ///
-/// Pull-to-refresh spins to the next page of classics.
+/// Pull-to-refresh selects a fresh random slice of classics while retrying
+/// transient failures and empty pages.
 
 abstract class _$ClassicVinesFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();

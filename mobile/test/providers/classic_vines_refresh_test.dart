@@ -81,12 +81,134 @@ void main() {
     }
 
     test(
+      'loads a random page-aligned classics page within the top classics',
+      () async {
+        final offsets = <int>[];
+        final limits = <int>[];
+        when(
+          () => mockFunnelcakeClient.getClassicVines(
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((invocation) async {
+          limits.add(invocation.namedArguments[#limit] as int);
+          offsets.add(invocation.namedArguments[#offset] as int);
+          return [_videoStats('classic-${offsets.length}')];
+        });
+
+        for (var i = 0; i < 12; i++) {
+          final container = createContainer();
+          addTearDown(container.dispose);
+
+          await container.read(funnelcakeAvailableProvider.future);
+          await container.read(classicVinesFeedProvider.future);
+        }
+
+        expect(offsets, hasLength(12));
+        expect(offsets, everyElement(inInclusiveRange(0, 400)));
+        expect(
+          offsets,
+          everyElement(predicate<int>((offset) => offset % 50 == 0)),
+        );
+        expect(offsets.toSet(), hasLength(greaterThan(1)));
+        expect(limits, everyElement(lessThanOrEqualTo(50)));
+      },
+    );
+
+    test('refresh selects a fresh random classics page', () async {
+      final offsets = <int>[];
+      when(
+        () => mockFunnelcakeClient.getClassicVines(
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((invocation) async {
+        offsets.add(invocation.namedArguments[#offset] as int);
+        return [_videoStats('classic-${offsets.length}')];
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      await container.read(funnelcakeAvailableProvider.future);
+      await container.read(classicVinesFeedProvider.future);
+      for (var i = 0; i < 12; i++) {
+        await container.read(classicVinesFeedProvider.notifier).refresh();
+      }
+
+      expect(offsets, hasLength(13));
+      expect(offsets, everyElement(inInclusiveRange(0, 400)));
+      expect(
+        offsets,
+        everyElement(predicate<int>((offset) => offset % 50 == 0)),
+      );
+      expect(offsets.toSet(), hasLength(greaterThan(1)));
+    });
+
+    test(
+      'tries the next classics page when the first page has no videos',
+      () async {
+        final offsets = <int>[];
+        when(
+          () => mockFunnelcakeClient.getClassicVines(
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((invocation) async {
+          final offset = invocation.namedArguments[#offset] as int;
+          offsets.add(offset);
+          if (offsets.length == 1) {
+            return const [];
+          }
+          return [_videoStats('classic-recovered')];
+        });
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final state = await container.read(classicVinesFeedProvider.future);
+
+        expect(state.videos.map((video) => video.id), ['classic-recovered']);
+        expect(offsets, hasLength(2));
+        expect(offsets[1], offsets[0] + 50);
+      },
+    );
+
+    test(
+      'retries the first classics page after a transient API error',
+      () async {
+        final offsets = <int>[];
+        var calls = 0;
+        when(
+          () => mockFunnelcakeClient.getClassicVines(
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((invocation) async {
+          calls++;
+          final offset = invocation.namedArguments[#offset] as int;
+          offsets.add(offset);
+          if (calls == 1) {
+            throw Exception('network unavailable');
+          }
+          return [_videoStats('classic-retry')];
+        });
+
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final state = await container.read(classicVinesFeedProvider.future);
+
+        expect(state.videos.map((video) => video.id), ['classic-retry']);
+        expect(offsets, hasLength(2));
+        expect(offsets[1], offsets[0]);
+      },
+    );
+
+    test(
       'preserves existing videos with an error when refresh API fails',
       () async {
         var calls = 0;
         when(
           () => mockFunnelcakeClient.getClassicVines(
-            limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async {
@@ -128,7 +250,6 @@ void main() {
         var calls = 0;
         when(
           () => mockFunnelcakeClient.getClassicVines(
-            limit: any(named: 'limit'),
             offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async {
