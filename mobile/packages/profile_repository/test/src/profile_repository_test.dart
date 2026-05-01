@@ -101,7 +101,7 @@ void main() {
         () => mockNostrClient.sendProfile(
           profileContent: any(named: 'profileContent'),
         ),
-      ).thenAnswer((_) async => mockProfileEvent);
+      ).thenAnswer((_) async => SendProfileSuccess(event: mockProfileEvent));
       when(() => mockUserProfilesDao.getProfile(any())).thenAnswer((
         invocation,
       ) async {
@@ -1426,10 +1426,7 @@ void main() {
             () => mockNostrClient.sendProfile(
               profileContent: any(named: 'profileContent'),
             ),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockNostrClient.connectedRelays,
-          ).thenReturn(['wss://relay.example.com']);
+          ).thenAnswer((_) async => const SendProfileFailed());
 
           await expectLater(
             profileRepository.saveProfileEvent(displayName: 'Test'),
@@ -1446,10 +1443,7 @@ void main() {
             () => mockNostrClient.sendProfile(
               profileContent: any(named: 'profileContent'),
             ),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockNostrClient.connectedRelays,
-          ).thenReturn([]);
+          ).thenAnswer((_) async => const SendProfileNoRelays());
 
           await expectLater(
             profileRepository.saveProfileEvent(displayName: 'Test'),

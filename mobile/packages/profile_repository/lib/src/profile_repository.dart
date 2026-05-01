@@ -1,6 +1,7 @@
 // ABOUTME: Repository for fetching and publishing user profiles (Kind 0).
 // ABOUTME: Delegates to NostrClient for relay operations.
-// ABOUTME: Throws ProfilePublishFailedException on publish failure.
+// ABOUTME: Throws typed ProfileRepositoryException subclasses on publish
+// ABOUTME: failure.
 
 import 'dart:async';
 import 'dart:convert';
@@ -499,7 +500,8 @@ class ProfileRepository {
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
   ///
-  /// Throws `ProfilePublishFailedException` if the operation fails.
+  /// Throws [NoRelaysConnectedException] when no relays are connected.
+  /// Throws [ProfilePublishFailedException] for other send failures.
   Future<UserProfile> saveProfileEvent({
     required String displayName,
     String? about,
@@ -531,38 +533,38 @@ class ProfileRepository {
       profileContent.remove('nip05');
     }
 
-    final profileEvent = await _nostrClient.sendProfile(
+    final result = await _nostrClient.sendProfile(
       profileContent: profileContent,
     );
 
-    if (profileEvent == null) {
-      // Distinguish "no relays at all" from "relay rejected / send error".
-      // publishEvent already called retryDisconnectedRelays() internally, so
-      // if connectedRelays is still empty the device has no relay connections.
-      if (_nostrClient.connectedRelays.isEmpty) {
+    // Switch exhaustively over the typed result — no post-failure
+    // connectedRelays snapshot needed.
+    switch (result) {
+      case SendProfileSuccess(:final event):
+        final profile = UserProfile.fromNostrEvent(event);
+        await _userProfilesDao.upsertProfile(profile);
+        return profile;
+
+      case SendProfileNoRelays():
         Log.error(
-          'sendProfile returned null — no connected relays after retry',
+          'sendProfile: no connected relays after retry',
           name: 'ProfileRepository.saveProfileEvent',
           category: LogCategory.relay,
         );
         throw const NoRelaysConnectedException(
           'No relays connected. Check your connection and try again.',
         );
-      }
-      Log.error(
-        'sendProfile returned null '
-        '(relay rejected the event or send failed)',
-        name: 'ProfileRepository.saveProfileEvent',
-        category: LogCategory.relay,
-      );
-      throw const ProfilePublishFailedException(
-        'Failed to publish profile. Please try again.',
-      );
-    }
 
-    final profile = UserProfile.fromNostrEvent(profileEvent);
-    await _userProfilesDao.upsertProfile(profile);
-    return profile;
+      case SendProfileFailed():
+        Log.error(
+          'sendProfile: relay rejected the event or send failed',
+          name: 'ProfileRepository.saveProfileEvent',
+          category: LogCategory.relay,
+        );
+        throw const ProfilePublishFailedException(
+          'Failed to publish profile. Please try again.',
+        );
+    }
   }
 
   /// Claims a username via NIP-98 authenticated request.
