@@ -339,17 +339,15 @@ class _NotificationTabContentState
               },
               child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
                 builder: (context, inviteState) {
-                  final inviteRemaining =
-                      inviteState.inviteStatus?.remaining ?? 0;
                   final showInviteCard =
-                      widget.filter == null && inviteRemaining > 0;
+                      widget.filter == null && inviteState.hasAvailableInvites;
                   if (showInviteCard) {
                     return ListView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       controller: _scrollController,
                       children: [
                         _InviteNotificationCard(
-                          count: inviteRemaining,
+                          count: inviteState.availableInviteCount,
                         ),
                       ],
                     );
@@ -425,10 +423,8 @@ class _NotificationTabContentState
             },
             child: BlocBuilder<InviteStatusCubit, InviteStatusState>(
               builder: (context, inviteState) {
-                final inviteRemaining =
-                    inviteState.inviteStatus?.remaining ?? 0;
                 final showInviteCard =
-                    widget.filter == null && inviteRemaining > 0;
+                    widget.filter == null && inviteState.hasAvailableInvites;
                 final inviteCardOffset = showInviteCard ? 1 : 0;
                 final hasLoadingIndicator =
                     feedState.hasMoreContent &&
@@ -446,7 +442,7 @@ class _NotificationTabContentState
                     // Invite card at top of All tab
                     if (showInviteCard && index == 0) {
                       return _InviteNotificationCard(
-                        count: inviteRemaining,
+                        count: inviteState.availableInviteCount,
                       );
                     }
                     final adjustedIndex = index - inviteCardOffset;

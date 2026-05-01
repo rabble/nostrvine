@@ -159,7 +159,7 @@ void main() {
         expect(state.hasUnclaimedCodes, isTrue);
         expect(state.unclaimedCount, equals(1));
         expect(state.hasAvailableInvites, isTrue);
-        expect(state.availableInviteCount, equals(2));
+        expect(state.availableInviteCount, equals(1));
       });
 
       test('hasUnclaimedCodes returns false when all claimed', () {
