@@ -175,5 +175,106 @@ void main() {
 
       scrollController.dispose();
     });
+
+    testWidgets(
+      'tap on a comment dismisses the keyboard (TikTok / Reels parity)',
+      (tester) async {
+        // When the comment input is focused and the user taps a comment in
+        // the list, the keyboard should dismiss so the user can read other
+        // comments unobstructed. Draft text in the input is retained
+        // (verified by the input retaining its FocusNode and controller
+        // separately — this test covers the focus-drop side).
+        final comment = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withContent('First comment')
+            .build();
+
+        final state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {comment.id: comment},
+        );
+
+        when(() => mockCommentsBloc.state).thenReturn(state);
+
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              nostrServiceProvider.overrideWithValue(mockNostrClient),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Scaffold(
+                body: BlocProvider<CommentsBloc>.value(
+                  value: mockCommentsBloc,
+                  // A focused TextField mimics the production scenario:
+                  // CommentInput has the keyboard up while CommentsList
+                  // is visible. The Column layout matches the bottom
+                  // sheet's scrollable-body / bottom-input split.
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: CommentsList(
+                          showClassicVineNotice: false,
+                          scrollController: ScrollController(),
+                        ),
+                      ),
+                      TextField(focusNode: focusNode),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        focusNode.requestFocus();
+        await tester.pump();
+        expect(focusNode.hasFocus, isTrue);
+
+        await tester.tap(find.text('First comment'));
+        await tester.pump();
+
+        expect(
+          focusNode.hasFocus,
+          isFalse,
+          reason:
+              'Tapping a comment in the list must dismiss the keyboard '
+              'so the user can read other comments without being '
+              'blocked. Matches TikTok / Instagram Reels behavior.',
+        );
+      },
+    );
+
+    testWidgets(
+      'ListView declares onDrag keyboard-dismiss behavior',
+      (tester) async {
+        // Idiomatic Flutter signal: the comments scroll view dismisses
+        // the keyboard when the user starts dragging it. Complements the
+        // tap-dismiss above for the scroll-to-read case.
+        final comment = CommentBuilder().build();
+        final state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {comment.id: comment},
+        );
+
+        await tester.pumpWidget(buildTestWidget(commentsState: state));
+        await tester.pump();
+
+        final listView = tester.widget<ListView>(find.byType(ListView));
+        expect(
+          listView.keyboardDismissBehavior,
+          ScrollViewKeyboardDismissBehavior.onDrag,
+        );
+      },
+    );
   });
 }

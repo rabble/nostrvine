@@ -378,19 +378,16 @@ class _CommentContent extends StatelessWidget {
       fontSize: isEmoji ? _emojiOnlyFontSize : 14,
       height: isEmoji ? null : 20 / 14,
     );
-    return TapRegion(
-      onTapOutside: (_) => FocusScope.of(context).unfocus(),
-      child: ClickableHashtagText(
-        text: content,
-        style: baseStyle,
-        hashtagStyle: baseStyle.copyWith(
-          color: VineTheme.info,
-          fontWeight: FontWeight.w500,
-        ),
-        mentionStyle: baseStyle.copyWith(
-          color: VineTheme.tabIndicatorGreen,
-          fontWeight: FontWeight.w600,
-        ),
+    return ClickableHashtagText(
+      text: content,
+      style: baseStyle,
+      hashtagStyle: baseStyle.copyWith(
+        color: VineTheme.info,
+        fontWeight: FontWeight.w500,
+      ),
+      mentionStyle: baseStyle.copyWith(
+        color: VineTheme.tabIndicatorGreen,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

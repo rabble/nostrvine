@@ -45,33 +45,49 @@ class _CommentsListState extends State<CommentsList> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CommentsBloc, CommentsState>(
-      builder: (context, state) {
-        if (state.status == CommentsStatus.loading) {
-          return const _LoadingState();
-        }
+    // Match TikTok / Instagram Reels: any interaction with the comments
+    // area (tap on a comment, drag to scroll) dismisses the keyboard so
+    // the user can read other comments unobstructed. Draft text in the
+    // input is retained — re-tapping the input restores focus.
+    //
+    // The Listener catches taps anywhere in the list (including dead
+    // space and on comment items themselves) without competing in the
+    // gesture arena, so existing tap handlers (reply, vote, navigate to
+    // profile) still run normally afterwards. The ListView's
+    // [ScrollViewKeyboardDismissBehavior.onDrag] covers the scroll case
+    // idiomatically.
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+      child: BlocBuilder<CommentsBloc, CommentsState>(
+        builder: (context, state) {
+          if (state.status == CommentsStatus.loading) {
+            return const _LoadingState();
+          }
 
-        if (state.status == CommentsStatus.failure) {
-          return const _ErrorState();
-        }
+          if (state.status == CommentsStatus.failure) {
+            return const _ErrorState();
+          }
 
-        final threaded = state.threadedComments;
+          final threaded = state.threadedComments;
 
-        if (threaded.isEmpty) {
-          return CommentsEmptyState(
-            isClassicVine: widget.showClassicVineNotice,
+          if (threaded.isEmpty) {
+            return CommentsEmptyState(
+              isClassicVine: widget.showClassicVineNotice,
+            );
+          }
+
+          return ListView.builder(
+            controller: widget.scrollController,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            itemCount: threaded.length,
+            itemBuilder: (context, index) {
+              final node = threaded[index];
+              return CommentItem(comment: node.comment, depth: node.depth);
+            },
           );
-        }
-
-        return ListView.builder(
-          controller: widget.scrollController,
-          itemCount: threaded.length,
-          itemBuilder: (context, index) {
-            final node = threaded[index];
-            return CommentItem(comment: node.comment, depth: node.depth);
-          },
-        );
-      },
+        },
+      ),
     );
   }
 }
