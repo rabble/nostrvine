@@ -12,10 +12,12 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
+import 'package:openvine/services/video_stats_hydration_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -256,11 +258,30 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       return;
     }
 
+    // Hydrate REST-side stats (loop counts, views) before navigating.
+    // Notification taps fetch the raw Nostr event which has no REST stats.
+    VideoEvent videoForNav = video;
+    try {
+      final funnelcakeClient = ref.read(funnelcakeApiClientProvider);
+      final hydrated = await VideoStatsHydrationService.hydrateVideo(
+        video,
+        client: funnelcakeClient,
+      );
+      if (hydrated != null) videoForNav = hydrated;
+    } catch (e) {
+      Log.warning(
+        'Stats hydration failed for ${video.id}: $e',
+        name: 'NotificationsView',
+        category: LogCategory.ui,
+      );
+    }
+
+    if (!context.mounted) return;
+
     final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply ||
         notificationKind == NotificationKind.mention;
-    final videoForNav = video;
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
