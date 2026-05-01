@@ -198,6 +198,38 @@ void main() {
         );
       });
 
+      test(
+        'refuses NIP-11 fetch for https:// input (not a relay URL)',
+        () async {
+          // Input contract is the WS form. An https:// URL means a caller
+          // upstream lost the WS form somewhere — fail closed.
+          await expectLater(
+            service.getRelayCapabilities('https://relay.example.com'),
+            throwsA(isA<RelayCapabilityException>()),
+          );
+
+          verifyNever(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          );
+        },
+      );
+
+      test(
+        'refuses NIP-11 fetch for http://localhost input (not a relay URL)',
+        () async {
+          // Loopback http:// is a valid HTTP target, but it's not a relay
+          // URL — relays are WS-only, so reject the input.
+          await expectLater(
+            service.getRelayCapabilities('http://localhost:47777'),
+            throwsA(isA<RelayCapabilityException>()),
+          );
+
+          verifyNever(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          );
+        },
+      );
+
       test('allows http://localhost for local Docker stack', () async {
         when(
           () => mockHttpClient.get(

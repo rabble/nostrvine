@@ -863,14 +863,12 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
     if (relayUrl == null || relayUrl.isEmpty) return;
 
-    // Validate URL format. `relaySettingsInvalidUrl` covers structurally
-    // bad input (no scheme, missing host); `relaySettingsInsecureUrl`
-    // covers cleartext ws:// / http:// pointed at a non-loopback host
-    // (#3362).
-    if (!relayUrl.startsWith('wss://') &&
-        !relayUrl.startsWith('ws://') &&
-        !relayUrl.startsWith('https://') &&
-        !relayUrl.startsWith('http://')) {
+    // Validate URL format. Relays are WebSocket-only, so anything that
+    // is not `wss://` or `ws://` (including pasted `https://` / `http://`
+    // links) is structurally wrong and surfaces `relaySettingsInvalidUrl`.
+    // `relaySettingsInsecureUrl` is reserved for the security-relevant
+    // case: cleartext `ws://` pointed at a non-loopback host (#3362).
+    if (!relayUrl.startsWith('wss://') && !relayUrl.startsWith('ws://')) {
       _showError(invalidUrlMessage);
       return;
     }

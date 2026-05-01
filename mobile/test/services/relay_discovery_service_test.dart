@@ -278,12 +278,40 @@ void main() {
       expect(relays, isEmpty);
     });
 
+    test('drops https:// relay tags (NIP-65 advertises WS endpoints only)', () {
+      // A published kind:10002 tag like `["r", "https://relay.example.com"]`
+      // is not a usable relay endpoint — `RelayManager._normalizeUrl` will
+      // reject it downstream. If discovery kept it, `result.hasRelays`
+      // would be true and the safe-fallback bootstrap (#2931) would be
+      // suppressed, leaving the user with no relays.
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'https://relay.example.com'],
+          ['r', 'https://relay.divine.video'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
+
+    test('drops http://localhost relay tags (NIP-65 is WS-only)', () {
+      // Even loopback http:// is not a relay — relays speak WebSocket.
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'http://localhost:47777'],
+          ['r', 'http://attacker.example.com'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
+
     test('keeps mixed list filtered to allowed entries only', () {
       final relays = service.parseRelayListFromJson(
         tagsJson([
           ['r', 'wss://good.example.com'],
           ['r', 'ws://attacker.example.com'],
           ['r', 'ws://localhost:8080'],
+          ['r', 'https://relay.example.com'],
+          ['r', 'http://localhost:47777'],
         ]),
       );
       expect(relays, hasLength(2));

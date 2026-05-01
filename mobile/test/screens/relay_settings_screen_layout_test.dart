@@ -221,5 +221,47 @@ void main() {
         verifyNever(() => nostrService.addRelay(any()));
       },
     );
+
+    testWidgets(
+      'shows malformed-URL message for https:// input (relays are WS-only)',
+      (tester) async {
+        // Reviewer ask on PR #3806: form previously accepted https:// /
+        // http://, but `RelayManager._normalizeUrl` only accepts wss:// /
+        // loopback ws://, so they fell through to a generic "failed to add"
+        // message. Surface the structurally-bad-input bucket instead.
+        final nostrService = _MockNostrService();
+        await pumpScreen(tester, nostrService: nostrService);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openAddDialogAndSubmit(
+          tester,
+          'https://relay.example.com',
+          l10n,
+        );
+
+        expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
+        expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
+        verifyNever(() => nostrService.addRelay(any()));
+      },
+    );
+
+    testWidgets(
+      'shows malformed-URL message for http:// input (relays are WS-only)',
+      (tester) async {
+        final nostrService = _MockNostrService();
+        await pumpScreen(tester, nostrService: nostrService);
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await openAddDialogAndSubmit(
+          tester,
+          'http://attacker.example.com',
+          l10n,
+        );
+
+        expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
+        expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
+        verifyNever(() => nostrService.addRelay(any()));
+      },
+    );
   });
 }

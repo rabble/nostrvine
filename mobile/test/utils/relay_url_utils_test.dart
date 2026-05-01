@@ -44,10 +44,22 @@ void main() {
       expect(isRelayUrlAllowed('ws://[::1]:8080'), isTrue);
     });
 
-    test('accepts https:// and http://loopback for capability fetches', () {
-      expect(isRelayUrlAllowed('https://relay.divine.video'), isTrue);
-      expect(isRelayUrlAllowed('http://localhost:47777'), isTrue);
-      expect(isRelayUrlAllowed('http://10.0.2.2:8787'), isTrue);
+    test('rejects https:// (relays are WebSocket-only)', () {
+      // NIP-65 only ever advertises WS endpoints, and `RelayManager.
+      // _normalizeUrl` only accepts WS — so an https:// URL is not a
+      // usable relay regardless of host. The capability service derives
+      // its NIP-11 fetch URL from the WS form internally.
+      expect(isRelayUrlAllowed('https://relay.divine.video'), isFalse);
+      expect(isRelayUrlAllowed('https://relay.example.com'), isFalse);
+      expect(isRelayUrlAllowed('https://localhost:47777'), isFalse);
+    });
+
+    test('rejects http:// (relays are WebSocket-only)', () {
+      expect(isRelayUrlAllowed('http://attacker.example.com'), isFalse);
+      expect(isRelayUrlAllowed('http://relay.example.com'), isFalse);
+      // Loopback http:// is also rejected — relays speak WS, not HTTP.
+      expect(isRelayUrlAllowed('http://localhost:47777'), isFalse);
+      expect(isRelayUrlAllowed('http://10.0.2.2:8787'), isFalse);
     });
 
     test('rejects ws:// to non-loopback hosts', () {
@@ -55,10 +67,6 @@ void main() {
       expect(isRelayUrlAllowed('ws://relay.example.com:8443'), isFalse);
       // Suffix-match attack: must check exact host equality.
       expect(isRelayUrlAllowed('ws://localhost.attacker.com'), isFalse);
-    });
-
-    test('rejects http:// to non-loopback hosts', () {
-      expect(isRelayUrlAllowed('http://attacker.example.com'), isFalse);
     });
 
     test('is case-insensitive on scheme and host', () {

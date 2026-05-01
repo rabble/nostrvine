@@ -27,10 +27,12 @@ bool isLoopbackHost(String host) => _loopbackHosts.contains(host.toLowerCase());
 
 /// True if [url] is a relay URL the app is allowed to connect to.
 ///
-/// A URL is allowed when it uses `wss://` (or `https://`) for any host, or
-/// when it uses `ws://` (or `http://`) targeting a recognized loopback host.
-/// All other shapes — malformed, missing host, or cleartext to a non-loopback
-/// host — are rejected.
+/// Nostr relays speak WebSocket only — `wss://` is accepted for any host,
+/// and `ws://` is accepted only for a recognized loopback host. Any other
+/// scheme (`https://`, `http://`, `ftp://`, …), a malformed URL, or a missing
+/// host is rejected. This matches the acceptance rule enforced by
+/// `RelayManager._normalizeUrl` in `nostr_client`, so the predicate doubles
+/// as the upstream "is this URL a usable relay endpoint" check.
 ///
 /// This predicate is the single source of truth for the application-layer
 /// transport allowlist. The package layer (`nostr_sdk`, `nostr_client`)
@@ -40,8 +42,8 @@ bool isRelayUrlAllowed(String url) {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
   final scheme = uri.scheme.toLowerCase();
-  if (scheme == 'wss' || scheme == 'https') return true;
-  if (scheme == 'ws' || scheme == 'http') return isLoopbackHost(uri.host);
+  if (scheme == 'wss') return true;
+  if (scheme == 'ws') return isLoopbackHost(uri.host);
   return false;
 }
 

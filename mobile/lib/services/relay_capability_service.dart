@@ -145,11 +145,12 @@ class RelayCapabilityService {
 
   /// Get capabilities for a relay (with caching)
   Future<RelayCapabilities> getRelayCapabilities(String relayWsUrl) async {
-    // Defense-in-depth: refuse cleartext NIP-11 fetches to non-loopback
-    // hosts so relay metadata never leaves the device unencrypted (#3362).
-    // Upstream validators should already block these URLs from being
-    // configured, but this guard keeps the HTTP request from firing if
-    // they ever miss one.
+    // Defense-in-depth: the input contract is a relay WebSocket URL
+    // (`wss://anyhost` or `ws://<loopback>`). Reject anything else here
+    // — including pasted `https://` / `http://` links — so a malformed
+    // input cannot trigger a cleartext NIP-11 fetch and leak relay
+    // metadata (#3362). Upstream validators should already block these,
+    // but this guard keeps the HTTP request from firing if they miss one.
     if (!isRelayUrlAllowed(relayWsUrl)) {
       throw RelayCapabilityException(
         'Relay URL is not a permitted scheme/host',
