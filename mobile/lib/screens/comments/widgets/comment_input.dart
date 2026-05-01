@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 
 /// Input widget for posting new top-level comments.
@@ -383,7 +384,7 @@ class _ReplyIndicator extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                'Re: $displayName',
+                '${context.l10n.commentReplyToPrefix} $displayName',
                 style: VineTheme.bodySmallFont(
                   color: VineTheme.tabIndicatorGreen,
                 ),

@@ -9284,6 +9284,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 other} other{{count} others}}'**
   String notificationOthersCount(int count);
 
+  /// Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying.
+  ///
+  /// In en, this message translates to:
+  /// **'Re:'**
+  String get commentReplyToPrefix;
+
   /// No description provided for @draftUntitled.
   ///
   /// In en, this message translates to:

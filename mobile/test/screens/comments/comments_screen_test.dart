@@ -228,7 +228,11 @@ void main() {
         await tester.pumpWidget(buildTestWidget(commentsState: commentsState));
         await tester.pumpAndSettle();
 
-        expect(find.text('Re: TestUser'), findsOneWidget);
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          find.text('${l10n.commentReplyToPrefix} TestUser'),
+          findsOneWidget,
+        );
         // Verify close icon exists (there may be multiple close icons on the screen)
         expect(find.byIcon(Icons.close), findsWidgets);
       });

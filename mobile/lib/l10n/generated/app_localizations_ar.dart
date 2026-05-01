@@ -5226,6 +5226,9 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get commentReplyToPrefix => 'Re:';
+
+  @override
   String get draftUntitled => 'بدون عنوان';
 
   @override

@@ -5320,6 +5320,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get commentReplyToPrefix => 'Re:';
+
+  @override
   String get draftUntitled => 'Senza titolo';
 
   @override

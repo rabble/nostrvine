@@ -603,20 +603,20 @@ class _ReplyIndicator extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Re:',
-          style: VineTheme.bodyMediumFont(color: VineTheme.tabIndicatorGreen),
+          context.l10n.commentReplyToPrefix,
+          style: VineTheme.bodySmallFont(color: VineTheme.tabIndicatorGreen),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
         Flexible(
           child: Container(
             decoration: BoxDecoration(
               color: VineTheme.containerLow,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
+            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
             child: Text(
               displayName,
-              style: VineTheme.bodyMediumFont(
+              style: VineTheme.bodySmallFont(
                 color: VineTheme.tabIndicatorGreen,
               ),
               overflow: TextOverflow.ellipsis,

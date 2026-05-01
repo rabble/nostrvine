@@ -5085,6 +5085,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get commentReplyToPrefix => 'Re:';
+
+  @override
   String get draftUntitled => '제목 없음';
 
   @override
