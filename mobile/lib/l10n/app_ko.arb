@@ -1727,6 +1727,7 @@
     "searchListsSectionHeader": "목록",
   "searchListsLoadingLabel": "목록 결과 불러오는 중",
     "searchForLists": "목록 검색",
+    "commentReplyToPrefix": "Re:",
     "searchSomethingWentWrong": "문제가 발생했어요",
     "searchTryAgain": "다시 시도",
     "trendingTitle": "트렌딩",

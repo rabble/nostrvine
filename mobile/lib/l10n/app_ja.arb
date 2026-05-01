@@ -2438,6 +2438,7 @@
     "searchListsSectionHeader": "リスト",
   "searchListsLoadingLabel": "リスト結果を読み込み中",
     "searchForLists": "リストを検索",
+    "commentReplyToPrefix": "Re:",
     "searchSomethingWentWrong": "なんかうまくいかなかった",
     "searchTryAgain": "もう一回",
     "trendingTitle": "トレンド",

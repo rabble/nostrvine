@@ -2439,6 +2439,7 @@
     "searchListsSectionHeader": "Liste",
   "searchListsLoadingLabel": "Caricamento risultati liste",
     "searchForLists": "Cerca liste",
+    "commentReplyToPrefix": "Re:",
     "searchSomethingWentWrong": "Qualcosa è andato storto",
     "searchTryAgain": "Riprova",
     "trendingTitle": "Di tendenza",

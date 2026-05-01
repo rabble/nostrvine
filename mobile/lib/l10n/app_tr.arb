@@ -2438,6 +2438,7 @@
     "searchListsSectionHeader": "Listeler",
   "searchListsLoadingLabel": "Liste sonuçları yükleniyor",
     "searchForLists": "Liste ara",
+    "commentReplyToPrefix": "Yan:",
     "searchSomethingWentWrong": "Bir şeyler ters gitti",
     "searchTryAgain": "Tekrar dene",
     "trendingTitle": "Gündemde",

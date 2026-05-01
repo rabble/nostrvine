@@ -2438,6 +2438,7 @@
     "searchListsSectionHeader": "القوائم",
   "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
     "searchForLists": "البحث عن قوائم",
+    "commentReplyToPrefix": "رد:",
     "searchSomethingWentWrong": "حدث خطأ ما",
     "searchTryAgain": "حاول مجددًا",
     "trendingTitle": "الرائج",

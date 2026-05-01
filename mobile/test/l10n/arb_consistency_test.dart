@@ -113,10 +113,6 @@ const _knownUntranslatedDebt = {
   'peopleListsUndo',
   'peopleListsVideoNotAvailable',
   'peopleListsViewProfileHint',
-  // Added by the comment-reply indicator l10n migration (#3783).
-  // Translators will pick this up in a follow-up pass; until then the
-  // generated l10n APIs fall back to the English source.
-  'commentReplyToPrefix',
 };
 
 Map<String, Object?> _readArb(File file) {

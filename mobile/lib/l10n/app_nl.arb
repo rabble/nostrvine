@@ -2439,6 +2439,7 @@
     "searchListsSectionHeader": "Lijsten",
   "searchListsLoadingLabel": "Lijstresultaten laden",
     "searchForLists": "Zoek naar lijsten",
+    "commentReplyToPrefix": "Re:",
     "searchSomethingWentWrong": "Er ging iets mis",
     "searchTryAgain": "Opnieuw proberen",
     "trendingTitle": "Trending",

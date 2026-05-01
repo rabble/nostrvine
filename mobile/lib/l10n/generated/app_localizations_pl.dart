@@ -5411,7 +5411,7 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get commentReplyToPrefix => 'Re:';
+  String get commentReplyToPrefix => 'Odp.:';
 
   @override
   String get draftUntitled => 'Bez tytułu';
