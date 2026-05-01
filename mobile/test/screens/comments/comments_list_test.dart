@@ -199,7 +199,11 @@ void main() {
         when(() => mockCommentsBloc.state).thenReturn(state);
 
         final focusNode = FocusNode();
+        final textController = TextEditingController(text: 'draft comment');
+        final scrollController = ScrollController();
         addTearDown(focusNode.dispose);
+        addTearDown(textController.dispose);
+        addTearDown(scrollController.dispose);
 
         await tester.pumpWidget(
           ProviderScope(
@@ -221,10 +225,13 @@ void main() {
                       Expanded(
                         child: CommentsList(
                           showClassicVineNotice: false,
-                          scrollController: ScrollController(),
+                          scrollController: scrollController,
                         ),
                       ),
-                      TextField(focusNode: focusNode),
+                      TextField(
+                        focusNode: focusNode,
+                        controller: textController,
+                      ),
                     ],
                   ),
                 ),
@@ -248,6 +255,13 @@ void main() {
               'Tapping a comment in the list must dismiss the keyboard '
               'so the user can read other comments without being '
               'blocked. Matches TikTok / Instagram Reels behavior.',
+        );
+        expect(
+          textController.text,
+          equals('draft comment'),
+          reason:
+              'Dismissing the keyboard by tapping the list must not clear '
+              'the draft text.',
         );
       },
     );
