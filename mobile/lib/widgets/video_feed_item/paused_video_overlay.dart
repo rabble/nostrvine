@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/foundation.dart';
@@ -38,6 +39,26 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
   /// latch from the previous playback session.
   bool _hasStartedPlaying = false;
 
+  /// Previous paused state used to detect paused -> playing transitions.
+  bool _previouslyPaused = false;
+
+  /// Pause edge timestamp used to filter short loop-restart blips.
+  DateTime? _pausedAt;
+
+  /// Whether the transient unpause pause-icon is currently visible.
+  bool _showUnpauseFeedback = false;
+
+  /// Animated opacity of the unpause feedback icon.
+  double _unpauseFeedbackOpacity = 1;
+
+  Timer? _unpauseFadeTimer;
+  Timer? _unpauseHideTimer;
+
+  static const _unpauseFadeStartDelay = Duration(milliseconds: 50);
+  static const _unpauseFadeDuration = Duration(milliseconds: 500);
+  static const _unpauseHideDelay = Duration(milliseconds: 550);
+  static const _minPauseForFeedback = Duration(milliseconds: 150);
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +70,12 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.controller, widget.controller)) {
       unawaited(_subscription?.cancel());
+      _cancelUnpauseFeedbackTimers();
       _hasStartedPlaying = false;
+      _previouslyPaused = false;
+      _pausedAt = null;
+      _showUnpauseFeedback = false;
+      _unpauseFeedbackOpacity = 1;
       _subscribe();
       return;
     }
@@ -67,47 +93,177 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
 
   void _onState(DivineVideoPlayerState state) {
     if (!mounted) return;
+
+    final isPaused = state.isPaused;
+    final wasPaused = _previouslyPaused;
+    _previouslyPaused = isPaused;
+
     if (!state.isFirstFrameRendered) {
       // New video loading — reset so the latch must be re-earned.
-      if (_hasStartedPlaying) setState(() => _hasStartedPlaying = false);
+      if (_hasStartedPlaying || _showUnpauseFeedback) {
+        _cancelUnpauseFeedbackTimers();
+        setState(() {
+          _hasStartedPlaying = false;
+          _showUnpauseFeedback = false;
+          _unpauseFeedbackOpacity = 1;
+        });
+      }
+      _pausedAt = null;
       return;
     }
+
     if (state.status == PlaybackStatus.playing && widget.isVisible) {
       if (!_hasStartedPlaying) setState(() => _hasStartedPlaying = true);
     }
+
+    if (isPaused && !wasPaused) {
+      _pausedAt = clock.now();
+      return;
+    }
+
+    if (!isPaused && wasPaused && _hasStartedPlaying && widget.isVisible) {
+      final pauseDuration = _pausedAt != null
+          ? clock.now().difference(_pausedAt!)
+          : Duration.zero;
+      _pausedAt = null;
+      if (pauseDuration >= _minPauseForFeedback) {
+        _triggerUnpauseFeedback();
+      }
+    }
+  }
+
+  void _triggerUnpauseFeedback() {
+    _cancelUnpauseFeedbackTimers();
+    setState(() {
+      _showUnpauseFeedback = true;
+      _unpauseFeedbackOpacity = 1;
+    });
+
+    _unpauseFadeTimer = Timer(_unpauseFadeStartDelay, () {
+      if (!mounted) return;
+      setState(() {
+        _unpauseFeedbackOpacity = 0;
+      });
+    });
+
+    _unpauseHideTimer = Timer(_unpauseHideDelay, () {
+      if (!mounted) return;
+      setState(() {
+        _showUnpauseFeedback = false;
+        _unpauseFeedbackOpacity = 1;
+      });
+    });
+  }
+
+  void _cancelUnpauseFeedbackTimers() {
+    _unpauseFadeTimer?.cancel();
+    _unpauseHideTimer?.cancel();
+    _unpauseFadeTimer = null;
+    _unpauseHideTimer = null;
   }
 
   @override
   void dispose() {
     unawaited(_subscription?.cancel());
+    _cancelUnpauseFeedbackTimers();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<
-      ({bool isFirstFrameRendered, bool isMuted, bool isPaused})
+      ({
+        bool isBuffering,
+        bool isFirstFrameRendered,
+        bool isMuted,
+        bool isPaused,
+        bool isPlaying,
+      })
     >(
       stream: widget.controller.stateStream
           .map(
             (s) => (
+              isBuffering: s.isBuffering,
               isPaused: s.isPaused,
+              isPlaying: s.isPlaying,
               isFirstFrameRendered: s.isFirstFrameRendered,
               isMuted: s.volume == 0,
             ),
           )
           .distinct(),
       builder: (context, snapshot) {
+        final isBuffering = snapshot.data?.isBuffering ?? false;
         final isFirstFrameRendered =
             snapshot.data?.isFirstFrameRendered ?? false;
         final isPaused = snapshot.data?.isPaused ?? false;
+        final isPlaying = snapshot.data?.isPlaying ?? false;
         final isMuted = snapshot.data?.isMuted ?? false;
 
         final shouldShow =
             widget.isVisible &&
             _hasStartedPlaying &&
             isPaused &&
+            !isBuffering &&
             isFirstFrameRendered;
+        final shouldShowUnpauseFeedback =
+            widget.isVisible &&
+            _showUnpauseFeedback &&
+            isPlaying &&
+            !shouldShow;
+
+        final Widget child;
+        if (shouldShow) {
+          child = Center(
+            child: Column(
+              mainAxisSize: .min,
+              spacing: 16,
+              children: [
+                if (!kIsWeb)
+                  DivineIconButton(
+                    icon: isMuted ? .speakerSimpleX : .speakerHigh,
+                    size: .small,
+                    type: .ghost,
+                    semanticLabel: isMuted
+                        ? context.l10n.videoPlayerUnmute
+                        : context.l10n.videoPlayerMute,
+                    onPressed: () {
+                      final newVolume = isMuted ? 1.0 : 0.0;
+                      if (widget.onVolumeToggle != null) {
+                        widget.onVolumeToggle!(newVolume);
+                      } else {
+                        widget.controller.setVolume(newVolume);
+                      }
+                      SemanticsService.sendAnnouncement(
+                        View.of(context),
+                        isMuted
+                            ? context.l10n.videoPlayerUnmute
+                            : context.l10n.videoPlayerMute,
+                        Directionality.of(context),
+                      );
+                    },
+                  ),
+                IgnorePointer(
+                  child: CenterPlaybackControl(
+                    state: CenterPlaybackControlState.play,
+                    semanticsLabel: context.l10n.videoPlayerPlayVideo,
+                  ),
+                ),
+              ],
+            ),
+          );
+        } else if (shouldShowUnpauseFeedback) {
+          child = IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _unpauseFeedbackOpacity,
+              duration: _unpauseFadeDuration,
+              child: const CenterPlaybackControl(
+                state: CenterPlaybackControlState.pause,
+              ),
+            ),
+          );
+        } else {
+          child = const SizedBox.shrink();
+        }
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 180),
@@ -125,46 +281,7 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
               ),
             );
           },
-          child: shouldShow
-              ? Center(
-                  child: Column(
-                    mainAxisSize: .min,
-                    spacing: 16,
-                    children: [
-                      if (!kIsWeb)
-                        DivineIconButton(
-                          icon: isMuted
-                              ? DivineIconName.speakerSimpleX
-                              : DivineIconName.speakerHigh,
-                          size: DivineIconButtonSize.small,
-                          type: DivineIconButtonType.ghost,
-                          semanticLabel: isMuted
-                              ? context.l10n.videoPlayerUnmute
-                              : context.l10n.videoPlayerMute,
-                          onPressed: () {
-                            final newVolume = isMuted ? 1.0 : 0.0;
-                            if (widget.onVolumeToggle != null) {
-                              widget.onVolumeToggle!(newVolume);
-                            } else {
-                              widget.controller.setVolume(newVolume);
-                            }
-                            SemanticsService.sendAnnouncement(
-                              View.of(context),
-                              isMuted
-                                  ? context.l10n.videoPlayerUnmute
-                                  : context.l10n.videoPlayerMute,
-                              Directionality.of(context),
-                            );
-                          },
-                        ),
-                      const CenterPlaybackControl(
-                        state: .play,
-                        semanticsLabel: 'Play video',
-                      ),
-                    ],
-                  ),
-                )
-              : const SizedBox.shrink(),
+          child: child,
         );
       },
     );
