@@ -39,7 +39,7 @@ class CancellableCacheOperation {
       _subscription = stream.listen(
         (response) {
           developer.log(
-            'prefetch CancellableCacheOp[$cacheKey]: '
+            'CancellableCacheOp[$cacheKey]: '
             'event=${response.runtimeType}',
             name: 'MediaCache',
           );
@@ -50,14 +50,14 @@ class CancellableCacheOperation {
         },
         onError: (Object error) {
           developer.log(
-            'prefetch CancellableCacheOp[$cacheKey]: onError=$error',
+            'CancellableCacheOp[$cacheKey]: onError=$error',
             name: 'MediaCache',
           );
           if (!_completer.isCompleted) _completer.complete();
         },
         onDone: () {
           developer.log(
-            'prefetch CancellableCacheOp[$cacheKey]: onDone '
+            'CancellableCacheOp[$cacheKey]: onDone '
             '(completed=${_completer.isCompleted})',
             name: 'MediaCache',
           );
