@@ -58,7 +58,7 @@ class _BadgesView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _BadgesIntro(errorMessage: state.errorMessage),
+                        _BadgesIntro(state: state),
                         const SizedBox(height: 16),
                         if (state.status == BadgesStatus.loading)
                           const _BadgesLoadingCard()
@@ -85,12 +85,23 @@ class _BadgesView extends StatelessWidget {
 }
 
 class _BadgesIntro extends StatelessWidget {
-  const _BadgesIntro({this.errorMessage});
+  const _BadgesIntro({required this.state});
 
-  final String? errorMessage;
+  final BadgesState state;
+
+  String? get _errorMessage {
+    if (state.actionStatus == BadgeActionStatus.error) {
+      return 'Could not update badge';
+    }
+    if (state.status == BadgesStatus.error) {
+      return 'Could not load badges';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final errorMessage = _errorMessage;
     return _Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,7 +119,7 @@ class _BadgesIntro extends StatelessWidget {
           if (errorMessage != null) ...[
             const SizedBox(height: 12),
             Text(
-              errorMessage!,
+              errorMessage,
               style: VineTheme.bodySmallFont(color: VineTheme.error),
             ),
           ],
@@ -120,7 +131,6 @@ class _BadgesIntro extends StatelessWidget {
               final app = _divineBadgesApp();
               context.push(
                 NostrAppSandboxScreen.pathForAppId(app.id),
-                extra: app,
               );
             },
           ),
@@ -365,7 +375,7 @@ class _Panel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: VineTheme.outlineMuted),
       ),
       child: Padding(padding: const EdgeInsets.all(16), child: child),

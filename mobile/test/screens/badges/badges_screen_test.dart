@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -92,9 +91,7 @@ void main() {
 
     testWidgets('opens the embedded Divine Badges app', (tester) async {
       final mockGoRouter = MockGoRouter();
-      when(
-        () => mockGoRouter.push(any(), extra: any(named: 'extra')),
-      ).thenAnswer((_) async => null);
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
       when(
         repository.loadDashboard,
       ).thenAnswer(
@@ -107,14 +104,11 @@ void main() {
       await tester.tap(find.text('Open badges app'));
       await tester.pumpAndSettle();
 
-      final captured = verify(
+      verify(
         () => mockGoRouter.push(
           NostrAppSandboxScreen.pathForAppId('bundled-badges'),
-          extra: captureAny(named: 'extra'),
         ),
-      ).captured;
-      expect(captured.single, isA<NostrAppDirectoryEntry>());
-      expect((captured.single as NostrAppDirectoryEntry).slug, 'badges');
+      ).called(1);
     });
   });
 }

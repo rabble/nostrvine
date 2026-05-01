@@ -22,7 +22,6 @@ class BadgesCubit extends Cubit<BadgesState> {
       state.copyWith(
         status: BadgesStatus.loading,
         actionStatus: BadgeActionStatus.idle,
-        clearErrorMessage: true,
       ),
     );
     await _loadDashboard();
@@ -63,7 +62,6 @@ class BadgesCubit extends Cubit<BadgesState> {
           status: BadgesStatus.loaded,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
-          clearErrorMessage: true,
         ),
       );
     } catch (error, stackTrace) {
@@ -72,7 +70,6 @@ class BadgesCubit extends Cubit<BadgesState> {
         state.copyWith(
           status: BadgesStatus.error,
           actionStatus: BadgeActionStatus.idle,
-          errorMessage: 'Could not load badges',
         ),
       );
     }
@@ -85,7 +82,6 @@ class BadgesCubit extends Cubit<BadgesState> {
     emit(
       state.copyWith(
         actionStatus: actionStatus,
-        clearErrorMessage: true,
       ),
     );
 
@@ -98,7 +94,6 @@ class BadgesCubit extends Cubit<BadgesState> {
           actionStatus: BadgeActionStatus.completed,
           awarded: dashboard.awarded,
           issued: dashboard.issued,
-          clearErrorMessage: true,
         ),
       );
     } catch (error, stackTrace) {
@@ -106,7 +101,6 @@ class BadgesCubit extends Cubit<BadgesState> {
       emit(
         state.copyWith(
           actionStatus: BadgeActionStatus.error,
-          errorMessage: 'Could not update badge',
         ),
       );
     }

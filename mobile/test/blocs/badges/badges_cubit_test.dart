@@ -67,10 +67,7 @@ void main() {
       act: (cubit) => cubit.load(),
       expect: () => [
         const BadgesState(status: BadgesStatus.loading),
-        const BadgesState(
-          status: BadgesStatus.error,
-          errorMessage: 'Could not load badges',
-        ),
+        const BadgesState(status: BadgesStatus.error),
       ],
       errors: () => [isA<Exception>()],
     );
@@ -200,7 +197,6 @@ void main() {
           status: BadgesStatus.loaded,
           actionStatus: BadgeActionStatus.error,
           awarded: [awardedBadge],
-          errorMessage: 'Could not update badge',
         ),
       ],
       errors: () => [isA<Exception>()],
