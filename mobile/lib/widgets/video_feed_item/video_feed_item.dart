@@ -64,6 +64,7 @@ class VideoOverlayActions extends ConsumerWidget {
     required this.isVisible,
     required this.isActive,
     super.key,
+    this.subtitleLayer,
     this.hasBottomNavigation = true,
     this.contextTitle,
     this.isFullscreen = false,
@@ -79,6 +80,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.onInteracted,
   });
 
+  final Widget? subtitleLayer;
   final VideoEvent video;
   final bool isVisible;
   final bool isActive;
@@ -203,6 +205,8 @@ class VideoOverlayActions extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    ?subtitleLayer,
+
                     // Repost banner (if video is a repost)
                     if (video.isRepost && video.reposterPubkey != null) ...[
                       VideoRepostHeader(reposterPubkey: video.reposterPubkey!),

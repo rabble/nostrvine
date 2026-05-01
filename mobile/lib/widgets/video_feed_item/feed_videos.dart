@@ -444,14 +444,6 @@ class __OverlayState extends ConsumerState<_Overlay> {
                         controller: widget.controller!,
                         isVisible: widget.isActive,
                       ),
-                      // Subtitle overlay — needs player position stream
-                      if (video.hasSubtitles)
-                        Positioned.fill(
-                          child: _SubtitleLayer(
-                            video: video,
-                            controller: widget.controller!,
-                          ),
-                        ),
                     ],
                     VideoOverlayActions(
                       video: video,
@@ -465,6 +457,12 @@ class __OverlayState extends ConsumerState<_Overlay> {
                       isAutoEnabled: effectiveAutoEnabled,
                       onAutoPressed: widget.onToggleAutoAdvance,
                       onInteracted: widget.onSuppressAutoAdvance,
+                      subtitleLayer: video.hasSubtitles
+                          ? _SubtitleLayer(
+                              video: video,
+                              controller: widget.controller!,
+                            )
+                          : null,
                     ),
                     Positioned.fill(
                       child: DoubleTapHeartOverlay(
@@ -493,23 +491,23 @@ class _SubtitleLayer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
 
-    return StreamBuilder<int>(
-      stream: controller.stateStream
-          .map((s) => s.position.inMilliseconds)
-          .distinct(),
-      builder: (context, snapshot) {
-        final positionMs = snapshot.data ?? 0;
-        return Stack(
-          children: [
-            SubtitleOverlay(
-              video: video,
-              positionMs: positionMs,
-              visible: subtitlesVisible,
-              bottomOffset: 180,
-            ),
-          ],
-        );
-      },
+    return Padding(
+      padding: const .only(bottom: 24),
+      child: StreamBuilder<int>(
+        stream: controller.stateStream
+            .map((s) => s.position.inMilliseconds)
+            .distinct(),
+        builder: (context, snapshot) {
+          final positionMs = snapshot.data ?? 0;
+          return SubtitleOverlay(
+            video: video,
+            positionMs: positionMs,
+            visible: subtitlesVisible,
+            enablePositioned: false,
+            bottomOffset: 0,
+          );
+        },
+      ),
     );
   }
 }

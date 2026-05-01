@@ -9,11 +9,15 @@ import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/services/subtitle_service.dart';
 
 /// Overlay that displays subtitle text synced to video playback position.
-class SubtitleOverlay extends ConsumerWidget {
+///
+/// Retains the last visible cue during inter-cue gaps to avoid flickering.
+/// The retained cue is cleared when [positionMs] resets to 0.
+class SubtitleOverlay extends ConsumerStatefulWidget {
   const SubtitleOverlay({
     required this.video,
     required this.positionMs,
     required this.visible,
+    this.enablePositioned = true,
     this.bottomOffset = 80,
     super.key,
   });
@@ -21,52 +25,78 @@ class SubtitleOverlay extends ConsumerWidget {
   final VideoEvent video;
   final int positionMs;
   final bool visible;
+  final bool enablePositioned;
 
   /// Distance from the bottom of the parent Stack.
   final double bottomOffset;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!visible || !video.hasSubtitles) {
+  ConsumerState<SubtitleOverlay> createState() => _SubtitleOverlayState();
+}
+
+class _SubtitleOverlayState extends ConsumerState<SubtitleOverlay> {
+  SubtitleCue? _lastCue;
+  int _prevPositionMs = 0;
+  static const _gapBridgeMs = 300;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.visible || !widget.video.hasSubtitles) {
       return const SizedBox.shrink();
     }
 
     final cuesAsync = ref.watch(
       subtitleCuesProvider(
-        videoId: video.id,
-        textTrackRef: video.textTrackRef,
-        textTrackContent: video.textTrackContent,
-        sha256: video.sha256,
+        videoId: widget.video.id,
+        textTrackRef: widget.video.textTrackRef,
+        textTrackContent: widget.video.textTrackContent,
+        sha256: widget.video.sha256,
       ),
     );
 
     return cuesAsync.when(
       data: (cues) {
-        final currentCue = _findCurrentCue(cues, positionMs);
-        if (currentCue == null) return const SizedBox.shrink();
+        final currentCue = _findCurrentCue(cues, widget.positionMs);
 
-        return Positioned(
-          bottom: bottomOffset,
-          left: 16,
-          right: 80,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: VineTheme.scrim50,
-                borderRadius: BorderRadius.circular(4),
+        final didSeekBackward = widget.positionMs < _prevPositionMs;
+        _prevPositionMs = widget.positionMs;
+
+        if (currentCue != null) {
+          _lastCue = currentCue;
+        } else if (_lastCue != null &&
+            (didSeekBackward ||
+                widget.positionMs > _lastCue!.end + _gapBridgeMs)) {
+          _lastCue = null;
+        }
+
+        final displayCue = _lastCue;
+        if (displayCue == null) return const SizedBox.shrink();
+
+        final content = Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: VineTheme.scrim50,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              displayCue.text,
+              style: const TextStyle(
+                color: VineTheme.whiteText,
+                fontSize: 16,
+                shadows: [Shadow(blurRadius: 4)],
               ),
-              child: Text(
-                currentCue.text,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 16,
-                  shadows: [Shadow(blurRadius: 4)],
-                ),
-                textAlign: TextAlign.center,
-              ),
+              textAlign: TextAlign.center,
             ),
           ),
+        );
+        if (!widget.enablePositioned) return content;
+
+        return Positioned(
+          bottom: widget.bottomOffset,
+          left: 16,
+          right: 80,
+          child: content,
         );
       },
       loading: SizedBox.shrink,
