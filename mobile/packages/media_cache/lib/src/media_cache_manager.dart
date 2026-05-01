@@ -212,18 +212,22 @@ class MediaCacheManager extends CacheManager {
       // coverage:ignore-end
     }
     // coverage:ignore-start
-    // Prefer the platform-native HTTP stack on mobile:
-    //   * iOS: NSURLSession via cupertino_http — gives us HTTP/2 + HTTP/3
-    //     (QUIC), shared OS-level connection pool, warm TLS sessions,
-    //     and 0-RTT resumption. Materially faster on lossy mobile links
-    //     than dart:io's HTTP/1.1-only stack with a per-isolate pool.
+    // Prefer the platform-native HTTP stack:
+    //   * Apple (iOS, macOS): NSURLSession via cupertino_http — gives us
+    //     HTTP/2 + HTTP/3 (QUIC), shared OS-level connection pool, warm
+    //     TLS sessions, and 0-RTT resumption. Materially faster on lossy
+    //     links than dart:io's HTTP/1.1-only stack with a per-isolate
+    //     pool, and on iOS/macOS shares the pool with AVPlayer.
     //   * Android: Cronet (Chromium net stack) via cronet_http — same
     //     story (HTTP/2 + HTTP/3, native pool). Falls back to dart:io
     //     when Cronet cannot be initialised (e.g. AOSP build without
     //     Google Play Services and no embedded Cronet asset bundled).
-    // Desktop and other platforms keep the dart:io / IOClient path so
-    // the debug bad-cert hook for self-signed local relays still works.
-    if (Platform.isIOS) {
+    // macOS in debug stays on the dart:io path so the bad-cert hook for
+    // self-signed local relays keeps working; release/profile macOS
+    // builds use NSURLSession.
+    // Windows and Linux keep the dart:io / IOClient path.
+    final useCupertino = Platform.isIOS || (Platform.isMacOS && !kDebugMode);
+    if (useCupertino) {
       try {
         final cfg = URLSessionConfiguration.defaultSessionConfiguration()
           ..timeoutIntervalForRequest = config.connectionTimeout
