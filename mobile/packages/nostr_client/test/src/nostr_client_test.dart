@@ -1431,38 +1431,40 @@ void main() {
         },
       );
 
-      test('retries disconnected relays and returns SendProfileSuccess',
-          () async {
-        final sentEvent = _createTestEvent(kind: EventKind.metadata);
-        final connectedRelays = ['wss://relay1.example.com'];
+      test(
+        'retries disconnected relays and returns SendProfileSuccess',
+        () async {
+          final sentEvent = _createTestEvent(kind: EventKind.metadata);
+          final connectedRelays = ['wss://relay1.example.com'];
 
-        when(() => mockRelayManager.connectedRelays).thenReturn([]);
-        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
+          when(() => mockRelayManager.connectedRelays).thenReturn([]);
+          when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
+            when(
+              () => mockRelayManager.connectedRelays,
+            ).thenReturn(connectedRelays);
+          });
           when(
-            () => mockRelayManager.connectedRelays,
-          ).thenReturn(connectedRelays);
-        });
-        when(
-          () => mockNostr.sendEvent(
-            any(),
-            tempRelays: any(named: 'tempRelays'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((_) async => sentEvent);
+            () => mockNostr.sendEvent(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => sentEvent);
 
-        final result = await client.sendProfile(
-          profileContent: {'display_name': 'Alice'},
-        );
+          final result = await client.sendProfile(
+            profileContent: {'display_name': 'Alice'},
+          );
 
-        expect(result, isA<SendProfileSuccess>());
-        expect((result as SendProfileSuccess).event, equals(sentEvent));
-        verify(mockRelayManager.retryDisconnectedRelays).called(1);
-        verify(
-          () => mockNostr.sendEvent(
-            any(),
-          ),
-        ).called(1);
-      });
+          expect(result, isA<SendProfileSuccess>());
+          expect((result as SendProfileSuccess).event, equals(sentEvent));
+          verify(mockRelayManager.retryDisconnectedRelays).called(1);
+          verify(
+            () => mockNostr.sendEvent(
+              any(),
+            ),
+          ).called(1);
+        },
+      );
 
       test('returns SendProfileFailed when sendEvent returns null', () async {
         when(
