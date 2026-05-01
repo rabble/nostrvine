@@ -263,8 +263,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(
-              createTestAuthService('someone-else'),
+            ...getStandardTestOverrides(
+              mockAuthService: createTestAuthService('someone-else'),
             ),
             profileFeedProvider(testUserHex).overrideWith(() {
               profileFeed = _TestProfileFeed(
@@ -325,8 +325,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(
-              createTestAuthService('someone-else'),
+            ...getStandardTestOverrides(
+              mockAuthService: createTestAuthService('someone-else'),
             ),
             profileFeedProvider(testUserHex).overrideWith(() {
               profileFeed = _TestProfileFeed(
@@ -393,8 +393,8 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              authServiceProvider.overrideWithValue(
-                createTestAuthService('someone-else'),
+              ...getStandardTestOverrides(
+                mockAuthService: createTestAuthService('someone-else'),
               ),
               profileFeedProvider(testUserHex).overrideWith(() {
                 profileFeed = _TestProfileFeed(
@@ -485,8 +485,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            authServiceProvider.overrideWithValue(
-              createTestAuthService('someone-else'),
+            ...getStandardTestOverrides(
+              mockAuthService: createTestAuthService('someone-else'),
             ),
             profileFeedProvider(testUserHex).overrideWith(
               () => _TestProfileFeed(
