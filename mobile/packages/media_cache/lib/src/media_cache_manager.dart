@@ -4,8 +4,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:media_cache/src/cancellable_cache_operation.dart';
+import 'package:media_cache/src/cancellable_downloader.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -176,9 +178,11 @@ class MediaCacheManager extends CacheManager {
     required MediaCacheConfig config,
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
     @visibleForTesting CacheInfoRepository? repoOverride,
+    @visibleForTesting CancellableDownloader? downloaderOverride,
   }) : _config = config,
        _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
        _repoOverride = repoOverride,
+       _downloader = downloaderOverride ?? _createDefaultDownloader(config),
        super(
          kIsWeb
              // coverage:ignore-start
@@ -197,9 +201,40 @@ class MediaCacheManager extends CacheManager {
                ),
        );
 
+  static CancellableDownloader _createDefaultDownloader(
+    MediaCacheConfig config,
+  ) {
+    if (kIsWeb) {
+      // coverage:ignore-start
+      return HttpCancellableDownloader(http.Client());
+      // coverage:ignore-end
+    }
+    final httpClient = HttpClient()
+      ..connectionTimeout = config.connectionTimeout
+      ..idleTimeout = config.idleTimeout
+      ..maxConnectionsPerHost = config.maxConnectionsPerHost;
+    if (config.allowBadCertificatesInDebug &&
+        kDebugMode &&
+        !kIsWeb &&
+        (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+      httpClient.badCertificateCallback = (cert, host, port) => true;
+    }
+    return HttpCancellableDownloader(IOClient(httpClient));
+  }
+
   final MediaCacheConfig _config;
   final DirectoryProvider _tempDirectoryProvider;
   final CacheInfoRepository? _repoOverride;
+  final CancellableDownloader _downloader;
+
+  /// Resolved `<tempDir>/<cacheKey>` path. Populated by [initialize] and
+  /// reused by [cacheFileCancellable] to compute target file paths
+  /// synchronously.
+  String? _baseCacheDir;
+
+  /// Monotonic counter to disambiguate filenames written within the same
+  /// millisecond when the same key is downloaded repeatedly.
+  int _downloadSeq = 0;
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
@@ -284,6 +319,7 @@ class MediaCacheManager extends CacheManager {
       final objects = await repo.getAllObjects();
       final tempDir = await _tempDirectoryProvider();
       final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
+      _baseCacheDir = baseCacheDir;
 
       for (final obj in objects) {
         final fullPath = path.join(baseCacheDir, obj.relativePath);
@@ -480,26 +516,110 @@ class MediaCacheManager extends CacheManager {
     _prefetchedKeys.add(key);
     metrics.prefetchedTotal++;
 
-    return CancellableCacheOperation.fromStream(
-      getFileStream(
-        url,
-        key: key,
-        headers: authHeaders ?? {},
-      ),
-      cacheKey: key,
-      onCached: _config.enableSyncManifest
-          ? (k, path) {
-              _cacheManifest[k] = path;
-              if (aliasKey != null) {
-                _cacheManifest[aliasKey] = path;
-                if (_aliasMap[aliasKey] != k) {
-                  _aliasMap[aliasKey] = k;
-                  unawaited(_persistAliasMap());
-                }
+    final relativePath = _relativePathFor(key, url);
+    final completer = Completer<File?>();
+    CancellableDownload? activeDownload;
+    var cancelledBeforeStart = false;
+
+    Future<void> startDownload() async {
+      try {
+        final baseDir = await _resolveBaseCacheDir();
+        if (cancelledBeforeStart) {
+          if (!completer.isCompleted) completer.complete();
+          return;
+        }
+        final targetFile = File(path.join(baseDir, relativePath));
+        final download = _downloader.download(
+          url: url,
+          targetFile: targetFile,
+          headers: authHeaders,
+        );
+        activeDownload = download;
+        final file = await download.file;
+        if (file != null && !download.isCancelled) {
+          // Register in flutter_cache_manager's store so the file survives
+          // app restart and shows up in [getAllObjects] on next launch.
+          try {
+            await store.putFile(
+              CacheObject(
+                url,
+                key: key,
+                relativePath: relativePath,
+                validTill: DateTime.now().add(_config.stalePeriod),
+              ),
+            );
+          } on Object catch (_) {
+            // Best-effort persistence; in-memory manifest still works.
+          }
+          if (_config.enableSyncManifest) {
+            _cacheManifest[key] = file.path;
+            if (aliasKey != null) {
+              _cacheManifest[aliasKey] = file.path;
+              if (_aliasMap[aliasKey] != key) {
+                _aliasMap[aliasKey] = key;
+                unawaited(_persistAliasMap());
               }
             }
-          : null,
+          }
+        }
+        if (!completer.isCompleted) completer.complete(file);
+      } on Object {
+        if (!completer.isCompleted) completer.complete();
+      }
+    }
+
+    unawaited(startDownload());
+
+    return CancellableCacheOperation.fromDownload(
+      _DeferredDownload(
+        future: completer.future,
+        cancel: () {
+          cancelledBeforeStart = true;
+          activeDownload?.cancel();
+        },
+        isCancelledGetter: () =>
+            activeDownload?.isCancelled ?? cancelledBeforeStart,
+      ),
+      cacheKey: key,
     );
+  }
+
+  /// Returns the base cache directory, resolving and caching it on first use.
+  Future<String> _resolveBaseCacheDir() async {
+    final cached = _baseCacheDir;
+    if (cached != null) return cached;
+    final tempDir = await _tempDirectoryProvider();
+    final base = path.join(tempDir.path, _config.cacheKey);
+    final dir = Directory(base);
+    if (!dir.existsSync()) {
+      await dir.create(recursive: true);
+    }
+    _baseCacheDir = base;
+    return base;
+  }
+
+  /// Generates a unique relative filename for [key]. The filename embeds the
+  /// cache key plus a monotonic counter and timestamp so concurrent
+  /// downloads of the same key cannot collide on disk.
+  String _relativePathFor(String key, String url) {
+    final ext = _extensionFor(url);
+    final seq = ++_downloadSeq;
+    final ts = DateTime.now().microsecondsSinceEpoch;
+    return '${key}_${ts}_$seq$ext';
+  }
+
+  String _extensionFor(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final last = uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
+      final dot = last.lastIndexOf('.');
+      if (dot > 0 && dot < last.length - 1 && dot >= last.length - 6) {
+        return last.substring(dot);
+      }
+    } on Object catch (_) {
+      // Fall through to default.
+    }
+    return '.bin';
   }
 
   /// Checks if a file is cached (async version).
@@ -609,4 +729,30 @@ class MediaCacheManager extends CacheManager {
     _prefetchedKeys.clear();
     metrics.reset();
   }
+}
+
+/// Bridges a deferred [Future] (which performs async setup before the real
+/// [CancellableDownload] starts) into the [CancellableDownload] interface
+/// expected by [CancellableCacheOperation.fromDownload].
+class _DeferredDownload implements CancellableDownload {
+  _DeferredDownload({
+    required Future<File?> future,
+    required void Function() cancel,
+    required bool Function() isCancelledGetter,
+  }) : _future = future,
+       _cancel = cancel,
+       _isCancelledGetter = isCancelledGetter;
+
+  final Future<File?> _future;
+  final void Function() _cancel;
+  final bool Function() _isCancelledGetter;
+
+  @override
+  Future<File?> get file => _future;
+
+  @override
+  bool get isCancelled => _isCancelledGetter();
+
+  @override
+  void cancel() => _cancel();
 }

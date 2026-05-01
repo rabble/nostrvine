@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:media_cache/src/cancellable_downloader.dart';
 
 /// A handle to an in-progress cache download that can be cancelled.
 ///
@@ -70,8 +71,40 @@ class CancellableCacheOperation {
     }
   }
 
+  /// Creates a pending operation backed by a [CancellableDownload].
+  ///
+  /// The returned operation forwards [cancel] to the underlying download —
+  /// which closes its HTTP socket immediately, freeing a connection-pool
+  /// slot — instead of just unsubscribing from a higher-level stream
+  /// (which would leave the pipe behind `CacheManager.getFileStream`
+  /// draining the response into a temp file regardless).
+  CancellableCacheOperation.fromDownload(
+    CancellableDownload download, {
+    void Function(File file)? onCached,
+    String? cacheKey,
+  }) {
+    _download = download;
+    unawaited(
+      download.file
+          .then((file) {
+            developer.log(
+              'CancellableCacheOp[$cacheKey]: download done '
+              '(file=${file?.path}, cancelled=$_isCancelled)',
+              name: 'MediaCache',
+            );
+            if (_completer.isCompleted) return;
+            if (file != null && !_isCancelled) onCached?.call(file);
+            _completer.complete(_isCancelled ? null : file);
+          })
+          .catchError((Object _) {
+            if (!_completer.isCompleted) _completer.complete();
+          }),
+    );
+  }
+
   final _completer = Completer<File?>();
   StreamSubscription<FileResponse>? _subscription;
+  CancellableDownload? _download;
   bool _isCancelled = false;
 
   /// The cached file when the download completes.
@@ -90,6 +123,7 @@ class CancellableCacheOperation {
   void cancel() {
     if (_isCancelled) return;
     _isCancelled = true;
+    _download?.cancel();
     unawaited(_subscription?.cancel());
     if (!_completer.isCompleted) _completer.complete();
   }

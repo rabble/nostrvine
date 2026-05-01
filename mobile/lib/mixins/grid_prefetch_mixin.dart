@@ -2,9 +2,10 @@
 // ABOUTME: Pre-caches video files based on grid position and bandwidth
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -17,7 +18,7 @@ import 'package:unified_logger/unified_logger.dart';
 ///
 /// Uses bandwidth-aware prefetching: only prefetches when the connection
 /// quality is medium or high (skips on low/480p connections).
-mixin GridPrefetchMixin<T extends StatefulWidget> on State<T> {
+mixin GridPrefetchMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   static const _logName = 'GridPrefetch';
 
   /// Prefetch the first [AppConstants.gridPrefetchLimit] videos from a list.
@@ -80,6 +81,13 @@ mixin GridPrefetchMixin<T extends StatefulWidget> on State<T> {
     openVineMediaCache.preCacheFiles(items);
   }
 
-  bool get _shouldPrefetch =>
-      !kIsWeb && BandwidthTrackerService.instance.shouldUseHighQuality;
+  bool get _shouldPrefetch {
+    final featureFlagService = ref.read(featureFlagServiceProvider);
+    final isNewVideoPlayerEnabled = featureFlagService.isEnabled(
+      .newVideoFeedPlayer,
+    );
+    return !kIsWeb &&
+        BandwidthTrackerService.instance.shouldUseHighQuality &&
+        !isNewVideoPlayerEnabled;
+  }
 }
