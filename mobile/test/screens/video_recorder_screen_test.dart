@@ -302,8 +302,7 @@ void main() {
             UncontrolledProviderScope(
               container: container,
               child: const MaterialApp(
-                localizationsDelegates:
-                    AppLocalizations.localizationsDelegates,
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
                 supportedLocales: AppLocalizations.supportedLocales,
                 home: Scaffold(body: Text('Other screen')),
               ),
