@@ -52,25 +52,15 @@
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<!-- Apple-documented key for loopback/local-only cleartext
+		     exemption. Permits http/ws to localhost, 127.0.0.1, ::1,
+		     single-label hostnames, and the .local TLD so the local
+		     Docker stack works from iOS Simulator. Remote cleartext
+		     stays rejected. Available since iOS 10.0; project
+		     deployment target is 16.0. Mirrors the loopback domain-config
+		     in android/app/src/main/res/xml/network_security_config.xml. -->
+		<key>NSAllowsLocalNetworking</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>relay.divine.video</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-			<key>relay3.openvine.co</key>
-			<dict>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<false/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>Divine uses Bluetooth to discover and sync videos with nearby users for offline sharing.</string>
