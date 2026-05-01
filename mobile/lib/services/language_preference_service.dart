@@ -93,6 +93,7 @@ class LanguagePreferenceService {
   /// Map of common ISO-639-1 language codes to display names.
   static const Map<String, String> supportedLanguages = {
     'en': 'English',
+    'bg': 'Bulgarian',
     'es': 'Spanish',
     'pt': 'Portuguese',
     'ja': 'Japanese',

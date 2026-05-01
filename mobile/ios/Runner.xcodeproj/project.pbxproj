@@ -316,6 +316,7 @@
 			knownRegions = (
 				en,
 				ar,
+				bg,
 				de,
 				es,
 				fr,

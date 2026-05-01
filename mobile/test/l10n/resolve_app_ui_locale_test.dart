@@ -36,6 +36,11 @@ void main() {
       expect(locale.languageCode, 'de');
     });
 
+    test('matches supported Bulgarian', () {
+      final locale = resolveAppUiLocale(const [Locale('bg', 'BG')], supported);
+      expect(locale.languageCode, 'bg');
+    });
+
     test('matches English when preferred', () {
       final locale = resolveAppUiLocale(const [Locale('en', 'US')], supported);
       expect(locale.languageCode, 'en');

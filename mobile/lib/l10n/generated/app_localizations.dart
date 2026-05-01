@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_ar.dart';
+import 'app_localizations_bg.dart';
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
@@ -109,6 +110,7 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('ar'),
+    Locale('bg'),
     Locale('de'),
     Locale('es'),
     Locale('fr'),
@@ -9296,6 +9298,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 other} other{{count} others}}'**
   String notificationOthersCount(int count);
 
+  /// Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying.
+  ///
+  /// In en, this message translates to:
+  /// **'Re:'**
+  String get commentReplyToPrefix;
+
   /// No description provided for @draftUntitled.
   ///
   /// In en, this message translates to:
@@ -10585,6 +10593,7 @@ class _AppLocalizationsDelegate
   @override
   bool isSupported(Locale locale) => <String>[
     'ar',
+    'bg',
     'de',
     'en',
     'es',
@@ -10610,6 +10619,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   switch (locale.languageCode) {
     case 'ar':
       return AppLocalizationsAr();
+    case 'bg':
+      return AppLocalizationsBg();
     case 'de':
       return AppLocalizationsDe();
     case 'en':

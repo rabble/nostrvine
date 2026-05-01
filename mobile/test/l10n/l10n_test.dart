@@ -48,6 +48,27 @@ void main() {
       expect(l10n.settingsTitle, equals('Ajustes'));
     });
 
+    testWidgets('supports Bulgarian locale', (tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('bg'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = context.l10n;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(l10n.settingsTitle, equals('Настройки'));
+      expect(l10n.settingsAppLanguageTitle, equals('Език на приложението'));
+    });
+
     testWidgets('falls back to English for unsupported locale', (tester) async {
       late AppLocalizations l10n;
 

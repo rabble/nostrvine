@@ -15,6 +15,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -255,6 +256,66 @@ void main() {
         // Should have disposed cleanly
         expect(find.byType(VideoRecorderScreen), findsNothing);
       });
+
+      testWidgets(
+        'clears overlayVisibility isPageOpen to false on dispose',
+        (tester) async {
+          final mockDraftStorage = _MockDraftStorageService();
+          when(
+            () => mockDraftStorage.getDraftById(any()),
+          ).thenAnswer((_) async => null);
+          final mockClipLibrary = _MockClipLibraryService();
+          when(mockClipLibrary.getAllClips).thenAnswer((_) async => []);
+
+          final container = ProviderContainer(
+            overrides: [
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorage,
+              ),
+              clipLibraryServiceProvider.overrideWithValue(mockClipLibrary),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: BlocProvider<CameraPermissionBloc>(
+                create: (_) => MockCameraPermissionBloc(),
+                child: const MaterialApp(
+                  localizationsDelegates:
+                      AppLocalizations.localizationsDelegates,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  home: VideoRecorderScreen(),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            container.read(overlayVisibilityProvider).isPageOpen,
+            isTrue,
+          );
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: const MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: Scaffold(body: Text('Other screen')),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            container.read(overlayVisibilityProvider).isPageOpen,
+            isFalse,
+          );
+        },
+      );
     });
 
     group('Screen Layout', () {
