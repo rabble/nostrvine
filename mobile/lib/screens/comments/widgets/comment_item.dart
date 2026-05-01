@@ -602,24 +602,18 @@ class _ReplyIndicator extends ConsumerWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          height: 20,
-          padding: const EdgeInsets.symmetric(vertical: 2),
-          alignment: Alignment.center,
-          child: Text(
-            'Re:',
-            style: VineTheme.bodyMediumFont(color: VineTheme.tabIndicatorGreen),
-          ),
+        Text(
+          'Re:',
+          style: VineTheme.bodyMediumFont(color: VineTheme.tabIndicatorGreen),
         ),
         const SizedBox(width: 8),
         Flexible(
           child: Container(
-            height: 20,
             decoration: BoxDecoration(
               color: VineTheme.containerLow,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 6),
             child: Text(
               displayName,
               style: VineTheme.bodyMediumFont(
