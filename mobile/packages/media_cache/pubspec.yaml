@@ -9,6 +9,8 @@ environment:
   flutter: ^3.41.1
 
 dependencies:
+  cronet_http: ^1.8.0
+  cupertino_http: ^2.4.0
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.1

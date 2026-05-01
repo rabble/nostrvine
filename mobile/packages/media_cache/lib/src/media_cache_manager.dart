@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cronet_http/cronet_http.dart';
+import 'package:cupertino_http/cupertino_http.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/http.dart' as http;
@@ -209,6 +211,43 @@ class MediaCacheManager extends CacheManager {
       return HttpCancellableDownloader(http.Client());
       // coverage:ignore-end
     }
+    // coverage:ignore-start
+    // Prefer the platform-native HTTP stack on mobile:
+    //   * iOS: NSURLSession via cupertino_http — gives us HTTP/2 + HTTP/3
+    //     (QUIC), shared OS-level connection pool, warm TLS sessions,
+    //     and 0-RTT resumption. Materially faster on lossy mobile links
+    //     than dart:io's HTTP/1.1-only stack with a per-isolate pool.
+    //   * Android: Cronet (Chromium net stack) via cronet_http — same
+    //     story (HTTP/2 + HTTP/3, native pool). Falls back to dart:io
+    //     when Cronet cannot be initialised (e.g. AOSP build without
+    //     Google Play Services and no embedded Cronet asset bundled).
+    // Desktop and other platforms keep the dart:io / IOClient path so
+    // the debug bad-cert hook for self-signed local relays still works.
+    if (Platform.isIOS) {
+      try {
+        final cfg = URLSessionConfiguration.defaultSessionConfiguration()
+          ..timeoutIntervalForRequest = config.connectionTimeout
+          ..httpMaximumConnectionsPerHost = config.maxConnectionsPerHost;
+        return HttpCancellableDownloader(
+          CupertinoClient.fromSessionConfiguration(cfg),
+        );
+      } on Object catch (e, st) {
+        debugPrint(
+          'MediaCache: cupertino_http init failed, '
+          'falling back to dart:io HttpClient: $e\n$st',
+        );
+      }
+    } else if (Platform.isAndroid) {
+      try {
+        return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
+      } on Object catch (e, st) {
+        debugPrint(
+          'MediaCache: cronet_http init failed, '
+          'falling back to dart:io HttpClient: $e\n$st',
+        );
+      }
+    }
+    // coverage:ignore-end
     final httpClient = HttpClient()
       ..connectionTimeout = config.connectionTimeout
       ..idleTimeout = config.idleTimeout
