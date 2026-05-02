@@ -33,12 +33,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsNotifications => '通知';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'コンテンツ設定';
 
   @override

@@ -34,12 +34,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsNotifications => 'Notificări';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'Preferințe de conținut';
 
   @override

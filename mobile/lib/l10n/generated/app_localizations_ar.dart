@@ -34,12 +34,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsNotifications => 'الإشعارات';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'تفضيلات المحتوى';
 
   @override

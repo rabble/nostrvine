@@ -34,12 +34,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsNotifications => 'Aviseringar';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'Innehållsinställningar';
 
   @override

@@ -34,12 +34,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsNotifications => 'Bildirimler';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'İçerik Tercihleri';
 
   @override

@@ -6480,4 +6480,74 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => 'ቪዲዮ ተወግዷል';
+
+  @override
+  String get settingsBadgesTitle => 'Badges';
+
+  @override
+  String get settingsBadgesSubtitle =>
+      'Accept awards and check issued badge status.';
+
+  @override
+  String get badgesTitle => 'Badges';
+
+  @override
+  String get badgesIntroTitle => 'Understand your badge trail';
+
+  @override
+  String get badgesIntroBody =>
+      'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.';
+
+  @override
+  String get badgesOpenApp => 'Open badges app';
+
+  @override
+  String get badgesLoadError => 'Could not load badges';
+
+  @override
+  String get badgesUpdateError => 'Could not update badge';
+
+  @override
+  String get badgesAwardedSectionTitle => 'Awarded to you';
+
+  @override
+  String get badgesAwardedEmptyTitle => 'No badge awards yet';
+
+  @override
+  String get badgesAwardedEmptySubtitle =>
+      'When someone awards you a Nostr badge, it will land here.';
+
+  @override
+  String get badgesStatusAccepted => 'Accepted';
+
+  @override
+  String get badgesStatusNotAccepted => 'Not accepted';
+
+  @override
+  String get badgesActionRemove => 'Remove';
+
+  @override
+  String get badgesActionAccept => 'Accept';
+
+  @override
+  String get badgesActionReject => 'Reject';
+
+  @override
+  String get badgesIssuedSectionTitle => 'Issued by you';
+
+  @override
+  String get badgesIssuedEmptyTitle => 'No issued badges yet';
+
+  @override
+  String get badgesIssuedEmptySubtitle =>
+      'Badges you issue will show acceptance status here.';
+
+  @override
+  String get badgesIssuedNoRecipients => 'No recipients found for this award.';
+
+  @override
+  String get badgesRecipientAcceptedStatus => 'Accepted by recipient';
+
+  @override
+  String get badgesRecipientWaitingStatus => 'Waiting for recipient';
 }

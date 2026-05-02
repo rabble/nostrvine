@@ -33,12 +33,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsNotifications => '알림';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => '콘텐츠 환경설정';
 
   @override

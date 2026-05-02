@@ -176,18 +176,6 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get settingsNotifications;
 
-  /// No description provided for @settingsGeneralTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'General Settings'**
-  String get settingsGeneralTitle;
-
-  /// No description provided for @settingsContentSafetyTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Content & Safety'**
-  String get settingsContentSafetyTitle;
-
   /// No description provided for @settingsContentPreferences.
   ///
   /// In en, this message translates to:

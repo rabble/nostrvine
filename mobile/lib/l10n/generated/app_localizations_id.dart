@@ -34,12 +34,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsNotifications => 'Notifikasi';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'Preferensi Konten';
 
   @override

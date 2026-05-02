@@ -34,12 +34,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsNotifications => 'Notificações';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
-
-  @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
-
-  @override
   String get settingsContentPreferences => 'Preferências de conteúdo';
 
   @override
