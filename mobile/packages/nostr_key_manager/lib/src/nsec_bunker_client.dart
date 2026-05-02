@@ -318,6 +318,10 @@ class NsecBunkerClient {
         config: _config,
         userPubkey: _userPubkey,
       );
+    } on InvalidBunkerRelayException catch (e) {
+      // Surface the security-relevant rejection without embedding the URL
+      // in the error string (#3362).
+      return BunkerAuthResult(success: false, error: e.reason);
     } on Exception catch (e) {
       return BunkerAuthResult(
         success: false,

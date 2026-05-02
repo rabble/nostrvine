@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Allow cleartext (HTTP) traffic for video URLs -->
-    <!-- This is needed for loading videos from Blossom servers and CDNs -->
-    <base-config cleartextTrafficPermitted="true">
+    <!-- Production transport security: HTTPS-only for remote hosts; trust
+         only system CAs (no user-installed CA trust, even on debug). -->
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
-            <certificates src="user" />
         </trust-anchors>
     </base-config>
+    <!-- Cleartext is permitted only to loopback hosts so the local Docker
+         stack works from emulator and on-device dev. These addresses
+         cannot be redirected by a network attacker, so the practical
+         security delta vs. a release-strict global config is zero.
+         Mirrors Apple's NSAllowsLocalNetworking semantics on iOS.
+         The Dart-side source of truth for the emulator-host loopback is
+         `localHost` in mobile/lib/models/environment_config.dart. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain>10.0.2.2</domain>
+        <domain>localhost</domain>
+        <domain>127.0.0.1</domain>
+    </domain-config>
 </network-security-config>

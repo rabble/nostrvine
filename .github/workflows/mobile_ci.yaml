@@ -31,6 +31,13 @@ jobs:
         run: bash scripts/check_hls_auth_web_shim_sync.sh
       - name: 🌐 Smoke-test HLS auth web shim
         run: node scripts/test_hls_auth_web_shim.mjs
+      - name: 🔒 Verify native transport security
+        run: |
+          if ! command -v xmllint >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends libxml2-utils
+          fi
+          bash scripts/check_native_transport_security.sh
       - name: 🔨 Verify generated files are up-to-date
         run: |
           dart run build_runner build --delete-conflicting-outputs

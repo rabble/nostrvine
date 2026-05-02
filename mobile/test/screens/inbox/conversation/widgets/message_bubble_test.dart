@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -19,6 +20,75 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import '../../../../helpers/test_provider_overrides.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+GoRouter _messageRouter(String message) {
+  return GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          body: MessageBubble(
+            message: message,
+            timestamp: '2:30 PM',
+            isSent: true,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/profile/:npub',
+        builder: (context, state) =>
+            Scaffold(body: Text('profile:${state.pathParameters['npub']}')),
+      ),
+      GoRoute(
+        path: '/video/:id',
+        builder: (context, state) =>
+            Scaffold(body: Text('video:${state.pathParameters['id']}')),
+      ),
+    ],
+  );
+}
+
+Widget _routerTestApp(
+  GoRouter router, {
+  List<dynamic>? additionalOverrides,
+  MockNostrClient? mockNostrService,
+}) {
+  return testProviderScope(
+    additionalOverrides: additionalOverrides,
+    mockNostrService: mockNostrService,
+    child: MaterialApp.router(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: router,
+    ),
+  );
+}
+
+TapGestureRecognizer _linkRecognizer(WidgetTester tester, String linkText) {
+  final richText = tester.widget<RichText>(
+    find.byWidgetPredicate(
+      (widget) =>
+          widget is RichText && widget.text.toPlainText().contains(linkText),
+    ),
+  );
+  final recognizer = _findRecognizer(richText.text, linkText);
+  expect(recognizer, isNotNull);
+  return recognizer!;
+}
+
+TapGestureRecognizer? _findRecognizer(InlineSpan span, String linkText) {
+  if (span is TextSpan) {
+    final recognizer = span.recognizer;
+    if (span.text == linkText && recognizer is TapGestureRecognizer) {
+      return recognizer;
+    }
+    for (final child in span.children ?? const <InlineSpan>[]) {
+      final match = _findRecognizer(child, linkText);
+      if (match != null) return match;
+    }
+  }
+  return null;
+}
 
 void main() {
   group(MessageBubble, () {
@@ -370,6 +440,22 @@ void main() {
         );
         expect(richTextFinder, findsOneWidget);
       });
+
+      testWidgets('tapping Divine profile link navigates in-app', (
+        tester,
+      ) async {
+        const npub =
+            'npub1sn0wdenkukak0d9dfczzeacvhkrgz92ak56egt7vdgzn8pv2wfqqhrjdv9';
+        final router = _messageRouter('https://divine.video/profile/$npub');
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(_routerTestApp(router));
+
+        _linkRecognizer(tester, 'https://divine.video/profile/$npub').onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('profile:$npub'), findsOneWidget);
+      });
     });
 
     group('video preview card', () {
@@ -476,6 +562,34 @@ void main() {
         );
         expect(richTextFinder, findsOneWidget);
         expect(find.byType(VideoThumbnailWidget), findsNothing);
+      });
+
+      testWidgets('tapping unresolved Divine video link navigates in-app', (
+        tester,
+      ) async {
+        final router = _messageRouter('https://divine.video/video/unknown-id');
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          _routerTestApp(
+            router,
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        _linkRecognizer(
+          tester,
+          'https://divine.video/video/unknown-id',
+        ).onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('video:unknown-id'), findsOneWidget);
       });
 
       testWidgets('preserves surrounding text alongside video preview', (

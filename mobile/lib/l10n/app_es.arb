@@ -794,6 +794,10 @@
     },
     "relaySettingsFailedToAddRelay": "No se pudo agregar el relay. Revisá la URL y probá de nuevo.",
     "relaySettingsInvalidUrl": "La URL del relay tiene que empezar con wss:// o ws://",
+    "relaySettingsInsecureUrl": "La URL del relay tiene que usar wss:// (ws:// solo se permite para localhost)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
     "relaySettingsRestoredDefault": "Relay predeterminado restaurado: {defaultRelay}",
     "@relaySettingsRestoredDefault": {
         "placeholders": {
@@ -2328,6 +2332,10 @@
                 "type": "String"
             }
         }
+    },
+    "keyImportInsecureBunkerRelay": "El relay del bunker tiene que usar wss:// (ws:// solo se permite para localhost)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
     },
     "libraryAddClips": "Añadir",
     "libraryClipSelectionTitle": "Clips",

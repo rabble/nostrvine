@@ -889,6 +889,7 @@
   },
   "relaySettingsFailedToAddRelay": "ቅብብሎሽ ማከል አልተሳካም። እባክህ URLን ተመልከት እና እንደገና ሞክር።",
   "relaySettingsInvalidUrl": "ሪሌይ URL በ wss:// ወይም ws:// መጀመር አለበት።",
+  "relaySettingsInsecureUrl": "የሪሌይ URL wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)",
   "relaySettingsRestoredDefault": "ወደነበረበት የተመለሰ ነባሪ ቅብብሎሽ፡ {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
@@ -2805,6 +2806,7 @@
       }
     }
   },
+  "keyImportInsecureBunkerRelay": "የBunker ሪሌይ wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)",
   "timeNow": "አሁን",
   "@timeNow": {
     "description": "Relative time label for less than one minute ago (short form)"

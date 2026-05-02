@@ -3086,6 +3086,12 @@ abstract class AppLocalizations {
   /// **'Relay URL must start with wss:// or ws://'**
   String get relaySettingsInvalidUrl;
 
+  /// Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay URL must use wss:// (ws:// is allowed only for localhost)'**
+  String get relaySettingsInsecureUrl;
+
   /// No description provided for @relaySettingsRestoredDefault.
   ///
   /// In en, this message translates to:
@@ -9515,6 +9521,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: {error}'**
   String keyImportError(String error);
+
+  /// Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host.
+  ///
+  /// In en, this message translates to:
+  /// **'Bunker relay must use wss:// (ws:// is allowed only for localhost)'**
+  String get keyImportInsecureBunkerRelay;
 
   /// Relative time label for less than one minute ago (short form)
   ///

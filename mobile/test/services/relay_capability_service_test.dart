@@ -141,6 +141,24 @@ void main() {
         ).called(1);
       });
 
+      test('converts uppercase WSS:// to https:// for NIP-11 fetch', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://staging-relay.divine.video'),
+            headers: {'Accept': 'application/nostr+json'},
+          ),
+        ).thenAnswer((_) async => http.Response('{"name": "Test Relay"}', 200));
+
+        await service.getRelayCapabilities('WSS://staging-relay.divine.video');
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse('https://staging-relay.divine.video'),
+            headers: {'Accept': 'application/nostr+json'},
+          ),
+        ).called(1);
+      });
+
       test('handles HTTP errors gracefully', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
@@ -172,6 +190,77 @@ void main() {
           () => service.getRelayCapabilities('wss://broken.relay'),
           throwsA(isA<RelayCapabilityException>()),
         );
+      });
+    });
+
+    group('insecure URL rejection (#3362)', () {
+      test('refuses NIP-11 fetch for ws:// non-loopback host', () async {
+        await expectLater(
+          service.getRelayCapabilities('ws://attacker.example.com'),
+          throwsA(isA<RelayCapabilityException>()),
+        );
+
+        verifyNever(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        );
+      });
+
+      test('refuses NIP-11 fetch for http:// non-loopback host', () async {
+        await expectLater(
+          service.getRelayCapabilities('http://attacker.example.com'),
+          throwsA(isA<RelayCapabilityException>()),
+        );
+
+        verifyNever(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        );
+      });
+
+      test(
+        'refuses NIP-11 fetch for https:// input (not a relay URL)',
+        () async {
+          // Input contract is the WS form. An https:// URL means a caller
+          // upstream lost the WS form somewhere — fail closed.
+          await expectLater(
+            service.getRelayCapabilities('https://relay.example.com'),
+            throwsA(isA<RelayCapabilityException>()),
+          );
+
+          verifyNever(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          );
+        },
+      );
+
+      test(
+        'refuses NIP-11 fetch for http://localhost input (not a relay URL)',
+        () async {
+          // Loopback http:// is a valid HTTP target, but it's not a relay
+          // URL — relays are WS-only, so reject the input.
+          await expectLater(
+            service.getRelayCapabilities('http://localhost:47777'),
+            throwsA(isA<RelayCapabilityException>()),
+          );
+
+          verifyNever(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          );
+        },
+      );
+
+      test('allows http://localhost for local Docker stack', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('http://localhost:47777'),
+            headers: {'Accept': 'application/nostr+json'},
+          ),
+        ).thenAnswer((_) async => http.Response('{"name": "Local"}', 200));
+
+        final capabilities = await service.getRelayCapabilities(
+          'ws://localhost:47777',
+        );
+
+        expect(capabilities.relayUrl, equals('ws://localhost:47777'));
       });
     });
 

@@ -1694,6 +1694,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String get relaySettingsInvalidUrl => 'ሪሌይ URL በ wss:// ወይም ws:// መጀመር አለበት።';
 
   @override
+  String get relaySettingsInsecureUrl =>
+      'የሪሌይ URL wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)';
+
+  @override
   String relaySettingsRestoredDefault(String defaultRelay) {
     return 'ወደነበረበት የተመለሰ ነባሪ ቅብብሎሽ፡ $defaultRelay';
   }
@@ -5272,6 +5276,10 @@ class AppLocalizationsAm extends AppLocalizations {
   String keyImportError(String error) {
     return 'ስህተት፡ $error';
   }
+
+  @override
+  String get keyImportInsecureBunkerRelay =>
+      'የBunker ሪሌይ wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)';
 
   @override
   String get timeNow => 'አሁን';

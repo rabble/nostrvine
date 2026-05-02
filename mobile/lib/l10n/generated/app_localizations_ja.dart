@@ -1633,6 +1633,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get relaySettingsInvalidUrl => 'リレー URL は wss:// か ws:// で始める必要があるよ';
 
   @override
+  String get relaySettingsInsecureUrl =>
+      'Relay URL must use wss:// (ws:// is allowed only for localhost)';
+
+  @override
   String relaySettingsRestoredDefault(String defaultRelay) {
     return '既定のリレーを復元したよ: $defaultRelay';
   }
@@ -5163,6 +5167,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String keyImportError(String error) {
     return 'エラー: $error';
   }
+
+  @override
+  String get keyImportInsecureBunkerRelay =>
+      'Bunker relay must use wss:// (ws:// is allowed only for localhost)';
 
   @override
   String get timeNow => '今';

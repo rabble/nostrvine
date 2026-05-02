@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -315,6 +316,12 @@ class _MessageTextState extends State<_MessageText> {
       uri = Uri.tryParse(normalized);
     }
     if (uri == null) return;
+
+    final appRoute = divineUrlToPushRoute(uri);
+    if (appRoute != null && context.mounted) {
+      await context.push(appRoute);
+      return;
+    }
 
     // Show a warning for external (non-Divine) URLs.
     if (uri.scheme != 'mailto' && !_isTrustedDomain(uri.host)) {

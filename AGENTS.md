@@ -68,6 +68,13 @@
 - If a PR touches `mobile/packages/models`, run that package's relevant tests before pushing.
 - If a PR touches `mobile/packages/videos_repository`, run `flutter test --coverage` from `mobile/packages/videos_repository` and confirm coverage still satisfies the repo requirement.
 
+## Local Stack Development
+
+- The local Docker stack (`local_stack/`) speaks cleartext on `10.0.2.2`, `localhost`, and `127.0.0.1`. Cleartext to those loopback hosts is permitted in every build type on both platforms — Android via the `<domain-config>` block in `mobile/android/app/src/main/res/xml/network_security_config.xml`, iOS via `NSAllowsLocalNetworking=true` in `mobile/ios/Runner/Info.plist`. Remote cleartext is rejected on both platforms in every build type.
+- Either Android emulator (`10.0.2.2` → host) or iOS Simulator (`localhost` → host) works against the local stack out of the box.
+- User-installed CAs are not trusted in any build. If you need to proxy-debug with Charles or mitmproxy, add a single `<certificates src="user" />` line to `<trust-anchors>` in `mobile/android/app/src/main/res/xml/network_security_config.xml` in your working copy and don't commit it; CI's transport-security guard will block any commit that re-enables user-CA trust. (For iOS, plist-edit `NSAppTransportSecurity` similarly and revert before commit.)
+- If you add a new exception to either native config, update `mobile/scripts/check_native_transport_security.sh` so the guard recognises the allowance.
+
 ## Clean Workspace Expectations
 
 - Do not leave untracked or modified files around after a task unless they are part of the intentional diff.

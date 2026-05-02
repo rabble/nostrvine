@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Exception thrown when relay capability detection fails
@@ -144,6 +145,19 @@ class RelayCapabilityService {
 
   /// Get capabilities for a relay (with caching)
   Future<RelayCapabilities> getRelayCapabilities(String relayWsUrl) async {
+    // Defense-in-depth: the input contract is a relay WebSocket URL
+    // (`wss://anyhost` or `ws://<loopback>`). Reject anything else here
+    // — including pasted `https://` / `http://` links — so a malformed
+    // input cannot trigger a cleartext NIP-11 fetch and leak relay
+    // metadata (#3362). Upstream validators should already block these,
+    // but this guard keeps the HTTP request from firing if they miss one.
+    if (!isRelayUrlAllowed(relayWsUrl)) {
+      throw RelayCapabilityException(
+        'Relay URL is not a permitted scheme/host',
+        relayWsUrl,
+      );
+    }
+
     // Check cache first
     final cached = _cache[relayWsUrl];
     if (cached != null && !cached.isExpired) {
@@ -154,10 +168,15 @@ class RelayCapabilityService {
       return cached.capabilities;
     }
 
-    // Convert wss:// to https:// for NIP-11 HTTP request
-    final httpUrl = relayWsUrl
-        .replaceFirst('wss://', 'https://')
-        .replaceFirst('ws://', 'http://');
+    // Convert the validated WebSocket relay URL to its matching HTTP(S)
+    // NIP-11 endpoint. Use parsed scheme replacement so uppercase inputs
+    // like `WSS://relay.example.com` normalize correctly.
+    final relayUri = Uri.parse(relayWsUrl);
+    final httpUrl = relayUri
+        .replace(
+          scheme: relayUri.scheme.toLowerCase() == 'wss' ? 'https' : 'http',
+        )
+        .toString();
 
     UnifiedLogger.info(
       'Fetching NIP-11 capabilities from $httpUrl',
