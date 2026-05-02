@@ -1516,14 +1516,57 @@ class BlossomUploadService {
             category: LogCategory.video,
           );
 
-          final result = await _uploadToServer(
-            serverUrl: serverUrl,
-            file: strippedFile,
-            fileHash: fileHash,
-            fileSize: fileSize,
-            contentType: mimeType,
-            onProgress: onProgress,
-          );
+          final capability = await _fetchDivineUploadCapability(serverUrl);
+
+          late BlossomUploadResult result;
+          if (capability.supportsResumable) {
+            try {
+              result = await _uploadToServerResumable(
+                serverUrl: serverUrl,
+                file: strippedFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: mimeType,
+                onProgress: onProgress,
+              );
+            } catch (error) {
+              if (!_isDivineOwnedUploadHost(serverUrl)) {
+                rethrow;
+              }
+
+              result = await _uploadToServerLegacyFallback(
+                serverUrl: serverUrl,
+                file: strippedFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: mimeType,
+                fallbackReason: error.toString(),
+                onProgress: onProgress,
+              );
+            }
+
+            if (!result.success && _isDivineOwnedUploadHost(serverUrl)) {
+              result = await _uploadToServerLegacyFallback(
+                serverUrl: serverUrl,
+                file: strippedFile,
+                fileHash: fileHash,
+                fileSize: fileSize,
+                contentType: mimeType,
+                fallbackReason:
+                    result.errorMessage ?? 'unknown resumable failure',
+                onProgress: onProgress,
+              );
+            }
+          } else {
+            result = await _uploadToServer(
+              serverUrl: serverUrl,
+              file: strippedFile,
+              fileHash: fileHash,
+              fileSize: fileSize,
+              contentType: mimeType,
+              onProgress: onProgress,
+            );
+          }
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash
