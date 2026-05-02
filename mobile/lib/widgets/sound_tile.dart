@@ -41,6 +41,7 @@ class SoundTile extends StatelessWidget {
     this.isPlaying = false,
     this.compact = false,
     this.videoCount,
+    this.trailing,
     super.key,
   });
 
@@ -65,6 +66,9 @@ class SoundTile extends StatelessWidget {
 
   /// Optional video usage count to display (e.g., "142 videos").
   final int? videoCount;
+
+  /// Optional trailing action for list tiles.
+  final Widget? trailing;
 
   /// Format the duration for display.
   ///
@@ -202,26 +206,27 @@ class SoundTile extends StatelessWidget {
                     ),
                   ),
 
-                  // Chevron indicator - tappable for detail navigation
-                  GestureDetector(
-                    onTap: onDetailTap,
-                    behavior: HitTestBehavior.opaque,
-                    child: Semantics(
-                      identifier: 'sound_tile_detail_${sound.id}',
-                      label: context.l10n.soundViewDetailsSemanticLabel(
-                        _displayTitle(context),
-                      ),
-                      button: true,
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(
-                          Icons.chevron_right,
-                          color: VineTheme.lightText,
-                          size: 24,
+                  trailing ??
+                      // Chevron indicator - tappable for detail navigation
+                      GestureDetector(
+                        onTap: onDetailTap,
+                        behavior: HitTestBehavior.opaque,
+                        child: Semantics(
+                          identifier: 'sound_tile_detail_${sound.id}',
+                          label: context.l10n.soundViewDetailsSemanticLabel(
+                            _displayTitle(context),
+                          ),
+                          button: true,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.chevron_right,
+                              color: VineTheme.lightText,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
                 ],
               ),
             ),

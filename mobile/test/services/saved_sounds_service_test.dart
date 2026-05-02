@@ -1,6 +1,8 @@
 // ABOUTME: Tests for the persisted reusable sounds library service.
 // ABOUTME: Covers saving, dedupe, ordering, and corrupt storage fallback.
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/saved_sounds_service.dart';
@@ -96,6 +98,20 @@ void main() {
       final service = SavedSoundsService(sharedPreferences);
 
       expect(service.loadSounds(), isEmpty);
+    });
+
+    test('skips invalid persisted entries without dropping valid sounds', () {
+      final validSound = _sound(id: 'sound1', title: 'Valid Sound');
+      sharedPreferences.setString(
+        SavedSoundsService.storageKey,
+        jsonEncode([
+          validSound.toJson(),
+          {'id': 123},
+        ]),
+      );
+      final service = SavedSoundsService(sharedPreferences);
+
+      expect(service.loadSounds(), [validSound]);
     });
   });
 }

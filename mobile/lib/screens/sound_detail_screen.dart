@@ -196,8 +196,8 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       SnackBar(
         content: Text(
           result == SavedSoundSaveResult.saved
-              ? 'Saved to Sounds'
-              : 'Already in Sounds',
+              ? context.l10n.soundsSavedToLibrary
+              : context.l10n.soundsAlreadySavedToLibrary,
         ),
         duration: const Duration(seconds: 2),
       ),

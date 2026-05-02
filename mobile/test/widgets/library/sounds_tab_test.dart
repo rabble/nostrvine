@@ -94,5 +94,18 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('removes a saved sound from the library', (tester) async {
+      await SavedSoundsService(sharedPreferences).saveSound(
+        _sound(id: 'sound1', title: 'Original sound - rabble'),
+      );
+
+      await pumpSoundsTab(tester);
+      await tester.tap(find.byTooltip('Remove sound'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Original sound - rabble'), findsNothing);
+      expect(find.text('No saved sounds yet'), findsOneWidget);
+    });
   });
 }

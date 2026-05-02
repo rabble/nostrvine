@@ -105,6 +105,19 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     context.push(SoundDetailScreen.pathForId(sound.id), extra: sound);
   }
 
+  Future<void> _onRemoveTap(AudioEvent sound) async {
+    await _stopPreview();
+    await ref.read(savedSoundsProvider.notifier).removeSound(sound.id);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.soundsRemovedFromLibrary),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
     if (_searchQuery.isEmpty) return sounds;
     return sounds.where((sound) {
@@ -147,32 +160,33 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           onTap: _onSoundTap,
           onPreview: _onPreviewTap,
           onDetail: _onDetailTap,
+          onRemove: _onRemoveTap,
         ),
       ],
     );
   }
 
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
-          SizedBox(height: 16),
+          const Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
+          const SizedBox(height: 16),
           Text(
-            'No saved sounds yet',
-            style: TextStyle(
+            context.l10n.soundsSavedEmptyTitle,
+            style: const TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'Tap Use Sound on a video to save it here.',
-              style: TextStyle(
+              context.l10n.soundsSavedEmptyDescription,
+              style: const TextStyle(
                 color: VineTheme.onSurfaceMuted,
                 fontSize: 14,
               ),
@@ -247,6 +261,7 @@ class _SavedSoundsSection extends StatelessWidget {
     required this.onTap,
     required this.onPreview,
     required this.onDetail,
+    required this.onRemove,
   });
 
   final List<AudioEvent> sounds;
@@ -254,6 +269,7 @@ class _SavedSoundsSection extends StatelessWidget {
   final ValueChanged<AudioEvent> onTap;
   final ValueChanged<AudioEvent> onPreview;
   final ValueChanged<AudioEvent> onDetail;
+  final ValueChanged<AudioEvent> onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -270,9 +286,9 @@ class _SavedSoundsSection extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'My Sounds',
-                style: TextStyle(
+              Text(
+                context.l10n.soundsSavedLibraryTitle,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -302,6 +318,14 @@ class _SavedSoundsSection extends StatelessWidget {
               onTap: () => onTap(sound),
               onPlayPreview: () => onPreview(sound),
               onDetailTap: sound.isBundled ? null : () => onDetail(sound),
+              trailing: IconButton(
+                tooltip: context.l10n.soundsRemoveSavedSound,
+                icon: const Icon(
+                  Icons.bookmark_remove_outlined,
+                  color: VineTheme.lightText,
+                ),
+                onPressed: () => onRemove(sound),
+              ),
             );
           },
         ),

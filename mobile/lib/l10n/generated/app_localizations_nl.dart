@@ -3802,6 +3802,28 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Probeer een andere zoekterm';
 
   @override
+  String get soundsSavedToLibrary => 'Saved to Sounds';
+
+  @override
+  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+
+  @override
+  String get soundsSavedLibraryTitle => 'My Sounds';
+
+  @override
+  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+
+  @override
+  String get soundsSavedEmptyDescription =>
+      'Tap Use Sound on a video to save it here.';
+
+  @override
+  String get soundsRemoveSavedSound => 'Remove sound';
+
+  @override
+  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+
+  @override
   String get soundsFailedToLoad => 'Laden van geluiden mislukt';
 
   @override
