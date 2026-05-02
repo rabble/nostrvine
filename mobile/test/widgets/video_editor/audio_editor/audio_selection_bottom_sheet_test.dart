@@ -9,13 +9,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 AudioEvent _createTestAudioEvent({
   String id = 'test-sound-id',
@@ -42,8 +45,11 @@ void main() {
 
   group(AudioSelectionBottomSheet, () {
     late ScrollController scrollController;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       scrollController = ScrollController();
     });
 
@@ -54,6 +60,7 @@ void main() {
     Widget buildWidget({AsyncValue<List<AudioEvent>>? trendingSoundsAsync}) {
       return ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           soundLibraryServiceProvider.overrideWith(
             (_) => SoundLibraryService(),
           ),
@@ -100,6 +107,7 @@ void main() {
         expect(find.byType(AudioCategoryBar), findsOneWidget);
         expect(find.text(l10n.videoEditorAudioCategoryDivine), findsWidgets);
         expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsWidgets);
+        expect(find.text(l10n.videoEditorAudioCategoryMySounds), findsWidgets);
       });
     });
 
@@ -136,6 +144,51 @@ void main() {
           findsOneWidget,
         );
         expect(find.byIcon(Icons.music_off), findsOneWidget);
+      });
+
+      testWidgets('renders saved sounds empty state on my sounds tab', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryMySounds));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.videoEditorAudioNoSavedSoundsTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoEditorAudioNoSavedSoundsSubtitle),
+          findsOneWidget,
+        );
+      });
+    });
+
+    group('My Sounds', () {
+      testWidgets('shows saved sounds on my sounds tab', (tester) async {
+        await SavedSoundsService(sharedPreferences).saveSound(
+          _createTestAudioEvent(
+            id: 'saved-sound-1',
+            title: 'Saved Loop',
+            source: 'Original Sound',
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryMySounds));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved Loop'), findsOneWidget);
       });
     });
 

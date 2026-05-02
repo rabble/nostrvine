@@ -11160,6 +11160,24 @@ abstract class AppLocalizations {
   /// **'Community'**
   String get videoEditorAudioCategoryCommunity;
 
+  /// No description provided for @videoEditorAudioCategoryMySounds.
+  ///
+  /// In en, this message translates to:
+  /// **'My Sounds'**
+  String get videoEditorAudioCategoryMySounds;
+
+  /// No description provided for @videoEditorAudioNoSavedSoundsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved sounds yet'**
+  String get videoEditorAudioNoSavedSoundsTitle;
+
+  /// No description provided for @videoEditorAudioNoSavedSoundsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Use Sound on a video to save it here.'**
+  String get videoEditorAudioNoSavedSoundsSubtitle;
+
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
   /// In en, this message translates to:

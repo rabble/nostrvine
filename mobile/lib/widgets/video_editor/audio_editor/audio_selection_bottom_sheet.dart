@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
@@ -226,6 +227,7 @@ class _AudioSelectionBottomSheetState
   Widget build(BuildContext context) {
     final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
     final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
+    final savedSounds = ref.watch(savedSoundsProvider);
 
     // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
@@ -270,6 +272,17 @@ class _AudioSelectionBottomSheetState
                         const Center(child: BrandedLoadingIndicator()),
                     error: (error, stack) => _ErrorState(error: error),
                   ),
+
+                  _SoundsContent(
+                    scrollController: widget.scrollController,
+                    sounds: savedSounds,
+                    selectedSound: _selectedItem,
+                    audioService: _audioService,
+                    onSelect: _selectSound,
+                    emptyTitle: context.l10n.videoEditorAudioNoSavedSoundsTitle,
+                    emptySubtitle:
+                        context.l10n.videoEditorAudioNoSavedSoundsSubtitle,
+                  ),
                 ],
               ),
             ),
@@ -302,6 +315,8 @@ class _SoundsContent extends StatelessWidget {
     required this.selectedSound,
     required this.audioService,
     required this.onSelect,
+    this.emptyTitle,
+    this.emptySubtitle,
   });
 
   final ScrollController scrollController;
@@ -309,13 +324,15 @@ class _SoundsContent extends StatelessWidget {
   final AudioEvent? selectedSound;
   final AudioPlaybackService audioService;
   final ValueChanged<AudioEvent> onSelect;
+  final String? emptyTitle;
+  final String? emptySubtitle;
 
   static const _bottomSpace = 120.0;
 
   @override
   Widget build(BuildContext context) {
     if (sounds.isEmpty) {
-      return const _EmptyState();
+      return _EmptyState(title: emptyTitle, subtitle: emptySubtitle);
     }
 
     return CustomScrollView(
@@ -361,7 +378,10 @@ class _SoundsContent extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({this.title, this.subtitle});
+
+  final String? title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -372,12 +392,12 @@ class _EmptyState extends StatelessWidget {
           const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
           const SizedBox(height: 16),
           Text(
-            context.l10n.videoEditorAudioNoSoundsAvailableTitle,
+            title ?? context.l10n.videoEditorAudioNoSoundsAvailableTitle,
             style: VineTheme.bodyLargeFont(),
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
+            subtitle ?? context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),

@@ -23,7 +23,7 @@ void main() {
       );
     }
 
-    testWidgets('renders both category chips', (tester) async {
+    testWidgets('renders all category chips', (tester) async {
       await tester.pumpWidget(
         buildWidget(category: AudioCategory.diVine, onSelect: (_) {}),
       );
@@ -32,6 +32,7 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.videoEditorAudioCategoryDivine), findsOneWidget);
       expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsOneWidget);
+      expect(find.text(l10n.videoEditorAudioCategoryMySounds), findsOneWidget);
     });
 
     testWidgets('calls onSelect with diVine when first chip is tapped', (
@@ -72,11 +73,30 @@ void main() {
       expect(selected, equals(AudioCategory.community));
     });
 
+    testWidgets('calls onSelect with mySounds when third chip is tapped', (
+      tester,
+    ) async {
+      AudioCategory? selected;
+      await tester.pumpWidget(
+        buildWidget(
+          category: AudioCategory.diVine,
+          onSelect: (c) => selected = c,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.videoEditorAudioCategoryMySounds));
+      await tester.pumpAndSettle();
+
+      expect(selected, equals(AudioCategory.mySounds));
+    });
+
     testWidgets('marks the selected chip with Semantics.selected', (
       tester,
     ) async {
       await tester.pumpWidget(
-        buildWidget(category: AudioCategory.diVine, onSelect: (_) {}),
+        buildWidget(category: AudioCategory.mySounds, onSelect: (_) {}),
       );
       await tester.pumpAndSettle();
 
@@ -97,9 +117,18 @@ void main() {
           ),
         ),
       );
+      final mySoundsSemantics = tester.widget<Semantics>(
+        find.ancestor(
+          of: find.text(l10n.videoEditorAudioCategoryMySounds),
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.selected != null,
+          ),
+        ),
+      );
 
-      expect(divineSemantics.properties.selected, isTrue);
+      expect(divineSemantics.properties.selected, isFalse);
       expect(communitySemantics.properties.selected, isFalse);
+      expect(mySoundsSemantics.properties.selected, isTrue);
     });
   });
 }
