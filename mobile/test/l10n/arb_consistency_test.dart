@@ -69,6 +69,13 @@ const _knownUntranslatedDebt = {
   'notificationRepliedToYourComment',
   'notificationAndConnector',
   'notificationOthersCount',
+  // Added by the audio loudness normalization toggle. Translators will
+  // pick these up in a follow-up pass; the generated l10n APIs fall
+  // back to the English source until then.
+  'settingsLoudnessNormalizationTitle',
+  'settingsLoudnessNormalizationSubtitle',
+  'settingsLoudnessNormalizationEnabledAnnouncement',
+  'settingsLoudnessNormalizationDisabledAnnouncement',
 };
 
 Map<String, Object?> _readArb(File file) {
