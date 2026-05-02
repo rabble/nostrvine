@@ -19,7 +19,6 @@ Use these test URLs for verification:
 ```
 https://divine.video/video/abc123
 https://divine.video/video/{actual-video-event-id}
-https://www.divine.video/video/{actual-video-event-id}
 https://www.divine.video/video/abc123
 ```
 
@@ -27,7 +26,6 @@ https://www.divine.video/video/abc123
 ```
 https://divine.video/profile/npub1abc...xyz
 https://divine.video/profile/{actual-npub}
-https://www.divine.video/profile/{actual-npub}
 https://www.divine.video/profile/npub1abc...xyz
 ```
 
@@ -117,7 +115,8 @@ adb shell pm verify-app-links --re-verify co.openvine.app
    - Check: `curl -I https://divine.video/.well-known/apple-app-site-association`
    - Check: `curl -I https://www.divine.video/.well-known/apple-app-site-association`
    - Check: `curl -I https://divine.video/.well-known/assetlinks.json`
-   - If `www` is claimed, also check the same two URLs on `https://www.divine.video`
+   - If `www` is claimed, also check `https://www.divine.video/.well-known/assetlinks.json`
+   - If `login.divine.video` is claimed, also check `https://login.divine.video/.well-known/assetlinks.json`
 
 2. **"Open with" dialog appears**
    - iOS: Means associated domains not configured correctly
