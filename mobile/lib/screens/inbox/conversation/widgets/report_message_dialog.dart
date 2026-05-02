@@ -44,7 +44,10 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: Text('Report Message', style: VineTheme.titleMediumFont()),
+    title: Text(
+      context.l10n.reportMessageTitle,
+      style: VineTheme.titleMediumFont(),
+    ),
     content: SizedBox(
       width: double.maxFinite,
       child: SingleChildScrollView(
@@ -52,14 +55,12 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Why are you reporting this message?',
+              context.l10n.reportMessageWhyReporting,
               style: VineTheme.bodyMediumFont(),
             ),
             const SizedBox(height: 8),
             Text(
-              'Divine will act on content reports within 24 hours by '
-              'removing the content and ejecting the user who provided '
-              'the offending content.',
+              context.l10n.reportPolicyNotice,
               style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
             ),
             const SizedBox(height: 16),
@@ -86,7 +87,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
               enableInteractiveSelection: true,
               style: VineTheme.bodyMediumFont(),
               decoration: InputDecoration(
-                labelText: 'Additional details (optional)',
+                labelText: context.l10n.reportAdditionalDetails,
                 labelStyle: VineTheme.bodyMediumFont(
                   color: VineTheme.secondaryText,
                 ),
@@ -95,7 +96,10 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
             ),
             const SizedBox(height: 8),
             CheckboxListTile(
-              title: Text('Block this user', style: VineTheme.bodyMediumFont()),
+              title: Text(
+                context.l10n.reportBlockUser,
+                style: VineTheme.bodyMediumFont(),
+              ),
               value: _blockUser,
               onChanged: (value) => setState(() => _blockUser = value ?? false),
               controlAffinity: ListTileControlAffinity.leading,
@@ -127,7 +131,7 @@ class _ReportMessageDialogState extends ConsumerState<ReportMessageDialog> {
     if (_selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         DivineSnackbarContainer.snackBar(
-          'Please select a reason for reporting this message',
+          context.l10n.reportMessageSelectReason,
           error: true,
         ),
       );

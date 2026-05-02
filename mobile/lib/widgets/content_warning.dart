@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 
 /// Content warning overlay for filtered content
@@ -145,7 +146,7 @@ class _ContentWarningState extends State<ContentWarning>
                   foregroundColor: VineTheme.whiteText,
                   side: const BorderSide(color: VineTheme.whiteText),
                 ),
-                child: const Text('View Anyway'),
+                child: Text(context.l10n.contentWarningViewAnyway),
               ),
             ),
 

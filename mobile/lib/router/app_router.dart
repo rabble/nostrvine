@@ -997,9 +997,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final video = st.extra as VideoEvent?;
           if (pubkey == null || pubkey.isEmpty) {
-            return const Scaffold(
-              appBar: DiVineAppBar(title: 'Error'),
-              body: Center(child: Text('Invalid creator')),
+            return Scaffold(
+              appBar: DiVineAppBar(title: ctx.l10n.routeErrorTitle),
+              body: Center(child: Text(ctx.l10n.routerInvalidCreator)),
             );
           }
           return OriginalSoundDetailScreen(

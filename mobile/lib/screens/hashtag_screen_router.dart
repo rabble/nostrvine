@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -37,7 +38,9 @@ class HashtagScreenRouter extends ConsumerWidget {
         name: 'HashtagRouter',
         category: LogCategory.ui,
       );
-      return const Scaffold(body: Center(child: Text('Invalid hashtag route')));
+      return Scaffold(
+        body: Center(child: Text(context.l10n.routerInvalidHashtagRoute)),
+      );
     }
 
     final hashtag = routeCtx.hashtag ?? 'trending';

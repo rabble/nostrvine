@@ -1029,8 +1029,12 @@ class _ProfileSetupScreenViewState
                             if (_nameController.text.trim().isEmpty) {
                               _nameFocusNode.requestFocus();
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter a display name'),
+                                SnackBar(
+                                  content: Text(
+                                    context
+                                        .l10n
+                                        .profileSetupDisplayNameRequired,
+                                  ),
                                   backgroundColor: VineTheme.error,
                                 ),
                               );
@@ -1790,8 +1794,8 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
     if (created) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Support request sent! We'll get back to you soon."),
+        SnackBar(
+          content: Text(context.l10n.profileSetupSupportRequestSent),
           backgroundColor: VineTheme.vineGreen,
         ),
       );
@@ -1807,8 +1811,8 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
       );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Couldn't open email. Send to: names@divine.video"),
+          SnackBar(
+            content: Text(context.l10n.profileSetupCouldntOpenEmail),
           ),
         );
       }

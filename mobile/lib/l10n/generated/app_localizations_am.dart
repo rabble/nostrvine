@@ -4889,6 +4889,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get commonCancel => 'ሰርዝ';
 
   @override
+  String get commonBack => 'ተመለስ';
+
+  @override
+  String get commonClose => 'ዝጋ';
+
+  @override
   String get videoMetadataTags => 'መለያዎች';
 
   @override
@@ -5077,16 +5083,116 @@ class AppLocalizationsAm extends AppLocalizations {
   String get categoryGalleryCouldNotLoadVideos => 'ቪዲዮዎችን መጫን አልተቻለም';
 
   @override
+  String get categoryGalleryNoVideosInCategory => 'በዚህ ምድብ ውስጥ ምንም ቪዲዮዎች የሉም';
+
+  @override
   String get categoriesCouldNotLoadCategories => 'ምድቦችን መጫን አልተቻለም';
+
+  @override
+  String get categoriesNoCategoriesAvailable => 'ምንም ምድቦች የሉም';
+
+  @override
+  String get notificationsEmptyTitle => 'እስካሁን እንቅስቃሴ የለም';
+
+  @override
+  String get notificationsEmptySubtitle => 'ሰዎች ከይዘትዎ ጋር ሲገናኙ እዚህ ያያሉ';
+
+  @override
+  String get appsPermissionsRevoke => 'ሰርዝ';
+
+  @override
+  String nostrAppPermissionTitle(String appName) {
+    return '$appName ፈቃድዎን ይፈልጋል';
+  }
+
+  @override
+  String get nostrAppPermissionDescription =>
+      'ይህ መተግበሪያ በDivine የተመረመረ sandbox በኩል መዳረሻ ይጠይቃል።';
+
+  @override
+  String get nostrAppPermissionOrigin => 'መነሻ';
+
+  @override
+  String get nostrAppPermissionMethod => 'ዘዴ';
+
+  @override
+  String get nostrAppPermissionCapability => 'ችሎታ';
+
+  @override
+  String get nostrAppPermissionEventKind => 'የክስተት አይነት';
+
+  @override
+  String get nostrAppPermissionAllow => 'ፍቀድ';
+
+  @override
+  String get bugReportSendReport => 'ሪፖርት ላክ';
+
+  @override
+  String get featureRequestSendRequest => 'ጥያቄ ላክ';
 
   @override
   String get notificationFollowBack => 'ተመለስ ተከታተል።';
 
   @override
+  String get followingTitle => 'የሚከተሉት';
+
+  @override
+  String followingTitleForName(String displayName) {
+    return '$displayName የሚከተላቸው';
+  }
+
+  @override
   String get followingFailedToLoadList => 'የሚከተለውን ዝርዝር መጫን አልተሳካም።';
 
   @override
+  String get followersTitle => 'ተከታዮች';
+
+  @override
+  String followersTitleForName(String displayName) {
+    return 'የ$displayName ተከታዮች';
+  }
+
+  @override
   String get followersFailedToLoadList => 'የተከታዮች ዝርዝርን መጫን አልተሳካም።';
+
+  @override
+  String get followersUpdateFollowFailed =>
+      'የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String get reportMessageTitle => 'መልዕክትን ሪፖርት አድርግ';
+
+  @override
+  String get reportMessageWhyReporting => 'ይህን መልዕክት ለምን ሪፖርት ያደርጋሉ?';
+
+  @override
+  String get reportMessageSelectReason =>
+      'እባክዎ ይህን መልዕክት ሪፖርት ለማድረግ ምክንያት ይምረጡ';
+
+  @override
+  String get newMessageTitle => 'አዲስ መልዕክት';
+
+  @override
+  String get newMessageFindPeople => 'ሰዎችን ይፈልጉ';
+
+  @override
+  String get newMessageNoContacts =>
+      'ምንም እውቂያዎች አልተገኙም።\nሰዎችን ይከተሉ እና እዚህ ያያሉ።';
+
+  @override
+  String get newMessageNoUsersFound => 'ምንም ተጠቃሚዎች አልተገኙም';
+
+  @override
+  String get hashtagSearchTitle => 'ሃሽታጎችን ይፈልጉ';
+
+  @override
+  String get hashtagSearchSubtitle => 'በመታየት ላይ ያሉ ርዕሶችን እና ይዘትን ያግኙ';
+
+  @override
+  String get userNotAvailableTitle => 'መለያው አይገኝም';
+
+  @override
+  String get userNotAvailableBody => 'ይህ መለያ አሁን አይገኝም።';
 
   @override
   String get classicVinersTitle => 'OG Viners';

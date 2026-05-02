@@ -2615,6 +2615,8 @@
   "commonNext": "Next",
   "commonDelete": "Delete",
   "commonCancel": "Cancel",
+  "commonBack": "Back",
+  "commonClose": "Close",
 
   "videoMetadataTags": "Tags",
   "videoMetadataExpiration": "Expiration",
@@ -2729,12 +2731,71 @@
   "routerInvalidHashtagRoute": "Invalid hashtag route",
 
   "categoryGalleryCouldNotLoadVideos": "Could not load videos",
+  "categoryGalleryNoVideosInCategory": "No videos in this category",
   "categoriesCouldNotLoadCategories": "Could not load categories",
+  "categoriesNoCategoriesAvailable": "No categories available",
+
+  "notificationsEmptyTitle": "No activity yet",
+  "notificationsEmptySubtitle": "When people interact with your content, you'll see it here",
+
+  "appsPermissionsRevoke": "Revoke",
+
+  "nostrAppPermissionTitle": "{appName} wants your approval",
+  "@nostrAppPermissionTitle": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrAppPermissionDescription": "This app is requesting access through Divine's vetted sandbox.",
+  "nostrAppPermissionOrigin": "Origin",
+  "nostrAppPermissionMethod": "Method",
+  "nostrAppPermissionCapability": "Capability",
+  "nostrAppPermissionEventKind": "Event kind",
+  "nostrAppPermissionAllow": "Allow",
+
+  "bugReportSendReport": "Send Report",
+  "featureRequestSendRequest": "Send Request",
 
   "notificationFollowBack": "Follow back",
 
+  "followingTitle": "Following",
+  "followingTitleForName": "{displayName}'s Following",
+  "@followingTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "followingFailedToLoadList": "Failed to load following list",
+  "followersTitle": "Followers",
+  "followersTitleForName": "{displayName}'s Followers",
+  "@followersTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "followersFailedToLoadList": "Failed to load followers list",
+  "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
+
+  "reportMessageTitle": "Report Message",
+  "reportMessageWhyReporting": "Why are you reporting this message?",
+  "reportMessageSelectReason": "Please select a reason for reporting this message",
+
+  "newMessageTitle": "New message",
+  "newMessageFindPeople": "Find people",
+  "newMessageNoContacts": "No contacts found.\nFollow people to see them here.",
+  "newMessageNoUsersFound": "No users found",
+
+  "hashtagSearchTitle": "Search for hashtags",
+  "hashtagSearchSubtitle": "Discover trending topics and content",
+
+  "userNotAvailableTitle": "Account not available",
+  "userNotAvailableBody": "This account isn't available right now.",
 
   "classicVinersTitle": "OG Viners",
 

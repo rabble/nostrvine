@@ -8850,6 +8850,18 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancel;
 
+  /// No description provided for @commonBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get commonBack;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonClose;
+
   /// No description provided for @videoMetadataTags.
   ///
   /// In en, this message translates to:
@@ -9156,11 +9168,95 @@ abstract class AppLocalizations {
   /// **'Could not load videos'**
   String get categoryGalleryCouldNotLoadVideos;
 
+  /// No description provided for @categoryGalleryNoVideosInCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos in this category'**
+  String get categoryGalleryNoVideosInCategory;
+
   /// No description provided for @categoriesCouldNotLoadCategories.
   ///
   /// In en, this message translates to:
   /// **'Could not load categories'**
   String get categoriesCouldNotLoadCategories;
+
+  /// No description provided for @categoriesNoCategoriesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories available'**
+  String get categoriesNoCategoriesAvailable;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When people interact with your content, you\'ll see it here'**
+  String get notificationsEmptySubtitle;
+
+  /// No description provided for @appsPermissionsRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get appsPermissionsRevoke;
+
+  /// No description provided for @nostrAppPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{appName} wants your approval'**
+  String nostrAppPermissionTitle(String appName);
+
+  /// No description provided for @nostrAppPermissionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is requesting access through Divine\'s vetted sandbox.'**
+  String get nostrAppPermissionDescription;
+
+  /// No description provided for @nostrAppPermissionOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin'**
+  String get nostrAppPermissionOrigin;
+
+  /// No description provided for @nostrAppPermissionMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get nostrAppPermissionMethod;
+
+  /// No description provided for @nostrAppPermissionCapability.
+  ///
+  /// In en, this message translates to:
+  /// **'Capability'**
+  String get nostrAppPermissionCapability;
+
+  /// No description provided for @nostrAppPermissionEventKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Event kind'**
+  String get nostrAppPermissionEventKind;
+
+  /// No description provided for @nostrAppPermissionAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get nostrAppPermissionAllow;
+
+  /// No description provided for @bugReportSendReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Report'**
+  String get bugReportSendReport;
+
+  /// No description provided for @featureRequestSendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Request'**
+  String get featureRequestSendRequest;
 
   /// No description provided for @notificationFollowBack.
   ///
@@ -9168,17 +9264,113 @@ abstract class AppLocalizations {
   /// **'Follow back'**
   String get notificationFollowBack;
 
+  /// No description provided for @followingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get followingTitle;
+
+  /// No description provided for @followingTitleForName.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName}\'s Following'**
+  String followingTitleForName(String displayName);
+
   /// No description provided for @followingFailedToLoadList.
   ///
   /// In en, this message translates to:
   /// **'Failed to load following list'**
   String get followingFailedToLoadList;
 
+  /// No description provided for @followersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get followersTitle;
+
+  /// No description provided for @followersTitleForName.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName}\'s Followers'**
+  String followersTitleForName(String displayName);
+
   /// No description provided for @followersFailedToLoadList.
   ///
   /// In en, this message translates to:
   /// **'Failed to load followers list'**
   String get followersFailedToLoadList;
+
+  /// No description provided for @followersUpdateFollowFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update follow status. Please try again.'**
+  String get followersUpdateFollowFailed;
+
+  /// No description provided for @reportMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Message'**
+  String get reportMessageTitle;
+
+  /// No description provided for @reportMessageWhyReporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you reporting this message?'**
+  String get reportMessageWhyReporting;
+
+  /// No description provided for @reportMessageSelectReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a reason for reporting this message'**
+  String get reportMessageSelectReason;
+
+  /// No description provided for @newMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New message'**
+  String get newMessageTitle;
+
+  /// No description provided for @newMessageFindPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Find people'**
+  String get newMessageFindPeople;
+
+  /// No description provided for @newMessageNoContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts found.\nFollow people to see them here.'**
+  String get newMessageNoContacts;
+
+  /// No description provided for @newMessageNoUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get newMessageNoUsersFound;
+
+  /// No description provided for @hashtagSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for hashtags'**
+  String get hashtagSearchTitle;
+
+  /// No description provided for @hashtagSearchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover trending topics and content'**
+  String get hashtagSearchSubtitle;
+
+  /// No description provided for @userNotAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not available'**
+  String get userNotAvailableTitle;
+
+  /// No description provided for @userNotAvailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This account isn\'t available right now.'**
+  String get userNotAvailableBody;
 
   /// No description provided for @classicVinersTitle.
   ///

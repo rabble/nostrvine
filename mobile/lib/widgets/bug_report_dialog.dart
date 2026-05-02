@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/config/bug_report_config.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
@@ -310,9 +311,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
         if (_isSuccess != true)
           TextButton(
             onPressed: _isSubmitting ? null : context.pop,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.lightText),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.lightText),
             ),
           ),
 
@@ -325,7 +326,11 @@ class _BugReportDialogState extends State<BugReportDialog> {
             backgroundColor: VineTheme.vineGreen,
             foregroundColor: VineTheme.whiteText,
           ),
-          child: Text(_isSuccess == true ? 'Close' : 'Send Report'),
+          child: Text(
+            _isSuccess == true
+                ? context.l10n.commonClose
+                : context.l10n.bugReportSendReport,
+          ),
         ),
       ],
     );

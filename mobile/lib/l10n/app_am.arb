@@ -2598,6 +2598,8 @@
   "commonNext": "ቀጥሎ",
   "commonDelete": "ሰርዝ",
   "commonCancel": "ሰርዝ",
+  "commonBack": "ተመለስ",
+  "commonClose": "ዝጋ",
   "videoMetadataTags": "መለያዎች",
   "videoMetadataExpiration": "የማለቂያ ጊዜ",
   "videoMetadataExpirationNotExpire": "ጊዜው አያልቅም።",
@@ -2704,10 +2706,61 @@
   "routerInvalidCreator": "ልክ ያልሆነ ፈጣሪ",
   "routerInvalidHashtagRoute": "ልክ ያልሆነ የሃሽታግ መስመር",
   "categoryGalleryCouldNotLoadVideos": "ቪዲዮዎችን መጫን አልተቻለም",
+  "categoryGalleryNoVideosInCategory": "በዚህ ምድብ ውስጥ ምንም ቪዲዮዎች የሉም",
   "categoriesCouldNotLoadCategories": "ምድቦችን መጫን አልተቻለም",
+  "categoriesNoCategoriesAvailable": "ምንም ምድቦች የሉም",
+  "notificationsEmptyTitle": "እስካሁን እንቅስቃሴ የለም",
+  "notificationsEmptySubtitle": "ሰዎች ከይዘትዎ ጋር ሲገናኙ እዚህ ያያሉ",
+  "appsPermissionsRevoke": "ሰርዝ",
+  "nostrAppPermissionTitle": "{appName} ፈቃድዎን ይፈልጋል",
+  "@nostrAppPermissionTitle": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrAppPermissionDescription": "ይህ መተግበሪያ በDivine የተመረመረ sandbox በኩል መዳረሻ ይጠይቃል።",
+  "nostrAppPermissionOrigin": "መነሻ",
+  "nostrAppPermissionMethod": "ዘዴ",
+  "nostrAppPermissionCapability": "ችሎታ",
+  "nostrAppPermissionEventKind": "የክስተት አይነት",
+  "nostrAppPermissionAllow": "ፍቀድ",
+  "bugReportSendReport": "ሪፖርት ላክ",
+  "featureRequestSendRequest": "ጥያቄ ላክ",
   "notificationFollowBack": "ተመለስ ተከታተል።",
+  "followingTitle": "የሚከተሉት",
+  "followingTitleForName": "{displayName} የሚከተላቸው",
+  "@followingTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "followingFailedToLoadList": "የሚከተለውን ዝርዝር መጫን አልተሳካም።",
+  "followersTitle": "ተከታዮች",
+  "followersTitleForName": "የ{displayName} ተከታዮች",
+  "@followersTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "followersFailedToLoadList": "የተከታዮች ዝርዝርን መጫን አልተሳካም።",
+  "followersUpdateFollowFailed": "የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "reportMessageTitle": "መልዕክትን ሪፖርት አድርግ",
+  "reportMessageWhyReporting": "ይህን መልዕክት ለምን ሪፖርት ያደርጋሉ?",
+  "reportMessageSelectReason": "እባክዎ ይህን መልዕክት ሪፖርት ለማድረግ ምክንያት ይምረጡ",
+  "newMessageTitle": "አዲስ መልዕክት",
+  "newMessageFindPeople": "ሰዎችን ይፈልጉ",
+  "newMessageNoContacts": "ምንም እውቂያዎች አልተገኙም።\nሰዎችን ይከተሉ እና እዚህ ያያሉ።",
+  "newMessageNoUsersFound": "ምንም ተጠቃሚዎች አልተገኙም",
+  "hashtagSearchTitle": "ሃሽታጎችን ይፈልጉ",
+  "hashtagSearchSubtitle": "በመታየት ላይ ያሉ ርዕሶችን እና ይዘትን ያግኙ",
+  "userNotAvailableTitle": "መለያው አይገኝም",
+  "userNotAvailableBody": "ይህ መለያ አሁን አይገኝም።",
   "classicVinersTitle": "OG Viners",
   "blossomFailedToSaveSettings": "ቅንብሮችን ማስቀመጥ አልተሳካም፦ {error}",
   "@blossomFailedToSaveSettings": {

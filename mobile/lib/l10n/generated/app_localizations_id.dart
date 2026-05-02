@@ -4960,6 +4960,12 @@ class AppLocalizationsId extends AppLocalizations {
   String get commonCancel => 'Batal';
 
   @override
+  String get commonBack => 'Back';
+
+  @override
+  String get commonClose => 'Close';
+
+  @override
   String get videoMetadataTags => 'Tag';
 
   @override
@@ -5151,16 +5157,117 @@ class AppLocalizationsId extends AppLocalizations {
   String get categoryGalleryCouldNotLoadVideos => 'Tidak dapat memuat video';
 
   @override
+  String get categoryGalleryNoVideosInCategory => 'No videos in this category';
+
+  @override
   String get categoriesCouldNotLoadCategories => 'Tidak dapat memuat kategori';
+
+  @override
+  String get categoriesNoCategoriesAvailable => 'No categories available';
+
+  @override
+  String get notificationsEmptyTitle => 'No activity yet';
+
+  @override
+  String get notificationsEmptySubtitle =>
+      'When people interact with your content, you\'ll see it here';
+
+  @override
+  String get appsPermissionsRevoke => 'Revoke';
+
+  @override
+  String nostrAppPermissionTitle(String appName) {
+    return '$appName wants your approval';
+  }
+
+  @override
+  String get nostrAppPermissionDescription =>
+      'This app is requesting access through Divine\'s vetted sandbox.';
+
+  @override
+  String get nostrAppPermissionOrigin => 'Origin';
+
+  @override
+  String get nostrAppPermissionMethod => 'Method';
+
+  @override
+  String get nostrAppPermissionCapability => 'Capability';
+
+  @override
+  String get nostrAppPermissionEventKind => 'Event kind';
+
+  @override
+  String get nostrAppPermissionAllow => 'Allow';
+
+  @override
+  String get bugReportSendReport => 'Send Report';
+
+  @override
+  String get featureRequestSendRequest => 'Send Request';
 
   @override
   String get notificationFollowBack => 'Ikuti balik';
 
   @override
+  String get followingTitle => 'Following';
+
+  @override
+  String followingTitleForName(String displayName) {
+    return '$displayName\'s Following';
+  }
+
+  @override
   String get followingFailedToLoadList => 'Gagal memuat daftar mengikuti';
 
   @override
+  String get followersTitle => 'Followers';
+
+  @override
+  String followersTitleForName(String displayName) {
+    return '$displayName\'s Followers';
+  }
+
+  @override
   String get followersFailedToLoadList => 'Gagal memuat daftar pengikut';
+
+  @override
+  String get followersUpdateFollowFailed =>
+      'Failed to update follow status. Please try again.';
+
+  @override
+  String get reportMessageTitle => 'Report Message';
+
+  @override
+  String get reportMessageWhyReporting => 'Why are you reporting this message?';
+
+  @override
+  String get reportMessageSelectReason =>
+      'Please select a reason for reporting this message';
+
+  @override
+  String get newMessageTitle => 'New message';
+
+  @override
+  String get newMessageFindPeople => 'Find people';
+
+  @override
+  String get newMessageNoContacts =>
+      'No contacts found.\nFollow people to see them here.';
+
+  @override
+  String get newMessageNoUsersFound => 'No users found';
+
+  @override
+  String get hashtagSearchTitle => 'Search for hashtags';
+
+  @override
+  String get hashtagSearchSubtitle => 'Discover trending topics and content';
+
+  @override
+  String get userNotAvailableTitle => 'Account not available';
+
+  @override
+  String get userNotAvailableBody => 'This account isn\'t available right now.';
 
   @override
   String get classicVinersTitle => 'OG Viners';

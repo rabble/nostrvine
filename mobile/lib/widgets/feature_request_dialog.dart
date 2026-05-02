@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -228,7 +229,10 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
         if (_isSuccess != true)
           TextButton(
             onPressed: _isSubmitting ? null : context.pop,
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
 
         // Send/Close button
@@ -240,7 +244,11 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
             backgroundColor: VineTheme.vineGreen,
             foregroundColor: VineTheme.whiteText,
           ),
-          child: Text(_isSuccess == true ? 'Close' : 'Send Request'),
+          child: Text(
+            _isSuccess == true
+                ? context.l10n.commonClose
+                : context.l10n.featureRequestSendRequest,
+          ),
         ),
       ],
     );

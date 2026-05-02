@@ -213,21 +213,30 @@ class _CategoryGalleryBody extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Could not load videos',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+              Text(
+                context.l10n.categoryGalleryCouldNotLoadVideos,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: Text(context.l10n.commonRetry),
+              ),
             ],
           ),
         );
       case CategoriesVideosStatus.loaded:
         if (state.videos.isEmpty && galleryOverride == null) {
-          return const Center(
+          return Center(
             child: Text(
-              'No videos in this category',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+              context.l10n.categoryGalleryNoVideosInCategory,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 16,
+              ),
             ),
           );
         }
