@@ -60,6 +60,11 @@ enum FeatureFlag {
     'Show Nostr relay configuration and diagnostics in Settings. '
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
+  ),
+  loudnessNormalization(
+    'Audio Loudness Match',
+    'Show the Settings toggle that applies dynamic audio normalization '
+        'so quiet and loud vines play at comparable loudness.',
   )
   ;
 

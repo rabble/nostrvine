@@ -32,6 +32,8 @@ import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
 import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/blocs/loudness_normalization/loudness_normalization_cubit.dart';
+import 'package:openvine/blocs/loudness_normalization/loudness_normalization_prefs.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/config/zendesk_config.dart';
@@ -239,6 +241,22 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
           initializationStep: 'Initializing media playback pool',
           task: _initializeMediaPlayback,
         );
+      },
+      optional: true,
+    );
+
+    coordinator.registerService(
+      name: 'LoudnessNormalization',
+      phase: StartupPhase.standard,
+      dependencies: const ['MediaPlayback'],
+      initialize: () async {
+        final prefs = container.read(sharedPreferencesProvider);
+        final enabled = prefs.getBool(loudnessNormalizationPrefsKey) ?? false;
+        if (enabled) {
+          await PlayerPool.instance.setLoudnessNormalizationEnabled(
+            enabled: true,
+          );
+        }
       },
       optional: true,
     );
@@ -1635,6 +1653,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             lazy: false,
             create: (_) => VideoVolumeCubit(
               sharedPreferences: ref.read(sharedPreferencesProvider),
+            ),
+          ),
+          BlocProvider(
+            create: (_) => LoudnessNormalizationCubit(
+              sharedPreferences: ref.read(sharedPreferencesProvider),
+              playerPool: PlayerPool.instance,
             ),
           ),
           BlocProvider(

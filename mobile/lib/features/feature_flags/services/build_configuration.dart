@@ -50,6 +50,8 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
+      case FeatureFlag.loudnessNormalization:
+        return const bool.fromEnvironment('FF_LOUDNESS_NORMALIZATION');
     }
   }
 
@@ -96,6 +98,8 @@ class BuildConfiguration {
         return 'FF_CONTENT_POLICY_V2';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
+      case FeatureFlag.loudnessNormalization:
+        return 'FF_LOUDNESS_NORMALIZATION';
     }
   }
 }
