@@ -74,8 +74,14 @@ class InviteErrorUtils {
       if (_invalidCodes.contains(code)) {
         return InviteActivationFailureReason.invalid;
       }
-      if (code == 'too_many_requests') {
+      if (code == 'too_many_requests' ||
+          code == 'timeout' ||
+          code == 'storage_error' ||
+          code == 'internal_error') {
         return InviteActivationFailureReason.temporary;
+      }
+      if (code == 'client_error') {
+        return InviteActivationFailureReason.unknown;
       }
     }
 

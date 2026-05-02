@@ -3,6 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
+    show EmailVerificationError;
 import 'package:openvine/utils/invite_error_utils.dart';
 
 void main() {
@@ -174,6 +176,64 @@ void main() {
           makeException(code: 'invite_revoked', statusCode: 409),
         ),
         InviteActivationFailureReason.invalid,
+      );
+    });
+  });
+
+  group('client-synthesized codes', () {
+    test('timeout code maps to temporary', () {
+      expect(
+        InviteErrorUtils.activationFailureReason(
+          makeException(code: 'timeout'),
+        ),
+        InviteActivationFailureReason.temporary,
+      );
+    });
+
+    test('client_error code maps to unknown', () {
+      expect(
+        InviteErrorUtils.activationFailureReason(
+          makeException(code: 'client_error'),
+        ),
+        InviteActivationFailureReason.unknown,
+      );
+    });
+
+    test('storage_error code maps to temporary', () {
+      expect(
+        InviteErrorUtils.activationFailureReason(
+          makeException(code: 'storage_error', statusCode: 502),
+        ),
+        InviteActivationFailureReason.temporary,
+      );
+    });
+  });
+
+  group('toEmailVerificationError', () {
+    test('authFailure maps to inviteTemporary', () {
+      expect(
+        InviteErrorUtils.toEmailVerificationError(
+          makeException(code: 'auth_invalid', statusCode: 401),
+        ),
+        EmailVerificationError.inviteTemporary,
+      );
+    });
+
+    test('creatorFull maps to inviteInvalid', () {
+      expect(
+        InviteErrorUtils.toEmailVerificationError(
+          makeException(code: 'creator_page_full', statusCode: 409),
+        ),
+        EmailVerificationError.inviteInvalid,
+      );
+    });
+
+    test('unknown maps to inviteUnknown', () {
+      expect(
+        InviteErrorUtils.toEmailVerificationError(
+          makeException(message: 'unexpected'),
+        ),
+        EmailVerificationError.inviteUnknown,
       );
     });
   });
