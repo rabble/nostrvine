@@ -8,8 +8,8 @@ This guide helps you test deep linking functionality on iOS and Android devices.
 - OR Android device/emulator (Android app links work on both)
 - App installed on device
 - Server verification files deployed at `https://divine.video/.well-known/`
-- If Apple `www.divine.video` links are expected to open the app too, the AASA
-  file must also be served from `https://www.divine.video/.well-known/`
+- If `www.divine.video` is claimed too, the same files deployed at `https://www.divine.video/.well-known/`
+- If `login.divine.video` is claimed too, `assetlinks.json` must also be deployed at `https://login.divine.video/.well-known/`
 
 ## Quick Test URLs
 
@@ -20,6 +20,7 @@ Use these test URLs for verification:
 https://divine.video/video/abc123
 https://divine.video/video/{actual-video-event-id}
 https://www.divine.video/video/{actual-video-event-id}
+https://www.divine.video/video/abc123
 ```
 
 ### Profile Links
@@ -27,6 +28,7 @@ https://www.divine.video/video/{actual-video-event-id}
 https://divine.video/profile/npub1abc...xyz
 https://divine.video/profile/{actual-npub}
 https://www.divine.video/profile/{actual-npub}
+https://www.divine.video/profile/npub1abc...xyz
 ```
 
 ### Hashtag Links
@@ -50,9 +52,11 @@ https://divine.video/search/{search-term}
    - iMessage (iOS)
    - SMS
    - Email
-   - Slack/Discord
+   - Notes
 
 2. **Tap the link**
+   - Prefer iMessage, Mail, or Notes for OS-level universal-link testing
+   - Slack/Discord may keep links inside an in-app browser instead of handing off to the OS
 
 3. **Expected behavior**:
    - App opens automatically
@@ -64,8 +68,7 @@ https://divine.video/search/{search-term}
 1. **Open Safari (iOS) or Chrome (Android)**
 
 2. **Type/paste the URL**: `https://divine.video/video/test123`
-   - For the Apple-specific `www` host coverage in this PR, also try
-     `https://www.divine.video/video/test123`
+   - If `www` is supported, also try: `https://www.divine.video/video/test123`
 
 3. **Tap the link or press Enter**
 
@@ -78,6 +81,7 @@ https://divine.video/search/{search-term}
 ```bash
 # Test video link
 adb shell am start -a android.intent.action.VIEW -d "https://divine.video/video/test123"
+adb shell am start -a android.intent.action.VIEW -d "https://www.divine.video/video/test123"
 
 # Test profile link
 adb shell am start -a android.intent.action.VIEW -d "https://divine.video/profile/npub1test"
@@ -113,6 +117,7 @@ adb shell pm verify-app-links --re-verify co.openvine.app
    - Check: `curl -I https://divine.video/.well-known/apple-app-site-association`
    - Check: `curl -I https://www.divine.video/.well-known/apple-app-site-association`
    - Check: `curl -I https://divine.video/.well-known/assetlinks.json`
+   - If `www` is claimed, also check the same two URLs on `https://www.divine.video`
 
 2. **"Open with" dialog appears**
    - iOS: Means associated domains not configured correctly
@@ -174,6 +179,8 @@ adb shell pm get-app-links co.openvine.app
 # Should show:
 # co.openvine.app:
 #   divine.video: verified
+#   www.divine.video: verified
+#   login.divine.video: verified
 
 # If not verified, re-verify
 adb shell pm verify-app-links --re-verify co.openvine.app
@@ -216,12 +223,14 @@ Before marking deep linking as complete:
   - [ ] Links from Chrome work
   - [ ] ADB test commands work
   - [ ] `pm get-app-links` shows "verified"
-  - Note: `www.divine.video` Android coverage is tracked separately from this
-    Apple host-claim PR
+  - [ ] `www.divine.video` shows "verified" if claimed
+  - [ ] `login.divine.video` shows "verified" if claimed
 
 - [ ] Server verification
   - [ ] Apple file returns HTTP 200
   - [ ] Android file returns HTTP 200
+  - [ ] `www` verification files return HTTP 200 if claimed
+  - [ ] `login.divine.video/.well-known/assetlinks.json` returns HTTP 200 if claimed
   - [ ] Apple validator passes
 
 - [ ] Console logging

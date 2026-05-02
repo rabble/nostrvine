@@ -1,10 +1,9 @@
 # Deep Link Server Setup for divine.video
 
-To enable iOS universal links and Android app links, you need to host the
-verification files on the hostnames each platform claims. This change only
-expands Apple associated-domain coverage to `www.divine.video`, so the `www`
-guidance below is specific to Apple universal links. Android host coverage is
-tracked separately.
+To enable iOS universal links and Android app links, you need to host two
+verification files on every claimed Divine hostname. For the current mobile app
+that means `divine.video`, `www.divine.video`, and `login.divine.video` for
+Android App Links, plus the Apple-associated hosts for universal links.
 
 ## Files to Create
 
@@ -13,7 +12,7 @@ tracked separately.
 **File**: `apple-app-site-association` (no file extension)
 **Primary Location**: `https://divine.video/.well-known/apple-app-site-association`
 **Alternative Location**: `https://divine.video/apple-app-site-association`
-**If Apple `www` links are supported**: also serve the same file from
+**Also serve on `www` if claimed**:
 `https://www.divine.video/.well-known/apple-app-site-association`
 
 ```json
@@ -49,6 +48,9 @@ tracked separately.
 
 **File**: `assetlinks.json`
 **Location**: `https://divine.video/.well-known/assetlinks.json`
+**Also serve on every claimed Android host**:
+- `https://www.divine.video/.well-known/assetlinks.json`
+- `https://login.divine.video/.well-known/assetlinks.json`
 
 ```json
 [
@@ -94,18 +96,23 @@ SHA256: AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:AB:CD:EF:12:34:56:78:90:
 
 ### .well-known Directory
 
-Both files should be placed in the `.well-known` directory:
+Both files should be placed in the `.well-known` directory on every hostname claimed by the app:
 ```
 https://divine.video/.well-known/
 ├── apple-app-site-association
 └── assetlinks.json
 ```
 
-If Apple universal links should also claim `www.divine.video`, mirror the AASA
-file there:
+If additional hosts are also claimed, mirror the same files there:
 ```
 https://www.divine.video/.well-known/
-└── apple-app-site-association
+├── apple-app-site-association
+└── assetlinks.json
+```
+
+```text
+https://login.divine.video/.well-known/
+└── assetlinks.json
 ```
 
 ### CORS Headers (if needed)
@@ -146,11 +153,14 @@ location /.well-known/assetlinks.json {
 
 1. Build and install the app on a device
 2. Test the link in a browser or messaging app: `https://divine.video/video/abc123`
-3. The link should automatically open in the app (no disambiguation dialog)
+3. If `www.divine.video` is supported, also test: `https://www.divine.video/video/abc123`
+4. The link should automatically open in the app (no disambiguation dialog)
+5. Do not ship new manifest hosts until every claimed host returns HTTP 200 for its `assetlinks.json` file.
 
 **Verification Command**:
 ```bash
 adb shell am start -a android.intent.action.VIEW -d "https://divine.video/video/test123"
+adb shell am start -a android.intent.action.VIEW -d "https://www.divine.video/video/test123"
 ```
 
 **Check verification status**:
@@ -163,6 +173,8 @@ Should show:
 co.openvine.app:
   ...
   divine.video: verified
+  www.divine.video: verified
+  login.divine.video: verified
 ```
 
 ## Troubleshooting
