@@ -16,11 +16,10 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/models/known_account.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
-import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -325,46 +324,9 @@ void main() {
       tester,
     ) async {
       final mockGoRouter = MockGoRouter();
-      when(() => mockGoRouter.go(any())).thenReturn(null);
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
 
-      final container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-          authServiceProvider.overrideWithValue(mockAuthService),
-          draftStorageServiceProvider.overrideWithValue(
-            mockDraftStorageService,
-          ),
-          currentAuthStateProvider.overrideWith(
-            (ref) => AuthState.authenticated,
-          ),
-          userProfileReactiveProvider.overrideWith(
-            (ref, pubkey) => Stream.value(null),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MockGoRouterProvider(
-            goRouter: mockGoRouter,
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: MultiBlocProvider(
-                providers: [
-                  BlocProvider<InviteStatusCubit>.value(
-                    value: _createMockInviteCubit(),
-                  ),
-                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
-                ],
-                child: const SettingsScreen(),
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
       await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable);
@@ -377,8 +339,7 @@ void main() {
       await tester.tap(find.text('Integrated Apps'));
       await tester.pumpAndSettle();
 
-      verify(() => mockGoRouter.go(ExploreScreen.path)).called(1);
-      expect(container.read(forceExploreTabNameProvider), 'apps');
+      verify(() => mockGoRouter.push(AppsDirectoryScreen.path)).called(1);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

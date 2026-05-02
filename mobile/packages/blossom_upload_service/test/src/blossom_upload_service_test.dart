@@ -4214,6 +4214,542 @@ void main() {
         await tempDir.delete(recursive: true);
       });
 
+      test(
+        'uses resumable upload when Divine image server advertises support',
+        () async {
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_resumable_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          when(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+                DivineUploadHeaders.dataHost: [
+                  'https://upload.divine.video',
+                ],
+              }),
+            ),
+          );
+
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+
+            if (url.endsWith('/upload/init')) {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                statusCode: 201,
+                data: {
+                  'uploadId': 'up_image',
+                  'uploadUrl': 'https://upload.divine.video/sessions/up_image',
+                  'chunkSize': 1024,
+                  'nextOffset': 0,
+                  'expiresAt': 9999999999,
+                },
+              );
+            }
+
+            if (url.endsWith('/upload/up_image/complete')) {
+              return Response(
+                requestOptions: RequestOptions(
+                  path: '/upload/up_image/complete',
+                ),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/image-hash',
+                  'fallbackUrl': 'https://media.divine.video/image-hash',
+                },
+              );
+            }
+
+            throw StateError('Unexpected POST url: $url');
+          });
+
+          final putUrls = <String>[];
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            putUrls.add(url);
+
+            if (url == 'https://upload.divine.video/sessions/up_image') {
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_image'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.uploadOffset: ['3'],
+                }),
+              );
+            }
+
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 503,
+              data: {'error': 'legacy upload unavailable'},
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            putUrls,
+            isNot(contains('https://media.divine.video/upload')),
+          );
+          expect(
+            putUrls,
+            contains('https://upload.divine.video/sessions/up_image'),
+          );
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'falls back to legacy upload when Divine image resumable init fails',
+        () async {
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_resumable_init_fallback_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          when(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 403,
+              data: {'error': 'init unavailable'},
+            ),
+          );
+
+          final putUrls = <String>[];
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            putUrls.add(url);
+
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/fallback-image',
+                'fallbackUrl': 'https://media.divine.video/fallback-image',
+              },
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(putUrls, contains('https://media.divine.video/upload'));
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'falls back to legacy upload when Divine image completion fails',
+        () async {
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_resumable_result_fallback_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          when(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+
+            if (url.endsWith('/upload/init')) {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                statusCode: 201,
+                data: {
+                  'uploadId': 'up_image',
+                  'uploadUrl': 'https://upload.divine.video/sessions/up_image',
+                  'chunkSize': 1024,
+                  'nextOffset': 0,
+                  'expiresAt': 9999999999,
+                },
+              );
+            }
+
+            if (url.endsWith('/upload/up_image/complete')) {
+              return Response(
+                requestOptions: RequestOptions(
+                  path: '/upload/up_image/complete',
+                ),
+                statusCode: 200,
+                data: {'sha256': 'image-hash'},
+              );
+            }
+
+            throw StateError('Unexpected POST url: $url');
+          });
+
+          final putUrls = <String>[];
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            putUrls.add(url);
+
+            if (url == 'https://upload.divine.video/sessions/up_image') {
+              return Response(
+                requestOptions: RequestOptions(path: '/sessions/up_image'),
+                statusCode: 204,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.uploadOffset: ['3'],
+                }),
+              );
+            }
+
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/fallback-image',
+                'fallbackUrl': 'https://media.divine.video/fallback-image',
+              },
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            putUrls,
+            contains('https://upload.divine.video/sessions/up_image'),
+          );
+          expect(putUrls, contains('https://media.divine.video/upload'));
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'tries Divine image legacy fallback only once when resumable init '
+        'and fallback both fail',
+        () async {
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_single_fallback_attempt_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          when(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 403,
+              data: {'error': 'init unavailable'},
+            ),
+          );
+
+          final putUrls = <String>[];
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            putUrls.add(url);
+
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 503,
+              data: {'error': 'legacy upload unavailable'},
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            putUrls.where((url) => url == 'https://media.divine.video/upload'),
+            hasLength(1),
+          );
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
+      test(
+        'does not use legacy fallback for third-party image resumable '
+        'failures',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'blossom_server_url': 'https://third-party.com',
+            'use_blossom_upload': true,
+          });
+          service = BlossomUploadService(
+            authProvider: mockAuthProvider,
+            dio: mockDio,
+          );
+
+          when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthProvider.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+          );
+
+          final tempDir = await Directory.systemTemp.createTemp(
+            'image_third_party_no_fallback_test_',
+          );
+          final imageFile = File('${tempDir.path}/image.jpg')
+            ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+
+          when(
+            () => mockDio.head<dynamic>(
+              any(),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+
+            if (url == 'https://third-party.com/upload') {
+              return Response(
+                requestOptions: RequestOptions(path: '/upload'),
+                statusCode: 200,
+                headers: Headers.fromMap({
+                  DivineUploadHeaders.extensions: [
+                    DivineUploadExtensions.resumableSessions,
+                  ],
+                }),
+              );
+            }
+
+            return Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers(),
+            );
+          });
+
+          when(
+            () => mockDio.post<dynamic>(
+              'https://third-party.com/upload/init',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenThrow(
+            const BlossomResumableUploadException('init failed'),
+          );
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              data: {
+                'url': 'https://media.divine.video/fallback-image',
+                'fallbackUrl': 'https://media.divine.video/fallback-image',
+              },
+            ),
+          );
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          verifyNever(
+            () => mockDio.put<dynamic>(
+              'https://third-party.com/upload',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          );
+          verify(
+            () => mockDio.put<dynamic>(
+              'https://media.divine.video/upload',
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).called(1);
+
+          await tempDir.delete(recursive: true);
+        },
+      );
+
       test('catches server DioException and tries next server', () async {
         when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
         when(

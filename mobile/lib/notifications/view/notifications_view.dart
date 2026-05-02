@@ -215,23 +215,19 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       return;
     }
 
-    // Get video from video event service.
-    var video = videoEventService.getVideoById(resolvedVideoEventId);
-
-    // If not found in cache, try fetching from Nostr.
-    if (video == null) {
-      try {
-        final event = await nostrService.fetchEventById(resolvedVideoEventId);
-        if (event != null) {
-          video = VideoEvent.fromNostrEvent(event);
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to fetch video from Nostr: $e',
-          name: 'NotificationsView',
-          category: LogCategory.ui,
-        );
-      }
+    // fetchVideoWithStats handles cache→relay lookup and bulk-stats
+    // hydration in one call, matching what feed providers do.
+    VideoEvent? video;
+    try {
+      video = await ref
+          .read(videosRepositoryProvider)
+          .fetchVideoWithStats(resolvedVideoEventId);
+    } catch (e) {
+      Log.error(
+        'Failed to fetch video: $e',
+        name: 'NotificationsView',
+        category: LogCategory.ui,
+      );
     }
 
     if (!context.mounted) return;
@@ -260,12 +256,11 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply ||
         notificationKind == NotificationKind.mention;
-    final videoForNav = video;
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([videoForNav]),
+        videosStream: Stream.value([video]),
         initialIndex: 0,
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,

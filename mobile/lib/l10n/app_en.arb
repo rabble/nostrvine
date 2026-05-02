@@ -80,6 +80,19 @@
   },
   "settingsAppLanguageDescription": "Choose the language for the app interface",
   "settingsAppLanguageUseDeviceLanguage": "Use device language",
+  "settingsGeneralTitle": "General Settings",
+  "settingsContentSafetyTitle": "Content & Safety",
+  "generalSettingsSectionIntegrations": "INTEGRATIONS",
+  "generalSettingsSectionViewing": "VIEWING",
+  "generalSettingsSectionCreating": "CREATING",
+  "generalSettingsSectionApp": "APP",
+  "generalSettingsClosedCaptions": "Closed Captions",
+  "generalSettingsClosedCaptionsSubtitle": "Show captions when videos include them",
+  "generalSettingsVideoShape": "Video Shape",
+  "generalSettingsVideoShapeSquareOnly": "Square videos only",
+  "generalSettingsVideoShapeSquareAndPortrait": "Square and portrait",
+  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Show the full mix of Divine videos",
+  "generalSettingsVideoShapeSquareOnlySubtitle": "Keep feeds in the classic square format",
   "contentPreferencesTitle": "Content Preferences",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -118,6 +131,14 @@
   "contentPreferencesAutoSelectsBest": "Automatically selects the best microphone",
   "contentPreferencesSelectAudioInput": "Select Audio Input",
   "contentPreferencesUnknownMicrophone": "Unknown Microphone",
+  "contentFiltersAdultContent": "ADULT CONTENT",
+  "contentFiltersViolenceGore": "VIOLENCE & GORE",
+  "contentFiltersSubstances": "SUBSTANCES",
+  "contentFiltersOther": "OTHER",
+  "contentFiltersAgeGateMessage": "Verify your age in Safety & Privacy settings to unlock adult content filters",
+  "contentFiltersShow": "Show",
+  "contentFiltersWarn": "Warn",
+  "contentFiltersFilterOut": "Filter Out",
   "profileBlockedAccountNotAvailable": "This account is not available",
   "profileErrorPrefix": "Error: {error}",
   "@profileErrorPrefix": {
@@ -364,6 +385,7 @@
   "profileSetupImageUrlTitle": "Add image URL",
   "profileSetupPictureUploaded": "Profile picture uploaded successfully!",
   "profileSetupImageSelectionFailed": "Image selection failed. Please paste an image URL below instead.",
+  "profileSetupImagesTypeGroup": "images",
   "profileSetupCameraAccessFailed": "Camera access failed: {error}",
   "@profileSetupCameraAccessFailed": {
     "placeholders": {
@@ -414,6 +436,8 @@
   "profileSetupSelectButton": "Select",
   "profileSetupUseOwnNip05": "Use your own NIP-05 address",
   "profileSetupNip05AddressLabel": "NIP-05 Address",
+  "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (e.g., name@domain.com)",
+  "profileSetupExternalNip05DivineDomain": "Use the username field above for divine.video",
   "profileSetupProfilePicturePreview": "Profile picture preview",
   "nostrInfoIntroBuiltOn": "DiVine is built on Nostr,",
   "nostrInfoIntroDescription": " a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ",
@@ -542,6 +566,14 @@
   "contentWarningDetailsSubtitle": "The creator applied these labels:",
   "contentWarningManageFilters": "Manage content filters",
   "contentWarningViewAnyway": "View Anyway",
+  "contentWarningReportContentTooltip": "Report Content",
+  "contentWarningBlockUserTooltip": "Block User",
+  "contentWarningBlockedTitle": "Content Blocked",
+  "contentWarningBlockedPolicy": "This content has been blocked due to policy violations.",
+  "contentWarningNoticeTitle": "Content Notice",
+  "contentWarningPotentiallyHarmfulTitle": "Potentially Harmful Content",
+  "contentWarningView": "View",
+  "contentWarningReportAction": "Report",
   "contentWarningHideAllLikeThis": "Hide all content like this",
   "contentWarningNoFilterYet": "No saved filter for this warning yet.",
   "contentWarningHiddenConfirmation": "We'll hide posts like this from now on.",
@@ -868,6 +900,10 @@
   },
   "relaySettingsFailedToAddRelay": "Failed to add relay. Please check the URL and try again.",
   "relaySettingsInvalidUrl": "Relay URL must start with wss:// or ws://",
+  "relaySettingsInsecureUrl": "Relay URL must use wss:// (ws:// is allowed only for localhost)",
+  "@relaySettingsInsecureUrl": {
+    "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+  },
   "relaySettingsRestoredDefault": "Restored default relay: {defaultRelay}",
   "@relaySettingsRestoredDefault": {
     "placeholders": {
@@ -879,6 +915,68 @@
   "relaySettingsFailedToRestoreDefault": "Failed to restore default relay. Please check your network connection.",
   "relaySettingsCouldNotOpenBrowser": "Could not open browser",
   "relaySettingsFailedToOpenLink": "Failed to open link",
+  "relaySettingsExternalRelay": "External relay",
+  "relaySettingsNotConnected": "Not connected",
+  "relaySettingsDisconnectedAgo": "Disconnected {duration} ago",
+  "@relaySettingsDisconnectedAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsSubscriptionsSummary": "{count} subs",
+  "@relaySettingsSubscriptionsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relaySettingsEventsSummary": "{count} events",
+  "@relaySettingsEventsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsTimeAgo": "{duration} ago",
+  "@relaySettingsTimeAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsIntro": "Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.",
+  "nostrSettingsSectionNetwork": "Network",
+  "nostrSettingsSectionAccount": "Account",
+  "nostrSettingsSectionDangerZone": "Danger Zone",
+  "nostrSettingsRelays": "Relays",
+  "nostrSettingsRelaysSubtitle": "Manage Nostr relay connections",
+  "nostrSettingsRelayDiagnostics": "Relay Diagnostics",
+  "nostrSettingsRelayDiagnosticsSubtitle": "Debug relay connectivity and network issues",
+  "nostrSettingsMediaServers": "Media Servers",
+  "nostrSettingsMediaServersSubtitle": "Configure Blossom upload servers",
+  "nostrSettingsDeveloperOptions": "Developer Options",
+  "nostrSettingsDeveloperOptionsSubtitle": "Environment switcher and debug settings",
+  "nostrSettingsExperimentalFeaturesSubtitle": "Toggle feature flags that may hiccup.",
+  "nostrSettingsKeyManagement": "Key Management",
+  "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",
+  "nostrSettingsRemoveKeys": "Remove Keys from Device",
+  "nostrSettingsRemoveKeysSubtitle": "Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.",
+  "nostrSettingsCouldNotRemoveKeys": "Could not remove keys from this device. Please try again.",
+  "nostrSettingsFailedToRemoveKeys": "Failed to remove keys: {error}",
+  "@nostrSettingsFailedToRemoveKeys": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsDeleteAccount": "Delete Account and Data",
+  "nostrSettingsDeleteAccountSubtitle": "PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.",
   "relayDiagnosticTitle": "Relay Diagnostics",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -1041,6 +1139,8 @@
     "description": "Safety settings screen app bar title"
   },
   "safetySettingsLabel": "SETTINGS",
+  "safetySettingsWhatYouSee": "WHAT YOU SEE",
+  "safetySettingsWhatYouPublish": "WHAT YOU PUBLISH",
   "safetySettingsShowDivineHostedOnly": "Only show Divine-hosted videos",
   "safetySettingsShowDivineHostedOnlySubtitle": "Hide videos served from other media hosts",
   "safetySettingsModeration": "MODERATION",
@@ -2133,6 +2233,15 @@
       }
     }
   },
+  "listPersonCount": "{count, plural, =1{1 person} other{{count} people}}",
+  "@listPersonCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listByAuthorPrefix": "By ",
   "listNewList": "New List",
   "listDone": "Done",
   "listErrorLoading": "Error loading lists",
@@ -2225,6 +2334,24 @@
   "soundPreview": "Preview",
   "soundStop": "Stop",
   "soundUseSound": "Use Sound",
+  "soundUntitled": "Untitled sound",
+  "soundStopPreview": "Stop preview",
+  "soundPreviewSemanticLabel": "Preview {title}",
+  "@soundPreviewSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "soundViewDetailsSemanticLabel": "View details for {title}",
+  "@soundViewDetailsSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "soundNoVideoCount": "No videos yet",
   "soundOneVideo": "1 video",
   "soundVideoCount": "{count} videos",
@@ -2512,6 +2639,16 @@
     }
   },
   "exploreNoVideosAvailable": "No videos available",
+  "exploreSearchHint": "Search...",
+
+  "categoryVideoCount": "{count} videos",
+  "@categoryVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
 
   "discoverListsFailedToUpdateSubscription": "Failed to update subscription: {error}",
   "@discoverListsFailedToUpdateSubscription": {
@@ -2521,11 +2658,34 @@
       }
     }
   },
+  "discoverListsTitle": "Discover Lists",
+  "discoverListsFailedToLoad": "Failed to load lists",
+  "discoverListsFailedToLoadWithError": "Failed to load lists: {error}",
+  "@discoverListsFailedToLoadWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverListsLoading": "Discovering public lists...",
+  "discoverListsEmptyTitle": "No public lists found",
+  "discoverListsEmptySubtitle": "Check back later for new lists",
+  "discoverListsByAuthorPrefix": "by",
+
+  "curatedListEmptyTitle": "No videos in this list",
+  "curatedListEmptySubtitle": "Add some videos to get started",
+  "curatedListLoadingVideos": "Loading videos...",
+  "curatedListFailedToLoad": "Failed to load list",
+  "curatedListNoVideosAvailable": "No videos available",
+  "curatedListVideoNotAvailable": "Video not available",
 
   "commonRetry": "Retry",
   "commonNext": "Next",
   "commonDelete": "Delete",
   "commonCancel": "Cancel",
+  "commonBack": "Back",
+  "commonClose": "Close",
 
   "videoMetadataTags": "Tags",
   "videoMetadataExpiration": "Expiration",
@@ -2640,12 +2800,127 @@
   "routerInvalidHashtagRoute": "Invalid hashtag route",
 
   "categoryGalleryCouldNotLoadVideos": "Could not load videos",
+  "categoryGalleryNoVideosInCategory": "No videos in this category",
+  "categoryGallerySortOptionsLabel": "Category sort options",
+  "categoryGallerySortHot": "Hot",
+  "categoryGallerySortNew": "New",
+  "categoryGallerySortClassic": "Classic",
+  "categoryGallerySortForYou": "For You",
   "categoriesCouldNotLoadCategories": "Could not load categories",
+  "categoriesNoCategoriesAvailable": "No categories available",
+
+  "notificationsEmptyTitle": "No activity yet",
+  "notificationsEmptySubtitle": "When people interact with your content, you'll see it here",
+
+  "appsPermissionsTitle": "Integration Permissions",
+  "appsPermissionsRevoke": "Revoke",
+  "appsPermissionsEmptyTitle": "No saved integration permissions",
+  "appsPermissionsEmptySubtitle": "Approved integrations will appear here after you remember an access approval.",
+
+  "nostrAppPermissionTitle": "{appName} wants your approval",
+  "@nostrAppPermissionTitle": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrAppPermissionDescription": "This app is requesting access through Divine's vetted sandbox.",
+  "nostrAppPermissionOrigin": "Origin",
+  "nostrAppPermissionMethod": "Method",
+  "nostrAppPermissionCapability": "Capability",
+  "nostrAppPermissionEventKind": "Event kind",
+  "nostrAppPermissionAllow": "Allow",
+
+  "bugReportSendReport": "Send Report",
+  "supportSubjectRequiredLabel": "Subject *",
+  "supportRequiredHelper": "Required",
+  "bugReportSubjectHint": "Brief summary of the issue",
+  "bugReportDescriptionRequiredLabel": "What happened? *",
+  "bugReportDescriptionHint": "Describe the issue you encountered",
+  "bugReportStepsLabel": "Steps to Reproduce",
+  "bugReportStepsHint": "1. Go to...\n2. Tap on...\n3. See error",
+  "bugReportExpectedBehaviorLabel": "Expected Behavior",
+  "bugReportExpectedBehaviorHint": "What should have happened instead?",
+  "bugReportDiagnosticsNotice": "Device info and logs will be included automatically.",
+  "bugReportSuccessMessage": "Thank you! We've received your report and will use it to make Divine better.",
+  "bugReportSendFailed": "Failed to send bug report. Please try again later.",
+  "bugReportFailedWithError": "Bug report failed to send: {error}",
+  "@bugReportFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestSendRequest": "Send Request",
+  "featureRequestSubjectHint": "Brief summary of your idea",
+  "featureRequestDescriptionRequiredLabel": "What would you like? *",
+  "featureRequestDescriptionHint": "Describe the feature you want",
+  "featureRequestUsefulnessLabel": "How would this be useful?",
+  "featureRequestUsefulnessHint": "Explain the benefit this feature would provide",
+  "featureRequestWhenLabel": "When would you use this?",
+  "featureRequestWhenHint": "Describe the situations where this would help",
+  "featureRequestSuccessMessage": "Thank you! We've received your feature request and will review it.",
+  "featureRequestSendFailed": "Failed to send feature request. Please try again later.",
+  "featureRequestFailedWithError": "Feature request failed to send: {error}",
+  "@featureRequestFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
 
   "notificationFollowBack": "Follow back",
 
+  "followingTitle": "Following",
+  "followingTitleForName": "{displayName}'s Following",
+  "@followingTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "followingFailedToLoadList": "Failed to load following list",
+  "followingEmptyTitle": "Not following anyone yet",
+  "followersTitle": "Followers",
+  "followersTitleForName": "{displayName}'s Followers",
+  "@followersTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
   "followersFailedToLoadList": "Failed to load followers list",
+  "followersEmptyTitle": "No followers yet",
+  "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
+
+  "reportMessageTitle": "Report Message",
+  "reportMessageWhyReporting": "Why are you reporting this message?",
+  "reportMessageSelectReason": "Please select a reason for reporting this message",
+
+  "newMessageTitle": "New message",
+  "newMessageFindPeople": "Find people",
+  "newMessageNoContacts": "No contacts found.\nFollow people to see them here.",
+  "newMessageNoUsersFound": "No users found",
+
+  "hashtagSearchTitle": "Search for hashtags",
+  "hashtagSearchSubtitle": "Discover trending topics and content",
+  "hashtagSearchNoResults": "No hashtags found for \"{query}\"",
+  "@hashtagSearchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagSearchFailed": "Search failed",
+
+  "userNotAvailableTitle": "Account not available",
+  "userNotAvailableBody": "This account isn't available right now.",
 
   "classicVinersTitle": "OG Viners",
 
@@ -2657,8 +2932,30 @@
       }
     }
   },
+  "blossomValidServerUrl": "Please enter a valid server URL (e.g., https://blossom.band)",
+  "blossomSettingsSaved": "Blossom settings saved",
+  "blossomSaveTooltip": "Save",
+  "blossomAboutTitle": "About Blossom",
+  "blossomAboutDescription": "Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine's Blossom server. Enable the option below to use a custom server instead.",
+  "blossomUseCustomServer": "Use Custom Blossom Server",
+  "blossomCustomServerEnabledSubtitle": "Videos will be uploaded to your custom Blossom server",
+  "blossomCustomServerDisabledSubtitle": "Your videos are currently being uploaded to Divine's Blossom server",
+  "blossomCustomServerUrl": "Custom Blossom Server URL",
+  "blossomCustomServerHelper": "Enter the URL of your custom Blossom server",
+  "blossomPopularServers": "Popular Blossom Servers",
 
   "blueskyFailedToUpdateCrosspost": "Failed to update crosspost setting",
+  "blueskySignInRequired": "Sign in to manage Bluesky settings",
+  "blueskyPublishVideos": "Publish videos to Bluesky",
+  "blueskyEnabledSubtitle": "Your videos will be published to Bluesky",
+  "blueskyDisabledSubtitle": "Your videos will not be published to Bluesky",
+  "blueskyHandle": "Bluesky Handle",
+  "blueskyStatus": "Status",
+  "blueskyStatusReady": "Account provisioned and ready",
+  "blueskyStatusPending": "Account provisioning in progress...",
+  "blueskyStatusFailed": "Account provisioning failed",
+  "blueskyStatusDisabled": "Account disabled",
+  "blueskyStatusNotLinked": "No Bluesky account linked",
 
   "invitesTitle": "Invite Friends",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
@@ -2676,6 +2973,24 @@
   "@invitesGenerateButtonLabel": {
     "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
   },
+  "invitesNoneAvailable": "No invites available right now",
+  "invitesShareWithPeople": "Share diVine with people you know",
+  "invitesUsedInvites": "Used invites",
+  "invitesShareMessage": "Join me on diVine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}",
+  "@invitesShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesCopyInvite": "Copy invite",
+  "invitesCopied": "Invite copied!",
+  "invitesShareInvite": "Share invite",
+  "invitesShareSubject": "Join me on diVine",
+  "invitesClaimed": "Claimed",
+  "invitesCouldNotLoad": "Could not load invites",
+  "invitesRetry": "Retry",
 
   "searchSomethingWentWrong": "Something went wrong",
   "searchTryAgain": "Try again",
@@ -2711,6 +3026,10 @@
         "type": "String"
       }
     }
+  },
+  "keyImportInsecureBunkerRelay": "Bunker relay must use wss:// (ws:// is allowed only for localhost)",
+  "@keyImportInsecureBunkerRelay": {
+    "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
   },
 
   "timeNow": "now",
@@ -2874,6 +3193,11 @@
     "placeholders": {
       "count": { "type": "int" }
     }
+  },
+
+  "commentReplyToPrefix": "Re:",
+  "@commentReplyToPrefix": {
+    "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."
   },
 
   "searchSomethingWentWrong": "Something went wrong",

@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/config/bug_report_config.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/widgets/support_dialog_utils.dart';
@@ -145,11 +146,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
           _isSubmitting = false;
           _isSuccess = success;
           if (success) {
-            _resultMessage =
-                "Thank you! We've received your report and will use it to make Divine better.";
+            _resultMessage = context.l10n.bugReportSuccessMessage;
           } else {
-            _resultMessage =
-                'Failed to send bug report. Please try again later.';
+            _resultMessage = context.l10n.bugReportSendFailed;
           }
         });
 
@@ -174,7 +173,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
         setState(() {
           _isSubmitting = false;
           _isSuccess = false;
-          _resultMessage = 'Bug report failed to send: $e';
+          _resultMessage = context.l10n.bugReportFailedWithError('$e');
         });
       }
     }
@@ -186,9 +185,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
-      title: const Text(
-        'Report a Bug',
-        style: TextStyle(color: VineTheme.whiteText),
+      title: Text(
+        context.l10n.supportReportBug,
+        style: const TextStyle(color: VineTheme.whiteText),
       ),
       content: SizedBox(
         width: 400,
@@ -203,9 +202,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'Subject *',
-                  hint: 'Brief summary of the issue',
-                  helper: 'Required',
+                  label: context.l10n.supportSubjectRequiredLabel,
+                  hint: context.l10n.bugReportSubjectHint,
+                  helper: context.l10n.supportRequiredHelper,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -219,9 +218,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'What happened? *',
-                  hint: 'Describe the issue you encountered',
-                  helper: 'Required',
+                  label: context.l10n.bugReportDescriptionRequiredLabel,
+                  hint: context.l10n.bugReportDescriptionHint,
+                  helper: context.l10n.supportRequiredHelper,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -235,8 +234,8 @@ class _BugReportDialogState extends State<BugReportDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'Steps to Reproduce',
-                  hint: '1. Go to...\n2. Tap on...\n3. See error',
+                  label: context.l10n.bugReportStepsLabel,
+                  hint: context.l10n.bugReportStepsHint,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -250,8 +249,8 @@ class _BugReportDialogState extends State<BugReportDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'Expected Behavior',
-                  hint: 'What should have happened instead?',
+                  label: context.l10n.bugReportExpectedBehaviorLabel,
+                  hint: context.l10n.bugReportExpectedBehaviorHint,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -260,7 +259,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
 
               // Info text
               Text(
-                'Device info and logs will be included automatically.',
+                context.l10n.bugReportDiagnosticsNotice,
                 style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
               ),
 
@@ -310,9 +309,9 @@ class _BugReportDialogState extends State<BugReportDialog> {
         if (_isSuccess != true)
           TextButton(
             onPressed: _isSubmitting ? null : context.pop,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.lightText),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.lightText),
             ),
           ),
 
@@ -325,7 +324,11 @@ class _BugReportDialogState extends State<BugReportDialog> {
             backgroundColor: VineTheme.vineGreen,
             foregroundColor: VineTheme.whiteText,
           ),
-          child: Text(_isSuccess == true ? 'Close' : 'Send Report'),
+          child: Text(
+            _isSuccess == true
+                ? context.l10n.commonClose
+                : context.l10n.bugReportSendReport,
+          ),
         ),
       ],
     );

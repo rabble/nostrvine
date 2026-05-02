@@ -2,6 +2,13 @@
 // ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
 /// Host address from Android emulator to reach the host machine's localhost.
+///
+/// Mirrored in the native transport-security configs that allow cleartext
+/// to loopback hosts:
+///   - mobile/android/app/src/main/res/xml/network_security_config.xml
+///   - mobile/ios/Runner/Info.plist (NSAllowsLocalNetworking)
+///   - mobile/macos/Runner/Info.plist (NSAllowsLocalNetworking)
+/// Keep this constant in sync with the Android <domain-config> list.
 const localHost = '10.0.2.2';
 
 /// Local Docker stack port mappings.

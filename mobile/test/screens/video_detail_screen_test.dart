@@ -9,11 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
 import '../test_data/video_test_data.dart';
@@ -27,6 +29,8 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockContentBlocklistRepository extends Mock
     implements ContentBlocklistRepository {}
 
+class _MockVideosRepository extends Mock implements VideosRepository {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(createTestVideoEvent(id: 'fallback_video'));
@@ -37,17 +41,17 @@ void main() {
     late _MockContentBlocklistRepository mockBlocklistRepository;
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
+    late _MockVideosRepository mockVideosRepository;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
       mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
+      mockVideosRepository = _MockVideosRepository();
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
-      // Stub configuredRelays (used when resolving Funnelcake base URL for
-      // funnelcakeApiClientProvider).
       when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
       when(() => mockNostrClient.publicKey).thenReturn('');
       when(() => mockNostrClient.isInitialized).thenReturn(true);
@@ -78,6 +82,7 @@ void main() {
             mockBlocklistRepository,
           ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         ],
         home: VideoDetailScreen(
           videoId: videoId,
@@ -91,11 +96,10 @@ void main() {
       testWidgets('renders $CircularProgressIndicator while fetching video', (
         tester,
       ) async {
-        // Cache miss, Nostr fetch stays pending
-        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
-        final completer = Completer<Event?>();
+        // fetchVideoWithStats stays pending
+        final completer = Completer<VideoEvent?>();
         when(
-          () => mockNostrClient.fetchEventById(any()),
+          () => mockVideosRepository.fetchVideoWithStats(any()),
         ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(buildSubject());
@@ -104,8 +108,10 @@ void main() {
       });
     });
 
-    group('video found in cache', () {
-      testWidgets('renders placeholder feed with cached video', (tester) async {
+    group('video found', () {
+      testWidgets('renders player once fetchVideoWithStats resolves', (
+        tester,
+      ) async {
         final video = createTestVideoEvent(
           id: 'test_video_id',
           pubkey: 'test_pubkey',
@@ -113,23 +119,80 @@ void main() {
         );
 
         when(
-          () => mockVideoEventService.getVideoById('test_video_id'),
-        ).thenReturn(video);
+          () => mockVideosRepository.fetchVideoWithStats('test_video_id'),
+        ).thenAnswer((_) async => video);
 
         await tester.pumpWidget(buildSubject());
         await tester.pump();
 
         expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
       });
+
+      testWidgets(
+        'stats are hydrated before player renders (regression #3768)',
+        (tester) async {
+          // Simulate a video returned with loop counts already populated
+          // by fetchVideoWithStats — this is the contract we pin.
+          final videoWithStats =
+              createTestVideoEvent(
+                id: 'test_video_id',
+                pubkey: 'test_pubkey',
+                title: 'Notif Video',
+              ).copyWith(
+                originalLoops: 99,
+                rawTags: const {'loops': '99', 'views': '1234'},
+              );
+
+          VideoEvent? capturedVideo;
+          when(
+            () => mockVideosRepository.fetchVideoWithStats('test_video_id'),
+          ).thenAnswer((_) async => videoWithStats);
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                followRepositoryProvider.overrideWithValue(
+                  mockFollowRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              home: VideoDetailScreen(
+                videoId: 'test_video_id',
+                videoFeedBuilder: (video) {
+                  capturedVideo = video;
+                  return const SizedBox(key: Key('video-feed-placeholder'));
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
+          // The video passed to the builder must already have hydrated stats.
+          expect(capturedVideo?.originalLoops, equals(99));
+          expect(capturedVideo?.rawTags['loops'], equals('99'));
+        },
+      );
     });
 
     group('video not found', () {
-      testWidgets('renders error when video not found in cache or Nostr', (
+      testWidgets('renders error when fetchVideoWithStats returns null', (
         tester,
       ) async {
-        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
-          () => mockNostrClient.fetchEventById(any()),
+          () => mockVideosRepository.fetchVideoWithStats(any()),
         ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(buildSubject());
@@ -141,13 +204,12 @@ void main() {
     });
 
     group('fetch error', () {
-      testWidgets('renders error message when Nostr fetch fails', (
+      testWidgets('renders error message when fetchVideoWithStats throws', (
         tester,
       ) async {
-        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
-          () => mockNostrClient.fetchEventById(any()),
-        ).thenAnswer((_) => Future<Event?>.error(Exception('Network error')));
+          () => mockVideosRepository.fetchVideoWithStats(any()),
+        ).thenAnswer((_) => Future.error(Exception('Network error')));
 
         await tester.pumpWidget(buildSubject());
         await tester.pump();
@@ -169,8 +231,8 @@ void main() {
         );
 
         when(
-          () => mockVideoEventService.getVideoById('blocked_video_id'),
-        ).thenReturn(video);
+          () => mockVideosRepository.fetchVideoWithStats('blocked_video_id'),
+        ).thenAnswer((_) async => video);
         when(
           () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);
@@ -191,8 +253,8 @@ void main() {
         );
 
         when(
-          () => mockVideoEventService.getVideoById('blocked_video_id'),
-        ).thenReturn(video);
+          () => mockVideosRepository.fetchVideoWithStats('blocked_video_id'),
+        ).thenAnswer((_) async => video);
         when(
           () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
         ).thenReturn(true);

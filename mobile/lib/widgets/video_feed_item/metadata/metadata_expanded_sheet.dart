@@ -187,10 +187,13 @@ class _TitleSection extends StatelessWidget {
     final hasTitleOrDescription =
         (title != null && title.isNotEmpty) || description.isNotEmpty;
 
+    final publishedAtSeconds =
+        int.tryParse(video.publishedAt ?? '') ?? video.createdAt;
     final formattedDate = TimeFormatter.formatAbsoluteDate(
-      video.createdAt,
+      publishedAtSeconds,
       locale: Localizations.localeOf(context).toString(),
     );
+    final postedDateText = l10n.metadataPostedDateSemantics(formattedDate);
 
     return DecoratedBox(
       decoration: const BoxDecoration(
@@ -220,9 +223,9 @@ class _TitleSection extends StatelessWidget {
               const SizedBox(height: 16),
             ],
             Semantics(
-              label: l10n.metadataPostedDateSemantics(formattedDate),
+              label: postedDateText,
               child: Text(
-                formattedDate,
+                postedDateText,
                 style: VineTheme.labelMediumFont(
                   color: VineTheme.onSurfaceVariant,
                 ),

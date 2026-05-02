@@ -153,6 +153,14 @@ void main() {
           LanguagePreferenceService.displayNameFor('ja'),
           equals('Japanese'),
         );
+        expect(
+          LanguagePreferenceService.displayNameFor('bg'),
+          equals('Bulgarian'),
+        );
+        expect(
+          LanguagePreferenceService.displayNameFor('am'),
+          equals('Amharic'),
+        );
       });
 
       test('returns uppercased code for unknown language codes', () {

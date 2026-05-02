@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Centered empty state for the notifications list.
 ///
@@ -25,10 +26,13 @@ class NotificationEmptyState extends StatelessWidget {
               color: VineTheme.lightText,
             ),
             const SizedBox(height: 16),
-            Text('No activity yet', style: VineTheme.titleMediumFont()),
+            Text(
+              context.l10n.notificationsEmptyTitle,
+              style: VineTheme.titleMediumFont(),
+            ),
             const SizedBox(height: 8),
             Text(
-              "When people interact with your content, you'll see it here",
+              context.l10n.notificationsEmptySubtitle,
               style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
             ),

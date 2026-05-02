@@ -54,6 +54,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     with WidgetsBindingObserver {
   VideoRecorderNotifier? _notifier;
   ProviderSubscription<AudioEvent?>? _soundSubscription;
+  OverlayVisibility? _overlayVisibilityNotifier;
 
   bool get _isAutosavedDraft => ref.read(videoEditorProvider).isAutosavedDraft;
 
@@ -213,7 +214,8 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   /// Force all background video playback to pause while camera is open.
   void _pauseBackgroundPlayback() {
     try {
-      ref.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      _overlayVisibilityNotifier = ref.read(overlayVisibilityProvider.notifier);
+      _overlayVisibilityNotifier!.setPageOpen(true);
       ref.read(videoVisibilityManagerProvider).pauseAllVideos();
       _disposeVideoControllers();
       Log.info(
@@ -311,7 +313,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   @override
   Future<void> dispose() async {
     try {
-      ref.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+      _overlayVisibilityNotifier?.setPageOpen(false);
     } catch (e) {
       Log.warning(
         '📹 Failed to clear overlay visibility on dispose: $e',

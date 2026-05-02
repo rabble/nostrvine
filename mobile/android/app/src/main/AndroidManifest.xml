@@ -114,13 +114,14 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep links for divine.video and the canonical login hostname -->
+            <!-- Deep links for apex/www Divine hosts and the canonical login hostname -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
 
                 <data android:scheme="https" android:host="divine.video" />
+                <data android:scheme="https" android:host="www.divine.video" />
                 <data android:scheme="https" android:host="login.divine.video" />
 
                 <data android:pathPrefix="/video"/>

@@ -20,13 +20,12 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
-import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
@@ -227,12 +226,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => context.push(NotificationSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'General Settings',
+                  title: context.l10n.settingsGeneralTitle,
                   divineIcon: DivineIconName.globe,
                   onTap: () => context.push(GeneralSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'Content & Safety',
+                  title: context.l10n.settingsContentSafetyTitle,
                   divineIcon: DivineIconName.faders,
                   onTap: () => context.push(SafetySettingsScreen.path),
                 ),
@@ -246,11 +245,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     icon: Icons.apps,
                     title: context.l10n.settingsIntegratedApps,
                     subtitle: context.l10n.settingsIntegratedAppsSubtitle,
-                    onTap: () {
-                      ref.read(forceExploreTabNameProvider.notifier).state =
-                          'apps';
-                      context.go(ExploreScreen.path);
-                    },
+                    onTap: () => context.push(AppsDirectoryScreen.path),
                   ),
                 _SettingsTile(
                   icon: Icons.science,

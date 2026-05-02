@@ -34,7 +34,7 @@ class _InvitesScreenState extends State<InvitesScreen> {
       backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: VineTheme.navGreen,
-        title: const Text('Invite Friends'),
+        title: Text(context.l10n.invitesTitle),
       ),
       body: const InvitesView(),
     );
@@ -84,12 +84,15 @@ class _LoadedView extends StatelessWidget {
     final hasRemainingCapacity = inviteStatus.remaining > 0;
 
     if (unclaimed.isEmpty && claimed.isEmpty && !hasRemainingCapacity) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
-            'No invites available right now',
-            style: TextStyle(fontSize: 16, color: VineTheme.secondaryText),
+            context.l10n.invitesNoneAvailable,
+            style: const TextStyle(
+              fontSize: 16,
+              color: VineTheme.secondaryText,
+            ),
             textAlign: TextAlign.center,
           ),
         ),
@@ -103,7 +106,7 @@ class _LoadedView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              'Share diVine with people you know',
+              context.l10n.invitesShareWithPeople,
               style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             ),
           ),
@@ -118,7 +121,7 @@ class _LoadedView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
-              'Used invites',
+              context.l10n.invitesUsedInvites,
               style: VineTheme.titleSmallFont(color: VineTheme.secondaryText),
             ),
           ),
@@ -171,9 +174,8 @@ class _InviteCodeCard extends StatelessWidget {
 
   final InviteCode code;
 
-  String get _shareMessage =>
-      'Join me on diVine! Use invite code ${code.code} to get started:\n'
-      'https://divine.video/invite/${code.code}';
+  String _shareMessage(BuildContext context) =>
+      context.l10n.invitesShareMessage(code.code);
 
   @override
   Widget build(BuildContext context) {
@@ -190,11 +192,11 @@ class _InviteCodeCard extends StatelessWidget {
                 icon: DivineIconName.copy,
                 color: VineTheme.vineGreen,
               ),
-              tooltip: 'Copy invite',
+              tooltip: context.l10n.invitesCopyInvite,
               onPressed: () => ClipboardUtils.copy(
                 context,
-                _shareMessage,
-                message: 'Invite copied!',
+                _shareMessage(context),
+                message: context.l10n.invitesCopied,
               ),
             ),
             IconButton(
@@ -202,9 +204,12 @@ class _InviteCodeCard extends StatelessWidget {
                 icon: DivineIconName.shareFat,
                 color: VineTheme.vineGreen,
               ),
-              tooltip: 'Share invite',
+              tooltip: context.l10n.invitesShareInvite,
               onPressed: () => SharePlus.instance.share(
-                ShareParams(text: _shareMessage, subject: 'Join me on diVine'),
+                ShareParams(
+                  text: _shareMessage(context),
+                  subject: context.l10n.invitesShareSubject,
+                ),
               ),
             ),
           ],
@@ -238,7 +243,7 @@ class _ClaimedCodeRow extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            'Claimed',
+            context.l10n.invitesClaimed,
             style: VineTheme.labelSmallFont(color: VineTheme.lightText),
           ),
         ],
@@ -258,16 +263,19 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Could not load invites',
-            style: TextStyle(fontSize: 16, color: VineTheme.secondaryText),
+          Text(
+            context.l10n.invitesCouldNotLoad,
+            style: const TextStyle(
+              fontSize: 16,
+              color: VineTheme.secondaryText,
+            ),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            child: const Text(
-              'Retry',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.invitesRetry,
+              style: const TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],

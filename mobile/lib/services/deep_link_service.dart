@@ -124,8 +124,9 @@ class DeepLinkService {
         return const DeepLink(type: DeepLinkType.signerCallback);
       }
 
-      // Only handle divine.video domain
-      if (uri.host != 'divine.video') {
+      // Only handle canonical Divine web hosts.
+      final host = uri.host.toLowerCase();
+      if (host != 'divine.video' && host != 'www.divine.video') {
         Log.warning(
           'Ignoring deep link from non-divine.video domain: ${uri.host}',
           name: 'DeepLinkService',

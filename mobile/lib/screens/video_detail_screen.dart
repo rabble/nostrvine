@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -60,57 +59,20 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         category: LogCategory.video,
       );
 
-      final videoEventService = ref.read(videoEventServiceProvider);
-
-      // Try to find video in existing loaded events first
-      final video = videoEventService.getVideoById(widget.videoId);
+      // fetchVideoWithStats handles cache→relay lookup and bulk-stats
+      // hydration in one call, matching what feed providers do.
+      final videosRepository = ref.read(videosRepositoryProvider);
+      final video = await videosRepository.fetchVideoWithStats(widget.videoId);
 
       if (video != null) {
         Log.info(
-          '✅ Found video in cache: ${video.title}',
+          '✅ Loaded video: ${video.title}',
           name: 'VideoDetailScreen',
           category: LogCategory.video,
         );
         if (mounted) {
           setState(() {
             _video = video;
-            _isLoading = false;
-          });
-          ScreenAnalyticsService().markDataLoaded('video_detail');
-        }
-        return;
-      }
-
-      // Video not in cache, fetch from Nostr
-      Log.info(
-        '🔍 Video not in cache, fetching from Nostr...',
-        name: 'VideoDetailScreen',
-        category: LogCategory.video,
-      );
-
-      final nostrService = ref.read(nostrServiceProvider);
-      final event = await nostrService.fetchEventById(widget.videoId);
-
-      if (event != null) {
-        final fetchedVideo = VideoEvent.fromNostrEvent(event);
-        if (videoEventService.shouldHideVideo(fetchedVideo)) {
-          if (mounted) {
-            setState(() {
-              _error = 'Video not found';
-              _isLoading = false;
-            });
-          }
-          return;
-        }
-
-        Log.info(
-          '✅ Fetched video from Nostr: ${fetchedVideo.title}',
-          name: 'VideoDetailScreen',
-          category: LogCategory.video,
-        );
-        if (mounted) {
-          setState(() {
-            _video = fetchedVideo;
             _isLoading = false;
           });
           ScreenAnalyticsService().markDataLoaded('video_detail');

@@ -1,0 +1,3505 @@
+{
+  "@@locale": "am",
+  "appTitle": "Divine",
+  "@appTitle": {
+    "description": "App title shown in task switcher"
+  },
+  "settingsTitle": "ቅንብሮች",
+  "@settingsTitle": {
+    "description": "Settings screen app bar title"
+  },
+  "settingsSecureAccount": "የመለያዎን ደህንነት ይጠብቁ",
+  "settingsSessionExpired": "ክፍለ ጊዜው አልፎበታል።",
+  "settingsSessionExpiredSubtitle": "ሙሉ መዳረሻን ለመመለስ እንደገና ይግቡ",
+  "settingsCreatorAnalytics": "የፈጣሪ ትንታኔ",
+  "settingsSupportCenter": "የድጋፍ ማዕከል",
+  "settingsNotifications": "ማሳወቂያዎች",
+  "settingsContentPreferences": "የይዘት ምርጫዎች",
+  "settingsModerationControls": "ልከኝነት መቆጣጠሪያዎች",
+  "settingsBlueskyPublishing": "Bluesky ማተም",
+  "settingsBlueskyPublishingSubtitle": "ወደ Bluesky መለጠፍን ያስተዳድሩ",
+  "settingsNostrSettings": "Nostr ቅንብሮች",
+  "settingsIntegratedApps": "የተዋሃዱ መተግበሪያዎች",
+  "settingsIntegratedAppsSubtitle": "በDivine ውስጥ የሚሰሩ የጸደቁ የሶስተኛ ወገን መተግበሪያዎች",
+  "settingsExperimentalFeatures": "የሙከራ ባህሪያት",
+  "settingsExperimentalFeaturesSubtitle": "ሊያደናቅፉ የሚችሉ ለውጦች - ለማወቅ ከፈለጉ ይሞክሩት።",
+  "settingsLegal": "ህጋዊ",
+  "settingsIntegrationPermissions": "የውህደት ፈቃዶች",
+  "settingsIntegrationPermissionsSubtitle": "የሚታወሱ የውህደት ማጽደቆችን ይገምግሙ እና ይሽሩ",
+  "settingsVersion": "ስሪት {version}",
+  "@settingsVersion": {
+    "description": "App version label in settings footer",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsVersionEmpty": "ሥሪት",
+  "@settingsVersionEmpty": {
+    "description": "Version label when version string is not yet loaded"
+  },
+  "settingsDeveloperModeAlreadyEnabled": "የገንቢ ሁነታ አስቀድሞ ነቅቷል።",
+  "settingsDeveloperModeEnabled": "የገንቢ ሁነታ ነቅቷል!",
+  "settingsDeveloperModeTapsRemaining": "{count} የገንቢ ሁነታን ለማንቃት ተጨማሪ መታ ማድረግ",
+  "@settingsDeveloperModeTapsRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsInvites": "ግብዣዎች",
+  "settingsSwitchAccount": "መለያ ቀይር",
+  "settingsAddAnotherAccount": "ሌላ መለያ ያክሉ",
+  "settingsUnsavedDraftsTitle": "ያልተቀመጡ ረቂቆች",
+  "settingsUnsavedDraftsMessage": "ያልተቀመጡ {count} {count, plural, =1{ረቂቅ} other{ረቂቆች}} አሉህ። አካውንት ስትቀይር {count, plural, =1{ረቂቁ} other{ረቂቆቹ}} ይቀመጣሉ፣ ግን መጀመሪያ {count, plural, =1{ልታትመው ወይም ልትመለከተው} other{ልታትማቸው ወይም ልትመለከታቸው}} ትችላለህ።",
+  "@settingsUnsavedDraftsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsCancel": "ተወው",
+  "settingsSwitchAnyway": "ለማንኛውም ቀይር",
+  "settingsAppVersionLabel": "የመተግበሪያ ስሪት",
+  "settingsAppLanguage": "የመተግበሪያ ቋንቋ",
+  "settingsAppLanguageDeviceDefault": "{language} (የመሣሪያ ነባሪ)",
+  "@settingsAppLanguageDeviceDefault": {
+    "description": "Subtitle for app language tile when using device default",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAppLanguageTitle": "የመተግበሪያ ቋንቋ",
+  "@settingsAppLanguageTitle": {
+    "description": "Title shown at top of locale picker bottom sheet"
+  },
+  "settingsAppLanguageDescription": "የመተግበሪያውን በይነገጽ ቋንቋ ምረጥ",
+  "settingsAppLanguageUseDeviceLanguage": "የመሣሪያውን ቋንቋ ተጠቀም",
+  "settingsGeneralTitle": "አጠቃላይ ቅንብሮች",
+  "settingsContentSafetyTitle": "ይዘት እና ደህንነት",
+  "generalSettingsSectionIntegrations": "ውህደቶች",
+  "generalSettingsSectionViewing": "ማየት",
+  "generalSettingsSectionCreating": "መፍጠር",
+  "generalSettingsSectionApp": "መተግበሪያ",
+  "generalSettingsClosedCaptions": "የተዘጉ መግለጫዎች",
+  "generalSettingsClosedCaptionsSubtitle": "ቪዲዮዎች መግለጫዎችን ሲያካትቱ አሳይ",
+  "generalSettingsVideoShape": "የቪዲዮ ቅርጽ",
+  "generalSettingsVideoShapeSquareOnly": "ካሬ ቪዲዮዎች ብቻ",
+  "generalSettingsVideoShapeSquareAndPortrait": "ካሬ እና ቁመታዊ",
+  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "የDivine ቪዲዮዎችን ሙሉ ድብልቅ አሳይ",
+  "generalSettingsVideoShapeSquareOnlySubtitle": "ምግቦችን በክላሲክ ካሬ ቅርጽ ያቆዩ",
+  "contentPreferencesTitle": "የይዘት ምርጫዎች",
+  "@contentPreferencesTitle": {
+    "description": "Content preferences screen app bar title"
+  },
+  "contentPreferencesContentFilters": "የይዘት ማጣሪያዎች",
+  "contentPreferencesContentFiltersSubtitle": "የይዘት ማስጠንቀቂያ ማጣሪያዎችን ያቀናብሩ",
+  "contentPreferencesContentLanguage": "የይዘት ቋንቋ",
+  "contentPreferencesContentLanguageDeviceDefault": "{language} (የመሣሪያ ነባሪ)",
+  "@contentPreferencesContentLanguageDeviceDefault": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "contentPreferencesTagYourVideos": "ተመልካቾች ይዘትን ማጣራት እንዲችሉ ቪዲዮዎችዎን በቋንቋ መለያ ይስጡ።",
+  "contentPreferencesUseDeviceLanguage": "የመሣሪያውን ቋንቋ ተጠቀም (ነባሪ)",
+  "contentPreferencesAudioSharing": "የእኔን ኦዲዮ ለእንደገና ጥቅም ላይ እንዲውል አድርግ",
+  "contentPreferencesAudioSharingSubtitle": "ሲነቃ ሌሎች ከቪዲዮዎችዎ ኦዲዮን መጠቀም ይችላሉ።",
+  "contentPreferencesAccountLabels": "መለያ መለያዎች",
+  "contentPreferencesAccountLabelsEmpty": "ይዘትዎን በራስ-ይሰይሙ",
+  "contentPreferencesAccountContentLabels": "የመለያ ይዘት መለያዎች",
+  "contentPreferencesClearAll": "ሁሉንም አጽዳ",
+  "contentPreferencesSelectAllThatApply": "በመለያህ ላይ የሚመለከተውን ሁሉ ምረጥ",
+  "contentPreferencesDoneNoLabels": "ተከናውኗል (ምንም መለያዎች የሉም)",
+  "contentPreferencesDoneCount": "ተከናውኗል ({count} ተመርጧል)",
+  "@contentPreferencesDoneCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contentPreferencesAudioInputDevice": "የድምጽ ግቤት መሣሪያ",
+  "contentPreferencesAutoRecommended": "ራስ-ሰር (የሚመከር)",
+  "contentPreferencesAutoSelectsBest": "በጣም ጥሩውን ማይክሮፎን በራስ-ሰር ይመርጣል",
+  "contentPreferencesSelectAudioInput": "የድምጽ ግቤትን ይምረጡ",
+  "contentPreferencesUnknownMicrophone": "ያልታወቀ ማይክሮፎን",
+  "contentFiltersAdultContent": "የአዋቂዎች ይዘት",
+  "contentFiltersViolenceGore": "ግፍ እና ደም",
+  "contentFiltersSubstances": "ንጥረ ነገሮች",
+  "contentFiltersOther": "ሌላ",
+  "contentFiltersAgeGateMessage": "የአዋቂዎች ይዘት ማጣሪያዎችን ለመክፈት በደህንነት እና ግላዊነት ቅንብሮች ውስጥ እድሜዎን ያረጋግጡ",
+  "contentFiltersShow": "አሳይ",
+  "contentFiltersWarn": "አስጠንቅቅ",
+  "contentFiltersFilterOut": "አጣራ",
+  "profileBlockedAccountNotAvailable": "ይህ መለያ አይገኝም",
+  "profileErrorPrefix": "ስህተት፡ {error}",
+  "@profileErrorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileInvalidId": "ልክ ያልሆነ የመገለጫ መታወቂያ",
+  "profileShareText": "{displayName} በDivine ላይ ይመልከቱ!\n\nhttps://divine.video/profile/{npub}",
+  "@profileShareText": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      },
+      "npub": {
+        "type": "String"
+      }
+    }
+  },
+  "profileShareSubject": "{displayName} በ Divine ላይ",
+  "@profileShareSubject": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileShareFailed": "መገለጫን ማጋራት አልተሳካም፦ {error}",
+  "@profileShareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileEditProfile": "መገለጫ አርትዕ",
+  "profileCreatorAnalytics": "የፈጣሪ ትንታኔ",
+  "profileShareProfile": "መገለጫ አጋራ",
+  "profileCopyPublicKey": "የህዝብ ቁልፍ ቅዳ (npub)",
+  "profileGetEmbedCode": "የተከተተ ኮድ ያግኙ",
+  "profilePublicKeyCopied": "የህዝብ ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል።",
+  "profileEmbedCodeCopied": "ኮድ ክተት ወደ ቅንጥብ ሰሌዳ ተቀድቷል።",
+  "profileRefreshTooltip": "አድስ",
+  "profileRefreshSemanticLabel": "መገለጫ አድስ",
+  "profileMoreTooltip": "ተጨማሪ",
+  "profileMoreSemanticLabel": "ተጨማሪ አማራጮች",
+  "profileAvatarLightboxBarrierLabel": "አምሳያ ዝጋ",
+  "@profileAvatarLightboxBarrierLabel": {
+    "description": "Screen-reader label for the dismissable scrim behind the maximized profile-avatar dialog. Read aloud when focus lands on the barrier."
+  },
+  "profileAvatarLightboxCloseSemanticLabel": "የአቫታር ቅድመ እይታን ዝጋ",
+  "@profileAvatarLightboxCloseSemanticLabel": {
+    "description": "Screen-reader label for the maximized profile-avatar dialog's tap-to-close gesture detector."
+  },
+  "profileFollowingLabel": "በመከተል ላይ",
+  "profileFollowLabel": "ተከተል",
+  "profileBlockedLabel": "ታግዷል",
+  "profileFollowersLabel": "ተከታዮች",
+  "profileFollowingStatLabel": "በመከተል ላይ",
+  "profileVideosLabel": "ቪዲዮዎች",
+  "profileFollowerCountUsers": "{count} ተጠቃሚዎች",
+  "@profileFollowerCountUsers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileBlockTitle": "አግድ {displayName}?",
+  "@profileBlockTitle": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBlockExplanation": "ተጠቃሚን ሲያግዱ፡-",
+  "profileBlockBulletHidePosts": "ልጥፎቻቸው በምግብዎ ውስጥ አይታዩም።",
+  "profileBlockBulletCantView": "መገለጫዎን ሊመለከቱዎት፣ እርስዎን መከተል ወይም ልጥፎችዎን ማየት አይችሉም።",
+  "profileBlockBulletNoNotify": "ስለዚህ ለውጥ ማሳወቂያ አይደርሳቸውም።",
+  "profileBlockBulletYouCanView": "አሁንም መገለጫቸውን ማየት ይችላሉ።",
+  "profileBlockConfirmButton": "አግድ {displayName}",
+  "@profileBlockConfirmButton": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileCancelButton": "ሰርዝ",
+  "profileLearnMore": "የበለጠ ተማር",
+  "profileUnblockTitle": "የ{displayName}ን እገዳ ልታነሳ?",
+  "@profileUnblockTitle": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockExplanation": "የዚህን ተጠቃሚ እገዳ ስታነቁ፡-",
+  "profileUnblockBulletShowPosts": "ልጥፎቻቸው በምግብዎ ውስጥ ይታያሉ።",
+  "profileUnblockBulletCanView": "እነሱ የእርስዎን መገለጫ ማየት፣ እርስዎን መከተል እና ልጥፎችዎን ማየት ይችላሉ።",
+  "profileUnblockBulletNoNotify": "ስለዚህ ለውጥ ማሳወቂያ አይደርሳቸውም።",
+  "profileLearnMoreAt": "በ ላይ የበለጠ ይረዱ",
+  "profileUnblockButton": "እገዳ አንሳ",
+  "profileUnfollowDisplayName": "{displayName}ን አትከተል",
+  "@profileUnfollowDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBlockDisplayName": "አግድ {displayName}",
+  "@profileBlockDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockDisplayName": "እገዳን አንሳ {displayName}",
+  "@profileUnblockDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileAddToListDisplayName": "{displayName}ን ወደ ዝርዝር ጨምር",
+  "@profileAddToListDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUserBlockedTitle": "ተጠቃሚ ታግዷል",
+  "profileUserBlockedContent": "የዚህን ተጠቃሚ ይዘት በምግብዎ ውስጥ አያዩም።",
+  "profileUserBlockedUnblockHint": "በማንኛውም ጊዜ ከመገለጫቸው ወይም በቅንብሮች > ደህንነት ውስጥ እገዳውን ማንሳት ትችላለህ።",
+  "profileCloseButton": "ገጠመ",
+  "profileNoCollabsTitle": "እስካሁን ምንም ትብብር የለም።",
+  "profileCollabsOwnEmpty": "የምትተባበሩባቸው ቪዲዮዎች እዚህ ይታያሉ።",
+  "profileCollabsOtherEmpty": "የሚተባበሩባቸው ቪዲዮዎች እዚህ ይታያሉ።",
+  "profileErrorLoadingCollabs": "የትብብር ቪዲዮዎችን መጫን ላይ ስህተት",
+  "profileNoSavedVideosTitle": "እስካሁን ምንም አልተቀመጠም።",
+  "profileSavedOwnEmpty": "ቪዲዮዎችን ከማጋሪያ ሉህ ላይ ዕልባት አድርግ እና እዚህ ይታያሉ።",
+  "profileErrorLoadingSaved": "የተቀመጡ ቪዲዮዎችን መጫን ላይ ስህተት",
+  "profileNoCommentsOwnTitle": "እስካሁን ምንም አስተያየት የለም።",
+  "profileNoCommentsOtherTitle": "እስካሁን ምንም አስተያየት የለም።",
+  "profileCommentsOwnEmpty": "የእርስዎ አስተያየቶች እና ምላሾች እዚህ ይታያሉ።",
+  "profileCommentsOtherEmpty": "የእነሱ አስተያየት እና ምላሾች እዚህ ይታያሉ.",
+  "profileErrorLoadingComments": "አስተያየቶችን መጫን ላይ ስህተት",
+  "profileVideoRepliesSection": "የቪዲዮ መልሶች",
+  "profileCommentsSection": "አስተያየቶች",
+  "profileEditLabel": "አርትዕ",
+  "profileLibraryLabel": "ቤተ መፃህፍት",
+  "profileNoLikedVideosTitle": "እስካሁን ምንም መውደዶች የሉም",
+  "profileLikedOwnEmpty": "የሆነ ነገር ዓይንዎን ሲይዝ, ልብን ይንኩ. መውደዶችዎ እዚህ ይታያሉ።",
+  "profileLikedOtherEmpty": "እስካሁን ዓይናቸውን የሳበ ነገር የለም። ጊዜ ስጠው።",
+  "profileErrorLoadingLiked": "የተወደዱ ቪዲዮዎችን መጫን ላይ ስህተት",
+  "profileNoRepostsTitle": "እስካሁን ምንም ድጋሚ የተለጠፈ የለም።",
+  "profileRepostsOwnEmpty": "ማጋራት የሚገባ ነገር አየህ? እንደገና ይለጥፉት እና እዚህ ይታያል።",
+  "profileRepostsOtherEmpty": "እስካሁን ምንም አላለፉም። ሲያደርጉ፣ እዚህ ይታያል።",
+  "profileErrorLoadingReposts": "እንደገና የተለጠፉ ቪዲዮዎችን መጫን ላይ ስህተት",
+  "profileLoadingTitle": "መገለጫን በመጫን ላይ...",
+  "profileLoadingSubtitle": "ይሄ ጥቂት ጊዜ ሊወስድ ይችላል።",
+  "profileLoadingVideos": "ቪዲዮዎችን በመጫን ላይ...",
+  "profileNoVideosTitle": "እስካሁን ምንም ቪዲዮዎች የሉም",
+  "profileNoVideosOwnSubtitle": "መድረክህ ተዘጋጅቷል። መለጠፍ ይጀምሩ እና ቪዲዮዎችዎ እዚህ ይኖራሉ።",
+  "profileNoVideosOtherSubtitle": "አለም እየጠበቀች ነው። እንዳያመልጥዎ ይከተሏቸው።",
+  "profileVideoThumbnailLabel": "የቪዲዮ ድንክዬ {number}",
+  "@profileVideoThumbnailLabel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "profileShowMore": "ተጨማሪ አሳይ",
+  "profileShowLess": "ያነሰ አሳይ",
+  "profileCompleteYourProfile": "መገለጫዎን ያጠናቅቁ",
+  "profileCompleteSubtitle": "ለመጀመር የእርስዎን ስም፣ የህይወት ታሪክ እና ምስል ያክሉ",
+  "profileSetUpButton": "አዋቅር",
+  "profileVerifyingEmail": "ኢሜል በማረጋገጥ ላይ...",
+  "profileCheckEmailVerification": "የማረጋገጫ ማገናኛን ለማግኘት {email}ን ያረጋግጡ",
+  "@profileCheckEmailVerification": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "profileWaitingForVerification": "የኢሜይል ማረጋገጫን በመጠበቅ ላይ",
+  "profileVerificationFailed": "ማረጋገጥ አልተሳካም።",
+  "profilePleaseTryAgain": "እባክህ እንደገና ሞክር",
+  "profileSecureYourAccount": "የመለያዎን ደህንነት ይጠብቁ",
+  "profileSecureSubtitle": "መለያዎን በማንኛውም መሳሪያ ላይ ለማግኘት ኢሜይል እና የይለፍ ቃል ያክሉ",
+  "profileRetryButton": "እንደገና ይሞክሩ",
+  "profileRegisterButton": "ይመዝገቡ",
+  "profileSessionExpired": "ክፍለ ጊዜው አልፎበታል።",
+  "profileSignInToRestore": "ሙሉ መዳረሻን ለመመለስ እንደገና ይግቡ",
+  "profileSignInButton": "ይግቡ",
+  "profileMaybeLaterLabel": "ምናልባት በኋላ",
+  "profileSecurePrimaryButton": "ኢሜይል እና የይለፍ ቃል ያክሉ",
+  "profileCompletePrimaryButton": "መገለጫዎን ያዘምኑ",
+  "profileLoopsLabel": "ቀለበቶች",
+  "profileLikesLabel": "መውደዶች",
+  "profileMyLibraryLabel": "የእኔ ቤተ-መጽሐፍት",
+  "profileMessageLabel": "መልእክት",
+  "profileUserFallback": "ተጠቃሚ",
+  "@profileUserFallback": {
+    "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+  },
+  "profileDismissTooltip": "አሰናብት",
+  "profileLinkCopied": "የመገለጫ አገናኝ ተቀድቷል።",
+  "profileSetupEditProfileTitle": "መገለጫ አርትዕ",
+  "profileSetupBackLabel": "ተመለስ",
+  "profileSetupAboutNostr": "ስለ Nostr",
+  "profileSetupProfilePublished": "መገለጫ በተሳካ ሁኔታ ታትሟል!",
+  "profileSetupCreateNewProfile": "አዲስ መገለጫ ይፈጠር?",
+  "profileSetupNoExistingProfile": "በእርስዎ ማስተላለፊያዎች ላይ ነባር መገለጫ አላገኘንም። ማተም አዲስ መገለጫ ይፈጥራል። ይቀጥል?",
+  "profileSetupPublishButton": "አትም",
+  "profileSetupUsernameTaken": "የተጠቃሚ ስም አሁን ተወስዷል። እባክዎ ሌላ ይምረጡ።",
+  "profileSetupClaimFailed": "የተጠቃሚ ስም መጠየቅ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "profileSetupPublishFailed": "መገለጫን ማተም አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "profileSetupNoRelaysConnected": "አውታረ መረቡ ላይ መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
+  "profileSetupRetryLabel": "እንደገና ይሞክሩ",
+  "profileSetupDisplayNameLabel": "የማሳያ ስም",
+  "profileSetupDisplayNameHint": "ሰዎች እርስዎን እንዴት ማወቅ አለባቸው?",
+  "profileSetupDisplayNameHelper": "የሚፈልጉት ማንኛውም ስም ወይም መለያ። ልዩ መሆን የለበትም።",
+  "profileSetupDisplayNameRequired": "እባክዎ የማሳያ ስም ያስገቡ",
+  "profileSetupBioLabel": "ባዮ (አማራጭ)",
+  "profileSetupBioHint": "ስለራስዎ ለሰዎች ይንገሩ…",
+  "profileSetupPublicKeyLabel": "የህዝብ ቁልፍ (npub)",
+  "profileSetupUsernameLabel": "የተጠቃሚ ስም (አማራጭ)",
+  "profileSetupUsernameHint": "የተጠቃሚ ስም",
+  "profileSetupUsernameHelper": "ልዩ ማንነትህ በDivine ላይ",
+  "profileSetupProfileColorLabel": "የመገለጫ ቀለም (አማራጭ)",
+  "profileSetupSaveButton": "አስቀምጥ",
+  "profileSetupSavingButton": "በማስቀመጥ ላይ...",
+  "profileSetupImageUrlTitle": "ምስል ያክሉ URL",
+  "profileSetupPictureUploaded": "የመገለጫ ስዕል በተሳካ ሁኔታ ተሰቅሏል!",
+  "profileSetupImageSelectionFailed": "የምስል ምርጫ አልተሳካም። እባክህ በምትኩ ምስል URL ከታች ለጥፍ።",
+  "profileSetupImagesTypeGroup": "ምስሎች",
+  "profileSetupCameraAccessFailed": "የካሜራ መዳረሻ አልተሳካም፦ {error}",
+  "@profileSetupCameraAccessFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileSetupGotItButton": "ገባኝ",
+  "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም፦ {error}",
+  "@profileSetupUploadFailedGeneric": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileSetupUploadNetworkError": "የአውታረ መረብ ስህተት፡ እባክህ የበይነመረብ ግንኙነትህን ፈትሽ እና እንደገና ሞክር።",
+  "profileSetupUploadAuthError": "የማረጋገጫ ስህተት፡ እባክዎ ዘግተው ለመውጣት ይሞክሩ።",
+  "profileSetupUploadFileTooLarge": "ፋይሉ በጣም ትልቅ ነው፡ እባክዎን ትንሽ ምስል ይምረጡ (ከፍተኛ 10 ሜባ)።",
+  "profileSetupUsernameChecking": "ተገኝነትን በማጣራት ላይ...",
+  "profileSetupUsernameAvailable": "የተጠቃሚ ስም አለ!",
+  "profileSetupUsernameTakenIndicator": "የተጠቃሚ ስም አስቀድሞ ተወስዷል",
+  "profileSetupUsernameReserved": "የተጠቃሚ ስም የተጠበቀ ነው።",
+  "profileSetupContactSupport": "ድጋፍን ያነጋግሩ",
+  "profileSetupCheckAgain": "እንደገና ያረጋግጡ",
+  "profileSetupUsernameBurned": "ይህ የተጠቃሚ ስም ከአሁን በኋላ አይገኝም",
+  "profileSetupUsernameInvalidFormat": "ፊደሎች፣ ቁጥሮች እና ሰረዞች ብቻ ይፈቀዳሉ።",
+  "profileSetupUsernameInvalidLength": "የተጠቃሚ ስም 3-20 ቁምፊዎች መሆን አለበት።",
+  "profileSetupUsernameNetworkError": "ተገኝነትን ማረጋገጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "profileSetupUsernameInvalidFormatGeneric": "የተሳሳተ የተጠቃሚ ስም ቅርጸት",
+  "profileSetupUsernameCheckFailed": "ተገኝነትን ማረጋገጥ አልተሳካም።",
+  "profileSetupUsernameReservedTitle": "የተጠቃሚ ስም ተቀምጧል",
+  "profileSetupUsernameReservedBody": "ስሙ {username} የተጠበቀ ነው። ለምን ያንተ መሆን እንዳለበት ንገረን።",
+  "@profileSetupUsernameReservedBody": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSetupUsernameReservedHint": "ለምሳሌ. የእኔ የምርት ስም፣ የመድረክ ስም፣ ወዘተ ነው።",
+  "profileSetupUsernameReservedCheckHint": "ድጋፍን አስቀድመው አነጋግረዋል? ለእርስዎ እንደተለቀቀ ለማየት \"እንደገና አረጋግጥ\" ን መታ ያድርጉ።",
+  "profileSetupSupportRequestSent": "የድጋፍ ጥያቄ ተልኳል! በቅርቡ እንመለስዎታለን።",
+  "profileSetupCouldntOpenEmail": "ኢሜይል መክፈት አልተቻለም። ወደ names@divine.video ላክ",
+  "profileSetupSendRequest": "ጥያቄ ላክ",
+  "profileSetupPickColorTitle": "ቀለም ይምረጡ",
+  "profileSetupSelectButton": "ይምረጡ",
+  "profileSetupUseOwnNip05": "የራስህን NIP-05 አድራሻ ተጠቀም",
+  "profileSetupNip05AddressLabel": "NIP-05 አድራሻ",
+  "profileSetupExternalNip05InvalidFormat": "ልክ ያልሆነ NIP-05 ቅርጸት (ለምሳሌ name@domain.com)",
+  "profileSetupExternalNip05DivineDomain": "ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ",
+  "profileSetupProfilePicturePreview": "የመገለጫ ስዕል ቅድመ እይታ",
+  "nostrInfoIntroBuiltOn": "ዳይቪን የተገነባው በNostr ላይ ነው፣",
+  "nostrInfoIntroDescription": "ሳንሱርን የሚቋቋም ክፍት ፕሮቶኮል ሰዎች በአንድ ኩባንያ ወይም መድረክ ላይ ሳይመሰረቱ በመስመር ላይ እንዲግባቡ ያስችላቸዋል።",
+  "nostrInfoIntroIdentity": "ለDivine ሲመዘገቡ አዲስ Nostr መታወቂያ ያገኛሉ።",
+  "nostrInfoOwnership": "Nostr የእርስዎን ይዘት፣ ማንነት እና ማህበራዊ ግራፍ በባለቤትነት እንዲይዙ ያስችልዎታል፣ ይህም በብዙ መተግበሪያዎች ላይ ሊጠቀሙበት ይችላሉ። ውጤቱ የበለጠ ምርጫ፣ መቆለፊያው ያነሰ እና ጤናማ፣ የበለጠ ጠንካራ ማህበራዊ ኢንተርኔት ነው።",
+  "nostrInfoLingo": "Nostr ሊንጎ፡-",
+  "nostrInfoNpubLabel": "npub:",
+  "nostrInfoNpubDescription": " የህዝብ Nostr አድራሻህ። ማጋራት ደህና ነው፣ ሌሎችም በNostr መተግበሪያዎች ላይ እንዲያገኙህ፣ እንዲከተሉህ ወይም መልዕክት እንዲልኩልህ ያስችላል።",
+  "nostrInfoNsecLabel": "nsec:",
+  "nostrInfoNsecDescription": "የእርስዎ የግል ቁልፍ እና የባለቤትነት ማረጋገጫ። የእርስዎን Nostr ማንነት ሙሉ ቁጥጥር ይሰጣል፣ ስለዚህ",
+  "nostrInfoNsecWarning": "ሁልጊዜ በሚስጥር ይያዙት!",
+  "nostrInfoUsernameLabel": "Nostr የተጠቃሚ ስም፡-",
+  "nostrInfoUsernameDescription": " ለሰው የሚነበብ ስም (እንደ @name.divine.video) ከnpubህ ጋር የሚገናኝ። የNostr ማንነትህን እንደ ኢሜይል አድራሻ ለመለየትና ለማረጋገጥ ያቀላል።",
+  "nostrInfoLearnMoreAt": "በ ላይ የበለጠ ይረዱ",
+  "nostrInfoGotIt": "ገባኝ!",
+  "profileTabRefreshTooltip": "አድስ",
+  "videoGridRefreshLabel": "ተጨማሪ ቪዲዮዎችን በመፈለግ ላይ",
+  "videoGridOptionsTitle": "የቪዲዮ አማራጮች",
+  "videoGridEditVideo": "ቪዲዮ አርትዕ",
+  "videoGridEditVideoSubtitle": "ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ",
+  "videoGridDeleteVideo": "ቪዲዮ ሰርዝ",
+  "videoGridDeleteVideoSubtitle": "ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።",
+  "videoGridDeleteConfirmTitle": "ቪዲዮ ሰርዝ",
+  "videoGridDeleteConfirmMessage": "ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።",
+  "videoGridDeleteConfirmNote": "ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።",
+  "videoGridDeleteCancel": "ሰርዝ",
+  "videoGridDeleteConfirm": "ሰርዝ",
+  "videoGridDeletingContent": "ይዘትን በመሰረዝ ላይ...",
+  "videoGridDeleteSuccess": "ጥያቄውን ሰርዝ በተሳካ ሁኔታ ተልኳል።",
+  "videoGridDeleteFailure": "ይዘትን መሰረዝ አልተሳካም፦ {error}",
+  "@videoGridDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreTabClassics": "ክላሲኮች",
+  "exploreTabNew": "አዲስ",
+  "exploreTabPopular": "ታዋቂ",
+  "exploreTabCategories": "ምድቦች",
+  "exploreTabForYou": "ለእርስዎ",
+  "exploreTabLists": "ዝርዝሮች",
+  "exploreTabIntegratedApps": "የተዋሃዱ መተግበሪያዎች",
+  "exploreNoVideosAvailable": "ምንም ቪዲዮዎች የሉም",
+  "exploreSearchHint": "ይፈልጉ...",
+  "categoryVideoCount": "{count} ቪዲዮዎች",
+  "@categoryVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreErrorPrefix": "ስህተት፡ {error}",
+  "@exploreErrorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreDiscoverLists": "ዝርዝሮችን ያግኙ",
+  "exploreAboutLists": "ስለ ዝርዝሮች",
+  "exploreAboutListsDescription": "ዝርዝሮች የDivine ይዘትን በሁለት መንገድ እንዲያደራጁ እና እንዲያዘጋጁ ያግዝዎታል፡",
+  "explorePeopleLists": "የሰዎች ዝርዝሮች",
+  "explorePeopleListsDescription": "የፈጣሪዎችን ቡድኖች ይከተሉ እና የቅርብ ጊዜ ቪዲዮዎቻቸውን ይመልከቱ",
+  "exploreVideoLists": "የቪዲዮ ዝርዝሮች",
+  "exploreVideoListsDescription": "በኋላ ለመመልከት የሚወዷቸውን ቪዲዮዎች አጫዋች ዝርዝሮችን ይፍጠሩ",
+  "exploreMyLists": "የእኔ ዝርዝሮች",
+  "exploreSubscribedLists": "የተመዘገቡ ዝርዝሮች",
+  "exploreErrorLoadingLists": "ዝርዝሮችን መጫን ላይ ስህተት፦ {error}",
+  "@exploreErrorLoadingLists": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreNewVideosCount": "{count, plural, =1{1 አዲስ ቪዲዮ} other{{count} አዳዲስ ቪዲዮዎች}}",
+  "@exploreNewVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreLoadNewVideosLabel": "{count, plural, =1{1 አዲስ ቪዲዮ ጫን} other{{count} አዳዲስ ቪዲዮዎች ጫን}}",
+  "@exploreLoadNewVideosLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoPlayerLoadingVideo": "ቪዲዮን በመጫን ላይ...",
+  "videoPlayerPlayVideo": "ቪዲዮ አጫውት።",
+  "videoPlayerMute": "ቪዲዮ ድምጸ-ከል አድርግ",
+  "videoPlayerUnmute": "የቪዲዮ ድምጸ-ከል አንሳ",
+  "videoPlayerEditVideo": "ቪዲዮን ያርትዑ",
+  "videoPlayerEditVideoTooltip": "ቪዲዮን ያርትዑ",
+  "contentWarningLabel": "የይዘት ማስጠንቀቂያ",
+  "contentWarningNudity": "እርቃንነት",
+  "contentWarningSexualContent": "ወሲባዊ ይዘት",
+  "contentWarningPornography": "የብልግና ሥዕሎች",
+  "contentWarningGraphicMedia": "ግራፊክ ሚዲያ",
+  "contentWarningViolence": "ብጥብጥ",
+  "contentWarningSelfHarm": "ራስን መጉዳት።",
+  "contentWarningDrugUse": "የመድሃኒት አጠቃቀም",
+  "contentWarningAlcohol": "አልኮል",
+  "contentWarningTobacco": "ትምባሆ",
+  "contentWarningGambling": "ቁማር",
+  "contentWarningProfanity": "ስድብ",
+  "contentWarningFlashingLights": "ብልጭ ድርግም የሚሉ መብራቶች",
+  "contentWarningAiGenerated": "በAI የተፈጠረ",
+  "contentWarningSpoiler": "ስፒለር",
+  "contentWarningSensitiveContent": "ሚስጥራዊነት ያለው ይዘት",
+  "contentWarningDescNudity": "እርቃን ወይም ከፊል እርቃንነትን ይይዛል",
+  "contentWarningDescSexual": "ወሲባዊ ይዘት ይዟል",
+  "contentWarningDescPorn": "ግልጽ የሆነ የወሲብ ስራ ይዘት ይዟል",
+  "contentWarningDescGraphicMedia": "ግራፊክ ወይም የሚረብሽ ምስሎችን ይዟል",
+  "contentWarningDescViolence": "የጥቃት ይዘት ይዟል",
+  "contentWarningDescSelfHarm": "ራስን መጉዳት ማጣቀሻዎችን ይዟል",
+  "contentWarningDescDrugs": "ከመድኃኒት ጋር የተያያዘ ይዘት ይዟል",
+  "contentWarningDescAlcohol": "ከአልኮል ጋር የተያያዘ ይዘት ይዟል",
+  "contentWarningDescTobacco": "ከትንባሆ ጋር የተያያዘ ይዘት ይዟል",
+  "contentWarningDescGambling": "ከቁማር ጋር የተያያዘ ይዘት ይዟል",
+  "contentWarningDescProfanity": "ጠንካራ ቋንቋ ይይዛል",
+  "contentWarningDescFlashingLights": "ብልጭ ድርግም የሚሉ መብራቶችን ይዟል (የፎቶ ትብነት ማስጠንቀቂያ)",
+  "contentWarningDescAiGenerated": "ይህ ይዘት በ AI የመነጨ ነው።",
+  "contentWarningDescSpoiler": "አጥፊዎችን ይይዛል",
+  "contentWarningDescContentWarning": "ፈጣሪ ይህንን እንደ ሚስጥራዊነት ምልክት አድርጎታል።",
+  "contentWarningDescDefault": "ፈጣሪ ይህንን ይዘት ጠቁሟል",
+  "contentWarningDetailsTitle": "የይዘት ማስጠንቀቂያዎች",
+  "contentWarningDetailsSubtitle": "ፈጣሪው እነዚህን መለያዎች ተግባራዊ አድርጓል፡-",
+  "contentWarningManageFilters": "የይዘት ማጣሪያዎችን ያቀናብሩ",
+  "contentWarningViewAnyway": "ለማንኛውም ይመልከቱ",
+  "contentWarningReportContentTooltip": "ይዘትን ሪፖርት አድርግ",
+  "contentWarningBlockUserTooltip": "ተጠቃሚን አግድ",
+  "contentWarningBlockedTitle": "ይዘት ታግዷል",
+  "contentWarningBlockedPolicy": "ይህ ይዘት በፖሊሲ ጥሰቶች ምክንያት ታግዷል።",
+  "contentWarningNoticeTitle": "የይዘት ማሳሰቢያ",
+  "contentWarningPotentiallyHarmfulTitle": "ሊጎዳ የሚችል ይዘት",
+  "contentWarningView": "ይመልከቱ",
+  "contentWarningReportAction": "ሪፖርት",
+  "contentWarningHideAllLikeThis": "ሁሉንም እንደዚህ ያሉ ይዘቶችን ደብቅ",
+  "contentWarningNoFilterYet": "ለዚህ ማስጠንቀቂያ እስካሁን ምንም የተቀመጠ ማጣሪያ የለም።",
+  "contentWarningHiddenConfirmation": "ከአሁን በኋላ እንደዚህ አይነት ልጥፎችን እንደብቃለን።",
+  "videoErrorNotFound": "ቪዲዮ አልተገኘም።",
+  "videoErrorNetwork": "የአውታረ መረብ ስህተት",
+  "videoErrorTimeout": "የመጫኛ ጊዜ ማብቂያ",
+  "videoErrorFormat": "የቪዲዮ ቅርጸት ስህተት\n(እንደገና ይሞክሩ ወይም የተለየ አሳሽ ይጠቀሙ)",
+  "videoErrorUnsupportedFormat": "የማይደገፍ የቪዲዮ ቅርጸት",
+  "videoErrorPlayback": "የቪዲዮ መልሶ ማጫወት ስህተት",
+  "videoErrorAgeRestricted": "በእድሜ የተገደበ ይዘት",
+  "videoErrorVerifyAge": "ዕድሜን ያረጋግጡ",
+  "videoErrorRetry": "እንደገና ይሞክሩ",
+  "videoErrorContentRestricted": "ይዘት ተገድቧል",
+  "videoErrorContentRestrictedBody": "ይህ ቪዲዮ በቅብብሎሽ ተገድቧል።",
+  "videoErrorVerifyAgeBody": "ይህን ቪዲዮ ለማየት እድሜዎን ያረጋግጡ።",
+  "videoErrorSkip": "ዝለል",
+  "videoErrorVerifyAgeButton": "ዕድሜን ያረጋግጡ",
+  "videoFollowButtonFollowing": "በመከተል ላይ",
+  "videoFollowButtonFollow": "ተከተል",
+  "audioAttributionOriginalSound": "ኦሪጅናል ድምጽ",
+  "videoInspiredByAttribution": "በ@{creatorName} የተነሳሳ",
+  "@videoInspiredByAttribution": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoCollaboratorWithOne": "ከ@{name} ጋር",
+  "@videoCollaboratorWithOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoCollaboratorWithMore": "ከ@{name} +{count} ጋር",
+  "@videoCollaboratorWithMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoCollaboratorCountLabel": "{count, plural, =1{1 ተባባሪ} other{{count} ተባባሪዎች}}። መገለጫውን ለማየት መታ አድርግ።",
+  "@videoCollaboratorCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listAttributionFallback": "ዝርዝር",
+  "shareVideoLabel": "ቪዲዮ አጋራ",
+  "sharePostSharedWith": "ልጥፍ ለ{recipientName} ተጋርቷል።",
+  "@sharePostSharedWith": {
+    "placeholders": {
+      "recipientName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFailedToSend": "ቪዲዮ መላክ አልተሳካም።",
+  "shareAddedToBookmarks": "ወደ ዕልባቶች ታክሏል።",
+  "shareRemovedFromBookmarks": "ከዕልባቶች ተወግዷል",
+  "@shareRemovedFromBookmarks": {
+    "description": "Snackbar shown after removing a video from global bookmarks via Save on the share sheet."
+  },
+  "shareFailedToAddBookmark": "ዕልባት ማከል አልተሳካም።",
+  "shareFailedToRemoveBookmark": "ዕልባትን ማስወገድ አልተሳካም።",
+  "@shareFailedToRemoveBookmark": {
+    "description": "Snackbar when toggling Save off (remove from bookmarks) fails."
+  },
+  "shareActionFailed": "እርምጃ አልተሳካም።",
+  "shareWithTitle": "ሼር በማድረግ ያካፍሉ።",
+  "shareFindPeople": "ሰዎችን ያግኙ",
+  "shareFindPeopleMultiline": "አግኝ\nሰዎች",
+  "shareSent": "ተልኳል።",
+  "shareContactFallback": "ተገናኝ",
+  "shareUserFallback": "ተጠቃሚ",
+  "shareSendingTo": "ወደ {name} በመላክ ላይ",
+  "@shareSendingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMessageHint": "አማራጭ መልእክት አክል...",
+  "videoActionUnlike": "ከቪዲዮ በተቃራኒ",
+  "videoActionLike": "ልክ እንደ ቪዲዮ",
+  "videoActionAutoLabel": "ማጠናቀር",
+  "videoActionLikeLabel": "እንደ",
+  "videoActionReplyLabel": "መልስ",
+  "videoActionRepostLabel": "እንደገና ይለጥፉ",
+  "videoActionShareLabel": "አጋራ",
+  "videoActionAboutLabel": "ስለ",
+  "videoActionEnableAutoAdvance": "አውቶማቲክ ማስቀደምን አንቃ",
+  "videoActionDisableAutoAdvance": "ራስ-ሰር ማስቀደምን አሰናክል",
+  "videoActionRemoveRepost": "ድጋሚ ልጥፍን ያስወግዱ",
+  "videoActionRepost": "ቪዲዮውን እንደገና ይለጥፉ",
+  "videoActionViewComments": "አስተያየቶችን ይመልከቱ",
+  "videoActionMoreOptions": "ተጨማሪ አማራጮች",
+  "videoActionHideSubtitles": "የትርጉም ጽሑፎችን ደብቅ",
+  "videoActionShowSubtitles": "የትርጉም ጽሑፎችን አሳይ",
+  "videoOverlayOpenMetadataFromTitle": "የቪዲዮ ዝርዝሮችን ይክፈቱ",
+  "@videoOverlayOpenMetadataFromTitle": {
+    "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+  },
+  "videoOverlayOpenMetadataFromDescription": "የቪዲዮ ዝርዝሮችን ይክፈቱ",
+  "@videoOverlayOpenMetadataFromDescription": {
+    "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+  },
+  "videoDescriptionLoops": "{count} ሉፖች",
+  "@videoDescriptionLoops": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{ሉፕ} other{ሉፖች}}",
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "metadataBadgeNotDivine": "አይደለም Divine",
+  "metadataBadgeHumanMade": "ሰው ሰራሽ",
+  "metadataSoundsLabel": "ይሰማል።",
+  "metadataOriginalSound": "ኦሪጅናል ድምጽ",
+  "metadataVerificationLabel": "ማረጋገጥ",
+  "metadataDeviceAttestation": "የመሣሪያ ማረጋገጫ",
+  "metadataProofManifest": "ማረጋገጫ አንጸባራቂ",
+  "metadataCreatorLabel": "ፈጣሪ",
+  "metadataCollaboratorsLabel": "ተባባሪዎች",
+  "metadataInspiredByLabel": "ተመስጦ",
+  "metadataRepostedByLabel": "በድጋሚ የተለጠፈው በ",
+  "metadataLoopsLabel": "{count, plural, =1{ሉፕ} other{ሉፖች}}",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "metadataLikesLabel": "መውደዶች",
+  "metadataCommentsLabel": "አስተያየቶች",
+  "metadataRepostsLabel": "ድጋሚ ልጥፎች",
+  "metadataPostedDateSemantics": "የተለጠፈው {date} ላይ ነው።",
+  "@metadataPostedDateSemantics": {
+    "description": "Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsTitle": "የገንቢ አማራጮች",
+  "@devOptionsTitle": {
+    "description": "Developer options screen app bar title"
+  },
+  "devOptionsPageLoadTimes": "የገጽ ጭነት ጊዜያት",
+  "devOptionsNoPageLoads": "እስካሁን ምንም የገጽ ጭነቶች አልተመዘገበም።\nየጊዜ ውሂብን ለማየት በመተግበሪያው ውስጥ ያስሱ።",
+  "devOptionsPageLoadVisible": "የሚታይ፡ {visibleMs}ms | ውሂብ፡ {dataMs}ms",
+  "@devOptionsPageLoadVisible": {
+    "placeholders": {
+      "visibleMs": {
+        "type": "String"
+      },
+      "dataMs": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsSlowestScreens": "በጣም ቀርፋፋ ስክሪኖች",
+  "devOptionsVideoPlaybackFormat": "የቪዲዮ መልሶ ማጫወት ቅርጸት",
+  "devOptionsSwitchEnvironmentTitle": "አካባቢ ይቀየር?",
+  "devOptionsSwitchEnvironmentMessage": "ወደ {envName} ቀይር?\n\nይህ የተሸጎጠ የቪዲዮ ውሂብን ያጸዳል እና ከአዲሱ ሪሌይ ጋር እንደገና ይገናኛል።",
+  "@devOptionsSwitchEnvironmentMessage": {
+    "placeholders": {
+      "envName": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsCancel": "ሰርዝ",
+  "devOptionsSwitch": "ቀይር",
+  "devOptionsSwitchedTo": "ወደ {envName} ተቀይሯል",
+  "@devOptionsSwitchedTo": {
+    "placeholders": {
+      "envName": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsSwitchedFormat": "ወደ {formatName} ተቀይሯል - መሸጎጫ ጸድቷል።",
+  "@devOptionsSwitchedFormat": {
+    "placeholders": {
+      "formatName": {
+        "type": "String"
+      }
+    }
+  },
+  "featureFlagTitle": "የባህሪ ባንዲራዎች",
+  "@featureFlagTitle": {
+    "description": "Feature flags screen app bar title"
+  },
+  "featureFlagResetAllTooltip": "ሁሉንም ባንዲራዎች ወደ ነባሪዎች ዳግም ያስጀምሩ",
+  "featureFlagResetToDefault": "ወደ ነባሪ ዳግም አስጀምር",
+  "featureFlagAppRecovery": "የመተግበሪያ መልሶ ማግኛ",
+  "featureFlagAppRecoveryDescription": "መተግበሪያው እየተበላሸ ከሆነ ወይም እንግዳ ከሆነ፣ መሸጎጫውን ለማጽዳት ይሞክሩ።",
+  "featureFlagClearAllCache": "ሁሉንም መሸጎጫ ያጽዱ",
+  "featureFlagCacheInfo": "የመሸጎጫ መረጃ",
+  "featureFlagClearCacheTitle": "ሁሉንም መሸጎጫ ይጽዱ?",
+  "featureFlagClearCacheMessage": "ይህ የሚከተሉትን ጨምሮ ሁሉንም የተሸጎጠ ውሂብ ያጸዳል-\n• ማሳወቂያዎች\n• የተጠቃሚ መገለጫዎች\n• ዕልባቶች\n• ጊዜያዊ ፋይሎች\n\nእንደገና መግባት ያስፈልግዎታል። ይቀጥል?",
+  "featureFlagClearCache": "መሸጎጫ አጽዳ",
+  "featureFlagClearingCache": "መሸጎጫ በማጽዳት ላይ...",
+  "featureFlagSuccess": "ስኬት",
+  "featureFlagError": "ስህተት",
+  "featureFlagClearCacheSuccess": "መሸጎጫ በተሳካ ሁኔታ ጸድቷል። እባክዎ መተግበሪያውን እንደገና ያስጀምሩት።",
+  "featureFlagClearCacheFailure": "አንዳንድ መሸጎጫ ንጥሎችን ማጽዳት አልተሳካም። ለዝርዝሮች የምዝግብ ማስታወሻዎችን ይመልከቱ።",
+  "featureFlagOk": "እሺ",
+  "featureFlagCacheInformation": "መሸጎጫ መረጃ",
+  "featureFlagTotalCacheSize": "ጠቅላላ የመሸጎጫ መጠን፡ {size}",
+  "@featureFlagTotalCacheSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "featureFlagCacheIncludes": "መሸጎጫ የሚከተሉትን ያጠቃልላል\n• የማሳወቂያ ታሪክ\n• የተጠቃሚ መገለጫ ውሂብ\n• የቪዲዮ ድንክዬዎች\n• ጊዜያዊ ፋይሎች\n• የውሂብ ጎታ ኢንዴክሶች",
+  "relaySettingsTitle": "ቅብብሎሽ",
+  "@relaySettingsTitle": {
+    "description": "Relay settings screen app bar title"
+  },
+  "relaySettingsInfoTitle": "Divine ክፍት ስርዓት ነው - ግንኙነቶችዎን ይቆጣጠራሉ።",
+  "relaySettingsInfoDescription": "እነዚህ ማስተላለፊያዎች የእርስዎን ይዘት ባልተማከለው Nostr አውታረ መረብ ላይ ያሰራጫሉ። እንደፈለጉ ማሰራጫዎችን ማከል ወይም ማስወገድ ይችላሉ።",
+  "relaySettingsLearnMoreNostr": "ስለ Nostr ተጨማሪ ተማር →",
+  "relaySettingsFindPublicRelays": "የህዝብ ሪሌዮችን በ nostr.co.uk ፈልግ →",
+  "relaySettingsAppNotFunctional": "መተግበሪያ ተግባራዊ አይደለም።",
+  "relaySettingsRequiresRelay": "Divine ቪዲዮዎችን ለመጫን፣ ይዘትን ለመለጠፍ እና ውሂብ ለማመሳሰል ቢያንስ አንድ ቅብብል ያስፈልገዋል።",
+  "relaySettingsRestoreDefaultRelay": "ነባሪ ቅብብሎሽ እነበረበት መልስ",
+  "relaySettingsAddCustomRelay": "ብጁ ቅብብል ያክሉ",
+  "relaySettingsAddRelay": "ቅብብል ጨምር",
+  "relaySettingsRetry": "እንደገና ይሞክሩ",
+  "relaySettingsNoStats": "እስካሁን ምንም ስታቲስቲክስ የለም።",
+  "relaySettingsConnection": "ግንኙነት",
+  "relaySettingsConnected": "ተገናኝቷል።",
+  "relaySettingsDisconnected": "ግንኙነቱ ተቋርጧል",
+  "relaySettingsSessionDuration": "የክፍለ ጊዜው ቆይታ",
+  "relaySettingsLastConnected": "መጨረሻ የተገናኘው።",
+  "relaySettingsDisconnectedLabel": "ግንኙነቱ ተቋርጧል",
+  "relaySettingsReason": "ምክንያት",
+  "relaySettingsActiveSubscriptions": "ንቁ የደንበኝነት ምዝገባዎች",
+  "relaySettingsTotalSubscriptions": "ጠቅላላ የደንበኝነት ምዝገባዎች",
+  "relaySettingsEventsReceived": "ክስተቶች ተቀብለዋል",
+  "relaySettingsEventsSent": "ክስተቶች ተልከዋል።",
+  "relaySettingsRequestsThisSession": "ይህንን ክፍለ ጊዜ ጠይቋል",
+  "relaySettingsFailedRequests": "ያልተሳኩ ጥያቄዎች",
+  "relaySettingsLastError": "የመጨረሻው ስህተት፡ {error}",
+  "@relaySettingsLastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsLoadingRelayInfo": "የማስተላለፊያ መረጃን በመጫን ላይ...",
+  "relaySettingsAboutRelay": "ስለ ሪሌይ",
+  "relaySettingsSupportedNips": "የሚደገፉ NIPዎች",
+  "relaySettingsSoftware": "ሶፍትዌር",
+  "relaySettingsViewWebsite": "ድህረ ገጽ ይመልከቱ",
+  "relaySettingsRemoveRelayTitle": "ሪሌይ ይወገድ?",
+  "relaySettingsRemoveRelayMessage": "እርግጠኛ ነዎት ይህን ቅብብል ማስወገድ ይፈልጋሉ?\n\n{relayUrl}",
+  "@relaySettingsRemoveRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsCancel": "ሰርዝ",
+  "relaySettingsRemove": "አስወግድ",
+  "relaySettingsRemovedRelay": "የተወገደ ቅብብል፡ {relayUrl}",
+  "@relaySettingsRemovedRelay": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsFailedToRemoveRelay": "ቅብብሎሽ ማስወገድ አልተሳካም።",
+  "relaySettingsForcingReconnection": "የዝውውር ዳግም ግንኙነትን በማስገደድ ላይ...",
+  "relaySettingsConnectedToRelays": "ከ {count} ሪሌይ(ዎች) ጋር ተገናኝቷል!",
+  "@relaySettingsConnectedToRelays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relaySettingsFailedToConnectCheck": "ከቅብብሎሽ ጋር መገናኘት አልተሳካም። እባክዎ የአውታረ መረብ ግንኙነትዎን ያረጋግጡ።",
+  "relaySettingsAddRelayTitle": "ቅብብል ጨምር",
+  "relaySettingsAddRelayPrompt": "ማከል የምትፈልገውን የሪሌይ WebSocket URL አስገባ:",
+  "relaySettingsBrowsePublicRelays": "በ nostr.co.uk ላይ የህዝብ ማሰራጫዎችን ያስሱ",
+  "relaySettingsAdd": "አክል",
+  "relaySettingsAddedRelay": "የተጨመረው ቅብብሎሽ፡ {relayUrl}",
+  "@relaySettingsAddedRelay": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsFailedToAddRelay": "ቅብብሎሽ ማከል አልተሳካም። እባክህ URLን ተመልከት እና እንደገና ሞክር።",
+  "relaySettingsInvalidUrl": "ሪሌይ URL በ wss:// ወይም ws:// መጀመር አለበት።",
+  "relaySettingsInsecureUrl": "የሪሌይ URL wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)",
+  "relaySettingsRestoredDefault": "ወደነበረበት የተመለሰ ነባሪ ቅብብሎሽ፡ {defaultRelay}",
+  "@relaySettingsRestoredDefault": {
+    "placeholders": {
+      "defaultRelay": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsFailedToRestoreDefault": "ነባሪ ቅብብሎሽ ወደነበረበት መመለስ አልተሳካም። እባክዎ የአውታረ መረብ ግንኙነትዎን ያረጋግጡ።",
+  "relaySettingsCouldNotOpenBrowser": "አሳሽ መክፈት አልተቻለም",
+  "relaySettingsFailedToOpenLink": "አገናኝ መክፈት አልተሳካም።",
+  "relaySettingsExternalRelay": "ውጫዊ ቅብብሎሽ",
+  "relaySettingsNotConnected": "አልተገናኘም",
+  "relaySettingsDisconnectedAgo": "ከ{duration} በፊት ተቋርጧል",
+  "@relaySettingsDisconnectedAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsSubscriptionsSummary": "{count} ደንበኝነቶች",
+  "@relaySettingsSubscriptionsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relaySettingsEventsSummary": "{count} ክስተቶች",
+  "@relaySettingsEventsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsTimeAgo": "ከ{duration} በፊት",
+  "@relaySettingsTimeAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsIntro": "Divine ለያልተማከለ ማተም Nostr ፕሮቶኮልን ይጠቀማል። ይዘትዎ በሚመርጧቸው ቅብብሎሾች ላይ ይኖራል፣ ቁልፎችዎም ማንነትዎ ናቸው።",
+  "nostrSettingsSectionNetwork": "አውታረ መረብ",
+  "nostrSettingsSectionAccount": "መለያ",
+  "nostrSettingsSectionDangerZone": "አደገኛ ቦታ",
+  "nostrSettingsRelays": "ቅብብሎሾች",
+  "nostrSettingsRelaysSubtitle": "የNostr ቅብብሎሽ ግንኙነቶችን ያስተዳድሩ",
+  "nostrSettingsRelayDiagnostics": "የቅብብሎሽ ምርመራ",
+  "nostrSettingsRelayDiagnosticsSubtitle": "የቅብብሎሽ ግንኙነትን እና የአውታረ መረብ ችግሮችን ያስሱ",
+  "nostrSettingsMediaServers": "የሚዲያ አገልጋዮች",
+  "nostrSettingsMediaServersSubtitle": "የBlossom ማስጫኛ አገልጋዮችን ያቀናብሩ",
+  "nostrSettingsDeveloperOptions": "የገንቢ አማራጮች",
+  "nostrSettingsDeveloperOptionsSubtitle": "የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች",
+  "nostrSettingsExperimentalFeaturesSubtitle": "ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።",
+  "nostrSettingsKeyManagement": "የቁልፍ አስተዳደር",
+  "nostrSettingsKeyManagementSubtitle": "የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ",
+  "nostrSettingsRemoveKeys": "ቁልፎችን ከመሣሪያው አስወግድ",
+  "nostrSettingsRemoveKeysSubtitle": "የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።",
+  "nostrSettingsCouldNotRemoveKeys": "ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "nostrSettingsFailedToRemoveKeys": "ቁልፎችን ማስወገድ አልተሳካም፦ {error}",
+  "@nostrSettingsFailedToRemoveKeys": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsDeleteAccount": "መለያ እና ውሂብ ሰርዝ",
+  "nostrSettingsDeleteAccountSubtitle": "መለያዎን እና ሁሉንም ይዘት ከNostr ቅብብሎሾች ላይ በቋሚነት ይሰርዙ። ይህ ሊመለስ አይችልም።",
+  "relayDiagnosticTitle": "ቅብብል ምርመራዎች",
+  "@relayDiagnosticTitle": {
+    "description": "Relay diagnostics screen app bar title"
+  },
+  "relayDiagnosticRefreshTooltip": "ምርመራዎችን ያድሱ",
+  "relayDiagnosticLastRefresh": "የመጨረሻው መታደስ፡ {time}",
+  "@relayDiagnosticLastRefresh": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relayDiagnosticRelayStatus": "የማስተላለፊያ ሁኔታ",
+  "relayDiagnosticInitialized": "ተጀመረ",
+  "relayDiagnosticReady": "ዝግጁ",
+  "relayDiagnosticNotInitialized": "አልተጀመረም።",
+  "relayDiagnosticDatabaseEvents": "የውሂብ ጎታ ክስተቶች",
+  "relayDiagnosticActiveSubscriptions": "ንቁ የደንበኝነት ምዝገባዎች",
+  "relayDiagnosticExternalRelays": "የውጭ ማስተላለፊያዎች",
+  "relayDiagnosticConfigured": "የተዋቀረ",
+  "relayDiagnosticRelayCount": "{count} ቅብብል(ዎች)",
+  "@relayDiagnosticRelayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticConnectedLabel": "ተገናኝቷል።",
+  "relayDiagnosticConnectedRatio": "{connected}/{total}",
+  "@relayDiagnosticConnectedRatio": {
+    "placeholders": {
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticVideoEvents": "የቪዲዮ ዝግጅቶች",
+  "relayDiagnosticHomeFeed": "የቤት ምግብ",
+  "relayDiagnosticVideosCount": "{count} ቪዲዮዎች",
+  "@relayDiagnosticVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticDiscovery": "ግኝት",
+  "relayDiagnosticLoading": "በመጫን ላይ",
+  "relayDiagnosticYes": "አዎ",
+  "relayDiagnosticNo": "አይ",
+  "relayDiagnosticTestDirectQuery": "ቀጥተኛ መጠይቅን ሞክር",
+  "relayDiagnosticNetworkConnectivity": "የአውታረ መረብ ግንኙነት",
+  "relayDiagnosticRunNetworkTest": "የአውታረ መረብ ሙከራን አሂድ",
+  "relayDiagnosticBlossomServer": "Blossom አገልጋይ",
+  "relayDiagnosticTestAllEndpoints": "ሁሉንም የመጨረሻ ነጥቦችን ይሞክሩ",
+  "relayDiagnosticStatus": "ሁኔታ",
+  "relayDiagnosticUrl": "URL",
+  "relayDiagnosticError": "ስህተት",
+  "relayDiagnosticFunnelCakeApi": "FunnelCake ኤፒአይ",
+  "relayDiagnosticBaseUrl": "መሰረታዊ URL",
+  "relayDiagnosticSummary": "ማጠቃለያ",
+  "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} እሺ (አማካኝ {avgMs}ms)",
+  "@relayDiagnosticEndpointSummary": {
+    "placeholders": {
+      "successCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      },
+      "avgMs": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticRetestAll": "ሁሉንም እንደገና ሞክር",
+  "relayDiagnosticRetrying": "እንደገና በመሞከር ላይ...",
+  "relayDiagnosticRetryConnection": "ግንኙነትን እንደገና ይሞክሩ",
+  "relayDiagnosticTroubleshooting": "መላ መፈለግ",
+  "relayDiagnosticTroubleshootingGuide": "• አረንጓዴ ሁኔታ = የተገናኘ እና የሚሰራ\n• ቀይ ሁኔታ = ግንኙነት አልተሳካም።\n• የአውታረ መረብ ሙከራ ካልተሳካ የበይነመረብ ግንኙነትን ያረጋግጡ\n• ማስተላለፎች ከተዋቀሩ ግን ካልተገናኙ \"ግንኙነቱን እንደገና ሞክር\" ን ይንኩ።\n• ለማረም ይህንን ስክሪን ያንሱ",
+  "relayDiagnosticAllEndpointsHealthy": "ሁሉም REST የመጨረሻ ነጥቦች ጤናማ ናቸው!",
+  "relayDiagnosticSomeEndpointsFailed": "አንዳንድ REST የመጨረሻ ነጥቦች አልተሳኩም - ዝርዝሮችን ከላይ ይመልከቱ",
+  "relayDiagnosticFoundVideoEvents": "በመረጃ ቋት ውስጥ {count} የቪዲዮ ክስተቶች ተገኝተዋል",
+  "@relayDiagnosticFoundVideoEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticQueryFailed": "መጠይቁ አልተሳካም፡ {error}",
+  "@relayDiagnosticQueryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "relayDiagnosticConnectedToRelays": "ከ {count} ሪሌይ(ዎች) ጋር ተገናኝቷል!",
+  "@relayDiagnosticConnectedToRelays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticFailedToConnect": "ከማንኛውም ማስተላለፊያዎች ጋር መገናኘት አልተሳካም።",
+  "relayDiagnosticConnectionRetryFailed": "የግንኙነት ድጋሚ መሞከር አልተሳካም፦ {error}",
+  "@relayDiagnosticConnectionRetryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "relayDiagnosticConnectedAuthenticated": "ተገናኝቷል እና የተረጋገጠ",
+  "relayDiagnosticConnectedOnly": "ተገናኝቷል።",
+  "relayDiagnosticNotConnected": "አልተገናኘም።",
+  "relayDiagnosticNoRelaysConfigured": "ምንም ቅብብሎሽ አልተዋቀረም።",
+  "relayDiagnosticFailed": "አልተሳካም።",
+  "notificationSettingsTitle": "ማሳወቂያዎች",
+  "@notificationSettingsTitle": {
+    "description": "Notification settings screen app bar title"
+  },
+  "notificationSettingsResetTooltip": "ወደ ነባሪዎች ዳግም አስጀምር",
+  "notificationSettingsTypes": "የማሳወቂያ ዓይነቶች",
+  "notificationSettingsLikes": "መውደዶች",
+  "notificationSettingsLikesSubtitle": "አንድ ሰው ቪዲዮዎችዎን ሲወድ",
+  "notificationSettingsComments": "አስተያየቶች",
+  "notificationSettingsCommentsSubtitle": "አንድ ሰው በቪዲዮዎችዎ ላይ አስተያየት ሲሰጥ",
+  "notificationSettingsFollows": "ይከተላል",
+  "notificationSettingsFollowsSubtitle": "ሰው ሲከተልህ",
+  "notificationSettingsMentions": "ይጠቅሳል",
+  "notificationSettingsMentionsSubtitle": "እርስዎ ሲጠቀሱ",
+  "notificationSettingsReposts": "ድጋሚ ልጥፎች",
+  "notificationSettingsRepostsSubtitle": "አንድ ሰው ቪዲዮዎችህን በድጋሚ ሲለጥፍ",
+  "notificationSettingsSystem": "ስርዓት",
+  "notificationSettingsSystemSubtitle": "የመተግበሪያ ዝመናዎች እና የስርዓት መልዕክቶች",
+  "notificationSettingsPushNotificationsSection": "ማሳወቂያዎችን ግፋ",
+  "notificationSettingsPushNotifications": "ማሳወቂያዎችን ግፋ",
+  "notificationSettingsPushNotificationsSubtitle": "መተግበሪያ ሲዘጋ ማሳወቂያዎችን ይቀበሉ",
+  "notificationSettingsSound": "ድምፅ",
+  "notificationSettingsSoundSubtitle": "ለማሳወቂያዎች ድምጽን ያጫውቱ",
+  "notificationSettingsVibration": "ንዝረት",
+  "notificationSettingsVibrationSubtitle": "ለማሳወቂያዎች ንዘር",
+  "notificationSettingsActions": "ድርጊቶች",
+  "notificationSettingsMarkAllAsRead": "ሁሉንም እንደተነበቡ ምልክት ያድርጉበት",
+  "notificationSettingsMarkAllAsReadSubtitle": "ሁሉንም ማሳወቂያዎች እንደተነበቡ ምልክት ያድርጉባቸው",
+  "notificationSettingsAllMarkedAsRead": "ሁሉም ማሳወቂያዎች እንደተነበቡ ምልክት ተደርጎባቸዋል",
+  "notificationSettingsResetToDefaults": "ቅንብሮች ወደ ነባሪዎች ዳግም ተጀምረዋል።",
+  "notificationSettingsAbout": "ስለ ማሳወቂያዎች",
+  "notificationSettingsAboutDescription": "ማሳወቂያዎች የተጎላበተው በNostr ፕሮቶኮል ነው። የቅጽበታዊ ዝማኔዎች ከNostr ቅብብሎሽ ጋር ባለዎት ግንኙነት ይወሰናል። አንዳንድ ማሳወቂያዎች መዘግየቶች ሊኖራቸው ይችላል።",
+  "safetySettingsTitle": "ደህንነት እና ግላዊነት",
+  "@safetySettingsTitle": {
+    "description": "Safety settings screen app bar title"
+  },
+  "safetySettingsLabel": "ቅንብሮች",
+  "safetySettingsWhatYouSee": "የሚያዩት",
+  "safetySettingsWhatYouPublish": "የሚያትሙት",
+  "safetySettingsShowDivineHostedOnly": "በDivine የተስተናገዱ ቪዲዮዎችን ብቻ አሳይ",
+  "safetySettingsShowDivineHostedOnlySubtitle": "ከሌሎች የሚዲያ አስተናጋጆች የቀረቡ ቪዲዮዎችን ደብቅ",
+  "safetySettingsModeration": "ሞደሬሽን",
+  "safetySettingsBlockedUsers": "የታገዱ ተጠቃሚዎች",
+  "safetySettingsAgeVerification": "የዕድሜ ማረጋገጫ",
+  "safetySettingsAgeConfirmation": "18 ዓመት ወይም ከዚያ በላይ መሆኔን አረጋግጣለሁ።",
+  "safetySettingsAgeRequired": "የአዋቂ ይዘት ለማየት ያስፈልጋል",
+  "safetySettingsDivine": "Divine",
+  "safetySettingsDivineSubtitle": "ይፋዊ የሽምግልና አገልግሎት (በነባሪ)",
+  "safetySettingsPeopleIFollow": "የምከተላቸው ሰዎች",
+  "safetySettingsPeopleIFollowSubtitle": "ለሚከተሏቸው ሰዎች መለያዎች ይመዝገቡ",
+  "safetySettingsAddCustomLabeler": "ብጁ መሰየሚያ ያክሉ",
+  "safetySettingsAddCustomLabelerHint": "npub አስገባ...",
+  "safetySettingsAddCustomLabelerListTitle": "ብጁ መለያ አክል",
+  "safetySettingsAddCustomLabelerListSubtitle": "npub አድራሻ አስገባ",
+  "safetySettingsNoBlockedUsers": "ምንም የታገዱ ተጠቃሚዎች የሉም",
+  "safetySettingsUnblock": "እገዳ አንሳ",
+  "safetySettingsUserUnblocked": "ተጠቃሚው ታግዷል",
+  "safetySettingsCancel": "ሰርዝ",
+  "safetySettingsAdd": "አክል",
+  "analyticsTitle": "የፈጣሪ ትንታኔ",
+  "@analyticsTitle": {
+    "description": "Creator analytics screen app bar title"
+  },
+  "analyticsDiagnosticsTooltip": "ምርመራዎች",
+  "analyticsDiagnosticsSemanticLabel": "ምርመራዎችን ቀያይር",
+  "analyticsRetry": "እንደገና ይሞክሩ",
+  "analyticsUnableToLoad": "ትንታኔዎችን መጫን አልተቻለም።",
+  "analyticsSignInRequired": "የፈጣሪ ትንታኔን ለማየት ይግቡ።",
+  "analyticsViewDataUnavailable": "ለእነዚህ ልጥፎች ከቅብብሎሽ እይታዎች በአሁኑ ጊዜ አይገኙም። መውደድ/አስተያየት/እንደገና መለጠፍ መለኪያዎች አሁንም ትክክል ናቸው።",
+  "analyticsViewDataTitle": "ውሂብ ይመልከቱ",
+  "analyticsUpdatedTimestamp": "ተዘምኗል {time} • ውጤቶች ሲገኙ መውደዶችን፣ አስተያየቶችን፣ ድጋሚ ልጥፎችን እና እይታዎችን ከFunnelcake ይጠቀማሉ።",
+  "@analyticsUpdatedTimestamp": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsVideos": "ቪዲዮዎች",
+  "analyticsViews": "እይታዎች",
+  "analyticsInteractions": "መስተጋብር",
+  "analyticsEngagement": "ተሳትፎ",
+  "analyticsFollowers": "ተከታዮች",
+  "analyticsAvgPerPost": "አማካኝ/ልጥፍ",
+  "analyticsInteractionMix": "መስተጋብር ድብልቅ",
+  "analyticsLikes": "መውደዶች",
+  "analyticsComments": "አስተያየቶች",
+  "analyticsReposts": "ድጋሚ ልጥፎች",
+  "analyticsPerformanceHighlights": "የአፈጻጸም ድምቀቶች",
+  "analyticsMostViewed": "በብዛት የታዩት።",
+  "analyticsMostDiscussed": "በብዛት ተወያይተዋል።",
+  "analyticsMostReposted": "በጣም በድጋሚ የተለጠፈ",
+  "analyticsNoVideosYet": "እስካሁን ምንም ቪዲዮዎች የሉም",
+  "analyticsViewDataUnavailableShort": "የእይታ ውሂብ አይገኝም",
+  "analyticsViewsCount": "{count} እይታዎች",
+  "@analyticsViewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsCommentsCount": "{count} አስተያየቶች",
+  "@analyticsCommentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsRepostsCount": "{count} ድጋሚ ልጥፎች",
+  "@analyticsRepostsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsTopContent": "ከፍተኛ ይዘት",
+  "analyticsPublishPrompt": "ደረጃዎችን ለማየት ጥቂት ቪዲዮዎችን ያትሙ።",
+  "analyticsEngagementRateExplainer": "የቀኝ ጎን % = የተሳትፎ መጠን (ግንኙነቶች በእይታዎች የተከፋፈሉ)።",
+  "analyticsEngagementRateNoViews": "የተሳትፎ መጠን የእይታ ውሂብ ያስፈልገዋል; እይታዎች እስኪገኙ ድረስ እሴቶች እንደ N/A ያሳያሉ።",
+  "analyticsEngagementLabel": "ተሳትፎ",
+  "analyticsViewsUnavailable": "እይታዎች አይገኙም።",
+  "analyticsInteractionsCount": "{count} መስተጋብር",
+  "@analyticsInteractionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsPostAnalytics": "ትንታኔ ይለጥፉ",
+  "analyticsOpenPost": "ፖስት ክፈት",
+  "analyticsRecentDailyInteractions": "የቅርብ ጊዜ ዕለታዊ ግንኙነቶች",
+  "analyticsNoActivityYet": "በዚህ ክልል ውስጥ እስካሁን ምንም እንቅስቃሴ የለም።",
+  "analyticsDailyInteractionsExplainer": "መስተጋብር = መውደዶች + አስተያየቶች + በፖስታ ቀን የተለጠፈ።",
+  "analyticsDailyBarExplainer": "የአሞሌ ርዝመት በዚህ መስኮት ውስጥ ካለህ ከፍተኛ ቀን ጋር አንጻራዊ ነው።",
+  "analyticsAudienceSnapshot": "የታዳሚዎች ቅጽበታዊ ገጽ እይታ",
+  "analyticsFollowersCount": "ተከታዮች፡ {count}",
+  "@analyticsFollowersCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsFollowingCount": "በመከተል፡ {count}",
+  "@analyticsFollowingCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsAudiencePlaceholder": "Funnelcake የታዳሚ ትንታኔ መጨረሻ ነጥቦችን ሲጨምር፣ የታዳሚ ምንጭ/ጂኦ/ጊዜ ዝርዝሮች ይሞላሉ።",
+  "analyticsRetention": "ማቆየት።",
+  "analyticsRetentionWithViews": "የማቆያ ኩርባ እና የምልከታ ጊዜ መከፋፈል በሰከንድ/በባልዲ ማቆየት ከFunnelcake ሲመጣ ይታያል።",
+  "analyticsRetentionWithoutViews": "የእይታ+ሰዓት-ጊዜ ትንታኔ በFunnelcake እስኪመለስ ድረስ የማቆየት ውሂብ አይገኝም።",
+  "analyticsDiagnostics": "ምርመራዎች",
+  "analyticsDiagnosticsTotalVideos": "ጠቅላላ ቪዲዮዎች፡ {count}",
+  "@analyticsDiagnosticsTotalVideos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsWithViews": "ከእይታዎች ጋር፡ {count}",
+  "@analyticsDiagnosticsWithViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsMissingViews": "የጎደሉ እይታዎች፡ {count}",
+  "@analyticsDiagnosticsMissingViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsHydratedBulk": "ሃይድሬድ (ጅምላ)፡ {count}",
+  "@analyticsDiagnosticsHydratedBulk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsHydratedViews": "የደረቀ (/እይታዎች)፡ {count}",
+  "@analyticsDiagnosticsHydratedViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsSources": "ምንጮች፡ {sources}",
+  "@analyticsDiagnosticsSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsDiagnosticsUseFixture": "የቋሚ መረጃን ተጠቀም",
+  "analyticsNa": "N/A",
+  "authCreateNewAccount": "አዲስ Divine መለያ ይፍጠሩ",
+  "authSignInDifferentAccount": "በተለየ መለያ ይግቡ",
+  "authSignBackIn": "ተመልሰው ይግቡ",
+  "authTermsPrefix": "ከላይ ያለውን አማራጭ በመምረጥ፣ ቢያንስ 16 ዓመት እንደሆናችሁ አረጋግጠዋል እና በዚህ ተስማምተዋል።",
+  "authTermsOfService": "የአገልግሎት ውል",
+  "authPrivacyPolicy": "የግላዊነት ፖሊሲ",
+  "authTermsAnd": ", እና",
+  "authSafetyStandards": "የደህንነት ደረጃዎች",
+  "authAmberNotInstalled": "Amber መተግበሪያ አልተጫነም።",
+  "authAmberConnectionFailed": "ከAmber ጋር መገናኘት አልተሳካም",
+  "authPasswordResetSent": "በዚያ ኢሜይል መለያ ካለ፣ የይለፍ ቃል ዳግም ማስጀመሪያ አገናኝ ተልኳል።",
+  "authSignInTitle": "ይግቡ",
+  "authEmailLabel": "ኢሜይል",
+  "authPasswordLabel": "የይለፍ ቃል",
+  "authForgotPassword": "የይለፍ ቃል ረሱ?",
+  "authImportNostrKey": "አስመጣ Nostr ቁልፍ",
+  "authConnectSignerApp": "ከፈራሚ መተግበሪያ ጋር ይገናኙ",
+  "authSignInWithAmber": "በAmber ግባ",
+  "authSignInOptionsTitle": "የመግባት አማራጮች",
+  "authInfoEmailPasswordTitle": "ኢሜይል እና የይለፍ ቃል",
+  "authInfoEmailPasswordDescription": "በDivine መለያህ ግባ። በኢሜይል እና በይለፍ ቃል ከተመዘገብክ፣ እዚህ ተጠቀማቸው።",
+  "authInfoImportNostrKeyDescription": "አስቀድሞ Nostr ማንነት አለህ? የእርስዎን nsec የግል ቁልፍ ከሌላ ደንበኛ ያስመጡ።",
+  "authInfoSignerAppTitle": "Signer መተግበሪያ",
+  "authInfoSignerAppDescription": "ለተሻሻለ ቁልፍ ደህንነት እንደ NIP-46 ተስማሚ የርቀት ፈራሚ በመጠቀም ይገናኙ።",
+  "authInfoAmberTitle": "Amber",
+  "authInfoAmberDescription": "የእርስዎን Nostr ቁልፎች ደህንነቱ በተጠበቀ ሁኔታ ለማስተዳደር የAmber ፈራሚ መተግበሪያን በAndroid ይጠቀሙ።",
+  "authCreateAccountTitle": "መለያ ይፍጠሩ",
+  "authBackToInviteCode": "ወደ ግብዣ ኮድ ተመለስ",
+  "authUseDivineNoBackup": "ምንም ምትኬ ሳይኖር Divine ተጠቀም",
+  "authSkipConfirmTitle": "አንድ የመጨረሻ ነገር...",
+  "authSkipConfirmKeyCreated": "ገብተሃል! የእርስዎን Divine መለያ የሚያስተናግድ አስተማማኝ ቁልፍ እንፈጥራለን።",
+  "authSkipConfirmKeyOnly": "ያለ ኢሜል፣ ይህ መለያ የእርስዎ መሆኑን የሚያውቅ ብቸኛው መንገድ የእርስዎ ቁልፍ ነው።",
+  "authSkipConfirmRecommendEmail": "በመተግበሪያው ውስጥ ቁልፍዎን መድረስ ይችላሉ ፣ ግን ቴክኒካል ካልሆኑ አሁን ኢሜይል እና የይለፍ ቃል ማከል እንመክራለን። ይህ መሳሪያ ከጠፋብዎት ወይም ዳግም ካስጀመሩት ወደ መለያዎ መግባት እና ወደነበረበት መመለስ ቀላል ያደርገዋል።",
+  "authAddEmailPassword": "ኢሜይል እና የይለፍ ቃል ያክሉ",
+  "authUseThisDeviceOnly": "ይህንን መሳሪያ ብቻ ይጠቀሙ",
+  "authCompleteRegistration": "ምዝገባዎን ያጠናቅቁ",
+  "authVerifying": "በማረጋገጥ ላይ...",
+  "authVerificationLinkSent": "የማረጋገጫ አገናኝ ልከናል ወደ፡-",
+  "authClickVerificationLink": "እባክዎን በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ\nምዝገባዎን ያጠናቅቁ.",
+  "authPleaseWaitVerifying": "እባክህ ኢሜልህን እስክናረጋግጥ ጠብቅ...",
+  "authWaitingForVerification": "ማረጋገጫን በመጠበቅ ላይ",
+  "authOpenEmailApp": "የኢሜል መተግበሪያን ይክፈቱ",
+  "authWelcomeToDivine": "እንኳን ወደ Divine በደህና መጣህ!",
+  "authEmailVerified": "ኢሜይልህ ተረጋግጧል።",
+  "authSigningYouIn": "እርስዎን በማስገባት ላይ",
+  "authErrorTitle": "ኧረ ወይኔ.",
+  "authVerificationFailed": "ኢሜልህን ማረጋገጥ አልቻልንም።\nእባክዎ እንደገና ይሞክሩ።",
+  "authStartOver": "እንደገና ጀምር",
+  "authEmailVerifiedLogin": "ኢሜል ተረጋግጧል! ለመቀጠል እባክዎ ይግቡ።",
+  "authVerificationLinkExpired": "ይህ የማረጋገጫ አገናኝ ከአሁን በኋላ የሚሰራ አይደለም።",
+  "authVerificationConnectionError": "ኢሜይል ማረጋገጥ አልተቻለም። እባክዎ ግንኙነትዎን ያረጋግጡ እና እንደገና ይሞክሩ።",
+  "authWaitlistConfirmTitle": "ገብተሃል!",
+  "authWaitlistUpdatesAt": "ዝመናዎችን በ{email} እናጋራለን።\nተጨማሪ የግብዣ ኮዶች ሲገኙ፣ እንልክልሃለን።",
+  "@authWaitlistUpdatesAt": {
+    "description": "Waitlist confirmation message with email",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authOk": "እሺ",
+  "authInviteUnavailable": "የግብዣ መዳረሻ ለጊዜው አይገኝም።",
+  "authInviteUnavailableBody": "ከአፍታ በኋላ እንደገና ይሞክሩ፣ ወይም ለመግባት እገዛ ከፈለጉ ድጋፍን ያግኙ።",
+  "authTryAgain": "እንደገና ይሞክሩ",
+  "authContactSupport": "ድጋፍን ያነጋግሩ",
+  "authCouldNotOpenEmail": "{email} መክፈት አልተቻለም",
+  "@authCouldNotOpenEmail": {
+    "description": "Error when email client cannot be opened",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authAddInviteCode": "የግብዣ ኮድዎን ያክሉ",
+  "authInviteCodeLabel": "የግብዣ ኮድ",
+  "authEnterYourCode": "ኮድዎን ያስገቡ",
+  "authNext": "ቀጥሎ",
+  "authJoinWaitlist": "የተጠባባቂ ዝርዝሩን ይቀላቀሉ",
+  "authJoinWaitlistTitle": "የተጠባባቂ ዝርዝሩን ይቀላቀሉ",
+  "authJoinWaitlistDescription": "ኢሜልዎን ያጋሩ እና መዳረሻ ሲከፈት ማሻሻያዎችን እንልካለን።",
+  "authInviteAccessHelp": "የመዳረሻ እገዛን ጋብዝ",
+  "authGeneratingConnection": "ግንኙነት በማመንጨት ላይ...",
+  "authConnectedAuthenticating": "ተገናኝቷል! በማረጋገጥ ላይ...",
+  "authConnectionTimedOut": "ግንኙነቱ ጊዜው አልፎበታል።",
+  "authApproveConnection": "በፈራሚ መተግበሪያዎ ውስጥ ያለውን ግንኙነት ማጽደቁን ያረጋግጡ።",
+  "authConnectionCancelled": "ግንኙነት ተሰርዟል።",
+  "authConnectionCancelledMessage": "ግንኙነቱ ተሰርዟል።",
+  "authConnectionFailed": "ግንኙነት አልተሳካም።",
+  "authUnknownError": "ያልታወቀ ስህተት ተከስቷል።",
+  "authUrlCopied": "URL ወደ ቅንጥብ ሰሌዳ ተቀድቷል።",
+  "authConnectToDivine": "ከDivine ጋር ተገናኝ",
+  "authPasteBunkerUrl": "bunker:// URL ለጥፍ",
+  "authBunkerUrlHint": "bunker:// URL",
+  "authInvalidBunkerUrl": "ልክ ያልሆነ Bunker URL። በ bunker:// መጀመር አለበት",
+  "authScanSignerApp": "ከእርስዎ ጋር ይቃኙ\nለማገናኘት ፈራሚ መተግበሪያ።",
+  "authWaitingForConnection": "ግንኙነትን በመጠበቅ ላይ... {seconds}ዎች",
+  "@authWaitingForConnection": {
+    "description": "Waiting indicator with elapsed seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "authCopyUrl": "ቅዳ URL",
+  "authShare": "አጋራ",
+  "authAddBunker": "ማሰሪያ ጨምር",
+  "authCompatibleSignerApps": "ተኳኋኝ Signer መተግበሪያዎች",
+  "authFailedToConnect": "መገናኘት አልተሳካም።",
+  "authResetPasswordTitle": "የይለፍ ቃል ዳግም አስጀምር",
+  "authResetPasswordSubtitle": "እባክዎ አዲሱን የይለፍ ቃልዎን ያስገቡ። ርዝመቱ ቢያንስ 8 ቁምፊዎች መሆን አለበት።",
+  "authNewPasswordLabel": "አዲስ የይለፍ ቃል",
+  "authPasswordTooShort": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት።",
+  "authPasswordResetSuccess": "የይለፍ ቃል ዳግም ማስጀመር ተሳክቷል። እባክዎ ይግቡ።",
+  "authPasswordResetFailed": "የይለፍ ቃል ዳግም ማስጀመር አልተሳካም።",
+  "authUnexpectedError": "ያልተጠበቀ ስህተት ተከስቷል። እባክዎ እንደገና ይሞክሩ።",
+  "authUpdatePassword": "የይለፍ ቃል አዘምን",
+  "authSecureAccountTitle": "ደህንነቱ የተጠበቀ መለያ",
+  "authUnableToAccessKeys": "ቁልፎችዎን መድረስ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "authRegistrationFailed": "ምዝገባ አልተሳካም።",
+  "authRegistrationComplete": "ምዝገባው ተጠናቅቋል። እባክህ ኢሜልህን አረጋግጥ።",
+  "authVerificationFailedTitle": "ማረጋገጥ አልተሳካም።",
+  "authClose": "ገጠመ",
+  "authAccountSecured": "መለያ ደህንነቱ የተጠበቀ!",
+  "authAccountLinkedToEmail": "መለያዎ አሁን ከኢሜይልዎ ጋር ተገናኝቷል።",
+  "authVerifyYourEmail": "ኢሜልዎን ያረጋግጡ",
+  "authClickLinkContinue": "ምዝገባውን ለማጠናቀቅ በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ። እስከዚያው መተግበሪያውን መጠቀም መቀጠል ይችላሉ።",
+  "authWaitingForVerificationEllipsis": "ማረጋገጫን በመጠበቅ ላይ...",
+  "authContinueToApp": "ወደ መተግበሪያ ይቀጥሉ",
+  "authResetPassword": "የይለፍ ቃል ዳግም አስጀምር",
+  "authResetPasswordDescription": "የኢሜል አድራሻዎን ያስገቡ እና የይለፍ ቃልዎን እንደገና የሚያስጀምሩበት አገናኝ እንልክልዎታለን።",
+  "authFailedToSendResetEmail": "ዳግም ማስጀመር ኢሜይል መላክ አልተሳካም።",
+  "authUnexpectedErrorShort": "ያልተጠበቀ ስህተት ተከስቷል።",
+  "authSending": "በመላክ ላይ...",
+  "authSendResetLink": "ዳግም ማስጀመሪያ አገናኝ ላክ",
+  "authEmailSent": "ኢሜል ተልኳል!",
+  "authResetLinkSentTo": "የይለፍ ቃል ዳግም ማስጀመሪያ አገናኝ ወደ {email} ልከናል። የይለፍ ቃልዎን ለማዘመን እባክዎ በኢሜልዎ ውስጥ ያለውን አገናኝ ጠቅ ያድርጉ።",
+  "@authResetLinkSentTo": {
+    "description": "Confirmation message after reset link sent",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authSignInButton": "ይግቡ",
+  "authVerificationErrorTimeout": "የማረጋገጫ ጊዜ አልቋል። እባክዎ እንደገና ለመመዝገብ ይሞክሩ።",
+  "authVerificationErrorMissingCode": "ማረጋገጥ አልተሳካም - የፈቀዳ ኮድ ጠፍቷል።",
+  "authVerificationErrorPollFailed": "ማረጋገጥ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "authVerificationErrorNetworkExchange": "በመለያ መግቢያ ጊዜ የአውታረ መረብ ስህተት። እባክዎ እንደገና ይሞክሩ።",
+  "authVerificationErrorOAuthExchange": "ማረጋገጥ አልተሳካም። እባክዎ እንደገና ለመመዝገብ ይሞክሩ።",
+  "authVerificationErrorSignInFailed": "መግባት አልተሳካም። እባክህ ራስህ ለመግባት ሞክር።",
+  "authInviteErrorAlreadyUsed": "ያ የግብዣ ኮድ ከአሁን በኋላ አይገኝም። ወደ የግብዣ ኮድዎ ይመለሱ፣ የተጠባባቂ ዝርዝሩን ይቀላቀሉ ወይም ድጋፍ ሰጪን ያግኙ።",
+  "authInviteErrorInvalid": "ያ የግብዣ ኮድ አሁን መጠቀም አይቻልም። ወደ የግብዣ ኮድዎ ይመለሱ፣ የተጠባባቂ ዝርዝሩን ይቀላቀሉ ወይም ድጋፍ ሰጪን ያግኙ።",
+  "authInviteErrorTemporary": "ግብዣህን አሁን ማረጋገጥ አልቻልንም። ወደ የግብዣ ኮድዎ ይመለሱ እና እንደገና ይሞክሩ፣ ወይም ድጋፍን ያግኙ።",
+  "authInviteErrorUnknown": "ግብዣህን ማግበር አልቻልንም። ወደ የግብዣ ኮድዎ ይመለሱ፣ የተጠባባቂ ዝርዝሩን ይቀላቀሉ ወይም ድጋፍ ሰጪን ያግኙ።",
+  "shareSheetSave": "አስቀምጥ",
+  "shareSheetSaveToGallery": "ወደ ማዕከለ-ስዕላት አስቀምጥ",
+  "shareSheetSaveWithWatermark": "በውሃ ምልክት አስቀምጥ",
+  "shareSheetSaveVideo": "ቪዲዮ አስቀምጥ",
+  "shareSheetAddToClips": "ወደ ቅንጥቦች ያክሉ",
+  "@shareSheetAddToClips": {
+    "description": "Share sheet action label for importing a classic Vine into the clip library"
+  },
+  "shareSheetAddedToClips": "ወደ ቅንጥቦች ታክሏል።",
+  "@shareSheetAddedToClips": {
+    "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
+  },
+  "shareSheetAddToClipsFailed": "ወደ ቅንጥቦች ማከል አልተቻለም",
+  "@shareSheetAddToClipsFailed": {
+    "description": "Snackbar shown when importing a classic Vine into the clip library fails"
+  },
+  "shareSheetAddToList": "ወደ ዝርዝር ያክሉ",
+  "shareSheetCopy": "ቅዳ",
+  "shareSheetShareVia": "በ በኩል አጋራ",
+  "shareSheetReport": "ሪፖርት አድርግ",
+  "shareSheetEventJson": "ክስተት JSON",
+  "shareSheetEventId": "የክስተት መታወቂያ",
+  "shareSheetMoreActions": "ተጨማሪ ድርጊቶች",
+  "watermarkDownloadSavedToCameraRoll": "ወደ ካሜራ ጥቅል ተቀምጧል",
+  "watermarkDownloadShare": "አጋራ",
+  "watermarkDownloadDone": "ተከናውኗል",
+  "watermarkDownloadPhotosAccessNeeded": "የፎቶዎች መዳረሻ ያስፈልጋል",
+  "watermarkDownloadPhotosAccessDescription": "ቪዲዮዎችን ለማስቀመጥ በቅንብሮች ውስጥ የፎቶዎች መዳረሻ ፍቀድ።",
+  "watermarkDownloadOpenSettings": "ቅንብሮችን ይክፈቱ",
+  "watermarkDownloadNotNow": "አሁን አይደለም",
+  "watermarkDownloadFailed": "ማውረድ አልተሳካም።",
+  "watermarkDownloadDismiss": "አሰናብት",
+  "watermarkDownloadStageDownloading": "ቪዲዮን በማውረድ ላይ",
+  "watermarkDownloadStageWatermarking": "የውሃ ምልክት ማከል",
+  "watermarkDownloadStageSaving": "ወደ ካሜራ ጥቅል በማስቀመጥ ላይ",
+  "watermarkDownloadStageDownloadingDesc": "ቪዲዮውን ከአውታረ መረብ በማምጣት ላይ...",
+  "watermarkDownloadStageWatermarkingDesc": "የDivine የውሃ ምልክትን በመተግበር ላይ...",
+  "watermarkDownloadStageSavingDesc": "በውሃ ምልክት የተደረገበትን ቪዲዮ ወደ ካሜራ ጥቅልዎ በማስቀመጥ ላይ...",
+  "uploadProgressVideoUpload": "ቪዲዮ ሰቀላ",
+  "uploadProgressPause": "ለአፍታ አቁም",
+  "uploadProgressResume": "ከቆመበት ቀጥል",
+  "uploadProgressGoBack": "ተመለስ",
+  "uploadProgressRetryWithCount": "እንደገና ይሞክሩ ({count} ግራ)",
+  "@uploadProgressRetryWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressDelete": "ሰርዝ",
+  "uploadProgressDaysAgo": "{count}d በፊት",
+  "@uploadProgressDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressHoursAgo": "{count}ሰ በፊት",
+  "@uploadProgressHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressMinutesAgo": "{count}ደቂቃ በፊት",
+  "@uploadProgressMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressJustNow": "ልክ አሁን",
+  "uploadProgressUploadingPercent": "በመስቀል ላይ {percent}%",
+  "@uploadProgressUploadingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressPausedPercent": "ባለበት ቆሟል {percent}%",
+  "@uploadProgressPausedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeExplanationClose": "ገጠመ",
+  "badgeExplanationOriginalVineArchive": "ኦሪጅናል Vine መዝገብ ቤት",
+  "badgeExplanationCameraProof": "የካሜራ ማረጋገጫ",
+  "badgeExplanationAuthenticitySignals": "የትክክለኛነት ምልክቶች",
+  "badgeExplanationVineArchiveIntro": "ይህ ቪዲዮ ከInternet Archive የተመለሰ ኦሪጅናል Vine ነው።",
+  "badgeExplanationVineArchiveHistory": "Vine በ2017 ከመዘጋቱ በፊት ArchiveTeam እና Internet Archive በሚሊዮኖች የሚቆጠሩ Vines ለትውልድ ለማቆየት ሰርተዋል። ይህ ይዘት የዚያ ታሪካዊ የጥበቃ ጥረት አካል ነው።",
+  "badgeExplanationOriginalStats": "ኦሪጅናል ስታትስ፡ {loops} ሉፖች",
+  "@badgeExplanationOriginalStats": {
+    "placeholders": {
+      "loops": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeExplanationLearnVineArchive": "ስለ Vine ማህደር አጠባበቅ የበለጠ ይረዱ",
+  "badgeExplanationLearnProofmode": "ስለ ProofMode ማረጋገጫ ተጨማሪ ተማር",
+  "badgeExplanationLearnAuthenticity": "ስለ Divine ትክክለኛነት ምልክቶች የበለጠ ይወቁ",
+  "badgeExplanationInspectProofCheck": "በProofCheck መሳሪያ መርምር",
+  "badgeExplanationInspectMedia": "የሚዲያ ዝርዝሮችን መርምር",
+  "badgeExplanationProofmodeVerified": "የዚህ ቪዲዮ ትክክለኛነት የተረጋገጠው የፕሮፍሞድ ቴክኖሎጂን በመጠቀም ነው።",
+  "badgeExplanationDivineHostedHumanMade": "ይህ ቪዲዮ የተስተናገደው በDivine ነው እና AI ማወቂያው በሰው ሰራሽ ሊሆን እንደሚችል ይጠቁማል፣ ነገር ግን ምስጠራ ካሜራ-ማረጋገጫ ውሂብን አያካትትም።",
+  "badgeExplanationHumanMadeNoCrypto": "የአይአይ ማወቂያ ይህ ቪዲዮ የሰው ሰራሽ እንደሆነ ያሳያል፣ ምንም እንኳን ክሪፕቶግራፊክ የካሜራ ማረጋገጫ ውሂብን ባያካትትም።",
+  "badgeExplanationDivineHostedNoCrypto": "ይህ ቪዲዮ የተስተናገደው በDivine ላይ ነው፣ ነገር ግን እስካሁን ክሪፕቶግራፊክ የካሜራ-ማረጋገጫ ውሂብን አያካትትም።",
+  "badgeExplanationExternalNoCrypto": "ይህ ቪዲዮ የሚስተናገደው ከDivine ውጪ ነው እና ምስጠራ ካሜራ-ማረጋገጫ ውሂብን አያካትትም።",
+  "badgeExplanationDeviceAttestation": "የመሣሪያ ማረጋገጫ",
+  "badgeExplanationPgpSignature": "PGP ፊርማ",
+  "badgeExplanationC2paCredentials": "C2PA የይዘት ምስክርነቶች",
+  "badgeExplanationProofManifest": "ማረጋገጫ አንጸባራቂ",
+  "badgeExplanationAiDetection": "AI ማግኘት",
+  "badgeExplanationAiNotScanned": "AI ስካን፡ ገና አልተቃኘም።",
+  "badgeExplanationNoScanResults": "እስካሁን ምንም የፍተሻ ውጤቶች አልተገኙም።",
+  "badgeExplanationCheckAiGenerated": "AI የመነጨ መሆኑን ያረጋግጡ",
+  "badgeExplanationAiLikelihood": "{percentage}% በ AI የመነጨ ዕድል",
+  "@badgeExplanationAiLikelihood": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeExplanationScannedBy": "የተቃኘው፡ {source}",
+  "@badgeExplanationScannedBy": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "badgeExplanationVerifiedByModerator": "በሰው አወያይ የተረጋገጠ",
+  "badgeExplanationVerificationPlatinum": "ፕላቲኒየም፡ የመሣሪያ ሃርድዌር ማረጋገጫ፣ የምስጠራ ፊርማዎች፣ የይዘት ምስክርነቶች (C2PA) እና AI ቅኝት የሰውን አመጣጥ ያረጋግጣል።",
+  "badgeExplanationVerificationGold": "ወርቅ፡ በሃርድዌር ማረጋገጫ፣ ምስጢራዊ ፊርማዎች እና የይዘት ምስክርነቶች (C2PA) በእውነተኛ መሳሪያ ላይ ተይዟል።",
+  "badgeExplanationVerificationSilver": "ብር፡ ክሪፕቶግራፊክ ፊርማዎች ይህ ቪዲዮ ከተቀዳ በኋላ እንዳልተለወጠ ያረጋግጣሉ።",
+  "badgeExplanationVerificationBronze": "ነሐስ፡ መሰረታዊ የሜታዳታ ፊርማዎች አሉ።",
+  "badgeExplanationVerificationSilverAiScan": "ብር፡ AI ስካን ይህ ቪዲዮ በሰው የተፈጠረ ሊሆን እንደሚችል ያረጋግጣል።",
+  "badgeExplanationNoVerification": "ለዚህ ቪዲዮ ምንም የማረጋገጫ ውሂብ አይገኝም።",
+  "shareMenuTitle": "ቪዲዮ አጋራ",
+  "shareMenuReportAiContent": "AI ይዘትን ሪፖርት አድርግ",
+  "shareMenuReportAiContentSubtitle": "ፈጣን ሪፖርት በ AI የመነጨ ይዘት ተጠርጥሯል።",
+  "shareMenuReportingAiContent": "AI ይዘትን ሪፖርት በማድረግ ላይ...",
+  "shareMenuFailedToReportContent": "ይዘትን ሪፖርት ማድረግ አልተሳካም፦ {error}",
+  "@shareMenuFailedToReportContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuFailedToReportAiContent": "የኤአይ ይዘትን ሪፖርት ማድረግ አልተሳካም፦ {error}",
+  "@shareMenuFailedToReportAiContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuVideoStatus": "የቪዲዮ ሁኔታ",
+  "shareMenuViewAllLists": "ሁሉንም ዝርዝሮች ይመልከቱ →",
+  "shareMenuShareWith": "ሼር በማድረግ ያካፍሉ።",
+  "shareMenuShareViaOtherApps": "በሌሎች መተግበሪያዎች አጋራ",
+  "shareMenuShareViaOtherAppsSubtitle": "በሌሎች መተግበሪያዎች ያጋሩ ወይም አገናኝ ይቅዱ",
+  "shareMenuSaveToGallery": "ወደ ማዕከለ-ስዕላት አስቀምጥ",
+  "shareMenuSaveOriginalSubtitle": "የመጀመሪያውን ቪዲዮ ወደ ካሜራ ጥቅል አስቀምጥ",
+  "shareMenuSaveWithWatermark": "በውሃ ምልክት አስቀምጥ",
+  "shareMenuSaveVideo": "ቪዲዮ አስቀምጥ",
+  "shareMenuDownloadWithWatermark": "በDivine የውሃ ምልክት ያውርዱ",
+  "shareMenuSaveVideoSubtitle": "ቪዲዮን ወደ ካሜራ ጥቅል አስቀምጥ",
+  "shareMenuLists": "ዝርዝሮች",
+  "shareMenuAddToList": "ወደ ዝርዝር ያክሉ",
+  "shareMenuAddToListSubtitle": "ወደ የተመረጡ ዝርዝሮችዎ ያክሉ",
+  "shareMenuCreateNewList": "አዲስ ዝርዝር ይፍጠሩ",
+  "shareMenuCreateNewListSubtitle": "አዲስ የተሰበሰበ ስብስብ ይጀምሩ",
+  "shareMenuRemovedFromList": "ከዝርዝሩ ተወግዷል",
+  "shareMenuFailedToRemoveFromList": "ከዝርዝሩ ማስወገድ አልተሳካም።",
+  "shareMenuBookmarks": "ዕልባቶች",
+  "shareMenuAddToBookmarks": "ወደ ዕልባቶች ያክሉ",
+  "shareMenuAddToBookmarksSubtitle": "በኋላ ለማየት ያስቀምጡ",
+  "shareMenuAddToBookmarkSet": "ወደ ዕልባት ስብስብ ያክሉ",
+  "shareMenuAddToBookmarkSetSubtitle": "በክምችቶች ውስጥ ያደራጁ",
+  "shareMenuFollowSets": "የሰዎች ዝርዝሮች",
+  "shareMenuCreateFollowSet": "የክትትል ስብስብ ይፍጠሩ",
+  "shareMenuCreateFollowSetSubtitle": "በዚህ ፈጣሪ አዲስ ስብስብ ጀምር",
+  "shareMenuAddToFollowSet": "ለመከተል አዘጋጅ ያክሉ",
+  "shareMenuFollowSetsAvailable": "{count} የሚገኙ ስብስቦችን ይከተሉ",
+  "@shareMenuFollowSetsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsAddToList": "ወደ ዝርዝር ያክሉ",
+  "peopleListsAddToListSubtitle": "ይህንን ፈጣሪ ከዝርዝሮችዎ ውስጥ በአንዱ ያስቀምጡት።",
+  "peopleListsSheetTitle": "ወደ ዝርዝር ያክሉ",
+  "peopleListsEmptyTitle": "እስካሁን ምንም ዝርዝሮች የሉም",
+  "peopleListsEmptySubtitle": "ሰዎችን መቧደን ለመጀመር ዝርዝር ይፍጠሩ።",
+  "peopleListsCreateList": "ዝርዝር ይፍጠሩ",
+  "peopleListsNewListTitle": "አዲስ ዝርዝር",
+  "peopleListsRouteTitle": "የሰዎች ዝርዝር",
+  "@peopleListsRouteTitle": {
+    "description": "AppBar title for the people-list members route when it is reached with a missing or empty list id (e.g., via a malformed deep link)."
+  },
+  "peopleListsListNameLabel": "የዝርዝር ስም",
+  "peopleListsListNameHint": "የቅርብ ጓደኞች",
+  "peopleListsCreateButton": "ፍጠር",
+  "peopleListsAddPeopleTitle": "ሰዎችን ጨምር",
+  "peopleListsAddPeopleTooltip": "ሰዎችን ጨምር",
+  "peopleListsAddPeopleSemanticLabel": "ሰዎችን ወደ ዝርዝር ያክሉ",
+  "peopleListsListNotFoundTitle": "ዝርዝር አልተገኘም።",
+  "peopleListsListNotFoundSubtitle": "ዝርዝር አልተገኘም። ተሰርዞ ሊሆን ይችላል።",
+  "peopleListsListDeletedSubtitle": "ይህ ዝርዝር ተሰርዞ ሊሆን ይችላል።",
+  "peopleListsNoPeopleTitle": "በዚህ ዝርዝር ውስጥ ምንም ሰዎች የሉም",
+  "peopleListsNoPeopleSubtitle": "ለመጀመር አንዳንድ ሰዎችን ያክሉ",
+  "peopleListsNoVideosTitle": "እስካሁን ምንም ቪዲዮዎች የሉም",
+  "peopleListsNoVideosSubtitle": "ከዝርዝር አባላት የመጡ ቪዲዮዎች እዚህ ይታያሉ",
+  "peopleListsNoVideosAvailable": "ምንም ቪዲዮዎች የሉም",
+  "peopleListsFailedToLoadVideos": "ቪዲዮዎችን መጫን አልተሳካም።",
+  "peopleListsVideoNotAvailable": "ቪዲዮ አይገኝም",
+  "peopleListsBackToGridTooltip": "ወደ ፍርግርግ ተመለስ",
+  "peopleListsErrorLoadingVideos": "ቪዲዮዎችን መጫን ላይ ስህተት",
+  "peopleListsNoPeopleToAdd": "ምንም የሚታከሉ ሰዎች የሉም።",
+  "peopleListsAddToListName": "ወደ {name} ጨምር",
+  "@peopleListsAddToListName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsAddPeopleSearchHint": "ሰዎችን ፈልግ",
+  "peopleListsAddPeopleError": "ሰዎችን መጫን አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "peopleListsAddPeopleRetry": "እንደገና ይሞክሩ",
+  "peopleListsAddButton": "አክል",
+  "peopleListsAddButtonWithCount": "አክል {count}",
+  "@peopleListsAddButtonWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsInNLists": "{count, plural, =1{በ1 ዝርዝር ውስጥ} other{በ{count} ዝርዝሮች ውስጥ}}",
+  "@peopleListsInNLists": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsRemoveConfirmTitle": "ይወገድ {name}?",
+  "@peopleListsRemoveConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsRemoveConfirmBody": "ከዚህ ዝርዝር ውስጥ ይወገዳሉ.",
+  "peopleListsRemove": "አስወግድ",
+  "peopleListsRemovedFromList": "{name} ከዝርዝሩ ተወግዷል",
+  "@peopleListsRemovedFromList": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsUndo": "ቀልብስ",
+  "peopleListsProfileLongPressHint": "መገለጫ ለ{name}። ለማስወገድ በረጅሙ ተጫን።",
+  "@peopleListsProfileLongPressHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsViewProfileHint": "ለ{name} መገለጫ ይመልከቱ",
+  "@peopleListsViewProfileHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuAddedToBookmarks": "ወደ ዕልባቶች ታክሏል!",
+  "shareMenuFailedToAddBookmark": "ዕልባት ማከል አልተሳካም።",
+  "shareMenuCreatedListAndAddedVideo": "\"{name}\" የሚባል ዝርዝር ተፈጥሯል እና ቪዲዮ ታክሏል",
+  "@shareMenuCreatedListAndAddedVideo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuManageContent": "ይዘትን አስተዳድር",
+  "shareMenuEditVideo": "ቪዲዮ አርትዕ",
+  "shareMenuEditVideoSubtitle": "ርዕስ፣ መግለጫ እና ሃሽታጎችን ያዘምኑ",
+  "shareMenuDeleteVideo": "ቪዲዮ ሰርዝ",
+  "shareMenuDeleteVideoSubtitle": "ይህን ቪዲዮ ከDivine አስወግድ። በሌሎች Nostr ደንበኞች ላይ አሁንም ሊታይ ይችላል።",
+  "shareMenuDeleteWarning": "ይህ የመሰረዝ ጥያቄን (NIP-09) ለሁሉም ማሰራጫዎች ይልካል። አንዳንድ ማሰራጫዎች አሁንም ይዘቱን ሊይዙት ይችላሉ።",
+  "shareMenuVideoInTheseLists": "ቪዲዮው በእነዚህ ዝርዝሮች ውስጥ ነው፡-",
+  "shareMenuVideoCount": "{count} ቪዲዮዎች",
+  "@shareMenuVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuClose": "ገጠመ",
+  "shareMenuDeleteConfirmation": "ይሄ ይህን ቪዲዮ ከDivine እስከመጨረሻው ይሰርዘዋል። አሁንም ሌሎች ማስተላለፊያዎችን በሚጠቀሙ የሶስተኛ ወገን Nostr ደንበኞች ላይ ሊታይ ይችላል።",
+  "shareMenuCancel": "ሰርዝ",
+  "shareMenuDelete": "ሰርዝ",
+  "shareMenuDeletingContent": "ይዘትን በመሰረዝ ላይ...",
+  "shareMenuFailedToDeleteContent": "ይዘትን መሰረዝ አልተሳካም፦ {error}",
+  "@shareMenuFailedToDeleteContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuDeleteRequestSent": "ቪዲዮ ተሰርዟል።",
+  "shareMenuDeleteFailedNotInitialized": "መሰረዝ ገና ዝግጁ አይደለም። ከአፍታ በኋላ እንደገና ይሞክሩ።",
+  "shareMenuDeleteFailedNotOwner": "የእራስዎን ቪዲዮዎች ብቻ መሰረዝ ይችላሉ.",
+  "shareMenuDeleteFailedNotAuthenticated": "እንደገና ይግቡ፣ ከዚያ ለመሰረዝ ይሞክሩ።",
+  "shareMenuDeleteFailedCouldNotSign": "የመሰረዝ ጥያቄውን መፈረም አልተቻለም። እንደገና ይሞክሩ።",
+  "shareMenuDeleteFailedRelayRejected": "ቅብብሎሹን መድረስ አልተቻለም። ግንኙነትዎን ይፈትሹ እና እንደገና ይሞክሩ።",
+  "shareMenuDeleteFailedGeneric": "ይህን ቪዲዮ መሰረዝ አልተቻለም። እንደገና ይሞክሩ።",
+  "shareMenuFollowSetName": "የቅንብር ስም ተከተል",
+  "shareMenuFollowSetNameHint": "ለምሳሌ፣ የይዘት ፈጣሪዎች፣ ሙዚቀኞች፣ ወዘተ",
+  "shareMenuDescriptionOptional": "መግለጫ (አማራጭ)",
+  "shareMenuCreate": "ፍጠር",
+  "shareMenuCreatedFollowSetAndAddedCreator": "\"{name}\" የሚባል የመከተል ስብስብ ተፈጥሯል እና ፈጣሪ ታክሏል",
+  "@shareMenuCreatedFollowSetAndAddedCreator": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuDone": "ተከናውኗል",
+  "shareMenuEditTitle": "ርዕስ",
+  "shareMenuEditTitleHint": "የቪዲዮ ርዕስ አስገባ",
+  "shareMenuEditDescription": "መግለጫ",
+  "shareMenuEditDescriptionHint": "የቪዲዮ መግለጫ ያስገቡ",
+  "shareMenuEditHashtags": "ሃሽታጎች",
+  "shareMenuEditHashtagsHint": "ነጠላ ሰረዝ፣ መለያየት፣ ሃሽታጎች",
+  "shareMenuEditMetadataNote": "ማስታወሻ፡ ሜታዳታ ብቻ ነው ሊስተካከል የሚችለው። የቪዲዮ ይዘት ሊቀየር አይችልም።",
+  "shareMenuDeleting": "በመሰረዝ ላይ...",
+  "shareMenuUpdate": "አዘምን",
+  "shareMenuVideoUpdated": "ቪዲዮው በተሳካ ሁኔታ ተዘምኗል",
+  "shareMenuFailedToUpdateVideo": "ቪዲዮውን ማዘመን አልተሳካም፦ {error}",
+  "@shareMenuFailedToUpdateVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuFailedToDeleteVideo": "ቪዲዮውን መሰረዝ አልተሳካም፦ {error}",
+  "@shareMenuFailedToDeleteVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuDeleteVideoQuestion": "ቪዲዮ ይሰረዝ?",
+  "shareMenuDeleteRelayWarning": "ይህ የስረዛ ጥያቄን ወደ ማስተላለፊያዎች ይልካል። ማስታወሻ፡ አንዳንድ ማሰራጫዎች አሁንም የተሸጎጡ ቅጂዎች ሊኖራቸው ይችላል።",
+  "shareMenuVideoDeletionRequested": "ቪዲዮ ተሰርዟል።",
+  "shareMenuContentLabels": "የይዘት መለያዎች",
+  "shareMenuAddContentLabels": "የይዘት መለያዎችን ያክሉ",
+  "shareMenuClearAll": "ሁሉንም አጽዳ",
+  "shareMenuCollaborators": "ተባባሪዎች",
+  "shareMenuAddCollaborator": "ተባባሪ ጋብዝ",
+  "shareMenuMutualFollowRequired": "እነሱን እንደ ተባባሪ ለመጋበዝ {name}ን በጋራ መከተል አለቦት።",
+  "@shareMenuMutualFollowRequired": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuLoading": "በመጫን ላይ...",
+  "shareMenuInspiredBy": "ተመስጦ",
+  "shareMenuAddInspirationCredit": "ተመስጦ ክሬዲት ያክሉ",
+  "shareMenuCreatorCannotBeReferenced": "ይህ ፈጣሪ ሊጠቀስ አይችልም።",
+  "shareMenuUnknown": "ያልታወቀ",
+  "shareMenuCreateBookmarkSet": "የዕልባት ስብስብ ይፍጠሩ",
+  "shareMenuSetName": "ስም አዘጋጅ",
+  "shareMenuSetNameHint": "ለምሳሌ፡ ተወዳጆች፡ በኋላ ይመልከቱ፡ ወዘተ",
+  "shareMenuCreateNewSet": "አዲስ ስብስብ ይፍጠሩ",
+  "shareMenuStartNewBookmarkCollection": "አዲስ የዕልባት ስብስብ ጀምር",
+  "shareMenuNoBookmarkSets": "እስካሁን ምንም ዕልባት አልተዘጋጀም። የመጀመሪያዎን ይፍጠሩ!",
+  "shareMenuError": "ስህተት",
+  "shareMenuFailedToLoadBookmarkSets": "የዕልባቶች ስብስቦችን መጫን አልተሳካም።",
+  "shareMenuCreatedSetAndAddedVideo": "\"{name}\" ተፈጥሯል እና ቪዲዮ ታክሏል",
+  "@shareMenuCreatedSetAndAddedVideo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuUseThisSound": "ይህንን ድምጽ ይጠቀሙ",
+  "shareMenuOriginalSound": "ኦሪጅናል ድምጽ",
+  "authSessionExpired": "ክፍለ ጊዜዎ ጊዜው አልፎበታል። እባክዎ እንደገና ይግቡ።",
+  "authSignInFailed": "መግባት አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "localeAppLanguage": "የመተግበሪያ ቋንቋ",
+  "localeDeviceDefault": "የመሣሪያ ነባሪ",
+  "localeSelectLanguage": "ቋንቋ ይምረጡ",
+  "webAuthNotSupportedSecureMode": "የድር ማረጋገጥ በአስተማማኝ ሁነታ አይደገፍም። እባክዎን ደህንነቱ የተጠበቀ ቁልፍ አስተዳደር ለማግኘት የሞባይል መተግበሪያን ይጠቀሙ።",
+  "webAuthIntegrationFailed": "የማረጋገጫ ውህደት አልተሳካም፦ {error}",
+  "@webAuthIntegrationFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "webAuthUnexpectedError": "ያልተጠበቀ ስህተት፡ {error}",
+  "@webAuthUnexpectedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "webAuthEnterBunkerUri": "እባክህ ማስቀመጫ አስገባ URI",
+  "webAuthConnectTitle": "ከDivine ጋር ተገናኝ",
+  "webAuthChooseMethod": "የመረጡትን Nostr የማረጋገጫ ዘዴ ይምረጡ",
+  "webAuthBrowserExtension": "የአሳሽ ቅጥያ",
+  "webAuthRecommended": "የሚመከር",
+  "webAuthNsecBunker": "nsec ማሰሪያ",
+  "webAuthConnectRemoteSigner": "ከርቀት ፈራሚ ጋር ይገናኙ",
+  "webAuthBunkerHint": "bunker://pubkey?relay=wss://...",
+  "webAuthPasteFromClipboard": "ከቅንጥብ ሰሌዳ ለጥፍ",
+  "webAuthConnectToBunker": "ከBunker ጋር ተገናኝ",
+  "webAuthNewToNostr": "ለNostr አዲስ?",
+  "webAuthNostrHelp": "በጣም ቀላሉን ለማግኘት እንደ Alby ወይም nos2x ያለ አሳሽ ቅጥያ ጫን ወይም ደህንነቱ የተጠበቀ የርቀት ፊርማ nsec ተጠቀም።",
+  "soundsTitle": "ይሰማል።",
+  "soundsSearchHint": "ድምፆችን ፈልግ...",
+  "soundsPreviewUnavailable": "ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።",
+  "soundsPreviewFailed": "ቅድመ እይታን ማጫወት አልተሳካም፦ {error}",
+  "@soundsPreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "soundsFeaturedSounds": "ተለይተው የቀረቡ ድምፆች",
+  "soundsTrendingSounds": "በመታየት ላይ ያሉ ድምፆች",
+  "soundsAllSounds": "ሁሉም ድምጾች",
+  "soundsSearchResults": "የፍለጋ ውጤቶች",
+  "soundsNoSoundsAvailable": "ምንም ድምፆች የሉም",
+  "soundsNoSoundsDescription": "ፈጣሪዎች ኦዲዮን ሲያጋሩ ድምጾች እዚህ ይታያሉ",
+  "soundsNoSoundsFound": "ምንም ድምፆች አልተገኙም።",
+  "soundsNoSoundsFoundDescription": "የተለየ የፍለጋ ቃል ይሞክሩ",
+  "soundsFailedToLoad": "ድምጾችን መጫን አልተሳካም።",
+  "soundsRetry": "እንደገና ይሞክሩ",
+  "soundsScreenLabel": "ስክሪን ይሰማል።",
+  "profileTitle": "መገለጫ",
+  "profileRefresh": "አድስ",
+  "profileRefreshLabel": "መገለጫ አድስ",
+  "profileMoreOptions": "ተጨማሪ አማራጮች",
+  "profileBlockedUser": "ታግዷል {name}",
+  "@profileBlockedUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockedUser": "ታግዷል {name}",
+  "@profileUnblockedUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnfollowedUser": "ያልተከተለ {name}",
+  "@profileUnfollowedUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileError": "ስህተት፡ {error}",
+  "@profileError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsTabAll": "ሁሉም",
+  "notificationsTabLikes": "መውደዶች",
+  "notificationsTabComments": "አስተያየቶች",
+  "notificationsTabFollows": "ይከተላል",
+  "notificationsTabReposts": "ድጋሚ ልጥፎች",
+  "notificationsFailedToLoad": "ማሳወቂያዎችን መጫን አልተሳካም።",
+  "notificationsRetry": "እንደገና ይሞክሩ",
+  "notificationsCheckingNew": "አዲስ ማሳወቂያዎችን በመፈተሽ ላይ",
+  "notificationsNoneYet": "እስካሁን ምንም ማሳወቂያዎች የሉም",
+  "notificationsNoneForType": "ምንም {type} ማሳወቂያዎች የሉም",
+  "@notificationsNoneForType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsEmptyDescription": "ሰዎች ከይዘትህ ጋር ሲገናኙ እዚህ ታየዋለህ",
+  "notificationsUnreadPrefix": "ያልተነበበ ማስታወቂያ",
+  "@notificationsUnreadPrefix": {
+    "description": "Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself."
+  },
+  "notificationsViewProfileSemanticLabel": "የ{displayName} መገለጫ ይመልከቱ",
+  "@notificationsViewProfileSemanticLabel": {
+    "description": "Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.",
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsViewProfilesSemanticLabel": "መገለጫዎችን ይመልከቱ",
+  "@notificationsViewProfilesSemanticLabel": {
+    "description": "Screen-reader label for a grouped notification's avatar stack, which opens the list of involved profiles."
+  },
+  "notificationsLoadingType": "{type} ማሳወቂያዎችን በመጫን ላይ...",
+  "@notificationsLoadingType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsInviteSingular": "ከጓደኛዎ ጋር ለመጋራት 1 ግብዣ አለዎት!",
+  "notificationsInvitePlural": "ከጓደኞችዎ ጋር ለመጋራት {count} ግብዣዎች አሉዎት!",
+  "@notificationsInvitePlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsVideoNotFound": "ቪዲዮ አልተገኘም።",
+  "notificationsVideoUnavailable": "ቪዲዮ አይገኝም",
+  "notificationsFromNotification": "ከማስታወቂያ",
+  "feedFailedToLoadVideos": "ቪዲዮዎችን መጫን አልተሳካም።",
+  "feedRetry": "እንደገና ይሞክሩ",
+  "feedNoFollowedUsers": "ምንም የተከተሉት ተጠቃሚዎች የሉም።\nቪዲዮዎቻቸውን እዚህ ለማየት አንድ ሰው ይከተሉ።",
+  "feedForYouEmpty": "የእርስዎ ለአንተ ምግብ ባዶ ነው።\nቪዲዮዎችን ያስሱ እና ለመቅረጽ ፈጣሪዎችን ይከተሉ።",
+  "feedFollowingEmpty": "እስካሁን ከምትከተላቸው ሰዎች ምንም ቪዲዮዎች የሉም።\nየሚወዷቸውን ፈጣሪዎች ያግኙ እና ይከተሉዋቸው።",
+  "feedLatestEmpty": "እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።",
+  "feedExploreVideos": "ቪዲዮዎችን ያስሱ",
+  "feedExternalVideoSlow": "ውጫዊ ቪዲዮ ቀስ በቀስ በመጫን ላይ",
+  "feedSkip": "ዝለል",
+  "uploadWaitingToUpload": "ለመስቀል በመጠበቅ ላይ",
+  "uploadUploadingVideo": "ቪዲዮ በመስቀል ላይ",
+  "uploadProcessingVideo": "ቪዲዮን በመስራት ላይ",
+  "uploadProcessingComplete": "ማካሄድ ተጠናቋል",
+  "uploadPublishedSuccessfully": "በተሳካ ሁኔታ ታትሟል",
+  "uploadFailed": "ሰቀላው አልተሳካም።",
+  "uploadRetrying": "ሰቀላን እንደገና በመሞከር ላይ",
+  "uploadPaused": "ሰቀላ ባለበት ቆሟል",
+  "uploadPercentComplete": "{percent}% ተጠናቋል",
+  "@uploadPercentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadQueuedMessage": "ቪዲዮዎ ለመስቀል ተሰልፏል",
+  "uploadUploadingMessage": "ወደ አገልጋይ በመስቀል ላይ...",
+  "uploadProcessingMessage": "ቪዲዮን በመስራት ላይ - ይህ ጥቂት ደቂቃዎችን ሊወስድ ይችላል።",
+  "uploadReadyToPublishMessage": "ቪዲዮው በተሳካ ሁኔታ ተከናውኗል እና ለመታተም ዝግጁ ነው።",
+  "uploadPublishedMessage": "ቪዲዮ ወደ መገለጫዎ ታትሟል",
+  "uploadFailedMessage": "ሰቀላው አልተሳካም - እባክዎ እንደገና ይሞክሩ",
+  "uploadRetryingMessage": "ሰቀላን እንደገና በመሞከር ላይ...",
+  "uploadPausedMessage": "ሰቀላው ባለበት ቆሟል",
+  "uploadRetryButton": "እንደገና ይሞክሩ",
+  "uploadRetryFailed": "ሰቀላን እንደገና መሞከር አልተሳካም፦ {error}",
+  "@uploadRetryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "userSearchPrompt": "ተጠቃሚዎችን ይፈልጉ",
+  "userSearchNoResults": "ምንም ተጠቃሚዎች አልተገኙም።",
+  "userSearchFailed": "ፍለጋ አልተሳካም።",
+  "userPickerSearchByName": "በስም ፈልግ",
+  "userPickerFilterByNameHint": "በስም አጣራ...",
+  "userPickerSearchByNameHint": "በስም ፈልግ...",
+  "userPickerAlreadyAddedSemantics": "{name} አስቀድሞ ታክሏል።",
+  "@userPickerAlreadyAddedSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPickerSelectSemantics": "{name} ምረጥ",
+  "@userPickerSelectSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPickerEmptyFollowListTitle": "የእርስዎ ሠራተኞች እዚያ አሉ።",
+  "userPickerEmptyFollowListBody": "የሚወዷቸውን ሰዎች ይከተሉ። ተመልሰው ሲከተሉ፣ መተባበር ይችላሉ።",
+  "userPickerGoBack": "ተመለስ",
+  "userPickerTypeNameToSearch": "ለመፈለግ ስም ይተይቡ",
+  "userPickerUnavailable": "የተጠቃሚ ፍለጋ አይገኝም። እባክዎ ቆይተው እንደገና ይሞክሩ።",
+  "userPickerSearchFailedTryAgain": "ፍለጋ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "forgotPasswordTitle": "የይለፍ ቃል ዳግም አስጀምር",
+  "forgotPasswordDescription": "የኢሜል አድራሻዎን ያስገቡ እና የይለፍ ቃልዎን እንደገና የሚያስጀምሩበት አገናኝ እንልክልዎታለን።",
+  "forgotPasswordEmailLabel": "ኢሜል አድራሻ",
+  "forgotPasswordCancel": "ሰርዝ",
+  "forgotPasswordSendLink": "የኢሜል ዳግም ማስጀመሪያ አገናኝ",
+  "ageVerificationContentWarning": "የይዘት ማስጠንቀቂያ",
+  "ageVerificationTitle": "የዕድሜ ማረጋገጫ",
+  "ageVerificationAdultDescription": "ይህ ይዘት የጎልማሳ ቁሳቁስ ሊይዝ እንደሚችል ተጠቁሟል። እሱን ለማየት 18 ወይም ከዚያ በላይ መሆን አለቦት።",
+  "ageVerificationCreationDescription": "ካሜራውን ለመጠቀም እና ይዘት ለመፍጠር ዕድሜዎ ቢያንስ 16 ዓመት መሆን አለበት።",
+  "ageVerificationAdultQuestion": "ዕድሜዎ 18 ዓመት ወይም ከዚያ በላይ ነው?",
+  "ageVerificationCreationQuestion": "ዕድሜዎ 16 ወይም ከዚያ በላይ ነው?",
+  "ageVerificationNo": "አይ",
+  "ageVerificationYes": "አዎ",
+  "shareLinkCopied": "ማገናኛ ወደ ቅንጥብ ሰሌዳ ተቀድቷል።",
+  "shareFailedToCopy": "አገናኙን መቅዳት አልተሳካም።",
+  "shareVideoSubject": "ይህንን ቪዲዮ በDivine ላይ ይመልከቱ",
+  "shareFailedToShare": "ማጋራት አልተሳካም።",
+  "shareVideoTitle": "ቪዲዮ አጋራ",
+  "shareToApps": "ለመተግበሪያዎች አጋራ",
+  "shareToAppsSubtitle": "በመልዕክት፣ በማህበራዊ መተግበሪያዎች አጋራ",
+  "shareCopyWebLink": "የድር ሊንክ ቅዳ",
+  "shareCopyWebLinkSubtitle": "ሊጋራ የሚችል የድር አገናኝ ይቅዱ",
+  "shareCopyNostrLink": "ቅዳ Nostr አገናኝ",
+  "shareCopyNostrLinkSubtitle": "ለደንበኞች nevent አገናኝን ይቅዱ",
+  "navHome": "ቤት",
+  "navExplore": "ያስሱ",
+  "navInbox": "የገቢ መልእክት ሳጥን",
+  "navProfile": "መገለጫ",
+  "navSearch": "ፈልግ",
+  "navSearchTooltip": "ፈልግ",
+  "navMyProfile": "የእኔ መገለጫ",
+  "navNotifications": "ማሳወቂያዎች",
+  "navOpenCamera": "ካሜራ ክፈት",
+  "navUnknown": "ያልታወቀ",
+  "navExploreClassics": "ክላሲኮች",
+  "navExploreNewVideos": "አዳዲስ ቪዲዮዎች",
+  "navExploreTrending": "በመታየት ላይ ያለ",
+  "navExploreForYou": "ለእርስዎ",
+  "navExploreLists": "ዝርዝሮች",
+  "routeErrorTitle": "ስህተት",
+  "routeInvalidHashtag": "ልክ ያልሆነ ሃሽታግ",
+  "routeInvalidConversationId": "ልክ ያልሆነ የውይይት መታወቂያ",
+  "routeInvalidRequestId": "ልክ ያልሆነ የጥያቄ መታወቂያ",
+  "routeInvalidListId": "ልክ ያልሆነ ዝርዝር መታወቂያ",
+  "routeInvalidUserId": "የተሳሳተ የተጠቃሚ መታወቂያ",
+  "routeInvalidVideoId": "ልክ ያልሆነ የቪዲዮ መታወቂያ",
+  "routeInvalidSoundId": "ልክ ያልሆነ የድምጽ መታወቂያ",
+  "routeInvalidCategory": "ልክ ያልሆነ ምድብ",
+  "routeNoVideosToDisplay": "ምንም የሚታዩ ቪዲዮዎች የሉም",
+  "routeInvalidProfileId": "ልክ ያልሆነ የመገለጫ መታወቂያ",
+  "routeDefaultListName": "ዝርዝር",
+  "supportTitle": "የድጋፍ ማዕከል",
+  "supportContactSupport": "ድጋፍን ያነጋግሩ",
+  "supportContactSupportSubtitle": "ውይይት ይጀምሩ ወይም ያለፉ መልዕክቶችን ይመልከቱ",
+  "supportReportBug": "ሳንካ ሪፖርት አድርግ",
+  "supportReportBugSubtitle": "ከመተግበሪያው ጋር ቴክኒካዊ ጉዳዮች",
+  "supportRequestFeature": "ባህሪ ይጠይቁ",
+  "supportRequestFeatureSubtitle": "ማሻሻያ ወይም አዲስ ባህሪን ይጠቁሙ",
+  "supportSaveLogs": "ምዝግብ ማስታወሻዎችን ያስቀምጡ",
+  "supportSaveLogsSubtitle": "በእጅ ለመላክ የምዝግብ ማስታወሻዎችን ወደ ፋይል ይላኩ።",
+  "supportFaq": "የሚጠየቁ ጥያቄዎች",
+  "supportFaqSubtitle": "የተለመዱ ጥያቄዎች እና መልሶች",
+  "supportProofMode": "ProofMode",
+  "supportProofModeSubtitle": "ስለ ማረጋገጫ እና ትክክለኛነት ይወቁ",
+  "supportLoginRequired": "ድጋፍን ለማግኘት ይግቡ",
+  "supportExportingLogs": "ምዝግብ ማስታወሻዎችን በመላክ ላይ...",
+  "supportExportLogsFailed": "ምዝግብ ማስታወሻዎችን ወደ ውጭ መላክ አልተሳካም።",
+  "supportChatNotAvailable": "የድጋፍ ውይይት አይገኝም",
+  "supportCouldNotOpenMessages": "የድጋፍ መልዕክቶችን መክፈት አልተቻለም",
+  "supportCouldNotOpenPage": "{pageName} መክፈት አልተቻለም",
+  "@supportCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      }
+    }
+  },
+  "supportErrorOpeningPage": "{pageName}: {error}ን መክፈት ላይ ስህተት",
+  "@supportErrorOpeningPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportTitle": "ይዘትን ሪፖርት አድርግ",
+  "reportWhyReporting": "ይህን ይዘት ለምን ሪፖርት ያደርጋሉ?",
+  "reportPolicyNotice": "Divine ይዘቱን በማስወገድ እና አጸያፊ ይዘቱን ያቀረበውን ተጠቃሚ በማስወጣት የይዘት ሪፖርቶችን በ24 ሰዓታት ውስጥ ይሰራል።",
+  "reportAdditionalDetails": "ተጨማሪ ዝርዝሮች (አማራጭ)",
+  "reportBlockUser": "ይህን ተጠቃሚ አግድ",
+  "reportCancel": "ሰርዝ",
+  "reportSubmit": "ሪፖርት አድርግ",
+  "reportSelectReason": "እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ",
+  "reportReasonSpam": "አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት",
+  "reportReasonHarassment": "ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት",
+  "reportReasonViolence": "የጥቃት ወይም ጽንፈኛ ይዘት",
+  "reportReasonSexualContent": "ወሲባዊ ወይም የአዋቂ ይዘት",
+  "reportReasonCopyright": "የቅጂ መብት ጥሰት",
+  "reportReasonFalseInfo": "የውሸት መረጃ",
+  "reportReasonCsam": "የልጅ ደህንነት ጥሰት",
+  "reportReasonAiGenerated": "በAI የተፈጠረ ይዘት",
+  "reportReasonOther": "ሌላ የፖሊሲ ጥሰት",
+  "reportFailed": "ይዘትን ሪፖርት ማድረግ አልተሳካም፦ {error}",
+  "@reportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportReceivedTitle": "ሪፖርት ደርሷል",
+  "reportReceivedThankYou": "Divine ደህንነትን ለመጠበቅ ስለረዱዎት እናመሰግናለን።",
+  "reportReceivedReviewNotice": "ቡድናችን የእርስዎን ሪፖርት ተመልክቶ ተገቢውን እርምጃ ይወስዳል። ዝማኔዎችን በቀጥታ መልእክት ሊቀበሉ ይችላሉ።",
+  "reportLearnMore": "የበለጠ ተማር",
+  "reportSafetyUrl": "divine.video/safety",
+  "reportClose": "ገጠመ",
+  "listAddToList": "ወደ ዝርዝር ያክሉ",
+  "listVideoCount": "{count} ቪዲዮዎች",
+  "@listVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listPersonCount": "{count, plural, =1{1 ሰው} other{{count} ሰዎች}}",
+  "@listPersonCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listByAuthorPrefix": "በ",
+  "listNewList": "አዲስ ዝርዝር",
+  "listDone": "ተከናውኗል",
+  "listErrorLoading": "ዝርዝሮችን መጫን ላይ ስህተት",
+  "listRemovedFrom": "ከ{name} ተወግዷል",
+  "@listRemovedFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listAddedTo": "ወደ {name} ታክሏል።",
+  "@listAddedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listCreateNewList": "አዲስ ዝርዝር ይፍጠሩ",
+  "listNewPeopleList": "አዲስ ሰዎች ዝርዝር",
+  "listCollaboratorsNone": "ምንም",
+  "listAddCollaboratorTitle": "ተባባሪ ጨምር",
+  "listCollaboratorSearchHint": "diVine ፈልግ...",
+  "listNameLabel": "የዝርዝር ስም",
+  "listDescriptionLabel": "መግለጫ (አማራጭ)",
+  "listPublicList": "የህዝብ ዝርዝር",
+  "listPublicListSubtitle": "ሌሎች ሊከተሉት እና ይህንን ዝርዝር ማየት ይችላሉ።",
+  "listCancel": "ሰርዝ",
+  "listCreate": "ፍጠር",
+  "listCreateFailed": "ዝርዝር መፍጠር አልተሳካም።",
+  "keyManagementTitle": "Nostr ቁልፎች",
+  "keyManagementWhatAreKeys": "Nostr ቁልፎች ምንድን ናቸው?",
+  "keyManagementExplanation": "የNostr ማንነትህ የክሪፕቶግራፊ ቁልፍ ጥንድ ነው፡\n\n• የህዝብ ቁልፍህ (npub) እንደ ተጠቃሚ ስምህ ነው - በነጻ አጋራው\n• የግል ቁልፍህ (nsec) እንደ ይለፍ ቃልህ ነው - በሚስጥር ያዘው!\n\nnsecህ በማንኛውም Nostr መተግበሪያ ላይ መለያህን እንድትጠቀም ያስችልሃል።",
+  "keyManagementImportTitle": "ነባር ቁልፍ አስመጣ",
+  "keyManagementImportSubtitle": "Nostr መለያ አለህ? እዚህ ለመጠቀም የግል ቁልፍህን (nsec) ለጥፍ።",
+  "keyManagementImportButton": "የማስመጣት ቁልፍ",
+  "keyManagementImportWarning": "ይህ የአሁኑን ቁልፍ ይተካዋል!",
+  "keyManagementBackupTitle": "የእርስዎን ቁልፍ ምትኬ ያስቀምጡ",
+  "keyManagementBackupSubtitle": "መለያዎን በሌሎች Nostr መተግበሪያዎች ለመጠቀም የግል ቁልፍዎን (nsec) ያስቀምጡ።",
+  "keyManagementCopyNsec": "የእኔን የግል ቁልፍ ቅዳ (nsec)",
+  "keyManagementNeverShare": "የእርስዎን nsec ለማንም አያካፍሉ!",
+  "keyManagementPasteKey": "እባክህ የግል ቁልፍህን ለጥፍ",
+  "keyManagementInvalidFormat": "ልክ ያልሆነ የቁልፍ ቅርጸት። በ\"nsec1\" መጀመር አለበት",
+  "keyManagementConfirmImportTitle": "ይህ ቁልፍ ይምጣ?",
+  "keyManagementConfirmImportBody": "ይህ አሁን ያለዎትን ማንነት ከውጪ በመጣው ይተካዋል።\n\nመጀመሪያ ምትኬ ካላስቀመጥከው በስተቀር የአሁኑ ቁልፍህ ይጠፋል።",
+  "keyManagementImportConfirm": "አስመጣ",
+  "keyManagementImportSuccess": "ቁልፍ በተሳካ ሁኔታ ገብቷል!",
+  "keyManagementImportFailed": "ቁልፍ ማስመጣት አልተሳካም፦ {error}",
+  "@keyManagementImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "keyManagementExportSuccess": "የግል ቁልፍ ወደ ቅንጥብ ሰሌዳ ተቀድቷል!\n\nደህንነቱ በተጠበቀ ቦታ ያስቀምጡት።",
+  "keyManagementExportFailed": "ቁልፉን ወደ ውጭ መላክ አልተሳካም፦ {error}",
+  "@keyManagementExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "saveOriginalSavedToCameraRoll": "ወደ ካሜራ ጥቅል ተቀምጧል",
+  "saveOriginalShare": "አጋራ",
+  "saveOriginalDone": "ተከናውኗል",
+  "saveOriginalPhotosAccessNeeded": "የፎቶዎች መዳረሻ ያስፈልጋል",
+  "saveOriginalPhotosAccessMessage": "ቪዲዮዎችን ለማስቀመጥ በቅንብሮች ውስጥ የፎቶዎች መዳረሻ ፍቀድ።",
+  "saveOriginalOpenSettings": "ቅንብሮችን ይክፈቱ",
+  "saveOriginalNotNow": "አሁን አይደለም",
+  "cameraPermissionNotNow": "አሁን አይደለም",
+  "saveOriginalDownloadFailed": "ማውረድ አልተሳካም።",
+  "saveOriginalDismiss": "አሰናብት",
+  "saveOriginalDownloadingVideo": "ቪዲዮን በማውረድ ላይ",
+  "saveOriginalSavingToCameraRoll": "ወደ ካሜራ ጥቅል በማስቀመጥ ላይ",
+  "saveOriginalFetchingVideo": "ቪዲዮውን ከአውታረ መረብ በማምጣት ላይ...",
+  "saveOriginalSavingVideo": "የመጀመሪያውን ቪዲዮ ወደ ካሜራ ጥቅልዎ በማስቀመጥ ላይ...",
+  "soundTitle": "ድምፅ",
+  "soundOriginalSound": "ኦሪጅናል ድምጽ",
+  "soundVideosUsingThisSound": "ይህን ድምፅ በመጠቀም ቪዲዮዎች",
+  "soundSourceVideo": "ምንጭ ቪዲዮ",
+  "soundNoVideosYet": "እስካሁን ምንም ቪዲዮዎች የሉም",
+  "soundBeFirstToUse": "ይህን ድምጽ ለመጠቀም የመጀመሪያው ይሁኑ!",
+  "soundFailedToLoadVideos": "ቪዲዮዎችን መጫን አልተሳካም።",
+  "soundRetry": "እንደገና ይሞክሩ",
+  "soundVideosUnavailable": "ቪዲዮዎች አይገኙም።",
+  "soundCouldNotLoadDetails": "የቪዲዮ ዝርዝሮችን መጫን አልተቻለም",
+  "soundPreview": "ቅድመ እይታ",
+  "soundStop": "ተወ",
+  "soundUseSound": "ድምጽን ተጠቀም",
+  "soundUntitled": "ርዕስ የሌለው ድምፅ",
+  "soundStopPreview": "ቅድመ እይታን አቁም",
+  "soundPreviewSemanticLabel": "{title}ን ቀድመው ያጫውቱ",
+  "@soundPreviewSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "soundViewDetailsSemanticLabel": "የ{title} ዝርዝሮችን ይመልከቱ",
+  "@soundViewDetailsSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "soundNoVideoCount": "እስካሁን ምንም ቪዲዮዎች የሉም",
+  "soundOneVideo": "1 ቪዲዮ",
+  "soundVideoCount": "{count} ቪዲዮዎች",
+  "@soundVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "soundUnableToPreview": "ድምጽን አስቀድሞ ማየት አልተቻለም - ምንም ኦዲዮ የለም።",
+  "soundPreviewFailed": "ቅድመ እይታን ማጫወት አልተሳካም፦ {error}",
+  "@soundPreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "soundViewSource": "ምንጭ ይመልከቱ",
+  "soundCloseTooltip": "ገጠመ",
+  "exploreNotExploreRoute": "የአሰሳ መንገድ አይደለም።",
+  "legalTitle": "ህጋዊ",
+  "legalTermsOfService": "የአገልግሎት ውል",
+  "legalTermsOfServiceSubtitle": "የአጠቃቀም ደንቦች እና ሁኔታዎች",
+  "legalPrivacyPolicy": "የግላዊነት ፖሊሲ",
+  "legalPrivacyPolicySubtitle": "የእርስዎን ውሂብ እንዴት እንደምንይዝ",
+  "legalSafetyStandards": "የደህንነት ደረጃዎች",
+  "legalSafetyStandardsSubtitle": "የማህበረሰብ መመሪያዎች እና ደህንነት",
+  "legalDmca": "DMCA",
+  "legalDmcaSubtitle": "የቅጂ መብት እና የማውረድ ፖሊሲ",
+  "legalOpenSourceLicenses": "ክፍት ምንጭ ፍቃዶች",
+  "legalOpenSourceLicensesSubtitle": "የሶስተኛ ወገን ጥቅል ባህሪያት",
+  "legalAppName": "Divine",
+  "legalCouldNotOpenPage": "{pageName} መክፈት አልተቻለም",
+  "@legalCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      }
+    }
+  },
+  "legalErrorOpeningPage": "{pageName}: {error}ን መክፈት ላይ ስህተት",
+  "@legalErrorOpeningPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "categoryAction": "ድርጊት",
+  "categoryAdventure": "ጀብዱ",
+  "categoryAnimals": "እንስሳት",
+  "categoryAnimation": "አኒሜሽን",
+  "categoryArchitecture": "አርክቴክቸር",
+  "categoryArt": "ስነ ጥበብ",
+  "categoryAutomotive": "አውቶሞቲቭ",
+  "categoryAwardShow": "የሽልማት ትርዒት",
+  "categoryAwards": "ሽልማቶች",
+  "categoryBaseball": "ቤዝቦል",
+  "categoryBasketball": "የቅርጫት ኳስ",
+  "categoryBeauty": "ውበት",
+  "categoryBeverage": "መጠጥ",
+  "categoryCars": "መኪኖች",
+  "categoryCelebration": "አከባበር",
+  "categoryCelebrities": "ታዋቂ ሰዎች",
+  "categoryCelebrity": "ታዋቂ ሰው",
+  "categoryCityscape": "የከተማ ገጽታ",
+  "categoryComedy": "አስቂኝ",
+  "categoryConcert": "ኮንሰርት",
+  "categoryCooking": "ምግብ ማብሰል",
+  "categoryCostume": "አልባሳት",
+  "categoryCrafts": "የእጅ ሥራዎች",
+  "categoryCrime": "ወንጀል",
+  "categoryCulture": "ባህል",
+  "categoryDance": "ዳንስ",
+  "categoryDiy": "DIY",
+  "categoryDrama": "ድራማ",
+  "categoryEducation": "ትምህርት",
+  "categoryEmotional": "ስሜታዊ",
+  "categoryEmotions": "ስሜቶች",
+  "categoryEntertainment": "መዝናኛ",
+  "categoryEvent": "ክስተት",
+  "categoryFamily": "ቤተሰብ",
+  "categoryFans": "ደጋፊዎች",
+  "categoryFantasy": "ምናባዊ",
+  "categoryFashion": "ቅጥ",
+  "categoryFestival": "በዓል",
+  "categoryFilm": "ፊልም",
+  "categoryFitness": "የአካል ብቃት",
+  "categoryFood": "ምግብ",
+  "categoryFootball": "እግር ኳስ",
+  "categoryFurniture": "የቤት ዕቃዎች",
+  "categoryGaming": "ጨዋታ",
+  "categoryGolf": "ጎልፍ",
+  "categoryGrooming": "ማበጠር",
+  "categoryGuitar": "ጊታር",
+  "categoryHalloween": "ሃሎዊን",
+  "categoryHealth": "ጤና",
+  "categoryHockey": "ሆኪ",
+  "categoryHoliday": "በዓል",
+  "categoryHome": "ቤት",
+  "categoryHomeImprovement": "የቤት መሻሻል",
+  "categoryHorror": "አስፈሪ",
+  "categoryHospital": "ሆስፒታል",
+  "categoryHumor": "ቀልድ",
+  "categoryInteriorDesign": "የውስጥ ንድፍ",
+  "categoryInterview": "ቃለ መጠይቅ",
+  "categoryKids": "ልጆች",
+  "categoryLifestyle": "የአኗኗር ዘይቤ",
+  "categoryMagic": "አስማት",
+  "categoryMakeup": "ሜካፕ",
+  "categoryMedical": "ሕክምና",
+  "categoryMusic": "ሙዚቃ",
+  "categoryMystery": "ምስጢር",
+  "categoryNature": "ተፈጥሮ",
+  "categoryNews": "ዜና",
+  "categoryOutdoor": "ከቤት ውጭ",
+  "categoryParty": "ፓርቲ",
+  "categoryPeople": "ሰዎች",
+  "categoryPerformance": "አፈጻጸም",
+  "categoryPets": "የቤት እንስሳት",
+  "categoryPolitics": "ፖለቲካ",
+  "categoryPrank": "ፕራንክ",
+  "categoryPranks": "ፕራንክ",
+  "categoryRealityShow": "የእውነታ ትርኢት",
+  "categoryRelationship": "ግንኙነት",
+  "categoryRelationships": "ግንኙነቶች",
+  "categoryRomance": "የፍቅር ጓደኝነት",
+  "categorySchool": "ትምህርት ቤት",
+  "categoryScienceFiction": "የሳይንስ ልብወለድ",
+  "categorySelfie": "የራስ ፎቶ",
+  "categoryShopping": "ግዢ",
+  "categorySkateboarding": "የስኬትቦርዲንግ",
+  "categorySkincare": "የቆዳ እንክብካቤ",
+  "categorySoccer": "እግር ኳስ",
+  "categorySocialGathering": "ማህበራዊ ስብሰባ",
+  "categorySocialMedia": "ማህበራዊ ሚዲያ",
+  "categorySports": "ስፖርት",
+  "categoryTalkShow": "የውይይት ትዕይንት",
+  "categoryTech": "ቴክ",
+  "categoryTechnology": "ቴክኖሎጂ",
+  "categoryTelevision": "ቴሌቪዥን",
+  "categoryToys": "መጫወቻዎች",
+  "categoryTransportation": "መጓጓዣ",
+  "categoryTravel": "ጉዞ",
+  "categoryUrban": "ከተማ",
+  "categoryViolence": "ብጥብጥ",
+  "categoryVlog": "ቪሎግ",
+  "categoryVlogging": "ቭሎግ ማድረግ",
+  "categoryWrestling": "ትግል",
+  "profileSetupUploadSuccess": "የመገለጫ ስዕል በተሳካ ሁኔታ ተሰቅሏል!",
+  "inboxReportedUser": "ሪፖርት ተደርጓል {displayName}",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxBlockedUser": "ታግዷል {displayName}",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "ታግዷል {displayName}",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "ውይይት ተወግዷል",
+  "inboxEmptyTitle": "እስካሁን ምንም መልዕክቶች የሉም",
+  "inboxEmptySubtitle": "ያ + ቁልፍ አይነክሰውም።",
+  "inboxActionMute": "ውይይት ድምጸ-ከል አድርግ",
+  "inboxActionReport": "ሪፖርት {displayName}",
+  "@inboxActionReport": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionBlock": "አግድ {displayName}",
+  "@inboxActionBlock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionUnblock": "እገዳን አንሳ {displayName}",
+  "@inboxActionUnblock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionRemove": "ውይይት አስወግድ",
+  "inboxRemoveConfirmTitle": "ውይይት ይወገድ?",
+  "inboxRemoveConfirmBody": "ይህ ከ{displayName} ጋር ያለህን ውይይት ይሰርዛል። ይህ እርምጃ ሊመለስ አይችልም።",
+  "@inboxRemoveConfirmBody": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemoveConfirmConfirm": "አስወግድ",
+  "inboxConversationMuted": "ውይይት ድምጸ-ከል ተደርጓል",
+  "inboxConversationUnmuted": "ውይይቱ ድምጸ-ከል ተነስቷል።",
+  "inboxCollabInviteCardTitle": "የተባባሪ ግብዣ",
+  "@inboxCollabInviteCardTitle": {
+    "description": "Header label on a collaborator invite card in the DM conversation."
+  },
+  "inboxCollabInviteCardRoleLabel": "{role} በዚህ ልጥፍ ላይ",
+  "@inboxCollabInviteCardRoleLabel": {
+    "description": "Subtitle on the collaborator invite card describing the offered collaborator role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxCollabInviteAcceptButton": "ተቀበል",
+  "inboxCollabInviteIgnoreButton": "ችላ በል",
+  "inboxCollabInviteAcceptedStatus": "ተቀባይነት አግኝቷል",
+  "inboxCollabInviteIgnoredStatus": "ችላ ተብሏል",
+  "inboxCollabInviteAcceptError": "መቀበል አልተቻለም። እንደገና ይሞክሩ።",
+  "inboxCollabInviteSentStatus": "ግብዣ ተልኳል።",
+  "@inboxCollabInviteSentStatus": {
+    "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
+  },
+  "inboxConversationCollabInvitePreview": "የተባባሪ ግብዣ",
+  "@inboxConversationCollabInvitePreview": {
+    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+  },
+  "reportDialogCancel": "ሰርዝ",
+  "reportDialogReport": "ሪፖርት አድርግ",
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "ርዕስ፡ {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "ቪዲዮ {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverListsFailedToUpdateSubscription": "የደንበኝነት ምዝገባን ማዘመን አልተሳካም፦ {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverListsTitle": "ዝርዝሮችን ያግኙ",
+  "discoverListsFailedToLoad": "ዝርዝሮችን መጫን አልተሳካም",
+  "discoverListsFailedToLoadWithError": "ዝርዝሮችን መጫን አልተሳካም፦ {error}",
+  "@discoverListsFailedToLoadWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverListsLoading": "የህዝብ ዝርዝሮችን በመፈለግ ላይ...",
+  "discoverListsEmptyTitle": "ምንም የህዝብ ዝርዝሮች አልተገኙም",
+  "discoverListsEmptySubtitle": "ለአዳዲስ ዝርዝሮች ቆይተው ይመልከቱ",
+  "discoverListsByAuthorPrefix": "በ",
+  "curatedListEmptyTitle": "በዚህ ዝርዝር ውስጥ ምንም ቪዲዮዎች የሉም",
+  "curatedListEmptySubtitle": "ለመጀመር ቪዲዮዎችን ያክሉ",
+  "curatedListLoadingVideos": "ቪዲዮዎችን በመጫን ላይ...",
+  "curatedListFailedToLoad": "ዝርዝሩን መጫን አልተሳካም",
+  "curatedListNoVideosAvailable": "ምንም ቪዲዮዎች የሉም",
+  "curatedListVideoNotAvailable": "ቪዲዮው አይገኝም",
+  "commonRetry": "እንደገና ይሞክሩ",
+  "commonNext": "ቀጥሎ",
+  "commonDelete": "ሰርዝ",
+  "commonCancel": "ሰርዝ",
+  "commonBack": "ተመለስ",
+  "commonClose": "ዝጋ",
+  "videoMetadataTags": "መለያዎች",
+  "videoMetadataExpiration": "የማለቂያ ጊዜ",
+  "videoMetadataExpirationNotExpire": "ጊዜው አያልቅም።",
+  "videoMetadataExpirationOneDay": "1 ቀን",
+  "videoMetadataExpirationOneWeek": "1 ሳምንት",
+  "videoMetadataExpirationOneMonth": "1 ወር",
+  "videoMetadataExpirationOneYear": "1 አመት",
+  "videoMetadataExpirationOneDecade": "1 አስርት አመታት",
+  "videoMetadataContentWarnings": "የይዘት ማስጠንቀቂያዎች",
+  "videoEditorStickers": "ተለጣፊዎች",
+  "trendingTitle": "በመታየት ላይ ያለ",
+  "proofmodeCheckAiGenerated": "AI የመነጨ መሆኑን ያረጋግጡ",
+  "libraryDeleteConfirm": "ሰርዝ",
+  "libraryWebUnavailableHeadline": "ቤተ-መጽሐፍት በሞባይል መተግበሪያ ውስጥ ይገኛል።",
+  "libraryWebUnavailableDescription": "ረቂቆች እና ክሊፖች በመሳሪያዎ ላይ ተቀምጠዋል፣ስለዚህ እነሱን ለማስተዳደር በስልክዎ ላይ Divineን ይክፈቱ።",
+  "libraryTabDrafts": "ረቂቆች",
+  "libraryTabClips": "ክሊፖች",
+  "librarySaveToCameraRollTooltip": "ወደ ካሜራ ጥቅል አስቀምጥ",
+  "libraryDeleteSelectedClipsTooltip": "የተመረጡ ቅንጥቦችን ሰርዝ",
+  "libraryDeleteClipsTitle": "ክሊፖችን ሰርዝ",
+  "libraryDeleteClipsMessage": "{count, plural, =1{1 የተመረጠ ክሊፕ} other{{count} የተመረጡ ክሊፖች}} መሰረዝ እርግጠኛ ነህ?",
+  "@libraryDeleteClipsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryDeleteClipsWarning": "ይህ እርምጃ ሊቀለበስ አይችልም። የቪዲዮ ፋይሎቹ እስከመጨረሻው ከመሣሪያዎ ይወገዳሉ።",
+  "libraryPreparingVideo": "ቪዲዮ በማዘጋጀት ላይ...",
+  "libraryCreateVideo": "ቪዲዮ ፍጠር",
+  "libraryClipsSavedToDestination": "{count, plural, =1{1 ክሊፕ} other{{count} ክሊፖች}} ወደ {destination} ተቀምጠዋል",
+  "@libraryClipsSavedToDestination": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsSavePartialResult": "{successCount} ተቀምጧል፣ {failureCount} አልተሳካም።",
+  "@libraryClipsSavePartialResult": {
+    "placeholders": {
+      "successCount": {
+        "type": "int"
+      },
+      "failureCount": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryGalleryPermissionDenied": "{destination} ፍቃድ ተከልክሏል።",
+  "@libraryGalleryPermissionDenied": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsDeletedCount": "{count, plural, =1{1 ክሊፕ ተሰርዟል} other{{count} ክሊፖች ተሰርዘዋል}}",
+  "@libraryClipsDeletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryCouldNotLoadDrafts": "ረቂቆችን መጫን አልተቻለም",
+  "libraryCouldNotLoadClips": "ቅንጥቦችን መጫን አልተቻለም",
+  "libraryOpenErrorDescription": "ቤተ-መጽሐፍትህን በመክፈት ላይ ሳለ የሆነ ችግር ተፈጥሯል። እንደገና መሞከር ይችላሉ።",
+  "libraryNoDraftsYetTitle": "እስካሁን ምንም ረቂቅ የለም።",
+  "libraryNoDraftsYetSubtitle": "እንደ ረቂቅ ያስቀመጥካቸው ቪዲዮዎች እዚህ ይታያሉ",
+  "libraryNoClipsYetTitle": "እስካሁን ምንም ክሊፖች የሉም",
+  "libraryNoClipsYetSubtitle": "የተቀዱ የቪዲዮ ቅንጥቦችህ እዚህ ይታያሉ",
+  "libraryDraftDeletedSnackbar": "ረቂቅ ተሰርዟል።",
+  "libraryDraftDeleteFailedSnackbar": "ረቂቅን መሰረዝ አልተሳካም።",
+  "libraryDraftActionPost": "ለጥፍ",
+  "libraryDraftActionEdit": "አርትዕ",
+  "libraryDraftActionDelete": "ረቂቅ ሰርዝ",
+  "libraryDeleteDraftTitle": "ረቂቅ ሰርዝ",
+  "libraryDeleteDraftMessage": "እርግጠኛ ነህ \"{title}\" መሰረዝ ትፈልጋለህ?",
+  "@libraryDeleteDraftMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteClipTitle": "ክሊፕን ሰርዝ",
+  "libraryDeleteClipMessage": "እርግጠኛ ነዎት ይህን ክሊፕ መሰረዝ ይፈልጋሉ?",
+  "libraryClipSelectionTitle": "ክሊፖች",
+  "librarySecondsRemaining": "{seconds} ይቀራል",
+  "@librarySecondsRemaining": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryAddClips": "አክል",
+  "libraryRecordVideo": "ቪዲዮ ይቅረጹ",
+  "routerInvalidCreator": "ልክ ያልሆነ ፈጣሪ",
+  "routerInvalidHashtagRoute": "ልክ ያልሆነ የሃሽታግ መስመር",
+  "categoryGalleryCouldNotLoadVideos": "ቪዲዮዎችን መጫን አልተቻለም",
+  "categoryGalleryNoVideosInCategory": "በዚህ ምድብ ውስጥ ምንም ቪዲዮዎች የሉም",
+  "categoryGallerySortOptionsLabel": "የምድብ መደርደሪያ አማራጮች",
+  "categoryGallerySortHot": "ታዋቂ",
+  "categoryGallerySortNew": "አዲስ",
+  "categoryGallerySortClassic": "ክላሲክ",
+  "categoryGallerySortForYou": "ለእርስዎ",
+  "categoriesCouldNotLoadCategories": "ምድቦችን መጫን አልተቻለም",
+  "categoriesNoCategoriesAvailable": "ምንም ምድቦች የሉም",
+  "notificationsEmptyTitle": "እስካሁን እንቅስቃሴ የለም",
+  "notificationsEmptySubtitle": "ሰዎች ከይዘትዎ ጋር ሲገናኙ እዚህ ያያሉ",
+  "appsPermissionsTitle": "የተዋሃዱ መተግበሪያዎች ፈቃዶች",
+  "appsPermissionsRevoke": "ሰርዝ",
+  "appsPermissionsEmptyTitle": "ምንም የተቀመጡ የተዋሃዱ መተግበሪያ ፈቃዶች የሉም",
+  "appsPermissionsEmptySubtitle": "አንድ የመዳረሻ ፈቃድ እንዲታወስ ከፈቀዱ በኋላ የተፈቀዱ መተግበሪያዎች እዚህ ይታያሉ።",
+  "nostrAppPermissionTitle": "{appName} ፈቃድዎን ይፈልጋል",
+  "@nostrAppPermissionTitle": {
+    "placeholders": {
+      "appName": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrAppPermissionDescription": "ይህ መተግበሪያ በDivine የተመረመረ sandbox በኩል መዳረሻ ይጠይቃል።",
+  "nostrAppPermissionOrigin": "መነሻ",
+  "nostrAppPermissionMethod": "ዘዴ",
+  "nostrAppPermissionCapability": "ችሎታ",
+  "nostrAppPermissionEventKind": "የክስተት አይነት",
+  "nostrAppPermissionAllow": "ፍቀድ",
+  "bugReportSendReport": "ሪፖርት ላክ",
+  "supportSubjectRequiredLabel": "ርዕስ *",
+  "supportRequiredHelper": "ያስፈልጋል",
+  "bugReportSubjectHint": "የችግሩ አጭር ማጠቃለያ",
+  "bugReportDescriptionRequiredLabel": "ምን ተከሰተ? *",
+  "bugReportDescriptionHint": "ያጋጠመዎትን ችግር ይግለጹ",
+  "bugReportStepsLabel": "ለመድገም የሚወሰዱ እርምጃዎች",
+  "bugReportStepsHint": "1. ወደ... ይሂዱ\n2. ... ላይ መታ ያድርጉ\n3. ስህተቱን ይመልከቱ",
+  "bugReportExpectedBehaviorLabel": "የሚጠበቀው ባህሪ",
+  "bugReportExpectedBehaviorHint": "በምትኩ ምን መሆን ነበረበት?",
+  "bugReportDiagnosticsNotice": "የመሳሪያ መረጃ እና ሎጎች በራስ-ሰር ይካተታሉ።",
+  "bugReportSuccessMessage": "እናመሰግናለን! ሪፖርትዎን ተቀብለናል፣ Divineን ለማሻሻል እንጠቀምበታለን።",
+  "bugReportSendFailed": "የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።",
+  "bugReportFailedWithError": "የሳንካ ሪፖርት መላክ አልተሳካም፦ {error}",
+  "@bugReportFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "featureRequestSendRequest": "ጥያቄ ላክ",
+  "featureRequestSubjectHint": "የሀሳብዎ አጭር ማጠቃለያ",
+  "featureRequestDescriptionRequiredLabel": "ምን ይፈልጋሉ? *",
+  "featureRequestDescriptionHint": "የሚፈልጉትን ባህሪ ይግለጹ",
+  "featureRequestUsefulnessLabel": "ይህ እንዴት ይጠቅማል?",
+  "featureRequestUsefulnessHint": "ይህ ባህሪ የሚሰጠውን ጥቅም ያብራሩ",
+  "featureRequestWhenLabel": "ይህን መቼ ይጠቀማሉ?",
+  "featureRequestWhenHint": "ይህ የሚረዳባቸውን ሁኔታዎች ይግለጹ",
+  "featureRequestSuccessMessage": "እናመሰግናለን! የባህሪ ጥያቄዎን ተቀብለናል፣ እንመለከተዋለን።",
+  "featureRequestSendFailed": "የባህሪ ጥያቄ መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።",
+  "featureRequestFailedWithError": "የባህሪ ጥያቄ መላክ አልተሳካም፦ {error}",
+  "@featureRequestFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationFollowBack": "ተመለስ ተከታተል።",
+  "followingTitle": "የሚከተሉት",
+  "followingTitleForName": "{displayName} የሚከተላቸው",
+  "@followingTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "followingFailedToLoadList": "የሚከተለውን ዝርዝር መጫን አልተሳካም።",
+  "followingEmptyTitle": "እስካሁን ማንንም አይከተሉም",
+  "followersTitle": "ተከታዮች",
+  "followersTitleForName": "የ{displayName} ተከታዮች",
+  "@followersTitleForName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "followersFailedToLoadList": "የተከታዮች ዝርዝርን መጫን አልተሳካም።",
+  "followersEmptyTitle": "እስካሁን ምንም ተከታዮች የሉም",
+  "followersUpdateFollowFailed": "የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+  "reportMessageTitle": "መልዕክትን ሪፖርት አድርግ",
+  "reportMessageWhyReporting": "ይህን መልዕክት ለምን ሪፖርት ያደርጋሉ?",
+  "reportMessageSelectReason": "እባክዎ ይህን መልዕክት ሪፖርት ለማድረግ ምክንያት ይምረጡ",
+  "newMessageTitle": "አዲስ መልዕክት",
+  "newMessageFindPeople": "ሰዎችን ይፈልጉ",
+  "newMessageNoContacts": "ምንም እውቂያዎች አልተገኙም።\nሰዎችን ይከተሉ እና እዚህ ያያሉ።",
+  "newMessageNoUsersFound": "ምንም ተጠቃሚዎች አልተገኙም",
+  "hashtagSearchTitle": "ሃሽታጎችን ይፈልጉ",
+  "hashtagSearchSubtitle": "በመታየት ላይ ያሉ ርዕሶችን እና ይዘትን ያግኙ",
+  "hashtagSearchNoResults": "ለ\"{query}\" ምንም ሃሽታጎች አልተገኙም",
+  "@hashtagSearchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagSearchFailed": "ፍለጋው አልተሳካም",
+  "userNotAvailableTitle": "መለያው አይገኝም",
+  "userNotAvailableBody": "ይህ መለያ አሁን አይገኝም።",
+  "classicVinersTitle": "OG Viners",
+  "blossomFailedToSaveSettings": "ቅንብሮችን ማስቀመጥ አልተሳካም፦ {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blossomValidServerUrl": "እባክዎ ትክክለኛ የአገልጋይ URL ያስገቡ (ለምሳሌ፦ https://blossom.band)",
+  "blossomSettingsSaved": "የBlossom ቅንብሮች ተቀምጠዋል",
+  "blossomSaveTooltip": "አስቀምጥ",
+  "blossomAboutTitle": "ስለ Blossom",
+  "blossomAboutDescription": "Blossom ቪዲዮዎችን ወደ ማንኛውም ተኳሃኝ አገልጋይ ለመስቀል የሚያስችል ያልተማከለ የሚዲያ ማከማቻ ፕሮቶኮል ነው። በነባሪነት ቪዲዮዎች ወደ Divine የBlossom አገልጋይ ይሰቀላሉ። በምትኩ ብጁ አገልጋይ ለመጠቀም ከታች ያለውን አማራጭ ያንቁ።",
+  "blossomUseCustomServer": "ብጁ Blossom አገልጋይ ተጠቀም",
+  "blossomCustomServerEnabledSubtitle": "ቪዲዮዎች ወደ ብጁ Blossom አገልጋይዎ ይሰቀላሉ",
+  "blossomCustomServerDisabledSubtitle": "ቪዲዮዎችዎ አሁን ወደ Divine የBlossom አገልጋይ እየተሰቀሉ ናቸው",
+  "blossomCustomServerUrl": "ብጁ Blossom አገልጋይ URL",
+  "blossomCustomServerHelper": "የብጁ Blossom አገልጋይዎን URL ያስገቡ",
+  "blossomPopularServers": "ታዋቂ የBlossom አገልጋዮች",
+  "blueskyFailedToUpdateCrosspost": "መስቀለኛ መንገድን ማዘመን አልተሳካም።",
+  "blueskySignInRequired": "የBluesky ቅንብሮችን ለማስተዳደር ይግቡ",
+  "blueskyPublishVideos": "ቪዲዮዎችን ወደ Bluesky አትም",
+  "blueskyEnabledSubtitle": "ቪዲዮዎችዎ ወደ Bluesky ይታተማሉ",
+  "blueskyDisabledSubtitle": "ቪዲዮዎችዎ ወደ Bluesky አይታተሙም",
+  "blueskyHandle": "የBluesky መያዣ",
+  "blueskyStatus": "ሁኔታ",
+  "blueskyStatusReady": "መለያው ተዘጋጅቷል እና ዝግጁ ነው",
+  "blueskyStatusPending": "መለያው በመዘጋጀት ላይ ነው...",
+  "blueskyStatusFailed": "መለያውን ማዘጋጀት አልተሳካም",
+  "blueskyStatusDisabled": "መለያው ተሰናክሏል",
+  "blueskyStatusNotLinked": "ምንም የBluesky መለያ አልተገናኘም",
+  "invitesTitle": "ጓደኞችን ይጋብዙ",
+  "invitesGenerateCardTitle": "{count, plural, =1{1 ግብዣ ለማመንጨት ዝግጁ ነው} other{{count} ግብዣዎች ለማመንጨት ዝግጁ ናቸው}}",
+  "@invitesGenerateCardTitle": {
+    "description": "Title of the generate-invite card on the invites screen, shown when the user has invite capacity that has not been generated as codes yet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invitesGenerateCardSubtitle": "አንድ ለማጋራት ዝግጁ ሲሆኑ ኮድ ይፍጠሩ።",
+  "@invitesGenerateCardSubtitle": {
+    "description": "Body text on the generate-invite card explaining what tapping the button does."
+  },
+  "invitesGenerateButtonLabel": "ግብዣ ይፍጠሩ",
+  "@invitesGenerateButtonLabel": {
+    "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
+  },
+  "invitesNoneAvailable": "አሁን ምንም ግብዣዎች የሉም",
+  "invitesShareWithPeople": "diVineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ",
+  "invitesUsedInvites": "ያገለገሉ ግብዣዎች",
+  "invitesShareMessage": "diVine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ {code} ተጠቀም፦\nhttps://divine.video/invite/{code}",
+  "@invitesShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesCopyInvite": "ግብዣ ቅዳ",
+  "invitesCopied": "ግብዣው ተቀድቷል!",
+  "invitesShareInvite": "ግብዣ አጋራ",
+  "invitesShareSubject": "diVine ላይ አብረኝ ግባ",
+  "invitesClaimed": "ተጠቅመዋል",
+  "invitesCouldNotLoad": "ግብዣዎችን መጫን አልተቻለም",
+  "invitesRetry": "እንደገና ሞክር",
+  "searchSomethingWentWrong": "የሆነ ችግር ተፈጥሯል።",
+  "searchTryAgain": "እንደገና ይሞክሩ",
+  "searchForLists": "ዝርዝሮችን ይፈልጉ",
+  "searchFindCuratedVideoLists": "የተመረጡ የቪዲዮ ዝርዝሮችን ያግኙ",
+  "searchEnterQuery": "የፍለጋ ጥያቄ አስገባ",
+  "@searchEnterQuery": {
+    "description": "Title of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchDiscoverSomethingInteresting": "አንድ አስደሳች ነገር ያግኙ",
+  "@searchDiscoverSomethingInteresting": {
+    "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchPeopleSectionHeader": "ሰዎች",
+  "searchPeopleLoadingLabel": "የሰዎች ውጤቶችን በመጫን ላይ",
+  "searchTagsSectionHeader": "መለያዎች",
+  "searchTagsLoadingLabel": "የመለያ ውጤቶችን በመጫን ላይ",
+  "searchVideosSectionHeader": "ቪዲዮዎች",
+  "searchVideosLoadingLabel": "የቪዲዮ ውጤቶችን በመጫን ላይ",
+  "searchListsSectionHeader": "ዝርዝሮች",
+  "searchListsLoadingLabel": "የዝርዝር ውጤቶችን በመጫን ላይ",
+  "cameraAgeRestriction": "ይዘት ለመፍጠር 16 ወይም ከዚያ በላይ መሆን አለቦት",
+  "featureRequestCancel": "ሰርዝ",
+  "keyImportError": "ስህተት፡ {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "keyImportInsecureBunkerRelay": "የBunker ሪሌይ wss:// መጠቀም አለበት (ws:// ለlocalhost ብቻ ይፈቀዳል)",
+  "timeNow": "አሁን",
+  "@timeNow": {
+    "description": "Relative time label for less than one minute ago (short form)"
+  },
+  "timeShortMinutes": "{count}ም",
+  "@timeShortMinutes": {
+    "description": "Short relative time in minutes, e.g. 3m",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortHours": "{count}ሸ",
+  "@timeShortHours": {
+    "description": "Short relative time in hours, e.g. 2h",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortDays": "{count}መ",
+  "@timeShortDays": {
+    "description": "Short relative time in days, e.g. 3d",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortWeeks": "{count}ወ",
+  "@timeShortWeeks": {
+    "description": "Short relative time in weeks, e.g. 2w",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortMonths": "{count}ሞ",
+  "@timeShortMonths": {
+    "description": "Short relative time in months, e.g. 1mo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortYears": "{count}ይ",
+  "@timeShortYears": {
+    "description": "Short relative time in years, e.g. 1y",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeVerboseNow": "አሁን",
+  "@timeVerboseNow": {
+    "description": "Verbose relative time label for less than one minute ago"
+  },
+  "timeAgo": "{time} በፊት",
+  "@timeAgo": {
+    "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timeToday": "ዛሬ",
+  "@timeToday": {
+    "description": "Date label for today"
+  },
+  "timeYesterday": "ትናንት",
+  "@timeYesterday": {
+    "description": "Date label for yesterday"
+  },
+  "timeJustNow": "ልክ አሁን",
+  "@timeJustNow": {
+    "description": "Verbose relative time for less than one minute (lowercase)"
+  },
+  "timeMinutesAgo": "{count}ደቂቃ በፊት",
+  "@timeMinutesAgo": {
+    "description": "Relative time in minutes with ago suffix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursAgo": "{count}ሰ በፊት",
+  "@timeHoursAgo": {
+    "description": "Relative time in hours with ago suffix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDaysAgo": "{count}d በፊት",
+  "@timeDaysAgo": {
+    "description": "Relative time in days with ago suffix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "draftTimeJustNow": "ልክ አሁን",
+  "@draftTimeJustNow": {
+    "description": "Draft age label for less than one minute (capitalized)"
+  },
+  "contentLabelNudity": "እርቃንነት",
+  "contentLabelSexualContent": "ወሲባዊ ይዘት",
+  "contentLabelPornography": "የብልግና ሥዕሎች",
+  "contentLabelGraphicMedia": "ግራፊክ ሚዲያ",
+  "contentLabelViolence": "ብጥብጥ",
+  "contentLabelSelfHarm": "ራስን መጉዳት/ ራስን ማጥፋት",
+  "contentLabelDrugUse": "የመድሃኒት አጠቃቀም",
+  "contentLabelAlcohol": "አልኮል",
+  "contentLabelTobacco": "ትምባሆ/ማጨስ",
+  "contentLabelGambling": "ቁማር",
+  "contentLabelProfanity": "ስድብ",
+  "contentLabelHateSpeech": "የጥላቻ ንግግር",
+  "contentLabelHarassment": "ትንኮሳ",
+  "contentLabelFlashingLights": "ብልጭ ድርግም የሚሉ መብራቶች",
+  "contentLabelAiGenerated": "በAI የተፈጠረ",
+  "contentLabelDeepfake": "ጥልቅ ሐሰት",
+  "contentLabelSpam": "አይፈለጌ መልእክት",
+  "contentLabelScam": "ማጭበርበር/ማጭበርበር",
+  "contentLabelSpoiler": "ስፒለር",
+  "contentLabelMisleading": "አሳሳች",
+  "contentLabelSensitiveContent": "ሚስጥራዊነት ያለው ይዘት",
+  "notificationLikedYourVideo": "{actorName} ቪዲዮህን ወደውታል።",
+  "@notificationLikedYourVideo": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationCommentedOnYourVideo": "{actorName} በቪዲዮዎ ላይ አስተያየት ሰጥቷል",
+  "@notificationCommentedOnYourVideo": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationStartedFollowing": "{actorName} አንተን መከተል ጀመረ",
+  "@notificationStartedFollowing": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationMentionedYou": "{actorName} ጠቅሶሃል",
+  "@notificationMentionedYou": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepostedYourVideo": "{actorName} ቪዲዮህን በድጋሚ ለጥፏል",
+  "@notificationRepostedYourVideo": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepliedToYourComment": "ለአስተያየትዎ ምላሽ ሰጥተዋል",
+  "@notificationRepliedToYourComment": {
+    "description": "Verb phrase shown after the actor name in a reply notification."
+  },
+  "notificationAndConnector": "እና",
+  "@notificationAndConnector": {
+    "description": "Connector word between the first actor and the 'N others' count in a grouped notification (e.g. 'Alice and 3 others liked your video')."
+  },
+  "notificationOthersCount": "{count, plural, =1{1 ሌላ} other{{count} ሌሎች}}",
+  "@notificationOthersCount": {
+    "description": "Number of additional actors beyond the first in a grouped notification.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commentReplyToPrefix": "ድጋሚ፡",
+  "@commentReplyToPrefix": {
+    "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."
+  },
+  "draftUntitled": "ርዕስ አልባ",
+  "contentWarningNone": "ምንም",
+  "textBackgroundNone": "ምንም",
+  "textBackgroundSolid": "ድፍን",
+  "textBackgroundHighlight": "አድምቅ",
+  "textBackgroundTransparent": "ግልጽ",
+  "textAlignLeft": "ግራ",
+  "textAlignRight": "ቀኝ",
+  "textAlignCenter": "መሃል",
+  "cameraPermissionWebUnsupportedTitle": "ካሜራ እስካሁን በድር ላይ አይደገፍም።",
+  "cameraPermissionWebUnsupportedDescription": "የካሜራ ቀረጻ እና ቀረጻ እስካሁን በድር ስሪት ውስጥ አይገኙም።",
+  "cameraPermissionBackToFeed": "ወደ ምግብ ተመለስ",
+  "cameraPermissionErrorTitle": "የፍቃድ ስህተት",
+  "cameraPermissionErrorDescription": "ፈቃዶችን በመፈተሽ ላይ ሳለ የሆነ ችግር ተፈጥሯል።",
+  "cameraPermissionRetry": "እንደገና ይሞክሩ",
+  "cameraPermissionAllowAccessTitle": "የካሜራ እና ማይክሮፎን መዳረሻ ፍቀድ",
+  "cameraPermissionAllowAccessDescription": "ይህ በመተግበሪያው ውስጥ ቪዲዮዎችን እንዲቀርጹ እና እንዲያርትዑ ይፈቅድልዎታል፣ ምንም ተጨማሪ ነገር የለም።",
+  "cameraPermissionContinue": "ቀጥል",
+  "cameraPermissionGoToSettings": "ወደ ቅንብሮች ይሂዱ",
+  "videoRecorderWhySixSecondsTitle": "ለምን ስድስት ሰከንዶች?",
+  "videoRecorderWhySixSecondsSubtitle": "ፈጣን ቅንጥቦች ለድንገተኛነት ቦታ ይፈጥራሉ። የ6 ሰከንድ ቅርጸት ትክክለኛ ጊዜዎችን በሚከሰቱበት ጊዜ እንዲይዙ ያግዝዎታል።",
+  "videoRecorderWhySixSecondsButton": "ገባኝ!",
+  "videoRecorderAutosaveFoundTitle": "በሂደት ላይ ያለ ስራ አግኝተናል",
+  "videoRecorderAutosaveFoundSubtitle": "ካቆሙበት መቀጠል ይፈልጋሉ?",
+  "videoRecorderAutosaveContinueButton": "አዎ ቀጥል።",
+  "videoRecorderAutosaveDiscardButton": "አይ፣ አዲስ ቪዲዮ ጀምር",
+  "videoRecorderAutosaveRestoreFailure": "ረቂቅዎን ወደነበረበት መመለስ አልተቻለም",
+  "videoRecorderStopRecordingTooltip": "መቅዳት አቁም",
+  "videoRecorderStartRecordingTooltip": "መቅዳት ጀምር",
+  "videoRecorderRecordingTapToStopLabel": "መቅዳት. ለማቆም የትኛውም ቦታ ላይ መታ ያድርጉ",
+  "videoRecorderTapToStartLabel": "መቅዳት ለመጀመር የትኛውም ቦታ ላይ መታ ያድርጉ",
+  "videoRecorderDeleteLastClipLabel": "የመጨረሻውን ቅንጥብ ሰርዝ",
+  "videoRecorderSwitchCameraLabel": "ካሜራ ቀይር",
+  "videoRecorderToggleGridLabel": "ፍርግርግ ቀያይር",
+  "videoRecorderToggleGhostFrameLabel": "የGhost ፍሬም ሁኔታ ቀይር",
+  "videoRecorderGhostFrameEnabled": "Ghost ፍሬም በርቷል",
+  "videoRecorderGhostFrameDisabled": "Ghost ፍሬም ጠፍቷል",
+  "videoRecorderClipDeletedMessage": "ክሊፕ ተሰርዟል።",
+  "videoRecorderCloseLabel": "የቪዲዮ መቅረጫ ዝጋ",
+  "videoRecorderContinueToEditorLabel": "ወደ ቪዲዮ አርታዒ ይቀጥሉ",
+  "videoRecorderCaptureCloseLabel": "ገጠመ",
+  "videoRecorderCaptureNextLabel": "ቀጥሎ",
+  "videoRecorderToggleFlashLabel": "ብልጭታ ቀያይር",
+  "videoRecorderCycleTimerLabel": "የዑደት ሰዓት ቆጣሪ",
+  "videoRecorderToggleAspectRatioLabel": "ምጥጥን ቀያይር",
+  "videoRecorderLibraryEmptyLabel": "ክሊፕ ቤተ-መጽሐፍት፣ ምንም ቅንጥቦች የሉም",
+  "videoRecorderLibraryOpenLabel": "{clipCount, plural, =1{የክሊፕ ቤተ-መዝገብ ክፈት፣ 1 ክሊፕ} other{የክሊፕ ቤተ-መዝገብ ክፈት፣ {clipCount} ክሊፖች}}",
+  "@videoRecorderLibraryOpenLabel": {
+    "placeholders": {
+      "clipCount": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorCameraLabel": "ካሜራ",
+  "videoEditorOpenCameraSemanticLabel": "ካሜራ ክፈት",
+  "videoEditorLibraryLabel": "ቤተ መፃህፍት",
+  "videoEditorTextLabel": "ጽሑፍ",
+  "videoEditorDrawLabel": "ይሳሉ",
+  "videoEditorFilterLabel": "አጣራ",
+  "videoEditorAudioLabel": "ኦዲዮ",
+  "videoEditorVolumeLabel": "መጠን",
+  "videoEditorAddTitle": "አክል",
+  "videoEditorOpenLibrarySemanticLabel": "ቤተ መፃህፍት ክፈት",
+  "videoEditorOpenAudioSemanticLabel": "የድምጽ አርታዒን ክፈት",
+  "videoEditorOpenTextSemanticLabel": "የጽሑፍ አርታዒን ክፈት",
+  "videoEditorOpenDrawSemanticLabel": "የስዕል አርታዒን ክፈት",
+  "videoEditorOpenFilterSemanticLabel": "የማጣሪያ አርታዒን ክፈት",
+  "videoEditorOpenStickerSemanticLabel": "ተለጣፊ አርታዒን ክፈት",
+  "videoEditorSaveDraftTitle": "ረቂቅዎን ይቆጥቡ?",
+  "videoEditorSaveDraftSubtitle": "አርትዖቶችዎን ለበለጠ ጊዜ ያቆዩት ወይም ያስወግዱዋቸው እና አርታዒውን ይተዉት።",
+  "videoEditorSaveDraftButton": "ረቂቅ አስቀምጥ",
+  "videoEditorDiscardChangesButton": "ለውጦችን አስወግድ",
+  "videoEditorKeepEditingButton": "ማረምዎን ይቀጥሉ",
+  "videoEditorDeleteLayerDropZone": "የንብርብር ጠብታ ዞን ሰርዝ",
+  "videoEditorReleaseToDeleteLayer": "ንብርብር ለመሰረዝ ይልቀቁ",
+  "videoEditorDoneLabel": "ተከናውኗል",
+  "videoEditorPlayPauseSemanticLabel": "ቪዲዮን ያጫውቱ ወይም ለአፍታ ያቁሙ",
+  "videoEditorCropSemanticLabel": "ሰብል",
+  "videoEditorCannotSplitProcessing": "ክሊፕ በሂደት ላይ እያለ መከፋፈል አይቻልም። እባክህ ጠብቅ።",
+  "videoEditorSplitPositionInvalid": "የመክፈል ቦታው ልክ አይደለም። ሁለቱም ክሊፖች ቢያንስ {minDurationMs}ms ርዝመት ሊኖራቸው ይገባል።",
+  "@videoEditorSplitPositionInvalid": {
+    "placeholders": {
+      "minDurationMs": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorAddClipFromLibrary": "ክሊፕ ከቤተ-መጽሐፍት ያክሉ",
+  "videoEditorSaveSelectedClip": "የተመረጠውን ቅንጥብ ያስቀምጡ",
+  "videoEditorSplitClip": "የተከፈለ ቅንጥብ",
+  "videoEditorSaveClip": "ቅንጥብ ያስቀምጡ",
+  "videoEditorDeleteClip": "ቅንጥብ ሰርዝ",
+  "videoEditorClipSavedSuccess": "ክሊፕ ወደ ቤተ-መጽሐፍት ተቀምጧል",
+  "videoEditorClipSaveFailed": "ቅንጥብ ማስቀመጥ አልተሳካም።",
+  "videoEditorClipDeleted": "ክሊፕ ተሰርዟል።",
+  "videoEditorColorPickerSemanticLabel": "ቀለም መራጭ",
+  "videoEditorUndoSemanticLabel": "ቀልብስ",
+  "videoEditorRedoSemanticLabel": "ድገም",
+  "videoEditorTextColorSemanticLabel": "የጽሑፍ ቀለም",
+  "videoEditorTextAlignmentSemanticLabel": "የጽሑፍ አሰላለፍ",
+  "videoEditorTextBackgroundSemanticLabel": "የጽሑፍ ዳራ",
+  "videoEditorFontSemanticLabel": "ቅርጸ-ቁምፊ",
+  "videoEditorNoStickersFound": "ምንም ተለጣፊዎች አልተገኙም።",
+  "videoEditorNoStickersAvailable": "ምንም ተለጣፊዎች አይገኙም።",
+  "videoEditorFailedLoadStickers": "ተለጣፊዎችን መጫን አልተሳካም።",
+  "videoEditorAdjustVolumeTitle": "ድምጽን ያስተካክሉ",
+  "videoEditorRecordedAudioLabel": "የተቀዳ ኦዲዮ",
+  "videoEditorCustomAudioLabel": "ብጁ ኦዲዮ",
+  "videoEditorPlaySemanticLabel": "ይጫወቱ",
+  "videoEditorPauseSemanticLabel": "ለአፍታ አቁም",
+  "videoEditorMuteAudioSemanticLabel": "ኦዲዮ ድምጸ-ከል አድርግ",
+  "videoEditorUnmuteAudioSemanticLabel": "የድምጽ ድምጸ-ከል አንሳ",
+  "videoEditorDeleteLabel": "ሰርዝ",
+  "videoEditorDeleteSelectedItemSemanticLabel": "የተመረጠውን ንጥል ሰርዝ",
+  "videoEditorEditLabel": "አርትዕ",
+  "videoEditorEditSelectedItemSemanticLabel": "የተመረጠውን ንጥል ያርትዑ",
+  "videoEditorDuplicateLabel": "ማባዛት።",
+  "videoEditorDuplicateSelectedItemSemanticLabel": "የተመረጠውን ንጥል ያባዛ",
+  "videoEditorSplitLabel": "ተከፈለ",
+  "videoEditorSplitSelectedClipSemanticLabel": "የተመረጠውን ቅንጥብ ክፈል።",
+  "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
+  "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",
+  "videoEditorAudioPausePreviewSemanticLabel": "ቅድመ እይታን ባለበት አቁም",
+  "videoEditorAudioUntitledSound": "ርዕስ አልባ ድምጽ",
+  "videoEditorAudioUntitled": "ርዕስ አልባ",
+  "videoEditorAudioAddAudio": "ኦዲዮ ያክሉ",
+  "videoEditorAudioNoSoundsAvailableTitle": "ምንም ድምፆች የሉም",
+  "videoEditorAudioNoSoundsAvailableSubtitle": "ፈጣሪዎች ኦዲዮን ሲያጋሩ ድምጾች እዚህ ይታያሉ",
+  "videoEditorAudioFailedToLoadTitle": "ድምጾችን መጫን አልተሳካም።",
+  "videoEditorAudioSegmentInstruction": "ለቪዲዮዎ የድምጽ ክፍሉን ይምረጡ",
+  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryCommunity": "ማህበረሰብ",
+  "videoEditorDrawToolArrowSemanticLabel": "የቀስት መሣሪያ",
+  "videoEditorDrawToolEraserSemanticLabel": "መጥረጊያ መሳሪያ",
+  "videoEditorDrawToolMarkerSemanticLabel": "ምልክት ማድረጊያ መሳሪያ",
+  "videoEditorDrawToolPencilSemanticLabel": "የእርሳስ መሳሪያ",
+  "videoEditorLayerReorderLabel": "ንብርብር እንደገና ይዘዙ {index}",
+  "@videoEditorLayerReorderLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorLayerReorderHint": "እንደገና ለመደርደር ይያዙ",
+  "videoEditorShowTimelineSemanticLabel": "የጊዜ መስመር አሳይ",
+  "videoEditorHideTimelineSemanticLabel": "የጊዜ መስመርን ደብቅ",
+  "videoEditorFeedPreviewContent": "ከእነዚህ አካባቢዎች በስተጀርባ ይዘትን ከማስቀመጥ ተቆጠብ።",
+  "videoEditorStickersDivineOriginals": "Divine ኦሪጅናል",
+  "videoEditorStickerSearchHint": "ተለጣፊዎችን ፈልግ...",
+  "videoEditorSelectFontSemanticLabel": "ቅርጸ-ቁምፊ ይምረጡ",
+  "videoEditorFontUnknown": "ያልታወቀ",
+  "videoEditorSplitPlayheadOutsideClip": "የመጫወቻ ቦታ ለመከፋፈል በተመረጠው ቅንጥብ ውስጥ መሆን አለበት።",
+  "videoEditorTimelineTrimStartSemanticLabel": "ጅምር ይከርክሙ",
+  "videoEditorTimelineTrimEndSemanticLabel": "መጨረሻውን ይከርክሙ",
+  "videoEditorTimelineTrimClipSemanticLabel": "ቅንጥብ ይከርክሙ",
+  "videoEditorTimelineTrimClipHint": "የቅንጥብ ቆይታ ለማስተካከል መያዣዎችን ይጎትቱ",
+  "videoEditorTimelineDraggingClipSemanticLabel": "ቅንጥብ መጎተት {index}",
+  "@videoEditorTimelineDraggingClipSemanticLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorTimelineClipSemanticLabel": "የ{index} የ{total}፣ {duration} ሴኮንዶች ቅንጥብ",
+  "@videoEditorTimelineClipSemanticLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorTimelineClipReorderHint": "እንደገና ለመደርደር በረጅሙ ተጫን",
+  "videoEditorClipGalleryInstruction": "ለማርትዕ መታ ያድርጉ። እንደገና ለመደርደር ይያዙ እና ይጎትቱ።",
+  "videoEditorTimelineClipMoveLeft": "ወደ ግራ ውሰድ",
+  "videoEditorTimelineClipMoveRight": "ወደ ቀኝ አንቀሳቅስ",
+  "videoEditorTimelineLongPressToDragHint": "ለመጎተት በረጅሙ ተጫን",
+  "videoEditorVideoTimelineSemanticLabel": "የቪዲዮ የጊዜ መስመር",
+  "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
+  "@videoEditorTimelinePositionFormat": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorColorSelectedSemanticLabel": "{colorName}፣ ተመርጧል",
+  "@videoEditorColorSelectedSemanticLabel": {
+    "placeholders": {
+      "colorName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorCloseColorPickerSemanticLabel": "የቀለም መራጭን ይዝጉ",
+  "videoEditorPickColorTitle": "ቀለም ይምረጡ",
+  "videoEditorConfirmColorSemanticLabel": "ቀለም ያረጋግጡ",
+  "videoEditorSaturationBrightnessSemanticLabel": "ሙሌት እና ብሩህነት",
+  "videoEditorSaturationBrightnessValue": "ሙሌት {saturation}%፣ ብሩህነት {brightness}%",
+  "@videoEditorSaturationBrightnessValue": {
+    "placeholders": {
+      "saturation": {
+        "type": "int"
+      },
+      "brightness": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorHueSemanticLabel": "ሁ",
+  "videoEditorAddElementSemanticLabel": "ኤለመንት አክል",
+  "videoEditorCloseSemanticLabel": "ገጠመ",
+  "videoEditorDoneSemanticLabel": "ተከናውኗል",
+  "videoEditorLevelSemanticLabel": "ደረጃ",
+  "videoMetadataBackSemanticLabel": "ተመለስ",
+  "videoMetadataDismissHelpDialogSemanticLabel": "የእገዛ ንግግርን አሰናብት",
+  "videoMetadataGotItButton": "ገባኝ!",
+  "videoMetadataLimitReachedWarning": "64KB ገደብ ላይ ደርሷል። ለመቀጠል አንዳንድ ይዘቶችን ያስወግዱ።",
+  "videoMetadataExpirationLabel": "የማለቂያ ጊዜ",
+  "videoMetadataSelectExpirationSemanticLabel": "የማለቂያ ጊዜን ይምረጡ",
+  "videoMetadataTitleLabel": "ርዕስ",
+  "videoMetadataDescriptionLabel": "መግለጫ",
+  "videoMetadataTagsLabel": "መለያዎች",
+  "videoMetadataDeleteTagSemanticLabel": "ሰርዝ",
+  "videoMetadataDeleteTagHint": "መለያን ሰርዝ {tag}",
+  "@videoMetadataDeleteTagHint": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataContentWarningLabel": "የይዘት ማስጠንቀቂያ",
+  "videoMetadataSelectContentWarningsSemanticLabel": "የይዘት ማስጠንቀቂያዎችን ይምረጡ",
+  "videoMetadataContentWarningSelectAllThatApply": "በይዘትህ ላይ የሚመለከተውን ሁሉ ምረጥ",
+  "videoMetadataContentWarningDoneButton": "ተከናውኗል",
+  "videoMetadataCollaboratorsLabel": "ተባባሪዎች",
+  "videoMetadataAddCollaboratorSemanticLabel": "ተባባሪ ጋብዝ",
+  "videoMetadataCollaboratorsHelpTooltip": "ተባባሪዎች እንዴት እንደሚሠሩ",
+  "videoMetadataCollaboratorsCount": "{count}/{max} ተባባሪዎች",
+  "@videoMetadataCollaboratorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "videoMetadataRemoveCollaboratorSemanticLabel": "ተባባሪውን ያስወግዱ",
+  "videoMetadataCollaboratorsHelpMessage": "በዚህ ልጥፍ ላይ ተባባሪዎች እንደ ተባባሪ ፈጣሪዎች ተጋብዘዋል። እርስዎ በጋራ የሚከተሏቸውን ሰዎች ብቻ መጋበዝ ይችላሉ፣ እና ካረጋገጡ በኋላ እንደ ተባባሪዎች ሆነው ይታያሉ።",
+  "videoMetadataMutualFollowersSearchText": "የጋራ ተከታዮች",
+  "videoMetadataMustMutuallyFollowSnackbar": "እነሱን እንደ ተባባሪ ለመጋበዝ {name}ን በጋራ መከተል አለቦት።",
+  "@videoMetadataMustMutuallyFollowSnackbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataInspiredByLabel": "ተመስጦ",
+  "videoMetadataSetInspiredBySemanticLabel": "ተመስጦ የተዘጋጀ",
+  "videoMetadataInspiredByHelpTooltip": "ማበረታቻ ምስጋናዎች እንዴት እንደሚሠሩ",
+  "videoMetadataInspiredByNone": "ምንም",
+  "videoMetadataInspiredByHelpMessage": "መለያ ለመስጠት ይህንን ይጠቀሙ። ተነሳሽነት ያለው ክሬዲት ከተባባሪዎች የተለየ ነው፡ ተጽዕኖን ይቀበላል፣ ነገር ግን አንድን ሰው እንደ ተባባሪ ፈጣሪ መለያ አይሰጥም።",
+  "videoMetadataCreatorCannotBeReferencedSnackbar": "ይህ ፈጣሪ ሊጠቀስ አይችልም።",
+  "videoMetadataRemoveInspiredBySemanticLabel": "ተመስጦ አስወግድ",
+  "videoMetadataPostDetailsTitle": "ዝርዝሮችን ይለጥፉ",
+  "videoMetadataSavedToLibrarySnackbar": "ወደ ቤተ-መጽሐፍት ተቀምጧል",
+  "videoMetadataFailedToSaveSnackbar": "ማስቀመጥ አልተሳካም።",
+  "videoMetadataGoToLibraryButton": "ወደ ቤተ-መጽሐፍት ሂድ",
+  "videoMetadataSaveForLaterSemanticLabel": "ለበኋላ አዝራር አስቀምጥ",
+  "videoMetadataRenderingVideoHint": "ቪዲዮ በማቅረብ ላይ...",
+  "videoMetadataSavingVideoHint": "ቪዲዮ በማስቀመጥ ላይ...",
+  "videoMetadataSaveToDraftsHint": "ቪዲዮን ወደ ረቂቆች እና {destination} አስቀምጥ",
+  "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveForLaterButton": "በኋላ ላይ አስቀምጥ",
+  "videoMetadataPostSemanticLabel": "የመለጠፍ ቁልፍ",
+  "videoMetadataPublishVideoHint": "ለመመገብ ቪዲዮ ያትሙ",
+  "videoMetadataFormNotReadyHint": "ለማንቃት ቅጹን ይሙሉ",
+  "videoMetadataPostButton": "ለጥፍ",
+  "videoMetadataOpenPreviewSemanticLabel": "የልጥፍ ቅድመ እይታ ማያን ክፈት",
+  "videoMetadataShareTitle": "አጋራ",
+  "videoMetadataVideoDetailsSubtitle": "የቪዲዮ ዝርዝሮች",
+  "videoMetadataClassicDoneButton": "ተከናውኗል",
+  "videoMetadataPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",
+  "videoMetadataPausePreviewSemanticLabel": "ቅድመ እይታን ባለበት አቁም",
+  "videoMetadataClosePreviewSemanticLabel": "የቪዲዮ ቅድመ እይታን ዝጋ",
+  "videoMetadataRemoveSemanticLabel": "አስወግድ",
+  "metadataCaptionsLabel": "መግለጫ ጽሑፎች",
+  "@metadataCaptionsLabel": {
+    "description": "Label for the global captions toggle in the video metadata sheet"
+  },
+  "metadataCaptionsEnabledSemantics": "መግለጫ ጽሑፎች ለሁሉም ቪዲዮዎች ነቅተዋል።",
+  "@metadataCaptionsEnabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is on"
+  },
+  "metadataCaptionsDisabledSemantics": "መግለጫ ጽሑፎች ለሁሉም ቪዲዮዎች ተሰናክለዋል።",
+  "@metadataCaptionsDisabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is off"
+  },
+  "fullscreenFeedRemovedMessage": "ቪዲዮ ተወግዷል",
+  "@fullscreenFeedRemovedMessage": {
+    "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
+  }
+}

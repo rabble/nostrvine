@@ -194,7 +194,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
           if (mounted) {
             provider.setLoading(false);
             setState(() {
-              _errorMessage = 'Failed to load lists: $error';
+              _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
+                '$error',
+              );
             });
           }
         },
@@ -203,7 +205,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
       if (mounted) {
         ref.read(discoveredListsProvider.notifier).setLoading(false);
         setState(() {
-          _errorMessage = 'Failed to load lists: $e';
+          _errorMessage = context.l10n.discoverListsFailedToLoadWithError(
+            '$e',
+          );
         });
         Log.error(
           'Failed to discover public lists: $e',
@@ -375,7 +379,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Discover Lists',
+        title: context.l10n.discoverListsTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -390,15 +394,18 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
     final isLoading = providerState.isLoading;
 
     if (isLoading && discoveredLists.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: VineTheme.vineGreen),
-            SizedBox(height: 16),
+            const CircularProgressIndicator(color: VineTheme.vineGreen),
+            const SizedBox(height: 16),
             Text(
-              'Discovering public lists...',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              context.l10n.discoverListsLoading,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -412,9 +419,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
           children: [
             const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
-            const Text(
-              'Failed to load lists',
-              style: TextStyle(
+            Text(
+              context.l10n.discoverListsFailedToLoad,
+              style: const TextStyle(
                 color: VineTheme.likeRed,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
@@ -448,24 +455,27 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
     }
 
     if (discoveredLists.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
-            SizedBox(height: 16),
+            const Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
+            const SizedBox(height: 16),
             Text(
-              'No public lists found',
-              style: TextStyle(
+              context.l10n.discoverListsEmptyTitle,
+              style: const TextStyle(
                 color: VineTheme.primaryText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              'Check back later for new lists',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              context.l10n.discoverListsEmptySubtitle,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -607,13 +617,14 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                 children: [
                   // Creator info
                   if (list.pubkey != null) ...[
-                    const Text(
-                      'by ',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.discoverListsByAuthorPrefix,
+                      style: const TextStyle(
                         color: VineTheme.secondaryText,
                         fontSize: 12,
                       ),
                     ),
+                    const SizedBox(width: 2),
                     Flexible(
                       flex: 0,
                       child: UserName.fromPubKey(
@@ -638,7 +649,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                     const SizedBox(width: 8),
                   ],
                   Text(
-                    '${list.videoEventIds.length} ${list.videoEventIds.length == 1 ? 'video' : 'videos'}',
+                    context.l10n.listVideoCount(list.videoEventIds.length),
                     style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 12,

@@ -17,6 +17,7 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class _MockRelayNotifications extends RelayNotifications {
   final List<NotificationModel> _notifications;
@@ -43,6 +44,8 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+class _MockVideosRepository extends Mock implements VideosRepository {}
+
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
 
@@ -51,6 +54,7 @@ void main() {
     RelayNotifications Function() notifierFactory, {
     required VideoEventService videoEventService,
     required NostrClient nostrClient,
+    required VideosRepository videosRepository,
   }) {
     final mockInviteCubit = _MockInviteStatusCubit();
     when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
@@ -60,6 +64,7 @@ void main() {
         relayNotificationsProvider.overrideWith(notifierFactory),
         videoEventServiceProvider.overrideWithValue(videoEventService),
         nostrServiceProvider.overrideWithValue(nostrClient),
+        videosRepositoryProvider.overrideWithValue(videosRepository),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -102,20 +107,28 @@ void main() {
     ) async {
       final mockVideoService = _MockVideoEventService();
       final mockNostrClient = _MockNostrClient();
+      final mockVideosRepository = _MockVideosRepository();
 
       final resolvedVideo = video('video_root_1');
+
+      // NotificationTargetResolver still uses videoEventService + nostrClient
+      // to walk the NIP-22 tags and resolve the comment event to a video ID.
       when(
         () => mockVideoService.getVideoById('comment_event_1'),
       ).thenReturn(null);
       when(
-        () => mockVideoService.getVideoById('video_root_1'),
-      ).thenReturn(resolvedVideo);
+        () => mockNostrClient.fetchEventById('comment_event_1'),
+      ).thenAnswer((_) async => commentEvent(rootVideoId: 'video_root_1'));
+
+      // After resolving to video_root_1, _navigateToVideo calls
+      // videosRepository.fetchVideoWithStats to fetch + hydrate the video.
+      when(
+        () => mockVideosRepository.fetchVideoWithStats('video_root_1'),
+      ).thenAnswer((_) async => resolvedVideo);
+
       when(
         () => mockVideoService.shouldHideVideo(resolvedVideo),
       ).thenReturn(true);
-      when(
-        () => mockNostrClient.fetchEventById('comment_event_1'),
-      ).thenAnswer((_) async => commentEvent(rootVideoId: 'video_root_1'));
 
       final notifier = _MockRelayNotifications([
         NotificationModel(
@@ -134,6 +147,7 @@ void main() {
           () => notifier,
           videoEventService: mockVideoService,
           nostrClient: mockNostrClient,
+          videosRepository: mockVideosRepository,
         ),
       );
       await tester.pumpAndSettle();
@@ -141,7 +155,9 @@ void main() {
       await tester.tap(find.byType(NotificationListItem).first);
       await tester.pumpAndSettle();
 
-      verify(() => mockVideoService.getVideoById('video_root_1')).called(1);
+      verify(
+        () => mockVideosRepository.fetchVideoWithStats('video_root_1'),
+      ).called(1);
       expect(find.text('Video unavailable'), findsOneWidget);
       expect(find.text('Video not found'), findsNothing);
     });
@@ -151,10 +167,14 @@ void main() {
     ) async {
       final mockVideoService = _MockVideoEventService();
       final mockNostrClient = _MockNostrClient();
+      final mockVideosRepository = _MockVideosRepository();
 
       when(() => mockVideoService.getVideoById(any())).thenReturn(null);
       when(
         () => mockNostrClient.fetchEventById('missing_event'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockVideosRepository.fetchVideoWithStats(any()),
       ).thenAnswer((_) async => null);
 
       final notifier = _MockRelayNotifications([
@@ -174,6 +194,7 @@ void main() {
           () => notifier,
           videoEventService: mockVideoService,
           nostrClient: mockNostrClient,
+          videosRepository: mockVideosRepository,
         ),
       );
       await tester.pumpAndSettle();

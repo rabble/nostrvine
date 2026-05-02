@@ -25,20 +25,25 @@ For production builds, you'll need to:
 
 ## Deployment Steps
 
-### 1. Create .well-known directory on divine.video server
+### 1. Create .well-known directory on every claimed host
 
 ```bash
 mkdir -p /var/www/divine.video/.well-known
+mkdir -p /var/www/www.divine.video/.well-known
+mkdir -p /var/www/login.divine.video/.well-known
 ```
 
-### 2. Copy files to server
+### 2. Copy files to every claimed host
 
 ```bash
 # iOS file (no extension!)
 cp mobile/docs/apple-app-site-association /var/www/divine.video/.well-known/
+cp mobile/docs/apple-app-site-association /var/www/www.divine.video/.well-known/
 
 # Android file (for testing with debug builds)
 cp mobile/docs/assetlinks.json /var/www/divine.video/.well-known/
+cp mobile/docs/assetlinks.json /var/www/www.divine.video/.well-known/
+cp mobile/docs/assetlinks.json /var/www/login.divine.video/.well-known/
 
 # For production, use assetlinks-production.json after adding release fingerprint
 # cp mobile/docs/assetlinks-production.json /var/www/divine.video/.well-known/assetlinks.json
@@ -49,6 +54,9 @@ cp mobile/docs/assetlinks.json /var/www/divine.video/.well-known/
 ```bash
 chmod 644 /var/www/divine.video/.well-known/apple-app-site-association
 chmod 644 /var/www/divine.video/.well-known/assetlinks.json
+chmod 644 /var/www/www.divine.video/.well-known/apple-app-site-association
+chmod 644 /var/www/www.divine.video/.well-known/assetlinks.json
+chmod 644 /var/www/login.divine.video/.well-known/assetlinks.json
 ```
 
 ### 4. Configure web server
@@ -110,10 +118,15 @@ sudo apachectl configtest && sudo systemctl reload apache2
 
 ## Verification
 
+Do not ship the Android manifest host change until all claimed hosts return
+HTTP 200 for their verification files. Android 11 and lower require manifest
+hosts to verify together before the app becomes the default handler.
+
 ### Test iOS file is accessible
 
 ```bash
 curl -I https://divine.video/.well-known/apple-app-site-association
+curl -I https://www.divine.video/.well-known/apple-app-site-association
 ```
 
 Expected:
@@ -123,6 +136,7 @@ Expected:
 Verify content:
 ```bash
 curl https://divine.video/.well-known/apple-app-site-association
+curl https://www.divine.video/.well-known/apple-app-site-association
 ```
 
 Should return the JSON with your Team ID (GZCZBKH7MY).
@@ -131,6 +145,8 @@ Should return the JSON with your Team ID (GZCZBKH7MY).
 
 ```bash
 curl -I https://divine.video/.well-known/assetlinks.json
+curl -I https://www.divine.video/.well-known/assetlinks.json
+curl -I https://login.divine.video/.well-known/assetlinks.json
 ```
 
 Expected:
@@ -140,6 +156,8 @@ Expected:
 Verify content:
 ```bash
 curl https://divine.video/.well-known/assetlinks.json
+curl https://www.divine.video/.well-known/assetlinks.json
+curl https://login.divine.video/.well-known/assetlinks.json
 ```
 
 Should return the JSON array with your package name and SHA-256 fingerprint.
@@ -168,6 +186,8 @@ Should show:
 ```
 co.openvine.app:
   divine.video: verified
+  www.divine.video: verified
+  login.divine.video: verified
 ```
 
 ## Testing Deep Links

@@ -7,6 +7,7 @@ import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/list_search/list_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/search_results/widgets/search_filter_pill.dart';
 
 /// App bar for the search results screen.
@@ -80,13 +81,13 @@ class _SearchResultsAppBarState extends State<SearchResultsAppBar> {
               type: DivineIconButtonType.secondary,
               size: DivineIconButtonSize.small,
               onPressed: () => Navigator.of(context).maybePop(),
-              semanticLabel: 'Back',
+              semanticLabel: context.l10n.commonBack,
             ),
             Expanded(
               child: DivineSearchBar(
                 controller: _controller,
                 focusNode: _focusNode,
-                hintText: 'Search...',
+                hintText: context.l10n.exploreSearchHint,
                 suffixIcon: const SearchFilterPill(),
               ),
             ),

@@ -262,6 +262,16 @@ void main() {
         expect(result.type, equals(DeepLinkType.video));
         expect(result.videoId, equals(videoId));
       });
+
+      test('accepts www.divine.video host alias', () {
+        const videoId = 'abc123';
+        const url = 'https://www.divine.video/video/$videoId';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.video));
+        expect(result.videoId, equals(videoId));
+      });
     });
 
     group('DeepLink Data Class', () {

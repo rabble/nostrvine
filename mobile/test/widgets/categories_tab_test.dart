@@ -13,8 +13,10 @@ void main() {
     required CategoriesState state,
     void Function(VideoCategory)? onCategoryTap,
     VoidCallback? onRetry,
+    Locale? locale,
   }) {
     return MaterialApp(
+      locale: locale,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
@@ -104,6 +106,21 @@ void main() {
 
       expect(animalsTopLeft.dy, lessThan(styleTopLeft.dy));
       expect(styleTopLeft.dy, lessThan(technologyTopLeft.dy));
+    });
+
+    testWidgets('localizes category video counts for Amharic', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          locale: const Locale('am'),
+          state: const CategoriesState(
+            categoriesStatus: CategoriesStatus.loaded,
+            categories: [VideoCategory(name: 'animals', videoCount: 1500)],
+          ),
+        ),
+      );
+
+      expect(find.text('1.5K ቪዲዮዎች'), findsOneWidget);
+      expect(find.text('1.5K videos'), findsNothing);
     });
 
     testWidgets('calls back when a category tile is tapped', (tester) async {

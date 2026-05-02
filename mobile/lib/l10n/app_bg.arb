@@ -1,0 +1,3202 @@
+{
+  "@@locale": "bg",
+  "appTitle": "Divine",
+  "@appTitle": {
+    "description": "App title shown in task switcher"
+  },
+  "settingsTitle": "Настройки",
+  "@settingsTitle": {
+    "description": "Settings screen app bar title"
+  },
+  "settingsSecureAccount": "Защити акаунта си",
+  "settingsSessionExpired": "Сесията изтече",
+  "settingsSessionExpiredSubtitle": "Влез отново, за да си върнеш пълния достъп",
+  "settingsCreatorAnalytics": "Аналитика за творци",
+  "settingsSupportCenter": "Помощен център",
+  "settingsNotifications": "Известия",
+  "settingsContentPreferences": "Предпочитания за съдържание",
+  "settingsModerationControls": "Контроли за модерация",
+  "settingsBlueskyPublishing": "Публикуване в Bluesky",
+  "settingsBlueskyPublishingSubtitle": "Управлявай публикуването в Bluesky",
+  "settingsNostrSettings": "Настройки за Nostr",
+  "settingsIntegratedApps": "Свързани приложения",
+  "settingsIntegratedAppsSubtitle": "Одобрени външни приложения, които работят в Divine",
+  "settingsExperimentalFeatures": "Експериментални функции",
+  "settingsExperimentalFeaturesSubtitle": "Малки експерименти, които може да се държат странно. Пробвай, ако ти е любопитно.",
+  "settingsLegal": "Правни неща",
+  "settingsIntegrationPermissions": "Разрешения за интеграции",
+  "settingsIntegrationPermissionsSubtitle": "Прегледай и махни запомнените одобрения за интеграции",
+  "settingsVersion": "Версия {version}",
+  "@settingsVersion": {
+    "description": "App version label in settings footer",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsVersionEmpty": "Версия",
+  "@settingsVersionEmpty": {
+    "description": "Version label when version string is not yet loaded"
+  },
+  "settingsDeveloperModeAlreadyEnabled": "Режимът за разработчици вече е включен",
+  "settingsDeveloperModeEnabled": "Режимът за разработчици е включен!",
+  "settingsDeveloperModeTapsRemaining": "Още {count} докосвания, за да включиш режима за разработчици",
+  "@settingsDeveloperModeTapsRemaining": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsInvites": "Покани",
+  "settingsSwitchAccount": "Смени акаунта",
+  "settingsAddAnotherAccount": "Добави друг акаунт",
+  "settingsUnsavedDraftsTitle": "Незапазени чернови",
+  "settingsUnsavedDraftsMessage": "Имаш {count} незапазен{count, plural, =1{а чернова} other{и чернови}}. При смяна на акаунта {count, plural, =1{тя ще се запази} other{те ще се запазят}}, но може първо да {count, plural, =1{я публикуваш или прегледаш} other{ги публикуваш или прегледаш}}.",
+  "@settingsUnsavedDraftsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsCancel": "Отказ",
+  "settingsSwitchAnyway": "Смени въпреки това",
+  "settingsAppVersionLabel": "Версия на приложението",
+  "settingsAppLanguage": "Език на приложението",
+  "settingsAppLanguageDeviceDefault": "{language} (език на устройството)",
+  "@settingsAppLanguageDeviceDefault": {
+    "description": "Subtitle for app language tile when using device default",
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAppLanguageTitle": "Език на приложението",
+  "@settingsAppLanguageTitle": {
+    "description": "Title shown at top of locale picker bottom sheet"
+  },
+  "settingsAppLanguageDescription": "Избери езика за интерфейса на приложението",
+  "settingsAppLanguageUseDeviceLanguage": "Използвай езика на устройството",
+  "contentPreferencesTitle": "Предпочитания за съдържание",
+  "@contentPreferencesTitle": {
+    "description": "Content preferences screen app bar title"
+  },
+  "contentPreferencesContentFilters": "Филтри за съдържание",
+  "contentPreferencesContentFiltersSubtitle": "Управлявай филтрите за предупреждения",
+  "contentPreferencesContentLanguage": "Език на съдържанието",
+  "contentPreferencesContentLanguageDeviceDefault": "{language} (език на устройството)",
+  "@contentPreferencesContentLanguageDeviceDefault": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "contentPreferencesTagYourVideos": "Слагай език на видеата си, за да могат хората да филтрират какво гледат.",
+  "contentPreferencesUseDeviceLanguage": "Използвай езика на устройството (по подразбиране)",
+  "contentPreferencesAudioSharing": "Позволи моето аудио да се използва отново",
+  "contentPreferencesAudioSharingSubtitle": "Когато е включено, други могат да използват аудио от твоите видеа",
+  "contentPreferencesAccountLabels": "Етикети на акаунта",
+  "contentPreferencesAccountLabelsEmpty": "Сам избираш етикетите за съдържанието си",
+  "contentPreferencesAccountContentLabels": "Етикети за съдържанието на акаунта",
+  "contentPreferencesClearAll": "Изчисти всичко",
+  "contentPreferencesSelectAllThatApply": "Избери всичко, което важи за акаунта ти",
+  "contentPreferencesDoneNoLabels": "Готово (без етикети)",
+  "contentPreferencesDoneCount": "Готово ({count} избрани)",
+  "@contentPreferencesDoneCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contentPreferencesAudioInputDevice": "Аудио вход",
+  "contentPreferencesAutoRecommended": "Автоматично (препоръчано)",
+  "contentPreferencesAutoSelectsBest": "Автоматично избира най-добрия микрофон",
+  "contentPreferencesSelectAudioInput": "Избери аудио вход",
+  "contentPreferencesUnknownMicrophone": "Неизвестен микрофон",
+  "profileBlockedAccountNotAvailable": "Този акаунт не е наличен",
+  "profileErrorPrefix": "Грешка: {error}",
+  "@profileErrorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileInvalidId": "Невалиден ID на профил",
+  "profileShareText": "Виж {displayName} в Divine!\n\nhttps://divine.video/profile/{npub}",
+  "@profileShareText": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      },
+      "npub": {
+        "type": "String"
+      }
+    }
+  },
+  "profileShareSubject": "{displayName} в Divine",
+  "@profileShareSubject": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileShareFailed": "Не успяхме да споделим профила: {error}",
+  "@profileShareFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileEditProfile": "Редактирай профила",
+  "profileCreatorAnalytics": "Анализ на създателя",
+  "profileShareProfile": "Сподели профила",
+  "profileCopyPublicKey": "Копирай публичния ключ (npub)",
+  "profileGetEmbedCode": "Вземи код за вграждане",
+  "profilePublicKeyCopied": "Публичният ключ е копиран",
+  "profileEmbedCodeCopied": "Кодът за вграждане е копиран в клипборда",
+  "profileRefreshTooltip": "Опресни",
+  "profileRefreshSemanticLabel": "Опресняване на профила",
+  "profileMoreTooltip": "Още",
+  "profileMoreSemanticLabel": "Още опции",
+  "profileAvatarLightboxBarrierLabel": "Затваряне на аватара",
+  "@profileAvatarLightboxBarrierLabel": {
+    "description": "Screen-reader label for the dismissable scrim behind the maximized profile-avatar dialog. Read aloud when focus lands on the barrier."
+  },
+  "profileAvatarLightboxCloseSemanticLabel": "Затвори аватара",
+  "@profileAvatarLightboxCloseSemanticLabel": {
+    "description": "Screen-reader label for the maximized profile-avatar dialog's tap-to-close gesture detector."
+  },
+  "profileFollowingLabel": "Следваш",
+  "profileFollowLabel": "Следвай",
+  "profileBlockedLabel": "Блокиран",
+  "profileFollowersLabel": "Последователи",
+  "profileFollowingStatLabel": "Следва",
+  "profileVideosLabel": "Видеа",
+  "profileFollowerCountUsers": "{count} потребители",
+  "@profileFollowerCountUsers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileBlockTitle": "Да блокираме {displayName}?",
+  "@profileBlockTitle": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBlockExplanation": "Когато блокираш потребител:",
+  "profileBlockBulletHidePosts": "Публикациите им няма да се показват в емисиите ти.",
+  "profileBlockBulletCantView": "Няма да могат да виждат профила ти, да те следват или да виждат публикациите ти.",
+  "profileBlockBulletNoNotify": "Те няма да бъдат уведомени за тази промяна.",
+  "profileBlockBulletYouCanView": "Все още ще можеш да видиш профила им.",
+  "profileBlockConfirmButton": "Блокирай {displayName}",
+  "@profileBlockConfirmButton": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileCancelButton": "Отказ",
+  "profileLearnMore": "Научи повече",
+  "profileUnblockTitle": "Да отблокираме {displayName}?",
+  "@profileUnblockTitle": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockExplanation": "Когато отблокираш този потребител:",
+  "profileUnblockBulletShowPosts": "Публикациите им пак ще се показват в емисиите ти.",
+  "profileUnblockBulletCanView": "Ще могат да виждат профила ти, да те следват и да виждат публикациите ти.",
+  "profileUnblockBulletNoNotify": "Те няма да бъдат уведомени за тази промяна.",
+  "profileLearnMoreAt": "Научи повече на",
+  "profileUnblockButton": "Разблокирай",
+  "profileUnfollowDisplayName": "Спри да следваш {displayName}",
+  "@profileUnfollowDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileBlockDisplayName": "Блокирай {displayName}",
+  "@profileBlockDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockDisplayName": "Отблокирай {displayName}",
+  "@profileUnblockDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileAddToListDisplayName": "Добави {displayName} към списък",
+  "@profileAddToListDisplayName": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUserBlockedTitle": "Потребителят е блокиран",
+  "profileUserBlockedContent": "Няма да виждаш съдържание от този потребител във фийдовете си.",
+  "profileUserBlockedUnblockHint": "Можеш да отблокираш този профил по всяко време от профила му или от Настройки > Безопасност.",
+  "profileCloseButton": "Затвори",
+  "profileNoCollabsTitle": "Още няма колаборации",
+  "profileCollabsOwnEmpty": "Видеата, в които участваш, ще се появят тук.",
+  "profileCollabsOtherEmpty": "Видеата, в които участват, ще се появят тук.",
+  "profileErrorLoadingCollabs": "Грешка при зареждане на видеата със сътрудничества",
+  "profileNoSavedVideosTitle": "Още нищо не е запазено",
+  "profileSavedOwnEmpty": "Запази видеа от менюто за споделяне и ще се появят тук.",
+  "profileErrorLoadingSaved": "Грешка при зареждане на запазените видеа",
+  "profileNoCommentsOwnTitle": "Още няма коментари",
+  "profileNoCommentsOtherTitle": "Още няма коментари",
+  "profileCommentsOwnEmpty": "Твоите коментари и отговори ще се появят тук.",
+  "profileCommentsOtherEmpty": "Техните коментари и отговори ще се показват тук.",
+  "profileErrorLoadingComments": "Грешка при зареждане на коментари",
+  "profileVideoRepliesSection": "Видео отговори",
+  "profileCommentsSection": "Коментари",
+  "profileEditLabel": "Редактиране",
+  "profileLibraryLabel": "Библиотека",
+  "profileNoLikedVideosTitle": "Още няма харесвания",
+  "profileLikedOwnEmpty": "Когато нещо ти хване окото, натисни сърцето. Харесванията ти ще се появят тук.",
+  "profileLikedOtherEmpty": "Още нищо не им е хванало окото. Дай му време.",
+  "profileErrorLoadingLiked": "Грешка при зареждане на харесаните видеа",
+  "profileNoRepostsTitle": "Още няма репостове",
+  "profileRepostsOwnEmpty": "Видя нещо, което си струва да споделиш? Публикувай го пак и ще се появи тук.",
+  "profileRepostsOtherEmpty": "Още не са препубликували нищо. Когато го направят, ще се появи тук.",
+  "profileErrorLoadingReposts": "Грешка при зареждане на репостнатите видеа",
+  "profileLoadingTitle": "Профилът се зарежда...",
+  "profileLoadingSubtitle": "Това може да отнеме няколко минути",
+  "profileLoadingVideos": "Видеата се зареждат...",
+  "profileNoVideosTitle": "Още няма видеа",
+  "profileNoVideosOwnSubtitle": "Сцената е твоя. Започни да публикуваш и видеата ти ще живеят тук.",
+  "profileNoVideosOtherSubtitle": "Светът чака. Последвай ги, за да не изпуснеш нищо.",
+  "profileVideoThumbnailLabel": "Миниатюра на видео {number}",
+  "@profileVideoThumbnailLabel": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "profileShowMore": "Покажи повече",
+  "profileShowLess": "Покажи по-малко",
+  "profileCompleteYourProfile": "Довърши профила си",
+  "profileCompleteSubtitle": "Добави име, био и снимка, за да започнеш",
+  "profileSetUpButton": "Настрой",
+  "profileVerifyingEmail": "Проверяваме имейла...",
+  "profileCheckEmailVerification": "Провери {email} за линк за потвърждение",
+  "@profileCheckEmailVerification": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "profileWaitingForVerification": "Изчакване на имейл потвърждение",
+  "profileVerificationFailed": "Потвърждението не мина",
+  "profilePleaseTryAgain": "Опитай пак",
+  "profileSecureYourAccount": "Защити акаунта си",
+  "profileSecureSubtitle": "Добави имейл и парола, за да възстановиш акаунта си на всяко устройство",
+  "profileRetryButton": "Опитай пак",
+  "profileRegisterButton": "Регистрирай се",
+  "profileSessionExpired": "Сесията изтече",
+  "profileSignInToRestore": "Влез отново, за да си върнеш пълния достъп",
+  "profileSignInButton": "Вход",
+  "profileMaybeLaterLabel": "Може би по-късно",
+  "profileSecurePrimaryButton": "Добави имейл и парола",
+  "profileCompletePrimaryButton": "Обнови профила си",
+  "profileLoopsLabel": "Лупове",
+  "profileLikesLabel": "Харесвания",
+  "profileMyLibraryLabel": "Моята библиотека",
+  "profileMessageLabel": "Съобщение",
+  "profileUserFallback": "Потребител",
+  "@profileUserFallback": {
+    "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+  },
+  "profileDismissTooltip": "Отхвърляне",
+  "profileLinkCopied": "Връзката към профила е копирана",
+  "profileSetupEditProfileTitle": "Редактиране на профил",
+  "profileSetupBackLabel": "Назад",
+  "profileSetupAboutNostr": "Относно Nostr",
+  "profileSetupProfilePublished": "Профилът е публикуван успешно!",
+  "profileSetupCreateNewProfile": "Създаване на нов профил?",
+  "profileSetupNoExistingProfile": "Не намерихме съществуващ профил на релетата ти. Ако продължиш, ще създадем нов профил.",
+  "profileSetupPublishButton": "Публикувай",
+  "profileSetupUsernameTaken": "Това потребителско име току-що беше заето. Избери друго.",
+  "profileSetupClaimFailed": "Не успяхме да запазим потребителското име. Опитай пак.",
+  "profileSetupPublishFailed": "Профилът не се публикува. Опитай пак.",
+  "profileSetupNoRelaysConnected": "Не успяхме да се свържем с мрежата. Провери връзката си и опитай пак.",
+  "profileSetupRetryLabel": "Опитай пак",
+  "profileSetupDisplayNameLabel": "Име за показване",
+  "profileSetupDisplayNameHint": "Как да те познават хората?",
+  "profileSetupDisplayNameHelper": "Каквото име или етикет искаш. Не е нужно да е уникално.",
+  "profileSetupDisplayNameRequired": "Въведи име за показване",
+  "profileSetupBioLabel": "Био (по избор)",
+  "profileSetupBioHint": "Разкажи на хората за себе си...",
+  "profileSetupPublicKeyLabel": "Публичен ключ (npub)",
+  "profileSetupUsernameLabel": "Потребителско име (по избор)",
+  "profileSetupUsernameHint": "Потребителско име",
+  "profileSetupUsernameHelper": "Твоята уникална самоличност в Divine",
+  "profileSetupProfileColorLabel": "Цвят на профила (по избор)",
+  "profileSetupSaveButton": "Запази",
+  "profileSetupSavingButton": "Запазва се...",
+  "profileSetupImageUrlTitle": "Добави URL адрес на изображението",
+  "profileSetupPictureUploaded": "Профилната снимка е качена успешно!",
+  "profileSetupImageSelectionFailed": "Не успяхме да изберем изображение. Постави URL на изображение по-долу.",
+  "profileSetupCameraAccessFailed": "Неуспешен достъп до камерата: {error}",
+  "@profileSetupCameraAccessFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileSetupGotItButton": "Разбрах",
+  "profileSetupUploadFailedGeneric": "Неуспешно качване на изображение: {error}",
+  "@profileSetupUploadFailedGeneric": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "profileSetupUploadNetworkError": "Мрежова грешка: провери интернет връзката си и опитай пак.",
+  "profileSetupUploadAuthError": "Грешка при удостоверяване: излез и влез отново.",
+  "profileSetupUploadFileTooLarge": "Файлът е твърде голям. Избери по-малко изображение (макс. 10 MB).",
+  "profileSetupUsernameChecking": "Проверява се наличността...",
+  "profileSetupUsernameAvailable": "Потребителското име е свободно!",
+  "profileSetupUsernameTakenIndicator": "Потребителското име вече е заето",
+  "profileSetupUsernameReserved": "Потребителското име е запазено",
+  "profileSetupContactSupport": "Свържи се с поддръжката",
+  "profileSetupCheckAgain": "Провери пак",
+  "profileSetupUsernameBurned": "Това потребителско име вече не е достъпно",
+  "profileSetupUsernameInvalidFormat": "Разрешени са само букви, цифри и тирета",
+  "profileSetupUsernameInvalidLength": "Потребителското име трябва да е 3-20 знака",
+  "profileSetupUsernameNetworkError": "Не можем да проверим дали е свободно. Опитай пак.",
+  "profileSetupUsernameInvalidFormatGeneric": "Невалиден формат на потребителското име",
+  "profileSetupUsernameCheckFailed": "Неуспешна проверка за наличност",
+  "profileSetupUsernameReservedTitle": "Потребителското име е запазено",
+  "profileSetupUsernameReservedBody": "Името {username} е запазено. Кажи ни защо трябва да е твое.",
+  "@profileSetupUsernameReservedBody": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "profileSetupUsernameReservedHint": "Напр. Това е името на моята марка, сценично име и т.н.",
+  "profileSetupUsernameReservedCheckHint": "Вече си се свързал с поддръжката? Натисни „Провери пак“, за да видиш дали е освободено за теб.",
+  "profileSetupSupportRequestSent": "Заявката за поддръжка е изпратена! Ще се свържем с вас скоро.",
+  "profileSetupCouldntOpenEmail": "Не можем да отворим имейл. Изпрати до: names@divine.video",
+  "profileSetupSendRequest": "Изпрати заявка",
+  "profileSetupPickColorTitle": "Избери цвят",
+  "profileSetupSelectButton": "Избери",
+  "profileSetupUseOwnNip05": "Използвай свой NIP-05 адрес",
+  "profileSetupNip05AddressLabel": "NIP-05 Адрес",
+  "profileSetupProfilePicturePreview": "Визуализация на профилна снимка",
+  "nostrInfoIntroBuiltOn": "Divine е изграден върху Nostr,",
+  "nostrInfoIntroDescription": " отворен протокол, устойчив на цензура, който позволява на хората да общуват онлайн, без да зависят от една компания или платформа. ",
+  "nostrInfoIntroIdentity": "Когато се регистрираш в Divine, получаваш нова Nostr самоличност.",
+  "nostrInfoOwnership": "Nostr ти позволява да притежаваш съдържанието, самоличността и социалната си мрежа, които можеш да използваш в много приложения. Повече избор, по-малко заключване, по-здрав социален интернет.",
+  "nostrInfoLingo": "Nostr речник:",
+  "nostrInfoNpubLabel": "Npub:",
+  "nostrInfoNpubDescription": " Твоят публичен Nostr адрес. Безопасно е да го споделяш и помага на други да те намират, следват или да ти пишат в Nostr приложения.",
+  "nostrInfoNsecLabel": "Nsec:",
+  "nostrInfoNsecDescription": " Твоят частен ключ и доказателство за собственост. Дава пълен контрол върху Nostr самоличността ти, така че ",
+  "nostrInfoNsecWarning": "Пази го в тайна!",
+  "nostrInfoUsernameLabel": "Nostr потребителско име:",
+  "nostrInfoUsernameDescription": "Човешко име (като @name.divine.video), което сочи към твоя npub. Така Nostr самоличността ти се разпознава и потвърждава по-лесно, почти като имейл адрес.",
+  "nostrInfoLearnMoreAt": "Научи повече на",
+  "nostrInfoGotIt": "Ясно!",
+  "profileTabRefreshTooltip": "Опресняване",
+  "videoGridRefreshLabel": "Търсим още видеа",
+  "videoGridOptionsTitle": "Опции за видеото",
+  "videoGridEditVideo": "Редактирай видеото",
+  "videoGridEditVideoSubtitle": "Актуализирай заглавие, описание и хаштагове",
+  "videoGridDeleteVideo": "Изтрий видеото",
+  "videoGridDeleteVideoSubtitle": "Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.",
+  "videoGridDeleteConfirmTitle": "Изтрий видеото",
+  "videoGridDeleteConfirmMessage": "Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.",
+  "videoGridDeleteConfirmNote": "Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.",
+  "videoGridDeleteCancel": "Отказ",
+  "videoGridDeleteConfirm": "Изтрий",
+  "videoGridDeletingContent": "Трием съдържанието...",
+  "videoGridDeleteSuccess": "Заявката за изтриване е изпратена",
+  "videoGridDeleteFailure": "Неуспешно изтриване на съдържание: {error}",
+  "@videoGridDeleteFailure": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreTabClassics": "Класики",
+  "exploreTabNew": "Нови",
+  "exploreTabPopular": "Популярни",
+  "exploreTabCategories": "Категории",
+  "exploreTabForYou": "За теб",
+  "exploreTabLists": "Списъци",
+  "exploreTabIntegratedApps": "Интегрирани приложения",
+  "exploreNoVideosAvailable": "Няма налични видеа",
+  "exploreErrorPrefix": "Грешка: {error}",
+  "@exploreErrorPrefix": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreDiscoverLists": "Открий списъци",
+  "exploreAboutLists": "Относно списъците",
+  "exploreAboutListsDescription": "Списъците ти помагат да организираш и управляваш Divine съдържание по два начина:",
+  "explorePeopleLists": "Списъци с хора",
+  "explorePeopleListsDescription": "Следвай групи от творци и виж най-новите им видеа",
+  "exploreVideoLists": "Видео списъци",
+  "exploreVideoListsDescription": "Създай плейлисти с любимите си видеа, за да ги гледаш по-късно",
+  "exploreMyLists": "Моите списъци",
+  "exploreSubscribedLists": "Абонирани списъци",
+  "exploreErrorLoadingLists": "Грешка при зареждане на списъците: {error}",
+  "@exploreErrorLoadingLists": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "exploreNewVideosCount": "{count, plural, =1{1 ново видео} other{{count} нови видеа}}",
+  "@exploreNewVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "exploreLoadNewVideosLabel": "Зареди {count} нов{count, plural, =1{о видео} other{и видеа}}",
+  "@exploreLoadNewVideosLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoPlayerLoadingVideo": "Видеото се зарежда...",
+  "videoPlayerPlayVideo": "Възпроизвеждане на видео",
+  "videoPlayerMute": "Заглушаване на видеото",
+  "videoPlayerUnmute": "Включване на звука на видеото",
+  "videoPlayerEditVideo": "Редактиране на видео",
+  "videoPlayerEditVideoTooltip": "Редактиране на видео",
+  "contentWarningLabel": "Предупреждение за съдържание",
+  "contentWarningNudity": "Голота",
+  "contentWarningSexualContent": "Сексуално съдържание",
+  "contentWarningPornography": "Порнография",
+  "contentWarningGraphicMedia": "Графични медии",
+  "contentWarningViolence": "Насилие",
+  "contentWarningSelfHarm": "Самонараняване",
+  "contentWarningDrugUse": "Употреба на наркотици",
+  "contentWarningAlcohol": "Алкохол",
+  "contentWarningTobacco": "Тютюн",
+  "contentWarningGambling": "Хазарт",
+  "contentWarningProfanity": "Ругатни",
+  "contentWarningFlashingLights": "Мигащи светлини",
+  "contentWarningAiGenerated": "AI-генерирано",
+  "contentWarningSpoiler": "Спойлер",
+  "contentWarningSensitiveContent": "Чувствително съдържание",
+  "contentWarningDescNudity": "Съдържа голота или частична голота",
+  "contentWarningDescSexual": "Съдържа сексуално съдържание",
+  "contentWarningDescPorn": "Съдържа изрично порнографско съдържание",
+  "contentWarningDescGraphicMedia": "Съдържа графични или смущаващи изображения",
+  "contentWarningDescViolence": "Съдържа съдържание с насилие",
+  "contentWarningDescSelfHarm": "Съдържа препратки към самонараняване",
+  "contentWarningDescDrugs": "Съдържа съдържание, свързано с наркотици",
+  "contentWarningDescAlcohol": "Съдържа съдържание, свързано с алкохол",
+  "contentWarningDescTobacco": "Съдържа съдържание, свързано с тютюна",
+  "contentWarningDescGambling": "Съдържа съдържание, свързано с хазарта",
+  "contentWarningDescProfanity": "Съдържа силен език",
+  "contentWarningDescFlashingLights": "Съдържа мигащи светлини (предупреждение за фоточувствителност)",
+  "contentWarningDescAiGenerated": "Това съдържание е AI-генерирано",
+  "contentWarningDescSpoiler": "Съдържа спойлери",
+  "contentWarningDescContentWarning": "Създателят означи това като чувствително",
+  "contentWarningDescDefault": "Създателят маркира това съдържание",
+  "contentWarningDetailsTitle": "Предупреждения за съдържание",
+  "contentWarningDetailsSubtitle": "Създателят е приложил тези етикети:",
+  "contentWarningManageFilters": "Управление на филтри за съдържание",
+  "contentWarningViewAnyway": "Виж все пак",
+  "contentWarningHideAllLikeThis": "Скрий всичко подобно",
+  "contentWarningNoFilterYet": "Още няма запазен филтър за това предупреждение.",
+  "contentWarningHiddenConfirmation": "Отсега нататък ще скриваме публикации като тази.",
+  "videoErrorNotFound": "Видеото не е намерено",
+  "videoErrorNetwork": "Мрежова грешка",
+  "videoErrorTimeout": "Зареждането изтече",
+  "videoErrorFormat": "Грешка във видео формата\n(Опитай пак или използвай друг браузър)",
+  "videoErrorUnsupportedFormat": "Неподдържан видео формат",
+  "videoErrorPlayback": "Грешка при възпроизвеждане",
+  "videoErrorAgeRestricted": "Съдържание с възрастово ограничение",
+  "videoErrorVerifyAge": "Потвърди възрастта",
+  "videoErrorRetry": "Опитай пак",
+  "videoErrorContentRestricted": "Ограничено съдържание",
+  "videoErrorContentRestrictedBody": "Това видео беше ограничено от релето.",
+  "videoErrorVerifyAgeBody": "Потвърди възрастта си, за да гледаш това видео.",
+  "videoErrorSkip": "Пропусни",
+  "videoErrorVerifyAgeButton": "Потвърди възрастта",
+  "videoFollowButtonFollowing": "Следване",
+  "videoFollowButtonFollow": "Следвай",
+  "audioAttributionOriginalSound": "Оригинален звук",
+  "videoInspiredByAttribution": "Вдъхновен от @{creatorName}",
+  "@videoInspiredByAttribution": {
+    "placeholders": {
+      "creatorName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoCollaboratorWithOne": "С @{name}",
+  "@videoCollaboratorWithOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoCollaboratorWithMore": "С @{name} +{count}",
+  "@videoCollaboratorWithMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "videoCollaboratorCountLabel": "{count, plural, =1{1 сътрудник} other{{count} сътрудници}}. Докосни, за да видиш профила.",
+  "@videoCollaboratorCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listAttributionFallback": "Списък",
+  "shareVideoLabel": "Сподели видео",
+  "sharePostSharedWith": "Публикация, споделена с {recipientName}",
+  "@sharePostSharedWith": {
+    "placeholders": {
+      "recipientName": {
+        "type": "String"
+      }
+    }
+  },
+  "shareFailedToSend": "Не успяхме да изпратим видеото",
+  "shareAddedToBookmarks": "Добавен към отметките",
+  "shareRemovedFromBookmarks": "Премахнато от отметките",
+  "@shareRemovedFromBookmarks": {
+    "description": "Snackbar shown after removing a video from global bookmarks via Save on the share sheet."
+  },
+  "shareFailedToAddBookmark": "Не успяхме да добавим отметка",
+  "shareFailedToRemoveBookmark": "Не успяхме да премахнем отметката",
+  "@shareFailedToRemoveBookmark": {
+    "description": "Snackbar when toggling Save off (remove from bookmarks) fails."
+  },
+  "shareActionFailed": "Действието не мина",
+  "shareWithTitle": "Сподели с",
+  "shareFindPeople": "Намери хора",
+  "shareFindPeopleMultiline": "Намери\nхора",
+  "shareSent": "Изпратено",
+  "shareContactFallback": "Контакт",
+  "shareUserFallback": "Потребител",
+  "shareSendingTo": "Изпращане до {name}",
+  "@shareSendingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMessageHint": "Добави съобщение (по избор)...",
+  "videoActionUnlike": "Премахни харесването",
+  "videoActionLike": "Харесай видеото",
+  "videoActionAutoLabel": "Компилация",
+  "videoActionLikeLabel": "Харесай",
+  "videoActionReplyLabel": "Отговор",
+  "videoActionRepostLabel": "Сподели пак",
+  "videoActionShareLabel": "Сподели",
+  "videoActionAboutLabel": "Инфо",
+  "videoActionEnableAutoAdvance": "Включи автоматичното продължаване",
+  "videoActionDisableAutoAdvance": "Изключи автоматичното продължаване",
+  "videoActionRemoveRepost": "Премахни репоста",
+  "videoActionRepost": "Сподели видеото пак",
+  "videoActionViewComments": "Виж коментарите",
+  "videoActionMoreOptions": "Още опции",
+  "videoActionHideSubtitles": "Скрий субтитрите",
+  "videoActionShowSubtitles": "Покажи субтитрите",
+  "videoOverlayOpenMetadataFromTitle": "Отвори подробностите за видеото",
+  "@videoOverlayOpenMetadataFromTitle": {
+    "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+  },
+  "videoOverlayOpenMetadataFromDescription": "Отвори подробностите за видеото",
+  "@videoOverlayOpenMetadataFromDescription": {
+    "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+  },
+  "videoDescriptionLoops": "{count} лупа",
+  "@videoDescriptionLoops": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{луп} other{лупа}}",
+  "@videoFeedLoopCountLine": {
+    "placeholders": {
+      "compactCount": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "metadataBadgeNotDivine": "Не е от Divine",
+  "metadataBadgeHumanMade": "Направено от човек",
+  "metadataSoundsLabel": "Звуци",
+  "metadataOriginalSound": "Оригинален звук",
+  "metadataVerificationLabel": "Проверка",
+  "metadataDeviceAttestation": "Атестация на устройството",
+  "metadataProofManifest": "Доказателствен манифест",
+  "metadataCreatorLabel": "Създател",
+  "metadataCollaboratorsLabel": "Сътрудници",
+  "metadataInspiredByLabel": "Вдъхновено от",
+  "metadataRepostedByLabel": "Повторно публикувано от",
+  "metadataLoopsLabel": "{count, plural, =1{Луп} other{Лупове}}",
+  "@metadataLoopsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "metadataLikesLabel": "Харесвания",
+  "metadataCommentsLabel": "Коментари",
+  "metadataRepostsLabel": "Репостове",
+  "metadataPostedDateSemantics": "Публикувано на {date}",
+  "@metadataPostedDateSemantics": {
+    "description": "Screen reader label for the publish date in the video info sheet. {date} is the locale-formatted absolute date, e.g. 'Apr 22, 2003'.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsTitle": "Опции за разработчици",
+  "@devOptionsTitle": {
+    "description": "Developer options screen app bar title"
+  },
+  "devOptionsPageLoadTimes": "Време за зареждане на страницата",
+  "devOptionsNoPageLoads": "Още няма регистрирани зареждания на страници.\nРазгледай приложението, за да видиш данните за времето.",
+  "devOptionsPageLoadVisible": "Видим: {visibleMs}ms |  Данни: {dataMs}ms",
+  "@devOptionsPageLoadVisible": {
+    "placeholders": {
+      "visibleMs": {
+        "type": "String"
+      },
+      "dataMs": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsSlowestScreens": "Най-бавните екрани",
+  "devOptionsVideoPlaybackFormat": "Формат за възпроизвеждане на видео",
+  "devOptionsSwitchEnvironmentTitle": "Превключване на среда?",
+  "devOptionsSwitchEnvironmentMessage": "Превключване към {envName}?\n\nТова ще изчисти кешираните видео данни и ще се свърже отново с новото реле.",
+  "@devOptionsSwitchEnvironmentMessage": {
+    "placeholders": {
+      "envName": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsCancel": "Отказ",
+  "devOptionsSwitch": "Превключване",
+  "devOptionsSwitchedTo": "Превключено към {envName}",
+  "@devOptionsSwitchedTo": {
+    "placeholders": {
+      "envName": {
+        "type": "String"
+      }
+    }
+  },
+  "devOptionsSwitchedFormat": "Превключено към {formatName} — кешът е изчистен",
+  "@devOptionsSwitchedFormat": {
+    "placeholders": {
+      "formatName": {
+        "type": "String"
+      }
+    }
+  },
+  "featureFlagTitle": "Флагове за функции",
+  "@featureFlagTitle": {
+    "description": "Feature flags screen app bar title"
+  },
+  "featureFlagResetAllTooltip": "Нулирай всички флагове до стойностите по подразбиране",
+  "featureFlagResetToDefault": "Нулирай до стойността по подразбиране",
+  "featureFlagAppRecovery": "Възстановяване на приложението",
+  "featureFlagAppRecoveryDescription": "Ако приложението се срива или се държи странно, опитай да изчистиш кеша.",
+  "featureFlagClearAllCache": "Изчистване на целия кеш",
+  "featureFlagCacheInfo": "Информация за кеша",
+  "featureFlagClearCacheTitle": "Изчистване на целия кеш?",
+  "featureFlagClearCacheMessage": "Това ще изчисти всички кеширани данни, включително:\n• Известия\n• Потребителски профили\n• Отметки\n• Временни файлове\n\nЩе трябва да влезеш отново. Да продължим?",
+  "featureFlagClearCache": "Изчистване на кеша",
+  "featureFlagClearingCache": "Изчистване на кеша...",
+  "featureFlagSuccess": "Успех",
+  "featureFlagError": "Грешка",
+  "featureFlagClearCacheSuccess": "Кешът е изчистен. Рестартирай приложението.",
+  "featureFlagClearCacheFailure": "Не успяхме да изчистим някои елементи от кеша. Виж логовете за подробности.",
+  "featureFlagOk": "Добре",
+  "featureFlagCacheInformation": "Кеш информация",
+  "featureFlagTotalCacheSize": "Общ размер на кеша: {size}",
+  "@featureFlagTotalCacheSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "featureFlagCacheIncludes": "Кешът включва:\n• История на известията\n• Данни от потребителския профил\n• Видео миниатюри\n• Временни файлове\n• Индекси на бази данни",
+  "relaySettingsTitle": "Релета",
+  "@relaySettingsTitle": {
+    "description": "Relay settings screen app bar title"
+  },
+  "relaySettingsInfoTitle": "Divine е отворена система - ти контролираш връзките си",
+  "relaySettingsInfoDescription": "Тези релета разпространяват съдържанието ти в децентрализираната Nostr мрежа. Можеш да добавяш или махаш релета когато поискаш.",
+  "relaySettingsLearnMoreNostr": "Научи повече за Nostr →",
+  "relaySettingsFindPublicRelays": "Намери публични релета на nostr.co.uk →",
+  "relaySettingsAppNotFunctional": "Приложението не функционира",
+  "relaySettingsRequiresRelay": "Divine изисква поне едно реле, за да зарежда видеа, да публикува съдържание и да синхронизира данни.",
+  "relaySettingsRestoreDefaultRelay": "Възстановяване на релето по подразбиране",
+  "relaySettingsAddCustomRelay": "Добави персонализирано реле",
+  "relaySettingsAddRelay": "Добави реле",
+  "relaySettingsRetry": "Опитай пак",
+  "relaySettingsNoStats": "Все още няма налична статистика",
+  "relaySettingsConnection": "Връзка",
+  "relaySettingsConnected": "Свързано",
+  "relaySettingsDisconnected": "Прекъснато",
+  "relaySettingsSessionDuration": "Продължителност на сесията",
+  "relaySettingsLastConnected": "Последно свързано",
+  "relaySettingsDisconnectedLabel": "Прекъсната връзка",
+  "relaySettingsReason": "Причина",
+  "relaySettingsActiveSubscriptions": "Активни абонаменти",
+  "relaySettingsTotalSubscriptions": "Общ брой абонаменти",
+  "relaySettingsEventsReceived": "Получени събития",
+  "relaySettingsEventsSent": "Изпратени събития",
+  "relaySettingsRequestsThisSession": "Иска тази сесия",
+  "relaySettingsFailedRequests": "Неуспешни заявки",
+  "relaySettingsLastError": "Последна грешка: {error}",
+  "@relaySettingsLastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsLoadingRelayInfo": "Информацията за релето се зарежда...",
+  "relaySettingsAboutRelay": "Относно релето",
+  "relaySettingsSupportedNips": "Поддържани NIP",
+  "relaySettingsSoftware": "Софтуер",
+  "relaySettingsViewWebsite": "Виж уебсайта",
+  "relaySettingsRemoveRelayTitle": "Да махнем ли релето?",
+  "relaySettingsRemoveRelayMessage": "Сигурен ли си, че искаш да премахнеш това реле?\n\n{relayUrl}",
+  "@relaySettingsRemoveRelayMessage": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsCancel": "Отказ",
+  "relaySettingsRemove": "Махни",
+  "relaySettingsRemovedRelay": "Премахнато реле: {relayUrl}",
+  "@relaySettingsRemovedRelay": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsFailedToRemoveRelay": "Премахването на релето не бе успешно",
+  "relaySettingsForcingReconnection": "Принудително повторно свързване с релето...",
+  "relaySettingsConnectedToRelays": "Свързани сме с {count} реле(та)!",
+  "@relaySettingsConnectedToRelays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relaySettingsFailedToConnectCheck": "Не успяхме да се свържем с релетата. Провери мрежовата си връзка.",
+  "relaySettingsAddRelayTitle": "Добави реле",
+  "relaySettingsAddRelayPrompt": "Въведи WebSocket URL на релето, което искаш да добавиш:",
+  "relaySettingsBrowsePublicRelays": "Разгледай публичните релета на nostr.co.uk",
+  "relaySettingsAdd": "Добави",
+  "relaySettingsAddedRelay": "Добавено реле: {relayUrl}",
+  "@relaySettingsAddedRelay": {
+    "placeholders": {
+      "relayUrl": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsFailedToAddRelay": "Не успяхме да добавим релето. Провери URL адреса и опитай пак.",
+  "relaySettingsInvalidUrl": "URL адресът за предаване трябва да започва с wss:// или ws://",
+  "relaySettingsRestoredDefault": "Възстановено реле по подразбиране: {defaultRelay}",
+  "@relaySettingsRestoredDefault": {
+    "placeholders": {
+      "defaultRelay": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsFailedToRestoreDefault": "Не успяхме да възстановим релето по подразбиране. Провери мрежовата си връзка.",
+  "relaySettingsCouldNotOpenBrowser": "Браузърът не може да се отвори",
+  "relaySettingsFailedToOpenLink": "Неуспешно отваряне на връзката",
+  "relayDiagnosticTitle": "Релейна диагностика",
+  "@relayDiagnosticTitle": {
+    "description": "Relay diagnostics screen app bar title"
+  },
+  "relayDiagnosticRefreshTooltip": "Обновяване на диагностиката",
+  "relayDiagnosticLastRefresh": "Последно опресняване: {time}",
+  "@relayDiagnosticLastRefresh": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "relayDiagnosticRelayStatus": "Състояние на релето",
+  "relayDiagnosticInitialized": "Инициализирано",
+  "relayDiagnosticReady": "Готови",
+  "relayDiagnosticNotInitialized": "Не е инициализирано",
+  "relayDiagnosticDatabaseEvents": "Събития в базата данни",
+  "relayDiagnosticActiveSubscriptions": "Активни абонаменти",
+  "relayDiagnosticExternalRelays": "Външни релета",
+  "relayDiagnosticConfigured": "Конфигуриран",
+  "relayDiagnosticRelayCount": "{count} реле(а)",
+  "@relayDiagnosticRelayCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticConnectedLabel": "Свързан",
+  "relayDiagnosticConnectedRatio": "{connected}/{total}",
+  "@relayDiagnosticConnectedRatio": {
+    "placeholders": {
+      "connected": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticVideoEvents": "Видео събития",
+  "relayDiagnosticHomeFeed": "Домашна емисия",
+  "relayDiagnosticVideosCount": "{count} видеа",
+  "@relayDiagnosticVideosCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticDiscovery": "Откриване",
+  "relayDiagnosticLoading": "Зарежда се",
+  "relayDiagnosticYes": "Да",
+  "relayDiagnosticNo": "Не",
+  "relayDiagnosticTestDirectQuery": "Тествай директна заявка",
+  "relayDiagnosticNetworkConnectivity": "Мрежова свързаност",
+  "relayDiagnosticRunNetworkTest": "Изпълни мрежов тест",
+  "relayDiagnosticBlossomServer": "Blossom сървър",
+  "relayDiagnosticTestAllEndpoints": "Тествай всички ендпойнти",
+  "relayDiagnosticStatus": "Статус",
+  "relayDiagnosticUrl": "URL адрес",
+  "relayDiagnosticError": "Грешка",
+  "relayDiagnosticFunnelCakeApi": "API на FunnelCake",
+  "relayDiagnosticBaseUrl": "Основен URL адрес",
+  "relayDiagnosticSummary": "Резюме",
+  "relayDiagnosticEndpointSummary": "{successCount}/{totalCount} OK (ср. {avgMs}ms)",
+  "@relayDiagnosticEndpointSummary": {
+    "placeholders": {
+      "successCount": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      },
+      "avgMs": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticRetestAll": "Повторно тестване на всички",
+  "relayDiagnosticRetrying": "Повторен опит...",
+  "relayDiagnosticRetryConnection": "Повторен опит за свързване",
+  "relayDiagnosticTroubleshooting": "Отстраняване на неизправности",
+  "relayDiagnosticTroubleshootingGuide": "• Зелен статус = свързано и работи\n• Червен статус = връзката не мина\n• Ако мрежовият тест не минава, провери интернет връзката\n• Ако релетата са конфигурирани, но не са свързани, натисни „Повторен опит за свързване“\n• Направи екранна снимка на този екран за отстраняване на проблеми",
+  "relayDiagnosticAllEndpointsHealthy": "Всички REST ендпойнти работят!",
+  "relayDiagnosticSomeEndpointsFailed": "Някои REST ендпойнти не минаха - виж подробностите по-горе",
+  "relayDiagnosticFoundVideoEvents": "Намерени {count} видео събития в базата данни",
+  "@relayDiagnosticFoundVideoEvents": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticQueryFailed": "Неуспешна заявка: {error}",
+  "@relayDiagnosticQueryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "relayDiagnosticConnectedToRelays": "Свързани сме с {count} реле(та)!",
+  "@relayDiagnosticConnectedToRelays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relayDiagnosticFailedToConnect": "Не успяхме да се свържем с нито едно реле",
+  "relayDiagnosticConnectionRetryFailed": "Неуспешен повторен опит за свързване: {error}",
+  "@relayDiagnosticConnectionRetryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "relayDiagnosticConnectedAuthenticated": "Свързан и удостоверен",
+  "relayDiagnosticConnectedOnly": "Свързан",
+  "relayDiagnosticNotConnected": "Не е свързан",
+  "relayDiagnosticNoRelaysConfigured": "Няма конфигурирани релета",
+  "relayDiagnosticFailed": "Неуспешно",
+  "notificationSettingsTitle": "Известия",
+  "@notificationSettingsTitle": {
+    "description": "Notification settings screen app bar title"
+  },
+  "notificationSettingsResetTooltip": "Възстановяване на настройките по подразбиране",
+  "notificationSettingsTypes": "Видове известия",
+  "notificationSettingsLikes": "Харесвания",
+  "notificationSettingsLikesSubtitle": "Когато някой хареса видеата ти",
+  "notificationSettingsComments": "Коментари",
+  "notificationSettingsCommentsSubtitle": "Когато някой коментира видеата ти",
+  "notificationSettingsFollows": "Следва",
+  "notificationSettingsFollowsSubtitle": "Когато някой те следва",
+  "notificationSettingsMentions": "Споменавания",
+  "notificationSettingsMentionsSubtitle": "Когато те споменат",
+  "notificationSettingsReposts": "Репостове",
+  "notificationSettingsRepostsSubtitle": "Когато някой препубликува видеата ти",
+  "notificationSettingsSystem": "Система",
+  "notificationSettingsSystemSubtitle": "Актуализации на приложения и системни съобщения",
+  "notificationSettingsPushNotificationsSection": "Насочени известия",
+  "notificationSettingsPushNotifications": "Насочени известия",
+  "notificationSettingsPushNotificationsSubtitle": "Получавай известия, когато приложението е затворено",
+  "notificationSettingsSound": "Звук",
+  "notificationSettingsSoundSubtitle": "Възпроизвеждане на звук за известия",
+  "notificationSettingsVibration": "Вибрация",
+  "notificationSettingsVibrationSubtitle": "Вибриране за известия",
+  "notificationSettingsActions": "Действия",
+  "notificationSettingsMarkAllAsRead": "Маркирай всички като прочетени",
+  "notificationSettingsMarkAllAsReadSubtitle": "Маркирай всички известия като прочетени",
+  "notificationSettingsAllMarkedAsRead": "Всички известия са маркирани като прочетени",
+  "notificationSettingsResetToDefaults": "Настройките се нулират до стойностите по подразбиране",
+  "notificationSettingsAbout": "Относно известията",
+  "notificationSettingsAboutDescription": "Известията се захранват от Nostr. Обновяването в реално време зависи от връзката ти с Nostr релета. Някои известия може да закъсняват.",
+  "safetySettingsTitle": "Безопасност и поверителност",
+  "@safetySettingsTitle": {
+    "description": "Safety settings screen app bar title"
+  },
+  "safetySettingsLabel": "НАСТРОЙКИ",
+  "safetySettingsShowDivineHostedOnly": "Показвай само видеа, хостнати от Divine",
+  "safetySettingsShowDivineHostedOnlySubtitle": "Скривай видеа, обслужвани от други медийни хостове",
+  "safetySettingsModeration": "УМЕРЕНОСТ",
+  "safetySettingsBlockedUsers": "БЛОКИРАНИ ПОТРЕБИТЕЛИ",
+  "safetySettingsAgeVerification": "ПРОВЕРКА НА ВЪЗРАСТТА",
+  "safetySettingsAgeConfirmation": "Потвърждавам, че съм навършил 18 години",
+  "safetySettingsAgeRequired": "Изисква се за гледане на съдържание за възрастни",
+  "safetySettingsDivine": "Divine",
+  "safetySettingsDivineSubtitle": "Официална услуга за модериране (включена по подразбиране)",
+  "safetySettingsPeopleIFollow": "Хора, които следвам",
+  "safetySettingsPeopleIFollowSubtitle": "Абонирай се за етикети от хората, които следваш",
+  "safetySettingsAddCustomLabeler": "Добави персонализиран етикет",
+  "safetySettingsAddCustomLabelerHint": "Въведи npub...",
+  "safetySettingsAddCustomLabelerListTitle": "Добави персонализиран етикет",
+  "safetySettingsAddCustomLabelerListSubtitle": "Въведи npub адрес",
+  "safetySettingsNoBlockedUsers": "Няма блокирани потребители",
+  "safetySettingsUnblock": "Разблокирай",
+  "safetySettingsUserUnblocked": "Потребителят е деблокиран",
+  "safetySettingsCancel": "Отказ",
+  "safetySettingsAdd": "Добави",
+  "analyticsTitle": "Анализ на създателите",
+  "@analyticsTitle": {
+    "description": "Creator analytics screen app bar title"
+  },
+  "analyticsDiagnosticsTooltip": "Диагностика",
+  "analyticsDiagnosticsSemanticLabel": "Превключване на диагностиката",
+  "analyticsRetry": "Опитай пак",
+  "analyticsUnableToLoad": "Анализът не може да се зареди.",
+  "analyticsSignInRequired": "Влез, за да видиш анализите за създатели.",
+  "analyticsViewDataUnavailable": "Данните за гледанията в момента не са достъпни от релето за тези публикации. Показателите за харесвания, коментари и репостове все още са точни.",
+  "analyticsViewDataTitle": "Преглед на данни",
+  "analyticsUpdatedTimestamp": "Обновено {time} • Резултатите използват харесвания, коментари, репостове и гледания/лупове от Funnelcake, когато са налични.",
+  "@analyticsUpdatedTimestamp": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsVideos": "Видеа",
+  "analyticsViews": "Гледания",
+  "analyticsInteractions": "Взаимодействия",
+  "analyticsEngagement": "Годеж",
+  "analyticsFollowers": "Последователи",
+  "analyticsAvgPerPost": "Ср./Публикация",
+  "analyticsInteractionMix": "Смес за взаимодействие",
+  "analyticsLikes": "Харесвания",
+  "analyticsComments": "Коментари",
+  "analyticsReposts": "Репостове",
+  "analyticsPerformanceHighlights": "Акценти в изпълнението",
+  "analyticsMostViewed": "Най-гледан",
+  "analyticsMostDiscussed": "Най-обсъждани",
+  "analyticsMostReposted": "Най-често публикувано",
+  "analyticsNoVideosYet": "Още няма видеа",
+  "analyticsViewDataUnavailableShort": "Данните за гледанията са недостъпни",
+  "analyticsViewsCount": "{count} показвания",
+  "@analyticsViewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsCommentsCount": "{count} коментара",
+  "@analyticsCommentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsRepostsCount": "{count} репоста",
+  "@analyticsRepostsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsTopContent": "Топ съдържание",
+  "analyticsPublishPrompt": "Публикувай няколко видеа, за да видиш класациите.",
+  "analyticsEngagementRateExplainer": "% от дясната страна = процент на ангажираност (взаимодействия, разделени на показвания).",
+  "analyticsEngagementRateNoViews": "Процентът на ангажираност изисква данни за гледанията; стойностите се показват като N/A, докато липсват гледания.",
+  "analyticsEngagementLabel": "Годеж",
+  "analyticsViewsUnavailable": "Гледанията не са налични",
+  "analyticsInteractionsCount": "{count} взаимодействия",
+  "@analyticsInteractionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsPostAnalytics": "Анализи на публикацията",
+  "analyticsOpenPost": "Отвори публикацията",
+  "analyticsRecentDailyInteractions": "Скорошни ежедневни взаимодействия",
+  "analyticsNoActivityYet": "Все още няма активност в този диапазон.",
+  "analyticsDailyInteractionsExplainer": "Взаимодействия = харесвания + коментари + репостове по дата на публикуване.",
+  "analyticsDailyBarExplainer": "Дължината на лентата е спрямо най-силния ти ден в този прозорец.",
+  "analyticsAudienceSnapshot": "Моментна снимка на аудиторията",
+  "analyticsFollowersCount": "Последователи: {count}",
+  "@analyticsFollowersCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsFollowingCount": "Следвам: {count}",
+  "@analyticsFollowingCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsAudiencePlaceholder": "Разбивките по източник на аудитория, гео и време ще се попълнят, когато Funnelcake добави ендпойнти за анализ на аудиторията.",
+  "analyticsRetention": "Задържане",
+  "analyticsRetentionWithViews": "Кривата на задържане и разбивката на времето за гледане ще се появят, след като задържането на секунда/на кофа пристигне от Funnelcake.",
+  "analyticsRetentionWithoutViews": "Данните за задържане не са налични, докато анализите за гледане+време за гледане не бъдат върнати от Funnelcake.",
+  "analyticsDiagnostics": "Диагностика",
+  "analyticsDiagnosticsTotalVideos": "Общо видеа: {count}",
+  "@analyticsDiagnosticsTotalVideos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsWithViews": "С гледания: {count}",
+  "@analyticsDiagnosticsWithViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsMissingViews": "Липсващи гледания: {count}",
+  "@analyticsDiagnosticsMissingViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsHydratedBulk": "Попълнени (пакетно): {count}",
+  "@analyticsDiagnosticsHydratedBulk": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsHydratedViews": "Хидратирани (/гледания): {count}",
+  "@analyticsDiagnosticsHydratedViews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "analyticsDiagnosticsSources": "Източници: {sources}",
+  "@analyticsDiagnosticsSources": {
+    "placeholders": {
+      "sources": {
+        "type": "String"
+      }
+    }
+  },
+  "analyticsDiagnosticsUseFixture": "Използвай примерни данни",
+  "analyticsNa": "N/A",
+  "authCreateNewAccount": "Създай нов Divine акаунт",
+  "authSignInDifferentAccount": "Влез с друг акаунт",
+  "authSignBackIn": "Влез отново",
+  "authTermsPrefix": "Като избереш опция по-горе, потвърждаваш, че си на 16 или повече и се съгласяваш с",
+  "authTermsOfService": "Условия за ползване",
+  "authPrivacyPolicy": "Политика за поверителност",
+  "authTermsAnd": ", и",
+  "authSafetyStandards": "Стандарти за безопасност",
+  "authAmberNotInstalled": "Приложението Amber не е инсталирано",
+  "authAmberConnectionFailed": "Неуспешно свързване с Амбър",
+  "authPasswordResetSent": "Ако има акаунт с този имейл, изпратихме линк за нулиране на паролата.",
+  "authSignInTitle": "Влез",
+  "authEmailLabel": "Имейл",
+  "authPasswordLabel": "Парола",
+  "authForgotPassword": "Забравена парола?",
+  "authImportNostrKey": "Импортиране на ключ Nostr",
+  "authConnectSignerApp": "Свържи приложение за подписване",
+  "authSignInWithAmber": "Влез с Amber",
+  "authSignInOptionsTitle": "Опции за влизане",
+  "authInfoEmailPasswordTitle": "Имейл и парола",
+  "authInfoEmailPasswordDescription": "Влез с Divine акаунта си. Ако си се регистрирал с имейл и парола, използвай ги тук.",
+  "authInfoImportNostrKeyDescription": "Вече имаш Nostr самоличност? Импортирай частния си nsec ключ от друг клиент.",
+  "authInfoSignerAppTitle": "Подписващо приложение",
+  "authInfoSignerAppDescription": "Свържи NIP-46 съвместим отдалечен подписващ агент като nsecBunker за по-добра сигурност на ключовете.",
+  "authInfoAmberTitle": "Амбър",
+  "authInfoAmberDescription": "Използвай Amber Signer на Android, за да управляваш Nostr ключовете си сигурно.",
+  "authCreateAccountTitle": "Създаване на акаунт",
+  "authBackToInviteCode": "Назад към кода на поканата",
+  "authUseDivineNoBackup": "Използвай Divine без резервно копие",
+  "authSkipConfirmTitle": "Едно последно нещо...",
+  "authSkipConfirmKeyCreated": "Готово, вътре си! Ще създадем сигурен ключ за Divine акаунта ти.",
+  "authSkipConfirmKeyOnly": "Без имейл ключът ти е единственият начин Divine да разбере, че акаунтът е твой.",
+  "authSkipConfirmRecommendEmail": "Можеш да намериш ключа си в приложението, но ако Nostr ключовете не са ти ежедневие, добави имейл и парола сега. Така по-лесно ще влизаш и ще си върнеш акаунта, ако изгубиш или нулираш това устройство.",
+  "authAddEmailPassword": "Добави имейл и парола",
+  "authUseThisDeviceOnly": "Използвай само това устройство",
+  "authCompleteRegistration": "Завърши регистрацията си",
+  "authVerifying": "Проверка...",
+  "authVerificationLinkSent": "Изпратихме връзка за потвърждение на:",
+  "authClickVerificationLink": "Натисни линка в имейла си, за да завършиш регистрацията.",
+  "authPleaseWaitVerifying": "Изчакай, докато потвърдим имейла ти...",
+  "authWaitingForVerification": "Чака се проверка",
+  "authOpenEmailApp": "Отвори имейл приложението",
+  "authWelcomeToDivine": "Радваме се, че си в Divine!",
+  "authEmailVerified": "Имейлът ти е потвърден.",
+  "authSigningYouIn": "Вписваме те",
+  "authErrorTitle": "Опа.",
+  "authVerificationFailed": "Не успяхме да потвърдим имейла ти.\nОпитай пак.",
+  "authStartOver": "Започни отначало",
+  "authEmailVerifiedLogin": "Имейлът е потвърден! Влез, за да продължиш.",
+  "authVerificationLinkExpired": "Тази връзка за потвърждение вече не е валидна.",
+  "authVerificationConnectionError": "Не можем да потвърдим имейла. Провери връзката си и опитай пак.",
+  "authWaitlistConfirmTitle": "Вътре си!",
+  "authWaitlistUpdatesAt": "Ще пращаме новини на {email}.\nКогато има още кодове за покани, ще ти ги изпратим.",
+  "@authWaitlistUpdatesAt": {
+    "description": "Waitlist confirmation message with email",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authOk": "Добре",
+  "authInviteUnavailable": "Достъпът с покана временно не е наличен.",
+  "authInviteUnavailableBody": "Опитай пак след малко или се свържи с поддръжката, ако имаш нужда от помощ при влизането.",
+  "authTryAgain": "Опитай пак",
+  "authContactSupport": "Свържи се с поддръжката",
+  "authCouldNotOpenEmail": "Не може да се отвори {email}",
+  "@authCouldNotOpenEmail": {
+    "description": "Error when email client cannot be opened",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authAddInviteCode": "Добави своя код за покана",
+  "authInviteCodeLabel": "Код за покана",
+  "authEnterYourCode": "Въведи своя код",
+  "authNext": "Следваща",
+  "authJoinWaitlist": "Присъедини се към списъка с чакащи",
+  "authJoinWaitlistTitle": "Присъедини се към списъка с чакащи",
+  "authJoinWaitlistDescription": "Остави имейла си и ще ти пишем, когато достъпът се отвори.",
+  "authInviteAccessHelp": "Помощ с поканите",
+  "authGeneratingConnection": "Генериране на връзка...",
+  "authConnectedAuthenticating": "Свързан! Удостоверява се...",
+  "authConnectionTimedOut": "Времето за изчакване на връзката изтече",
+  "authApproveConnection": "Увери се, че връзката е одобрена в приложението ти за подписване.",
+  "authConnectionCancelled": "Връзката е отменена",
+  "authConnectionCancelledMessage": "Връзката беше прекратена.",
+  "authConnectionFailed": "Връзката е неуспешна",
+  "authUnknownError": "Възникна неизвестна грешка.",
+  "authUrlCopied": "URL адресът е копиран в клипборда",
+  "authConnectToDivine": "Свържи се с Divine",
+  "authPasteBunkerUrl": "Постави bunker:// URL",
+  "authBunkerUrlHint": "Bunker:// URL",
+  "authInvalidBunkerUrl": "Невалиден Bunker URL. Трябва да започва с bunker://",
+  "authScanSignerApp": "Сканирай с приложението си за подписване, за да се свържеш.",
+  "authWaitingForConnection": "Изчаква се връзка... {seconds}s",
+  "@authWaitingForConnection": {
+    "description": "Waiting indicator with elapsed seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "authCopyUrl": "Копирай URL",
+  "authShare": "Сподели",
+  "authAddBunker": "Добави Bunker",
+  "authCompatibleSignerApps": "Съвместими приложения за подписване",
+  "authFailedToConnect": "Неуспешно свързване",
+  "authResetPasswordTitle": "Нулиране на парола",
+  "authResetPasswordSubtitle": "Въведи новата си парола. Трябва да е поне 8 знака.",
+  "authNewPasswordLabel": "Нова парола",
+  "authPasswordTooShort": "Паролата трябва да е поне 8 знака",
+  "authPasswordResetSuccess": "Паролата е сменена. Влез отново.",
+  "authPasswordResetFailed": "Неуспешно нулиране на паролата",
+  "authUnexpectedError": "Стана неочаквана грешка. Опитай пак.",
+  "authUpdatePassword": "Актуализиране на паролата",
+  "authSecureAccountTitle": "Защитен акаунт",
+  "authUnableToAccessKeys": "Няма достъп до ключовете ти. Опитай пак.",
+  "authRegistrationFailed": "Регистрацията не мина",
+  "authRegistrationComplete": "Регистрацията е готова. Провери имейла си.",
+  "authVerificationFailedTitle": "Потвърждението не мина",
+  "authClose": "Затвори",
+  "authAccountSecured": "Акаунтът е защитен!",
+  "authAccountLinkedToEmail": "Акаунтът ти вече е свързан с имейла ти.",
+  "authVerifyYourEmail": "Потвърди имейла си",
+  "authClickLinkContinue": "Отвори линка в имейла си, за да завършиш регистрацията. Междувременно можеш да продължиш да използваш приложението.",
+  "authWaitingForVerificationEllipsis": "Чакаме потвърждение...",
+  "authContinueToApp": "Продължи към приложението",
+  "authResetPassword": "Нулирай паролата",
+  "authResetPasswordDescription": "Въведи имейл адреса си и ще ти изпратим линк за възстановяване на паролата.",
+  "authFailedToSendResetEmail": "Не успяхме да изпратим имейл за нулиране.",
+  "authUnexpectedErrorShort": "Стана неочаквана грешка.",
+  "authSending": "Изпращаме...",
+  "authSendResetLink": "Изпрати линк за нулиране",
+  "authEmailSent": "Имейлът е изпратен!",
+  "authResetLinkSentTo": "Изпратихме линк за нулиране на паролата до {email}. Натисни линка в имейла, за да обновиш паролата си.",
+  "@authResetLinkSentTo": {
+    "description": "Confirmation message after reset link sent",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "authSignInButton": "Вход",
+  "authVerificationErrorTimeout": "Потвърждението изтече. Опитай да се регистрираш отново.",
+  "authVerificationErrorMissingCode": "Потвърждението не мина - липсва код за оторизация.",
+  "authVerificationErrorPollFailed": "Потвърждението не мина. Опитай пак.",
+  "authVerificationErrorNetworkExchange": "Мрежова грешка при влизане. Опитай пак.",
+  "authVerificationErrorOAuthExchange": "Потвърждението не мина. Опитай да се регистрираш отново.",
+  "authVerificationErrorSignInFailed": "Входът не мина. Опитай да влезеш ръчно.",
+  "authInviteErrorAlreadyUsed": "Този код за покана вече не е наличен. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.",
+  "authInviteErrorInvalid": "Този код за покана не може да се използва в момента. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.",
+  "authInviteErrorTemporary": "Не можахме да потвърдим поканата ти в момента. Върни се към кода за покана и опитай пак или се свържи с поддръжката.",
+  "authInviteErrorUnknown": "Не успяхме да активираме поканата ти. Върни се към кода за покана, присъедини се към списъка с чакащи или се свържи с поддръжката.",
+  "shareSheetSave": "Запази",
+  "shareSheetSaveToGallery": "Запази в галерията",
+  "shareSheetSaveWithWatermark": "Запази с воден знак",
+  "shareSheetSaveVideo": "Запази видео",
+  "shareSheetAddToClips": "Добави към клипове",
+  "@shareSheetAddToClips": {
+    "description": "Share sheet action label for importing a classic Vine into the clip library"
+  },
+  "shareSheetAddedToClips": "Добавен към клипове",
+  "@shareSheetAddedToClips": {
+    "description": "Snackbar shown after successfully importing a classic Vine into the clip library"
+  },
+  "shareSheetAddToClipsFailed": "Не можа да се добави към клипове",
+  "@shareSheetAddToClipsFailed": {
+    "description": "Snackbar shown when importing a classic Vine into the clip library fails"
+  },
+  "shareSheetAddToList": "Добави към списъка",
+  "shareSheetCopy": "Копие",
+  "shareSheetShareVia": "Сподели чрез",
+  "shareSheetReport": "Докладвай",
+  "shareSheetEventJson": "Събитие JSON",
+  "shareSheetEventId": "ID на събитието",
+  "shareSheetMoreActions": "Още действия",
+  "watermarkDownloadSavedToCameraRoll": "Запазено в галерията",
+  "watermarkDownloadShare": "Сподели",
+  "watermarkDownloadDone": "Готово",
+  "watermarkDownloadPhotosAccessNeeded": "Необходим е достъп до снимки",
+  "watermarkDownloadPhotosAccessDescription": "За да запазваш видеа, дай достъп до снимките в настройките.",
+  "watermarkDownloadOpenSettings": "Отвори Настройки",
+  "watermarkDownloadNotNow": "Не сега",
+  "watermarkDownloadFailed": "Неуспешно изтегляне",
+  "watermarkDownloadDismiss": "Отхвърляне",
+  "watermarkDownloadStageDownloading": "Изтегляне на видео",
+  "watermarkDownloadStageWatermarking": "Добавяне на воден знак",
+  "watermarkDownloadStageSaving": "Запазване в галерията",
+  "watermarkDownloadStageDownloadingDesc": "Видеото се извлича от мрежата...",
+  "watermarkDownloadStageWatermarkingDesc": "Добавя се воден знак Divine...",
+  "watermarkDownloadStageSavingDesc": "Видеото с воден знак се запазва в галерията...",
+  "uploadProgressVideoUpload": "Качване на видео",
+  "uploadProgressPause": "Пауза",
+  "uploadProgressResume": "Продължи",
+  "uploadProgressGoBack": "Назад",
+  "uploadProgressRetryWithCount": "Опитай пак ({count} остават)",
+  "@uploadProgressRetryWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressDelete": "Изтрий",
+  "uploadProgressDaysAgo": "Преди {count} дни",
+  "@uploadProgressDaysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressHoursAgo": "Преди {count}ч",
+  "@uploadProgressHoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressMinutesAgo": "Преди {count} мин",
+  "@uploadProgressMinutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressJustNow": "Току-що",
+  "uploadProgressUploadingPercent": "Качва се {percent}%",
+  "@uploadProgressUploadingPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadProgressPausedPercent": "На пауза {percent}%",
+  "@uploadProgressPausedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeExplanationClose": "Затвори",
+  "badgeExplanationOriginalVineArchive": "Оригинален архив на Vine",
+  "badgeExplanationCameraProof": "Доказателство от камерата",
+  "badgeExplanationAuthenticitySignals": "Сигнали за автентичност",
+  "badgeExplanationVineArchiveIntro": "Това видео е оригинален Vine, възстановен от Internet Archive.",
+  "badgeExplanationVineArchiveHistory": "Преди Vine да затвори през 2017 г., ArchiveTeam и Internet Archive работиха, за да запазят милиони Vines за поколенията. Това съдържание е част от тези усилия за запазване на историята.",
+  "badgeExplanationOriginalStats": "Оригинални статистики: {loops} лупа",
+  "@badgeExplanationOriginalStats": {
+    "placeholders": {
+      "loops": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeExplanationLearnVineArchive": "Научи повече за запазването на Vine архива",
+  "badgeExplanationLearnProofmode": "Научи повече за проверката в Proofmode",
+  "badgeExplanationLearnAuthenticity": "Научи повече за Divine сигналите за автентичност",
+  "badgeExplanationInspectProofCheck": "Провери с ProofCheck",
+  "badgeExplanationInspectMedia": "Провери подробностите за медията",
+  "badgeExplanationProofmodeVerified": "Автентичността на това видео е потвърдена с технологията Proofmode.",
+  "badgeExplanationDivineHostedHumanMade": "Това видео е хостнато в Divine. AI проверката показва, че вероятно е направено от човек, но няма криптографски данни от камерата.",
+  "badgeExplanationHumanMadeNoCrypto": "AI проверката показва, че това видео вероятно е направено от човек, но няма криптографски данни от камерата.",
+  "badgeExplanationDivineHostedNoCrypto": "Това видео е хостнато в Divine, но още няма криптографски данни от камерата.",
+  "badgeExplanationExternalNoCrypto": "Това видео е хостнато извън Divine и няма криптографски данни от камерата.",
+  "badgeExplanationDeviceAttestation": "Атестация на устройството",
+  "badgeExplanationPgpSignature": "PGP подпис",
+  "badgeExplanationC2paCredentials": "C2PA Идентификационни данни за съдържание",
+  "badgeExplanationProofManifest": "Доказателствен манифест",
+  "badgeExplanationAiDetection": "AI проверка",
+  "badgeExplanationAiNotScanned": "AI проверка: още не е сканирано",
+  "badgeExplanationNoScanResults": "Още няма резултати от сканиране.",
+  "badgeExplanationCheckAiGenerated": "Провери дали е генерирано от AI",
+  "badgeExplanationAiLikelihood": "{percentage}% вероятност да е генерирано от AI",
+  "@badgeExplanationAiLikelihood": {
+    "placeholders": {
+      "percentage": {
+        "type": "int"
+      }
+    }
+  },
+  "badgeExplanationScannedBy": "Сканирано от: {source}",
+  "@badgeExplanationScannedBy": {
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "badgeExplanationVerifiedByModerator": "Проверено от човешки модератор",
+  "badgeExplanationVerificationPlatinum": "Platinum: Хардуерна атестация на устройството, криптографски подписи, идентификационни данни за съдържание (C2PA) и AI сканиране потвърждават човешкия произход.",
+  "badgeExplanationVerificationGold": "Злато: Заснето на реално устройство с хардуерна атестация, криптографски подписи и идентификационни данни за съдържание (C2PA).",
+  "badgeExplanationVerificationSilver": "Сребро: криптографските подписи доказват, че това видео не е било променяно след записа.",
+  "badgeExplanationVerificationBronze": "Бронз: Налице са подписи на основни метаданни.",
+  "badgeExplanationVerificationSilverAiScan": "Сребро: AI проверката потвърждава, че видеото вероятно е направено от човек.",
+  "badgeExplanationNoVerification": "Няма данни за верификация за това видео.",
+  "shareMenuTitle": "Сподели видео",
+  "shareMenuReportAiContent": "Докладвай AI боклук",
+  "shareMenuReportAiContentSubtitle": "Сигнал за съмнително AI-генерирано съдържание",
+  "shareMenuReportingAiContent": "Докладваме AI съдържанието...",
+  "shareMenuFailedToReportContent": "Не успяхме да докладваме съдържанието: {error}",
+  "@shareMenuFailedToReportContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuFailedToReportAiContent": "Не успяхме да докладваме AI съдържанието: {error}",
+  "@shareMenuFailedToReportAiContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuVideoStatus": "Състояние на видеото",
+  "shareMenuViewAllLists": "Виж всички списъци →",
+  "shareMenuShareWith": "Сподели с",
+  "shareMenuShareViaOtherApps": "Сподели чрез други приложения",
+  "shareMenuShareViaOtherAppsSubtitle": "Сподели чрез други приложения или копирай връзката",
+  "shareMenuSaveToGallery": "Запази в галерията",
+  "shareMenuSaveOriginalSubtitle": "Запази оригиналното видео в галерията",
+  "shareMenuSaveWithWatermark": "Запази с воден знак",
+  "shareMenuSaveVideo": "Запази видео",
+  "shareMenuDownloadWithWatermark": "Изтегли с воден знак Divine",
+  "shareMenuSaveVideoSubtitle": "Запази видеото в галерията",
+  "shareMenuLists": "Списъци",
+  "shareMenuAddToList": "Добави към списъка",
+  "shareMenuAddToListSubtitle": "Добави към подбраните си списъци",
+  "shareMenuCreateNewList": "Създаване на нов списък",
+  "shareMenuCreateNewListSubtitle": "Започни нова подбрана колекция",
+  "shareMenuRemovedFromList": "Премахнато от списъка",
+  "shareMenuFailedToRemoveFromList": "Неуспешно премахване от списъка",
+  "shareMenuBookmarks": "Отметки",
+  "shareMenuAddToBookmarks": "Добави към отметки",
+  "shareMenuAddToBookmarksSubtitle": "Запази за по-късен преглед",
+  "shareMenuAddToBookmarkSet": "Добави към набора с отметки",
+  "shareMenuAddToBookmarkSetSubtitle": "Организирай в колекции",
+  "shareMenuFollowSets": "Списъци с хора",
+  "shareMenuCreateFollowSet": "Създай списък за следване",
+  "shareMenuCreateFollowSetSubtitle": "Започни нова колекция с този творец",
+  "shareMenuAddToFollowSet": "Добави към набора за следване",
+  "shareMenuFollowSetsAvailable": "{count} налични списъка за следване",
+  "@shareMenuFollowSetsAvailable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsAddToList": "Добави към списъка",
+  "peopleListsAddToListSubtitle": "Постави този творец в един от списъците си",
+  "peopleListsSheetTitle": "Добави към списък",
+  "peopleListsEmptyTitle": "Още няма списъци",
+  "peopleListsEmptySubtitle": "Създай списък, за да започнеш да групираш хора.",
+  "peopleListsCreateList": "Създаване на списък",
+  "peopleListsNewListTitle": "Нов списък",
+  "peopleListsRouteTitle": "Списък с хора",
+  "@peopleListsRouteTitle": {
+    "description": "AppBar title for the people-list members route when it is reached with a missing or empty list id (e.g., via a malformed deep link)."
+  },
+  "peopleListsListNameLabel": "Име на списък",
+  "peopleListsListNameHint": "Близки приятели",
+  "peopleListsCreateButton": "Създай",
+  "peopleListsAddPeopleTitle": "Добави хора",
+  "peopleListsAddPeopleTooltip": "Добави хора",
+  "peopleListsAddPeopleSemanticLabel": "Добави хора към списъка",
+  "peopleListsListNotFoundTitle": "Списъкът не е намерен",
+  "peopleListsListNotFoundSubtitle": "Списъкът не е намерен. Може да е изтрит.",
+  "peopleListsListDeletedSubtitle": "Този списък може да е изтрит.",
+  "peopleListsNoPeopleTitle": "Няма хора в този списък",
+  "peopleListsNoPeopleSubtitle": "Добави някого, за да започнеш",
+  "peopleListsNoVideosTitle": "Още няма видеа",
+  "peopleListsNoVideosSubtitle": "Видеата от хората в списъка ще се появят тук",
+  "peopleListsNoVideosAvailable": "Няма налични видеа",
+  "peopleListsFailedToLoadVideos": "Не успяхме да заредим видеата",
+  "peopleListsVideoNotAvailable": "Видеото не е налично",
+  "peopleListsBackToGridTooltip": "Обратно към мрежата",
+  "peopleListsErrorLoadingVideos": "Грешка при зареждане на видеа",
+  "peopleListsNoPeopleToAdd": "Няма налични хора за добавяне.",
+  "peopleListsAddToListName": "Добави към {name}",
+  "@peopleListsAddToListName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsAddPeopleSearchHint": "Търси хора",
+  "peopleListsAddPeopleError": "Не успяхме да заредим хората. Опитай пак.",
+  "peopleListsAddPeopleRetry": "Опитай пак",
+  "peopleListsAddButton": "Добави",
+  "peopleListsAddButtonWithCount": "Добави {count}",
+  "@peopleListsAddButtonWithCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsInNLists": "{count, plural, =1{В 1 списък} other{В {count} списъка}}",
+  "@peopleListsInNLists": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "peopleListsRemoveConfirmTitle": "Да премахнем {name}?",
+  "@peopleListsRemoveConfirmTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsRemoveConfirmBody": "Те ще бъдат премахнати от този списък.",
+  "peopleListsRemove": "Премахни",
+  "peopleListsRemovedFromList": "Премахнато {name} от списъка",
+  "@peopleListsRemovedFromList": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsUndo": "Отмяна",
+  "peopleListsProfileLongPressHint": "Профил на {name}. Натисни дълго, за да премахнеш.",
+  "@peopleListsProfileLongPressHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "peopleListsViewProfileHint": "Виж профила на {name}",
+  "@peopleListsViewProfileHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuAddedToBookmarks": "Добавено към отметките!",
+  "shareMenuFailedToAddBookmark": "Неуспешно добавяне на отметка",
+  "shareMenuCreatedListAndAddedVideo": "Създаден е списък „{name}“ и е добавено видео",
+  "@shareMenuCreatedListAndAddedVideo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuManageContent": "Управление на съдържанието",
+  "shareMenuEditVideo": "Редактиране на видео",
+  "shareMenuEditVideoSubtitle": "Актуализирай заглавие, описание и хаштагове",
+  "shareMenuDeleteVideo": "Изтрий видеото",
+  "shareMenuDeleteVideoSubtitle": "Премахни това видео от Divine. Може още да се вижда в други Nostr клиенти.",
+  "shareMenuDeleteWarning": "Това изпраща заявка за изтриване (NIP-09) до всички релета. Някои релета все още могат да запазят съдържанието.",
+  "shareMenuVideoInTheseLists": "Видеото е в тези списъци:",
+  "shareMenuVideoCount": "{count} видеа",
+  "@shareMenuVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shareMenuClose": "Затвори",
+  "shareMenuDeleteConfirmation": "Това ще изтрие за постоянно това видео от Divine. Може още да се вижда в Nostr клиенти на трети страни, които използват други релета.",
+  "shareMenuCancel": "Отказ",
+  "shareMenuDelete": "Изтрий",
+  "shareMenuDeletingContent": "Изтриване на съдържание...",
+  "shareMenuFailedToDeleteContent": "Неуспешно изтриване на съдържание: {error}",
+  "@shareMenuFailedToDeleteContent": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuDeleteRequestSent": "Видеото е изтрито",
+  "shareMenuDeleteFailedNotInitialized": "Изтриването още не е готово. Опитай пак след малко.",
+  "shareMenuDeleteFailedNotOwner": "Можеш да триеш само собствените си видеа.",
+  "shareMenuDeleteFailedNotAuthenticated": "Влез отново, после пробвай да изтриеш.",
+  "shareMenuDeleteFailedCouldNotSign": "Не успяхме да подпишем заявката за изтриване. Опитай пак.",
+  "shareMenuDeleteFailedRelayRejected": "Не можем да достигнем релето. Провери връзката си и опитай пак.",
+  "shareMenuDeleteFailedGeneric": "Не успяхме да изтрием това видео. Опитай пак.",
+  "shareMenuFollowSetName": "Име на списъка за следване",
+  "shareMenuFollowSetNameHint": "Например създатели на съдържание, музиканти и др.",
+  "shareMenuDescriptionOptional": "Описание (по избор)",
+  "shareMenuCreate": "Създай",
+  "shareMenuCreatedFollowSetAndAddedCreator": "Създаден е списъкът за следване „{name}“ и творецът е добавен",
+  "@shareMenuCreatedFollowSetAndAddedCreator": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuDone": "Готово",
+  "shareMenuEditTitle": "Заглавие",
+  "shareMenuEditTitleHint": "Въведи заглавие на видеото",
+  "shareMenuEditDescription": "Описание",
+  "shareMenuEditDescriptionHint": "Въведи описание на видеото",
+  "shareMenuEditHashtags": "Хаштагове",
+  "shareMenuEditHashtagsHint": "Запетая, разделени, хаштагове",
+  "shareMenuEditMetadataNote": "Забележка: Могат да се редактират само метаданни. Видеосъдържанието не може да се променя.",
+  "shareMenuDeleting": "Изтриване...",
+  "shareMenuUpdate": "Актуализация",
+  "shareMenuVideoUpdated": "Видеото е обновено",
+  "shareMenuFailedToUpdateVideo": "Не успяхме да обновим видеото: {error}",
+  "@shareMenuFailedToUpdateVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuFailedToDeleteVideo": "Не успяхме да изтрием видеото: {error}",
+  "@shareMenuFailedToDeleteVideo": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuDeleteVideoQuestion": "Да изтрием видеото?",
+  "shareMenuDeleteRelayWarning": "Това ще изпрати заявка за изтриване до релетата. Забележка: Някои релета все още може да имат кеширани копия.",
+  "shareMenuVideoDeletionRequested": "Видеото е изтрито",
+  "shareMenuContentLabels": "Етикети за съдържание",
+  "shareMenuAddContentLabels": "Добави етикети за съдържание",
+  "shareMenuClearAll": "Изчисти всички",
+  "shareMenuCollaborators": "Сътрудници",
+  "shareMenuAddCollaborator": "Покани сътрудник",
+  "shareMenuMutualFollowRequired": "Трябва с {name} да се следвате взаимно, за да поканиш този човек като сътрудник.",
+  "@shareMenuMutualFollowRequired": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuLoading": "Зареждане...",
+  "shareMenuInspiredBy": "Вдъхновен от",
+  "shareMenuAddInspirationCredit": "Добави кредит за вдъхновение",
+  "shareMenuCreatorCannotBeReferenced": "Този създател не може да бъде цитиран.",
+  "shareMenuUnknown": "Неизвестен",
+  "shareMenuCreateBookmarkSet": "Създай набор с отметки",
+  "shareMenuSetName": "Задай име",
+  "shareMenuSetNameHint": "Напр. Любими, Гледай по-късно и т.н.",
+  "shareMenuCreateNewSet": "Създаване на нов набор",
+  "shareMenuStartNewBookmarkCollection": "Започни нова колекция от отметки",
+  "shareMenuNoBookmarkSets": "Още няма набори с отметки. Създай първия си.",
+  "shareMenuError": "Грешка",
+  "shareMenuFailedToLoadBookmarkSets": "Неуспешно зареждане на набори от отметки",
+  "shareMenuCreatedSetAndAddedVideo": "Създаде „{name}“ и добави видео",
+  "@shareMenuCreatedSetAndAddedVideo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareMenuUseThisSound": "Използвай този звук",
+  "shareMenuOriginalSound": "Оригинален звук",
+  "authSessionExpired": "Сесията ти изтече. Влез отново.",
+  "authSignInFailed": "Входът не мина. Опитай пак.",
+  "localeAppLanguage": "Език на приложението",
+  "localeDeviceDefault": "Езикът на устройството",
+  "localeSelectLanguage": "Избери език",
+  "webAuthNotSupportedSecureMode": "Уеб удостоверяването не се поддържа в защитен режим. Използвай мобилното приложение, за да управляваш ключовете си сигурно.",
+  "webAuthIntegrationFailed": "Неуспешно интегриране на удостоверяването: {error}",
+  "@webAuthIntegrationFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "webAuthUnexpectedError": "Неочаквана грешка: {error}",
+  "@webAuthUnexpectedError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "webAuthEnterBunkerUri": "Въведи Bunker URI",
+  "webAuthConnectTitle": "Свържи се с Divine",
+  "webAuthChooseMethod": "Избери предпочитания Nostr метод за удостоверяване",
+  "webAuthBrowserExtension": "Разширение за браузър",
+  "webAuthRecommended": "ПРЕПОРЪЧВА СЕ",
+  "webAuthNsecBunker": "Nsec бункер",
+  "webAuthConnectRemoteSigner": "Свържи отдалечен подписващ",
+  "webAuthBunkerHint": "Бункер://pubkey?relay=wss://...",
+  "webAuthPasteFromClipboard": "Поставяне от клипборда",
+  "webAuthConnectToBunker": "Свържи се с Bunker",
+  "webAuthNewToNostr": "Нов си в Nostr?",
+  "webAuthNostrHelp": "Инсталирай браузър разширение като Alby или nos2x за най-лесното изживяване, или използвай nsec bunker за сигурно отдалечено подписване.",
+  "soundsTitle": "Звуци",
+  "soundsSearchHint": "Звуци за търсене...",
+  "soundsPreviewUnavailable": "Не може да се визуализира звук - няма наличен звук",
+  "soundsPreviewFailed": "Неуспешно пускане на визуализация: {error}",
+  "@soundsPreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "soundsFeaturedSounds": "Представени звуци",
+  "soundsTrendingSounds": "Набиращи популярност звуци",
+  "soundsAllSounds": "Всички звуци",
+  "soundsSearchResults": "Резултати от търсенето",
+  "soundsNoSoundsAvailable": "Няма налични звуци",
+  "soundsNoSoundsDescription": "Звуците ще се появят тук, когато творците споделят аудио",
+  "soundsNoSoundsFound": "Няма намерени звуци",
+  "soundsNoSoundsFoundDescription": "Пробвай с друго търсене",
+  "soundsFailedToLoad": "Не успяхме да заредим звуците",
+  "soundsRetry": "Опитай пак",
+  "soundsScreenLabel": "Екран със звуци",
+  "profileTitle": "Профил",
+  "profileRefresh": "Опресняване",
+  "profileRefreshLabel": "Опресняване на профила",
+  "profileMoreOptions": "Още опции",
+  "profileBlockedUser": "Блокиран {name}",
+  "@profileBlockedUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnblockedUser": "Отблокиран {name}",
+  "@profileUnblockedUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileUnfollowedUser": "Вече не следваш {name}",
+  "@profileUnfollowedUser": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileError": "Грешка: {error}",
+  "@profileError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsTabAll": "Всички",
+  "notificationsTabLikes": "Харесвания",
+  "notificationsTabComments": "Коментари",
+  "notificationsTabFollows": "Следва",
+  "notificationsTabReposts": "Репостове",
+  "notificationsFailedToLoad": "Не успяхме да заредим известията",
+  "notificationsRetry": "Опитай пак",
+  "notificationsCheckingNew": "Проверяваме за нови известия",
+  "notificationsNoneYet": "Още няма известия",
+  "notificationsNoneForType": "Няма известия от тип {type}",
+  "@notificationsNoneForType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsEmptyDescription": "Когато хората взаимодействат със съдържанието ти, ще го видиш тук",
+  "notificationsUnreadPrefix": "Непрочетено известие",
+  "@notificationsUnreadPrefix": {
+    "description": "Screen-reader prefix announced before an unread notification row's content, so the user hears that the row is unread before the message itself."
+  },
+  "notificationsViewProfileSemanticLabel": "Виж профила на {displayName}",
+  "@notificationsViewProfileSemanticLabel": {
+    "description": "Screen-reader label for the avatar tap target on a notification row, which opens the user's profile.",
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsViewProfilesSemanticLabel": "Преглед на профили",
+  "@notificationsViewProfilesSemanticLabel": {
+    "description": "Screen-reader label for a grouped notification's avatar stack, which opens the list of involved profiles."
+  },
+  "notificationsLoadingType": "Зареждат се {type} известия...",
+  "@notificationsLoadingType": {
+    "placeholders": {
+      "type": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsInviteSingular": "Имаш 1 покана за споделяне с приятел!",
+  "notificationsInvitePlural": "Имаш {count} покани за споделяне с приятели!",
+  "@notificationsInvitePlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationsVideoNotFound": "Видеото не е намерено",
+  "notificationsVideoUnavailable": "Видеото е недостъпно",
+  "notificationsFromNotification": "От Известие",
+  "feedFailedToLoadVideos": "Не успяхме да заредим видеата",
+  "feedRetry": "Опитай пак",
+  "feedNoFollowedUsers": "Още не следваш никого.\nПоследвай някого, за да виждаш видеата му тук.",
+  "feedForYouEmpty": "Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.",
+  "feedFollowingEmpty": "Още няма видеа от хората, които следваш.\nНамери творци, които ти допадат, и ги последвай.",
+  "feedLatestEmpty": "Още няма нови видеа.\nПровери пак скоро.",
+  "feedExploreVideos": "Разгледай видеа",
+  "feedExternalVideoSlow": "Външното видео се зарежда бавно",
+  "feedSkip": "Пропускане",
+  "uploadWaitingToUpload": "Чака качване",
+  "uploadUploadingVideo": "Качва се видео",
+  "uploadProcessingVideo": "Обработва се видео",
+  "uploadProcessingComplete": "Обработката е готова",
+  "uploadPublishedSuccessfully": "Публикувано. Видеото е навън.",
+  "uploadFailed": "Качването не мина",
+  "uploadRetrying": "Опитваме качването пак",
+  "uploadPaused": "Качването е на пауза",
+  "uploadPercentComplete": "{percent}% готово",
+  "@uploadPercentComplete": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "uploadQueuedMessage": "Видеото ти чака за качване",
+  "uploadUploadingMessage": "Качваме към сървъра...",
+  "uploadProcessingMessage": "Обработваме видеото - може да отнеме няколко минути",
+  "uploadReadyToPublishMessage": "Видеото е обработено и готово за публикуване",
+  "uploadPublishedMessage": "Видеото е публикувано в профила ти",
+  "uploadFailedMessage": "Качването не мина - опитай пак",
+  "uploadRetryingMessage": "Опитваме качването пак...",
+  "uploadPausedMessage": "Качването е спряно от теб",
+  "uploadRetryButton": "ОПИТАЙ ПАК",
+  "uploadRetryFailed": "Неуспешен повторен опит за качване: {error}",
+  "@uploadRetryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "userSearchPrompt": "Търсене на потребители",
+  "userSearchNoResults": "Няма намерени потребители",
+  "userSearchFailed": "Търсенето не мина",
+  "userPickerSearchByName": "Търсене по име",
+  "userPickerFilterByNameHint": "Филтриране по име...",
+  "userPickerSearchByNameHint": "Търсене по име...",
+  "userPickerAlreadyAddedSemantics": "{name} вече е добавен",
+  "@userPickerAlreadyAddedSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPickerSelectSemantics": "Избери {name}",
+  "@userPickerSelectSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "userPickerEmptyFollowListTitle": "Твоите хора са някъде там",
+  "userPickerEmptyFollowListBody": "Последвай хора, с които си на една вълна. Когато те последват обратно, ще сте готови за колаборации.",
+  "userPickerGoBack": "Върни се назад",
+  "userPickerTypeNameToSearch": "Въведи име за търсене",
+  "userPickerUnavailable": "Търсенето на потребители не е налично. Опитай пак по-късно.",
+  "userPickerSearchFailedTryAgain": "Търсенето не мина. Опитай пак.",
+  "forgotPasswordTitle": "Нулиране на парола",
+  "forgotPasswordDescription": "Въведи имейл адреса си и ще ти изпратим линк за възстановяване на паролата.",
+  "forgotPasswordEmailLabel": "Имейл адрес",
+  "forgotPasswordCancel": "Отказ",
+  "forgotPasswordSendLink": "Връзка за нулиране на имейл",
+  "ageVerificationContentWarning": "Предупреждение за съдържание",
+  "ageVerificationTitle": "Проверка на възрастта",
+  "ageVerificationAdultDescription": "Това съдържание е маркирано като потенциално съдържание за възрастни. Трябва да си на 18 или повече, за да го видиш.",
+  "ageVerificationCreationDescription": "За да използваш камерата и да създаваш съдържание, трябва да си на 16 или повече.",
+  "ageVerificationAdultQuestion": "На 18 или повече ли си?",
+  "ageVerificationCreationQuestion": "На 16 или повече ли си?",
+  "ageVerificationNo": "Не",
+  "ageVerificationYes": "Да",
+  "shareLinkCopied": "Връзката е копирана в клипборда",
+  "shareFailedToCopy": "Неуспешно копиране на връзката",
+  "shareVideoSubject": "Виж това видео в Divine",
+  "shareFailedToShare": "Неуспешно споделяне",
+  "shareVideoTitle": "Сподели видео",
+  "shareToApps": "Споделяне в Приложения",
+  "shareToAppsSubtitle": "Споделяй чрез съобщения и социални приложения",
+  "shareCopyWebLink": "Копирай уеб връзка",
+  "shareCopyWebLinkSubtitle": "Копирай уеб връзката за споделяне",
+  "shareCopyNostrLink": "Копирай Nostr връзката",
+  "shareCopyNostrLinkSubtitle": "Копирай nevent връзката за Nostr клиенти",
+  "navHome": "Начало",
+  "navExplore": "Разгледай",
+  "navInbox": "Входяща кутия",
+  "navProfile": "Профил",
+  "navSearch": "Търсене",
+  "navSearchTooltip": "Търсене",
+  "navMyProfile": "Моят профил",
+  "navNotifications": "Известия",
+  "navOpenCamera": "Отвори камерата",
+  "navUnknown": "Неизвестно",
+  "navExploreClassics": "Класика",
+  "navExploreNewVideos": "Нови видеа",
+  "navExploreTrending": "Тенденция",
+  "navExploreForYou": "За теб",
+  "navExploreLists": "Списъци",
+  "routeErrorTitle": "Грешка",
+  "routeInvalidHashtag": "Невалиден хаштаг",
+  "routeInvalidConversationId": "Невалиден идентификатор на разговор",
+  "routeInvalidRequestId": "Невалиден ID на заявката",
+  "routeInvalidListId": "Невалиден идентификатор на списък",
+  "routeInvalidUserId": "Невалиден потребителски идентификатор",
+  "routeInvalidVideoId": "Невалиден идентификатор на видео",
+  "routeInvalidSoundId": "Невалиден идентификатор на звука",
+  "routeInvalidCategory": "Невалидна категория",
+  "routeNoVideosToDisplay": "Няма видеа за показване",
+  "routeInvalidProfileId": "Невалиден ID на потребителския профил",
+  "routeDefaultListName": "Списък",
+  "supportTitle": "Център за поддръжка",
+  "supportContactSupport": "Свържи се с поддръжката",
+  "supportContactSupportSubtitle": "Започни разговор или прегледай минали съобщения",
+  "supportReportBug": "Докладване за грешка",
+  "supportReportBugSubtitle": "Технически проблеми с приложението",
+  "supportRequestFeature": "Заявка за функция",
+  "supportRequestFeatureSubtitle": "Предложи подобрение или нова функция",
+  "supportSaveLogs": "Запази логове",
+  "supportSaveLogsSubtitle": "Експортирай логовете във файл за ръчно изпращане",
+  "supportFaq": "ЧЗВ",
+  "supportFaqSubtitle": "Често задавани въпроси и отговори",
+  "supportProofMode": "ProofMode",
+  "supportProofModeSubtitle": "Научи за проверката и автентичността",
+  "supportLoginRequired": "Влез, за да се свържеш с поддръжката",
+  "supportExportingLogs": "Логовете се експортират...",
+  "supportExportLogsFailed": "Не успяхме да експортираме логовете",
+  "supportChatNotAvailable": "Чатът за поддръжка не е наличен",
+  "supportCouldNotOpenMessages": "Не можах да отворя съобщения за поддръжка",
+  "supportCouldNotOpenPage": "Не може да се отвори {pageName}",
+  "@supportCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      }
+    }
+  },
+  "supportErrorOpeningPage": "Грешка при отваряне на {pageName}: {error}",
+  "@supportErrorOpeningPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportTitle": "Докладвай съдържание",
+  "reportWhyReporting": "Защо подаваш сигнал за това съдържание?",
+  "reportPolicyNotice": "Divine ще преглежда сигналите за съдържание до 24 часа и при нужда ще премахва съдържание или ще блокира акаунта, който го е публикувал.",
+  "reportAdditionalDetails": "Допълнителни подробности (по избор)",
+  "reportBlockUser": "Блокирай този потребител",
+  "reportCancel": "Отказ",
+  "reportSubmit": "Докладвай",
+  "reportSelectReason": "Избери причина за докладване на това съдържание",
+  "reportReasonSpam": "Спам или нежелано съдържание",
+  "reportReasonHarassment": "Тормоз, малтретиране или заплахи",
+  "reportReasonViolence": "Насилствено или екстремистко съдържание",
+  "reportReasonSexualContent": "Сексуално съдържание или съдържание за възрастни",
+  "reportReasonCopyright": "Нарушаване на авторски права",
+  "reportReasonFalseInfo": "Невярна информация",
+  "reportReasonCsam": "Нарушение на безопасността на детето",
+  "reportReasonAiGenerated": "AI-генерирано съдържание",
+  "reportReasonOther": "Друго нарушение на правилата",
+  "reportFailed": "Неуспешно докладване на съдържание: {error}",
+  "@reportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "reportReceivedTitle": "Докладът е получен",
+  "reportReceivedThankYou": "Благодарим, че помагаш да запазим Divine безопасен.",
+  "reportReceivedReviewNotice": "Екипът ни ще прегледа сигнала ти и ще предприеме нужните действия. Може да получаваш новини чрез директно съобщение.",
+  "reportLearnMore": "Научи повече",
+  "reportSafetyUrl": "divine.video/safety",
+  "reportClose": "Затвори",
+  "listAddToList": "Добави към списъка",
+  "listVideoCount": "{count} видеа",
+  "@listVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listNewList": "Нов списък",
+  "listDone": "Готово",
+  "listErrorLoading": "Грешка при зареждане на списъците",
+  "listRemovedFrom": "Премахнато от {name}",
+  "@listRemovedFrom": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listAddedTo": "Добавено към {name}",
+  "@listAddedTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listCreateNewList": "Създаване на нов списък",
+  "listNewPeopleList": "Нов списък с хора",
+  "listCollaboratorsNone": "Няма",
+  "listAddCollaboratorTitle": "Добави сътрудник",
+  "listCollaboratorSearchHint": "Търсене diVine...",
+  "listNameLabel": "Име на списък",
+  "listDescriptionLabel": "Описание (по избор)",
+  "listPublicList": "Публичен списък",
+  "listPublicListSubtitle": "Други могат да следват и да видят този списък",
+  "listCancel": "Отказ",
+  "listCreate": "Създай",
+  "listCreateFailed": "Неуспешно създаване на списък",
+  "keyManagementTitle": "Nostr Ключове",
+  "keyManagementWhatAreKeys": "Какво представляват ключовете Nostr?",
+  "keyManagementExplanation": "Nostr самоличността ти е двойка криптографски ключове:\n\n• Публичният ти ключ (npub) е като потребителско име - споделяй го спокойно\n• Частният ти ключ (nsec) е като парола - пази го в тайна!\n\nТвоят nsec ти дава достъп до акаунта във всяко Nostr приложение.",
+  "keyManagementImportTitle": "Импортиране на съществуващ ключ",
+  "keyManagementImportSubtitle": "Вече имаш Nostr акаунт? Постави частния си ключ (nsec), за да го използваш тук.",
+  "keyManagementImportButton": "Ключ за импортиране",
+  "keyManagementImportWarning": "Това ще замени текущия ти ключ!",
+  "keyManagementBackupTitle": "Архивирай ключа си",
+  "keyManagementBackupSubtitle": "Запази частния си ключ (nsec), за да използваш акаунта си в други Nostr приложения.",
+  "keyManagementCopyNsec": "Копирай личния ми ключ (nsec)",
+  "keyManagementNeverShare": "Никога не споделяй своя nsec с никого!",
+  "keyManagementPasteKey": "Постави частния си ключ",
+  "keyManagementInvalidFormat": "Невалиден формат на ключа. Трябва да започва с \"nsec1\"",
+  "keyManagementConfirmImportTitle": "Импортиране на този ключ?",
+  "keyManagementConfirmImportBody": "Това ще замени текущата ти самоличност с импортираната.\n\nТекущият ти ключ ще бъде загубен, освен ако първо не си го архивирал.",
+  "keyManagementImportConfirm": "Импортиране",
+  "keyManagementImportSuccess": "Ключът е импортиран успешно!",
+  "keyManagementImportFailed": "Неуспешно импортиране на ключ: {error}",
+  "@keyManagementImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "keyManagementExportSuccess": "Частният ключ е копиран в клипборда!\n\nСъхранявайте го на сигурно място.",
+  "keyManagementExportFailed": "Неуспешно експортиране на ключ: {error}",
+  "@keyManagementExportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "saveOriginalSavedToCameraRoll": "Запазено в галерията",
+  "saveOriginalShare": "Сподели",
+  "saveOriginalDone": "Готово",
+  "saveOriginalPhotosAccessNeeded": "Необходим е достъп до снимки",
+  "saveOriginalPhotosAccessMessage": "За да запазваш видеа, дай достъп до снимките в настройките.",
+  "saveOriginalOpenSettings": "Отвори Настройки",
+  "saveOriginalNotNow": "Не сега",
+  "cameraPermissionNotNow": "Не сега",
+  "saveOriginalDownloadFailed": "Неуспешно изтегляне",
+  "saveOriginalDismiss": "Отхвърляне",
+  "saveOriginalDownloadingVideo": "Изтегляне на видео",
+  "saveOriginalSavingToCameraRoll": "Запазване в галерията",
+  "saveOriginalFetchingVideo": "Видеото се извлича от мрежата...",
+  "saveOriginalSavingVideo": "Оригиналното видео се запазва в галерията...",
+  "soundTitle": "Звук",
+  "soundOriginalSound": "Оригинален звук",
+  "soundVideosUsingThisSound": "Видеоклипове, използващи този звук",
+  "soundSourceVideo": "Източник на видео",
+  "soundNoVideosYet": "Още няма видеа",
+  "soundBeFirstToUse": "Бъдете първите, които използват този звук!",
+  "soundFailedToLoadVideos": "Не успяхме да заредим видеата",
+  "soundRetry": "Опитай пак",
+  "soundVideosUnavailable": "Видеоклиповете са недостъпни",
+  "soundCouldNotLoadDetails": "Подробностите за видеото не се заредиха",
+  "soundPreview": "Преглед",
+  "soundStop": "Спрете",
+  "soundUseSound": "Използвай звук",
+  "soundNoVideoCount": "Още няма видеа",
+  "soundOneVideo": "1 видео",
+  "soundVideoCount": "{count} видеа",
+  "@soundVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "soundUnableToPreview": "Не може да се визуализира звук - няма наличен звук",
+  "soundPreviewFailed": "Неуспешно пускане на визуализация: {error}",
+  "@soundPreviewFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "soundViewSource": "Виж източника",
+  "soundCloseTooltip": "Затвори",
+  "exploreNotExploreRoute": "Не е маршрут за изследване",
+  "legalTitle": "Законни",
+  "legalTermsOfService": "Условия за ползване",
+  "legalTermsOfServiceSubtitle": "Правила и условия за ползване",
+  "legalPrivacyPolicy": "Политика за поверителност",
+  "legalPrivacyPolicySubtitle": "Как работим с данните ти",
+  "legalSafetyStandards": "Стандарти за безопасност",
+  "legalSafetyStandardsSubtitle": "Правила на общността и безопасност",
+  "legalDmca": "DMCA",
+  "legalDmcaSubtitle": "Правила за авторско право и сваляне",
+  "legalOpenSourceLicenses": "Лицензи за отворен код",
+  "legalOpenSourceLicensesSubtitle": "Приписвания на пакети на трети страни",
+  "legalAppName": "Divine",
+  "legalCouldNotOpenPage": "Не може да се отвори {pageName}",
+  "@legalCouldNotOpenPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      }
+    }
+  },
+  "legalErrorOpeningPage": "Грешка при отваряне на {pageName}: {error}",
+  "@legalErrorOpeningPage": {
+    "placeholders": {
+      "pageName": {
+        "type": "String"
+      },
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "categoryAction": "Действие",
+  "categoryAdventure": "Приключение",
+  "categoryAnimals": "Животни",
+  "categoryAnimation": "Анимация",
+  "categoryArchitecture": "Архитектура",
+  "categoryArt": "Чл",
+  "categoryAutomotive": "Автомобилен",
+  "categoryAwardShow": "Наградно шоу",
+  "categoryAwards": "Награди",
+  "categoryBaseball": "Бейзбол",
+  "categoryBasketball": "Баскетбол",
+  "categoryBeauty": "Красота",
+  "categoryBeverage": "Напитка",
+  "categoryCars": "Автомобили",
+  "categoryCelebration": "Тържество",
+  "categoryCelebrities": "Знаменитости",
+  "categoryCelebrity": "Знаменитост",
+  "categoryCityscape": "Градски пейзаж",
+  "categoryComedy": "Комедия",
+  "categoryConcert": "Концерт",
+  "categoryCooking": "Готвене",
+  "categoryCostume": "Костюм",
+  "categoryCrafts": "Занаяти",
+  "categoryCrime": "Престъпление",
+  "categoryCulture": "Култура",
+  "categoryDance": "Танцувай",
+  "categoryDiy": "Направи си сам",
+  "categoryDrama": "Драма",
+  "categoryEducation": "Образование",
+  "categoryEmotional": "Емоционален",
+  "categoryEmotions": "Емоции",
+  "categoryEntertainment": "Развлечение",
+  "categoryEvent": "Събитие",
+  "categoryFamily": "Семейство",
+  "categoryFans": "Фенове",
+  "categoryFantasy": "Фантазия",
+  "categoryFashion": "Стил",
+  "categoryFestival": "Фестивал",
+  "categoryFilm": "Филм",
+  "categoryFitness": "Фитнес",
+  "categoryFood": "Храна",
+  "categoryFootball": "Футбол",
+  "categoryFurniture": "Мебели",
+  "categoryGaming": "Игри",
+  "categoryGolf": "Голф",
+  "categoryGrooming": "Подстригване",
+  "categoryGuitar": "Китара",
+  "categoryHalloween": "Хелоуин",
+  "categoryHealth": "Здраве",
+  "categoryHockey": "Хокей",
+  "categoryHoliday": "Празник",
+  "categoryHome": "Начало",
+  "categoryHomeImprovement": "Подобряване на дома",
+  "categoryHorror": "Ужас",
+  "categoryHospital": "Болница",
+  "categoryHumor": "Хумор",
+  "categoryInteriorDesign": "Интериорен дизайн",
+  "categoryInterview": "Интервю",
+  "categoryKids": "Деца",
+  "categoryLifestyle": "Начин на живот",
+  "categoryMagic": "Магия",
+  "categoryMakeup": "Грим",
+  "categoryMedical": "Медицински",
+  "categoryMusic": "Музика",
+  "categoryMystery": "Мистерия",
+  "categoryNature": "Природата",
+  "categoryNews": "Новини",
+  "categoryOutdoor": "На открито",
+  "categoryParty": "Парти",
+  "categoryPeople": "Хора",
+  "categoryPerformance": "Изпълнение",
+  "categoryPets": "Домашни любимци",
+  "categoryPolitics": "Политика",
+  "categoryPrank": "Шега",
+  "categoryPranks": "Шеги",
+  "categoryRealityShow": "Риалити шоу",
+  "categoryRelationship": "Връзка",
+  "categoryRelationships": "Връзки",
+  "categoryRomance": "Романтика",
+  "categorySchool": "Училище",
+  "categoryScienceFiction": "Научна фантастика",
+  "categorySelfie": "Селфи",
+  "categoryShopping": "Пазаруване",
+  "categorySkateboarding": "Скейтборд",
+  "categorySkincare": "Грижа за кожата",
+  "categorySoccer": "Футбол",
+  "categorySocialGathering": "Социално събиране",
+  "categorySocialMedia": "Социални медии",
+  "categorySports": "Спорт",
+  "categoryTalkShow": "Ток шоу",
+  "categoryTech": "Техн",
+  "categoryTechnology": "Технология",
+  "categoryTelevision": "Телевизия",
+  "categoryToys": "Играчки",
+  "categoryTransportation": "Транспорт",
+  "categoryTravel": "Пътуване",
+  "categoryUrban": "Градски",
+  "categoryViolence": "Насилие",
+  "categoryVlog": "Влог",
+  "categoryVlogging": "Влогове",
+  "categoryWrestling": "Борба",
+  "profileSetupUploadSuccess": "Профилната снимка е качена успешно!",
+  "inboxReportedUser": "Докладвано {displayName}",
+  "@inboxReportedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxBlockedUser": "Блокиран {displayName}",
+  "@inboxBlockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxUnblockedUser": "Отблокиран {displayName}",
+  "@inboxUnblockedUser": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemovedConversation": "Премахнат разговор",
+  "inboxEmptyTitle": "Все още няма съобщения",
+  "inboxEmptySubtitle": "Този бутон + няма да ухапе.",
+  "inboxActionMute": "Заглушаване на разговора",
+  "inboxActionReport": "Докладвай {displayName}",
+  "@inboxActionReport": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionBlock": "Блокирай {displayName}",
+  "@inboxActionBlock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionUnblock": "Отблокирай {displayName}",
+  "@inboxActionUnblock": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxActionRemove": "Премахни разговора",
+  "inboxRemoveConfirmTitle": "Да премахнем разговора?",
+  "inboxRemoveConfirmBody": "Това ще изтрие разговора ти с {displayName}. Действието не може да бъде отменено.",
+  "@inboxRemoveConfirmBody": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxRemoveConfirmConfirm": "Премахни",
+  "inboxConversationMuted": "Разговорът е заглушен",
+  "inboxConversationUnmuted": "Разговорът е включен",
+  "inboxCollabInviteCardTitle": "Покана за сътрудник",
+  "@inboxCollabInviteCardTitle": {
+    "description": "Header label on a collaborator invite card in the DM conversation."
+  },
+  "inboxCollabInviteCardRoleLabel": "{role} на тази публикация",
+  "@inboxCollabInviteCardRoleLabel": {
+    "description": "Subtitle on the collaborator invite card describing the offered collaborator role.",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxCollabInviteAcceptButton": "Приеми",
+  "inboxCollabInviteIgnoreButton": "Игнорирайте",
+  "inboxCollabInviteAcceptedStatus": "Прието",
+  "inboxCollabInviteIgnoredStatus": "Игнорирани",
+  "inboxCollabInviteAcceptError": "Не успяхме да приемем. Опитай пак.",
+  "inboxCollabInviteSentStatus": "Поканата е изпратена",
+  "@inboxCollabInviteSentStatus": {
+    "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
+  },
+  "inboxConversationCollabInvitePreview": "Покана за сътрудник",
+  "@inboxConversationCollabInvitePreview": {
+    "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+  },
+  "reportDialogCancel": "Отказ",
+  "reportDialogReport": "Докладвай",
+  "exploreVideoId": "ID: {id}",
+  "@exploreVideoId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoTitle": "Заглавие: {title}",
+  "@exploreVideoTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "exploreVideoCounter": "Видео {current}/{total}",
+  "@exploreVideoCounter": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "discoverListsFailedToUpdateSubscription": "Неуспешно актуализиране на абонамента: {error}",
+  "@discoverListsFailedToUpdateSubscription": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRetry": "Опитай пак",
+  "commonNext": "Следваща",
+  "commonDelete": "Изтрий",
+  "commonCancel": "Отказ",
+  "videoMetadataTags": "Етикети",
+  "videoMetadataExpiration": "Изтичане",
+  "videoMetadataExpirationNotExpire": "Не изтича",
+  "videoMetadataExpirationOneDay": "1 ден",
+  "videoMetadataExpirationOneWeek": "1 седмица",
+  "videoMetadataExpirationOneMonth": "1 месец",
+  "videoMetadataExpirationOneYear": "1 година",
+  "videoMetadataExpirationOneDecade": "1 десетилетие",
+  "videoMetadataContentWarnings": "Предупреждения за съдържанието",
+  "videoEditorStickers": "Стикери",
+  "trendingTitle": "Тенденция",
+  "proofmodeCheckAiGenerated": "Провери дали е генерирано от AI",
+  "libraryDeleteConfirm": "Изтриване",
+  "libraryWebUnavailableHeadline": "Библиотеката е налична в мобилното приложение",
+  "libraryWebUnavailableDescription": "Черновите и клиповете се пазят на устройството ти, затова отвори Divine на телефона си, за да ги управляваш.",
+  "libraryTabDrafts": "Чернови",
+  "libraryTabClips": "Клипове",
+  "librarySaveToCameraRollTooltip": "Запазване в ролката на камерата",
+  "libraryDeleteSelectedClipsTooltip": "Изтрийте избраните клипове",
+  "libraryDeleteClipsTitle": "Изтриване на клипове",
+  "libraryDeleteClipsMessage": "Сигурен ли си, че искаш да изтриеш {count, plural, one{# избран клип} other{# избрани клипа}}?",
+  "@libraryDeleteClipsMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryDeleteClipsWarning": "Това действие не може да бъде отменено. Видео файловете ще бъдат премахнати за постоянно от твоето устройство.",
+  "libraryPreparingVideo": "Видеоклипът се подготвя...",
+  "libraryCreateVideo": "Създаване на видео",
+  "libraryClipsSavedToDestination": "{count, plural, =1{1 клип} other{{count} клипа}} запазен{count, plural, =1{} other{и}} в {destination}",
+  "@libraryClipsSavedToDestination": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsSavePartialResult": "{successCount} запазено, {failureCount} неуспешно",
+  "@libraryClipsSavePartialResult": {
+    "placeholders": {
+      "successCount": {
+        "type": "int"
+      },
+      "failureCount": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryGalleryPermissionDenied": "Разрешението за {destination} е отказано",
+  "@libraryGalleryPermissionDenied": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryClipsDeletedCount": "{count, plural, =1{1 клип е изтрит} other{{count} клипа са изтрити}}",
+  "@libraryClipsDeletedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "libraryCouldNotLoadDrafts": "Не успяхме да заредим черновите",
+  "libraryCouldNotLoadClips": "Не успяхме да заредим клиповете",
+  "libraryOpenErrorDescription": "Нещо се обърка при отварянето на библиотеката ти. Пробвай пак.",
+  "libraryNoDraftsYetTitle": "Още няма чернови",
+  "libraryNoDraftsYetSubtitle": "Видеата, които запазиш като чернова, ще се появят тук",
+  "libraryNoClipsYetTitle": "Още няма клипове",
+  "libraryNoClipsYetSubtitle": "Записаните ти видео клипове ще се появят тук",
+  "libraryDraftDeletedSnackbar": "Черновата е изтрита",
+  "libraryDraftDeleteFailedSnackbar": "Не успяхме да изтрием черновата",
+  "libraryDraftActionPost": "Публикувай",
+  "libraryDraftActionEdit": "Редактиране",
+  "libraryDraftActionDelete": "Изтрий черновата",
+  "libraryDeleteDraftTitle": "Изтрий чернова",
+  "libraryDeleteDraftMessage": "Сигурен ли си, че искаш да изтриеш „{title}“?",
+  "@libraryDeleteDraftMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryDeleteClipTitle": "Изтрий клип",
+  "libraryDeleteClipMessage": "Сигурен ли си, че искаш да изтриеш този клип?",
+  "libraryClipSelectionTitle": "Клипове",
+  "librarySecondsRemaining": "Остават {seconds}s",
+  "@librarySecondsRemaining": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "libraryAddClips": "Добави",
+  "libraryRecordVideo": "Запишете видео",
+  "routerInvalidCreator": "Невалиден създател",
+  "routerInvalidHashtagRoute": "Невалиден маршрут на хаштаг",
+  "categoryGalleryCouldNotLoadVideos": "Не успяхме да заредим видеата",
+  "categoriesCouldNotLoadCategories": "Не успяхме да заредим категориите",
+  "notificationFollowBack": "Последвай обратно",
+  "followingFailedToLoadList": "Неуспешно зареждане на следния списък",
+  "followersFailedToLoadList": "Неуспешно зареждане на списъка с последователи",
+  "classicVinersTitle": "OG Viners",
+  "blossomFailedToSaveSettings": "Неуспешно запазване на настройките: {error}",
+  "@blossomFailedToSaveSettings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "blueskyFailedToUpdateCrosspost": "Неуспешно актуализиране на настройката за кръстосана публикация",
+  "invitesTitle": "Покани приятели",
+  "invitesGenerateCardTitle": "{count, plural, =1{1 покана е готова за генериране} other{{count} покани са готови за генериране}}",
+  "@invitesGenerateCardTitle": {
+    "description": "Title of the generate-invite card on the invites screen, shown when the user has invite capacity that has not been generated as codes yet.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invitesGenerateCardSubtitle": "Генерирай код, когато си готов да го споделиш.",
+  "@invitesGenerateCardSubtitle": {
+    "description": "Body text on the generate-invite card explaining what tapping the button does."
+  },
+  "invitesGenerateButtonLabel": "Генерирай покана",
+  "@invitesGenerateButtonLabel": {
+    "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
+  },
+  "searchSomethingWentWrong": "Нещо се обърка",
+  "searchTryAgain": "Опитай пак",
+  "searchForLists": "Търсете списъци",
+  "searchFindCuratedVideoLists": "Намери подбрани видео списъци",
+  "searchEnterQuery": "Въведи заявка за търсене",
+  "@searchEnterQuery": {
+    "description": "Title of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchDiscoverSomethingInteresting": "Открийте нещо интересно",
+  "@searchDiscoverSomethingInteresting": {
+    "description": "Subtitle of the empty-query placeholder shown on the search results screen before the user has entered a query."
+  },
+  "searchPeopleSectionHeader": "Хора",
+  "searchPeopleLoadingLabel": "Зареждат се резултати за хора",
+  "searchTagsSectionHeader": "Етикети",
+  "searchTagsLoadingLabel": "Резултатите от етикета се зареждат",
+  "searchVideosSectionHeader": "Видеоклипове",
+  "searchVideosLoadingLabel": "Зареждат се видео резултати",
+  "searchListsSectionHeader": "Списъци",
+  "searchListsLoadingLabel": "Резултатите от списъка се зареждат",
+  "cameraAgeRestriction": "Трябва да си на 16 или повече, за да създаваш съдържание",
+  "featureRequestCancel": "Отказ",
+  "keyImportError": "Грешка: {error}",
+  "@keyImportError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "timeNow": "Сега",
+  "@timeNow": {
+    "description": "Relative time label for less than one minute ago (short form)"
+  },
+  "timeShortMinutes": "{count}м",
+  "@timeShortMinutes": {
+    "description": "Short relative time in minutes, e.g. 3m",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortHours": "{count}ч",
+  "@timeShortHours": {
+    "description": "Short relative time in hours, e.g. 2h",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortDays": "{count}д",
+  "@timeShortDays": {
+    "description": "Short relative time in days, e.g. 3d",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortWeeks": "{count}седм",
+  "@timeShortWeeks": {
+    "description": "Short relative time in weeks, e.g. 2w",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortMonths": "{count}мес",
+  "@timeShortMonths": {
+    "description": "Short relative time in months, e.g. 1mo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeShortYears": "{count}г",
+  "@timeShortYears": {
+    "description": "Short relative time in years, e.g. 1y",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeVerboseNow": "Сега",
+  "@timeVerboseNow": {
+    "description": "Verbose relative time label for less than one minute ago"
+  },
+  "timeAgo": "Преди {time}",
+  "@timeAgo": {
+    "description": "Verbose relative time with ago suffix, e.g. 3m ago",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "timeToday": "Днес",
+  "@timeToday": {
+    "description": "Date label for today"
+  },
+  "timeYesterday": "Вчера",
+  "@timeYesterday": {
+    "description": "Date label for yesterday"
+  },
+  "timeJustNow": "Току-що",
+  "@timeJustNow": {
+    "description": "Verbose relative time for less than one minute (lowercase)"
+  },
+  "timeMinutesAgo": "Преди {count} мин",
+  "@timeMinutesAgo": {
+    "description": "Relative time in minutes with ago suffix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeHoursAgo": "Преди {count}ч",
+  "@timeHoursAgo": {
+    "description": "Relative time in hours with ago suffix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeDaysAgo": "Преди {count} дни",
+  "@timeDaysAgo": {
+    "description": "Relative time in days with ago suffix",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "draftTimeJustNow": "Току-що",
+  "@draftTimeJustNow": {
+    "description": "Draft age label for less than one minute (capitalized)"
+  },
+  "contentLabelNudity": "Голота",
+  "contentLabelSexualContent": "Сексуално съдържание",
+  "contentLabelPornography": "Порнография",
+  "contentLabelGraphicMedia": "Графични медии",
+  "contentLabelViolence": "Насилие",
+  "contentLabelSelfHarm": "Самонараняване/самоубийство",
+  "contentLabelDrugUse": "Употреба на наркотици",
+  "contentLabelAlcohol": "Алкохол",
+  "contentLabelTobacco": "Тютюн/пушене",
+  "contentLabelGambling": "Хазарт",
+  "contentLabelProfanity": "Ругатни",
+  "contentLabelHateSpeech": "Реч на омразата",
+  "contentLabelHarassment": "Тормоз",
+  "contentLabelFlashingLights": "Мигащи светлини",
+  "contentLabelAiGenerated": "Генерирано от AI",
+  "contentLabelDeepfake": "Дийпфейк",
+  "contentLabelSpam": "Спам",
+  "contentLabelScam": "Скам/измама",
+  "contentLabelSpoiler": "Спойлер",
+  "contentLabelMisleading": "Подвеждащи",
+  "contentLabelSensitiveContent": "Чувствително съдържание",
+  "notificationLikedYourVideo": "{actorName} хареса видеото ти",
+  "@notificationLikedYourVideo": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationCommentedOnYourVideo": "{actorName} коментира видеото ти",
+  "@notificationCommentedOnYourVideo": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationStartedFollowing": "{actorName} започна да те следва",
+  "@notificationStartedFollowing": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationMentionedYou": "{actorName} те спомена",
+  "@notificationMentionedYou": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepostedYourVideo": "{actorName} сподели видеото ти пак",
+  "@notificationRepostedYourVideo": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationRepliedToYourComment": "Отговори на коментара ти",
+  "@notificationRepliedToYourComment": {
+    "description": "Verb phrase shown after the actor name in a reply notification."
+  },
+  "notificationAndConnector": "И",
+  "@notificationAndConnector": {
+    "description": "Connector word between the first actor and the 'N others' count in a grouped notification (e.g. 'Alice and 3 others liked your video')."
+  },
+  "notificationOthersCount": "{count, plural, =1{1 друг} other{{count} други}}",
+  "@notificationOthersCount": {
+    "description": "Number of additional actors beyond the first in a grouped notification.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commentReplyToPrefix": "Отг.:",
+  "@commentReplyToPrefix": {
+    "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."
+  },
+  "draftUntitled": "Без заглавие",
+  "contentWarningNone": "Няма",
+  "textBackgroundNone": "Няма",
+  "textBackgroundSolid": "Твърди",
+  "textBackgroundHighlight": "Маркирайте",
+  "textBackgroundTransparent": "Прозрачен",
+  "textAlignLeft": "Наляво",
+  "textAlignRight": "Вярно",
+  "textAlignCenter": "Център",
+  "cameraPermissionWebUnsupportedTitle": "Камерата още не се поддържа в уеб",
+  "cameraPermissionWebUnsupportedDescription": "Снимането и записът с камера още не са налични в уеб версията.",
+  "cameraPermissionBackToFeed": "Назад към фийда",
+  "cameraPermissionErrorTitle": "Грешка с разрешенията",
+  "cameraPermissionErrorDescription": "Нещо се обърка, докато проверявахме разрешенията.",
+  "cameraPermissionRetry": "Опитай пак",
+  "cameraPermissionAllowAccessTitle": "Разреши достъп до камерата и микрофона",
+  "cameraPermissionAllowAccessDescription": "Това ти позволява да записваш и редактираш видеа директно в приложението. Нищо повече.",
+  "cameraPermissionContinue": "Продължи",
+  "cameraPermissionGoToSettings": "Към настройките",
+  "videoRecorderWhySixSecondsTitle": "Защо шест секунди?",
+  "videoRecorderWhySixSecondsSubtitle": "Кратките клипове оставят място за спонтанност. 6-секундният формат ти помага да хванеш истинските моменти, докато се случват.",
+  "videoRecorderWhySixSecondsButton": "Разбрах!",
+  "videoRecorderAutosaveFoundTitle": "Намерихме започнато видео",
+  "videoRecorderAutosaveFoundSubtitle": "Искаш ли да продължиш оттам, докъдето стигна?",
+  "videoRecorderAutosaveContinueButton": "Да, продължете",
+  "videoRecorderAutosaveDiscardButton": "Не, започни ново видео",
+  "videoRecorderAutosaveRestoreFailure": "Не успяхме да възстановим черновата ти",
+  "videoRecorderStopRecordingTooltip": "Спрете записа",
+  "videoRecorderStartRecordingTooltip": "Започни записа",
+  "videoRecorderRecordingTapToStopLabel": "Записване. Докосни навсякъде, за да спрете",
+  "videoRecorderTapToStartLabel": "Докосни произволно място, за да започнете да записвате",
+  "videoRecorderDeleteLastClipLabel": "Изтрий последния клип",
+  "videoRecorderSwitchCameraLabel": "Смени камерата",
+  "videoRecorderToggleGridLabel": "Превключване на мрежата",
+  "videoRecorderToggleGhostFrameLabel": "Превключване на призрачна рамка",
+  "videoRecorderGhostFrameEnabled": "Рамката призрак е активирана",
+  "videoRecorderGhostFrameDisabled": "Призрачната рамка е деактивирана",
+  "videoRecorderClipDeletedMessage": "Клипът е изтрит",
+  "videoRecorderCloseLabel": "Затворете видеорекордер",
+  "videoRecorderContinueToEditorLabel": "Продължете към видеоредактора",
+  "videoRecorderCaptureCloseLabel": "Затвори",
+  "videoRecorderCaptureNextLabel": "Следваща",
+  "videoRecorderToggleFlashLabel": "Превключване на светкавицата",
+  "videoRecorderCycleTimerLabel": "Цикъл таймер",
+  "videoRecorderToggleAspectRatioLabel": "Превключване на пропорциите",
+  "videoRecorderLibraryEmptyLabel": "Библиотека с клипове, няма клипове",
+  "videoRecorderLibraryOpenLabel": "{clipCount, plural, one{Отвори библиотеката с клипове, 1 клип} other{Отвори библиотеката с клипове, {clipCount} клипа}}",
+  "@videoRecorderLibraryOpenLabel": {
+    "placeholders": {
+      "clipCount": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorCameraLabel": "Камера",
+  "videoEditorOpenCameraSemanticLabel": "Отвори камерата",
+  "videoEditorLibraryLabel": "Библиотека",
+  "videoEditorTextLabel": "Текст",
+  "videoEditorDrawLabel": "Начертайте",
+  "videoEditorFilterLabel": "Филтър",
+  "videoEditorAudioLabel": "Аудио",
+  "videoEditorVolumeLabel": "Обем",
+  "videoEditorAddTitle": "Добави",
+  "videoEditorOpenLibrarySemanticLabel": "Отвори библиотеката",
+  "videoEditorOpenAudioSemanticLabel": "Отвори аудио редактора",
+  "videoEditorOpenTextSemanticLabel": "Отвори текстовия редактор",
+  "videoEditorOpenDrawSemanticLabel": "Отвори редактора за рисуване",
+  "videoEditorOpenFilterSemanticLabel": "Отвори редактора на филтъра",
+  "videoEditorOpenStickerSemanticLabel": "Отвори редактора на стикери",
+  "videoEditorSaveDraftTitle": "Да запазим черновата?",
+  "videoEditorSaveDraftSubtitle": "Запази редакциите си за по-късно или ги отхвърлете и напуснете редактора.",
+  "videoEditorSaveDraftButton": "Запазване на черновата",
+  "videoEditorDiscardChangesButton": "Отхвърляне на промените",
+  "videoEditorKeepEditingButton": "Продължете да редактирате",
+  "videoEditorDeleteLayerDropZone": "Изтриване на зоната за падане на слоя",
+  "videoEditorReleaseToDeleteLayer": "Пуснете, за да изтриете слой",
+  "videoEditorDoneLabel": "Готово",
+  "videoEditorPlayPauseSemanticLabel": "Пускане или пауза на видео",
+  "videoEditorCropSemanticLabel": "Изрязване",
+  "videoEditorCannotSplitProcessing": "Не можеш да разделиш клипа, докато се обработва. Изчакай малко.",
+  "videoEditorSplitPositionInvalid": "Разделената позиция е невалидна. И двата клипа трябва да са дълги поне {minDurationMs}ms.",
+  "@videoEditorSplitPositionInvalid": {
+    "placeholders": {
+      "minDurationMs": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorAddClipFromLibrary": "Добави клип от библиотеката",
+  "videoEditorSaveSelectedClip": "Запази избрания клип",
+  "videoEditorSplitClip": "Разделен клип",
+  "videoEditorSaveClip": "Запазване на клипа",
+  "videoEditorDeleteClip": "Изтрий клип",
+  "videoEditorClipSavedSuccess": "Клипът е запазен в библиотеката",
+  "videoEditorClipSaveFailed": "Не успяхме да запазим клипа",
+  "videoEditorClipDeleted": "Клипът е изтрит",
+  "videoEditorColorPickerSemanticLabel": "Избор на цвят",
+  "videoEditorUndoSemanticLabel": "Отмяна",
+  "videoEditorRedoSemanticLabel": "Повторете",
+  "videoEditorTextColorSemanticLabel": "Цвят на текста",
+  "videoEditorTextAlignmentSemanticLabel": "Подравняване на текст",
+  "videoEditorTextBackgroundSemanticLabel": "Текстов фон",
+  "videoEditorFontSemanticLabel": "Шрифт",
+  "videoEditorNoStickersFound": "Няма намерени стикери",
+  "videoEditorNoStickersAvailable": "Няма налични стикери",
+  "videoEditorFailedLoadStickers": "Не успяхме да заредим стикерите",
+  "videoEditorAdjustVolumeTitle": "Регулирайте силата на звука",
+  "videoEditorRecordedAudioLabel": "Записано аудио",
+  "videoEditorCustomAudioLabel": "Персонализирано аудио",
+  "videoEditorPlaySemanticLabel": "Играйте",
+  "videoEditorPauseSemanticLabel": "Пауза",
+  "videoEditorMuteAudioSemanticLabel": "Заглушаване на звука",
+  "videoEditorUnmuteAudioSemanticLabel": "Включване на звука",
+  "videoEditorDeleteLabel": "Изтрий",
+  "videoEditorDeleteSelectedItemSemanticLabel": "Изтриване на избрания елемент",
+  "videoEditorEditLabel": "Редактиране",
+  "videoEditorEditSelectedItemSemanticLabel": "Редактиране на избрания елемент",
+  "videoEditorDuplicateLabel": "Дубликат",
+  "videoEditorDuplicateSelectedItemSemanticLabel": "Дублиране на избрания елемент",
+  "videoEditorSplitLabel": "Сплит",
+  "videoEditorSplitSelectedClipSemanticLabel": "Разделете избрания клип",
+  "videoEditorFinishTimelineEditingSemanticLabel": "Завършете редактирането на времевата линия",
+  "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",
+  "videoEditorAudioPausePreviewSemanticLabel": "Пауза на прегледа",
+  "videoEditorAudioUntitledSound": "Звук без заглавие",
+  "videoEditorAudioUntitled": "Без заглавие",
+  "videoEditorAudioAddAudio": "Добави аудио",
+  "videoEditorAudioNoSoundsAvailableTitle": "Няма налични звуци",
+  "videoEditorAudioNoSoundsAvailableSubtitle": "Звуците ще се появят тук, когато творците споделят аудио",
+  "videoEditorAudioFailedToLoadTitle": "Не успяхме да заредим звуците",
+  "videoEditorAudioSegmentInstruction": "Избери аудио сегмента за видеото си",
+  "videoEditorAudioCategoryDivine": "diVine",
+  "videoEditorAudioCategoryCommunity": "Общност",
+  "videoEditorDrawToolArrowSemanticLabel": "Инструмент със стрелка",
+  "videoEditorDrawToolEraserSemanticLabel": "Инструмент за изтриване",
+  "videoEditorDrawToolMarkerSemanticLabel": "Инструмент за маркер",
+  "videoEditorDrawToolPencilSemanticLabel": "Инструмент молив",
+  "videoEditorLayerReorderLabel": "Пренареждане на слой {index}",
+  "@videoEditorLayerReorderLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorLayerReorderHint": "Задръжте за пренареждане",
+  "videoEditorShowTimelineSemanticLabel": "Показване на времевата линия",
+  "videoEditorHideTimelineSemanticLabel": "Скриване на времевата линия",
+  "videoEditorFeedPreviewContent": "Избягвайте да поставяте съдържание зад тези области.",
+  "videoEditorStickersDivineOriginals": "Divine Оригинали",
+  "videoEditorStickerSearchHint": "Търсене на стикери...",
+  "videoEditorSelectFontSemanticLabel": "Избери шрифт",
+  "videoEditorFontUnknown": "Неизвестен",
+  "videoEditorSplitPlayheadOutsideClip": "Главата за възпроизвеждане трябва да е в рамките на избрания клип, за да се раздели.",
+  "videoEditorTimelineTrimStartSemanticLabel": "Подстригване начало",
+  "videoEditorTimelineTrimEndSemanticLabel": "Подстригване на края",
+  "videoEditorTimelineTrimClipSemanticLabel": "Подстригване на клипса",
+  "videoEditorTimelineTrimClipHint": "Плъзни дръжките, за да настроиш дължината на клипа",
+  "videoEditorTimelineDraggingClipSemanticLabel": "Плъзгане на клип {index}",
+  "@videoEditorTimelineDraggingClipSemanticLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorTimelineClipSemanticLabel": "Клип {index} от {total}, {duration} секунди",
+  "@videoEditorTimelineClipSemanticLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorTimelineClipReorderHint": "Натисни дълго, за да пренаредиш",
+  "videoEditorClipGalleryInstruction": "Докосни за редактиране. Задръжте и плъзнете, за да пренаредите.",
+  "videoEditorTimelineClipMoveLeft": "Преместете се наляво",
+  "videoEditorTimelineClipMoveRight": "Преместете се надясно",
+  "videoEditorTimelineLongPressToDragHint": "Натисни дълго, за да плъзнеш",
+  "videoEditorVideoTimelineSemanticLabel": "Времева линия на видео",
+  "videoEditorTimelinePositionFormat": "{minutes}m {seconds}s",
+  "@videoEditorTimelinePositionFormat": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorColorSelectedSemanticLabel": "{colorName}, избрано",
+  "@videoEditorColorSelectedSemanticLabel": {
+    "placeholders": {
+      "colorName": {
+        "type": "String"
+      }
+    }
+  },
+  "videoEditorCloseColorPickerSemanticLabel": "Затворете инструмента за избор на цвят",
+  "videoEditorPickColorTitle": "Избери цвят",
+  "videoEditorConfirmColorSemanticLabel": "Потвърдете цвета",
+  "videoEditorSaturationBrightnessSemanticLabel": "Наситеност и яркост",
+  "videoEditorSaturationBrightnessValue": "Наситеност {saturation}%, яркост {brightness}%",
+  "@videoEditorSaturationBrightnessValue": {
+    "placeholders": {
+      "saturation": {
+        "type": "int"
+      },
+      "brightness": {
+        "type": "int"
+      }
+    }
+  },
+  "videoEditorHueSemanticLabel": "Нюанс",
+  "videoEditorAddElementSemanticLabel": "Добави елемент",
+  "videoEditorCloseSemanticLabel": "Затвори",
+  "videoEditorDoneSemanticLabel": "Готово",
+  "videoEditorLevelSemanticLabel": "Ниво",
+  "videoMetadataBackSemanticLabel": "Назад",
+  "videoMetadataDismissHelpDialogSemanticLabel": "Отхвърляне на диалоговия прозорец за помощ",
+  "videoMetadataGotItButton": "Разбрах!",
+  "videoMetadataLimitReachedWarning": "Лимитът от 64 KB е достигнат. Премахни малко съдържание, за да продължиш.",
+  "videoMetadataExpirationLabel": "Изтичане",
+  "videoMetadataSelectExpirationSemanticLabel": "Избери време на изтичане",
+  "videoMetadataTitleLabel": "Заглавие",
+  "videoMetadataDescriptionLabel": "Описание",
+  "videoMetadataTagsLabel": "Етикети",
+  "videoMetadataDeleteTagSemanticLabel": "Изтрий",
+  "videoMetadataDeleteTagHint": "Изтриване на маркер {tag}",
+  "@videoMetadataDeleteTagHint": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataContentWarningLabel": "Предупреждение за съдържание",
+  "videoMetadataSelectContentWarningsSemanticLabel": "Избери предупреждения за съдържание",
+  "videoMetadataContentWarningSelectAllThatApply": "Избери всичко, което важи за съдържанието ти",
+  "videoMetadataContentWarningDoneButton": "Готово",
+  "videoMetadataCollaboratorsLabel": "Сътрудници",
+  "videoMetadataAddCollaboratorSemanticLabel": "Поканете сътрудник",
+  "videoMetadataCollaboratorsHelpTooltip": "Как работят сътрудниците",
+  "videoMetadataCollaboratorsCount": "{count}/{max} сътрудници",
+  "@videoMetadataCollaboratorsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "videoMetadataRemoveCollaboratorSemanticLabel": "Премахни сътрудник",
+  "videoMetadataCollaboratorsHelpMessage": "Сътрудниците са поканени като съавтори на тази публикация. Можеш да поканиш само хора, с които взаимно се следвате, и те се показват като сътрудници, след като потвърдят.",
+  "videoMetadataMutualFollowersSearchText": "Взаимни последователи",
+  "videoMetadataMustMutuallyFollowSnackbar": "Трябва с {name} да се следвате взаимно, за да поканиш този човек като сътрудник.",
+  "@videoMetadataMustMutuallyFollowSnackbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataInspiredByLabel": "Вдъхновено от",
+  "videoMetadataSetInspiredBySemanticLabel": "Комплект, вдъхновен от",
+  "videoMetadataInspiredByHelpTooltip": "Как работят кредитите за вдъхновение",
+  "videoMetadataInspiredByNone": "Няма",
+  "videoMetadataInspiredByHelpMessage": "Използвай това за признание. „Вдъхновено от“ е различно от сътрудници: показва влияние, но не отбелязва човека като съавтор.",
+  "videoMetadataCreatorCannotBeReferencedSnackbar": "Този творец не може да бъде посочен.",
+  "videoMetadataRemoveInspiredBySemanticLabel": "Премахни вдъхновен от",
+  "videoMetadataPostDetailsTitle": "Детайли за публикацията",
+  "videoMetadataSavedToLibrarySnackbar": "Запазено в библиотека",
+  "videoMetadataFailedToSaveSnackbar": "Не успяхме да запазим",
+  "videoMetadataGoToLibraryButton": "Отидете в библиотеката",
+  "videoMetadataSaveForLaterSemanticLabel": "Бутон за запазване за по-късно",
+  "videoMetadataRenderingVideoHint": "Изобразява се видео...",
+  "videoMetadataSavingVideoHint": "Видеото се запазва...",
+  "videoMetadataSaveToDraftsHint": "Запази видеото в чернови и {destination}",
+  "@videoMetadataSaveToDraftsHint": {
+    "placeholders": {
+      "destination": {
+        "type": "String"
+      }
+    }
+  },
+  "videoMetadataSaveForLaterButton": "Запазване за по-късно",
+  "videoMetadataPostSemanticLabel": "Бутон за публикуване",
+  "videoMetadataPublishVideoHint": "Публикувай видео във фийда",
+  "videoMetadataFormNotReadyHint": "Попълни формата, за да продължиш",
+  "videoMetadataPostButton": "Публикувай",
+  "videoMetadataOpenPreviewSemanticLabel": "Отвори прегледа на публикацията",
+  "videoMetadataShareTitle": "Сподели",
+  "videoMetadataVideoDetailsSubtitle": "Детайли за видеото",
+  "videoMetadataClassicDoneButton": "Готово",
+  "videoMetadataPlayPreviewSemanticLabel": "Пусни предварителен преглед",
+  "videoMetadataPausePreviewSemanticLabel": "Пауза на прегледа",
+  "videoMetadataClosePreviewSemanticLabel": "Затворете визуализацията на видеото",
+  "videoMetadataRemoveSemanticLabel": "Премахни",
+  "metadataCaptionsLabel": "Надписи",
+  "@metadataCaptionsLabel": {
+    "description": "Label for the global captions toggle in the video metadata sheet"
+  },
+  "metadataCaptionsEnabledSemantics": "Субтитрите са включени за всички видеа",
+  "@metadataCaptionsEnabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is on"
+  },
+  "metadataCaptionsDisabledSemantics": "Субтитрите са изключени за всички видеа",
+  "@metadataCaptionsDisabledSemantics": {
+    "description": "Screen reader label when the global captions toggle is off"
+  },
+  "fullscreenFeedRemovedMessage": "Видеото е премахнато",
+  "@fullscreenFeedRemovedMessage": {
+    "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."
+  }
+}
