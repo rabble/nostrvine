@@ -138,13 +138,8 @@ internal class DivineVideoPlayerInstance(
      * Enables texture-based rendering for this player.
      *
      * Must be called before any clips are loaded. Returns the texture
-<<<<<<< HEAD
      * ID that Dart should pass to the `Texture` widget.
      *
-=======
-     * ID that Dart should pass to the `Texture` widget.  
-     * 
->>>>>>> 8a70ff105 (feat(video): refactor texture rendering to use SurfaceProducer for better surface management)
      * Uses [TextureRegistry.SurfaceProducer] instead of the legacy
      * [TextureRegistry.SurfaceTextureEntry] so that Android can notify
      * us when the underlying surface is destroyed and recreated (e.g.
@@ -180,7 +175,6 @@ internal class DivineVideoPlayerInstance(
     override fun onSurfaceAvailable() {
         if (needsSurface) {
             val surface = surfaceProducer?.surface ?: return
-<<<<<<< HEAD
             val p = player
             if (p != null) {
                 p.setVideoSurface(surface)
@@ -188,10 +182,6 @@ internal class DivineVideoPlayerInstance(
             }
             // If player is null, needsSurface stays true so ensurePlayer()
             // attaches the surface when the player is eventually created.
-=======
-            player?.setVideoSurface(surface)
-            needsSurface = false
->>>>>>> 8a70ff105 (feat(video): refactor texture rendering to use SurfaceProducer for better surface management)
         }
     }
 

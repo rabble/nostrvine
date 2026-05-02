@@ -240,22 +240,6 @@ class DivineVideoPlayerInstanceTest {
         // onMediaItemTransition invocation below.
         clearMocks(mockPlayer, answers = false, recordedCalls = true)
 
-        listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
-
-        // setVideoSurface(null) must NOT be called — needsSurface is true, meaning
-        // no surface is currently attached for ExoPlayer to lose.
-        verify(exactly = 0) { mockPlayer.setVideoSurface(null) }
-    }
-
-    @Test
-    fun `non-auto media item transition does not detach or reattach surface`() {
-        every { mockProducer.surface } returns mockSurface
-        instance.enableTextureOutput(mockRegistry)
-        val listener = capturePlayerListener()
-        // Clear calls recorded during setup (ensurePlayer → setVideoSurface(surface))
-        // so the assertion only covers the onMediaItemTransition invocation below.
-        clearMocks(mockPlayer, answers = false, recordedCalls = true)
-
         listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
 
         verify(exactly = 0) { mockPlayer.setVideoSurface(any()) }

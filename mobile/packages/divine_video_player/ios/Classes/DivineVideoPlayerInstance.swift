@@ -184,12 +184,8 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 guard avComposition.renderSize.isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
-<<<<<<< HEAD
                 playerItem.videoComposition = avComposition
                 self.templateItem = playerItem
-=======
-                self.textureOutput?.attach(to: playerItem)
->>>>>>> 412359c3f (feat(video): improve video rendering and volume control handling)
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
                 // Many encoded videos in the feed have 1 black leading
