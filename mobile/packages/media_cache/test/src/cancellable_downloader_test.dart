@@ -199,9 +199,8 @@ void main() {
 
         // Ensure listener is attached before we trigger completion.
         await Future<void>.delayed(const Duration(milliseconds: 1));
-        controller
-          ..add(utf8.encode('partial'))
-          ..close();
+        controller.add(utf8.encode('partial'));
+        await controller.close();
 
         // Trigger cancellation while stream completion is in-flight.
         dl.cancel();
