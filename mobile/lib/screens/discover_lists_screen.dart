@@ -638,7 +638,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen>
                     const SizedBox(width: 8),
                   ],
                   Text(
-                    '${list.videoEventIds.length} ${list.videoEventIds.length == 1 ? 'video' : 'videos'}',
+                    context.l10n.listVideoCount(list.videoEventIds.length),
                     style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 12,

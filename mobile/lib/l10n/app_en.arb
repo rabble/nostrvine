@@ -2222,6 +2222,15 @@
       }
     }
   },
+  "listPersonCount": "{count, plural, =1{1 person} other{{count} people}}",
+  "@listPersonCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "listByAuthorPrefix": "By ",
   "listNewList": "New List",
   "listDone": "Done",
   "listErrorLoading": "Error loading lists",
@@ -2314,6 +2323,24 @@
   "soundPreview": "Preview",
   "soundStop": "Stop",
   "soundUseSound": "Use Sound",
+  "soundUntitled": "Untitled sound",
+  "soundStopPreview": "Stop preview",
+  "soundPreviewSemanticLabel": "Preview {title}",
+  "@soundPreviewSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "soundViewDetailsSemanticLabel": "View details for {title}",
+  "@soundViewDetailsSemanticLabel": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "soundNoVideoCount": "No videos yet",
   "soundOneVideo": "1 video",
   "soundVideoCount": "{count} videos",
@@ -2601,6 +2628,16 @@
     }
   },
   "exploreNoVideosAvailable": "No videos available",
+  "exploreSearchHint": "Search...",
+
+  "categoryVideoCount": "{count} videos",
+  "@categoryVideoCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
 
   "discoverListsFailedToUpdateSubscription": "Failed to update subscription: {error}",
   "@discoverListsFailedToUpdateSubscription": {

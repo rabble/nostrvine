@@ -4072,6 +4072,20 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String listPersonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count people',
+      one: '1 person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listByAuthorPrefix => 'By ';
+
+  @override
   String get listNewList => '新しいリスト';
 
   @override
@@ -4274,6 +4288,22 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get soundUseSound => 'サウンドを使う';
+
+  @override
+  String get soundUntitled => 'Untitled sound';
+
+  @override
+  String get soundStopPreview => 'Stop preview';
+
+  @override
+  String soundPreviewSemanticLabel(String title) {
+    return 'Preview $title';
+  }
+
+  @override
+  String soundViewDetailsSemanticLabel(String title) {
+    return 'View details for $title';
+  }
 
   @override
   String get soundNoVideoCount => '動画はまだないよ';
@@ -4765,6 +4795,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String exploreVideoCounter(int current, int total) {
     return '動画 $current/$total';
+  }
+
+  @override
+  String get exploreSearchHint => 'Search...';
+
+  @override
+  String categoryVideoCount(String count) {
+    return '$count videos';
   }
 
   @override

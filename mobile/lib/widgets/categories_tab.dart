@@ -161,7 +161,9 @@ class _CategoryTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_formatCount(category.videoCount)} videos',
+                        context.l10n.categoryVideoCount(
+                          _formatCount(category.videoCount),
+                        ),
                         style: TextStyle(
                           color: visuals.foregroundColor.withValues(alpha: 0.9),
                           fontSize: 12,

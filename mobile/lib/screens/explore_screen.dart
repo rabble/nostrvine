@@ -450,7 +450,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               padding: const EdgeInsets.all(16),
               child: DivineSearchBar(
                 controller: _searchController,
-                hintText: 'Search...',
+                hintText: context.l10n.exploreSearchHint,
               ),
             ),
           ),

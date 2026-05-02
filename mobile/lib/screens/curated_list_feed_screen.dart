@@ -259,10 +259,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     );
   }
 
-  /// Build the subheading showing "By [username] • # videos"
+  /// Build the subheading showing the creator and video count.
   Widget _buildSubheading() {
     final videoCount = widget.videoIds?.length ?? 0;
-    final videoText = '$videoCount ${videoCount == 1 ? 'video' : 'videos'}';
+    final videoText = context.l10n.listVideoCount(videoCount);
     final authorPubkey = widget.authorPubkey;
 
     if (authorPubkey != null) {
@@ -274,9 +274,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'By ',
-              style: TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 12),
+            Text(
+              context.l10n.listByAuthorPrefix,
+              style: const TextStyle(
+                color: VineTheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
             ),
             Flexible(
               flex: 0,

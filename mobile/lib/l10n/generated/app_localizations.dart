@@ -7512,6 +7512,18 @@ abstract class AppLocalizations {
   /// **'{count} videos'**
   String listVideoCount(int count);
 
+  /// No description provided for @listPersonCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person} other{{count} people}}'**
+  String listPersonCount(int count);
+
+  /// No description provided for @listByAuthorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'By '**
+  String get listByAuthorPrefix;
+
   /// No description provided for @listNewList.
   ///
   /// In en, this message translates to:
@@ -7895,6 +7907,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use Sound'**
   String get soundUseSound;
+
+  /// No description provided for @soundUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled sound'**
+  String get soundUntitled;
+
+  /// No description provided for @soundStopPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop preview'**
+  String get soundStopPreview;
+
+  /// No description provided for @soundPreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview {title}'**
+  String soundPreviewSemanticLabel(String title);
+
+  /// No description provided for @soundViewDetailsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View details for {title}'**
+  String soundViewDetailsSemanticLabel(String title);
 
   /// No description provided for @soundNoVideoCount.
   ///
@@ -8819,6 +8855,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video {current}/{total}'**
   String exploreVideoCounter(int current, int total);
+
+  /// No description provided for @exploreSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get exploreSearchHint;
+
+  /// No description provided for @categoryVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos'**
+  String categoryVideoCount(String count);
 
   /// No description provided for @discoverListsFailedToUpdateSubscription.
   ///

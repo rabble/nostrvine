@@ -4173,6 +4173,20 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String listPersonCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ሰዎች',
+      one: '1 ሰው',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get listByAuthorPrefix => 'በ';
+
+  @override
   String get listNewList => 'አዲስ ዝርዝር';
 
   @override
@@ -4378,6 +4392,22 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get soundUseSound => 'ድምጽን ተጠቀም';
+
+  @override
+  String get soundUntitled => 'ርዕስ የሌለው ድምፅ';
+
+  @override
+  String get soundStopPreview => 'ቅድመ እይታን አቁም';
+
+  @override
+  String soundPreviewSemanticLabel(String title) {
+    return '$titleን ቀድመው ያጫውቱ';
+  }
+
+  @override
+  String soundViewDetailsSemanticLabel(String title) {
+    return 'የ$title ዝርዝሮችን ይመልከቱ';
+  }
 
   @override
   String get soundNoVideoCount => 'እስካሁን ምንም ቪዲዮዎች የሉም';
@@ -4869,6 +4899,14 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String exploreVideoCounter(int current, int total) {
     return 'ቪዲዮ $current/$total';
+  }
+
+  @override
+  String get exploreSearchHint => 'ይፈልጉ...';
+
+  @override
+  String categoryVideoCount(String count) {
+    return '$count ቪዲዮዎች';
   }
 
   @override

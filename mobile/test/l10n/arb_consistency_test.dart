@@ -189,6 +189,16 @@ const _knownUntranslatedDebt = {
   'hashtagSearchSubtitle',
   'userNotAvailableTitle',
   'userNotAvailableBody',
+  // Added after an Explore Amharic QA pass caught hardcoded search and video
+  // count suffixes. Existing locales fall back to English until the next pass.
+  'exploreSearchHint',
+  'categoryVideoCount',
+  'listPersonCount',
+  'listByAuthorPrefix',
+  'soundUntitled',
+  'soundStopPreview',
+  'soundPreviewSemanticLabel',
+  'soundViewDetailsSemanticLabel',
   // Added by people-lists feature (investigate/list-management).
   // Translators will pick these up in a follow-up pass; until then the
   // generated l10n APIs fall back to the English source.
