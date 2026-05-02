@@ -168,10 +168,15 @@ class RelayCapabilityService {
       return cached.capabilities;
     }
 
-    // Convert wss:// to https:// for NIP-11 HTTP request
-    final httpUrl = relayWsUrl
-        .replaceFirst('wss://', 'https://')
-        .replaceFirst('ws://', 'http://');
+    // Convert the validated WebSocket relay URL to its matching HTTP(S)
+    // NIP-11 endpoint. Use parsed scheme replacement so uppercase inputs
+    // like `WSS://relay.example.com` normalize correctly.
+    final relayUri = Uri.parse(relayWsUrl);
+    final httpUrl = relayUri
+        .replace(
+          scheme: relayUri.scheme.toLowerCase() == 'wss' ? 'https' : 'http',
+        )
+        .toString();
 
     UnifiedLogger.info(
       'Fetching NIP-11 capabilities from $httpUrl',

@@ -868,11 +868,12 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     // links) is structurally wrong and surfaces `relaySettingsInvalidUrl`.
     // `relaySettingsInsecureUrl` is reserved for the security-relevant
     // case: cleartext `ws://` pointed at a non-loopback host (#3362).
-    if (!relayUrl.startsWith('wss://') && !relayUrl.startsWith('ws://')) {
+    final uri = Uri.tryParse(relayUrl);
+    final scheme = uri?.scheme.toLowerCase();
+    if (scheme != 'wss' && scheme != 'ws') {
       _showError(invalidUrlMessage);
       return;
     }
-    final uri = Uri.tryParse(relayUrl);
     if (uri == null || !uri.hasAuthority || uri.host.isEmpty) {
       _showError(invalidUrlMessage);
       return;

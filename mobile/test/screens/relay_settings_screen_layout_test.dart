@@ -27,9 +27,7 @@ class _MockRelayStatisticsService extends Mock
 void main() {
   testWidgets(
     'RelaySettingsScreen constrains menu content width on wide screens',
-    (
-      tester,
-    ) async {
+    (tester) async {
       tester.view.physicalSize = const Size(900, 1200);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
@@ -51,9 +49,7 @@ void main() {
       when(
         statsService.getAllStatistics,
       ).thenReturn({'wss://relay.divine.video': stats});
-      when(
-        () => capabilityService.getRelayCapabilities(any()),
-      ).thenThrow(
+      when(() => capabilityService.getRelayCapabilities(any())).thenThrow(
         RelayCapabilityException('Not found', 'wss://relay.divine.video'),
       );
 
@@ -162,65 +158,64 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets(
-      'rejects ws:// non-loopback URL with insecure-url snackbar',
-      (tester) async {
-        final nostrService = _MockNostrService();
-        await pumpScreen(tester, nostrService: nostrService);
+    testWidgets('rejects ws:// non-loopback URL with insecure-url snackbar', (
+      tester,
+    ) async {
+      final nostrService = _MockNostrService();
+      await pumpScreen(tester, nostrService: nostrService);
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await openAddDialogAndSubmit(
-          tester,
-          'ws://attacker.example.com',
-          l10n,
-        );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await openAddDialogAndSubmit(tester, 'ws://attacker.example.com', l10n);
 
-        expect(find.text(l10n.relaySettingsInsecureUrl), findsOneWidget);
-        verifyNever(() => nostrService.addRelay(any()));
-      },
-    );
+      expect(find.text(l10n.relaySettingsInsecureUrl), findsOneWidget);
+      verifyNever(() => nostrService.addRelay(any()));
+    });
 
-    testWidgets(
-      'accepts wss:// URL and forwards to NostrClient',
-      (tester) async {
-        final nostrService = _MockNostrService();
-        when(
-          () => nostrService.addRelay(any()),
-        ).thenAnswer((_) async => true);
+    testWidgets('accepts wss:// URL and forwards to NostrClient', (
+      tester,
+    ) async {
+      final nostrService = _MockNostrService();
+      when(() => nostrService.addRelay(any())).thenAnswer((_) async => true);
 
-        await pumpScreen(tester, nostrService: nostrService);
+      await pumpScreen(tester, nostrService: nostrService);
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await openAddDialogAndSubmit(
-          tester,
-          'wss://relay.example.com',
-          l10n,
-        );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await openAddDialogAndSubmit(tester, 'wss://relay.example.com', l10n);
 
-        verify(
-          () => nostrService.addRelay('wss://relay.example.com'),
-        ).called(1);
-      },
-    );
+      verify(() => nostrService.addRelay('wss://relay.example.com')).called(1);
+    });
 
-    testWidgets(
-      'shows malformed-URL message for empty-host wss://',
-      (tester) async {
-        // Self-review fix: a bare scheme like `wss://` previously surfaced
-        // the security-relevant insecure-URL message, which told the user
-        // to do exactly what they typed. After the fix it falls through to
-        // the malformed-URL message.
-        final nostrService = _MockNostrService();
-        await pumpScreen(tester, nostrService: nostrService);
+    testWidgets('accepts uppercase WSS:// URL and forwards to NostrClient', (
+      tester,
+    ) async {
+      final nostrService = _MockNostrService();
+      when(() => nostrService.addRelay(any())).thenAnswer((_) async => true);
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await openAddDialogAndSubmit(tester, 'wss://', l10n);
+      await pumpScreen(tester, nostrService: nostrService);
 
-        expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
-        expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
-        verifyNever(() => nostrService.addRelay(any()));
-      },
-    );
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await openAddDialogAndSubmit(tester, 'WSS://relay.example.com', l10n);
+
+      verify(() => nostrService.addRelay('WSS://relay.example.com')).called(1);
+    });
+
+    testWidgets('shows malformed-URL message for empty-host wss://', (
+      tester,
+    ) async {
+      // Self-review fix: a bare scheme like `wss://` previously surfaced
+      // the security-relevant insecure-URL message, which told the user
+      // to do exactly what they typed. After the fix it falls through to
+      // the malformed-URL message.
+      final nostrService = _MockNostrService();
+      await pumpScreen(tester, nostrService: nostrService);
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await openAddDialogAndSubmit(tester, 'wss://', l10n);
+
+      expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
+      expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);
+      verifyNever(() => nostrService.addRelay(any()));
+    });
 
     testWidgets(
       'shows malformed-URL message for https:// input (relays are WS-only)',
@@ -233,11 +228,7 @@ void main() {
         await pumpScreen(tester, nostrService: nostrService);
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await openAddDialogAndSubmit(
-          tester,
-          'https://relay.example.com',
-          l10n,
-        );
+        await openAddDialogAndSubmit(tester, 'https://relay.example.com', l10n);
 
         expect(find.text(l10n.relaySettingsInvalidUrl), findsOneWidget);
         expect(find.text(l10n.relaySettingsInsecureUrl), findsNothing);

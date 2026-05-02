@@ -141,6 +141,24 @@ void main() {
         ).called(1);
       });
 
+      test('converts uppercase WSS:// to https:// for NIP-11 fetch', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://staging-relay.divine.video'),
+            headers: {'Accept': 'application/nostr+json'},
+          ),
+        ).thenAnswer((_) async => http.Response('{"name": "Test Relay"}', 200));
+
+        await service.getRelayCapabilities('WSS://staging-relay.divine.video');
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse('https://staging-relay.divine.video'),
+            headers: {'Accept': 'application/nostr+json'},
+          ),
+        ).called(1);
+      });
+
       test('handles HTTP errors gracefully', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
