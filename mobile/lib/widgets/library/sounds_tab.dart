@@ -1,5 +1,5 @@
 // ABOUTME: Sounds tab for the Library screen.
-// ABOUTME: Browse bundled and trending Nostr sounds with search and preview.
+// ABOUTME: Shows reusable sounds the user has explicitly saved.
 
 import 'dart:developer' as developer;
 
@@ -10,17 +10,15 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:sound_service/sound_service.dart';
 
-/// Sounds browsing tab for the Library screen.
+/// User-saved sounds tab for the Library screen.
 ///
-/// Shows bundled and trending Nostr sounds with search, preview
-/// playback, and navigation to [SoundDetailScreen].
+/// Shows sounds saved through the out-of-flow "Use Sound" actions. Editor
+/// selection remains inside the recording/editor flow.
 class SoundsTab extends ConsumerStatefulWidget {
   const SoundsTab({super.key});
 
@@ -67,7 +65,6 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     _audioService ??= ref.read(audioPlaybackServiceProvider);
     final audioService = _audioService!;
 
-    // Toggle off if already playing this sound
     if (_previewingSoundId == sound.id) {
       await _stopPreview();
       return;
@@ -130,112 +127,57 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   }
 
   Widget _buildContent() {
-    final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
-    final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
-
-    final bundledSounds =
-        bundledSoundsAsync.whenOrNull(
-          data: (service) {
-            return service.sounds.indexed
-                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
-                .toList();
-          },
-        ) ??
-        <AudioEvent>[];
-
-    return nostrSoundsAsync.when(
-      data: (nostrSounds) => _buildSoundsContent(
-        bundledSounds: bundledSounds,
-        nostrSounds: nostrSounds,
-      ),
-      loading: () => bundledSounds.isNotEmpty
-          ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
-          : const Center(child: BrandedLoadingIndicator()),
-      error: (error, stack) => bundledSounds.isNotEmpty
-          ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
-          : _buildEmptyState(),
-    );
+    final savedSounds = ref.watch(savedSoundsProvider);
+    return _buildSoundsContent(savedSounds);
   }
 
-  Widget _buildSoundsContent({
-    required List<AudioEvent> bundledSounds,
-    required List<AudioEvent> nostrSounds,
-  }) {
-    final allSounds = [...bundledSounds, ...nostrSounds];
+  Widget _buildSoundsContent(List<AudioEvent> sounds) {
+    if (sounds.isEmpty) return _buildEmptyState();
 
-    if (allSounds.isEmpty) return _buildEmptyState();
-
-    final filteredBundled = _filterSounds(bundledSounds);
-    final filteredNostr = _filterSounds(nostrSounds);
-    final filteredAll = [...filteredBundled, ...filteredNostr];
-
-    if (_searchQuery.isNotEmpty && filteredAll.isEmpty) {
+    final filteredSounds = _filterSounds(sounds);
+    if (_searchQuery.isNotEmpty && filteredSounds.isEmpty) {
       return _buildNoResultsState();
     }
 
-    return RefreshIndicator(
-      color: VineTheme.onPrimary,
-      backgroundColor: VineTheme.vineGreen,
-      onRefresh: () async {
-        await ref.read(trendingSoundsProvider.notifier).refresh();
-      },
-      child: ListView(
-        children: [
-          if (_searchQuery.isEmpty && bundledSounds.isNotEmpty) ...[
-            _FeaturedSoundsSection(
-              sounds: bundledSounds,
-              previewingSoundId: _previewingSoundId,
-              onTap: _onSoundTap,
-              onPreview: _onPreviewTap,
-            ),
-            const SizedBox(height: 16),
-          ],
-          if (_searchQuery.isEmpty && nostrSounds.isNotEmpty) ...[
-            _TrendingSoundsSection(
-              sounds: nostrSounds,
-              previewingSoundId: _previewingSoundId,
-              onTap: _onSoundTap,
-              onPreview: _onPreviewTap,
-              onDetail: _onDetailTap,
-            ),
-            const SizedBox(height: 16),
-          ],
-          _AllSoundsSection(
-            sounds: _searchQuery.isNotEmpty ? filteredAll : allSounds,
-            searchQuery: _searchQuery,
-            previewingSoundId: _previewingSoundId,
-            onTap: _onSoundTap,
-            onPreview: _onPreviewTap,
-            onDetail: _onDetailTap,
-          ),
-        ],
-      ),
+    return ListView(
+      children: [
+        _SavedSoundsSection(
+          sounds: filteredSounds,
+          previewingSoundId: _previewingSoundId,
+          onTap: _onSoundTap,
+          onPreview: _onPreviewTap,
+          onDetail: _onDetailTap,
+        ),
+      ],
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
-          const SizedBox(height: 16),
+          Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
+          SizedBox(height: 16),
           Text(
-            context.l10n.soundsNoSoundsAvailable,
-            style: const TextStyle(
+            'No saved sounds yet',
+            style: TextStyle(
               color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.soundsNoSoundsDescription,
-            style: const TextStyle(
-              color: VineTheme.onSurfaceMuted,
-              fontSize: 14,
+          SizedBox(height: 8),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'Tap Use Sound on a video to save it here.',
+              style: TextStyle(
+                color: VineTheme.onSurfaceMuted,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -298,72 +240,8 @@ class _SearchInput extends StatelessWidget {
   }
 }
 
-class _FeaturedSoundsSection extends StatelessWidget {
-  const _FeaturedSoundsSection({
-    required this.sounds,
-    required this.previewingSoundId,
-    required this.onTap,
-    required this.onPreview,
-  });
-
-  final List<AudioEvent> sounds;
-  final String? previewingSoundId;
-  final ValueChanged<AudioEvent> onTap;
-  final ValueChanged<AudioEvent> onPreview;
-
-  @override
-  Widget build(BuildContext context) {
-    final featured = sounds.take(10).toList();
-    if (featured.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.soundsFeaturedSounds,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: featured.length,
-            itemBuilder: (context, index) {
-              final sound = featured[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: SoundTile(
-                  sound: sound,
-                  compact: true,
-                  isPlaying: previewingSoundId == sound.id,
-                  onTap: () => onTap(sound),
-                  onPlayPreview: () => onPreview(sound),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TrendingSoundsSection extends StatelessWidget {
-  const _TrendingSoundsSection({
+class _SavedSoundsSection extends StatelessWidget {
+  const _SavedSoundsSection({
     required this.sounds,
     required this.previewingSoundId,
     required this.onTap,
@@ -372,79 +250,6 @@ class _TrendingSoundsSection extends StatelessWidget {
   });
 
   final List<AudioEvent> sounds;
-  final String? previewingSoundId;
-  final ValueChanged<AudioEvent> onTap;
-  final ValueChanged<AudioEvent> onPreview;
-  final ValueChanged<AudioEvent> onDetail;
-
-  @override
-  Widget build(BuildContext context) {
-    final trending = sounds.take(10).toList();
-    if (trending.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.local_fire_department,
-                color: VineTheme.vineGreen,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.soundsTrendingSounds,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: trending.length,
-            itemBuilder: (context, index) {
-              final sound = trending[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: SoundTile(
-                  sound: sound,
-                  compact: true,
-                  isPlaying: previewingSoundId == sound.id,
-                  onTap: () => onTap(sound),
-                  onPlayPreview: () => onPreview(sound),
-                  onDetailTap: () => onDetail(sound),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AllSoundsSection extends StatelessWidget {
-  const _AllSoundsSection({
-    required this.sounds,
-    required this.searchQuery,
-    required this.previewingSoundId,
-    required this.onTap,
-    required this.onPreview,
-    required this.onDetail,
-  });
-
-  final List<AudioEvent> sounds;
-  final String searchQuery;
   final String? previewingSoundId;
   final ValueChanged<AudioEvent> onTap;
   final ValueChanged<AudioEvent> onPreview;
@@ -465,11 +270,9 @@ class _AllSoundsSection extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                searchQuery.isEmpty
-                    ? context.l10n.soundsAllSounds
-                    : context.l10n.soundsSearchResults,
-                style: const TextStyle(
+              const Text(
+                'My Sounds',
+                style: TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
