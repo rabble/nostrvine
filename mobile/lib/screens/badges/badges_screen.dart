@@ -8,9 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/badges/badges_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/services/badges/badge_repository.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Shows the current user's Nostr badge dashboard.
 class BadgesScreen extends ConsumerWidget {
@@ -27,6 +29,7 @@ class BadgesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final repository = ref.watch(badgeRepositoryProvider);
     return BlocProvider(
+      key: ObjectKey(repository),
       create: (_) => BadgesCubit(repository: repository)..load(),
       child: const _BadgesView(),
     );
@@ -40,7 +43,7 @@ class _BadgesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Badges',
+        title: context.l10n.badgesTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -89,31 +92,24 @@ class _BadgesIntro extends StatelessWidget {
 
   final BadgesState state;
 
-  String? get _errorMessage {
-    if (state.actionStatus == BadgeActionStatus.error) {
-      return 'Could not update badge';
-    }
-    if (state.status == BadgesStatus.error) {
-      return 'Could not load badges';
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final errorMessage = _errorMessage;
+    final errorMessage = switch ((state.actionStatus, state.status)) {
+      (BadgeActionStatus.error, _) => context.l10n.badgesUpdateError,
+      (_, BadgesStatus.error) => context.l10n.badgesLoadError,
+      _ => null,
+    };
     return _Panel(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Understand your badge trail',
+            context.l10n.badgesIntroTitle,
             style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
-            'See badge awards sent to you, choose what to pin to your Nostr '
-            'profile, and check whether people accepted badges you issued.',
+            context.l10n.badgesIntroBody,
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceVariant),
           ),
           if (errorMessage != null) ...[
@@ -125,13 +121,11 @@ class _BadgesIntro extends StatelessWidget {
           ],
           const SizedBox(height: 16),
           DivineButton(
-            label: 'Open badges app',
+            label: context.l10n.badgesOpenApp,
             leadingIcon: DivineIconName.arrowUpRight,
             onPressed: () {
               final app = _divineBadgesApp();
-              context.push(
-                NostrAppSandboxScreen.pathForAppId(app.id),
-              );
+              context.push(NostrAppSandboxScreen.pathForAppId(app.id));
             },
           ),
         ],
@@ -150,19 +144,15 @@ class _AwardedBadgesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionTitle('Awarded to you'),
+        _SectionTitle(context.l10n.badgesAwardedSectionTitle),
         if (state.awarded.isEmpty)
-          const _EmptyPanel(
-            title: 'No badge awards yet',
-            subtitle:
-                'When someone awards you a Nostr badge, it will land here.',
+          _EmptyPanel(
+            title: context.l10n.badgesAwardedEmptyTitle,
+            subtitle: context.l10n.badgesAwardedEmptySubtitle,
           )
         else
           for (final award in state.awarded) ...[
-            _AwardedBadgeCard(
-              award: award,
-              actionStatus: state.actionStatus,
-            ),
+            _AwardedBadgeCard(award: award, actionStatus: state.actionStatus),
             const SizedBox(height: 12),
           ],
       ],
@@ -171,10 +161,7 @@ class _AwardedBadgesSection extends StatelessWidget {
 }
 
 class _AwardedBadgeCard extends StatelessWidget {
-  const _AwardedBadgeCard({
-    required this.award,
-    required this.actionStatus,
-  });
+  const _AwardedBadgeCard({required this.award, required this.actionStatus});
 
   final BadgeAwardViewData award;
   final BadgeActionStatus actionStatus;
@@ -208,7 +195,9 @@ class _AwardedBadgeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     _StatusPill(
-                      label: award.isAccepted ? 'Accepted' : 'Not accepted',
+                      label: award.isAccepted
+                          ? context.l10n.badgesStatusAccepted
+                          : context.l10n.badgesStatusNotAccepted,
                       accepted: award.isAccepted,
                     ),
                   ],
@@ -230,7 +219,7 @@ class _AwardedBadgeCard extends StatelessWidget {
             children: [
               if (award.isAccepted)
                 DivineButton(
-                  label: 'Remove',
+                  label: context.l10n.badgesActionRemove,
                   type: DivineButtonType.secondary,
                   size: DivineButtonSize.small,
                   isLoading: actionStatus == BadgeActionStatus.removing,
@@ -238,13 +227,13 @@ class _AwardedBadgeCard extends StatelessWidget {
                 )
               else ...[
                 DivineButton(
-                  label: 'Accept',
+                  label: context.l10n.badgesActionAccept,
                   size: DivineButtonSize.small,
                   isLoading: actionStatus == BadgeActionStatus.accepting,
                   onPressed: _isBusy ? null : () => cubit.acceptAward(award),
                 ),
                 DivineButton(
-                  label: 'Reject',
+                  label: context.l10n.badgesActionReject,
                   type: DivineButtonType.secondary,
                   size: DivineButtonSize.small,
                   isLoading: actionStatus == BadgeActionStatus.hiding,
@@ -269,11 +258,11 @@ class _IssuedBadgesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _SectionTitle('Issued by you'),
+        _SectionTitle(context.l10n.badgesIssuedSectionTitle),
         if (issued.isEmpty)
-          const _EmptyPanel(
-            title: 'No issued badges yet',
-            subtitle: 'Badges you issue will show acceptance status here.',
+          _EmptyPanel(
+            title: context.l10n.badgesIssuedEmptyTitle,
+            subtitle: context.l10n.badgesIssuedEmptySubtitle,
           )
         else
           for (final badge in issued) ...[
@@ -304,7 +293,7 @@ class _IssuedBadgeCard extends StatelessWidget {
           const SizedBox(height: 12),
           if (badge.recipients.isEmpty)
             Text(
-              'No recipients found for this award.',
+              context.l10n.badgesIssuedNoRecipients,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
             )
           else
@@ -339,8 +328,8 @@ class _RecipientStatusRow extends StatelessWidget {
         const SizedBox(width: 12),
         _StatusPill(
           label: recipient.isAccepted
-              ? 'Accepted by recipient'
-              : 'Waiting for recipient',
+              ? context.l10n.badgesRecipientAcceptedStatus
+              : context.l10n.badgesRecipientWaitingStatus,
           accepted: recipient.isAccepted,
         ),
       ],
@@ -412,9 +401,7 @@ class _BadgesLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _Panel(
-      child: Center(child: CircularProgressIndicator()),
-    );
+    return const _Panel(child: Center(child: CircularProgressIndicator()));
   }
 }
 
@@ -427,10 +414,10 @@ class _BadgesErrorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Could not load badges', style: VineTheme.titleSmallFont()),
+          Text(context.l10n.badgesLoadError, style: VineTheme.titleSmallFont()),
           const SizedBox(height: 12),
           DivineButton(
-            label: 'Retry',
+            label: context.l10n.commonRetry,
             onPressed: () => context.read<BadgesCubit>().load(),
           ),
         ],
@@ -465,10 +452,9 @@ class _BadgeMedallion extends StatelessWidget {
       child: imageUrl == null || imageUrl!.isEmpty
           ? fallback
           : ClipOval(
-              child: Image.network(
-                imageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => fallback,
+              child: VineCachedImage(
+                imageUrl: imageUrl!,
+                errorWidget: (_, _, _) => fallback,
               ),
             ),
     );

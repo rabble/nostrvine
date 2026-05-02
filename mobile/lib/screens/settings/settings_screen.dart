@@ -242,9 +242,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => context.push(NostrSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'Badges',
-                  icon: Icons.workspace_premium,
-                  subtitle: 'Accept awards and check issued badge status.',
+                  title: context.l10n.settingsBadgesTitle,
+                  divineIcon: DivineIconName.sealCheck,
+                  subtitle: context.l10n.settingsBadgesSubtitle,
                   onTap: () => context.push(BadgesScreen.path),
                 ),
                 if (nostrAppsSandboxSupported)

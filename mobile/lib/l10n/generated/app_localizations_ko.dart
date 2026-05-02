@@ -33,6 +33,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsNotifications => '알림';
 
   @override
+  String get settingsGeneralTitle => 'General Settings';
+
+  @override
+  String get settingsContentSafetyTitle => 'Content & Safety';
+
+  @override
   String get settingsContentPreferences => '콘텐츠 환경설정';
 
   @override
@@ -6392,4 +6398,74 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get fullscreenFeedRemovedMessage => '동영상이 삭제됐어요';
+
+  @override
+  String get settingsBadgesTitle => 'Badges';
+
+  @override
+  String get settingsBadgesSubtitle =>
+      'Accept awards and check issued badge status.';
+
+  @override
+  String get badgesTitle => 'Badges';
+
+  @override
+  String get badgesIntroTitle => 'Understand your badge trail';
+
+  @override
+  String get badgesIntroBody =>
+      'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.';
+
+  @override
+  String get badgesOpenApp => 'Open badges app';
+
+  @override
+  String get badgesLoadError => 'Could not load badges';
+
+  @override
+  String get badgesUpdateError => 'Could not update badge';
+
+  @override
+  String get badgesAwardedSectionTitle => 'Awarded to you';
+
+  @override
+  String get badgesAwardedEmptyTitle => 'No badge awards yet';
+
+  @override
+  String get badgesAwardedEmptySubtitle =>
+      'When someone awards you a Nostr badge, it will land here.';
+
+  @override
+  String get badgesStatusAccepted => 'Accepted';
+
+  @override
+  String get badgesStatusNotAccepted => 'Not accepted';
+
+  @override
+  String get badgesActionRemove => 'Remove';
+
+  @override
+  String get badgesActionAccept => 'Accept';
+
+  @override
+  String get badgesActionReject => 'Reject';
+
+  @override
+  String get badgesIssuedSectionTitle => 'Issued by you';
+
+  @override
+  String get badgesIssuedEmptyTitle => 'No issued badges yet';
+
+  @override
+  String get badgesIssuedEmptySubtitle =>
+      'Badges you issue will show acceptance status here.';
+
+  @override
+  String get badgesIssuedNoRecipients => 'No recipients found for this award.';
+
+  @override
+  String get badgesRecipientAcceptedStatus => 'Accepted by recipient';
+
+  @override
+  String get badgesRecipientWaitingStatus => 'Waiting for recipient';
 }

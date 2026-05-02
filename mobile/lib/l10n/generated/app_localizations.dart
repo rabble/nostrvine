@@ -176,6 +176,18 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get settingsNotifications;
 
+  /// No description provided for @settingsGeneralTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'General Settings'**
+  String get settingsGeneralTitle;
+
+  /// No description provided for @settingsContentSafetyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content & Safety'**
+  String get settingsContentSafetyTitle;
+
   /// No description provided for @settingsContentPreferences.
   ///
   /// In en, this message translates to:
@@ -11673,6 +11685,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video removed'**
   String get fullscreenFeedRemovedMessage;
+
+  /// No description provided for @settingsBadgesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges'**
+  String get settingsBadgesTitle;
+
+  /// No description provided for @settingsBadgesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept awards and check issued badge status.'**
+  String get settingsBadgesSubtitle;
+
+  /// No description provided for @badgesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges'**
+  String get badgesTitle;
+
+  /// No description provided for @badgesIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Understand your badge trail'**
+  String get badgesIntroTitle;
+
+  /// No description provided for @badgesIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.'**
+  String get badgesIntroBody;
+
+  /// No description provided for @badgesOpenApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open badges app'**
+  String get badgesOpenApp;
+
+  /// No description provided for @badgesLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load badges'**
+  String get badgesLoadError;
+
+  /// No description provided for @badgesUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update badge'**
+  String get badgesUpdateError;
+
+  /// No description provided for @badgesAwardedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Awarded to you'**
+  String get badgesAwardedSectionTitle;
+
+  /// No description provided for @badgesAwardedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No badge awards yet'**
+  String get badgesAwardedEmptyTitle;
+
+  /// No description provided for @badgesAwardedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone awards you a Nostr badge, it will land here.'**
+  String get badgesAwardedEmptySubtitle;
+
+  /// No description provided for @badgesStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get badgesStatusAccepted;
+
+  /// No description provided for @badgesStatusNotAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get badgesStatusNotAccepted;
+
+  /// No description provided for @badgesActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get badgesActionRemove;
+
+  /// No description provided for @badgesActionAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get badgesActionAccept;
+
+  /// No description provided for @badgesActionReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get badgesActionReject;
+
+  /// No description provided for @badgesIssuedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued by you'**
+  String get badgesIssuedSectionTitle;
+
+  /// No description provided for @badgesIssuedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No issued badges yet'**
+  String get badgesIssuedEmptyTitle;
+
+  /// No description provided for @badgesIssuedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges you issue will show acceptance status here.'**
+  String get badgesIssuedEmptySubtitle;
+
+  /// No description provided for @badgesIssuedNoRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'No recipients found for this award.'**
+  String get badgesIssuedNoRecipients;
+
+  /// No description provided for @badgesRecipientAcceptedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted by recipient'**
+  String get badgesRecipientAcceptedStatus;
+
+  /// No description provided for @badgesRecipientWaitingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for recipient'**
+  String get badgesRecipientWaitingStatus;
 }
 
 class _AppLocalizationsDelegate

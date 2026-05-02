@@ -20,6 +20,7 @@ void main() {
     late _MockBadgeRepository repository;
     late BadgeAwardViewData awardedBadge;
     late IssuedBadgeViewData issuedBadge;
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUpAll(() {
       registerFallbackValue(_awardViewData(isAccepted: false));
@@ -47,42 +48,36 @@ void main() {
     }
 
     testWidgets('loads awarded and issued badge context', (tester) async {
-      when(
-        repository.loadDashboard,
-      ).thenAnswer(
-        (_) async => BadgeDashboardData(
-          awarded: [awardedBadge],
-          issued: [issuedBadge],
-        ),
+      when(repository.loadDashboard).thenAnswer(
+        (_) async =>
+            BadgeDashboardData(awarded: [awardedBadge], issued: [issuedBadge]),
       );
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       expect(find.byType(DiVineAppBar), findsOneWidget);
-      expect(find.text('Badges'), findsOneWidget);
-      expect(find.text('Awarded to you'), findsOneWidget);
+      expect(find.text(l10n.badgesTitle), findsOneWidget);
+      expect(find.text(l10n.badgesAwardedSectionTitle), findsOneWidget);
       expect(find.text('Diviner of the Day'), findsOneWidget);
-      expect(find.text('Not accepted'), findsOneWidget);
-      expect(find.text('Accept'), findsOneWidget);
-      expect(find.text('Reject'), findsOneWidget);
-      expect(find.text('Issued by you'), findsOneWidget);
-      expect(find.text('Accepted by recipient'), findsOneWidget);
+      expect(find.text(l10n.badgesStatusNotAccepted), findsOneWidget);
+      expect(find.text(l10n.badgesActionAccept), findsOneWidget);
+      expect(find.text(l10n.badgesActionReject), findsOneWidget);
+      expect(find.text(l10n.badgesIssuedSectionTitle), findsOneWidget);
+      expect(find.text(l10n.badgesRecipientAcceptedStatus), findsOneWidget);
     });
 
     testWidgets('accept button delegates to the repository', (tester) async {
       when(repository.loadDashboard).thenAnswer(
-        (_) async => BadgeDashboardData(
-          awarded: [awardedBadge],
-          issued: const [],
-        ),
+        (_) async =>
+            BadgeDashboardData(awarded: [awardedBadge], issued: const []),
       );
       when(() => repository.acceptAward(any())).thenAnswer((_) async {});
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Accept'));
+      await tester.tap(find.text(l10n.badgesActionAccept));
       await tester.pumpAndSettle();
 
       verify(() => repository.acceptAward(awardedBadge)).called(1);
@@ -92,16 +87,14 @@ void main() {
     testWidgets('opens the embedded Divine Badges app', (tester) async {
       final mockGoRouter = MockGoRouter();
       when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
-      when(
-        repository.loadDashboard,
-      ).thenAnswer(
+      when(repository.loadDashboard).thenAnswer(
         (_) async => const BadgeDashboardData(awarded: [], issued: []),
       );
 
       await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open badges app'));
+      await tester.tap(find.text(l10n.badgesOpenApp));
       await tester.pumpAndSettle();
 
       verify(
