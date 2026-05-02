@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -72,6 +73,19 @@ Widget _buildEmptyFeedSubject(VideoFeedState state) {
 }
 
 void main() {
+  late bool originalInfiniteFeedSupport;
+
+  setUpAll(() {
+    // This test suite validates pooled-feed behavior; pin the runtime branch
+    // so host platform support changes do not flip widget paths.
+    originalInfiniteFeedSupport = InfiniteVideoFeed.isSupported;
+    InfiniteVideoFeed.isSupported = false;
+  });
+
+  tearDownAll(() {
+    InfiniteVideoFeed.isSupported = originalInfiniteFeedSupport;
+  });
+
   group(FeedEmptyWidget, () {
     testWidgets('uses no-follow guidance for an empty For You feed', (
       tester,

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -215,6 +216,8 @@ class _PopCountingObserver extends NavigatorObserver {
 }
 
 void main() {
+  late bool originalInfiniteFeedSupport;
+
   group('PooledFullscreenVideoFeedScreen', () {
     group('fullscreen video media alignment', () {
       test('top-aligns contained square and landscape videos', () {
@@ -241,6 +244,11 @@ void main() {
     late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUpAll(() {
+      // This suite validates pooled controller behavior; force the widget
+      // to stay on the pooled/native fallback path regardless of host OS.
+      originalInfiniteFeedSupport = InfiniteVideoFeed.isSupported;
+      InfiniteVideoFeed.isSupported = false;
+
       registerFallbackValue(const FullscreenFeedStarted());
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
       registerFallbackValue(const FullscreenFeedLoadMoreRequested());
@@ -274,6 +282,10 @@ void main() {
     tearDown(() async {
       await stateController.close();
       await PlayerPool.reset();
+    });
+
+    tearDownAll(() {
+      InfiniteVideoFeed.isSupported = originalInfiniteFeedSupport;
     });
 
     List<VideoEvent> createTestVideos({int count = 3}) {
