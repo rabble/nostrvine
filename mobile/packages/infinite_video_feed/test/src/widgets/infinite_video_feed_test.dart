@@ -306,17 +306,18 @@ void main() {
           (message) async {
             final call = methodCodec.decodeMethodCall(message);
             if (call.method == 'listen') {
-              scheduleMicrotask(() {
-                tester.binding.defaultBinaryMessenger.handlePlatformMessage(
-                  eventChannelName,
-                  methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
-                    'status': 'ready',
-                    'videoWidth': 1280,
-                    'videoHeight': 720,
-                    'isFirstFrameRendered': false,
-                  }),
-                  (_) {},
-                );
+              scheduleMicrotask(() async {
+                await tester.binding.defaultBinaryMessenger
+                    .handlePlatformMessage(
+                      eventChannelName,
+                      methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
+                        'status': 'ready',
+                        'videoWidth': 1280,
+                        'videoHeight': 720,
+                        'isFirstFrameRendered': false,
+                      }),
+                      (_) {},
+                    );
               });
             }
             return methodCodec.encodeSuccessEnvelope(null);
