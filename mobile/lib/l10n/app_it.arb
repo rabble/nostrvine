@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Capito",
-    "profileSetupUploadFailedGeneric": "Impossibile caricare l'immagine: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Impossibile caricare l'immagine. Riprova più tardi.",
     "profileSetupUploadNetworkError": "Errore di rete: controlla la connessione a internet e riprova.",
     "profileSetupUploadAuthError": "Errore di autenticazione: prova a uscire e a rientrare.",
     "profileSetupUploadFileTooLarge": "File troppo grande: scegli un'immagine più piccola (max 10MB).",
+    "profileSetupUploadServerError": "Impossibile caricare l'immagine. I nostri server sono temporaneamente non disponibili. Riprova tra un attimo.",
     "profileSetupUsernameChecking": "Controllo disponibilità...",
     "profileSetupUsernameAvailable": "Nome utente disponibile!",
     "profileSetupUsernameTakenIndicator": "Nome utente già preso",

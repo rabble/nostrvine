@@ -805,9 +805,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupGotItButton => 'Am înțeles';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Încărcarea imaginii a eșuat: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -820,6 +819,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Fișier prea mare: alege o imagine mai mică (maxim 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.';
 
   @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';

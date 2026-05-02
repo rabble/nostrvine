@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Entendido",
-    "profileSetupUploadFailedGeneric": "No se pudo subir la imagen: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "No se pudo subir la imagen. Probá de nuevo más tarde.",
     "profileSetupUploadNetworkError": "Error de red: revisá tu conexión a internet y probá de nuevo.",
     "profileSetupUploadAuthError": "Error de autenticación: cerrá sesión y volvé a iniciarla.",
     "profileSetupUploadFileTooLarge": "Archivo demasiado grande: elegí una imagen más chica (máx 10MB).",
+    "profileSetupUploadServerError": "No se pudo subir la imagen. Nuestros servidores están temporalmente fuera de servicio. Probá de nuevo en un momento.",
     "profileSetupUsernameChecking": "Verificando disponibilidad...",
     "profileSetupUsernameAvailable": "¡Nombre de usuario disponible!",
     "profileSetupUsernameTakenIndicator": "Ese nombre de usuario ya está ocupado",

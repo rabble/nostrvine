@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Am înțeles",
-    "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.",
     "profileSetupUploadNetworkError": "Eroare de rețea: verifică conexiunea la internet și încearcă din nou.",
     "profileSetupUploadAuthError": "Eroare de autentificare: deconectează-te și autentifică-te din nou.",
     "profileSetupUploadFileTooLarge": "Fișier prea mare: alege o imagine mai mică (maxim 10MB).",
+    "profileSetupUploadServerError": "Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.",
     "profileSetupUsernameChecking": "Se verifică disponibilitatea...",
     "profileSetupUsernameAvailable": "Numele e disponibil!",
     "profileSetupUsernameTakenIndicator": "Numele e deja luat",

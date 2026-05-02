@@ -761,9 +761,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupGotItButton => 'Jag fattar';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Kunde inte ladda upp bilden: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Det gick inte att ladda upp bilden. Försök igen senare.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -776,6 +775,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Filen är för stor: Välj en mindre bild (max 10 MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.';
 
   @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';

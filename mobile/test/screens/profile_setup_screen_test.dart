@@ -415,4 +415,59 @@ void main() {
       );
     });
   });
+
+  group('profileSetupUploadErrorMessage', () {
+    Future<AppLocalizations> loadL10n(WidgetTester tester) async {
+      late AppLocalizations l10n;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              l10n = AppLocalizations.of(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      return l10n;
+    }
+
+    testWidgets('maps server failures to the server error message', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          Exception('Server error (503): Service Unavailable'),
+        ),
+        l10n.profileSetupUploadServerError,
+      );
+    });
+
+    testWidgets('uses a generic fallback without leaking raw exception text', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          Exception('weird upstream blob storage failure'),
+        ),
+        l10n.profileSetupUploadFailedGeneric,
+      );
+      expect(
+        l10n.profileSetupUploadFailedGeneric.contains(
+          'weird upstream blob storage failure',
+        ),
+        isFalse,
+      );
+    });
+  });
 }

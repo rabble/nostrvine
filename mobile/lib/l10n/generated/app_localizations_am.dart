@@ -750,9 +750,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupGotItButton => 'ገባኝ';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'ምስል መስቀል አልተሳካም፦ $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -765,6 +764,10 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'ፋይሉ በጣም ትልቅ ነው፡ እባክዎን ትንሽ ምስል ይምረጡ (ከፍተኛ 10 ሜባ)።';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።';
 
   @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';

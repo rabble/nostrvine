@@ -1445,8 +1445,8 @@ abstract class AppLocalizations {
   /// No description provided for @profileSetupUploadFailedGeneric.
   ///
   /// In en, this message translates to:
-  /// **'Failed to upload image: {error}'**
-  String profileSetupUploadFailedGeneric(Object error);
+  /// **'Upload failed. Please try again later.'**
+  String get profileSetupUploadFailedGeneric;
 
   /// No description provided for @profileSetupUploadNetworkError.
   ///
@@ -1465,6 +1465,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File too large: Please choose a smaller image (max 10MB).'**
   String get profileSetupUploadFileTooLarge;
+
+  /// No description provided for @profileSetupUploadServerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed. Our servers are temporarily unavailable. Please try again in a moment.'**
+  String get profileSetupUploadServerError;
 
   /// No description provided for @profileSetupUsernameChecking.
   ///

@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Jag fattar",
-    "profileSetupUploadFailedGeneric": "Kunde inte ladda upp bilden: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Det gick inte att ladda upp bilden. Försök igen senare.",
     "profileSetupUploadNetworkError": "Nätverksfel: Kolla din internetanslutning och försök igen.",
     "profileSetupUploadAuthError": "Autentiseringsfel: Logga ut och in igen.",
     "profileSetupUploadFileTooLarge": "Filen är för stor: Välj en mindre bild (max 10 MB).",
+    "profileSetupUploadServerError": "Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.",
     "profileSetupUsernameChecking": "Kollar tillgänglighet...",
     "profileSetupUsernameAvailable": "Användarnamnet är ledigt!",
     "profileSetupUsernameTakenIndicator": "Användarnamnet är redan taget",

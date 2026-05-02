@@ -723,9 +723,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupGotItButton => '알겠어요';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return '이미지를 올리지 못했어요: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      '이미지를 올리지 못했어요. 잠시 후 다시 시도해주세요.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -737,6 +736,10 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       '파일이 너무 커요: 더 작은 이미지를 고르세요 (최대 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      '이미지를 올리지 못했어요. 서버가 일시적으로 사용할 수 없어요. 잠시 후 다시 시도해주세요.';
 
   @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';

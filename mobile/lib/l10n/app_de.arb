@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Verstanden",
-    "profileSetupUploadFailedGeneric": "Bild konnte nicht hochgeladen werden: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Bild konnte nicht hochgeladen werden. Bitte versuche es später noch einmal.",
     "profileSetupUploadNetworkError": "Netzwerkfehler: Bitte prüf deine Internetverbindung und versuch es nochmal.",
     "profileSetupUploadAuthError": "Authentifizierungsfehler: Bitte melde dich ab und wieder an.",
     "profileSetupUploadFileTooLarge": "Datei zu groß: Bitte wähl ein kleineres Bild (max. 10MB).",
+    "profileSetupUploadServerError": "Bild konnte nicht hochgeladen werden. Unsere Server sind vorübergehend nicht verfügbar. Bitte versuche es gleich noch einmal.",
     "profileSetupUsernameChecking": "Verfügbarkeit wird geprüft...",
     "profileSetupUsernameAvailable": "Benutzername verfügbar!",
     "profileSetupUsernameTakenIndicator": "Benutzername bereits vergeben",

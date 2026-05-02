@@ -753,9 +753,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupGotItButton => 'فهمت';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'فشل رفع الصورة: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -768,6 +767,10 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'الملف كبير جدًا: يرجى اختيار صورة أصغر (10 ميغابايت كحد أقصى).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'فشل رفع الصورة. خوادمنا غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى بعد قليل.';
 
   @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';

@@ -786,9 +786,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupGotItButton => 'Capito';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Impossibile caricare l\'immagine: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Impossibile caricare l\'immagine. Riprova più tardi.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -801,6 +800,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'File troppo grande: scegli un\'immagine più piccola (max 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Impossibile caricare l\'immagine. I nostri server sono temporaneamente non disponibili. Riprova tra un attimo.';
 
   @override
   String get profileSetupUsernameChecking => 'Controllo disponibilità...';

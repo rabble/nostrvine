@@ -29,6 +29,45 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+String profileSetupUploadErrorMessage(
+  AppLocalizations l10n,
+  Object error,
+) {
+  final errorMessage = error.toString().toLowerCase();
+
+  if (errorMessage.contains('network') ||
+      errorMessage.contains('connection') ||
+      errorMessage.contains('cannot connect') ||
+      errorMessage.contains('timeout')) {
+    return l10n.profileSetupUploadNetworkError;
+  }
+
+  if (errorMessage.contains('auth') ||
+      errorMessage.contains('401') ||
+      errorMessage.contains('403')) {
+    return l10n.profileSetupUploadAuthError;
+  }
+
+  if (errorMessage.contains('file too large') ||
+      errorMessage.contains('payload too large') ||
+      errorMessage.contains('413') ||
+      errorMessage.contains('size')) {
+    return l10n.profileSetupUploadFileTooLarge;
+  }
+
+  if (errorMessage.contains('server error') ||
+      errorMessage.contains('server') ||
+      errorMessage.contains('unavailable') ||
+      errorMessage.contains('500') ||
+      errorMessage.contains('502') ||
+      errorMessage.contains('503') ||
+      errorMessage.contains('504')) {
+    return l10n.profileSetupUploadServerError;
+  }
+
+  return l10n.profileSetupUploadFailedGeneric;
+}
+
 class ProfileSetupScreen extends ConsumerWidget {
   /// Route name for editing existing profile.
   static const editRouteName = 'edit-profile';
@@ -1348,22 +1387,7 @@ class _ProfileSetupScreenViewState
         category: LogCategory.ui,
       );
 
-      // Check if it's a network connectivity issue
-      final errorMessage = e.toString().toLowerCase();
-      String userMessage = l10n.profileSetupUploadFailedGeneric('$e');
-
-      if (errorMessage.contains('network') ||
-          errorMessage.contains('connection') ||
-          errorMessage.contains('timeout')) {
-        userMessage = l10n.profileSetupUploadNetworkError;
-      } else if (errorMessage.contains('auth') ||
-          errorMessage.contains('401') ||
-          errorMessage.contains('403')) {
-        userMessage = l10n.profileSetupUploadAuthError;
-      } else if (errorMessage.contains('file too large') ||
-          errorMessage.contains('size')) {
-        userMessage = l10n.profileSetupUploadFileTooLarge;
-      }
+      final userMessage = profileSetupUploadErrorMessage(l10n, e);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

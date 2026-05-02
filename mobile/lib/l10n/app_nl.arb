@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Begrepen",
-    "profileSetupUploadFailedGeneric": "Afbeelding uploaden mislukt: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Uploaden van afbeelding mislukt. Probeer het later opnieuw.",
     "profileSetupUploadNetworkError": "Netwerkfout: check je internetverbinding en probeer opnieuw.",
     "profileSetupUploadAuthError": "Authenticatiefout: log uit en weer in.",
     "profileSetupUploadFileTooLarge": "Bestand te groot: kies een kleinere afbeelding (max 10 MB).",
+    "profileSetupUploadServerError": "Uploaden van afbeelding mislukt. Onze servers zijn tijdelijk niet beschikbaar. Probeer het zo opnieuw.",
     "profileSetupUsernameChecking": "Beschikbaarheid controleren...",
     "profileSetupUsernameAvailable": "Gebruikersnaam beschikbaar!",
     "profileSetupUsernameTakenIndicator": "Gebruikersnaam al in gebruik",

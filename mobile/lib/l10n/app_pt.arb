@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Entendi",
-    "profileSetupUploadFailedGeneric": "Falha ao enviar imagem: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Não foi possível enviar a imagem. Tente novamente mais tarde.",
     "profileSetupUploadNetworkError": "Erro de rede: verifique sua conexão com a internet e tente novamente.",
     "profileSetupUploadAuthError": "Erro de autenticação: tente sair e entrar novamente.",
     "profileSetupUploadFileTooLarge": "Arquivo muito grande: escolha uma imagem menor (máx. 10 MB).",
+    "profileSetupUploadServerError": "Não foi possível enviar a imagem. Nossos servidores estão temporariamente indisponíveis. Tente novamente em instantes.",
     "profileSetupUsernameChecking": "Verificando disponibilidade...",
     "profileSetupUsernameAvailable": "Nome de usuário disponível!",
     "profileSetupUsernameTakenIndicator": "Nome de usuário já em uso",

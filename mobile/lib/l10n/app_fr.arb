@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Compris",
-    "profileSetupUploadFailedGeneric": "Échec de l'envoi de l'image : {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "L'envoi de l'image a échoué. Réessaie plus tard.",
     "profileSetupUploadNetworkError": "Erreur réseau : vérifie ta connexion internet et réessaie.",
     "profileSetupUploadAuthError": "Erreur d'authentification : déconnecte-toi et reconnecte-toi.",
     "profileSetupUploadFileTooLarge": "Fichier trop gros : choisis une image plus petite (10 Mo max).",
+    "profileSetupUploadServerError": "L'envoi de l'image a échoué. Nos serveurs sont temporairement indisponibles. Réessaie dans un instant.",
     "profileSetupUsernameChecking": "Vérification de la disponibilité...",
     "profileSetupUsernameAvailable": "Nom d'utilisateur disponible !",
     "profileSetupUsernameTakenIndicator": "Nom d'utilisateur déjà pris",

@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "Anlaşıldı",
-    "profileSetupUploadFailedGeneric": "Görsel yüklenemedi: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Görsel yüklenemedi. Lütfen daha sonra tekrar dene.",
     "profileSetupUploadNetworkError": "Ağ hatası: Lütfen internet bağlantını kontrol et ve tekrar dene.",
     "profileSetupUploadAuthError": "Kimlik doğrulama hatası: Lütfen çıkış yapıp tekrar giriş yap.",
     "profileSetupUploadFileTooLarge": "Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).",
+    "profileSetupUploadServerError": "Görsel yüklenemedi. Sunucularımız geçici olarak kullanılamıyor. Lütfen birazdan tekrar dene.",
     "profileSetupUsernameChecking": "Uygunluk kontrol ediliyor...",
     "profileSetupUsernameAvailable": "Kullanıcı adı uygun!",
     "profileSetupUsernameTakenIndicator": "Kullanıcı adı zaten alınmış",

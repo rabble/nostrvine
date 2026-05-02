@@ -761,9 +761,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupGotItButton => 'Mengerti';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Gagal mengunggah gambar: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Gagal mengunggah gambar. Coba lagi nanti.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -776,6 +775,10 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'File terlalu besar: Pilih gambar yang lebih kecil (maks 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Gagal mengunggah gambar. Server kami sedang tidak tersedia untuk sementara. Coba lagi sebentar lagi.';
 
   @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';

@@ -759,9 +759,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupGotItButton => 'Anlaşıldı';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Görsel yüklenemedi: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Görsel yüklenemedi. Lütfen daha sonra tekrar dene.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -774,6 +773,10 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Görsel yüklenemedi. Sunucularımız geçici olarak kullanılamıyor. Lütfen birazdan tekrar dene.';
 
   @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';

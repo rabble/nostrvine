@@ -395,17 +395,11 @@
     }
   },
   "profileSetupGotItButton": "Got it",
-  "profileSetupUploadFailedGeneric": "Failed to upload image: {error}",
-  "@profileSetupUploadFailedGeneric": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileSetupUploadFailedGeneric": "Upload failed. Please try again later.",
   "profileSetupUploadNetworkError": "Network error: Please check your internet connection and try again.",
   "profileSetupUploadAuthError": "Authentication error: Please try logging out and back in.",
   "profileSetupUploadFileTooLarge": "File too large: Please choose a smaller image (max 10MB).",
+  "profileSetupUploadServerError": "Upload failed. Our servers are temporarily unavailable. Please try again in a moment.",
   "profileSetupUsernameChecking": "Checking availability...",
   "profileSetupUsernameAvailable": "Username available!",
   "profileSetupUsernameTakenIndicator": "Username already taken",

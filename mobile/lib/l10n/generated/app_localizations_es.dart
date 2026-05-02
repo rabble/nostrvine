@@ -784,9 +784,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get profileSetupGotItButton => 'Entendido';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'No se pudo subir la imagen: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'No se pudo subir la imagen. Probá de nuevo más tarde.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -799,6 +798,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Archivo demasiado grande: elegí una imagen más chica (máx 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'No se pudo subir la imagen. Nuestros servidores están temporalmente fuera de servicio. Probá de nuevo en un momento.';
 
   @override
   String get profileSetupUsernameChecking => 'Verificando disponibilidad...';

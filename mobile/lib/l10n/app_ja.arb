@@ -344,17 +344,11 @@
         }
     },
     "profileSetupGotItButton": "了解！",
-    "profileSetupUploadFailedGeneric": "画像のアップロードがうまくいかなかった: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "画像をアップロードできなかった。あとでもう一度試してみて。",
     "profileSetupUploadNetworkError": "ネットワークエラー: ネット接続を確認してもう一回試してみて。",
     "profileSetupUploadAuthError": "認証エラー: 一度ログアウトしてもう一回ログインしてみて。",
     "profileSetupUploadFileTooLarge": "ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。",
+    "profileSetupUploadServerError": "画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。",
     "profileSetupUsernameChecking": "使えるか確認中...",
     "profileSetupUsernameAvailable": "このユーザー名、使えるよ！",
     "profileSetupUsernameTakenIndicator": "このユーザー名はもう使われてる",

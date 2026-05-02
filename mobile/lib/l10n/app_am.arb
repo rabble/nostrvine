@@ -395,17 +395,11 @@
     }
   },
   "profileSetupGotItButton": "ገባኝ",
-  "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም፦ {error}",
-  "@profileSetupUploadFailedGeneric": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።",
   "profileSetupUploadNetworkError": "የአውታረ መረብ ስህተት፡ እባክህ የበይነመረብ ግንኙነትህን ፈትሽ እና እንደገና ሞክር።",
   "profileSetupUploadAuthError": "የማረጋገጫ ስህተት፡ እባክዎ ዘግተው ለመውጣት ይሞክሩ።",
   "profileSetupUploadFileTooLarge": "ፋይሉ በጣም ትልቅ ነው፡ እባክዎን ትንሽ ምስል ይምረጡ (ከፍተኛ 10 ሜባ)።",
+  "profileSetupUploadServerError": "ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።",
   "profileSetupUsernameChecking": "ተገኝነትን በማጣራት ላይ...",
   "profileSetupUsernameAvailable": "የተጠቃሚ ስም አለ!",
   "profileSetupUsernameTakenIndicator": "የተጠቃሚ ስም አስቀድሞ ተወስዷል",

@@ -722,9 +722,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupGotItButton => '了解！';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return '画像のアップロードがうまくいかなかった: $error';
-  }
+  String get profileSetupUploadFailedGeneric => '画像をアップロードできなかった。あとでもう一度試してみて。';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -736,6 +734,10 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。';
+
+  @override
+  String get profileSetupUploadServerError =>
+      '画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。';
 
   @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
