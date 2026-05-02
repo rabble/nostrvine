@@ -1,4 +1,5 @@
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
+import 'package:divine_video_player/src/video_player_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
@@ -43,7 +44,13 @@ class DivineVideoPlayer extends StatelessWidget {
 
     final Widget surface;
     if (ctrl.useTexture && ctrl.textureId != null) {
-      surface = Texture(textureId: ctrl.textureId!);
+      // SurfaceProducer does not forward ExoPlayer's GL transform matrix
+      // (NATIVE_WINDOW_TRANSFORM_HINT) to Flutter, unlike the legacy
+      // SurfaceTextureEntry which encoded rotation implicitly. The native
+      // side reads Format.rotationDegrees and sends it explicitly so Dart
+      // can apply a RotatedBox. Listen to stateStream because
+      // onVideoSizeChanged fires after the first build.
+      surface = _RotatingTexture(controller: ctrl);
     } else {
       final creationParams = <String, dynamic>{'playerId': ctrl.playerId};
       surface = switch (defaultTargetPlatform) {
@@ -125,6 +132,33 @@ class _AndroidPlayerView extends StatelessWidget {
   }
 
   // coverage:ignore-end
+}
+
+/// Renders the native [Texture] wrapped in a [RotatedBox] when the
+/// player reports a non-zero rotation. The native side reads
+/// `Format.rotationDegrees` and sends it via the event channel because
+/// `SurfaceProducer` does not forward ExoPlayer's GL transform matrix
+/// to Flutter (unlike the legacy `SurfaceTextureEntry`). Listens to
+/// [DivineVideoPlayerController.stateStream] so the rotation updates
+/// after the first build.
+class _RotatingTexture extends StatelessWidget {
+  const _RotatingTexture({required this.controller});
+
+  final DivineVideoPlayerController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final texture = Texture(textureId: controller.textureId!);
+    return StreamBuilder<DivineVideoPlayerState>(
+      stream: controller.stateStream,
+      initialData: controller.state,
+      builder: (context, snapshot) {
+        final rotation = snapshot.data?.rotationDegrees ?? 0;
+        if (rotation == 0) return texture;
+        return RotatedBox(quarterTurns: rotation ~/ 90, child: texture);
+      },
+    );
+  }
 }
 
 /// Shows the [placeholder] over the video surface and hides it once

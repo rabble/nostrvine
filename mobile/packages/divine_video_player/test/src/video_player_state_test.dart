@@ -55,6 +55,7 @@ void main() {
       expect(state.isFirstFrameRendered, isFalse);
       expect(state.videoWidth, isZero);
       expect(state.videoHeight, isZero);
+      expect(state.rotationDegrees, isZero);
     });
 
     test('isPlaying delegates to status', () {
@@ -147,6 +148,14 @@ void main() {
         expect(a, isNot(equals(b)));
       });
 
+      test('states with different rotationDegrees are not equal', () {
+        const a = DivineVideoPlayerState();
+        const b = DivineVideoPlayerState(rotationDegrees: 90);
+
+        expect(a, isNot(equals(b)));
+        expect(a.hashCode, isNot(equals(b.hashCode)));
+      });
+
       test('copyWith without changes returns equal state', () {
         const original = DivineVideoPlayerState(
           status: PlaybackStatus.playing,
@@ -192,6 +201,15 @@ void main() {
         );
         expect(copy.videoWidth, equals(original.videoWidth));
         expect(copy.videoHeight, equals(original.videoHeight));
+        expect(copy.rotationDegrees, equals(original.rotationDegrees));
+      });
+
+      test('overrides rotationDegrees when specified', () {
+        const original = DivineVideoPlayerState();
+        final copy = original.copyWith(rotationDegrees: 90);
+
+        expect(copy.rotationDegrees, equals(90));
+        expect(original.rotationDegrees, isZero);
       });
 
       test('overrides only specified fields', () {
@@ -222,6 +240,7 @@ void main() {
           'isFirstFrameRendered': true,
           'videoWidth': 1920,
           'videoHeight': 1080,
+          'rotationDegrees': 90,
         });
 
         expect(state.status, equals(PlaybackStatus.playing));
@@ -236,6 +255,7 @@ void main() {
         expect(state.isFirstFrameRendered, isTrue);
         expect(state.videoWidth, equals(1920));
         expect(state.videoHeight, equals(1080));
+        expect(state.rotationDegrees, equals(90));
       });
 
       test('uses defaults for missing keys', () {
@@ -253,6 +273,7 @@ void main() {
         expect(state.isFirstFrameRendered, isFalse);
         expect(state.videoWidth, isZero);
         expect(state.videoHeight, isZero);
+        expect(state.rotationDegrees, isZero);
       });
 
       test('parses all status values', () {
@@ -289,11 +310,13 @@ void main() {
           status: PlaybackStatus.playing,
           videoWidth: 1920,
           videoHeight: 1080,
+          rotationDegrees: 90,
         );
         final string = state.toString();
 
         expect(string, contains('playing'));
         expect(string, contains('1920x1080'));
+        expect(string, contains('rotation: 90'));
       });
 
       test('includes error message when present', () {
