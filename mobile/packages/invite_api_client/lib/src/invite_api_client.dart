@@ -89,11 +89,12 @@ class InviteApiClient {
         mode: OnboardingMode.open,
         supportEmail: config.supportEmail,
       );
-    } on TimeoutException {
-      throw const InviteApiException('Invite configuration request timed out');
     } catch (error) {
-      if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to load invite configuration: $error');
+      throw _wrapClientException(
+        error: error,
+        timeoutMessage: 'Invite configuration request timed out',
+        failureMessage: 'Failed to load invite configuration',
+      );
     }
   }
 
@@ -129,11 +130,12 @@ class InviteApiClient {
         message: 'Failed to validate invite code',
         response: response,
       );
-    } on TimeoutException {
-      throw const InviteApiException('Invite code validation timed out');
     } catch (error) {
-      if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to validate invite code: $error');
+      throw _wrapClientException(
+        error: error,
+        timeoutMessage: 'Invite code validation timed out',
+        failureMessage: 'Failed to validate invite code',
+      );
     }
   }
 
@@ -172,11 +174,12 @@ class InviteApiClient {
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return WaitlistJoinResult.fromJson(json);
-    } on TimeoutException {
-      throw const InviteApiException('Waitlist request timed out');
     } catch (error) {
-      if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to join waitlist: $error');
+      throw _wrapClientException(
+        error: error,
+        timeoutMessage: 'Waitlist request timed out',
+        failureMessage: 'Failed to join waitlist',
+      );
     }
   }
 
@@ -189,9 +192,16 @@ class InviteApiClient {
     required SecureKeyContainer keyContainer,
   }) async {
     late final LocalNostrSigner signer;
-    keyContainer.withPrivateKey<void>((privateKeyHex) {
-      signer = LocalNostrSigner(privateKeyHex);
-    });
+    try {
+      keyContainer.withPrivateKey<void>((privateKeyHex) {
+        signer = LocalNostrSigner(privateKeyHex);
+      });
+    } catch (error) {
+      throw InviteApiException(
+        'Failed to authenticate invite request: $error',
+        code: InviteApiErrorCode.clientAuthFailed,
+      );
+    }
 
     try {
       return _consumeInvite(code: code, signer: signer);
@@ -205,7 +215,15 @@ class InviteApiClient {
     required OAuthConfig oauthConfig,
     required KeycastSession session,
   }) async {
-    final signer = KeycastRpc.fromSession(oauthConfig, session);
+    late final KeycastRpc signer;
+    try {
+      signer = KeycastRpc.fromSession(oauthConfig, session);
+    } catch (error) {
+      throw InviteApiException(
+        'Failed to authenticate invite request: $error',
+        code: InviteApiErrorCode.clientAuthFailed,
+      );
+    }
     try {
       return _consumeInvite(code: code, signer: signer);
     } finally {
@@ -238,7 +256,8 @@ class InviteApiClient {
 
       if (response.statusCode != 200) {
         final alreadyJoined =
-            _parseErrorCode(response.body) == 'user_already_joined';
+            _parseErrorCode(response.body) ==
+            InviteApiErrorCode.userAlreadyJoined;
         if (alreadyJoined) {
           return InviteConsumeResult.fromJson({
             'result': 'user_already_joined',
@@ -254,11 +273,12 @@ class InviteApiClient {
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return InviteConsumeResult.fromJson(json);
-    } on TimeoutException {
-      throw const InviteApiException('Invite activation timed out');
     } catch (error) {
-      if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to activate invite code: $error');
+      throw _wrapClientException(
+        error: error,
+        timeoutMessage: 'Invite activation timed out',
+        failureMessage: 'Failed to activate invite code',
+      );
     }
   }
 
@@ -282,11 +302,12 @@ class InviteApiClient {
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return InviteStatus.fromJson(json);
-    } on TimeoutException {
-      throw const InviteApiException('Invite status request timed out');
     } catch (error) {
-      if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to fetch invite status: $error');
+      throw _wrapClientException(
+        error: error,
+        timeoutMessage: 'Invite status request timed out',
+        failureMessage: 'Failed to fetch invite status',
+      );
     }
   }
 
@@ -314,11 +335,12 @@ class InviteApiClient {
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return GenerateInviteResult.fromJson(json);
-    } on TimeoutException {
-      throw const InviteApiException('Generate invite request timed out');
     } catch (error) {
-      if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to generate invite code: $error');
+      throw _wrapClientException(
+        error: error,
+        timeoutMessage: 'Generate invite request timed out',
+        failureMessage: 'Failed to generate invite code',
+      );
     }
   }
 
@@ -369,38 +391,72 @@ class InviteApiClient {
     required InviteRequestMethod method,
     String? payload,
   }) async {
-    final normalizedUrl = url.contains('#')
-        ? url.substring(0, url.indexOf('#'))
-        : url;
-    final publicKeyHex = await signer.getPublicKey();
+    try {
+      final normalizedUrl = url.contains('#')
+          ? url.substring(0, url.indexOf('#'))
+          : url;
+      final publicKeyHex = await signer.getPublicKey();
 
-    if (publicKeyHex == null || publicKeyHex.isEmpty) {
-      throw const InviteApiException('Failed to authenticate invite request');
+      if (publicKeyHex == null || publicKeyHex.isEmpty) {
+        throw const InviteApiException(
+          'Failed to authenticate invite request',
+          code: InviteApiErrorCode.clientAuthFailed,
+        );
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final tags = <List<String>>[
+        ['u', normalizedUrl],
+        ['method', method.value],
+        ['created_at', timestamp.toString()],
+      ];
+
+      if (method == InviteRequestMethod.post ||
+          method == InviteRequestMethod.put ||
+          method == InviteRequestMethod.patch) {
+        final payloadHash = sha256.convert(utf8.encode(payload ?? ''));
+        tags.add(['payload', payloadHash.toString()]);
+      }
+
+      final event = Event(publicKeyHex, 27235, tags, '', createdAt: timestamp);
+      final signedEvent = await signer.signEvent(event);
+
+      if (signedEvent == null || !signedEvent.isSigned) {
+        throw const InviteApiException(
+          'Failed to authenticate invite request',
+          code: InviteApiErrorCode.clientAuthFailed,
+        );
+      }
+
+      final eventJson = jsonEncode(signedEvent.toJson());
+      return 'Nostr ${base64Encode(utf8.encode(eventJson))}';
+    } on InviteApiException {
+      rethrow;
+    } catch (error) {
+      throw InviteApiException(
+        'Failed to authenticate invite request: $error',
+        code: InviteApiErrorCode.clientAuthFailed,
+      );
+    }
+  }
+
+  InviteApiException _wrapClientException({
+    required Object error,
+    required String timeoutMessage,
+    required String failureMessage,
+  }) {
+    if (error is InviteApiException) return error;
+    if (error is TimeoutException) {
+      return InviteApiException(
+        timeoutMessage,
+        code: InviteApiErrorCode.clientTimeout,
+      );
     }
 
-    final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final tags = <List<String>>[
-      ['u', normalizedUrl],
-      ['method', method.value],
-      ['created_at', timestamp.toString()],
-    ];
-
-    if (method == InviteRequestMethod.post ||
-        method == InviteRequestMethod.put ||
-        method == InviteRequestMethod.patch) {
-      final payloadHash = sha256.convert(utf8.encode(payload ?? ''));
-      tags.add(['payload', payloadHash.toString()]);
-    }
-
-    final event = Event(publicKeyHex, 27235, tags, '', createdAt: timestamp);
-    final signedEvent = await signer.signEvent(event);
-
-    if (signedEvent == null || !signedEvent.isSigned) {
-      throw const InviteApiException('Failed to authenticate invite request');
-    }
-
-    final eventJson = jsonEncode(signedEvent.toJson());
-    return 'Nostr ${base64Encode(utf8.encode(eventJson))}';
+    final code = _isNetworkError(error)
+        ? InviteApiErrorCode.clientNetworkError
+        : InviteApiErrorCode.clientError;
+    return InviteApiException('$failureMessage: $error', code: code);
   }
 
   InviteApiException _requestFailed({
@@ -495,5 +551,13 @@ class InviteApiClient {
       // Ignore malformed bodies and fall back to null.
     }
     return null;
+  }
+
+  bool _isNetworkError(Object error) {
+    if (error is http.ClientException) return true;
+    final message = error.toString().toLowerCase();
+    return message.contains('network') ||
+        message.contains('socket') ||
+        message.contains('connection');
   }
 }
