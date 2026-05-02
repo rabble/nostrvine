@@ -72,7 +72,7 @@ internal class DivineVideoPlayerInstance(
     private var firstFrameRendered = false
     private var videoWidth = 0
     private var videoHeight = 0
-    private var unappliedRotationDegrees = 0
+    private var rotationDegrees = 0
 
     /**
      * True only during the synchronous stop→clearMediaItems→setMediaItems→prepare
@@ -160,8 +160,13 @@ internal class DivineVideoPlayerInstance(
     override fun onSurfaceAvailable() {
         if (needsSurface) {
             val surface = surfaceProducer?.surface ?: return
-            player?.setVideoSurface(surface)
-            needsSurface = false
+            val p = player
+            if (p != null) {
+                p.setVideoSurface(surface)
+                needsSurface = false
+            }
+            // If player is null, needsSurface stays true so ensurePlayer()
+            // attaches the surface when the player is eventually created.
         }
     }
 
@@ -483,7 +488,7 @@ internal class DivineVideoPlayerInstance(
             "isFirstFrameRendered" to firstFrameRendered,
             "videoWidth" to videoWidth,
             "videoHeight" to videoHeight,
-            "rotationDegrees" to unappliedRotationDegrees,
+            "rotationDegrees" to rotationDegrees,
         )
         exoPlayer.playerError?.let { error ->
             map["errorMessage"] = error.localizedMessage
@@ -609,19 +614,24 @@ internal class DivineVideoPlayerInstance(
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
             videoWidth = videoSize.width
             videoHeight = videoSize.height
-            // Use Format.rotationDegrees (source metadata rotation) rather than
-            // VideoSize.unappliedRotationDegrees. ExoPlayer applies rotation in
-            // the decoder (unapplied=0) but the SurfaceTexture backend still
-            // requires Dart to counter-rotate via RotatedBox. This mirrors
-            // Flutter's own TextureExoPlayerEventListener which reads
-            // Format.rotationDegrees as rotationCorrection for Dart.
+            // Send 0 on the ImageReader/Impeller backend (Android 14+) because
+            // SurfaceProducer.handlesCropAndRotation() == true means the
+            // compositor already applies the GL transform matrix — RotatedBox
+            // in Dart would double-rotate. On the SurfaceTexture fallback
+            // (older devices) rotation is not applied, so Dart must compensate.
+            // This mirrors Flutter's own TextureExoPlayerEventListener which
+            // gates on handlesCropAndRotation() before reading rotationDegrees.
             //
             // Guard: ExoPlayer emits onVideoSizeChanged(0, 0) as an intermediate
-            // reset during seeks and transitions. videoFormat is null at that
-            // point, so skip the update to avoid a brief flash of 0° rotation.
-            val newRotation = player?.videoFormat?.rotationDegrees
-            if (videoSize.width > 0 && videoSize.height > 0 && newRotation != null) {
-                unappliedRotationDegrees = newRotation
+            // reset during seeks and transitions; skip to avoid a brief flash
+            // of 0° rotation.
+            val newRotation = if (surfaceProducer?.handlesCropAndRotation() == true) {
+                0
+            } else {
+                player?.videoFormat?.rotationDegrees ?: 0
+            }
+            if (videoSize.width > 0 && videoSize.height > 0) {
+                rotationDegrees = newRotation
             }
             sendStateUpdate()
         }

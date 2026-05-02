@@ -149,11 +149,11 @@ class _RotatingTexture extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final texture = Texture(textureId: controller.textureId!);
-    return StreamBuilder<DivineVideoPlayerState>(
-      stream: controller.stateStream,
-      initialData: controller.state,
+    return StreamBuilder<int>(
+      stream: controller.stateStream.map((s) => s.rotationDegrees).distinct(),
+      initialData: controller.state.rotationDegrees,
       builder: (context, snapshot) {
-        final rotation = snapshot.data?.rotationDegrees ?? 0;
+        final rotation = snapshot.data ?? 0;
         if (rotation == 0) return texture;
         return RotatedBox(quarterTurns: rotation ~/ 90, child: texture);
       },
