@@ -38,8 +38,12 @@ import 'package:unified_logger/unified_logger.dart';
 const _collaboratorInviteRelayHint = 'wss://relay.divine.video';
 
 @visibleForTesting
-List<String> buildCollaboratorPTag(String pubkey) =>
-    ['p', pubkey, _collaboratorInviteRelayHint, 'collaborator'];
+List<String> buildCollaboratorPTag(String pubkey) => [
+  'p',
+  pubkey,
+  _collaboratorInviteRelayHint,
+  'collaborator',
+];
 
 @visibleForTesting
 Future<Map<String, CollaboratorInviteResult>>
