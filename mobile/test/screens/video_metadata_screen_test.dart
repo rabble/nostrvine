@@ -14,6 +14,7 @@ import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -107,6 +108,48 @@ void main() {
 
         expect(find.text('Post details'), findsOneWidget);
         expect(find.text('Post'), findsOneWidget);
+      });
+
+      testWidgets('renders audio reuse opt-in and updates editor state', (
+        tester,
+      ) async {
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: VideoMetadataScreen(),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Publish this sound'), findsOneWidget);
+        expect(
+          find.text("Let others save and reuse this video's audio."),
+          findsOneWidget,
+        );
+        expect(container.read(videoEditorProvider).allowAudioReuse, isTrue);
+
+        await tester.ensureVisible(find.byType(Switch));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(Switch));
+        await tester.pump();
+
+        expect(container.read(videoEditorProvider).allowAudioReuse, isFalse);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
       });
     });
 

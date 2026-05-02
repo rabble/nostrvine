@@ -205,6 +205,8 @@ const _knownUntranslatedDebt = {
   'soundsSavedEmptyDescription',
   'soundsRemoveSavedSound',
   'soundsRemovedFromLibrary',
+  'videoMetadataAudioReuseTitle',
+  'videoMetadataAudioReuseSubtitle',
   'profileSetupImagesTypeGroup',
   'profileSetupExternalNip05InvalidFormat',
   'profileSetupExternalNip05DivineDomain',
