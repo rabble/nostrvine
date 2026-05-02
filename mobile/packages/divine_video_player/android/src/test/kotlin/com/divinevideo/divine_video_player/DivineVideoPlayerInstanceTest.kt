@@ -234,6 +234,9 @@ class DivineVideoPlayerInstanceTest {
         // back to true by calling onSurfaceCleanup to simulate a surface loss before
         // the auto-transition fires.
         instance.onSurfaceCleanup()
+        // Clear calls recorded during setup so the assertion only covers the
+        // onMediaItemTransition invocation below.
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
 
         listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
 
@@ -247,6 +250,9 @@ class DivineVideoPlayerInstanceTest {
         every { mockProducer.surface } returns mockSurface
         instance.enableTextureOutput(mockRegistry)
         val listener = capturePlayerListener()
+        // Clear calls recorded during setup (ensurePlayer → setVideoSurface(surface))
+        // so the assertion only covers the onMediaItemTransition invocation below.
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
 
         listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
 
