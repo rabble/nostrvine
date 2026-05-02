@@ -157,6 +157,10 @@ void main() {
           LanguagePreferenceService.displayNameFor('bg'),
           equals('Bulgarian'),
         );
+        expect(
+          LanguagePreferenceService.displayNameFor('am'),
+          equals('Amharic'),
+        );
       });
 
       test('returns uppercased code for unknown language codes', () {

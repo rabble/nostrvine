@@ -16,6 +16,10 @@ void main() {
       expect(appLocaleCodes, contains('bg'));
     });
 
+    test('includes Amharic in app-supported locales', () {
+      expect(appLocaleCodes, contains('am'));
+    });
+
     test('Android per-app language config includes all app locales', () {
       final androidConfig = File(
         'android/app/src/main/res/xml/locales_config.xml',
