@@ -38,6 +38,10 @@ import 'package:unified_logger/unified_logger.dart';
 const _collaboratorInviteRelayHint = 'wss://relay.divine.video';
 
 @visibleForTesting
+List<String> buildCollaboratorPTag(String pubkey) =>
+    ['p', pubkey, _collaboratorInviteRelayHint, 'collaborator'];
+
+@visibleForTesting
 Future<Map<String, CollaboratorInviteResult>>
 sendPostPublishCollaboratorInvites({
   required CollaboratorInviteService inviteService,
@@ -1527,7 +1531,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Add collaborator p-tags
       for (final pubkey in _collaboratorPubkeys) {
-        tags.add(['p', pubkey, 'wss://relay.divine.video', 'collaborator']);
+        tags.add(buildCollaboratorPTag(pubkey));
       }
 
       // Add inspired-by a-tag (video reference)
