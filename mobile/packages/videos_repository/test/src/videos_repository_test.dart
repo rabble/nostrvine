@@ -6639,6 +6639,199 @@ void main() {
         expect(result.single.warnLabels, isEmpty);
       });
     });
+
+    group('non-loopback http:// filtering (#3836)', () {
+      group('via _tryParseAndFilter (Nostr ingest)', () {
+        test('filters out non-loopback http:// video URLs', () async {
+          final cleartextEvent = _createVideoEvent(
+            id: 'cleartext-id',
+            pubkey: 'test-pubkey',
+            videoUrl: 'http://example.com/video.mp4',
+            createdAt: 1704067200,
+          );
+          final httpsEvent = _createVideoEvent(
+            id: 'https-id',
+            pubkey: 'test-pubkey',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1704067201,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [cleartextEvent, httpsEvent]);
+
+          final result = await repository.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('https-id'));
+        });
+
+        test('allows loopback http://10.0.2.2', () async {
+          final loopbackEvent = _createVideoEvent(
+            id: 'android-emulator-host',
+            pubkey: 'test-pubkey',
+            videoUrl: 'http://10.0.2.2:8000/video.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [loopbackEvent]);
+
+          final result = await repository.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('android-emulator-host'));
+        });
+
+        test('allows loopback http://localhost', () async {
+          final loopbackEvent = _createVideoEvent(
+            id: 'localhost-host',
+            pubkey: 'test-pubkey',
+            videoUrl: 'http://localhost:8000/video.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [loopbackEvent]);
+
+          final result = await repository.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('localhost-host'));
+        });
+
+        test('allows loopback http://127.0.0.1', () async {
+          final loopbackEvent = _createVideoEvent(
+            id: 'ipv4-loopback',
+            pubkey: 'test-pubkey',
+            videoUrl: 'http://127.0.0.1:8000/video.mp4',
+            createdAt: 1704067200,
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [loopbackEvent]);
+
+          final result = await repository.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('ipv4-loopback'));
+        });
+
+        test(
+          'rejects hostnames that contain but do not equal a loopback host',
+          () async {
+            final spoofA = _createVideoEvent(
+              id: 'spoof-a',
+              pubkey: 'test-pubkey',
+              videoUrl: 'http://10.0.2.2.example.com/video.mp4',
+              createdAt: 1704067200,
+            );
+            final spoofB = _createVideoEvent(
+              id: 'spoof-b',
+              pubkey: 'test-pubkey',
+              videoUrl: 'http://localhost.evil.com/video.mp4',
+              createdAt: 1704067201,
+            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [spoofA, spoofB]);
+
+            final result = await repository.getNewVideos();
+
+            expect(result, isEmpty);
+          },
+        );
+      });
+
+      group('via _transformVideoStats (Funnelcake API path)', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        });
+
+        test('filters out non-loopback http:// video URLs', () async {
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'cleartext-id',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-1',
+                videoUrl: 'http://example.com/video.mp4',
+              ),
+              _createVideoStats(
+                id: 'https-id',
+                pubkey: 'pubkey-2',
+                dTag: 'dtag-2',
+                videoUrl: 'https://example.com/video.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getNewVideos();
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('https-id'));
+        });
+      });
+
+      group(
+        'via _fetchMissingVideosFromFunnelcake (addressable-id fallback)',
+        () {
+          late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+          setUp(() {
+            mockFunnelcakeClient = MockFunnelcakeApiClient();
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          });
+
+          test('filters out non-loopback http:// video URLs', () async {
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => <Event>[]);
+
+            final cleartextStats = _createVideoStats(
+              id: 'cleartext-id',
+              pubkey: 'pubkey1',
+              dTag: 'dtag1',
+              videoUrl: 'http://example.com/video.mp4',
+            );
+
+            when(
+              () => mockFunnelcakeClient.getVideosByAuthor(
+                pubkey: 'pubkey1',
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => VideosByAuthorResponse(videos: [cleartextStats]),
+            );
+
+            final repositoryWithFunnelcake = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithFunnelcake
+                .getVideosByAddressableIds([
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                ]);
+
+            expect(result, isEmpty);
+          });
+        },
+      );
+    });
   });
 }
 

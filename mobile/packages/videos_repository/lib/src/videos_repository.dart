@@ -848,6 +848,9 @@ class VideosRepository {
             // Apply content filter if configured
             if (_blockFilter?.call(video.pubkey) ?? false) continue;
             if (!video.hasVideo) continue;
+            // Reject non-loopback http:// URLs that the OS layer blocks
+            // under release transport security (#3836).
+            if (!_hasAllowedTransportScheme(video)) continue;
             if (video.isExpired) continue;
 
             final processed = _applyContentPreferences(video);
@@ -890,6 +893,10 @@ class VideosRepository {
       // Skip videos without a playable URL
       if (!video.hasVideo) continue;
 
+      // Reject non-loopback http:// URLs that the OS layer blocks under
+      // release transport security (#3836).
+      if (!_hasAllowedTransportScheme(video)) continue;
+
       // Skip expired videos (NIP-40)
       if (video.isExpired) continue;
 
@@ -926,6 +933,10 @@ class VideosRepository {
     // Skip videos without a playable URL
     if (!video.hasVideo) return null;
 
+    // Reject non-loopback http:// URLs that the OS layer blocks under
+    // release transport security (#3836).
+    if (!_hasAllowedTransportScheme(video)) return null;
+
     // Skip expired videos (NIP-40)
     if (video.isExpired) return null;
 
@@ -943,6 +954,35 @@ class VideosRepository {
     }
 
     return video.copyWith(warnLabels: warnLabels);
+  }
+
+  /// Whether [video]'s primary playable URL uses a transport scheme that
+  /// the OS will actually load on the platforms we ship.
+  ///
+  /// Release-build native transport-security on Android, iOS, and macOS
+  /// rejects every cleartext request to a non-loopback host at the OS
+  /// layer (see #3358 / PR #3788). A `kind:22` event whose `videoUrl` is
+  /// non-loopback `http://` would be rejected by the OS at playback time;
+  /// the in-feed retry logic in `FullscreenFeedBloc` would then treat
+  /// the rejection as transient and keep the un-loadable entry visible
+  /// forever. Reject at repository ingest so it never reaches the player.
+  ///
+  /// Loopback `http://` (`10.0.2.2`, `localhost`, `127.0.0.1`) is allowed
+  /// so the local-stack development workflow keeps working. The host list
+  /// is pinned to match the loopback allowlist in the native configs:
+  ///   - mobile/android/app/src/main/res/xml/network_security_config.xml
+  ///   - mobile/ios/Runner/Info.plist (NSAllowsLocalNetworking)
+  ///   - mobile/macos/Runner/Info.plist (NSAllowsLocalNetworking)
+  bool _hasAllowedTransportScheme(VideoEvent video) {
+    final url = video.videoUrl;
+    if (url == null || url.isEmpty) return false;
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme) return false;
+    final scheme = uri.scheme.toLowerCase();
+    if (scheme == 'https') return true;
+    if (scheme != 'http') return false;
+    final host = uri.host.toLowerCase();
+    return host == '10.0.2.2' || host == 'localhost' || host == '127.0.0.1';
   }
 
   /// Applies the injected block filter, content filter, and warning-labels
