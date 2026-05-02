@@ -4993,6 +4993,14 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get blossomServerUrlInvalid =>
+      'Please enter a valid server URL (e.g., https://blossom.band)';
+
+  @override
+  String get blossomServerUrlMustUseHttps =>
+      'Blossom server URL must use https://';
+
+  @override
   String get blueskyFailedToUpdateCrosspost =>
       'Gagal memperbarui pengaturan crosspost';
 

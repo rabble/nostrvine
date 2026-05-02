@@ -69,6 +69,10 @@ const _knownUntranslatedDebt = {
   'notificationRepliedToYourComment',
   'notificationAndConnector',
   'notificationOthersCount',
+  // Added by #3837 (Blossom URL scheme validation under strict ATS).
+  // English fallbacks ship until translators pick these up.
+  'blossomServerUrlInvalid',
+  'blossomServerUrlMustUseHttps',
 };
 
 Map<String, Object?> _readArb(File file) {
