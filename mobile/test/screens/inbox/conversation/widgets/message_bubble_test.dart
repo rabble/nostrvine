@@ -36,15 +36,13 @@ GoRouter _messageRouter(String message) {
       ),
       GoRoute(
         path: '/profile/:npub',
-        builder: (context, state) => Scaffold(
-          body: Text('profile:${state.pathParameters['npub']}'),
-        ),
+        builder: (context, state) =>
+            Scaffold(body: Text('profile:${state.pathParameters['npub']}')),
       ),
       GoRoute(
         path: '/video/:id',
-        builder: (context, state) => Scaffold(
-          body: Text('video:${state.pathParameters['id']}'),
-        ),
+        builder: (context, state) =>
+            Scaffold(body: Text('video:${state.pathParameters['id']}')),
       ),
     ],
   );

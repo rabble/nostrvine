@@ -5,6 +5,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 
 void main() {
+  group('divineUrlToPushRoute', () {
+    test('maps video links to video detail routes', () {
+      expect(
+        divineUrlToPushRoute(Uri.parse('https://divine.video/video/abc123')),
+        equals('/video/abc123'),
+      );
+    });
+
+    test('accepts www.divine.video host alias', () {
+      expect(
+        divineUrlToPushRoute(
+          Uri.parse('https://www.divine.video/profile/npub1abc123'),
+        ),
+        equals('/profile/npub1abc123'),
+      );
+    });
+
+    test('returns null for invite links', () {
+      expect(
+        divineUrlToPushRoute(
+          Uri.parse('https://divine.video/invite/ABCD-EFGH'),
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('universalLinkToRouterPath', () {
     group('host gating', () {
       test('returns null for non-http schemes', () {
@@ -31,6 +58,15 @@ void main() {
         expect(
           universalLinkToRouterPath(
             Uri.parse('https://divine.video/search/music'),
+          ),
+          equals('/search-results/music'),
+        );
+      });
+
+      test('accepts www.divine.video host alias', () {
+        expect(
+          universalLinkToRouterPath(
+            Uri.parse('https://www.divine.video/search/music'),
           ),
           equals('/search-results/music'),
         );

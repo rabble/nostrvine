@@ -12,8 +12,8 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/video_link_preview_cubit.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -200,34 +200,6 @@ bool _isTrustedDomain(String host) {
   return _trustedDomains.any((d) => lower == d || lower.endsWith('.$d'));
 }
 
-/// Maps canonical Divine web URLs to in-app routes.
-String? _routeForDivineUrl(Uri uri) {
-  final host = uri.host.toLowerCase();
-  if (host != 'divine.video' && host != 'www.divine.video') {
-    return null;
-  }
-
-  final segments = uri.pathSegments;
-  if (segments.length == 2 && segments[0] == 'video') {
-    final videoId = segments[1];
-    if (videoId.isEmpty) return null;
-    return VideoDetailScreen.pathForId(videoId);
-  }
-
-  if ((segments.length == 2 || segments.length == 3) &&
-      segments[0] == 'profile') {
-    final npub = segments[1];
-    if (npub.isEmpty) return null;
-    if (segments.length == 3) {
-      final index = int.tryParse(segments[2]);
-      if (index != null) return ProfileScreenRouter.pathForIndex(npub, index);
-    }
-    return ProfileScreenRouter.pathForNpub(npub);
-  }
-
-  return null;
-}
-
 /// Renders message text with clickable URLs and email addresses.
 ///
 /// Links matching [_linkRegex] are styled as underlined links. URLs open in
@@ -345,7 +317,7 @@ class _MessageTextState extends State<_MessageText> {
     }
     if (uri == null) return;
 
-    final appRoute = _routeForDivineUrl(uri);
+    final appRoute = divineUrlToPushRoute(uri);
     if (appRoute != null && context.mounted) {
       await context.push(appRoute);
       return;
