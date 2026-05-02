@@ -34,6 +34,20 @@ void main() {
       );
     }
 
+    Future<ListTile> findLocaleTile(
+      WidgetTester tester,
+      String nativeName,
+    ) async {
+      final tileFinder = find.widgetWithText(ListTile, nativeName);
+      await tester.scrollUntilVisible(
+        tileFinder,
+        160,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      return tester.widget<ListTile>(tileFinder);
+    }
+
     testWidgets('renders Device default tile', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -81,9 +95,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      final frenchTile = tester.widget<ListTile>(
-        find.widgetWithText(ListTile, 'Français'),
-      );
+      final frenchTile = await findLocaleTile(tester, 'Français');
       final icon = frenchTile.leading! as Icon;
       expect(icon.icon, equals(Icons.radio_button_checked));
     });
@@ -113,12 +125,12 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // ListView is lazy — only a subset of tiles are built at once.
-      // Verify a few visible ones from the top of the list. Full map
-      // coverage is asserted in locale_preference_service_test.dart.
-      expect(find.text('Deutsch'), findsOneWidget);
-      expect(find.text('Español'), findsOneWidget);
-      expect(find.text('Français'), findsOneWidget);
+      // ListView is lazy, and the full suite can run this file after tests
+      // that change the global test viewport. Scroll to each sample locale so
+      // this remains independent of the current viewport height.
+      await findLocaleTile(tester, 'Deutsch');
+      await findLocaleTile(tester, 'Español');
+      await findLocaleTile(tester, 'Français');
     });
   });
 }

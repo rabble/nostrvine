@@ -6,6 +6,7 @@ import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/relay_manager.dart';
+import 'package:nostr_client/src/send_profile_result.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 
@@ -827,10 +828,15 @@ class NostrClient {
 
   /// Sends a user profile (Kind 0 metadata event).
   ///
-  /// Routes through [publishEvent] to ensure relay health checks and
-  /// reconnection logic run before broadcasting. Kind 0 is replaceable,
-  /// so the event is cached only on successful publish.
-  Future<Event?> sendProfile({
+  /// Checks relay connectivity (with retry) before broadcasting. Kind 0 is
+  /// replaceable, so the event is cached only on successful publish.
+  ///
+  /// Returns a [SendProfileResult] that callers can switch exhaustively over:
+  /// - [SendProfileSuccess] — the event was broadcast to at least one relay.
+  /// - [SendProfileNoRelays] — no relays were connected even after retry.
+  /// - [SendProfileFailed] — the SDK send call returned null for a reason
+  ///   other than empty relay list (e.g. serialisation error).
+  Future<SendProfileResult> sendProfile({
     required Map<String, dynamic> profileContent,
   }) async {
     final event = Event(
@@ -839,7 +845,28 @@ class NostrClient {
       [],
       jsonEncode(profileContent),
     );
-    return publishEvent(event);
+
+    // Fast-path: check relay connectivity before attempting to send, and
+    // surface the no-relays case as a first-class result variant rather than
+    // returning null and forcing callers to infer from a subsequent
+    // connectedRelays snapshot.
+    if (_relayManager.connectedRelays.isEmpty) {
+      await retryDisconnectedRelays();
+      if (_relayManager.connectedRelays.isEmpty) {
+        return const SendProfileNoRelays();
+      }
+    }
+
+    final sentEvent = await _nostr.sendEvent(event);
+    if (sentEvent == null) {
+      return const SendProfileFailed();
+    }
+
+    // Kind 0 is replaceable — cache on success only (not optimistically).
+    _cacheEvent(sentEvent);
+    statisticsObserver?.onEventSent();
+
+    return SendProfileSuccess(event: sentEvent);
   }
 
   /// Sends a repost

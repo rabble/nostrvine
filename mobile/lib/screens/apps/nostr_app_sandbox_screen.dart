@@ -296,9 +296,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         uri,
         headers: const {'accept': 'text/html,application/xhtml+xml'},
       );
-      if (response.statusCode < 200 ||
-          response.statusCode >= 300 ||
-          response.body.isEmpty) {
+      if (response.body.isEmpty || !_isBootstrappableHtml(response)) {
         return null;
       }
 
@@ -333,6 +331,21 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
       autoLoginScript: widget.app.autoLoginScript,
     );
     await _runJavaScript(fullScript);
+  }
+
+  bool _isBootstrappableHtml(http.Response response) {
+    final statusCode = response.statusCode;
+    if (statusCode >= 200 && statusCode < 300) {
+      return true;
+    }
+
+    final contentType = response.headers['content-type']?.toLowerCase() ?? '';
+    final bodyStart = response.body.trimLeft().toLowerCase();
+    final looksLikeHtml =
+        contentType.contains('text/html') ||
+        bodyStart.startsWith('<!doctype html') ||
+        bodyStart.startsWith('<html');
+    return statusCode == 404 && looksLikeHtml;
   }
 
   Future<void> _handleBridgeMessage(String message) async {

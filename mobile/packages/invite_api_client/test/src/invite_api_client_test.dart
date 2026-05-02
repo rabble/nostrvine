@@ -186,19 +186,23 @@ void main() {
             body: any(named: 'body'),
           ),
         ).thenAnswer(
-          (_) => Future<http.Response>.error(
-            TimeoutException('timed out'),
-          ),
+          (_) => Future<http.Response>.error(TimeoutException('timed out')),
         );
 
         await expectLater(
           client.validateCode('ab12ef34'),
           throwsA(
-            isA<InviteApiException>().having(
-              (error) => error.message,
-              'message',
-              'Invite code validation timed out',
-            ),
+            isA<InviteApiException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  'Invite code validation timed out',
+                )
+                .having(
+                  (error) => error.code,
+                  'code',
+                  InviteApiErrorCode.clientTimeout,
+                ),
           ),
         );
       },
@@ -218,11 +222,17 @@ void main() {
         await expectLater(
           client.validateCode('ab12ef34'),
           throwsA(
-            isA<InviteApiException>().having(
-              (error) => error.message,
-              'message',
-              contains('Failed to validate invite code'),
-            ),
+            isA<InviteApiException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  contains('Failed to validate invite code'),
+                )
+                .having(
+                  (error) => error.code,
+                  'code',
+                  InviteApiErrorCode.clientNetworkError,
+                ),
           ),
         );
       },
@@ -234,13 +244,10 @@ void main() {
         client: MockClient((request) async {
           expect(request.method, 'POST');
           expect(request.url.path, contains('/v1/waitlist'));
-          expect(
-            jsonDecode(request.body),
-            {
-              'contact': 'test@example.com',
-              'pubkey': 'pubkey-123',
-            },
-          );
+          expect(jsonDecode(request.body), {
+            'contact': 'test@example.com',
+            'pubkey': 'pubkey-123',
+          });
           return http.Response(
             jsonEncode({
               'id': 'waitlist-entry-1',
@@ -266,13 +273,10 @@ void main() {
         client: MockClient((request) async {
           expect(request.method, 'POST');
           expect(request.url.path, contains('/v1/waitlist'));
-          expect(
-            jsonDecode(request.body),
-            {
-              'contact': 'test@example.com',
-              'source_slug': 'lele-pons',
-            },
-          );
+          expect(jsonDecode(request.body), {
+            'contact': 'test@example.com',
+            'source_slug': 'lele-pons',
+          });
           return http.Response(
             jsonEncode({
               'id': 'waitlist-entry-1',
@@ -430,7 +434,7 @@ void main() {
         throwsA(
           isA<InviteApiException>()
               .having((e) => e.statusCode, 'statusCode', 409)
-              .having((e) => e.code, 'code', 'creator_page_full')
+              .having((e) => e.code, 'code', InviteApiErrorCode.creatorPageFull)
               .having((e) => e.creatorSlug, 'creatorSlug', 'lele-pons'),
         ),
       );
@@ -459,6 +463,104 @@ void main() {
       expect(result.result, InviteConsumeStatus.userAlreadyJoined);
       expect(result.code, 'LELE-PONS');
     });
+
+    test(
+      'surfaces consumeInvite timeout failures with a structured code',
+      () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) => Future<http.Response>.error(TimeoutException('timed out')),
+        );
+
+        await expectLater(
+          client.consumeInvite('ab12ef34'),
+          throwsA(
+            isA<InviteApiException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  'Invite activation timed out',
+                )
+                .having(
+                  (error) => error.code,
+                  'code',
+                  InviteApiErrorCode.clientTimeout,
+                ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'surfaces consumeInvite network failures with a structured code',
+      () async {
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(const SocketException('Connection failed'));
+
+        await expectLater(
+          client.consumeInvite('ab12ef34'),
+          throwsA(
+            isA<InviteApiException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  contains('Failed to activate invite code'),
+                )
+                .having(
+                  (error) => error.code,
+                  'code',
+                  InviteApiErrorCode.clientNetworkError,
+                ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'surfaces invite signing failures with a structured auth code',
+      () async {
+        final keyContainer = SecureKeyContainer.fromNsec(_testNsec);
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(StateError('should not hit network'));
+
+        keyContainer.dispose();
+
+        await expectLater(
+          client.consumeInviteWithKeyContainer(
+            code: 'ab12ef34',
+            keyContainer: keyContainer,
+          ),
+          throwsA(
+            isA<InviteApiException>()
+                .having(
+                  (error) => error.message,
+                  'message',
+                  contains('Failed to authenticate invite request'),
+                )
+                .having(
+                  (error) => error.code,
+                  'code',
+                  InviteApiErrorCode.clientAuthFailed,
+                ),
+          ),
+        );
+      },
+    );
 
     test('surfaces server errors as InviteApiException', () async {
       final response = _MockResponse();
@@ -525,9 +627,9 @@ void main() {
       test('includes pubkey when provided', () async {
         final response = _MockResponse();
         when(() => response.statusCode).thenReturn(201);
-        when(() => response.body).thenReturn(
-          jsonEncode({'id': 'wl-789', 'message': 'Added'}),
-        );
+        when(
+          () => response.body,
+        ).thenReturn(jsonEncode({'id': 'wl-789', 'message': 'Added'}));
         when(
           () => mockClient.post(
             any(),
@@ -536,10 +638,7 @@ void main() {
           ),
         ).thenAnswer((_) async => response);
 
-        await client.joinWaitlist(
-          contact: 'user@test.com',
-          pubkey: 'abc123',
-        );
+        await client.joinWaitlist(contact: 'user@test.com', pubkey: 'abc123');
 
         final captured =
             verify(
@@ -558,9 +657,9 @@ void main() {
       test('throws on server error', () async {
         final response = _MockResponse();
         when(() => response.statusCode).thenReturn(500);
-        when(() => response.body).thenReturn(
-          jsonEncode({'error': 'Internal error'}),
-        );
+        when(
+          () => response.body,
+        ).thenReturn(jsonEncode({'error': 'Internal error'}));
         when(
           () => mockClient.post(
             any(),
@@ -582,9 +681,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('timed out'));
 
         await expectLater(
           client.joinWaitlist(contact: 'user@test.com'),
@@ -623,9 +720,9 @@ void main() {
       test('maps 403 rejection to invalid result', () async {
         final response = _MockResponse();
         when(() => response.statusCode).thenReturn(403);
-        when(() => response.body).thenReturn(
-          jsonEncode({'valid': false, 'used': false}),
-        );
+        when(
+          () => response.body,
+        ).thenReturn(jsonEncode({'valid': false, 'used': false}));
         when(
           () => mockClient.post(
             any(),
@@ -642,9 +739,9 @@ void main() {
       test('maps 404 rejection to invalid result', () async {
         final response = _MockResponse();
         when(() => response.statusCode).thenReturn(404);
-        when(() => response.body).thenReturn(
-          jsonEncode({'valid': false, 'used': false}),
-        );
+        when(
+          () => response.body,
+        ).thenReturn(jsonEncode({'valid': false, 'used': false}));
         when(
           () => mockClient.post(
             any(),
@@ -700,9 +797,9 @@ void main() {
       test('throws on non-rejection server error', () async {
         final response = _MockResponse();
         when(() => response.statusCode).thenReturn(500);
-        when(() => response.body).thenReturn(
-          jsonEncode({'error': 'Internal server error'}),
-        );
+        when(
+          () => response.body,
+        ).thenReturn(jsonEncode({'error': 'Internal server error'}));
         when(
           () => mockClient.post(
             any(),
@@ -730,9 +827,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('timed out'));
 
         await expectLater(
           client.validateCode('ab12ef34'),
@@ -766,9 +861,7 @@ void main() {
       test('throws on timeout', () async {
         when(
           () => mockClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('timed out'));
 
         await expectLater(
           client.getClientConfig(),

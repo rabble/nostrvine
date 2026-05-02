@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/apps_permissions/apps_permissions_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Displays persisted permission grants and allows
 /// revocation.
@@ -48,7 +49,7 @@ class _AppsPermissionsContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Integration Permissions',
+        title: context.l10n.appsPermissionsTitle,
         showBackButton: true,
         onBackPressed: Navigator.of(context).pop,
       ),
@@ -111,13 +112,13 @@ class _AppsPermissionsEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'No saved integration permissions',
+              context.l10n.appsPermissionsEmptyTitle,
               textAlign: TextAlign.center,
               style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
             ),
             const SizedBox(height: 10),
             Text(
-              'Approved integrations will appear here after you remember an access approval.',
+              context.l10n.appsPermissionsEmptySubtitle,
               textAlign: TextAlign.center,
               style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             ),
@@ -163,7 +164,10 @@ class _GrantCard extends StatelessWidget {
           const SizedBox(height: 16),
           Align(
             alignment: AlignmentDirectional.centerEnd,
-            child: DivineButton(label: 'Revoke', onPressed: onRevoke),
+            child: DivineButton(
+              label: context.l10n.appsPermissionsRevoke,
+              onPressed: onRevoke,
+            ),
           ),
         ],
       ),

@@ -14,9 +14,6 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
-const _toggleFollowErrorMessage =
-    'Failed to update follow status. Please try again.';
-
 /// Page widget for displaying current user's following list.
 ///
 /// Creates [MyFollowingBloc] and provides it to the view.
@@ -52,8 +49,8 @@ class _MyFollowingView extends ConsumerWidget {
     });
 
     final appBarTitle = displayName?.isNotEmpty == true
-        ? "$displayName's Following"
-        : 'Following';
+        ? context.l10n.followingTitleForName(displayName!)
+        : context.l10n.followingTitle;
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
@@ -66,7 +63,7 @@ class _MyFollowingView extends ConsumerWidget {
         ),
         showBackButton: true,
         onBackPressed: () => Navigator.of(context).pop(),
-        backButtonSemanticLabel: 'Back',
+        backButtonSemanticLabel: context.l10n.commonBack,
       ),
       body: BlocConsumer<MyFollowingBloc, MyFollowingState>(
         listenWhen: (previous, current) =>
@@ -83,7 +80,9 @@ class _MyFollowingView extends ConsumerWidget {
           }
           if (state.status == MyFollowingStatus.toggleFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text(_toggleFollowErrorMessage)),
+              SnackBar(
+                content: Text(context.l10n.followersUpdateFollowFailed),
+              ),
             );
           }
         },
@@ -163,15 +162,22 @@ class _FollowingEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_add_outlined, size: 64, color: VineTheme.lightText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.person_add_outlined,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Not following anyone yet',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+            context.l10n.followingEmptyTitle,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 16,
+            ),
           ),
         ],
       ),
@@ -192,9 +198,12 @@ class _FollowingErrorBody extends StatelessWidget {
         children: [
           const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
-          const Text(
-            'Failed to load following list',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+          Text(
+            context.l10n.followingFailedToLoadList,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 16,
+            ),
           ),
           const SizedBox(height: 8),
           TextButton(onPressed: onRetry, child: Text(context.l10n.commonRetry)),

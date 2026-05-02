@@ -76,6 +76,7 @@ VideoEvent _makeVideo({
   Map<String, String> rawTags = const {},
   int originalLoops = 1500,
   int createdAt = 1700000000,
+  String? publishedAt,
 }) => VideoEvent(
   id: 'test_video_id_00000000000000000000000000000000000000000000000000',
   pubkey: _creatorPubkey,
@@ -92,6 +93,7 @@ VideoEvent _makeVideo({
   audioEventId: audioEventId,
   originalLoops: originalLoops,
   rawTags: rawTags,
+  publishedAt: publishedAt,
 );
 
 const _testAudio = AudioEvent(
@@ -216,7 +218,11 @@ void main() {
       final expectedDate = DateFormat.yMMMd(
         'en',
       ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
-      expect(find.text(expectedDate), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders posted date for a recent post', (tester) async {
@@ -229,7 +235,35 @@ void main() {
       final expectedDate = DateFormat.yMMMd(
         'en',
       ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
-      expect(find.text(expectedDate), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('prefers published_at for the visible posted date', (
+      tester,
+    ) async {
+      const publishedAt = 1700604800;
+      final video = _makeVideo(
+        title: 'Who knew?',
+        content: 'A description',
+        publishedAt: '$publishedAt',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+
+      final expectedDate = DateFormat.yMMMd(
+        'en',
+      ).format(DateTime.fromMillisecondsSinceEpoch(publishedAt * 1000));
+      final l10n = _l10n(tester);
+      expect(
+        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders Vine-era date for a classic vine timestamp', (
@@ -262,7 +296,10 @@ void main() {
       final expectedDate = DateFormat.yMMMd(
         'en',
       ).format(DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000));
-      final dateText = tester.widget<Text>(find.text(expectedDate));
+      final l10n = _l10n(tester);
+      final dateText = tester.widget<Text>(
+        find.text(l10n.metadataPostedDateSemantics(expectedDate)),
+      );
       expect(dateText.style?.fontSize, equals(12));
       expect(dateText.style?.fontWeight, equals(FontWeight.w600));
       expect(dateText.style?.color, equals(VineTheme.onSurfaceVariant));

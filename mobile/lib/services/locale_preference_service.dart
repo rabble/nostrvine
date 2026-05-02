@@ -83,7 +83,9 @@ class LocalePreferenceService {
   /// Add new entries here as translations are added.
   static const Map<String, String> supportedLocales = {
     'en': 'English',
+    'am': 'አማርኛ',
     'ar': 'العربية',
+    'bg': 'Български',
     'de': 'Deutsch',
     'es': 'Español',
     'fr': 'Français',

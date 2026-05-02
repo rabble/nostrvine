@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/camera_permission_check.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -36,8 +37,8 @@ class CameraFAB extends ConsumerWidget {
           } else {
             if (scaffoldContext.mounted) {
               ScaffoldMessenger.of(scaffoldContext).showSnackBar(
-                const SnackBar(
-                  content: Text('You must be 16 or older to create content'),
+                SnackBar(
+                  content: Text(scaffoldContext.l10n.cameraAgeRestriction),
                   backgroundColor: VineTheme.error,
                 ),
               );

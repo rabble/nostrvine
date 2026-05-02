@@ -144,6 +144,39 @@ void main() {
         expect(evaluation.reasonCode, 'blocked_event_kind');
       },
     );
+
+    test(
+      'preloaded Divine Badges manifest allows only NIP-58 '
+      'badge event signing',
+      () {
+        final badges = preloadedNostrApps
+            .where((app) => app.slug == 'badges')
+            .single;
+
+        expect(
+          badges.allowedSignEventKinds,
+          [3, 8, 10002, 10008, 30008, 30009],
+        );
+
+        final acceptedBadgeProfile = policy.evaluate(
+          app: badges,
+          origin: Uri.parse('https://badges.divine.video/me'),
+          method: 'signEvent',
+          eventKind: 10008,
+        );
+        expect(acceptedBadgeProfile.decision, BridgeDecision.prompt);
+        expect(acceptedBadgeProfile.capability, 'signEvent:10008');
+
+        final blockedDirectMessage = policy.evaluate(
+          app: badges,
+          origin: Uri.parse('https://badges.divine.video/me'),
+          method: 'signEvent',
+          eventKind: 4,
+        );
+        expect(blockedDirectMessage.decision, BridgeDecision.deny);
+        expect(blockedDirectMessage.reasonCode, 'blocked_event_kind');
+      },
+    );
   });
 }
 

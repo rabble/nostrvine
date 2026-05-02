@@ -190,6 +190,31 @@ final List<NostrAppDirectoryEntry> preloadedNostrApps = List.unmodifiable([
     launchUrl: 'https://divine.space/',
     sortOrder: 14,
   ),
+  _buildPreloadedApp(
+    id: 'bundled-badges',
+    slug: 'badges',
+    name: 'Divine Badges',
+    tagline: 'Accept, reject, and issue Nostr badge awards.',
+    description:
+        'A Divine Nostr app for reviewing badge awards, pinning the '
+        'ones you accept to your profile, and checking badge issue status.',
+    launchUrl: 'https://badges.divine.video/me',
+    allowedMethods: const [
+      'getPublicKey',
+      'getRelays',
+      'signEvent',
+    ],
+    allowedSignEventKinds: const [
+      3,
+      8,
+      10002,
+      10008,
+      30008,
+      30009,
+    ],
+    promptRequiredFor: const ['signEvent'],
+    sortOrder: 15,
+  ),
 ]);
 
 /// Per-app localStorage seeding scripts keyed by slug.
@@ -220,6 +245,11 @@ localStorage.setItem('pubkey', '{{PUBKEY}}');
   'zap-stream': '''
 localStorage.setItem('login-method', 'nip7');
 localStorage.setItem('pubkey', '{{PUBKEY}}');
+''',
+  // badges.divine.video uses divine-signer's session store.
+  'badges': '''
+localStorage.setItem('dbdg_session', JSON.stringify({ type: 'extension' }));
+localStorage.removeItem('dbdg_logged_out');
 ''',
 };
 

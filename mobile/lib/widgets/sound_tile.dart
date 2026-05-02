@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/l10n/l10n.dart';
 
 /// A tile widget for displaying a sound (AudioEvent) in various list contexts.
 ///
@@ -83,24 +84,25 @@ class SoundTile extends StatelessWidget {
   }
 
   /// Get the display title, falling back gracefully.
-  String get _displayTitle => sound.title ?? 'Untitled sound';
+  String _displayTitle(BuildContext context) =>
+      sound.title ?? context.l10n.soundUntitled;
 
   @override
   Widget build(BuildContext context) {
     if (compact) {
-      return _buildCompactTile();
+      return _buildCompactTile(context);
     }
-    return _buildNormalTile();
+    return _buildNormalTile(context);
   }
 
   /// Build the compact version for horizontal scroll.
   ///
   /// Shows the sound title (truncated) so users can identify the sound.
   /// Tapping selects the sound for use in recording.
-  Widget _buildCompactTile() {
+  Widget _buildCompactTile(BuildContext context) {
     return Semantics(
       identifier: 'sound_tile_compact_${sound.id}',
-      label: _displayTitle,
+      label: _displayTitle(context),
       button: true,
       child: GestureDetector(
         onTap: onTap,
@@ -123,7 +125,7 @@ class SoundTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _displayTitle,
+                  _displayTitle(context),
                   style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 10,
@@ -142,10 +144,10 @@ class SoundTile extends StatelessWidget {
   }
 
   /// Build the normal list tile version.
-  Widget _buildNormalTile() {
+  Widget _buildNormalTile(BuildContext context) {
     return Semantics(
       identifier: 'sound_tile_${sound.id}',
-      label: _displayTitle,
+      label: _displayTitle(context),
       container: true,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -163,7 +165,7 @@ class SoundTile extends StatelessWidget {
               child: Row(
                 children: [
                   // Music note icon with play preview
-                  _buildPlayPreviewButton(),
+                  _buildPlayPreviewButton(context),
                   const SizedBox(width: 12),
 
                   // Title and metadata
@@ -182,7 +184,7 @@ class SoundTile extends StatelessWidget {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                _displayTitle,
+                                _displayTitle(context),
                                 style: const TextStyle(
                                   color: VineTheme.whiteText,
                                   fontSize: 15,
@@ -195,7 +197,7 @@ class SoundTile extends StatelessWidget {
                           ],
                         ),
                         const SizedBox(height: 4),
-                        _buildMetadataRow(),
+                        _buildMetadataRow(context),
                       ],
                     ),
                   ),
@@ -206,7 +208,9 @@ class SoundTile extends StatelessWidget {
                     behavior: HitTestBehavior.opaque,
                     child: Semantics(
                       identifier: 'sound_tile_detail_${sound.id}',
-                      label: 'View details for $_displayTitle',
+                      label: context.l10n.soundViewDetailsSemanticLabel(
+                        _displayTitle(context),
+                      ),
                       button: true,
                       child: const Padding(
                         padding: EdgeInsets.all(8),
@@ -228,10 +232,12 @@ class SoundTile extends StatelessWidget {
   }
 
   /// Build the play preview button.
-  Widget _buildPlayPreviewButton() {
+  Widget _buildPlayPreviewButton(BuildContext context) {
     return Semantics(
       identifier: 'sound_tile_preview_${sound.id}',
-      label: isPlaying ? 'Stop preview' : 'Preview $_displayTitle',
+      label: isPlaying
+          ? context.l10n.soundStopPreview
+          : context.l10n.soundPreviewSemanticLabel(_displayTitle(context)),
       button: true,
       child: GestureDetector(
         onTap: onPlayPreview,
@@ -253,12 +259,11 @@ class SoundTile extends StatelessWidget {
   }
 
   /// Build the metadata row (duration and video count).
-  Widget _buildMetadataRow() {
+  Widget _buildMetadataRow(BuildContext context) {
     final parts = <String>[_formatDuration()];
 
     if (videoCount != null && videoCount! > 0) {
-      final videoText = videoCount == 1 ? '1 video' : '$videoCount videos';
-      parts.add(videoText);
+      parts.add(context.l10n.soundVideoCount(videoCount!));
     }
 
     return Text(

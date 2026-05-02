@@ -69,21 +69,24 @@ class CategoriesDiscoveryView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Could not load categories',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+              Text(
+                context.l10n.categoriesCouldNotLoadCategories,
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: Text(context.l10n.commonRetry),
+              ),
             ],
           ),
         );
       case CategoriesStatus.loaded:
         if (state.categories.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No categories available',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              context.l10n.categoriesNoCategoriesAvailable,
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
             ),
           );
         }
@@ -158,7 +161,9 @@ class _CategoryTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_formatCount(category.videoCount)} videos',
+                        context.l10n.categoryVideoCount(
+                          _formatCount(category.videoCount),
+                        ),
                         style: TextStyle(
                           color: visuals.foregroundColor.withValues(alpha: 0.9),
                           fontSize: 12,

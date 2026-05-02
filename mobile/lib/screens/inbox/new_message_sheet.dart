@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/screens/inbox/bloc/bloc.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -118,6 +119,8 @@ class _ResultsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return BlocBuilder<NewMessageSearchBloc, NewMessageSearchState>(
       builder: (context, state) {
         return switch (state.status) {
@@ -126,7 +129,7 @@ class _ResultsBody extends StatelessWidget {
           ),
           NewMessageSearchStatus.idle => _UserProfileList(
             profiles: state.contacts,
-            emptyMessage: 'No contacts found.\nFollow people to see them here.',
+            emptyMessage: l10n.newMessageNoContacts,
           ),
           NewMessageSearchStatus.searching when state.results.isEmpty =>
             const Center(
@@ -137,15 +140,15 @@ class _ResultsBody extends StatelessWidget {
           ),
           NewMessageSearchStatus.searchSuccess when state.results.isNotEmpty =>
             _UserProfileList(profiles: state.results),
-          NewMessageSearchStatus.searchSuccess => const _UserProfileList(
-            profiles: [],
-            emptyMessage: 'No users found',
+          NewMessageSearchStatus.searchSuccess => _UserProfileList(
+            profiles: const [],
+            emptyMessage: l10n.newMessageNoUsersFound,
           ),
           NewMessageSearchStatus.searchFailure when state.results.isNotEmpty =>
             _UserProfileList(profiles: state.results),
-          NewMessageSearchStatus.searchFailure => const _UserProfileList(
-            profiles: [],
-            emptyMessage: 'Search failed. Please try again.',
+          NewMessageSearchStatus.searchFailure => _UserProfileList(
+            profiles: const [],
+            emptyMessage: l10n.userPickerSearchFailedTryAgain,
           ),
         };
       },
@@ -170,7 +173,7 @@ class _SheetHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text('New message', style: VineTheme.titleMediumFont()),
+        Text(context.l10n.newMessageTitle, style: VineTheme.titleMediumFont()),
         const SizedBox(height: 8),
         const Divider(height: 1, thickness: 1, color: VineTheme.outlineMuted),
       ],
@@ -203,7 +206,7 @@ class _SearchField extends StatelessWidget {
               autofocus: true,
               style: VineTheme.bodyLargeFont(),
               decoration: InputDecoration(
-                hintText: 'Find people',
+                hintText: context.l10n.newMessageFindPeople,
                 hintStyle: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceMuted,
                 ),

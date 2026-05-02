@@ -446,7 +446,11 @@ class _ScrollableContent extends StatelessWidget {
           const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
         // Optional bottom input
-        ?bottomInput,
+        if (bottomInput != null)
+          _KeyboardAwareBottomInput(
+            includeSafeArea: true,
+            child: bottomInput!,
+          ),
       ],
     );
   }
@@ -542,10 +546,42 @@ class _FixedContent extends StatelessWidget {
             const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
           // Optional bottom input
-          ?bottomInput,
+          if (bottomInput != null)
+            _KeyboardAwareBottomInput(
+              includeSafeArea: false,
+              child: bottomInput!,
+            ),
         ],
       ),
     );
+  }
+}
+
+class _KeyboardAwareBottomInput extends StatelessWidget {
+  const _KeyboardAwareBottomInput({
+    required this.child,
+    required this.includeSafeArea,
+  });
+
+  final Widget child;
+  final bool includeSafeArea;
+
+  @override
+  Widget build(BuildContext context) {
+    // Let the bottom input ride the keyboard in both scrollable and fixed
+    // sheet layouts so composers stay visible while typing.
+    final paddedInput = AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: child,
+    );
+
+    // Scrollable sheets still need the platform bottom inset once the keyboard
+    // is gone. Fixed sheets are already wrapped in SafeArea higher up.
+    if (!includeSafeArea) return paddedInput;
+
+    return SafeArea(top: false, child: paddedInput);
   }
 }
 

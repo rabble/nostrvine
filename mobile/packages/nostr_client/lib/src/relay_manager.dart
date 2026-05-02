@@ -10,6 +10,20 @@ import 'package:nostr_client/src/models/relay_manager_config.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/relay/client_connected.dart';
 
+/// Hosts allowed to use cleartext (`ws://`) relay schemes.
+///
+/// Mirrors `isLoopbackHost` in `mobile/lib/utils/relay_url_utils.dart`. Any
+/// change here must be reflected there and in `network_security_config.xml`.
+const _relayLoopbackHosts = <String>{
+  'localhost',
+  '127.0.0.1',
+  '10.0.2.2',
+  '::1',
+};
+
+bool _isLoopbackHost(String host) =>
+    _relayLoopbackHosts.contains(host.toLowerCase());
+
 /// {@template relay_manager}
 /// Manages relay configuration and connection status.
 ///
@@ -132,11 +146,19 @@ class RelayManager {
     final storage = _config.storage;
     if (storage != null) {
       final savedRelays = await storage.loadRelays();
-      // Normalize loaded relays and filter out blocked/duplicate relays
+      // Normalize loaded relays and filter out blocked/duplicate/invalid
+      // relays.
       var blockedCount = 0;
+      var droppedCount = 0;
       for (final url in savedRelays) {
         final normalized = _normalizeUrl(url);
-        if (normalized == null) continue;
+        if (normalized == null) {
+          // URL is malformed or now disallowed by the loopback gate
+          // (#3362). Drop it from the in-memory list and re-save below so
+          // the entry doesn't linger in storage forever.
+          droppedCount++;
+          continue;
+        }
         if (_isBlockedRelay(normalized)) {
           blockedCount++;
           continue;
@@ -147,7 +169,13 @@ class RelayManager {
       }
       if (blockedCount > 0) {
         _log('Filtered $blockedCount blocked relays from storage');
-        // Persist the filtered list so blocked relays are permanently removed
+      }
+      if (droppedCount > 0) {
+        _log('Filtered $droppedCount invalid relay URLs from storage');
+      }
+      if (blockedCount > 0 || droppedCount > 0) {
+        // Persist the filtered list so removed entries don't reappear
+        // on the next launch.
         await storage.saveRelays(_configuredRelays);
         _log('Saved filtered relay list to storage');
       }
@@ -623,11 +651,32 @@ class RelayManager {
   }
 
   String? _normalizeUrl(String url) {
-    var normalized = url.trim();
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
 
-    // Ensure wss:// prefix
-    if (!normalized.startsWith('wss://') && !normalized.startsWith('ws://')) {
-      normalized = 'wss://$normalized';
+    // Validate any explicit scheme BEFORE the bare-host upgrade. Without this
+    // gate, `http://attacker.example.com` would slip past the prefix check
+    // below and be string-prefixed into `wss://http://attacker.example.com`
+    // (a URL whose authority parses as host=`http`, path=`//attacker…` —
+    // routed to the wrong host rather than rejected). Schemes are
+    // case-insensitive per RFC 3986 §3.1; Dart's Uri canonicalises them to
+    // lowercase, so `WSS://X` round-trips through `toString()` as `wss://X`.
+    String normalized;
+    final initial = Uri.tryParse(trimmed);
+    if (initial != null && initial.hasAuthority) {
+      final scheme = initial.scheme.toLowerCase();
+      if (scheme != 'wss' && scheme != 'ws') return null;
+      // `wss://http://x` parses with host=`http` and path=`//x`. Reject so
+      // an attacker can't smuggle a cleartext URL past us by pre-wrapping
+      // it inside a `wss://` prefix.
+      if (initial.path.startsWith('//')) return null;
+      normalized = initial.toString();
+    } else {
+      // No parsable authority → bare host[:port][/path]; upgrade to wss://.
+      // Reject inputs that contain `://` anywhere we couldn't parse, so we
+      // never silently rewrite something that looked scheme-shaped.
+      if (trimmed.contains('://')) return null;
+      normalized = 'wss://$trimmed';
     }
 
     // Remove trailing slash
@@ -635,14 +684,16 @@ class RelayManager {
       normalized = normalized.substring(0, normalized.length - 1);
     }
 
-    // Basic validation
-    try {
-      final uri = Uri.parse(normalized);
-      if (uri.host.isEmpty) return null;
-      return normalized;
-    } on FormatException {
-      return null;
-    }
+    // Re-parse to apply host validation and the loopback gate. Only wss/ws
+    // can reach this point per the scheme check above; the second
+    // `tryParse` also catches inputs whose bare-host upgrade produced an
+    // unparseable authority (e.g. `wss:relay.example.com` →
+    // `wss://wss:relay.example.com`, where `relay.example.com` is not a
+    // valid port).
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || uri.host.isEmpty) return null;
+    if (uri.scheme == 'ws' && !_isLoopbackHost(uri.host)) return null;
+    return normalized;
   }
 
   void _log(String message) {

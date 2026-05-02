@@ -19,21 +19,21 @@ part 'classic_vines_provider.g.dart';
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
 /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
-/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+/// Each page is 50 videos. With ~10k classic vines, there are ~200 pages.
 ///
-/// Pull-to-refresh spins to the next page of classics.
+/// Pull-to-refresh selects a fresh random slice of classics while retrying
+/// transient failures and empty pages.
 @Riverpod(keepAlive: true)
 class ClassicVinesFeed extends _$ClassicVinesFeed {
-  static const int _pageSize = 100;
+  static const int _pageSize = 50;
   static const int _totalClassicVines = 10000; // Approximate total
-
-  /// Max random offset — draws from top 500 most-looped vines
-  static const int _maxRandomOffset = 400;
+  static const int _initialRequestAttempts = 2;
+  static const int _maxRandomStartOffset = 400;
 
   final Random _random = Random();
 
-  /// Random starting offset for the current session (0–400)
-  int _randomOffset = 0;
+  /// Starting offset for the current loaded classics window.
+  int _startOffset = 0;
 
   /// Number of additional pages appended via loadMore
   int _loadMorePages = 0;
@@ -70,11 +70,15 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
-    // Pick a random offset within the top 500 most-looped vines
-    _randomOffset = _random.nextInt(_maxRandomOffset + 1);
+    _startOffset = _randomStartOffset();
     _loadMorePages = 0;
 
     return _loadFirstPage(funnelcakeAvailable: funnelcakeAvailable);
+  }
+
+  int _randomStartOffset() {
+    const pageCount = (_maxRandomStartOffset ~/ _pageSize) + 1;
+    return _random.nextInt(pageCount) * _pageSize;
   }
 
   Future<VideoFeedState> _loadFirstPage({
@@ -86,48 +90,102 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final blocklistRepository = ref.read(contentBlocklistRepositoryProvider);
     Object? restError;
 
+    Future<List<VideoEvent>> fetchFilteredRestPage(
+      int offset, {
+      required bool retryOnError,
+    }) async {
+      final attempts = retryOnError ? _initialRequestAttempts : 1;
+      for (var attempt = 1; attempt <= attempts; attempt++) {
+        try {
+          final stats = await client.getClassicVines(offset: offset);
+          final videos = stats.toVideoEvents();
+
+          // Filter for platform compatibility, content preferences,
+          // blocked users, and shuffle
+          return videoEventService.filterVideoList(
+            videos
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
+                )
+                .toList(),
+          )..shuffle(_random);
+        } catch (e) {
+          if (attempt < attempts) {
+            Log.warning(
+              '🎬 ClassicVinesFeed: REST API error at offset $offset, retrying: $e',
+              name: 'ClassicVinesFeedProvider',
+              category: LogCategory.video,
+            );
+            continue;
+          }
+          rethrow;
+        }
+      }
+
+      throw StateError('Classics API retry loop exhausted');
+    }
+
+    VideoFeedState restFeedState({
+      required List<VideoEvent> videos,
+      required int offset,
+    }) {
+      _startOffset = offset;
+      final nextOffset = offset + _pageSize;
+
+      Log.info(
+        '🎬 ClassicVinesFeed: Loaded ${videos.length} videos '
+        '(offset: $offset, shuffled)',
+        name: 'ClassicVinesFeedProvider',
+        category: LogCategory.video,
+      );
+
+      return VideoFeedState(
+        videos: videos,
+        hasMoreContent: nextOffset < _totalClassicVines,
+        lastUpdated: DateTime.now(),
+      );
+    }
+
     // Try REST API first (Funnelcake has comprehensive classic Vine data)
     if (funnelcakeAvailable) {
       try {
-        final stats = await client.getClassicVines(
-          limit: _pageSize,
-          offset: _randomOffset,
+        final firstPage = await fetchFilteredRestPage(
+          _startOffset,
+          retryOnError: true,
         );
-        final videos = stats.toVideoEvents();
 
-        // Filter for platform compatibility, content preferences,
-        // blocked users, and shuffle
-        final filteredVideos = videoEventService.filterVideoList(
-          videos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .where(
-                (v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey),
-              )
-              .toList(),
-        )..shuffle(_random);
+        if (firstPage.isNotEmpty) {
+          return restFeedState(videos: firstPage, offset: _startOffset);
+        }
 
-        if (filteredVideos.isEmpty) {
-          restError = StateError('Classics API returned no videos');
+        restError = StateError(
+          'Classics API returned no videos at offset $_startOffset',
+        );
+        Log.warning(
+          '🎬 ClassicVinesFeed: REST API returned no videos at offset $_startOffset, trying next page',
+          name: 'ClassicVinesFeedProvider',
+          category: LogCategory.video,
+        );
+
+        final recoveryOffset = _startOffset + _pageSize;
+        final recoveryPage = await fetchFilteredRestPage(
+          recoveryOffset,
+          retryOnError: false,
+        );
+
+        if (recoveryPage.isEmpty) {
+          restError = StateError(
+            'Classics API returned no videos at offset $recoveryOffset',
+          );
           Log.warning(
-            '🎬 ClassicVinesFeed: REST API returned no videos, falling back to Nostr',
+            '🎬 ClassicVinesFeed: REST API recovery page returned no videos, falling back to Nostr',
             name: 'ClassicVinesFeedProvider',
             category: LogCategory.video,
           );
           // Fall through to Nostr fallback.
         } else {
-          Log.info(
-            '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} videos '
-            '(offset: $_randomOffset, shuffled)',
-            name: 'ClassicVinesFeedProvider',
-            category: LogCategory.video,
-          );
-
-          final nextOffset = _randomOffset + _pageSize;
-          return VideoFeedState(
-            videos: filteredVideos,
-            hasMoreContent: nextOffset < _totalClassicVines,
-            lastUpdated: DateTime.now(),
-          );
+          return restFeedState(videos: recoveryPage, offset: recoveryOffset);
         }
       } catch (e) {
         restError = e;
@@ -172,17 +230,16 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
   }
 
-  /// Refresh with a new random slice of classic vines
+  /// Refresh with a new random slice of classic vines.
   Future<void> refresh() async {
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
-    // Pick a new random offset for a fresh slice
-    _randomOffset = _random.nextInt(_maxRandomOffset + 1);
+    _startOffset = _randomStartOffset();
     _loadMorePages = 0;
 
     Log.info(
-      '🎬 ClassicVinesFeed: Refreshing with new offset $_randomOffset',
+      '🎬 ClassicVinesFeed: Refreshing with offset $_startOffset',
       name: 'ClassicVinesFeedProvider',
       category: LogCategory.video,
     );
@@ -214,12 +271,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
     try {
       _loadMorePages++;
-      final nextOffset = _randomOffset + _loadMorePages * _pageSize;
+      final nextOffset = _startOffset + _loadMorePages * _pageSize;
 
-      final stats = await client.getClassicVines(
-        limit: _pageSize,
-        offset: nextOffset,
-      );
+      final stats = await client.getClassicVines(offset: nextOffset);
       final videos = stats.toVideoEvents();
 
       final videoEventService = ref.read(videoEventServiceProvider);

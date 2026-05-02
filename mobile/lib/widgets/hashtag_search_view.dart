@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/widgets/search_tag_chip.dart';
@@ -69,9 +70,12 @@ class _HashtagSearchEmptyState extends StatelessWidget {
             size: 64,
           ),
           const SizedBox(height: 16),
-          Text('Search for hashtags', style: VineTheme.titleSmallFont()),
           Text(
-            'Discover trending topics and content',
+            context.l10n.hashtagSearchTitle,
+            style: VineTheme.titleSmallFont(),
+          ),
+          Text(
+            context.l10n.hashtagSearchSubtitle,
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
         ],
@@ -192,7 +196,7 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No hashtags found for "$query"',
+            context.l10n.hashtagSearchNoResults(query),
             style: VineTheme.titleSmallFont(),
           ),
         ],
@@ -217,7 +221,7 @@ class _HashtagSearchErrorState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Search failed',
+            context.l10n.hashtagSearchFailed,
             style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
           ),
         ],

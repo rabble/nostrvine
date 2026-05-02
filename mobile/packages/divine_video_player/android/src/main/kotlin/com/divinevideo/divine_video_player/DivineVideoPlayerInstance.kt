@@ -3,7 +3,6 @@ package com.divinevideo.divine_video_player
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.view.Surface
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -39,7 +38,9 @@ internal class DivineVideoPlayerInstance(
     private val audioOverlayManagerFactory: (Context) -> AudioOverlayManager = { ctx ->
         AudioOverlayManager(ctx)
     },
-) : MethodChannel.MethodCallHandler, EventChannel.StreamHandler {
+) : MethodChannel.MethodCallHandler,
+    EventChannel.StreamHandler,
+    TextureRegistry.SurfaceProducer.Callback {
 
     private val methodChannel = MethodChannel(
         messenger,
@@ -54,8 +55,13 @@ internal class DivineVideoPlayerInstance(
     private var eventSink: EventChannel.EventSink? = null
 
     // Texture rendering (non-null when useTexture is enabled).
-    private var textureEntry: TextureRegistry.SurfaceTextureEntry? = null
-    private var textureSurface: Surface? = null
+    private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
+
+    /**
+     * True when ExoPlayer needs a surface re-attached.
+     * Set to true on init and after [onSurfaceCleanup]; cleared in [onSurfaceAvailable].
+     */
+    private var needsSurface = true
 
     /** Accumulated clip durations for global timeline calculation. */
     private var clipOffsets = listOf<Long>()
@@ -66,6 +72,7 @@ internal class DivineVideoPlayerInstance(
     private var firstFrameRendered = false
     private var videoWidth = 0
     private var videoHeight = 0
+    private var rotationDegrees = 0
 
     /**
      * True only during the synchronous stop→clearMediaItems→setMediaItems→prepare
@@ -117,12 +124,22 @@ internal class DivineVideoPlayerInstance(
      *
      * Must be called before any clips are loaded. Returns the texture
      * ID that Dart should pass to the `Texture` widget.
+     *
+     * Uses [TextureRegistry.SurfaceProducer] instead of the legacy
+     * [TextureRegistry.SurfaceTextureEntry] so that Android can notify
+     * us when the underlying surface is destroyed and recreated (e.g.
+     * after a permission dialog or OEM compositor event on Vivo/Android 16).
      */
     fun enableTextureOutput(registry: TextureRegistry): Long {
-        val entry = registry.createSurfaceTexture()
-        textureEntry = entry
-        textureSurface = Surface(entry.surfaceTexture())
-        return entry.id()
+        val producer = registry.createSurfaceProducer()
+        surfaceProducer = producer
+        producer.setCallback(this)
+        val surface = producer.surface
+        needsSurface = surface == null
+        if (surface != null) {
+            player?.setVideoSurface(surface)
+        }
+        return producer.id()
     }
 
     private fun ensurePlayer(): ExoPlayer {
@@ -130,8 +147,32 @@ internal class DivineVideoPlayerInstance(
             player = newPlayer
             newPlayer.setSeekParameters(SeekParameters.EXACT)
             newPlayer.addListener(playerListener)
-            textureSurface?.let { newPlayer.setVideoSurface(it) }
+            val surface = surfaceProducer?.surface
+            if (surface != null) {
+                newPlayer.setVideoSurface(surface)
+                needsSurface = false
+            }
         }
+    }
+
+    // -- SurfaceProducer.Callback --
+
+    override fun onSurfaceAvailable() {
+        if (needsSurface) {
+            val surface = surfaceProducer?.surface ?: return
+            val p = player
+            if (p != null) {
+                p.setVideoSurface(surface)
+                needsSurface = false
+            }
+            // If player is null, needsSurface stays true so ensurePlayer()
+            // attaches the surface when the player is eventually created.
+        }
+    }
+
+    override fun onSurfaceCleanup() {
+        player?.setVideoSurface(null)
+        needsSurface = true
     }
 
     // -- MethodCallHandler --
@@ -224,12 +265,13 @@ internal class DivineVideoPlayerInstance(
             }
         }
 
-        // Suppress sendStateUpdate during the synchronous reset so the
-        // transient STATE_IDLE / position-0 event from stop() is never
-        // forwarded to Dart (which would jump the timeline back to 0).
+        // Replace the playlist in-place without calling stop() first.
+        // stop() transitions ExoPlayer to STATE_IDLE which on some OEM decoders
+        // (e.g. Vivo/Mediatek) triggers a full MediaCodec reset and surface
+        // disconnect. setMediaItems() handles playlist replacement internally
+        // without that overhead. isResettingPlayer suppresses intermediate
+        // state events fired while ExoPlayer processes the new items.
         isResettingPlayer = true
-        exoPlayer.stop()
-        exoPlayer.clearMediaItems()
         exoPlayer.setMediaItems(mediaItems, startIndex, startLocalMs)
         exoPlayer.prepare()
         isResettingPlayer = false
@@ -446,6 +488,7 @@ internal class DivineVideoPlayerInstance(
             "isFirstFrameRendered" to firstFrameRendered,
             "videoWidth" to videoWidth,
             "videoHeight" to videoHeight,
+            "rotationDegrees" to rotationDegrees,
         )
         exoPlayer.playerError?.let { error ->
             map["errorMessage"] = error.localizedMessage
@@ -543,6 +586,18 @@ internal class DivineVideoPlayerInstance(
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            // When ExoPlayer auto-advances to the next playlist item it reuses the
+            // decoder without reconfiguring the output surface rotation. Force a
+            // detach+reattach so the decoder re-initialises its rotation transform
+            // for the new clip. Not needed for PLAYLIST_CHANGED (reason=3) because
+            // the surface is freshly attached at that point.
+            if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                val surface = surfaceProducer?.surface
+                if (surface != null && !needsSurface) {
+                    player?.setVideoSurface(null)
+                    player?.setVideoSurface(surface)
+                }
+            }
             syncAudioOverlays()
             sendStateUpdate()
         }
@@ -559,6 +614,25 @@ internal class DivineVideoPlayerInstance(
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
             videoWidth = videoSize.width
             videoHeight = videoSize.height
+            // Send 0 on the ImageReader/Impeller backend (Android 14+) because
+            // SurfaceProducer.handlesCropAndRotation() == true means the
+            // compositor already applies the GL transform matrix — RotatedBox
+            // in Dart would double-rotate. On the SurfaceTexture fallback
+            // (older devices) rotation is not applied, so Dart must compensate.
+            // This mirrors Flutter's own TextureExoPlayerEventListener which
+            // gates on handlesCropAndRotation() before reading rotationDegrees.
+            //
+            // Guard: ExoPlayer emits onVideoSizeChanged(0, 0) as an intermediate
+            // reset during seeks and transitions; skip to avoid a brief flash
+            // of 0° rotation.
+            val newRotation = if (surfaceProducer?.handlesCropAndRotation() == true) {
+                0
+            } else {
+                player?.videoFormat?.rotationDegrees ?: 0
+            }
+            if (videoSize.width > 0 && videoSize.height > 0) {
+                rotationDegrees = newRotation
+            }
             sendStateUpdate()
         }
     }
@@ -611,6 +685,7 @@ internal class DivineVideoPlayerInstance(
             it.stop()
             it.clearVideoSurface()
         }
+        needsSurface = true
         audioOverlayManager.pauseAll()
     }
 
@@ -621,18 +696,18 @@ internal class DivineVideoPlayerInstance(
         seekCompletionResult = null
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
+        // Release the player before the surface producer. Releasing the
+        // producer first can cause in-flight decoder frames to land in a
+        // detaching surface, triggering native crashes on some OEMs (#3416).
         player?.let {
             it.removeListener(playerListener)
-            // Stop decoder and detach surface before release. See #3416.
             it.stop()
             it.clearVideoSurface()
             it.release()
         }
         player = null
-        textureSurface?.release()
-        textureSurface = null
-        textureEntry?.release()
-        textureEntry = null
+        surfaceProducer?.release()
+        surfaceProducer = null
         audioOverlayManager.releaseAll()
         eventSink = null
     }

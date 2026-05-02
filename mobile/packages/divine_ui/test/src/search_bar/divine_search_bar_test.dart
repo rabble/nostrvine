@@ -88,6 +88,63 @@ void main() {
       expect(changedValue, equals('test'));
     });
 
+    testWidgets('uses search as the keyboard action', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      // The keyboard action should advertise search explicitly so the widget
+      // reads as a search field rather than a generic text box.
+      expect(textField.textInputAction, TextInputAction.search);
+    });
+
+    testWidgets('calls onSubmitted and dismisses focus on submit', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+
+      String? submittedValue;
+      await tester.pumpWidget(
+        buildTestWidget(
+          focusNode: focusNode,
+          onSubmitted: (value) => submittedValue = value,
+        ),
+      );
+
+      focusNode.requestFocus();
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      // Trigger the callback directly to assert our submit/unfocus behavior
+      // without depending on platform text-input integration in the test.
+      textField.onSubmitted?.call('divine search');
+      await tester.pump();
+
+      expect(submittedValue, equals('divine search'));
+      expect(focusNode.hasFocus, isFalse);
+    });
+
+    testWidgets('dismisses focus on outside tap', (tester) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+
+      await tester.pumpWidget(buildTestWidget(focusNode: focusNode));
+
+      focusNode.requestFocus();
+      await tester.pump();
+      expect(focusNode.hasFocus, isTrue);
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      // Simulate Flutter's tap-outside dispatch so the test stays focused on
+      // the widget contract rather than gesture hit-testing details.
+      textField.onTapOutside?.call(const PointerDownEvent());
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isFalse);
+    });
+
     testWidgets('calls onTap when tapped', (tester) async {
       var tapped = false;
       await tester.pumpWidget(

@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class NostrAppPermissionPromptSheet extends StatelessWidget {
   const NostrAppPermissionPromptSheet({
@@ -26,6 +27,8 @@ class NostrAppPermissionPromptSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
@@ -33,31 +36,41 @@ class NostrAppPermissionPromptSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$appName wants your approval',
+            l10n.nostrAppPermissionTitle(appName),
             style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
           ),
           const SizedBox(height: 8),
           Text(
-            "This app is requesting access through Divine's vetted sandbox.",
+            l10n.nostrAppPermissionDescription,
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 20),
-          _DetailRow(label: 'Origin', value: origin),
+          _DetailRow(label: l10n.nostrAppPermissionOrigin, value: origin),
           const SizedBox(height: 12),
-          _DetailRow(label: 'Method', value: method),
+          _DetailRow(label: l10n.nostrAppPermissionMethod, value: method),
           const SizedBox(height: 12),
-          _DetailRow(label: 'Capability', value: capability),
+          _DetailRow(
+            label: l10n.nostrAppPermissionCapability,
+            value: capability,
+          ),
           if (eventKind != null) ...[
             const SizedBox(height: 12),
-            _DetailRow(label: 'Event kind', value: '$eventKind'),
+            _DetailRow(
+              label: l10n.nostrAppPermissionEventKind,
+              value: '$eventKind',
+            ),
           ],
           const SizedBox(height: 28),
           Column(
             spacing: 12,
             children: [
-              DivineButton(label: 'Allow', onPressed: onAllow, expanded: true),
               DivineButton(
-                label: 'Cancel',
+                label: l10n.nostrAppPermissionAllow,
+                onPressed: onAllow,
+                expanded: true,
+              ),
+              DivineButton(
+                label: l10n.commonCancel,
                 type: DivineButtonType.secondary,
                 onPressed: onCancel,
                 expanded: true,

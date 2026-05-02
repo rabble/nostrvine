@@ -67,6 +67,49 @@ void main() {
       expect(find.byKey(const Key('input')), findsOneWidget);
     });
 
+    testWidgets('keeps bottomInput above the keyboard inset', (tester) async {
+      tester.view
+        ..physicalSize = const Size(400, 800)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      const keyboardHeight = 240.0;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: MediaQuery(
+            // Inject a keyboard inset directly so the test can assert layout
+            // without needing a real platform keyboard.
+            data: MediaQueryData(
+              size: Size(400, 800),
+              viewInsets: EdgeInsets.only(bottom: keyboardHeight),
+            ),
+            child: Scaffold(
+              resizeToAvoidBottomInset: false,
+              body: VineBottomSheet(
+                title: Text('Test Sheet'),
+                body: Text('Content'),
+                bottomInput: SizedBox(
+                  key: Key('keyboard-safe-input'),
+                  height: 56,
+                  child: TextField(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final inputRect = tester.getRect(
+        find.byKey(const Key('keyboard-safe-input')),
+      );
+
+      // The animated padding should move the entire bottom input above the
+      // keyboard, not just add space below it.
+      expect(inputRect.bottom, lessThanOrEqualTo(800 - keyboardHeight));
+    });
+
     testWidgets('content is scrollable when expanded', (tester) async {
       await tester.pumpWidget(
         MaterialApp(

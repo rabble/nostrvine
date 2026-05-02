@@ -161,10 +161,15 @@ void main() {
     ),
   ];
 
-  Widget wrap(Widget child, {List<dynamic> overrides = const []}) {
+  Widget wrap(
+    Widget child, {
+    Locale? locale,
+    List<dynamic> overrides = const [],
+  }) {
     return ProviderScope(
       overrides: [...baseOverrides(), ...overrides],
       child: MaterialApp(
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
@@ -193,6 +198,56 @@ void main() {
     expect(find.text('Content Preferences'), findsNothing);
     expect(find.text('Moderation Controls'), findsNothing);
     expect(find.text('Bluesky Publishing'), findsNothing);
+  });
+
+  testWidgets('localizes settings taxonomy for Amharic', (tester) async {
+    await tester.pumpWidget(
+      wrap(const SettingsScreen(), locale: const Locale('am')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
+    expect(find.text('ይዘት እና ደህንነት'), findsOneWidget);
+    expect(find.text('General Settings'), findsNothing);
+    expect(find.text('Content & Safety'), findsNothing);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    await tester.pumpWidget(
+      wrap(
+        const GeneralSettingsScreen(),
+        locale: const Locale('am'),
+        overrides: [
+          isFeatureEnabledProvider(
+            FeatureFlag.blueskyPublishing,
+          ).overrideWithValue(true),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('አጠቃላይ ቅንብሮች'), findsOneWidget);
+    expect(find.text('ውህደቶች'), findsOneWidget);
+    expect(find.text('የተዘጉ መግለጫዎች'), findsOneWidget);
+    expect(find.text('የቪዲዮ ቅርጽ'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    await tester.pumpWidget(
+      wrap(const SafetySettingsScreen(), locale: const Locale('am')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ይዘት እና ደህንነት'), findsOneWidget);
+    expect(find.text('የሚያዩት'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('የሚያትሙት'),
+      300,
+      scrollable: find.byType(Scrollable),
+    );
+    expect(find.text('የሚያትሙት'), findsOneWidget);
   });
 
   testWidgets('General Settings contains integrations and viewing defaults', (

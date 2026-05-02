@@ -28,6 +28,16 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<!-- See mobile/ios/Runner/Info.plist for the rationale.
+		     Mirrors the iOS posture: HTTPS-only for remote hosts,
+		     loopback/local-only cleartext via NSAllowsLocalNetworking. -->
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Divine needs access to your camera to record short videos.</string>
 	<key>NSMicrophoneUsageDescription</key>

@@ -48,6 +48,13 @@ class DivineSearchBar extends StatelessWidget {
   /// Called when the user submits the text.
   final ValueChanged<String>? onSubmitted;
 
+  void _handleSubmitted(BuildContext context, String value) {
+    // Search should behave like a committed action: forward the query first,
+    // then dismiss the keyboard so results remain visible.
+    onSubmitted?.call(value);
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ConstrainedBox(
@@ -60,7 +67,13 @@ class DivineSearchBar extends StatelessWidget {
           readOnly: readOnly,
           onTap: onTap,
           onChanged: onChanged,
-          onSubmitted: onSubmitted,
+          onSubmitted: (value) => _handleSubmitted(context, value),
+          // Match mobile search-field behavior by dismissing focus when the
+          // user taps away instead of leaving the keyboard covering results.
+          onTapOutside: (_) => FocusScope.of(context).unfocus(),
+          // Surface the search action directly on the soft keyboard instead of
+          // the generic return key.
+          textInputAction: TextInputAction.search,
           style: VineTheme.bodyLargeFont(),
           decoration: InputDecoration(
             hintText: hintText,

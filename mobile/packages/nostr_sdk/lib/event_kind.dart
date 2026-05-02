@@ -85,6 +85,8 @@ class EventKind {
 
   static const int relayListMetadata = 10002;
 
+  static const int profileBadges = 10008;
+
   static const int bookmarksList = 10003;
 
   static const int groupList = 10009;
@@ -107,6 +109,12 @@ class EventKind {
 
   static const int followSets = 30000;
 
+  static const int badgeSet = 30008;
+
+  @Deprecated(
+    'Use profileBadges for accepted profile badges or badgeSet '
+    'for NIP-58 badge sets. Kind 30008 profile_badges is legacy.',
+  )
   static const int badgeAccept = 30008;
 
   static const int badgeDefinition = 30009;

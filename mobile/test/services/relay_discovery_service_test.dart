@@ -241,6 +241,108 @@ void main() {
     });
   });
 
+  group('parseRelayListFromJson (#3362 insecure URL filtering)', () {
+    late RelayDiscoveryService service;
+
+    setUp(() {
+      service = RelayDiscoveryService(indexerRelays: const ['wss://a']);
+    });
+
+    Map<String, dynamic> tagsJson(List<List<String>> tags) => {'tags': tags};
+
+    test('keeps wss:// relays', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'wss://relay.example.com'],
+        ]),
+      );
+      expect(relays, hasLength(1));
+      expect(relays.first.url, equals('wss://relay.example.com'));
+    });
+
+    test('keeps ws://localhost relays', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'ws://localhost:47777'],
+        ]),
+      );
+      expect(relays, hasLength(1));
+    });
+
+    test('drops ws:// non-loopback relays', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'ws://attacker.example.com'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
+
+    test('drops https:// relay tags (NIP-65 advertises WS endpoints only)', () {
+      // A published kind:10002 tag like `["r", "https://relay.example.com"]`
+      // is not a usable relay endpoint — `RelayManager._normalizeUrl` will
+      // reject it downstream. If discovery kept it, `result.hasRelays`
+      // would be true and the safe-fallback bootstrap (#2931) would be
+      // suppressed, leaving the user with no relays.
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'https://relay.example.com'],
+          ['r', 'https://relay.divine.video'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
+
+    test('drops http://localhost relay tags (NIP-65 is WS-only)', () {
+      // Even loopback http:// is not a relay — relays speak WebSocket.
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'http://localhost:47777'],
+          ['r', 'http://attacker.example.com'],
+        ]),
+      );
+      expect(relays, isEmpty);
+    });
+
+    test('keeps mixed list filtered to allowed entries only', () {
+      final relays = service.parseRelayListFromJson(
+        tagsJson([
+          ['r', 'wss://good.example.com'],
+          ['r', 'ws://attacker.example.com'],
+          ['r', 'ws://localhost:8080'],
+          ['r', 'https://relay.example.com'],
+          ['r', 'http://localhost:47777'],
+        ]),
+      );
+      expect(relays, hasLength(2));
+      expect(
+        relays.map((r) => r.url),
+        containsAll(['wss://good.example.com', 'ws://localhost:8080']),
+      );
+    });
+
+    test(
+      'drops mis-nested wss://http:// tags (#3362 review follow-up)',
+      () {
+        // `wss://http://attacker` parses with host=`http` and path=`//attacker…`.
+        // Without the `path.startsWith('//')` guard in `isRelayUrlAllowed`,
+        // the predicate would accept it (scheme=wss) and discovery would
+        // surface a relay pointing at host `http`. `RelayManager.
+        // _normalizeUrl` would also reject it downstream, but we don't want
+        // discovery's `hasRelays` to flip true on a malformed tag — that
+        // would suppress the safe-fallback bootstrap (#2931).
+        final relays = service.parseRelayListFromJson(
+          tagsJson([
+            ['r', 'wss://http://attacker.example.com'],
+            ['r', 'wss://https://attacker.example.com'],
+            ['r', 'wss://wss://relay.example.com'],
+          ]),
+        );
+        expect(relays, isEmpty);
+      },
+    );
+  });
+
   group(IndexerRelayConfig, () {
     group('safeFallbackRelays (#2931)', () {
       test('is non-empty so DM reachability degrades gracefully', () {

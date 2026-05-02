@@ -667,33 +667,19 @@ class _NotificationTabContentState
       category: LogCategory.ui,
     );
 
-    // Get video from video event service (search all feed types)
-    final videoEventService = ref.read(videoEventServiceProvider);
-
-    // Use the service's built-in search across all subscription types
-    var video = videoEventService.getVideoById(videoEventId);
-
-    // If not found in cache, try fetching from Nostr
-    if (video == null) {
-      Log.info(
-        'Video not in cache, fetching from Nostr: $videoEventId',
+    // fetchVideoWithStats handles cache→relay lookup and bulk-stats
+    // hydration in one call, matching what feed providers do.
+    VideoEvent? video;
+    try {
+      video = await ref
+          .read(videosRepositoryProvider)
+          .fetchVideoWithStats(videoEventId);
+    } catch (e) {
+      Log.error(
+        'Failed to fetch video: $e',
         name: 'NotificationsScreen',
         category: LogCategory.ui,
       );
-
-      try {
-        final nostrService = ref.read(nostrServiceProvider);
-        final event = await nostrService.fetchEventById(videoEventId);
-        if (event != null) {
-          video = VideoEvent.fromNostrEvent(event);
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to fetch video from Nostr: $e',
-          name: 'NotificationsScreen',
-          category: LogCategory.ui,
-        );
-      }
     }
 
     if (!context.mounted) return;
@@ -708,6 +694,7 @@ class _NotificationTabContentState
       return;
     }
 
+    final videoEventService = ref.read(videoEventServiceProvider);
     if (videoEventService.shouldHideVideo(video)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -721,13 +708,12 @@ class _NotificationTabContentState
     final shouldAutoOpenComments =
         notificationType == NotificationType.comment ||
         notificationType == NotificationType.mention;
-    final videoForNav = video;
 
     // Navigate to video player using the pooled playback path
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([videoForNav]),
+        videosStream: Stream.value([video]),
         initialIndex: 0,
         removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
         contextTitle: context.l10n.notificationsFromNotification,
