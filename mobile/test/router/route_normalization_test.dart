@@ -1,7 +1,49 @@
-// ABOUTME: Tests for route normalization (canonical URLs)
-// ABOUTME: Ensures negative indices, encoding, and unknown paths are normalized
-// TODO(any): Fix and re-enable this test
-void main() {}
+// ABOUTME: Tests for route normalization skip logic
+// ABOUTME: Prevents universal links from being rewritten by internal canonicalization
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/router/providers/route_normalization_provider.dart';
+
+void main() {
+  group('shouldSkipRouteNormalization', () {
+    test('skips divine video universal links', () {
+      expect(
+        shouldSkipRouteNormalization('https://divine.video/video/abc123'),
+        isTrue,
+      );
+    });
+
+    test('skips divine profile universal links', () {
+      expect(
+        shouldSkipRouteNormalization(
+          'https://divine.video/profile/npub1abc123',
+        ),
+        isTrue,
+      );
+    });
+
+    test('skips divine invite universal links', () {
+      expect(
+        shouldSkipRouteNormalization(
+          'https://divine.video/invite/ABCD-EFGH',
+        ),
+        isTrue,
+      );
+    });
+
+    test('does not skip unrelated hosts', () {
+      expect(
+        shouldSkipRouteNormalization('https://example.com/video/abc123'),
+        isFalse,
+      );
+    });
+
+    test('does not skip canonical internal routes', () {
+      expect(shouldSkipRouteNormalization('/video/abc123'), isFalse);
+      expect(shouldSkipRouteNormalization('/home/0'), isFalse);
+    });
+  });
+}
 
 //import 'package:flutter/material.dart';
 //import 'package:flutter_test/flutter_test.dart';
