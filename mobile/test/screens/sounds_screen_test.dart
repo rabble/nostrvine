@@ -12,6 +12,8 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -20,6 +22,7 @@ import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 
 import '../helpers/go_router.dart';
@@ -484,16 +487,19 @@ void main() {
     });
 
     group('Sound Selection', () {
-      testWidgets('tapping sound without callback selects it for recording', (
+      testWidgets('tapping sound without callback saves it to library', (
         tester,
       ) async {
         final testSounds = [
           createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
         ];
+        SharedPreferences.setMockInitialValues({});
+        final sharedPreferences = await SharedPreferences.getInstance();
         final mockGoRouter = MockGoRouter();
         when(() => mockGoRouter.pop<Object?>()).thenAnswer((_) {});
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             trendingSoundsProvider.overrideWith(
               () => MockTrendingSoundsNotifier(sounds: testSounds),
             ),
@@ -529,13 +535,13 @@ void main() {
         await tester.tap(soundTiles.last);
         await tester.pumpAndSettle();
 
-        verify(() => mockGoRouter.pop<Object?>()).called(1);
-        expect(container.read(selectedSoundProvider)?.id, equals('sound1'));
-        expect(
-          container.read(videoEditorProvider).selectedSound?.id,
-          equals('sound1'),
-        );
-        expect(container.read(videoEditorProvider).originalAudioVolume, 0);
+        verifyNever(() => mockGoRouter.pop<Object?>());
+        expect(find.text('Saved to Sounds'), findsOneWidget);
+        expect(container.read(savedSoundsProvider).map((sound) => sound.id), [
+          'sound1',
+        ]);
+        expect(container.read(selectedSoundProvider), isNull);
+        expect(container.read(videoEditorProvider).selectedSound, isNull);
       });
 
       testWidgets('tapping sound selects it and navigates back', (
