@@ -6485,6 +6485,13 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Selesai';
 
   @override
+  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+
+  @override
+  String get videoMetadataAudioReuseSubtitle =>
+      'Let others save and reuse this video\'s audio.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Kolaborator';
 
   @override

@@ -304,6 +304,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Set whether this post publishes its original audio as a reusable sound.
+  void setAllowAudioReuse(bool allowAudioReuse) {
+    if (state.allowAudioReuse == allowAudioReuse) return;
+    state = state.copyWith(allowAudioReuse: allowAudioReuse);
+    triggerAutosave();
+  }
+
   // === COLLABORATORS & INSPIRED BY ===
 
   /// Maximum number of collaborators allowed per video.

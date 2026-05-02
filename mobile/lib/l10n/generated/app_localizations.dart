@@ -11482,6 +11482,18 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get videoMetadataContentWarningDoneButton;
 
+  /// No description provided for @videoMetadataAudioReuseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish this sound'**
+  String get videoMetadataAudioReuseTitle;
+
+  /// No description provided for @videoMetadataAudioReuseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let others save and reuse this video\'s audio.'**
+  String get videoMetadataAudioReuseSubtitle;
+
   /// No description provided for @videoMetadataCollaboratorsLabel.
   ///
   /// In en, this message translates to:

@@ -41,6 +41,7 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -1913,6 +1914,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final blossomUploadService = ref.watch(blossomUploadServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
   final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
+  final savedSoundsService = ref.watch(savedSoundsServiceProvider);
 
   return VideoEventPublisher(
     uploadManager: uploadManager,
@@ -1923,6 +1925,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     blossomUploadService: blossomUploadService,
     profileRepository: profileRepository,
     profileStatsDao: profileStatsDao,
+    savedSoundsService: savedSoundsService,
   );
 }
 

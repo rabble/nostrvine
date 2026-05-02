@@ -3460,6 +3460,8 @@
   "videoMetadataSelectContentWarningsSemanticLabel": "Select content warnings",
   "videoMetadataContentWarningSelectAllThatApply": "Select all that apply to your content",
   "videoMetadataContentWarningDoneButton": "Done",
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
   "videoMetadataCollaboratorsLabel": "Collaborators",
   "videoMetadataAddCollaboratorSemanticLabel": "Invite collaborator",
   "videoMetadataCollaboratorsHelpTooltip": "How collaborators work",

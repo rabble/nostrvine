@@ -1,21 +1,32 @@
+import 'dart:io';
+
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show VideoEvent;
+import 'package:models/models.dart' show AudioEvent, VideoEvent, audioEventKind;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockUploadManager extends Mock implements UploadManager {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _MockAudioExtractionService extends Mock
+    implements AudioExtractionService {}
 
 class _MockPersonalEventCacheService extends Mock
     implements PersonalEventCacheService {}
@@ -41,6 +52,7 @@ void main() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(UploadStatus.pending);
+    registerFallbackValue(File(''));
   });
 
   setUp(() {
@@ -129,6 +141,16 @@ void main() {
     ).thenAnswer((_) async => event);
   }
 
+  bool containsTag(List<List<String>> tags, List<String> expected) {
+    return tags.any((tag) {
+      if (tag.length != expected.length) return false;
+      for (var i = 0; i < expected.length; i++) {
+        if (tag[i] != expected[i]) return false;
+      }
+      return true;
+    });
+  }
+
   group('VideoEventPublisher direct publish', () {
     test('succeeds when relay accepts the event', () async {
       final signedEvent = createSignedEvent();
@@ -192,6 +214,202 @@ void main() {
         ),
       );
       verify(() => mockNostrClient.publishEvent(signedEvent)).called(1);
+    });
+
+    test('adds selected audio tag only for valid Nostr event ids', () async {
+      final validAudioId = 'b' * 64;
+      late List<List<String>> videoTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        videoTags = invocation.namedArguments[#tags] as List<List<String>>;
+        return Event(
+          testPubkey,
+          NIP71VideoKinds.getPreferredAddressableKind(),
+          videoTags,
+          'video content',
+        );
+      });
+      when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.single as Event,
+      );
+
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        selectedAudioEventId: validAudioId,
+        selectedAudioRelay: 'wss://relay.divine.video',
+      );
+
+      expect(result, isTrue);
+      expect(
+        containsTag(videoTags, [
+          'e',
+          validAudioId,
+          'wss://relay.divine.video',
+          'audio',
+        ]),
+        isTrue,
+      );
+    });
+
+    test('skips selected audio tag for non-event ids', () async {
+      late List<List<String>> videoTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        videoTags = invocation.namedArguments[#tags] as List<List<String>>;
+        return Event(
+          testPubkey,
+          NIP71VideoKinds.getPreferredAddressableKind(),
+          videoTags,
+          'video content',
+        );
+      });
+      when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.single as Event,
+      );
+
+      final result = await publisher.publishDirectUpload(
+        createUpload(),
+        selectedAudioEventId: 'video_not_a_64_hex_id',
+        selectedAudioRelay: 'wss://relay.divine.video',
+      );
+
+      expect(result, isTrue);
+      expect(
+        videoTags.any(
+          (tag) =>
+              tag.length >= 4 &&
+              tag.first == 'e' &&
+              tag[1] == 'video_not_a_64_hex_id' &&
+              tag[3] == 'audio',
+        ),
+        isFalse,
+      );
+    });
+
+    test('publishes reusable audio event and saves it to My Sounds', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final savedSoundsService = SavedSoundsService(prefs);
+      final blossomUploadService = _MockBlossomUploadService();
+      final audioExtractionService = _MockAudioExtractionService();
+      final audioPublisher = VideoEventPublisher(
+        uploadManager: mockUploadManager,
+        nostrService: mockNostrClient,
+        authService: mockAuthService,
+        blossomUploadService: blossomUploadService,
+        audioExtractionService: audioExtractionService,
+        savedSoundsService: savedSoundsService,
+      );
+
+      const audioPath = '/tmp/openvine_test_audio.m4a';
+      when(
+        () => audioExtractionService.extractAudio('/tmp/test.mp4'),
+      ).thenAnswer(
+        (_) async => const AudioExtractionResult(
+          audioFilePath: audioPath,
+          duration: 6,
+          fileSize: 12345,
+          sha256Hash:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          mimeType: 'audio/m4a',
+        ),
+      );
+      when(
+        () => audioExtractionService.cleanupAudioFile(audioPath),
+      ).thenAnswer((_) async {});
+      when(
+        () => blossomUploadService.uploadAudio(
+          audioFile: any(named: 'audioFile'),
+          mimeType: 'audio/m4a',
+        ),
+      ).thenAnswer(
+        (_) async => const BlossomUploadResult(
+          success: true,
+          url: 'https://cdn.example.com/audio.m4a',
+          fallbackUrl: 'https://cdn.example.com/audio.m4a',
+          videoId: 'audio-file-hash',
+        ),
+      );
+
+      late Event signedAudioEvent;
+      late List<List<String>> audioTags;
+      late List<List<String>> videoTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        final kind = invocation.namedArguments[#kind] as int;
+        final tags = invocation.namedArguments[#tags] as List<List<String>>;
+        if (kind == audioEventKind) {
+          audioTags = tags;
+          signedAudioEvent = Event(testPubkey, audioEventKind, tags, '');
+          return signedAudioEvent;
+        }
+
+        videoTags = tags;
+        return Event(testPubkey, kind, tags, 'video content');
+      });
+      when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.single as Event,
+      );
+
+      final result = await audioPublisher.publishDirectUpload(
+        createUpload(),
+        allowAudioReuse: true,
+      );
+
+      expect(result, isTrue);
+      expect(
+        containsTag(audioTags, [
+          'url',
+          'https://cdn.example.com/audio.m4a',
+        ]),
+        isTrue,
+      );
+      expect(containsTag(audioTags, ['m', 'audio/m4a']), isTrue);
+      expect(containsTag(audioTags, ['x', 'a' * 64]), isTrue);
+      expect(containsTag(audioTags, ['size', '12345']), isTrue);
+      expect(containsTag(audioTags, ['duration', '6.0']), isTrue);
+      expect(containsTag(audioTags, ['title', 'Plants']), isTrue);
+      expect(containsTag(videoTags, ['allow_audio_reuse', 'true']), isTrue);
+      expect(
+        containsTag(videoTags, [
+          'e',
+          signedAudioEvent.id,
+          'wss://relay.divine.video',
+          'audio',
+        ]),
+        isTrue,
+      );
+
+      final savedSounds = savedSoundsService.loadSounds();
+      expect(savedSounds, hasLength(1));
+      final savedSound = savedSounds.single;
+      expect(savedSound, isA<AudioEvent>());
+      expect(savedSound.id, signedAudioEvent.id);
+      expect(savedSound.pubkey, testPubkey);
+      expect(savedSound.url, 'https://cdn.example.com/audio.m4a');
+      expect(savedSound.mimeType, 'audio/m4a');
+      expect(
+        savedSound.sourceVideoReference,
+        '34236:$testPubkey:test-video-id',
+      );
     });
   });
 

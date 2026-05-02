@@ -6267,6 +6267,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => '完了';
 
   @override
+  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+
+  @override
+  String get videoMetadataAudioReuseSubtitle =>
+      'Let others save and reuse this video\'s audio.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'コラボレーター';
 
   @override

@@ -6487,6 +6487,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Bitti';
 
   @override
+  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+
+  @override
+  String get videoMetadataAudioReuseSubtitle =>
+      'Let others save and reuse this video\'s audio.';
+
+  @override
   String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';
 
   @override
