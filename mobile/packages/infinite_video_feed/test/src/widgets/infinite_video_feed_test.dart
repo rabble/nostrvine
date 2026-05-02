@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:divine_video_player/divine_video_player.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -50,6 +52,10 @@ void main() {
   });
 
   group(InfiniteVideoFeed, () {
+    test('isSupported can be evaluated', () {
+      expect(InfiniteVideoFeed.isSupported, isA<bool>());
+    });
+
     group('empty video list', () {
       testWidgets('renders without error', (tester) async {
         await tester.pumpWidget(
@@ -273,6 +279,85 @@ void main() {
 
         // Feed should still be mounted with either loading or error content.
         expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+      });
+
+      testWidgets('shows loading while first frame is not rendered', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        const globalChannel = MethodChannel('divine_video_player');
+        const playerChannel = MethodChannel('divine_video_player/player_0');
+        const eventChannelName = 'divine_video_player/player_0/events';
+        const methodCodec = StandardMethodCodec();
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          (call) async {
+            if (call.method == 'create') return <Object?, Object?>{};
+            return null;
+          },
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          (_) async => null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          eventChannelName,
+          (message) async {
+            final call = methodCodec.decodeMethodCall(message);
+            if (call.method == 'listen') {
+              scheduleMicrotask(() {
+                tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+                  eventChannelName,
+                  methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
+                    'status': 'ready',
+                    'videoWidth': 1280,
+                    'videoHeight': 720,
+                    'isFirstFrameRendered': false,
+                  }),
+                  (_) {},
+                );
+              });
+            }
+            return methodCodec.encodeSuccessEnvelope(null);
+          },
+        );
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              videos: [_makeVideo('first_frame_pending')],
+              cache: cache,
+              prefetchCount: 0,
+              preloadGracePeriod: Duration.zero,
+              loadingBuilder: (_, _, {required isSquare}) =>
+                  const Text('loading'),
+              videoBuilder: (_, _, _) => const Text('video'),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.text('loading'), findsOneWidget);
+        expect(find.text('video'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          eventChannelName,
+          null,
+        );
       });
 
       testWidgets('currentIndex returns 0 initially', (tester) async {
