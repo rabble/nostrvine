@@ -25,12 +25,37 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
     private lateinit var globalChannel: MethodChannel
     private lateinit var binding: FlutterPlugin.FlutterPluginBinding
 
+    companion object {
+        // Tracks the plugin instance attached to the main FlutterEngine.
+        // Flutter creates a NEW DivineVideoPlayerPlugin instance per engine,
+        // so instance variables cannot distinguish engines — only a static
+        // reference to the known-main instance works.
+        //
+        // Background engines (Firebase FCM isolate, WorkManager) attach a
+        // different instance while mainPluginInstance is non-null. They are
+        // skipped entirely so PlayerRegistry.disposeAll() never kills live
+        // players owned by the main engine.
+        @Volatile
+        private var mainPluginInstance: DivineVideoPlayerPlugin? = null
+    }
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        // Treat as the main engine when:
+        //   • nothing is registered yet (cold start), OR
+        //   • this same instance is reattaching (hot restart without a
+        //     preceding onDetachedFromEngine call).
+        // Any other instance attaching while the main one is registered is
+        // a background engine — skip it.
+        val isMainEngine = mainPluginInstance == null || mainPluginInstance === this
+        if (!isMainEngine) return
+
+        mainPluginInstance = this
         binding = flutterPluginBinding
 
-        // Hot restart re-calls onAttachedToEngine without a preceding
-        // onDetachedFromEngine. Dispose any leftover players so zombie
-        // timers and event channels are cleaned up.
+        // Hot restart re-calls onAttachedToEngine on the same instance without
+        // a preceding onDetachedFromEngine. Dispose zombie players left over
+        // from the previous Dart VM. main.dart also calls disposeAll() before
+        // runApp() as belt-and-suspenders coverage.
         PlayerRegistry.disposeAll()
 
         globalChannel = MethodChannel(
@@ -46,6 +71,11 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
     }
 
     override fun onDetachedFromEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        if (mainPluginInstance !== this) {
+            // Background engine detaching — do not touch main engine's players.
+            return
+        }
+        mainPluginInstance = null
         globalChannel.setMethodCallHandler(null)
         PlayerRegistry.disposeAll()
         VideoCache.release()

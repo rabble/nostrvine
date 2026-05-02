@@ -179,6 +179,14 @@ internal class DivineVideoPlayerInstance(
             if (p != null) {
                 p.setVideoSurface(surface)
                 needsSurface = false
+                // ExoPlayer does not re-render the current frame after a surface
+                // reattach when the player is paused — the surface stays black
+                // until the next decoded frame arrives (i.e. not until play()).
+                // Seeking to the current position forces the codec to decode and
+                // display the frame at the current position without moving it.
+                if (!p.isPlaying && p.playbackState == Player.STATE_READY) {
+                    p.seekTo(p.currentPosition)
+                }
             }
             // If player is null, needsSurface stays true so ensurePlayer()
             // attaches the surface when the player is eventually created.
@@ -710,14 +718,31 @@ internal class DivineVideoPlayerInstance(
 
     /**
      * Called when the app returns to the foreground.
-     * Resumes playback only if it was playing before.
+     * Resumes playback only if it was playing before. For players that were
+     * already paused before backgrounding, seeks to the current position so
+     * ExoPlayer decodes and displays the current frame — without this the
+     * surface stays black on devices where the Surface is not destroyed and
+     * recreated on background (i.e. onSurfaceAvailable is never called).
      */
     fun onAppForegrounded() {
+        val p = player
         if (wasPlayingBeforePause) {
-            player?.play()
+            p?.play()
             audioOverlayManager.resumeActive()
             wasPlayingBeforePause = false
             sendStateUpdate()
+        } else if (p != null && !p.isPlaying && p.playbackState == Player.STATE_READY) {
+            // seekTo() does not reliably flush a frame to the surface on all
+            // devices. play() forces the decoder to output a frame; we
+            // immediately schedule a pause on the next main-thread loop so the
+            // video doesn't actually advance. Mute during this single frame
+            // to avoid an audible glitch.
+            p.volume = 0f
+            p.play()
+            mainHandler.post {
+                p.pause()
+                p.volume = volume.toFloat()
+            }
         }
     }
 
