@@ -27,10 +27,15 @@ class SavedSoundsService {
         return [];
       }
 
-      return decoded
-          .whereType<Map>()
-          .map((json) => AudioEvent.fromJson(Map<String, dynamic>.from(json)))
-          .toList();
+      final sounds = <AudioEvent>[];
+      for (final entry in decoded.whereType<Map>()) {
+        try {
+          sounds.add(AudioEvent.fromJson(Map<String, dynamic>.from(entry)));
+        } catch (_) {
+          continue;
+        }
+      }
+      return sounds;
     } catch (_) {
       return [];
     }

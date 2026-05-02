@@ -6558,6 +6558,48 @@ abstract class AppLocalizations {
   /// **'Try a different search term'**
   String get soundsNoSoundsFoundDescription;
 
+  /// No description provided for @soundsSavedToLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Sounds'**
+  String get soundsSavedToLibrary;
+
+  /// No description provided for @soundsAlreadySavedToLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Already in Sounds'**
+  String get soundsAlreadySavedToLibrary;
+
+  /// No description provided for @soundsSavedLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Sounds'**
+  String get soundsSavedLibraryTitle;
+
+  /// No description provided for @soundsSavedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved sounds yet'**
+  String get soundsSavedEmptyTitle;
+
+  /// No description provided for @soundsSavedEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Use Sound on a video to save it here.'**
+  String get soundsSavedEmptyDescription;
+
+  /// No description provided for @soundsRemoveSavedSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove sound'**
+  String get soundsRemoveSavedSound;
+
+  /// No description provided for @soundsRemovedFromLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from Sounds'**
+  String get soundsRemovedFromLibrary;
+
   /// No description provided for @soundsFailedToLoad.
   ///
   /// In en, this message translates to:

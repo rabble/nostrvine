@@ -3573,6 +3573,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => '다른 검색어로 시도해 보세요';
 
   @override
+  String get soundsSavedToLibrary => 'Saved to Sounds';
+
+  @override
+  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+
+  @override
+  String get soundsSavedLibraryTitle => 'My Sounds';
+
+  @override
+  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+
+  @override
+  String get soundsSavedEmptyDescription =>
+      'Tap Use Sound on a video to save it here.';
+
+  @override
+  String get soundsRemoveSavedSound => 'Remove sound';
+
+  @override
+  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+
+  @override
   String get soundsFailedToLoad => '사운드를 불러오지 못했어요';
 
   @override
