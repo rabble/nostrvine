@@ -8,8 +8,8 @@ This guide helps you test deep linking functionality on iOS and Android devices.
 - OR Android device/emulator (Android app links work on both)
 - App installed on device
 - Server verification files deployed at `https://divine.video/.well-known/`
-- If `www.divine.video` links are expected to open the app too, the same
-  verification file must also be served from `https://www.divine.video/.well-known/`
+- If Apple `www.divine.video` links are expected to open the app too, the AASA
+  file must also be served from `https://www.divine.video/.well-known/`
 
 ## Quick Test URLs
 
@@ -64,6 +64,8 @@ https://divine.video/search/{search-term}
 1. **Open Safari (iOS) or Chrome (Android)**
 
 2. **Type/paste the URL**: `https://divine.video/video/test123`
+   - For the Apple-specific `www` host coverage in this PR, also try
+     `https://www.divine.video/video/test123`
 
 3. **Tap the link or press Enter**
 
@@ -214,6 +216,8 @@ Before marking deep linking as complete:
   - [ ] Links from Chrome work
   - [ ] ADB test commands work
   - [ ] `pm get-app-links` shows "verified"
+  - Note: `www.divine.video` Android coverage is tracked separately from this
+    Apple host-claim PR
 
 - [ ] Server verification
   - [ ] Apple file returns HTTP 200
