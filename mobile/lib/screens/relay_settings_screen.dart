@@ -338,7 +338,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     final stats = statsAsync.whenData((allStats) => allStats[relayUrl]).value;
 
     final isConnected = stats?.isConnected ?? false;
-    final statusSummary = stats?.statusSummary ?? 'External relay';
+    final statusSummary = _relayStatusSummary(stats);
 
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: VineTheme.transparent),
@@ -626,6 +626,39 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
   String _formatCount(int count) => CountFormatter.formatCompact(count);
 
+  String _relayStatusSummary(RelayStatistics? stats) {
+    if (stats == null) return context.l10n.relaySettingsExternalRelay;
+    if (!stats.isConnected) {
+      if (stats.lastDisconnected != null) {
+        final ago = DateTime.now().difference(stats.lastDisconnected!);
+        return context.l10n.relaySettingsDisconnectedAgo(
+          _formatDuration(ago),
+        );
+      }
+      return context.l10n.relaySettingsNotConnected;
+    }
+
+    final parts = <String>[];
+    if (stats.activeSubscriptions > 0) {
+      parts.add(
+        context.l10n.relaySettingsSubscriptionsSummary(
+          stats.activeSubscriptions,
+        ),
+      );
+    }
+    if (stats.eventsReceived > 0) {
+      parts.add(
+        context.l10n.relaySettingsEventsSummary(
+          _formatCount(stats.eventsReceived),
+        ),
+      );
+    }
+    if (parts.isEmpty) {
+      return context.l10n.relaySettingsConnected;
+    }
+    return parts.join(' | ');
+  }
+
   String _formatDuration(Duration duration) {
     if (duration.inDays > 0) {
       return '${duration.inDays}d ${duration.inHours.remainder(24)}h';
@@ -643,13 +676,13 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     final diff = now.difference(time);
 
     if (diff.inSeconds < 60) {
-      return '${diff.inSeconds}s ago';
+      return context.l10n.relaySettingsTimeAgo('${diff.inSeconds}s');
     } else if (diff.inMinutes < 60) {
-      return '${diff.inMinutes}m ago';
+      return context.l10n.relaySettingsTimeAgo('${diff.inMinutes}m');
     } else if (diff.inHours < 24) {
-      return '${diff.inHours}h ago';
+      return context.l10n.relaySettingsTimeAgo('${diff.inHours}h');
     } else {
-      return '${diff.inDays}d ago';
+      return context.l10n.relaySettingsTimeAgo('${diff.inDays}d');
     }
   }
 
@@ -719,7 +752,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       );
     } catch (e) {
       Log.error('Failed to remove relay: $e', name: 'RelaySettingsScreen');
-      _showError('Failed to remove relay: $e');
+      _showError(failedToRemoveMessage);
     }
   }
 
@@ -770,7 +803,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       }
     } catch (e) {
       Log.error('Failed to retry connection: $e', name: 'RelaySettingsScreen');
-      _showError('Connection retry failed: $e');
+      _showError(failedToConnectMessage);
     }
   }
 
@@ -892,7 +925,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       }
     } catch (e) {
       Log.error('Failed to add relay: $e', name: 'RelaySettingsScreen');
-      _showError('Failed to add relay: $e');
+      _showError(failedToAddMessage);
     }
   }
 
@@ -929,7 +962,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         'Failed to restore default relay: $e',
         name: 'RelaySettingsScreen',
       );
-      _showError('Failed to restore default relay: $e');
+      _showError(failedToRestoreMessage);
     }
   }
 

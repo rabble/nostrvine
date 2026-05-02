@@ -80,6 +80,19 @@
   },
   "settingsAppLanguageDescription": "የመተግበሪያውን በይነገጽ ቋንቋ ምረጥ",
   "settingsAppLanguageUseDeviceLanguage": "የመሣሪያውን ቋንቋ ተጠቀም",
+  "settingsGeneralTitle": "አጠቃላይ ቅንብሮች",
+  "settingsContentSafetyTitle": "ይዘት እና ደህንነት",
+  "generalSettingsSectionIntegrations": "ውህደቶች",
+  "generalSettingsSectionViewing": "ማየት",
+  "generalSettingsSectionCreating": "መፍጠር",
+  "generalSettingsSectionApp": "መተግበሪያ",
+  "generalSettingsClosedCaptions": "የተዘጉ መግለጫዎች",
+  "generalSettingsClosedCaptionsSubtitle": "ቪዲዮዎች መግለጫዎችን ሲያካትቱ አሳይ",
+  "generalSettingsVideoShape": "የቪዲዮ ቅርጽ",
+  "generalSettingsVideoShapeSquareOnly": "ካሬ ቪዲዮዎች ብቻ",
+  "generalSettingsVideoShapeSquareAndPortrait": "ካሬ እና ቁመታዊ",
+  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "የDivine ቪዲዮዎችን ሙሉ ድብልቅ አሳይ",
+  "generalSettingsVideoShapeSquareOnlySubtitle": "ምግቦችን በክላሲክ ካሬ ቅርጽ ያቆዩ",
   "contentPreferencesTitle": "የይዘት ምርጫዎች",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -118,6 +131,14 @@
   "contentPreferencesAutoSelectsBest": "በጣም ጥሩውን ማይክሮፎን በራስ-ሰር ይመርጣል",
   "contentPreferencesSelectAudioInput": "የድምጽ ግቤትን ይምረጡ",
   "contentPreferencesUnknownMicrophone": "ያልታወቀ ማይክሮፎን",
+  "contentFiltersAdultContent": "የአዋቂዎች ይዘት",
+  "contentFiltersViolenceGore": "ግፍ እና ደም",
+  "contentFiltersSubstances": "ንጥረ ነገሮች",
+  "contentFiltersOther": "ሌላ",
+  "contentFiltersAgeGateMessage": "የአዋቂዎች ይዘት ማጣሪያዎችን ለመክፈት በደህንነት እና ግላዊነት ቅንብሮች ውስጥ እድሜዎን ያረጋግጡ",
+  "contentFiltersShow": "አሳይ",
+  "contentFiltersWarn": "አስጠንቅቅ",
+  "contentFiltersFilterOut": "አጣራ",
   "profileBlockedAccountNotAvailable": "ይህ መለያ አይገኝም",
   "profileErrorPrefix": "ስህተት፡ {error}",
   "@profileErrorPrefix": {
@@ -879,6 +900,68 @@
   "relaySettingsFailedToRestoreDefault": "ነባሪ ቅብብሎሽ ወደነበረበት መመለስ አልተሳካም። እባክዎ የአውታረ መረብ ግንኙነትዎን ያረጋግጡ።",
   "relaySettingsCouldNotOpenBrowser": "አሳሽ መክፈት አልተቻለም",
   "relaySettingsFailedToOpenLink": "አገናኝ መክፈት አልተሳካም።",
+  "relaySettingsExternalRelay": "ውጫዊ ቅብብሎሽ",
+  "relaySettingsNotConnected": "አልተገናኘም",
+  "relaySettingsDisconnectedAgo": "ከ{duration} በፊት ተቋርጧል",
+  "@relaySettingsDisconnectedAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsSubscriptionsSummary": "{count} ደንበኝነቶች",
+  "@relaySettingsSubscriptionsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relaySettingsEventsSummary": "{count} ክስተቶች",
+  "@relaySettingsEventsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsTimeAgo": "ከ{duration} በፊት",
+  "@relaySettingsTimeAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsIntro": "Divine ለያልተማከለ ማተም Nostr ፕሮቶኮልን ይጠቀማል። ይዘትዎ በሚመርጧቸው ቅብብሎሾች ላይ ይኖራል፣ ቁልፎችዎም ማንነትዎ ናቸው።",
+  "nostrSettingsSectionNetwork": "አውታረ መረብ",
+  "nostrSettingsSectionAccount": "መለያ",
+  "nostrSettingsSectionDangerZone": "አደገኛ ቦታ",
+  "nostrSettingsRelays": "ቅብብሎሾች",
+  "nostrSettingsRelaysSubtitle": "የNostr ቅብብሎሽ ግንኙነቶችን ያስተዳድሩ",
+  "nostrSettingsRelayDiagnostics": "የቅብብሎሽ ምርመራ",
+  "nostrSettingsRelayDiagnosticsSubtitle": "የቅብብሎሽ ግንኙነትን እና የአውታረ መረብ ችግሮችን ያስሱ",
+  "nostrSettingsMediaServers": "የሚዲያ አገልጋዮች",
+  "nostrSettingsMediaServersSubtitle": "የBlossom ማስጫኛ አገልጋዮችን ያቀናብሩ",
+  "nostrSettingsDeveloperOptions": "የገንቢ አማራጮች",
+  "nostrSettingsDeveloperOptionsSubtitle": "የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች",
+  "nostrSettingsExperimentalFeaturesSubtitle": "ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።",
+  "nostrSettingsKeyManagement": "የቁልፍ አስተዳደር",
+  "nostrSettingsKeyManagementSubtitle": "የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ",
+  "nostrSettingsRemoveKeys": "ቁልፎችን ከመሣሪያው አስወግድ",
+  "nostrSettingsRemoveKeysSubtitle": "የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።",
+  "nostrSettingsCouldNotRemoveKeys": "ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
+  "nostrSettingsFailedToRemoveKeys": "ቁልፎችን ማስወገድ አልተሳካም፦ {error}",
+  "@nostrSettingsFailedToRemoveKeys": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsDeleteAccount": "መለያ እና ውሂብ ሰርዝ",
+  "nostrSettingsDeleteAccountSubtitle": "መለያዎን እና ሁሉንም ይዘት ከNostr ቅብብሎሾች ላይ በቋሚነት ይሰርዙ። ይህ ሊመለስ አይችልም።",
   "relayDiagnosticTitle": "ቅብብል ምርመራዎች",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -1041,6 +1124,8 @@
     "description": "Safety settings screen app bar title"
   },
   "safetySettingsLabel": "ቅንብሮች",
+  "safetySettingsWhatYouSee": "የሚያዩት",
+  "safetySettingsWhatYouPublish": "የሚያትሙት",
   "safetySettingsShowDivineHostedOnly": "በDivine የተስተናገዱ ቪዲዮዎችን ብቻ አሳይ",
   "safetySettingsShowDivineHostedOnlySubtitle": "ከሌሎች የሚዲያ አስተናጋጆች የቀረቡ ቪዲዮዎችን ደብቅ",
   "safetySettingsModeration": "ሞደሬሽን",
@@ -2631,7 +2716,29 @@
       }
     }
   },
+  "blossomValidServerUrl": "እባክዎ ትክክለኛ የአገልጋይ URL ያስገቡ (ለምሳሌ፦ https://blossom.band)",
+  "blossomSettingsSaved": "የBlossom ቅንብሮች ተቀምጠዋል",
+  "blossomSaveTooltip": "አስቀምጥ",
+  "blossomAboutTitle": "ስለ Blossom",
+  "blossomAboutDescription": "Blossom ቪዲዮዎችን ወደ ማንኛውም ተኳሃኝ አገልጋይ ለመስቀል የሚያስችል ያልተማከለ የሚዲያ ማከማቻ ፕሮቶኮል ነው። በነባሪነት ቪዲዮዎች ወደ Divine የBlossom አገልጋይ ይሰቀላሉ። በምትኩ ብጁ አገልጋይ ለመጠቀም ከታች ያለውን አማራጭ ያንቁ።",
+  "blossomUseCustomServer": "ብጁ Blossom አገልጋይ ተጠቀም",
+  "blossomCustomServerEnabledSubtitle": "ቪዲዮዎች ወደ ብጁ Blossom አገልጋይዎ ይሰቀላሉ",
+  "blossomCustomServerDisabledSubtitle": "ቪዲዮዎችዎ አሁን ወደ Divine የBlossom አገልጋይ እየተሰቀሉ ናቸው",
+  "blossomCustomServerUrl": "ብጁ Blossom አገልጋይ URL",
+  "blossomCustomServerHelper": "የብጁ Blossom አገልጋይዎን URL ያስገቡ",
+  "blossomPopularServers": "ታዋቂ የBlossom አገልጋዮች",
   "blueskyFailedToUpdateCrosspost": "መስቀለኛ መንገድን ማዘመን አልተሳካም።",
+  "blueskySignInRequired": "የBluesky ቅንብሮችን ለማስተዳደር ይግቡ",
+  "blueskyPublishVideos": "ቪዲዮዎችን ወደ Bluesky አትም",
+  "blueskyEnabledSubtitle": "ቪዲዮዎችዎ ወደ Bluesky ይታተማሉ",
+  "blueskyDisabledSubtitle": "ቪዲዮዎችዎ ወደ Bluesky አይታተሙም",
+  "blueskyHandle": "የBluesky መያዣ",
+  "blueskyStatus": "ሁኔታ",
+  "blueskyStatusReady": "መለያው ተዘጋጅቷል እና ዝግጁ ነው",
+  "blueskyStatusPending": "መለያው በመዘጋጀት ላይ ነው...",
+  "blueskyStatusFailed": "መለያውን ማዘጋጀት አልተሳካም",
+  "blueskyStatusDisabled": "መለያው ተሰናክሏል",
+  "blueskyStatusNotLinked": "ምንም የBluesky መለያ አልተገናኘም",
   "invitesTitle": "ጓደኞችን ይጋብዙ",
   "invitesGenerateCardTitle": "{count, plural, =1{1 ግብዣ ለማመንጨት ዝግጁ ነው} other{{count} ግብዣዎች ለማመንጨት ዝግጁ ናቸው}}",
   "@invitesGenerateCardTitle": {
@@ -2650,6 +2757,24 @@
   "@invitesGenerateButtonLabel": {
     "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
   },
+  "invitesNoneAvailable": "አሁን ምንም ግብዣዎች የሉም",
+  "invitesShareWithPeople": "diVineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ",
+  "invitesUsedInvites": "ያገለገሉ ግብዣዎች",
+  "invitesShareMessage": "diVine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ {code} ተጠቀም፦\nhttps://divine.video/invite/{code}",
+  "@invitesShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesCopyInvite": "ግብዣ ቅዳ",
+  "invitesCopied": "ግብዣው ተቀድቷል!",
+  "invitesShareInvite": "ግብዣ አጋራ",
+  "invitesShareSubject": "diVine ላይ አብረኝ ግባ",
+  "invitesClaimed": "ተጠቅመዋል",
+  "invitesCouldNotLoad": "ግብዣዎችን መጫን አልተቻለም",
+  "invitesRetry": "እንደገና ሞክር",
   "searchSomethingWentWrong": "የሆነ ችግር ተፈጥሯል።",
   "searchTryAgain": "እንደገና ይሞክሩ",
   "searchForLists": "ዝርዝሮችን ይፈልጉ",

@@ -12,6 +12,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -39,7 +40,7 @@ class NostrSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Nostr Settings',
+        title: context.l10n.settingsNostrSettings,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -50,50 +51,52 @@ class NostrSettingsScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
             children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  'Divine uses the Nostr protocol for decentralized '
-                  'publishing. Your content lives on relays you choose, '
-                  'and your keys are your identity.',
-                  style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+                  context.l10n.nostrSettingsIntro,
+                  style: const TextStyle(
+                    color: VineTheme.lightText,
+                    fontSize: 14,
+                  ),
                 ),
               ),
 
               // Network section
-              const _SectionHeader(title: 'Network'),
+              _SectionHeader(title: context.l10n.nostrSettingsSectionNetwork),
               if (showAdvancedRelaySettings) ...[
                 _SettingsTile(
                   icon: Icons.hub,
-                  title: 'Relays',
-                  subtitle: 'Manage Nostr relay connections',
+                  title: context.l10n.nostrSettingsRelays,
+                  subtitle: context.l10n.nostrSettingsRelaysSubtitle,
                   onTap: () => context.push(RelaySettingsScreen.path),
                 ),
                 _SettingsTile(
                   icon: Icons.troubleshoot,
-                  title: 'Relay Diagnostics',
-                  subtitle: 'Debug relay connectivity and network issues',
+                  title: context.l10n.nostrSettingsRelayDiagnostics,
+                  subtitle: context.l10n.nostrSettingsRelayDiagnosticsSubtitle,
                   onTap: () => context.push(RelayDiagnosticScreen.path),
                 ),
               ],
               _SettingsTile(
                 icon: Icons.cloud_upload,
-                title: 'Media Servers',
-                subtitle: 'Configure Blossom upload servers',
+                title: context.l10n.nostrSettingsMediaServers,
+                subtitle: context.l10n.nostrSettingsMediaServersSubtitle,
                 onTap: () => context.push(BlossomSettingsScreen.path),
               ),
               if (isDeveloperMode)
                 _SettingsTile(
                   icon: Icons.developer_mode,
-                  title: 'Developer Options',
-                  subtitle: 'Environment switcher and debug settings',
+                  title: context.l10n.nostrSettingsDeveloperOptions,
+                  subtitle: context.l10n.nostrSettingsDeveloperOptionsSubtitle,
                   onTap: () => context.push(DeveloperOptionsScreen.path),
                   iconColor: VineTheme.warning,
                 ),
               _SettingsTile(
                 icon: Icons.science,
-                title: 'Experimental Features',
-                subtitle: 'Toggle feature flags that may hiccup.',
+                title: context.l10n.settingsExperimentalFeatures,
+                subtitle:
+                    context.l10n.nostrSettingsExperimentalFeaturesSubtitle,
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const FeatureFlagScreen()),
@@ -102,15 +105,17 @@ class NostrSettingsScreen extends ConsumerWidget {
 
               // Account section
               if (isAuthenticated) ...[
-                const _SectionHeader(title: 'Account'),
+                _SectionHeader(title: context.l10n.nostrSettingsSectionAccount),
                 _SettingsTile(
                   icon: Icons.key,
-                  title: 'Key Management',
-                  subtitle: 'Export, backup, and restore your Nostr keys',
+                  title: context.l10n.nostrSettingsKeyManagement,
+                  subtitle: context.l10n.nostrSettingsKeyManagementSubtitle,
                   onTap: () => context.push(KeyManagementScreen.path),
                 ),
                 _RemoveKeysTile(ref: ref),
-                const _SectionHeader(title: 'Danger Zone'),
+                _SectionHeader(
+                  title: context.l10n.nostrSettingsSectionDangerZone,
+                ),
                 _DeleteAccountTile(ref: ref),
               ],
             ],
@@ -130,11 +135,8 @@ class _RemoveKeysTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SettingsTile(
       icon: Icons.key_off,
-      title: 'Remove Keys from Device',
-      subtitle:
-          'Delete your private key from this device only. '
-          "Your content stays on relays, but you'll need your "
-          'nsec backup to access your account again.',
+      title: context.l10n.nostrSettingsRemoveKeys,
+      subtitle: context.l10n.nostrSettingsRemoveKeysSubtitle,
       onTap: () => _handleRemoveKeys(context, ref),
       iconColor: VineTheme.warning,
       titleColor: VineTheme.warning,
@@ -143,6 +145,9 @@ class _RemoveKeysTile extends StatelessWidget {
 
   Future<void> _handleRemoveKeys(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);
+    final couldNotRemoveKeysMessage =
+        context.l10n.nostrSettingsCouldNotRemoveKeys;
+    final failedToRemoveKeysFn = context.l10n.nostrSettingsFailedToRemoveKeys;
 
     await showRemoveKeysWarningDialog(
       context: context,
@@ -173,8 +178,7 @@ class _RemoveKeysTile extends StatelessWidget {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              'Could not remove keys from this device. '
-              'Please try again.',
+              couldNotRemoveKeysMessage,
               error: true,
             ),
           );
@@ -186,7 +190,7 @@ class _RemoveKeysTile extends StatelessWidget {
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
             DivineSnackbarContainer.snackBar(
-              'Failed to remove keys: $e',
+              failedToRemoveKeysFn('$e'),
               error: true,
             ),
           );
@@ -205,10 +209,8 @@ class _DeleteAccountTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SettingsTile(
       icon: Icons.delete_forever,
-      title: 'Delete Account and Data',
-      subtitle:
-          'PERMANENTLY delete your account and ALL content from Nostr '
-          'relays. This cannot be undone.',
+      title: context.l10n.nostrSettingsDeleteAccount,
+      subtitle: context.l10n.nostrSettingsDeleteAccountSubtitle,
       onTap: () => _handleDeleteAllContent(context, ref),
       iconColor: VineTheme.error,
       titleColor: VineTheme.error,

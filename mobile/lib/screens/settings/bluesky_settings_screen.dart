@@ -24,15 +24,15 @@ class BlueskySettingsScreen extends ConsumerWidget {
     if (pubkey == null) {
       return Scaffold(
         appBar: DiVineAppBar(
-          title: 'Bluesky Publishing',
+          title: context.l10n.settingsBlueskyPublishing,
           showBackButton: true,
           onBackPressed: context.pop,
         ),
         backgroundColor: VineTheme.backgroundColor,
-        body: const Center(
+        body: Center(
           child: Text(
-            'Sign in to manage Bluesky settings',
-            style: TextStyle(color: VineTheme.lightText),
+            context.l10n.blueskySignInRequired,
+            style: const TextStyle(color: VineTheme.lightText),
           ),
         ),
       );
@@ -55,7 +55,7 @@ class _BlueskySettingsView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Bluesky Publishing',
+        title: context.l10n.settingsBlueskyPublishing,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -109,9 +109,9 @@ class _CrosspostToggle extends StatelessWidget {
 
     return SwitchListTile(
       secondary: const Icon(Icons.cloud_upload, color: VineTheme.vineGreen),
-      title: const Text(
-        'Publish videos to Bluesky',
-        style: TextStyle(
+      title: Text(
+        context.l10n.blueskyPublishVideos,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
@@ -119,8 +119,8 @@ class _CrosspostToggle extends StatelessWidget {
       ),
       subtitle: Text(
         state.enabled
-            ? 'Your videos will be published to Bluesky'
-            : 'Your videos will not be published to Bluesky',
+            ? context.l10n.blueskyEnabledSubtitle
+            : context.l10n.blueskyDisabledSubtitle,
         style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
       ),
       value: state.enabled,
@@ -144,9 +144,9 @@ class _HandleInfo extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.alternate_email, color: VineTheme.vineGreen),
-      title: const Text(
-        'Bluesky Handle',
-        style: TextStyle(
+      title: Text(
+        context.l10n.blueskyHandle,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,
@@ -168,11 +168,11 @@ class _ProvisioningStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusText = switch (state.provisioningState) {
-      'ready' => 'Account provisioned and ready',
-      'pending' => 'Account provisioning in progress...',
-      'failed' => 'Account provisioning failed',
-      'disabled' => 'Account disabled',
-      _ => 'No Bluesky account linked',
+      'ready' => context.l10n.blueskyStatusReady,
+      'pending' => context.l10n.blueskyStatusPending,
+      'failed' => context.l10n.blueskyStatusFailed,
+      'disabled' => context.l10n.blueskyStatusDisabled,
+      _ => context.l10n.blueskyStatusNotLinked,
     };
 
     final statusColor = switch (state.provisioningState) {
@@ -184,9 +184,9 @@ class _ProvisioningStatus extends StatelessWidget {
 
     return ListTile(
       leading: Icon(Icons.info_outline, color: statusColor),
-      title: const Text(
-        'Status',
-        style: TextStyle(
+      title: Text(
+        context.l10n.blueskyStatus,
+        style: const TextStyle(
           color: VineTheme.whiteText,
           fontSize: 16,
           fontWeight: FontWeight.w500,

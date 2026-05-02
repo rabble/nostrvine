@@ -227,12 +227,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => context.push(NotificationSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'General Settings',
+                  title: context.l10n.settingsGeneralTitle,
                   divineIcon: DivineIconName.globe,
                   onTap: () => context.push(GeneralSettingsScreen.path),
                 ),
                 _SettingsTile(
-                  title: 'Content & Safety',
+                  title: context.l10n.settingsContentSafetyTitle,
                   divineIcon: DivineIconName.faders,
                   onTap: () => context.push(SafetySettingsScreen.path),
                 ),

@@ -80,6 +80,19 @@
   },
   "settingsAppLanguageDescription": "Choose the language for the app interface",
   "settingsAppLanguageUseDeviceLanguage": "Use device language",
+  "settingsGeneralTitle": "General Settings",
+  "settingsContentSafetyTitle": "Content & Safety",
+  "generalSettingsSectionIntegrations": "INTEGRATIONS",
+  "generalSettingsSectionViewing": "VIEWING",
+  "generalSettingsSectionCreating": "CREATING",
+  "generalSettingsSectionApp": "APP",
+  "generalSettingsClosedCaptions": "Closed Captions",
+  "generalSettingsClosedCaptionsSubtitle": "Show captions when videos include them",
+  "generalSettingsVideoShape": "Video Shape",
+  "generalSettingsVideoShapeSquareOnly": "Square videos only",
+  "generalSettingsVideoShapeSquareAndPortrait": "Square and portrait",
+  "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Show the full mix of Divine videos",
+  "generalSettingsVideoShapeSquareOnlySubtitle": "Keep feeds in the classic square format",
   "contentPreferencesTitle": "Content Preferences",
   "@contentPreferencesTitle": {
     "description": "Content preferences screen app bar title"
@@ -118,6 +131,14 @@
   "contentPreferencesAutoSelectsBest": "Automatically selects the best microphone",
   "contentPreferencesSelectAudioInput": "Select Audio Input",
   "contentPreferencesUnknownMicrophone": "Unknown Microphone",
+  "contentFiltersAdultContent": "ADULT CONTENT",
+  "contentFiltersViolenceGore": "VIOLENCE & GORE",
+  "contentFiltersSubstances": "SUBSTANCES",
+  "contentFiltersOther": "OTHER",
+  "contentFiltersAgeGateMessage": "Verify your age in Safety & Privacy settings to unlock adult content filters",
+  "contentFiltersShow": "Show",
+  "contentFiltersWarn": "Warn",
+  "contentFiltersFilterOut": "Filter Out",
   "profileBlockedAccountNotAvailable": "This account is not available",
   "profileErrorPrefix": "Error: {error}",
   "@profileErrorPrefix": {
@@ -879,6 +900,68 @@
   "relaySettingsFailedToRestoreDefault": "Failed to restore default relay. Please check your network connection.",
   "relaySettingsCouldNotOpenBrowser": "Could not open browser",
   "relaySettingsFailedToOpenLink": "Failed to open link",
+  "relaySettingsExternalRelay": "External relay",
+  "relaySettingsNotConnected": "Not connected",
+  "relaySettingsDisconnectedAgo": "Disconnected {duration} ago",
+  "@relaySettingsDisconnectedAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsSubscriptionsSummary": "{count} subs",
+  "@relaySettingsSubscriptionsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "relaySettingsEventsSummary": "{count} events",
+  "@relaySettingsEventsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "relaySettingsTimeAgo": "{duration} ago",
+  "@relaySettingsTimeAgo": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsIntro": "Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.",
+  "nostrSettingsSectionNetwork": "Network",
+  "nostrSettingsSectionAccount": "Account",
+  "nostrSettingsSectionDangerZone": "Danger Zone",
+  "nostrSettingsRelays": "Relays",
+  "nostrSettingsRelaysSubtitle": "Manage Nostr relay connections",
+  "nostrSettingsRelayDiagnostics": "Relay Diagnostics",
+  "nostrSettingsRelayDiagnosticsSubtitle": "Debug relay connectivity and network issues",
+  "nostrSettingsMediaServers": "Media Servers",
+  "nostrSettingsMediaServersSubtitle": "Configure Blossom upload servers",
+  "nostrSettingsDeveloperOptions": "Developer Options",
+  "nostrSettingsDeveloperOptionsSubtitle": "Environment switcher and debug settings",
+  "nostrSettingsExperimentalFeaturesSubtitle": "Toggle feature flags that may hiccup.",
+  "nostrSettingsKeyManagement": "Key Management",
+  "nostrSettingsKeyManagementSubtitle": "Export, backup, and restore your Nostr keys",
+  "nostrSettingsRemoveKeys": "Remove Keys from Device",
+  "nostrSettingsRemoveKeysSubtitle": "Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.",
+  "nostrSettingsCouldNotRemoveKeys": "Could not remove keys from this device. Please try again.",
+  "nostrSettingsFailedToRemoveKeys": "Failed to remove keys: {error}",
+  "@nostrSettingsFailedToRemoveKeys": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "nostrSettingsDeleteAccount": "Delete Account and Data",
+  "nostrSettingsDeleteAccountSubtitle": "PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.",
   "relayDiagnosticTitle": "Relay Diagnostics",
   "@relayDiagnosticTitle": {
     "description": "Relay diagnostics screen app bar title"
@@ -1041,6 +1124,8 @@
     "description": "Safety settings screen app bar title"
   },
   "safetySettingsLabel": "SETTINGS",
+  "safetySettingsWhatYouSee": "WHAT YOU SEE",
+  "safetySettingsWhatYouPublish": "WHAT YOU PUBLISH",
   "safetySettingsShowDivineHostedOnly": "Only show Divine-hosted videos",
   "safetySettingsShowDivineHostedOnlySubtitle": "Hide videos served from other media hosts",
   "safetySettingsModeration": "MODERATION",
@@ -2657,8 +2742,30 @@
       }
     }
   },
+  "blossomValidServerUrl": "Please enter a valid server URL (e.g., https://blossom.band)",
+  "blossomSettingsSaved": "Blossom settings saved",
+  "blossomSaveTooltip": "Save",
+  "blossomAboutTitle": "About Blossom",
+  "blossomAboutDescription": "Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine's Blossom server. Enable the option below to use a custom server instead.",
+  "blossomUseCustomServer": "Use Custom Blossom Server",
+  "blossomCustomServerEnabledSubtitle": "Videos will be uploaded to your custom Blossom server",
+  "blossomCustomServerDisabledSubtitle": "Your videos are currently being uploaded to Divine's Blossom server",
+  "blossomCustomServerUrl": "Custom Blossom Server URL",
+  "blossomCustomServerHelper": "Enter the URL of your custom Blossom server",
+  "blossomPopularServers": "Popular Blossom Servers",
 
   "blueskyFailedToUpdateCrosspost": "Failed to update crosspost setting",
+  "blueskySignInRequired": "Sign in to manage Bluesky settings",
+  "blueskyPublishVideos": "Publish videos to Bluesky",
+  "blueskyEnabledSubtitle": "Your videos will be published to Bluesky",
+  "blueskyDisabledSubtitle": "Your videos will not be published to Bluesky",
+  "blueskyHandle": "Bluesky Handle",
+  "blueskyStatus": "Status",
+  "blueskyStatusReady": "Account provisioned and ready",
+  "blueskyStatusPending": "Account provisioning in progress...",
+  "blueskyStatusFailed": "Account provisioning failed",
+  "blueskyStatusDisabled": "Account disabled",
+  "blueskyStatusNotLinked": "No Bluesky account linked",
 
   "invitesTitle": "Invite Friends",
   "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
@@ -2676,6 +2783,24 @@
   "@invitesGenerateButtonLabel": {
     "description": "Label of the button on the generate-invite card that creates a new invite code from remaining capacity."
   },
+  "invitesNoneAvailable": "No invites available right now",
+  "invitesShareWithPeople": "Share diVine with people you know",
+  "invitesUsedInvites": "Used invites",
+  "invitesShareMessage": "Join me on diVine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}",
+  "@invitesShareMessage": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesCopyInvite": "Copy invite",
+  "invitesCopied": "Invite copied!",
+  "invitesShareInvite": "Share invite",
+  "invitesShareSubject": "Join me on diVine",
+  "invitesClaimed": "Claimed",
+  "invitesCouldNotLoad": "Could not load invites",
+  "invitesRetry": "Retry",
 
   "searchSomethingWentWrong": "Something went wrong",
   "searchTryAgain": "Try again",

@@ -152,6 +152,47 @@ class AppLocalizationsAm extends AppLocalizations {
   String get settingsAppLanguageUseDeviceLanguage => 'የመሣሪያውን ቋንቋ ተጠቀም';
 
   @override
+  String get settingsGeneralTitle => 'አጠቃላይ ቅንብሮች';
+
+  @override
+  String get settingsContentSafetyTitle => 'ይዘት እና ደህንነት';
+
+  @override
+  String get generalSettingsSectionIntegrations => 'ውህደቶች';
+
+  @override
+  String get generalSettingsSectionViewing => 'ማየት';
+
+  @override
+  String get generalSettingsSectionCreating => 'መፍጠር';
+
+  @override
+  String get generalSettingsSectionApp => 'መተግበሪያ';
+
+  @override
+  String get generalSettingsClosedCaptions => 'የተዘጉ መግለጫዎች';
+
+  @override
+  String get generalSettingsClosedCaptionsSubtitle => 'ቪዲዮዎች መግለጫዎችን ሲያካትቱ አሳይ';
+
+  @override
+  String get generalSettingsVideoShape => 'የቪዲዮ ቅርጽ';
+
+  @override
+  String get generalSettingsVideoShapeSquareOnly => 'ካሬ ቪዲዮዎች ብቻ';
+
+  @override
+  String get generalSettingsVideoShapeSquareAndPortrait => 'ካሬ እና ቁመታዊ';
+
+  @override
+  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
+      'የDivine ቪዲዮዎችን ሙሉ ድብልቅ አሳይ';
+
+  @override
+  String get generalSettingsVideoShapeSquareOnlySubtitle =>
+      'ምግቦችን በክላሲክ ካሬ ቅርጽ ያቆዩ';
+
+  @override
   String get contentPreferencesTitle => 'የይዘት ምርጫዎች';
 
   @override
@@ -222,6 +263,31 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get contentPreferencesUnknownMicrophone => 'ያልታወቀ ማይክሮፎን';
+
+  @override
+  String get contentFiltersAdultContent => 'የአዋቂዎች ይዘት';
+
+  @override
+  String get contentFiltersViolenceGore => 'ግፍ እና ደም';
+
+  @override
+  String get contentFiltersSubstances => 'ንጥረ ነገሮች';
+
+  @override
+  String get contentFiltersOther => 'ሌላ';
+
+  @override
+  String get contentFiltersAgeGateMessage =>
+      'የአዋቂዎች ይዘት ማጣሪያዎችን ለመክፈት በደህንነት እና ግላዊነት ቅንብሮች ውስጥ እድሜዎን ያረጋግጡ';
+
+  @override
+  String get contentFiltersShow => 'አሳይ';
+
+  @override
+  String get contentFiltersWarn => 'አስጠንቅቅ';
+
+  @override
+  String get contentFiltersFilterOut => 'አጣራ';
 
   @override
   String get profileBlockedAccountNotAvailable => 'ይህ መለያ አይገኝም';
@@ -1643,6 +1709,105 @@ class AppLocalizationsAm extends AppLocalizations {
   String get relaySettingsFailedToOpenLink => 'አገናኝ መክፈት አልተሳካም።';
 
   @override
+  String get relaySettingsExternalRelay => 'ውጫዊ ቅብብሎሽ';
+
+  @override
+  String get relaySettingsNotConnected => 'አልተገናኘም';
+
+  @override
+  String relaySettingsDisconnectedAgo(String duration) {
+    return 'ከ$duration በፊት ተቋርጧል';
+  }
+
+  @override
+  String relaySettingsSubscriptionsSummary(int count) {
+    return '$count ደንበኝነቶች';
+  }
+
+  @override
+  String relaySettingsEventsSummary(String count) {
+    return '$count ክስተቶች';
+  }
+
+  @override
+  String relaySettingsTimeAgo(String duration) {
+    return 'ከ$duration በፊት';
+  }
+
+  @override
+  String get nostrSettingsIntro =>
+      'Divine ለያልተማከለ ማተም Nostr ፕሮቶኮልን ይጠቀማል። ይዘትዎ በሚመርጧቸው ቅብብሎሾች ላይ ይኖራል፣ ቁልፎችዎም ማንነትዎ ናቸው።';
+
+  @override
+  String get nostrSettingsSectionNetwork => 'አውታረ መረብ';
+
+  @override
+  String get nostrSettingsSectionAccount => 'መለያ';
+
+  @override
+  String get nostrSettingsSectionDangerZone => 'አደገኛ ቦታ';
+
+  @override
+  String get nostrSettingsRelays => 'ቅብብሎሾች';
+
+  @override
+  String get nostrSettingsRelaysSubtitle => 'የNostr ቅብብሎሽ ግንኙነቶችን ያስተዳድሩ';
+
+  @override
+  String get nostrSettingsRelayDiagnostics => 'የቅብብሎሽ ምርመራ';
+
+  @override
+  String get nostrSettingsRelayDiagnosticsSubtitle =>
+      'የቅብብሎሽ ግንኙነትን እና የአውታረ መረብ ችግሮችን ያስሱ';
+
+  @override
+  String get nostrSettingsMediaServers => 'የሚዲያ አገልጋዮች';
+
+  @override
+  String get nostrSettingsMediaServersSubtitle => 'የBlossom ማስጫኛ አገልጋዮችን ያቀናብሩ';
+
+  @override
+  String get nostrSettingsDeveloperOptions => 'የገንቢ አማራጮች';
+
+  @override
+  String get nostrSettingsDeveloperOptionsSubtitle =>
+      'የአካባቢ መቀየሪያ እና የማረሚያ ቅንብሮች';
+
+  @override
+  String get nostrSettingsExperimentalFeaturesSubtitle =>
+      'ሊያደናቅፉ የሚችሉ የባህሪ ባንዲራዎችን ቀይር።';
+
+  @override
+  String get nostrSettingsKeyManagement => 'የቁልፍ አስተዳደር';
+
+  @override
+  String get nostrSettingsKeyManagementSubtitle =>
+      'የNostr ቁልፎችዎን ወደ ውጭ ይላኩ፣ ምትኬ ያስቀምጡ እና ይመልሱ';
+
+  @override
+  String get nostrSettingsRemoveKeys => 'ቁልፎችን ከመሣሪያው አስወግድ';
+
+  @override
+  String get nostrSettingsRemoveKeysSubtitle =>
+      'የግል ቁልፍዎን ከዚህ መሣሪያ ብቻ ይሰርዙ። ይዘትዎ በቅብብሎሾች ላይ ይቆያል፣ ግን መለያዎን እንደገና ለመጠቀም የnsec ምትኬዎን ያስፈልግዎታል።';
+
+  @override
+  String get nostrSettingsCouldNotRemoveKeys =>
+      'ቁልፎችን ከዚህ መሣሪያ ማስወገድ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';
+
+  @override
+  String nostrSettingsFailedToRemoveKeys(String error) {
+    return 'ቁልፎችን ማስወገድ አልተሳካም፦ $error';
+  }
+
+  @override
+  String get nostrSettingsDeleteAccount => 'መለያ እና ውሂብ ሰርዝ';
+
+  @override
+  String get nostrSettingsDeleteAccountSubtitle =>
+      'መለያዎን እና ሁሉንም ይዘት ከNostr ቅብብሎሾች ላይ በቋሚነት ይሰርዙ። ይህ ሊመለስ አይችልም።';
+
+  @override
   String get relayDiagnosticTitle => 'ቅብብል ምርመራዎች';
 
   @override
@@ -1917,6 +2082,12 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get safetySettingsLabel => 'ቅንብሮች';
+
+  @override
+  String get safetySettingsWhatYouSee => 'የሚያዩት';
+
+  @override
+  String get safetySettingsWhatYouPublish => 'የሚያትሙት';
 
   @override
   String get safetySettingsShowDivineHostedOnly =>
@@ -4922,7 +5093,77 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get blossomValidServerUrl =>
+      'እባክዎ ትክክለኛ የአገልጋይ URL ያስገቡ (ለምሳሌ፦ https://blossom.band)';
+
+  @override
+  String get blossomSettingsSaved => 'የBlossom ቅንብሮች ተቀምጠዋል';
+
+  @override
+  String get blossomSaveTooltip => 'አስቀምጥ';
+
+  @override
+  String get blossomAboutTitle => 'ስለ Blossom';
+
+  @override
+  String get blossomAboutDescription =>
+      'Blossom ቪዲዮዎችን ወደ ማንኛውም ተኳሃኝ አገልጋይ ለመስቀል የሚያስችል ያልተማከለ የሚዲያ ማከማቻ ፕሮቶኮል ነው። በነባሪነት ቪዲዮዎች ወደ Divine የBlossom አገልጋይ ይሰቀላሉ። በምትኩ ብጁ አገልጋይ ለመጠቀም ከታች ያለውን አማራጭ ያንቁ።';
+
+  @override
+  String get blossomUseCustomServer => 'ብጁ Blossom አገልጋይ ተጠቀም';
+
+  @override
+  String get blossomCustomServerEnabledSubtitle =>
+      'ቪዲዮዎች ወደ ብጁ Blossom አገልጋይዎ ይሰቀላሉ';
+
+  @override
+  String get blossomCustomServerDisabledSubtitle =>
+      'ቪዲዮዎችዎ አሁን ወደ Divine የBlossom አገልጋይ እየተሰቀሉ ናቸው';
+
+  @override
+  String get blossomCustomServerUrl => 'ብጁ Blossom አገልጋይ URL';
+
+  @override
+  String get blossomCustomServerHelper => 'የብጁ Blossom አገልጋይዎን URL ያስገቡ';
+
+  @override
+  String get blossomPopularServers => 'ታዋቂ የBlossom አገልጋዮች';
+
+  @override
   String get blueskyFailedToUpdateCrosspost => 'መስቀለኛ መንገድን ማዘመን አልተሳካም።';
+
+  @override
+  String get blueskySignInRequired => 'የBluesky ቅንብሮችን ለማስተዳደር ይግቡ';
+
+  @override
+  String get blueskyPublishVideos => 'ቪዲዮዎችን ወደ Bluesky አትም';
+
+  @override
+  String get blueskyEnabledSubtitle => 'ቪዲዮዎችዎ ወደ Bluesky ይታተማሉ';
+
+  @override
+  String get blueskyDisabledSubtitle => 'ቪዲዮዎችዎ ወደ Bluesky አይታተሙም';
+
+  @override
+  String get blueskyHandle => 'የBluesky መያዣ';
+
+  @override
+  String get blueskyStatus => 'ሁኔታ';
+
+  @override
+  String get blueskyStatusReady => 'መለያው ተዘጋጅቷል እና ዝግጁ ነው';
+
+  @override
+  String get blueskyStatusPending => 'መለያው በመዘጋጀት ላይ ነው...';
+
+  @override
+  String get blueskyStatusFailed => 'መለያውን ማዘጋጀት አልተሳካም';
+
+  @override
+  String get blueskyStatusDisabled => 'መለያው ተሰናክሏል';
+
+  @override
+  String get blueskyStatusNotLinked => 'ምንም የBluesky መለያ አልተገናኘም';
 
   @override
   String get invitesTitle => 'ጓደኞችን ይጋብዙ';
@@ -4943,6 +5184,41 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get invitesGenerateButtonLabel => 'ግብዣ ይፍጠሩ';
+
+  @override
+  String get invitesNoneAvailable => 'አሁን ምንም ግብዣዎች የሉም';
+
+  @override
+  String get invitesShareWithPeople => 'diVineን ከሚያውቋቸው ሰዎች ጋር ያጋሩ';
+
+  @override
+  String get invitesUsedInvites => 'ያገለገሉ ግብዣዎች';
+
+  @override
+  String invitesShareMessage(String code) {
+    return 'diVine ላይ አብረኝ ግባ! ለመጀመር የግብዣ ኮድ $code ተጠቀም፦\nhttps://divine.video/invite/$code';
+  }
+
+  @override
+  String get invitesCopyInvite => 'ግብዣ ቅዳ';
+
+  @override
+  String get invitesCopied => 'ግብዣው ተቀድቷል!';
+
+  @override
+  String get invitesShareInvite => 'ግብዣ አጋራ';
+
+  @override
+  String get invitesShareSubject => 'diVine ላይ አብረኝ ግባ';
+
+  @override
+  String get invitesClaimed => 'ተጠቅመዋል';
+
+  @override
+  String get invitesCouldNotLoad => 'ግብዣዎችን መጫን አልተቻለም';
+
+  @override
+  String get invitesRetry => 'እንደገና ሞክር';
 
   @override
   String get searchSomethingWentWrong => 'የሆነ ችግር ተፈጥሯል።';

@@ -356,6 +356,84 @@ abstract class AppLocalizations {
   /// **'Use device language'**
   String get settingsAppLanguageUseDeviceLanguage;
 
+  /// No description provided for @settingsGeneralTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'General Settings'**
+  String get settingsGeneralTitle;
+
+  /// No description provided for @settingsContentSafetyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content & Safety'**
+  String get settingsContentSafetyTitle;
+
+  /// No description provided for @generalSettingsSectionIntegrations.
+  ///
+  /// In en, this message translates to:
+  /// **'INTEGRATIONS'**
+  String get generalSettingsSectionIntegrations;
+
+  /// No description provided for @generalSettingsSectionViewing.
+  ///
+  /// In en, this message translates to:
+  /// **'VIEWING'**
+  String get generalSettingsSectionViewing;
+
+  /// No description provided for @generalSettingsSectionCreating.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATING'**
+  String get generalSettingsSectionCreating;
+
+  /// No description provided for @generalSettingsSectionApp.
+  ///
+  /// In en, this message translates to:
+  /// **'APP'**
+  String get generalSettingsSectionApp;
+
+  /// No description provided for @generalSettingsClosedCaptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed Captions'**
+  String get generalSettingsClosedCaptions;
+
+  /// No description provided for @generalSettingsClosedCaptionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show captions when videos include them'**
+  String get generalSettingsClosedCaptionsSubtitle;
+
+  /// No description provided for @generalSettingsVideoShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Shape'**
+  String get generalSettingsVideoShape;
+
+  /// No description provided for @generalSettingsVideoShapeSquareOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Square videos only'**
+  String get generalSettingsVideoShapeSquareOnly;
+
+  /// No description provided for @generalSettingsVideoShapeSquareAndPortrait.
+  ///
+  /// In en, this message translates to:
+  /// **'Square and portrait'**
+  String get generalSettingsVideoShapeSquareAndPortrait;
+
+  /// No description provided for @generalSettingsVideoShapeSquareAndPortraitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the full mix of Divine videos'**
+  String get generalSettingsVideoShapeSquareAndPortraitSubtitle;
+
+  /// No description provided for @generalSettingsVideoShapeSquareOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep feeds in the classic square format'**
+  String get generalSettingsVideoShapeSquareOnlySubtitle;
+
   /// Content preferences screen app bar title
   ///
   /// In en, this message translates to:
@@ -481,6 +559,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown Microphone'**
   String get contentPreferencesUnknownMicrophone;
+
+  /// No description provided for @contentFiltersAdultContent.
+  ///
+  /// In en, this message translates to:
+  /// **'ADULT CONTENT'**
+  String get contentFiltersAdultContent;
+
+  /// No description provided for @contentFiltersViolenceGore.
+  ///
+  /// In en, this message translates to:
+  /// **'VIOLENCE & GORE'**
+  String get contentFiltersViolenceGore;
+
+  /// No description provided for @contentFiltersSubstances.
+  ///
+  /// In en, this message translates to:
+  /// **'SUBSTANCES'**
+  String get contentFiltersSubstances;
+
+  /// No description provided for @contentFiltersOther.
+  ///
+  /// In en, this message translates to:
+  /// **'OTHER'**
+  String get contentFiltersOther;
+
+  /// No description provided for @contentFiltersAgeGateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your age in Safety & Privacy settings to unlock adult content filters'**
+  String get contentFiltersAgeGateMessage;
+
+  /// No description provided for @contentFiltersShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get contentFiltersShow;
+
+  /// No description provided for @contentFiltersWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Warn'**
+  String get contentFiltersWarn;
+
+  /// No description provided for @contentFiltersFilterOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter Out'**
+  String get contentFiltersFilterOut;
 
   /// No description provided for @profileBlockedAccountNotAvailable.
   ///
@@ -2984,6 +3110,168 @@ abstract class AppLocalizations {
   /// **'Failed to open link'**
   String get relaySettingsFailedToOpenLink;
 
+  /// No description provided for @relaySettingsExternalRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'External relay'**
+  String get relaySettingsExternalRelay;
+
+  /// No description provided for @relaySettingsNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get relaySettingsNotConnected;
+
+  /// No description provided for @relaySettingsDisconnectedAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected {duration} ago'**
+  String relaySettingsDisconnectedAgo(String duration);
+
+  /// No description provided for @relaySettingsSubscriptionsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} subs'**
+  String relaySettingsSubscriptionsSummary(int count);
+
+  /// No description provided for @relaySettingsEventsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} events'**
+  String relaySettingsEventsSummary(String count);
+
+  /// No description provided for @relaySettingsTimeAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} ago'**
+  String relaySettingsTimeAgo(String duration);
+
+  /// No description provided for @nostrSettingsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.'**
+  String get nostrSettingsIntro;
+
+  /// No description provided for @nostrSettingsSectionNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get nostrSettingsSectionNetwork;
+
+  /// No description provided for @nostrSettingsSectionAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get nostrSettingsSectionAccount;
+
+  /// No description provided for @nostrSettingsSectionDangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get nostrSettingsSectionDangerZone;
+
+  /// No description provided for @nostrSettingsRelays.
+  ///
+  /// In en, this message translates to:
+  /// **'Relays'**
+  String get nostrSettingsRelays;
+
+  /// No description provided for @nostrSettingsRelaysSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Nostr relay connections'**
+  String get nostrSettingsRelaysSubtitle;
+
+  /// No description provided for @nostrSettingsRelayDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay Diagnostics'**
+  String get nostrSettingsRelayDiagnostics;
+
+  /// No description provided for @nostrSettingsRelayDiagnosticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug relay connectivity and network issues'**
+  String get nostrSettingsRelayDiagnosticsSubtitle;
+
+  /// No description provided for @nostrSettingsMediaServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Media Servers'**
+  String get nostrSettingsMediaServers;
+
+  /// No description provided for @nostrSettingsMediaServersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Blossom upload servers'**
+  String get nostrSettingsMediaServersSubtitle;
+
+  /// No description provided for @nostrSettingsDeveloperOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer Options'**
+  String get nostrSettingsDeveloperOptions;
+
+  /// No description provided for @nostrSettingsDeveloperOptionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment switcher and debug settings'**
+  String get nostrSettingsDeveloperOptionsSubtitle;
+
+  /// No description provided for @nostrSettingsExperimentalFeaturesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle feature flags that may hiccup.'**
+  String get nostrSettingsExperimentalFeaturesSubtitle;
+
+  /// No description provided for @nostrSettingsKeyManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Management'**
+  String get nostrSettingsKeyManagement;
+
+  /// No description provided for @nostrSettingsKeyManagementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export, backup, and restore your Nostr keys'**
+  String get nostrSettingsKeyManagementSubtitle;
+
+  /// No description provided for @nostrSettingsRemoveKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Keys from Device'**
+  String get nostrSettingsRemoveKeys;
+
+  /// No description provided for @nostrSettingsRemoveKeysSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.'**
+  String get nostrSettingsRemoveKeysSubtitle;
+
+  /// No description provided for @nostrSettingsCouldNotRemoveKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove keys from this device. Please try again.'**
+  String get nostrSettingsCouldNotRemoveKeys;
+
+  /// No description provided for @nostrSettingsFailedToRemoveKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove keys: {error}'**
+  String nostrSettingsFailedToRemoveKeys(String error);
+
+  /// No description provided for @nostrSettingsDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account and Data'**
+  String get nostrSettingsDeleteAccount;
+
+  /// No description provided for @nostrSettingsDeleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.'**
+  String get nostrSettingsDeleteAccountSubtitle;
+
   /// Relay diagnostics screen app bar title
   ///
   /// In en, this message translates to:
@@ -3473,6 +3761,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SETTINGS'**
   String get safetySettingsLabel;
+
+  /// No description provided for @safetySettingsWhatYouSee.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT YOU SEE'**
+  String get safetySettingsWhatYouSee;
+
+  /// No description provided for @safetySettingsWhatYouPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT YOU PUBLISH'**
+  String get safetySettingsWhatYouPublish;
 
   /// No description provided for @safetySettingsShowDivineHostedOnly.
   ///
@@ -8886,11 +9186,143 @@ abstract class AppLocalizations {
   /// **'Failed to save settings: {error}'**
   String blossomFailedToSaveSettings(String error);
 
+  /// No description provided for @blossomValidServerUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid server URL (e.g., https://blossom.band)'**
+  String get blossomValidServerUrl;
+
+  /// No description provided for @blossomSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Blossom settings saved'**
+  String get blossomSettingsSaved;
+
+  /// No description provided for @blossomSaveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get blossomSaveTooltip;
+
+  /// No description provided for @blossomAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Blossom'**
+  String get blossomAboutTitle;
+
+  /// No description provided for @blossomAboutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.'**
+  String get blossomAboutDescription;
+
+  /// No description provided for @blossomUseCustomServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Custom Blossom Server'**
+  String get blossomUseCustomServer;
+
+  /// No description provided for @blossomCustomServerEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos will be uploaded to your custom Blossom server'**
+  String get blossomCustomServerEnabledSubtitle;
+
+  /// No description provided for @blossomCustomServerDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos are currently being uploaded to Divine\'s Blossom server'**
+  String get blossomCustomServerDisabledSubtitle;
+
+  /// No description provided for @blossomCustomServerUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Blossom Server URL'**
+  String get blossomCustomServerUrl;
+
+  /// No description provided for @blossomCustomServerHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the URL of your custom Blossom server'**
+  String get blossomCustomServerHelper;
+
+  /// No description provided for @blossomPopularServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular Blossom Servers'**
+  String get blossomPopularServers;
+
   /// No description provided for @blueskyFailedToUpdateCrosspost.
   ///
   /// In en, this message translates to:
   /// **'Failed to update crosspost setting'**
   String get blueskyFailedToUpdateCrosspost;
+
+  /// No description provided for @blueskySignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to manage Bluesky settings'**
+  String get blueskySignInRequired;
+
+  /// No description provided for @blueskyPublishVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish videos to Bluesky'**
+  String get blueskyPublishVideos;
+
+  /// No description provided for @blueskyEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos will be published to Bluesky'**
+  String get blueskyEnabledSubtitle;
+
+  /// No description provided for @blueskyDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos will not be published to Bluesky'**
+  String get blueskyDisabledSubtitle;
+
+  /// No description provided for @blueskyHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluesky Handle'**
+  String get blueskyHandle;
+
+  /// No description provided for @blueskyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get blueskyStatus;
+
+  /// No description provided for @blueskyStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Account provisioned and ready'**
+  String get blueskyStatusReady;
+
+  /// No description provided for @blueskyStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Account provisioning in progress...'**
+  String get blueskyStatusPending;
+
+  /// No description provided for @blueskyStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account provisioning failed'**
+  String get blueskyStatusFailed;
+
+  /// No description provided for @blueskyStatusDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Account disabled'**
+  String get blueskyStatusDisabled;
+
+  /// No description provided for @blueskyStatusNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'No Bluesky account linked'**
+  String get blueskyStatusNotLinked;
 
   /// No description provided for @invitesTitle.
   ///
@@ -8915,6 +9347,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate invite'**
   String get invitesGenerateButtonLabel;
+
+  /// No description provided for @invitesNoneAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No invites available right now'**
+  String get invitesNoneAvailable;
+
+  /// No description provided for @invitesShareWithPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Share diVine with people you know'**
+  String get invitesShareWithPeople;
+
+  /// No description provided for @invitesUsedInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'Used invites'**
+  String get invitesUsedInvites;
+
+  /// No description provided for @invitesShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Join me on diVine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}'**
+  String invitesShareMessage(String code);
+
+  /// No description provided for @invitesCopyInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy invite'**
+  String get invitesCopyInvite;
+
+  /// No description provided for @invitesCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite copied!'**
+  String get invitesCopied;
+
+  /// No description provided for @invitesShareInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Share invite'**
+  String get invitesShareInvite;
+
+  /// No description provided for @invitesShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Join me on diVine'**
+  String get invitesShareSubject;
+
+  /// No description provided for @invitesClaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'Claimed'**
+  String get invitesClaimed;
+
+  /// No description provided for @invitesCouldNotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load invites'**
+  String get invitesCouldNotLoad;
+
+  /// No description provided for @invitesRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get invitesRetry;
 
   /// No description provided for @searchSomethingWentWrong.
   ///

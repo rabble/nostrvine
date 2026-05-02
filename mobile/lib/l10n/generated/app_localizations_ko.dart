@@ -132,6 +132,49 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsAppLanguageUseDeviceLanguage => '기기 언어 사용';
 
   @override
+  String get settingsGeneralTitle => 'General Settings';
+
+  @override
+  String get settingsContentSafetyTitle => 'Content & Safety';
+
+  @override
+  String get generalSettingsSectionIntegrations => 'INTEGRATIONS';
+
+  @override
+  String get generalSettingsSectionViewing => 'VIEWING';
+
+  @override
+  String get generalSettingsSectionCreating => 'CREATING';
+
+  @override
+  String get generalSettingsSectionApp => 'APP';
+
+  @override
+  String get generalSettingsClosedCaptions => 'Closed Captions';
+
+  @override
+  String get generalSettingsClosedCaptionsSubtitle =>
+      'Show captions when videos include them';
+
+  @override
+  String get generalSettingsVideoShape => 'Video Shape';
+
+  @override
+  String get generalSettingsVideoShapeSquareOnly => 'Square videos only';
+
+  @override
+  String get generalSettingsVideoShapeSquareAndPortrait =>
+      'Square and portrait';
+
+  @override
+  String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
+      'Show the full mix of Divine videos';
+
+  @override
+  String get generalSettingsVideoShapeSquareOnlySubtitle =>
+      'Keep feeds in the classic square format';
+
+  @override
   String get contentPreferencesTitle => '콘텐츠 환경설정';
 
   @override
@@ -199,6 +242,31 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get contentPreferencesUnknownMicrophone => '알 수 없는 마이크';
+
+  @override
+  String get contentFiltersAdultContent => 'ADULT CONTENT';
+
+  @override
+  String get contentFiltersViolenceGore => 'VIOLENCE & GORE';
+
+  @override
+  String get contentFiltersSubstances => 'SUBSTANCES';
+
+  @override
+  String get contentFiltersOther => 'OTHER';
+
+  @override
+  String get contentFiltersAgeGateMessage =>
+      'Verify your age in Safety & Privacy settings to unlock adult content filters';
+
+  @override
+  String get contentFiltersShow => 'Show';
+
+  @override
+  String get contentFiltersWarn => 'Warn';
+
+  @override
+  String get contentFiltersFilterOut => 'Filter Out';
 
   @override
   String get profileBlockedAccountNotAvailable => '이 계정은 이용할 수 없어요';
@@ -1588,6 +1656,106 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relaySettingsFailedToOpenLink => '링크를 열 수 없어요';
 
   @override
+  String get relaySettingsExternalRelay => 'External relay';
+
+  @override
+  String get relaySettingsNotConnected => 'Not connected';
+
+  @override
+  String relaySettingsDisconnectedAgo(String duration) {
+    return 'Disconnected $duration ago';
+  }
+
+  @override
+  String relaySettingsSubscriptionsSummary(int count) {
+    return '$count subs';
+  }
+
+  @override
+  String relaySettingsEventsSummary(String count) {
+    return '$count events';
+  }
+
+  @override
+  String relaySettingsTimeAgo(String duration) {
+    return '$duration ago';
+  }
+
+  @override
+  String get nostrSettingsIntro =>
+      'Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.';
+
+  @override
+  String get nostrSettingsSectionNetwork => 'Network';
+
+  @override
+  String get nostrSettingsSectionAccount => 'Account';
+
+  @override
+  String get nostrSettingsSectionDangerZone => 'Danger Zone';
+
+  @override
+  String get nostrSettingsRelays => 'Relays';
+
+  @override
+  String get nostrSettingsRelaysSubtitle => 'Manage Nostr relay connections';
+
+  @override
+  String get nostrSettingsRelayDiagnostics => 'Relay Diagnostics';
+
+  @override
+  String get nostrSettingsRelayDiagnosticsSubtitle =>
+      'Debug relay connectivity and network issues';
+
+  @override
+  String get nostrSettingsMediaServers => 'Media Servers';
+
+  @override
+  String get nostrSettingsMediaServersSubtitle =>
+      'Configure Blossom upload servers';
+
+  @override
+  String get nostrSettingsDeveloperOptions => 'Developer Options';
+
+  @override
+  String get nostrSettingsDeveloperOptionsSubtitle =>
+      'Environment switcher and debug settings';
+
+  @override
+  String get nostrSettingsExperimentalFeaturesSubtitle =>
+      'Toggle feature flags that may hiccup.';
+
+  @override
+  String get nostrSettingsKeyManagement => 'Key Management';
+
+  @override
+  String get nostrSettingsKeyManagementSubtitle =>
+      'Export, backup, and restore your Nostr keys';
+
+  @override
+  String get nostrSettingsRemoveKeys => 'Remove Keys from Device';
+
+  @override
+  String get nostrSettingsRemoveKeysSubtitle =>
+      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.';
+
+  @override
+  String get nostrSettingsCouldNotRemoveKeys =>
+      'Could not remove keys from this device. Please try again.';
+
+  @override
+  String nostrSettingsFailedToRemoveKeys(String error) {
+    return 'Failed to remove keys: $error';
+  }
+
+  @override
+  String get nostrSettingsDeleteAccount => 'Delete Account and Data';
+
+  @override
+  String get nostrSettingsDeleteAccountSubtitle =>
+      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.';
+
+  @override
   String get relayDiagnosticTitle => '릴레이 진단';
 
   @override
@@ -1855,6 +2023,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get safetySettingsLabel => '설정';
+
+  @override
+  String get safetySettingsWhatYouSee => 'WHAT YOU SEE';
+
+  @override
+  String get safetySettingsWhatYouPublish => 'WHAT YOU PUBLISH';
 
   @override
   String get safetySettingsShowDivineHostedOnly => 'Divine이 호스팅하는 영상만 보이기';
@@ -4828,7 +5002,80 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get blossomValidServerUrl =>
+      'Please enter a valid server URL (e.g., https://blossom.band)';
+
+  @override
+  String get blossomSettingsSaved => 'Blossom settings saved';
+
+  @override
+  String get blossomSaveTooltip => 'Save';
+
+  @override
+  String get blossomAboutTitle => 'About Blossom';
+
+  @override
+  String get blossomAboutDescription =>
+      'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.';
+
+  @override
+  String get blossomUseCustomServer => 'Use Custom Blossom Server';
+
+  @override
+  String get blossomCustomServerEnabledSubtitle =>
+      'Videos will be uploaded to your custom Blossom server';
+
+  @override
+  String get blossomCustomServerDisabledSubtitle =>
+      'Your videos are currently being uploaded to Divine\'s Blossom server';
+
+  @override
+  String get blossomCustomServerUrl => 'Custom Blossom Server URL';
+
+  @override
+  String get blossomCustomServerHelper =>
+      'Enter the URL of your custom Blossom server';
+
+  @override
+  String get blossomPopularServers => 'Popular Blossom Servers';
+
+  @override
   String get blueskyFailedToUpdateCrosspost => '크로스포스트 설정 업데이트에 실패했어요';
+
+  @override
+  String get blueskySignInRequired => 'Sign in to manage Bluesky settings';
+
+  @override
+  String get blueskyPublishVideos => 'Publish videos to Bluesky';
+
+  @override
+  String get blueskyEnabledSubtitle =>
+      'Your videos will be published to Bluesky';
+
+  @override
+  String get blueskyDisabledSubtitle =>
+      'Your videos will not be published to Bluesky';
+
+  @override
+  String get blueskyHandle => 'Bluesky Handle';
+
+  @override
+  String get blueskyStatus => 'Status';
+
+  @override
+  String get blueskyStatusReady => 'Account provisioned and ready';
+
+  @override
+  String get blueskyStatusPending => 'Account provisioning in progress...';
+
+  @override
+  String get blueskyStatusFailed => 'Account provisioning failed';
+
+  @override
+  String get blueskyStatusDisabled => 'Account disabled';
+
+  @override
+  String get blueskyStatusNotLinked => 'No Bluesky account linked';
 
   @override
   String get invitesTitle => '친구 초대';
@@ -4850,6 +5097,41 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get invitesGenerateButtonLabel => 'Generate invite';
+
+  @override
+  String get invitesNoneAvailable => 'No invites available right now';
+
+  @override
+  String get invitesShareWithPeople => 'Share diVine with people you know';
+
+  @override
+  String get invitesUsedInvites => 'Used invites';
+
+  @override
+  String invitesShareMessage(String code) {
+    return 'Join me on diVine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
+  }
+
+  @override
+  String get invitesCopyInvite => 'Copy invite';
+
+  @override
+  String get invitesCopied => 'Invite copied!';
+
+  @override
+  String get invitesShareInvite => 'Share invite';
+
+  @override
+  String get invitesShareSubject => 'Join me on diVine';
+
+  @override
+  String get invitesClaimed => 'Claimed';
+
+  @override
+  String get invitesCouldNotLoad => 'Could not load invites';
+
+  @override
+  String get invitesRetry => 'Retry';
 
   @override
   String get searchSomethingWentWrong => '문제가 발생했어요';
