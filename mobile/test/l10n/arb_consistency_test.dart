@@ -307,6 +307,30 @@ const _knownUntranslatedDebt = {
   // next pass.
   'relaySettingsInsecureUrl',
   'keyImportInsecureBunkerRelay',
+  // Added by the badges dashboard in #3825. Translations are tracked in
+  // #3864; until that lands, non-English locales fall back to English.
+  'settingsBadgesTitle',
+  'settingsBadgesSubtitle',
+  'badgesTitle',
+  'badgesIntroTitle',
+  'badgesIntroBody',
+  'badgesOpenApp',
+  'badgesLoadError',
+  'badgesUpdateError',
+  'badgesAwardedSectionTitle',
+  'badgesAwardedEmptyTitle',
+  'badgesAwardedEmptySubtitle',
+  'badgesStatusAccepted',
+  'badgesStatusNotAccepted',
+  'badgesActionRemove',
+  'badgesActionAccept',
+  'badgesActionReject',
+  'badgesIssuedSectionTitle',
+  'badgesIssuedEmptyTitle',
+  'badgesIssuedEmptySubtitle',
+  'badgesIssuedNoRecipients',
+  'badgesRecipientAcceptedStatus',
+  'badgesRecipientWaitingStatus',
 };
 
 Map<String, Object?> _readArb(File file) {
