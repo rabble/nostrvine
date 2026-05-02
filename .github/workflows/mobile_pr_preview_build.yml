@@ -51,6 +51,7 @@ jobs:
             --dart-define=BACKEND_URL=https://api.openvine.co \
             --dart-define=ENVIRONMENT=production \
             --dart-define=GH_ACTIONS_PR_PREVIEW=true \
+            --no-wasm-dry-run \
             --no-source-maps
 
       - name: Bundle preview artifact
