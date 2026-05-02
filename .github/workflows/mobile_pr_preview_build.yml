@@ -34,7 +34,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.41.6"
+          flutter-version: "3.41.4"
           channel: stable
           cache: true
 
@@ -51,7 +51,6 @@ jobs:
             --dart-define=BACKEND_URL=https://api.openvine.co \
             --dart-define=ENVIRONMENT=production \
             --dart-define=GH_ACTIONS_PR_PREVIEW=true \
-            --no-wasm-dry-run \
             --no-source-maps
 
       - name: Bundle preview artifact

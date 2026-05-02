@@ -2,14 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cronet_http/cronet_http.dart';
-import 'package:cupertino_http/cupertino_http.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:media_cache/src/cancellable_cache_operation.dart';
 import 'package:media_cache/src/cancellable_downloader.dart';
+import 'package:media_cache/src/platform_downloader_factory.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -224,63 +222,14 @@ class MediaCacheManager extends CacheManager {
   static CancellableDownloader _createDefaultDownloader(
     MediaCacheConfig config,
   ) {
-    if (kIsWeb) {
-      // coverage:ignore-start
-      return HttpCancellableDownloader(http.Client());
-      // coverage:ignore-end
-    }
-    // coverage:ignore-start
-    // Prefer the platform-native HTTP stack:
-    //   * Apple (iOS, macOS): NSURLSession via cupertino_http — gives us
-    //     HTTP/2 + HTTP/3 (QUIC), shared OS-level connection pool, warm
-    //     TLS sessions, and 0-RTT resumption. Materially faster on lossy
-    //     links than dart:io's HTTP/1.1-only stack with a per-isolate
-    //     pool, and on iOS/macOS shares the pool with AVPlayer.
-    //   * Android: Cronet (Chromium net stack) via cronet_http — same
-    //     story (HTTP/2 + HTTP/3, native pool). Falls back to dart:io
-    //     when Cronet cannot be initialised (e.g. AOSP build without
-    //     Google Play Services and no embedded Cronet asset bundled).
-    // macOS in debug stays on the dart:io path so the bad-cert hook for
-    // self-signed local relays keeps working; release/profile macOS
-    // builds use NSURLSession.
-    // Windows and Linux keep the dart:io / IOClient path.
-    final useCupertino = Platform.isIOS || (Platform.isMacOS && !kDebugMode);
-    if (useCupertino) {
-      try {
-        final cfg = URLSessionConfiguration.defaultSessionConfiguration()
-          ..timeoutIntervalForRequest = config.connectionTimeout
-          ..httpMaximumConnectionsPerHost = config.maxConnectionsPerHost;
-        return HttpCancellableDownloader(
-          CupertinoClient.fromSessionConfiguration(cfg),
-        );
-      } on Object catch (e, st) {
-        debugPrint(
-          'MediaCache: cupertino_http init failed, '
-          'falling back to dart:io HttpClient: $e\n$st',
-        );
-      }
-    } else if (Platform.isAndroid) {
-      try {
-        return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
-      } on Object catch (e, st) {
-        debugPrint(
-          'MediaCache: cronet_http init failed, '
-          'falling back to dart:io HttpClient: $e\n$st',
-        );
-      }
-    }
-    // coverage:ignore-end
-    final httpClient = HttpClient()
-      ..connectionTimeout = config.connectionTimeout
-      ..idleTimeout = config.idleTimeout
-      ..maxConnectionsPerHost = config.maxConnectionsPerHost;
-    if (config.allowBadCertificatesInDebug &&
-        kDebugMode &&
-        !kIsWeb &&
-        (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
-      httpClient.badCertificateCallback = (cert, host, port) => true;
-    }
-    return HttpCancellableDownloader(IOClient(httpClient));
+    return createPlatformDownloader(
+      connectionTimeout: config.connectionTimeout,
+      idleTimeout: config.idleTimeout,
+      maxConnectionsPerHost: config.maxConnectionsPerHost,
+      allowBadCertificatesInDebug: config.allowBadCertificatesInDebug,
+      isDebugMode: kDebugMode,
+      isWeb: kIsWeb,
+    );
   }
 
   final MediaCacheConfig _config;
