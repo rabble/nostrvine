@@ -112,8 +112,12 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
       return;
     }
 
-    if (state.status == PlaybackStatus.playing && widget.isVisible) {
-      if (!_hasStartedPlaying) setState(() => _hasStartedPlaying = true);
+    if (state.status == PlaybackStatus.playing &&
+        widget.isVisible &&
+        !_hasStartedPlaying) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _hasStartedPlaying = true;
+      });
     }
 
     if (isPaused && !wasPaused) {

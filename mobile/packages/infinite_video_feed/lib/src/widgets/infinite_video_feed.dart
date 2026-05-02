@@ -891,6 +891,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     }
 
     unawaited(_onIndexChanged(index));
+
+    if (mounted) setState(() {});
   }
   // coverage:ignore-end
 
