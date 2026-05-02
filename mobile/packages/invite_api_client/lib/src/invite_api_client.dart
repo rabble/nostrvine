@@ -255,10 +255,16 @@ class InviteApiClient {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return InviteConsumeResult.fromJson(json);
     } on TimeoutException {
-      throw const InviteApiException('Invite activation timed out');
+      throw const InviteApiException(
+        'Invite activation timed out',
+        code: 'timeout',
+      );
     } catch (error) {
       if (error is InviteApiException) rethrow;
-      throw InviteApiException('Failed to activate invite code: $error');
+      throw InviteApiException(
+        'Failed to activate invite code: $error',
+        code: 'client_error',
+      );
     }
   }
 
