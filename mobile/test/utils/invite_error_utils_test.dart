@@ -1,5 +1,4 @@
-// ABOUTME: Tests for InviteErrorUtils error classification.
-// ABOUTME: Verifies server error codes map to correct failure reasons.
+// ABOUTME: Tests for invite activation error classification and mapping.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:invite_api_client/invite_api_client.dart';
@@ -13,28 +12,28 @@ void main() {
     int? statusCode,
     String? code,
   }) {
-    return InviteApiException(
-      message,
-      statusCode: statusCode,
-      code: code,
-    );
+    return InviteApiException(message, statusCode: statusCode, code: code);
   }
 
   group('server error code classification', () {
     test('creator_page_full maps to creatorFull', () {
       expect(
         InviteErrorUtils.activationFailureReason(
-          makeException(code: 'creator_page_full', statusCode: 409),
+          makeException(
+            code: InviteApiErrorCode.creatorPageFull,
+            statusCode: 409,
+          ),
         ),
         InviteActivationFailureReason.creatorFull,
       );
     });
 
     for (final code in [
-      'auth_required',
-      'auth_invalid',
-      'auth_expired',
-      'auth_invalid_binding',
+      InviteApiErrorCode.authRequired,
+      InviteApiErrorCode.authInvalid,
+      InviteApiErrorCode.authExpired,
+      InviteApiErrorCode.authInvalidBinding,
+      InviteApiErrorCode.clientAuthFailed,
     ]) {
       test('$code maps to authFailure', () {
         expect(
@@ -46,7 +45,10 @@ void main() {
       });
     }
 
-    for (final code in ['invite_already_used', 'user_already_joined']) {
+    for (final code in [
+      InviteApiErrorCode.inviteAlreadyUsed,
+      InviteApiErrorCode.userAlreadyJoined,
+    ]) {
       test('$code maps to alreadyUsed', () {
         expect(
           InviteErrorUtils.activationFailureReason(
@@ -58,30 +60,36 @@ void main() {
     }
 
     for (final code in [
-      'invite_not_found',
-      'invite_invalid_format',
-      'invite_revoked',
-      'invite_code_rotated',
-      'creator_page_disabled',
+      InviteApiErrorCode.inviteNotFound,
+      InviteApiErrorCode.inviteInvalidFormat,
+      InviteApiErrorCode.inviteRevoked,
+      InviteApiErrorCode.inviteCodeRotated,
+      InviteApiErrorCode.creatorPageDisabled,
     ]) {
       test('$code maps to invalid', () {
         expect(
-          InviteErrorUtils.activationFailureReason(
-            makeException(code: code),
-          ),
+          InviteErrorUtils.activationFailureReason(makeException(code: code)),
           InviteActivationFailureReason.invalid,
         );
       });
     }
 
-    test('too_many_requests maps to temporary', () {
-      expect(
-        InviteErrorUtils.activationFailureReason(
-          makeException(code: 'too_many_requests', statusCode: 429),
-        ),
-        InviteActivationFailureReason.temporary,
-      );
-    });
+    for (final code in [
+      InviteApiErrorCode.tooManyRequests,
+      InviteApiErrorCode.storageError,
+      InviteApiErrorCode.internalError,
+      InviteApiErrorCode.clientTimeout,
+      InviteApiErrorCode.clientNetworkError,
+    ]) {
+      test('$code maps to temporary', () {
+        expect(
+          InviteErrorUtils.activationFailureReason(
+            makeException(code: code, statusCode: 429),
+          ),
+          InviteActivationFailureReason.temporary,
+        );
+      });
+    }
   });
 
   group('status code fallback classification', () {
@@ -150,6 +158,24 @@ void main() {
       );
     });
 
+    test('invalid in message maps to invalid', () {
+      expect(
+        InviteErrorUtils.activationFailureReason(
+          makeException(message: 'Invalid invite code'),
+        ),
+        InviteActivationFailureReason.invalid,
+      );
+    });
+
+    test('expired in message maps to invalid', () {
+      expect(
+        InviteErrorUtils.activationFailureReason(
+          makeException(message: 'Invite code expired'),
+        ),
+        InviteActivationFailureReason.invalid,
+      );
+    });
+
     test('unrecognized error falls to unknown', () {
       expect(
         InviteErrorUtils.activationFailureReason(
@@ -164,7 +190,7 @@ void main() {
     test('auth_invalid at 401 maps to authFailure not invalid', () {
       expect(
         InviteErrorUtils.activationFailureReason(
-          makeException(code: 'auth_invalid', statusCode: 401),
+          makeException(code: InviteApiErrorCode.authInvalid, statusCode: 401),
         ),
         InviteActivationFailureReason.authFailure,
       );
@@ -173,7 +199,10 @@ void main() {
     test('invite_revoked at 409 maps to invalid not alreadyUsed', () {
       expect(
         InviteErrorUtils.activationFailureReason(
-          makeException(code: 'invite_revoked', statusCode: 409),
+          makeException(
+            code: InviteApiErrorCode.inviteRevoked,
+            statusCode: 409,
+          ),
         ),
         InviteActivationFailureReason.invalid,
       );
@@ -181,30 +210,12 @@ void main() {
   });
 
   group('client-synthesized codes', () {
-    test('timeout code maps to temporary', () {
-      expect(
-        InviteErrorUtils.activationFailureReason(
-          makeException(code: 'timeout'),
-        ),
-        InviteActivationFailureReason.temporary,
-      );
-    });
-
     test('client_error code maps to unknown', () {
       expect(
         InviteErrorUtils.activationFailureReason(
-          makeException(code: 'client_error'),
+          makeException(code: InviteApiErrorCode.clientError),
         ),
         InviteActivationFailureReason.unknown,
-      );
-    });
-
-    test('storage_error code maps to temporary', () {
-      expect(
-        InviteErrorUtils.activationFailureReason(
-          makeException(code: 'storage_error', statusCode: 502),
-        ),
-        InviteActivationFailureReason.temporary,
       );
     });
   });
@@ -213,7 +224,7 @@ void main() {
     test('authFailure maps to inviteTemporary', () {
       expect(
         InviteErrorUtils.toEmailVerificationError(
-          makeException(code: 'auth_invalid', statusCode: 401),
+          makeException(code: InviteApiErrorCode.authInvalid, statusCode: 401),
         ),
         EmailVerificationError.inviteTemporary,
       );
@@ -222,7 +233,10 @@ void main() {
     test('creatorFull maps to inviteInvalid', () {
       expect(
         InviteErrorUtils.toEmailVerificationError(
-          makeException(code: 'creator_page_full', statusCode: 409),
+          makeException(
+            code: InviteApiErrorCode.creatorPageFull,
+            statusCode: 409,
+          ),
         ),
         EmailVerificationError.inviteInvalid,
       );
@@ -231,7 +245,7 @@ void main() {
     test('unknown maps to inviteUnknown', () {
       expect(
         InviteErrorUtils.toEmailVerificationError(
-          makeException(message: 'unexpected'),
+          makeException(code: InviteApiErrorCode.clientError),
         ),
         EmailVerificationError.inviteUnknown,
       );
@@ -241,7 +255,10 @@ void main() {
   group('activationFailureMessage', () {
     test('authFailure message suggests trying again', () {
       final message = InviteErrorUtils.activationFailureMessage(
-        makeException(code: 'auth_invalid', statusCode: 401),
+        makeException(
+          code: InviteApiErrorCode.clientAuthFailed,
+          statusCode: 401,
+        ),
       );
       expect(message, contains('try again'));
     });

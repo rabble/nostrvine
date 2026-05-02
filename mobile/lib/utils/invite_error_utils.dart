@@ -29,30 +29,39 @@ enum InviteActivationFailureReason {
 }
 
 class InviteErrorUtils {
+  static const Set<String> _authCodes = {
+    InviteApiErrorCode.authRequired,
+    InviteApiErrorCode.authInvalid,
+    InviteApiErrorCode.authExpired,
+    InviteApiErrorCode.authInvalidBinding,
+    InviteApiErrorCode.clientAuthFailed,
+  };
+
+  static const Set<String> _invalidCodes = {
+    InviteApiErrorCode.inviteNotFound,
+    InviteApiErrorCode.inviteInvalidFormat,
+    InviteApiErrorCode.inviteRevoked,
+    InviteApiErrorCode.inviteCodeRotated,
+    InviteApiErrorCode.creatorPageDisabled,
+  };
+
+  static const Set<String> _usedCodes = {
+    InviteApiErrorCode.inviteAlreadyUsed,
+    InviteApiErrorCode.userAlreadyJoined,
+  };
+
+  static const Set<String> _temporaryCodes = {
+    InviteApiErrorCode.tooManyRequests,
+    InviteApiErrorCode.storageError,
+    InviteApiErrorCode.internalError,
+    InviteApiErrorCode.clientTimeout,
+    InviteApiErrorCode.clientNetworkError,
+  };
+
   /// Classifies an [InviteApiException] into a reason code.
   ///
   /// Use this from the cubit/BLoC layer so state never carries English copy.
   /// The UI layer maps the reason to a localized string.
-  static const _authCodes = {
-    'auth_required',
-    'auth_invalid',
-    'auth_expired',
-    'auth_invalid_binding',
-  };
-
-  static const _invalidCodes = {
-    'invite_not_found',
-    'invite_invalid_format',
-    'invite_revoked',
-    'invite_code_rotated',
-    'creator_page_disabled',
-  };
-
-  static const _usedCodes = {
-    'invite_already_used',
-    'user_already_joined',
-  };
-
   static InviteActivationFailureReason activationFailureReason(
     InviteApiException error,
   ) {
@@ -60,9 +69,8 @@ class InviteErrorUtils {
     final normalizedMessage = error.message.toLowerCase();
     final code = error.code;
 
-    // Server error code takes priority over keyword matching.
     if (code != null) {
-      if (code == 'creator_page_full') {
+      if (code == InviteApiErrorCode.creatorPageFull) {
         return InviteActivationFailureReason.creatorFull;
       }
       if (_authCodes.contains(code)) {
@@ -74,19 +82,16 @@ class InviteErrorUtils {
       if (_invalidCodes.contains(code)) {
         return InviteActivationFailureReason.invalid;
       }
-      if (code == 'too_many_requests' ||
-          code == 'timeout' ||
-          code == 'storage_error' ||
-          code == 'internal_error') {
+      if (_temporaryCodes.contains(code)) {
         return InviteActivationFailureReason.temporary;
       }
-      if (code == 'client_error') {
+      if (code == InviteApiErrorCode.clientError) {
         return InviteActivationFailureReason.unknown;
       }
     }
 
     // Fall back to status code + keyword matching for exceptions that
-    // don't carry a server error code (timeouts, network errors, etc.).
+    // don't carry a structured error code.
     if (statusCode == 401) {
       return InviteActivationFailureReason.authFailure;
     }
@@ -105,7 +110,9 @@ class InviteErrorUtils {
     final isInvalidError =
         statusCode == 403 ||
         statusCode == 404 ||
+        normalizedMessage.contains('invalid') ||
         normalizedMessage.contains('revoked') ||
+        normalizedMessage.contains('expired') ||
         normalizedMessage.contains('not eligible');
 
     if (isInvalidError) {
@@ -168,8 +175,6 @@ class InviteErrorUtils {
         return "This creator's invites are full. Join the waitlist and "
             "we'll send an invite when there's room.";
       case InviteActivationFailureReason.authFailure:
-        return "We couldn't verify your account for this invite. "
-            'Go back to your invite code and try again, or contact support.';
       case InviteActivationFailureReason.temporary:
         return "We couldn't confirm your invite right now. "
             'Go back to your invite code and try again, or contact support.';
