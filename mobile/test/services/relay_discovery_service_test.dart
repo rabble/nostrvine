@@ -320,6 +320,27 @@ void main() {
         containsAll(['wss://good.example.com', 'ws://localhost:8080']),
       );
     });
+
+    test(
+      'drops mis-nested wss://http:// tags (#3362 review follow-up)',
+      () {
+        // `wss://http://attacker` parses with host=`http` and path=`//attacker…`.
+        // Without the `path.startsWith('//')` guard in `isRelayUrlAllowed`,
+        // the predicate would accept it (scheme=wss) and discovery would
+        // surface a relay pointing at host `http`. `RelayManager.
+        // _normalizeUrl` would also reject it downstream, but we don't want
+        // discovery's `hasRelays` to flip true on a malformed tag — that
+        // would suppress the safe-fallback bootstrap (#2931).
+        final relays = service.parseRelayListFromJson(
+          tagsJson([
+            ['r', 'wss://http://attacker.example.com'],
+            ['r', 'wss://https://attacker.example.com'],
+            ['r', 'wss://wss://relay.example.com'],
+          ]),
+        );
+        expect(relays, isEmpty);
+      },
+    );
   });
 
   group(IndexerRelayConfig, () {

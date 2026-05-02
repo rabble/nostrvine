@@ -41,6 +41,10 @@ bool isLoopbackHost(String host) => _loopbackHosts.contains(host.toLowerCase());
 bool isRelayUrlAllowed(String url) {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
+  // `wss://http://x` parses as host=`http` and path=`//x`; reject so a
+  // mis-nested URL in a NIP-65 tag or capability-service input cannot
+  // pass the allowlist and target the wrong host downstream.
+  if (uri.path.startsWith('//')) return false;
   final scheme = uri.scheme.toLowerCase();
   if (scheme == 'wss') return true;
   if (scheme == 'ws') return isLoopbackHost(uri.host);

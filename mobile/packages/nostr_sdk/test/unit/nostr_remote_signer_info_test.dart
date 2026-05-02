@@ -237,6 +237,38 @@ void main() {
             throwsA(isA<InvalidBunkerRelayException>()),
           );
         });
+
+        test(
+          'rejects mis-nested wss://http:// relay (#3362 review follow-up)',
+          () {
+            // `wss://http://attacker` parses as host=`http` and
+            // path=`//attacker…`. Without the `path.startsWith('//')` guard
+            // in `_isAllowedBunkerRelayUrl`, this URL would pass the
+            // allowlist (scheme=wss) and the bunker session would point at
+            // host `http`. The query parameter is URL-encoded so the parser
+            // delivers the raw mis-nested form back to the predicate.
+            expect(
+              () => NostrRemoteSignerInfo.parseBunkerUrl(
+                'bunker://pubkey?relay='
+                '${Uri.encodeQueryComponent('wss://http://attacker.example.com')}',
+              ),
+              throwsA(isA<InvalidBunkerRelayException>()),
+            );
+          },
+        );
+
+        test(
+          'rejects mis-nested wss://wss:// relay (smuggled double scheme)',
+          () {
+            expect(
+              () => NostrRemoteSignerInfo.parseBunkerUrl(
+                'bunker://pubkey?relay='
+                '${Uri.encodeQueryComponent('wss://wss://relay.example.com')}',
+              ),
+              throwsA(isA<InvalidBunkerRelayException>()),
+            );
+          },
+        );
       });
 
       group('successful parsing', () {

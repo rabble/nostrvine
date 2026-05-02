@@ -457,6 +457,110 @@ void main() {
         }
       });
 
+      // Scheme validation before bare-host upgrade (#3362 review follow-up).
+      // Without this gate, `_normalizeUrl` would string-prefix `wss://` onto
+      // any input not already starting with `wss://`/`ws://`, turning
+      // `http://attacker.example.com` into `wss://http://attacker.example.com`
+      // (host=`http`, path=`//attacker…` — the wrong target).
+      test('rejects http:// even with a non-loopback host', () async {
+        final result = await manager.addRelay('http://attacker.example.com');
+
+        expect(result, isFalse);
+        expect(
+          manager.configuredRelays,
+          isNot(
+            contains(
+              anyOf(
+                'http://attacker.example.com',
+                'wss://http://attacker.example.com',
+              ),
+            ),
+          ),
+        );
+        verifyNever(
+          () => mockRelayPool.add(
+            any(
+              that: predicate<Relay>(
+                (r) => r.url.contains('attacker.example.com'),
+              ),
+            ),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        );
+      });
+
+      test(
+        'rejects https:// even when pointed at a relay-shaped host',
+        () async {
+          final result = await manager.addRelay('https://relay.example.com');
+
+          expect(result, isFalse);
+        },
+      );
+
+      test('rejects http:// pointed at a loopback host', () async {
+        // Relays speak WebSocket only; cleartext HTTP to localhost is still
+        // not a relay endpoint.
+        final result = await manager.addRelay('http://localhost:47777');
+
+        expect(result, isFalse);
+      });
+
+      test('rejects ftp:// and other unknown schemes', () async {
+        expect(await manager.addRelay('ftp://relay.example.com'), isFalse);
+        expect(await manager.addRelay('file:///etc/hosts'), isFalse);
+      });
+
+      test('rejects mis-nested wss://http:// (smuggled cleartext)', () async {
+        // Without the `path.startsWith('//')` guard, this URL parses with
+        // host=`http` and path=`//attacker…` and would be accepted as
+        // scheme=`wss` — routing the connection to host `http` rather
+        // than rejecting the malformed input.
+        final result = await manager.addRelay(
+          'wss://http://attacker.example.com',
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => mockRelayPool.add(
+            any(
+              that: predicate<Relay>(
+                (r) => r.url.contains('attacker.example.com'),
+              ),
+            ),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        );
+      });
+
+      test('rejects mis-nested wss://wss:// (double scheme prefix)', () async {
+        final result = await manager.addRelay('wss://wss://relay.example.com');
+
+        expect(result, isFalse);
+      });
+
+      test('case-folds uppercase scheme to canonical lowercase', () async {
+        // Discovery accepts `WSS://relay.example.com` because Dart's Uri
+        // canonicalises the scheme to lowercase. `_normalizeUrl` must do
+        // the same so the URL is stored in canonical form and string-based
+        // dedup / persistence checks compare equal across casings.
+        final result = await manager.addRelay('WSS://relay.example.com');
+
+        expect(result, isTrue);
+        expect(manager.configuredRelays, contains('wss://relay.example.com'));
+        expect(
+          manager.configuredRelays,
+          isNot(contains('WSS://relay.example.com')),
+        );
+      });
+
+      test('case-folds uppercase ws:// scheme for loopback hosts', () async {
+        final result = await manager.addRelay('WS://localhost:8080');
+
+        expect(result, isTrue);
+        expect(manager.configuredRelays, contains('ws://localhost:8080'));
+      });
+
       test('emits both connecting and final connected state', () async {
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);

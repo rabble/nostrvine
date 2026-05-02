@@ -91,6 +91,20 @@ void main() {
       expect(isRelayUrlAllowed('not a url'), isFalse);
     });
 
+    test('rejects mis-nested scheme prefixes (#3362 review follow-up)', () {
+      // `wss://http://x` parses with host=`http` and path=`//x`; without
+      // the path-starts-with-`//` guard, the predicate would accept it
+      // (scheme=wss) and the URL would route to the wrong host
+      // downstream. The guard also covers `wss://wss://x` (smuggled
+      // double-prefix) and `wss://https://x` (cleartext under wss
+      // wrapper).
+      expect(isRelayUrlAllowed('wss://http://attacker.example.com'), isFalse);
+      expect(isRelayUrlAllowed('wss://https://attacker.example.com'), isFalse);
+      expect(isRelayUrlAllowed('wss://wss://relay.example.com'), isFalse);
+      expect(isRelayUrlAllowed('wss://WSS://relay.example.com'), isFalse);
+      expect(isRelayUrlAllowed('ws://http://attacker.example.com'), isFalse);
+    });
+
     test('canonical loopback set (#3362 drift sentinel)', () {
       // Mirrored in:
       //  - mobile/packages/nostr_sdk/test/unit/nostr_remote_signer_info_test.dart

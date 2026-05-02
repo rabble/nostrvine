@@ -23,6 +23,10 @@ bool _isLoopbackHost(String host) =>
 bool _isAllowedBunkerRelayUrl(String url) {
   final uri = Uri.tryParse(url.trim());
   if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
+  // `wss://http://x` parses as host=`http` and path=`//x`; reject so a
+  // mis-nested URL smuggled inside a `bunker://` / `nostrconnect://` query
+  // parameter cannot pass the allowlist.
+  if (uri.path.startsWith('//')) return false;
   final scheme = uri.scheme.toLowerCase();
   if (scheme == 'wss') return true;
   if (scheme == 'ws') return _isLoopbackHost(uri.host);

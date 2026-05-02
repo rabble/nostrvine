@@ -651,13 +651,32 @@ class RelayManager {
   }
 
   String? _normalizeUrl(String url) {
-    var normalized = url.trim();
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
 
-    // Ensure wss:// prefix when no scheme is present (security upgrade for
-    // bare hostnames). Explicit ws:// is preserved here; the loopback gate
-    // below decides whether it is permitted.
-    if (!normalized.startsWith('wss://') && !normalized.startsWith('ws://')) {
-      normalized = 'wss://$normalized';
+    // Validate any explicit scheme BEFORE the bare-host upgrade. Without this
+    // gate, `http://attacker.example.com` would slip past the prefix check
+    // below and be string-prefixed into `wss://http://attacker.example.com`
+    // (a URL whose authority parses as host=`http`, path=`//attacker…` —
+    // routed to the wrong host rather than rejected). Schemes are
+    // case-insensitive per RFC 3986 §3.1; Dart's Uri canonicalises them to
+    // lowercase, so `WSS://X` round-trips through `toString()` as `wss://X`.
+    String normalized;
+    final initial = Uri.tryParse(trimmed);
+    if (initial != null && initial.hasAuthority) {
+      final scheme = initial.scheme.toLowerCase();
+      if (scheme != 'wss' && scheme != 'ws') return null;
+      // `wss://http://x` parses with host=`http` and path=`//x`. Reject so
+      // an attacker can't smuggle a cleartext URL past us by pre-wrapping
+      // it inside a `wss://` prefix.
+      if (initial.path.startsWith('//')) return null;
+      normalized = initial.toString();
+    } else {
+      // No parsable authority → bare host[:port][/path]; upgrade to wss://.
+      // Reject inputs that contain `://` anywhere we couldn't parse, so we
+      // never silently rewrite something that looked scheme-shaped.
+      if (trimmed.contains('://')) return null;
+      normalized = 'wss://$trimmed';
     }
 
     // Remove trailing slash
@@ -665,15 +684,16 @@ class RelayManager {
       normalized = normalized.substring(0, normalized.length - 1);
     }
 
-    // Basic shape validation + loopback gate for cleartext schemes.
+    // Re-parse to apply host validation and the loopback gate. Only wss/ws
+    // can reach this point per the scheme check above; the second
+    // `tryParse` also catches inputs whose bare-host upgrade produced an
+    // unparseable authority (e.g. `wss:relay.example.com` →
+    // `wss://wss:relay.example.com`, where `relay.example.com` is not a
+    // valid port).
     final uri = Uri.tryParse(normalized);
     if (uri == null || uri.host.isEmpty) return null;
-    final scheme = uri.scheme.toLowerCase();
-    if (scheme == 'wss') return normalized;
-    if (scheme == 'ws') {
-      return _isLoopbackHost(uri.host) ? normalized : null;
-    }
-    return null;
+    if (uri.scheme == 'ws' && !_isLoopbackHost(uri.host)) return null;
+    return normalized;
   }
 
   void _log(String message) {
