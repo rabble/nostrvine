@@ -6,6 +6,24 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:pooled_video_player/src/models/video_pool_config.dart';
 
+/// libmpv audio filter chain applied when loudness normalization is on.
+///
+/// Single-pass dynamic normalizer tuned for short-form video so quiet and
+/// loud clips play at comparable perceived loudness without 2-pass analysis.
+///
+/// Parameters:
+/// - g=15  : Gaussian frame size (default 31; smaller reacts faster
+///           between clips).
+/// - m=10  : maximum gain factor — caps amplification to avoid pumping
+///           noise floors.
+/// - p=0.95: peak target relative to 0 dBFS.
+/// - r=0.0 : disable RMS targeting; rely on peak.
+/// - n=1   : disable cross-clip compression so each frame normalizes
+///           independently.
+///
+/// See https://ffmpeg.org/ffmpeg-filters.html#dynaudnorm
+const String _kDynaudnormFilter = 'dynaudnorm=g=15:m=10:p=0.95:r=0.0:n=1';
+
 /// A pooled player instance containing both Player and VideoController.
 ///
 /// Keeps native resources alive for reuse instead of expensive recreation.
@@ -254,6 +272,57 @@ class PlayerPool {
   /// Number of players currently in the pool.
   int get playerCount => _players.length;
 
+  /// Whether libmpv's dynamic audio normalization filter is active on every
+  /// pooled player.
+  ///
+  /// When `true`, each pooled [Player] applies an `af=dynaudnorm=...` filter
+  /// before audio output, leveling perceived loudness across clips. The
+  /// filter is reapplied to recycled players and to every player created
+  /// after the toggle. No-op on web — HTML5 `<video>` has no equivalent
+  /// filter API.
+  bool get isLoudnessNormalizationEnabled => _normalizationEnabled;
+  bool _normalizationEnabled = false;
+
+  /// Toggles the libmpv audio filter on every active pooled player and on
+  /// every player created afterwards.
+  ///
+  /// Returns immediately when [enabled] matches the current state. Otherwise
+  /// updates the pool state and applies the filter to each non-disposed
+  /// pooled player concurrently.
+  Future<void> setLoudnessNormalizationEnabled({required bool enabled}) async {
+    if (_normalizationEnabled == enabled) return;
+    _normalizationEnabled = enabled;
+    final filter = enabled ? _kDynaudnormFilter : '';
+    final futures = <Future<void>>[
+      for (final pooled in _players.values)
+        if (!pooled.isDisposed) applyAudioFilter(pooled.player, filter),
+    ];
+    await Future.wait(futures);
+  }
+
+  /// Applies [filter] to [player] via libmpv's `af` property.
+  ///
+  /// Empty [filter] clears the chain. Mirrors the swallow-on-failure pattern
+  /// used elsewhere in [createPlayer]: web stubs and platforms that don't
+  /// expose [NativePlayer.setProperty] silently no-op.
+  ///
+  /// Marked `@visibleForOverriding` so test subclasses can record applied
+  /// filters without instantiating real libmpv players. The pattern mirrors
+  /// [createPlayer] / [createPlayerForUrl].
+  @visibleForTesting
+  @visibleForOverriding
+  Future<void> applyAudioFilter(Player player, String filter) async {
+    if (kIsWeb) return;
+    try {
+      final platform = player.platform;
+      if (platform is NativePlayer) {
+        await (platform as dynamic).setProperty('af', filter);
+      }
+    } on Object catch (_) {
+      // Same swallow as the existing setProperty calls in createPlayer.
+    }
+  }
+
   /// Get or create a player for the given URL.
   ///
   /// If a player already exists for this URL, it is returned and marked
@@ -462,6 +531,12 @@ class PlayerPool {
             'cache-pause-initial',
             '0',
           );
+          if (_normalizationEnabled) {
+            await (nativePlayer as dynamic).setProperty(
+              'af',
+              _kDynaudnormFilter,
+            );
+          }
         }
       } on Object catch (_) {
         // Ignore — some platforms or stubs don't support setProperty.

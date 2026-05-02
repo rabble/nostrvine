@@ -907,6 +907,119 @@ void main() {
         },
       );
     });
+
+    group('loudness normalization', () {
+      late _FilterRecordingPool pool;
+
+      setUp(() {
+        pool = _FilterRecordingPool(maxPlayers: 3);
+      });
+
+      tearDown(() async {
+        await pool.dispose();
+      });
+
+      test('defaults to disabled', () {
+        expect(pool.isLoudnessNormalizationEnabled, isFalse);
+      });
+
+      test(
+        'setLoudnessNormalizationEnabled(enabled: true) flips state',
+        () async {
+          await pool.setLoudnessNormalizationEnabled(enabled: true);
+
+          expect(pool.isLoudnessNormalizationEnabled, isTrue);
+        },
+      );
+
+      test(
+        'setLoudnessNormalizationEnabled(enabled: false) flips state back',
+        () async {
+          await pool.setLoudnessNormalizationEnabled(enabled: true);
+          await pool.setLoudnessNormalizationEnabled(enabled: false);
+
+          expect(pool.isLoudnessNormalizationEnabled, isFalse);
+        },
+      );
+
+      test(
+        'setLoudnessNormalizationEnabled is a no-op when state is unchanged',
+        () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+          pool.appliedFilters.clear();
+
+          // Already disabled; no-op.
+          await pool.setLoudnessNormalizationEnabled(enabled: false);
+
+          expect(pool.appliedFilters, isEmpty);
+        },
+      );
+
+      test(
+        'setLoudnessNormalizationEnabled(enabled: true) applies filter '
+        'to every non-disposed pooled player',
+        () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+          await pool.getPlayer('https://example.com/v2.mp4');
+          pool.appliedFilters.clear();
+
+          await pool.setLoudnessNormalizationEnabled(enabled: true);
+
+          expect(pool.appliedFilters, hasLength(2));
+          expect(
+            pool.appliedFilters.every((f) => f.contains('dynaudnorm')),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'setLoudnessNormalizationEnabled(enabled: false) clears filter '
+        'on every pooled player',
+        () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+          await pool.getPlayer('https://example.com/v2.mp4');
+          await pool.setLoudnessNormalizationEnabled(enabled: true);
+          pool.appliedFilters.clear();
+
+          await pool.setLoudnessNormalizationEnabled(enabled: false);
+
+          expect(pool.appliedFilters, hasLength(2));
+          expect(pool.appliedFilters.every((f) => f.isEmpty), isTrue);
+        },
+      );
+
+      test('disposed players are skipped', () async {
+        final disposed = createMockPooledPlayer(isDisposed: true);
+        final live = createMockPooledPlayer();
+        pool.queueNextPlayers([disposed, live]);
+
+        await pool.getPlayer('https://example.com/disposed.mp4');
+        await pool.getPlayer('https://example.com/live.mp4');
+        pool.appliedFilters.clear();
+
+        await pool.setLoudnessNormalizationEnabled(enabled: true);
+
+        expect(pool.appliedFilters, hasLength(1));
+      });
+
+      test(
+        'players created after enabling inherit the active state via '
+        'createPlayer',
+        () async {
+          await pool.setLoudnessNormalizationEnabled(enabled: true);
+
+          // Subsequent player creation should observe the active flag.
+          // The recording pool exposes the flag at creation time.
+          final created = await pool.getPlayer('https://example.com/new.mp4');
+
+          expect(
+            pool.normalizationFlagAtCreate[created],
+            isTrue,
+          );
+        },
+      );
+    });
   });
 }
 
@@ -920,5 +1033,47 @@ class _SerializedTestPool extends PlayerPool {
   @override
   Future<PooledPlayer> createPlayer() async {
     return onCreatePlayer();
+  }
+}
+
+/// A [PlayerPool] subclass that records every applied audio filter and the
+/// normalization-enabled flag at the time each player was created.
+///
+/// Bypasses real libmpv `setProperty` calls so tests can run without native
+/// players, while still observing the filter-application side effect at the
+/// public API boundary.
+class _FilterRecordingPool extends PlayerPool {
+  _FilterRecordingPool({super.maxPlayers});
+
+  /// Records each filter string applied via [applyAudioFilter], in order.
+  final List<String> appliedFilters = [];
+
+  /// Records the value of [isLoudnessNormalizationEnabled] at the moment
+  /// each player was created. Useful for asserting that newly-created
+  /// players inherit the active state.
+  final Map<PooledPlayer, bool> normalizationFlagAtCreate = {};
+
+  /// Optional FIFO queue of mock players returned by [createPlayer]. When
+  /// empty, falls back to a fresh [createMockPooledPlayer].
+  final List<PooledPlayer> _queuedPlayers = [];
+
+  void queueNextPlayers(List<PooledPlayer> players) {
+    _queuedPlayers
+      ..clear()
+      ..addAll(players);
+  }
+
+  @override
+  Future<void> applyAudioFilter(Player player, String filter) async {
+    appliedFilters.add(filter);
+  }
+
+  @override
+  Future<PooledPlayer> createPlayer() async {
+    final player = _queuedPlayers.isNotEmpty
+        ? _queuedPlayers.removeAt(0)
+        : createMockPooledPlayer();
+    normalizationFlagAtCreate[player] = isLoudnessNormalizationEnabled;
+    return player;
   }
 }
