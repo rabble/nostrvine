@@ -842,6 +842,35 @@ void main() {
         },
       );
 
+      test(
+        'cancel after deferred download starts forwards cancel state',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloader = FakeCancellableDownloader();
+
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancellable_cancel_started_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          );
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'cancel_started_key',
+          );
+
+          await pumpDownloads(downloader);
+          expect(op.isCancelled, isFalse);
+
+          op.cancel();
+          expect(op.isCancelled, isTrue);
+          expect(downloader.downloads.single.isCancelled, isTrue);
+          expect(await op.file, isNull);
+        },
+      );
+
       test('completes with null when downloader throws during start', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;
 

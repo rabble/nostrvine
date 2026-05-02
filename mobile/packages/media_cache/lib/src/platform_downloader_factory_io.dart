@@ -36,6 +36,7 @@ CancellableDownloader createPlatformDownloaderImpl({
   // self-signed local relays keeps working; release/profile macOS
   // builds use NSURLSession.
   // Windows and Linux keep the dart:io / IOClient path.
+  // coverage:ignore-start
   final useCupertino = Platform.isIOS || (Platform.isMacOS && !isDebugMode);
   if (useCupertino) {
     try {
@@ -61,6 +62,7 @@ CancellableDownloader createPlatformDownloaderImpl({
       );
     }
   }
+  // coverage:ignore-end
 
   final httpClient = HttpClient()
     ..connectionTimeout = connectionTimeout

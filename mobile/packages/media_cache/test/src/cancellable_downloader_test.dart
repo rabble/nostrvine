@@ -181,5 +181,36 @@ void main() {
       expect(dl.isCancelled, isFalse);
       expect(target.existsSync(), isTrue);
     });
+
+    test(
+      'cancel during stream completion returns null and removes file',
+      () async {
+        final controller = StreamController<List<int>>();
+        final client = _CallbackClient(
+          (_) async => http.StreamedResponse(controller.stream, 200),
+        );
+        final downloader = HttpCancellableDownloader(client);
+        final target = File('${tempDir.path}/cancel_during_done.mp4');
+
+        final dl = downloader.download(
+          url: 'https://example.com/cancel_during_done.mp4',
+          targetFile: target,
+        );
+
+        // Ensure listener is attached before we trigger completion.
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+        controller
+          ..add(utf8.encode('partial'))
+          ..close();
+
+        // Trigger cancellation while stream completion is in-flight.
+        dl.cancel();
+
+        final file = await dl.file;
+        expect(file, isNull);
+        expect(dl.isCancelled, isTrue);
+        expect(target.existsSync(), isFalse);
+      },
+    );
   });
 }
