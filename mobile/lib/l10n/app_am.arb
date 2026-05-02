@@ -385,6 +385,7 @@
   "profileSetupImageUrlTitle": "ምስል ያክሉ URL",
   "profileSetupPictureUploaded": "የመገለጫ ስዕል በተሳካ ሁኔታ ተሰቅሏል!",
   "profileSetupImageSelectionFailed": "የምስል ምርጫ አልተሳካም። እባክህ በምትኩ ምስል URL ከታች ለጥፍ።",
+  "profileSetupImagesTypeGroup": "ምስሎች",
   "profileSetupCameraAccessFailed": "የካሜራ መዳረሻ አልተሳካም፦ {error}",
   "@profileSetupCameraAccessFailed": {
     "placeholders": {
@@ -435,6 +436,8 @@
   "profileSetupSelectButton": "ይምረጡ",
   "profileSetupUseOwnNip05": "የራስህን NIP-05 አድራሻ ተጠቀም",
   "profileSetupNip05AddressLabel": "NIP-05 አድራሻ",
+  "profileSetupExternalNip05InvalidFormat": "ልክ ያልሆነ NIP-05 ቅርጸት (ለምሳሌ name@domain.com)",
+  "profileSetupExternalNip05DivineDomain": "ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ",
   "profileSetupProfilePicturePreview": "የመገለጫ ስዕል ቅድመ እይታ",
   "nostrInfoIntroBuiltOn": "ዳይቪን የተገነባው በNostr ላይ ነው፣",
   "nostrInfoIntroDescription": "ሳንሱርን የሚቋቋም ክፍት ፕሮቶኮል ሰዎች በአንድ ኩባንያ ወይም መድረክ ላይ ሳይመሰረቱ በመስመር ላይ እንዲግባቡ ያስችላቸዋል።",
@@ -572,6 +575,14 @@
   "contentWarningDetailsSubtitle": "ፈጣሪው እነዚህን መለያዎች ተግባራዊ አድርጓል፡-",
   "contentWarningManageFilters": "የይዘት ማጣሪያዎችን ያቀናብሩ",
   "contentWarningViewAnyway": "ለማንኛውም ይመልከቱ",
+  "contentWarningReportContentTooltip": "ይዘትን ሪፖርት አድርግ",
+  "contentWarningBlockUserTooltip": "ተጠቃሚን አግድ",
+  "contentWarningBlockedTitle": "ይዘት ታግዷል",
+  "contentWarningBlockedPolicy": "ይህ ይዘት በፖሊሲ ጥሰቶች ምክንያት ታግዷል።",
+  "contentWarningNoticeTitle": "የይዘት ማሳሰቢያ",
+  "contentWarningPotentiallyHarmfulTitle": "ሊጎዳ የሚችል ይዘት",
+  "contentWarningView": "ይመልከቱ",
+  "contentWarningReportAction": "ሪፖርት",
   "contentWarningHideAllLikeThis": "ሁሉንም እንደዚህ ያሉ ይዘቶችን ደብቅ",
   "contentWarningNoFilterYet": "ለዚህ ማስጠንቀቂያ እስካሁን ምንም የተቀመጠ ማጣሪያ የለም።",
   "contentWarningHiddenConfirmation": "ከአሁን በኋላ እንደዚህ አይነት ልጥፎችን እንደብቃለን።",
@@ -2630,6 +2641,26 @@
       }
     }
   },
+  "discoverListsTitle": "ዝርዝሮችን ያግኙ",
+  "discoverListsFailedToLoad": "ዝርዝሮችን መጫን አልተሳካም",
+  "discoverListsFailedToLoadWithError": "ዝርዝሮችን መጫን አልተሳካም፦ {error}",
+  "@discoverListsFailedToLoadWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverListsLoading": "የህዝብ ዝርዝሮችን በመፈለግ ላይ...",
+  "discoverListsEmptyTitle": "ምንም የህዝብ ዝርዝሮች አልተገኙም",
+  "discoverListsEmptySubtitle": "ለአዳዲስ ዝርዝሮች ቆይተው ይመልከቱ",
+  "discoverListsByAuthorPrefix": "በ",
+  "curatedListEmptyTitle": "በዚህ ዝርዝር ውስጥ ምንም ቪዲዮዎች የሉም",
+  "curatedListEmptySubtitle": "ለመጀመር ቪዲዮዎችን ያክሉ",
+  "curatedListLoadingVideos": "ቪዲዮዎችን በመጫን ላይ...",
+  "curatedListFailedToLoad": "ዝርዝሩን መጫን አልተሳካም",
+  "curatedListNoVideosAvailable": "ምንም ቪዲዮዎች የሉም",
+  "curatedListVideoNotAvailable": "ቪዲዮው አይገኝም",
   "commonRetry": "እንደገና ይሞክሩ",
   "commonNext": "ቀጥሎ",
   "commonDelete": "ሰርዝ",
@@ -2743,11 +2774,19 @@
   "routerInvalidHashtagRoute": "ልክ ያልሆነ የሃሽታግ መስመር",
   "categoryGalleryCouldNotLoadVideos": "ቪዲዮዎችን መጫን አልተቻለም",
   "categoryGalleryNoVideosInCategory": "በዚህ ምድብ ውስጥ ምንም ቪዲዮዎች የሉም",
+  "categoryGallerySortOptionsLabel": "የምድብ መደርደሪያ አማራጮች",
+  "categoryGallerySortHot": "ታዋቂ",
+  "categoryGallerySortNew": "አዲስ",
+  "categoryGallerySortClassic": "ክላሲክ",
+  "categoryGallerySortForYou": "ለእርስዎ",
   "categoriesCouldNotLoadCategories": "ምድቦችን መጫን አልተቻለም",
   "categoriesNoCategoriesAvailable": "ምንም ምድቦች የሉም",
   "notificationsEmptyTitle": "እስካሁን እንቅስቃሴ የለም",
   "notificationsEmptySubtitle": "ሰዎች ከይዘትዎ ጋር ሲገናኙ እዚህ ያያሉ",
+  "appsPermissionsTitle": "የተዋሃዱ መተግበሪያዎች ፈቃዶች",
   "appsPermissionsRevoke": "ሰርዝ",
+  "appsPermissionsEmptyTitle": "ምንም የተቀመጡ የተዋሃዱ መተግበሪያ ፈቃዶች የሉም",
+  "appsPermissionsEmptySubtitle": "አንድ የመዳረሻ ፈቃድ እንዲታወስ ከፈቀዱ በኋላ የተፈቀዱ መተግበሪያዎች እዚህ ይታያሉ።",
   "nostrAppPermissionTitle": "{appName} ፈቃድዎን ይፈልጋል",
   "@nostrAppPermissionTitle": {
     "placeholders": {
@@ -2763,7 +2802,44 @@
   "nostrAppPermissionEventKind": "የክስተት አይነት",
   "nostrAppPermissionAllow": "ፍቀድ",
   "bugReportSendReport": "ሪፖርት ላክ",
+  "supportSubjectRequiredLabel": "ርዕስ *",
+  "supportRequiredHelper": "ያስፈልጋል",
+  "bugReportSubjectHint": "የችግሩ አጭር ማጠቃለያ",
+  "bugReportDescriptionRequiredLabel": "ምን ተከሰተ? *",
+  "bugReportDescriptionHint": "ያጋጠመዎትን ችግር ይግለጹ",
+  "bugReportStepsLabel": "ለመድገም የሚወሰዱ እርምጃዎች",
+  "bugReportStepsHint": "1. ወደ... ይሂዱ\n2. ... ላይ መታ ያድርጉ\n3. ስህተቱን ይመልከቱ",
+  "bugReportExpectedBehaviorLabel": "የሚጠበቀው ባህሪ",
+  "bugReportExpectedBehaviorHint": "በምትኩ ምን መሆን ነበረበት?",
+  "bugReportDiagnosticsNotice": "የመሳሪያ መረጃ እና ሎጎች በራስ-ሰር ይካተታሉ።",
+  "bugReportSuccessMessage": "እናመሰግናለን! ሪፖርትዎን ተቀብለናል፣ Divineን ለማሻሻል እንጠቀምበታለን።",
+  "bugReportSendFailed": "የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።",
+  "bugReportFailedWithError": "የሳንካ ሪፖርት መላክ አልተሳካም፦ {error}",
+  "@bugReportFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "featureRequestSendRequest": "ጥያቄ ላክ",
+  "featureRequestSubjectHint": "የሀሳብዎ አጭር ማጠቃለያ",
+  "featureRequestDescriptionRequiredLabel": "ምን ይፈልጋሉ? *",
+  "featureRequestDescriptionHint": "የሚፈልጉትን ባህሪ ይግለጹ",
+  "featureRequestUsefulnessLabel": "ይህ እንዴት ይጠቅማል?",
+  "featureRequestUsefulnessHint": "ይህ ባህሪ የሚሰጠውን ጥቅም ያብራሩ",
+  "featureRequestWhenLabel": "ይህን መቼ ይጠቀማሉ?",
+  "featureRequestWhenHint": "ይህ የሚረዳባቸውን ሁኔታዎች ይግለጹ",
+  "featureRequestSuccessMessage": "እናመሰግናለን! የባህሪ ጥያቄዎን ተቀብለናል፣ እንመለከተዋለን።",
+  "featureRequestSendFailed": "የባህሪ ጥያቄ መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።",
+  "featureRequestFailedWithError": "የባህሪ ጥያቄ መላክ አልተሳካም፦ {error}",
+  "@featureRequestFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "notificationFollowBack": "ተመለስ ተከታተል።",
   "followingTitle": "የሚከተሉት",
   "followingTitleForName": "{displayName} የሚከተላቸው",
@@ -2775,6 +2851,7 @@
     }
   },
   "followingFailedToLoadList": "የሚከተለውን ዝርዝር መጫን አልተሳካም።",
+  "followingEmptyTitle": "እስካሁን ማንንም አይከተሉም",
   "followersTitle": "ተከታዮች",
   "followersTitleForName": "የ{displayName} ተከታዮች",
   "@followersTitleForName": {
@@ -2785,6 +2862,7 @@
     }
   },
   "followersFailedToLoadList": "የተከታዮች ዝርዝርን መጫን አልተሳካም።",
+  "followersEmptyTitle": "እስካሁን ምንም ተከታዮች የሉም",
   "followersUpdateFollowFailed": "የመከተል ሁኔታን ማዘመን አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
   "reportMessageTitle": "መልዕክትን ሪፖርት አድርግ",
   "reportMessageWhyReporting": "ይህን መልዕክት ለምን ሪፖርት ያደርጋሉ?",
@@ -2795,6 +2873,15 @@
   "newMessageNoUsersFound": "ምንም ተጠቃሚዎች አልተገኙም",
   "hashtagSearchTitle": "ሃሽታጎችን ይፈልጉ",
   "hashtagSearchSubtitle": "በመታየት ላይ ያሉ ርዕሶችን እና ይዘትን ያግኙ",
+  "hashtagSearchNoResults": "ለ\"{query}\" ምንም ሃሽታጎች አልተገኙም",
+  "@hashtagSearchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagSearchFailed": "ፍለጋው አልተሳካም",
   "userNotAvailableTitle": "መለያው አይገኝም",
   "userNotAvailableBody": "ይህ መለያ አሁን አይገኝም።",
   "classicVinersTitle": "OG Viners",

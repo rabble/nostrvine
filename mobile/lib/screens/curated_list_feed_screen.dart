@@ -89,28 +89,28 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       body: videosAsync.when(
         data: (videos) {
           if (videos.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.video_library,
                     size: 64,
                     color: VineTheme.secondaryText,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'No videos in this list',
-                    style: TextStyle(
+                    context.l10n.curatedListEmptyTitle,
+                    style: const TextStyle(
                       color: VineTheme.primaryText,
                       fontSize: 18,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    'Add some videos to get started',
-                    style: TextStyle(
+                    context.l10n.curatedListEmptySubtitle,
+                    style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 14,
                     ),
@@ -133,15 +133,18 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           // Otherwise show grid
           return _buildVideoGrid(videos);
         },
-        loading: () => const Center(
+        loading: () => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(color: VineTheme.vineGreen),
-              SizedBox(height: 16),
+              const CircularProgressIndicator(color: VineTheme.vineGreen),
+              const SizedBox(height: 16),
               Text(
-                'Loading videos...',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+                context.l10n.curatedListLoadingVideos,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -152,9 +155,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             children: [
               const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
               const SizedBox(height: 16),
-              const Text(
-                'Failed to load list',
-                style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+              Text(
+                context.l10n.curatedListFailedToLoad,
+                style: const TextStyle(
+                  color: VineTheme.likeRed,
+                  fontSize: 18,
+                ),
               ),
               const SizedBox(height: 8),
               Padding(
@@ -204,10 +210,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         // Refresh by invalidating the provider
         ref.invalidate(curatedListVideoEventsProvider(widget.listId));
       },
-      emptyBuilder: () => const Center(
+      emptyBuilder: () => Center(
         child: Text(
-          'No videos available',
-          style: TextStyle(color: VineTheme.secondaryText),
+          context.l10n.curatedListNoVideosAvailable,
+          style: const TextStyle(color: VineTheme.secondaryText),
         ),
       ),
     );
@@ -215,10 +221,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
   Widget _buildVideoPlayer(List<VideoEvent> videos) {
     if (videos.isEmpty || _activeVideoIndex! >= videos.length) {
-      return const Center(
+      return Center(
         child: Text(
-          'Video not available',
-          style: TextStyle(color: VineTheme.secondaryText),
+          context.l10n.curatedListVideoNotAvailable,
+          style: const TextStyle(color: VineTheme.secondaryText),
         ),
       );
     }

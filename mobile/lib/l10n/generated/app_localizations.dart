@@ -1424,6 +1424,12 @@ abstract class AppLocalizations {
   /// **'Image selection failed. Please paste an image URL below instead.'**
   String get profileSetupImageSelectionFailed;
 
+  /// No description provided for @profileSetupImagesTypeGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'images'**
+  String get profileSetupImagesTypeGroup;
+
   /// No description provided for @profileSetupCameraAccessFailed.
   ///
   /// In en, this message translates to:
@@ -1597,6 +1603,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NIP-05 Address'**
   String get profileSetupNip05AddressLabel;
+
+  /// No description provided for @profileSetupExternalNip05InvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid NIP-05 format (e.g., name@domain.com)'**
+  String get profileSetupExternalNip05InvalidFormat;
+
+  /// No description provided for @profileSetupExternalNip05DivineDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the username field above for divine.video'**
+  String get profileSetupExternalNip05DivineDomain;
 
   /// No description provided for @profileSetupProfilePicturePreview.
   ///
@@ -2155,6 +2173,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Anyway'**
   String get contentWarningViewAnyway;
+
+  /// No description provided for @contentWarningReportContentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Content'**
+  String get contentWarningReportContentTooltip;
+
+  /// No description provided for @contentWarningBlockUserTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Block User'**
+  String get contentWarningBlockUserTooltip;
+
+  /// No description provided for @contentWarningBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Blocked'**
+  String get contentWarningBlockedTitle;
+
+  /// No description provided for @contentWarningBlockedPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'This content has been blocked due to policy violations.'**
+  String get contentWarningBlockedPolicy;
+
+  /// No description provided for @contentWarningNoticeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Notice'**
+  String get contentWarningNoticeTitle;
+
+  /// No description provided for @contentWarningPotentiallyHarmfulTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Potentially Harmful Content'**
+  String get contentWarningPotentiallyHarmfulTitle;
+
+  /// No description provided for @contentWarningView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get contentWarningView;
+
+  /// No description provided for @contentWarningReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get contentWarningReportAction;
 
   /// No description provided for @contentWarningHideAllLikeThis.
   ///
@@ -8874,6 +8940,84 @@ abstract class AppLocalizations {
   /// **'Failed to update subscription: {error}'**
   String discoverListsFailedToUpdateSubscription(String error);
 
+  /// No description provided for @discoverListsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Lists'**
+  String get discoverListsTitle;
+
+  /// No description provided for @discoverListsFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load lists'**
+  String get discoverListsFailedToLoad;
+
+  /// No description provided for @discoverListsFailedToLoadWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load lists: {error}'**
+  String discoverListsFailedToLoadWithError(String error);
+
+  /// No description provided for @discoverListsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovering public lists...'**
+  String get discoverListsLoading;
+
+  /// No description provided for @discoverListsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No public lists found'**
+  String get discoverListsEmptyTitle;
+
+  /// No description provided for @discoverListsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for new lists'**
+  String get discoverListsEmptySubtitle;
+
+  /// No description provided for @discoverListsByAuthorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'by'**
+  String get discoverListsByAuthorPrefix;
+
+  /// No description provided for @curatedListEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos in this list'**
+  String get curatedListEmptyTitle;
+
+  /// No description provided for @curatedListEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add some videos to get started'**
+  String get curatedListEmptySubtitle;
+
+  /// No description provided for @curatedListLoadingVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading videos...'**
+  String get curatedListLoadingVideos;
+
+  /// No description provided for @curatedListFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load list'**
+  String get curatedListFailedToLoad;
+
+  /// No description provided for @curatedListNoVideosAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos available'**
+  String get curatedListNoVideosAvailable;
+
+  /// No description provided for @curatedListVideoNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Video not available'**
+  String get curatedListVideoNotAvailable;
+
   /// No description provided for @commonRetry.
   ///
   /// In en, this message translates to:
@@ -9222,6 +9366,36 @@ abstract class AppLocalizations {
   /// **'No videos in this category'**
   String get categoryGalleryNoVideosInCategory;
 
+  /// No description provided for @categoryGallerySortOptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category sort options'**
+  String get categoryGallerySortOptionsLabel;
+
+  /// No description provided for @categoryGallerySortHot.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot'**
+  String get categoryGallerySortHot;
+
+  /// No description provided for @categoryGallerySortNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get categoryGallerySortNew;
+
+  /// No description provided for @categoryGallerySortClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get categoryGallerySortClassic;
+
+  /// No description provided for @categoryGallerySortForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For You'**
+  String get categoryGallerySortForYou;
+
   /// No description provided for @categoriesCouldNotLoadCategories.
   ///
   /// In en, this message translates to:
@@ -9246,11 +9420,29 @@ abstract class AppLocalizations {
   /// **'When people interact with your content, you\'ll see it here'**
   String get notificationsEmptySubtitle;
 
+  /// No description provided for @appsPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration Permissions'**
+  String get appsPermissionsTitle;
+
   /// No description provided for @appsPermissionsRevoke.
   ///
   /// In en, this message translates to:
   /// **'Revoke'**
   String get appsPermissionsRevoke;
+
+  /// No description provided for @appsPermissionsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved integration permissions'**
+  String get appsPermissionsEmptyTitle;
+
+  /// No description provided for @appsPermissionsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved integrations will appear here after you remember an access approval.'**
+  String get appsPermissionsEmptySubtitle;
 
   /// No description provided for @nostrAppPermissionTitle.
   ///
@@ -9300,11 +9492,149 @@ abstract class AppLocalizations {
   /// **'Send Report'**
   String get bugReportSendReport;
 
+  /// No description provided for @supportSubjectRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject *'**
+  String get supportSubjectRequiredLabel;
+
+  /// No description provided for @supportRequiredHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get supportRequiredHelper;
+
+  /// No description provided for @bugReportSubjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief summary of the issue'**
+  String get bugReportSubjectHint;
+
+  /// No description provided for @bugReportDescriptionRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened? *'**
+  String get bugReportDescriptionRequiredLabel;
+
+  /// No description provided for @bugReportDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the issue you encountered'**
+  String get bugReportDescriptionHint;
+
+  /// No description provided for @bugReportStepsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps to Reproduce'**
+  String get bugReportStepsLabel;
+
+  /// No description provided for @bugReportStepsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Go to...\n2. Tap on...\n3. See error'**
+  String get bugReportStepsHint;
+
+  /// No description provided for @bugReportExpectedBehaviorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected Behavior'**
+  String get bugReportExpectedBehaviorLabel;
+
+  /// No description provided for @bugReportExpectedBehaviorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should have happened instead?'**
+  String get bugReportExpectedBehaviorHint;
+
+  /// No description provided for @bugReportDiagnosticsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device info and logs will be included automatically.'**
+  String get bugReportDiagnosticsNotice;
+
+  /// No description provided for @bugReportSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you! We\'ve received your report and will use it to make Divine better.'**
+  String get bugReportSuccessMessage;
+
+  /// No description provided for @bugReportSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send bug report. Please try again later.'**
+  String get bugReportSendFailed;
+
+  /// No description provided for @bugReportFailedWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug report failed to send: {error}'**
+  String bugReportFailedWithError(String error);
+
   /// No description provided for @featureRequestSendRequest.
   ///
   /// In en, this message translates to:
   /// **'Send Request'**
   String get featureRequestSendRequest;
+
+  /// No description provided for @featureRequestSubjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief summary of your idea'**
+  String get featureRequestSubjectHint;
+
+  /// No description provided for @featureRequestDescriptionRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like? *'**
+  String get featureRequestDescriptionRequiredLabel;
+
+  /// No description provided for @featureRequestDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the feature you want'**
+  String get featureRequestDescriptionHint;
+
+  /// No description provided for @featureRequestUsefulnessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How would this be useful?'**
+  String get featureRequestUsefulnessLabel;
+
+  /// No description provided for @featureRequestUsefulnessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain the benefit this feature would provide'**
+  String get featureRequestUsefulnessHint;
+
+  /// No description provided for @featureRequestWhenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When would you use this?'**
+  String get featureRequestWhenLabel;
+
+  /// No description provided for @featureRequestWhenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the situations where this would help'**
+  String get featureRequestWhenHint;
+
+  /// No description provided for @featureRequestSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you! We\'ve received your feature request and will review it.'**
+  String get featureRequestSuccessMessage;
+
+  /// No description provided for @featureRequestSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send feature request. Please try again later.'**
+  String get featureRequestSendFailed;
+
+  /// No description provided for @featureRequestFailedWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature request failed to send: {error}'**
+  String featureRequestFailedWithError(String error);
 
   /// No description provided for @notificationFollowBack.
   ///
@@ -9330,6 +9660,12 @@ abstract class AppLocalizations {
   /// **'Failed to load following list'**
   String get followingFailedToLoadList;
 
+  /// No description provided for @followingEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not following anyone yet'**
+  String get followingEmptyTitle;
+
   /// No description provided for @followersTitle.
   ///
   /// In en, this message translates to:
@@ -9347,6 +9683,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to load followers list'**
   String get followersFailedToLoadList;
+
+  /// No description provided for @followersEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No followers yet'**
+  String get followersEmptyTitle;
 
   /// No description provided for @followersUpdateFollowFailed.
   ///
@@ -9407,6 +9749,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Discover trending topics and content'**
   String get hashtagSearchSubtitle;
+
+  /// No description provided for @hashtagSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No hashtags found for \"{query}\"'**
+  String hashtagSearchNoResults(String query);
+
+  /// No description provided for @hashtagSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed'**
+  String get hashtagSearchFailed;
 
   /// No description provided for @userNotAvailableTitle.
   ///

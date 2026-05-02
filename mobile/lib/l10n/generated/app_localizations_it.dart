@@ -775,6 +775,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Selezione immagine fallita. Incolla qui sotto l\'URL di un\'immagine.';
 
   @override
+  String get profileSetupImagesTypeGroup => 'images';
+
+  @override
   String profileSetupCameraAccessFailed(Object error) {
     return 'Accesso alla fotocamera fallito: $error';
   }
@@ -879,6 +882,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get profileSetupNip05AddressLabel => 'Indirizzo NIP-05';
+
+  @override
+  String get profileSetupExternalNip05InvalidFormat =>
+      'Invalid NIP-05 format (e.g., name@domain.com)';
+
+  @override
+  String get profileSetupExternalNip05DivineDomain =>
+      'Use the username field above for divine.video';
 
   @override
   String get profileSetupProfilePicturePreview => 'Anteprima foto profilo';
@@ -1205,6 +1216,32 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get contentWarningViewAnyway => 'Guarda comunque';
+
+  @override
+  String get contentWarningReportContentTooltip => 'Report Content';
+
+  @override
+  String get contentWarningBlockUserTooltip => 'Block User';
+
+  @override
+  String get contentWarningBlockedTitle => 'Content Blocked';
+
+  @override
+  String get contentWarningBlockedPolicy =>
+      'This content has been blocked due to policy violations.';
+
+  @override
+  String get contentWarningNoticeTitle => 'Content Notice';
+
+  @override
+  String get contentWarningPotentiallyHarmfulTitle =>
+      'Potentially Harmful Content';
+
+  @override
+  String get contentWarningView => 'View';
+
+  @override
+  String get contentWarningReportAction => 'Report';
 
   @override
   String get contentWarningHideAllLikeThis =>
@@ -5058,6 +5095,47 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get discoverListsTitle => 'Discover Lists';
+
+  @override
+  String get discoverListsFailedToLoad => 'Failed to load lists';
+
+  @override
+  String discoverListsFailedToLoadWithError(String error) {
+    return 'Failed to load lists: $error';
+  }
+
+  @override
+  String get discoverListsLoading => 'Discovering public lists...';
+
+  @override
+  String get discoverListsEmptyTitle => 'No public lists found';
+
+  @override
+  String get discoverListsEmptySubtitle => 'Check back later for new lists';
+
+  @override
+  String get discoverListsByAuthorPrefix => 'by';
+
+  @override
+  String get curatedListEmptyTitle => 'No videos in this list';
+
+  @override
+  String get curatedListEmptySubtitle => 'Add some videos to get started';
+
+  @override
+  String get curatedListLoadingVideos => 'Loading videos...';
+
+  @override
+  String get curatedListFailedToLoad => 'Failed to load list';
+
+  @override
+  String get curatedListNoVideosAvailable => 'No videos available';
+
+  @override
+  String get curatedListVideoNotAvailable => 'Video not available';
+
+  @override
   String get commonRetry => 'Riprova';
 
   @override
@@ -5270,6 +5348,21 @@ class AppLocalizationsIt extends AppLocalizations {
   String get categoryGalleryNoVideosInCategory => 'No videos in this category';
 
   @override
+  String get categoryGallerySortOptionsLabel => 'Category sort options';
+
+  @override
+  String get categoryGallerySortHot => 'Hot';
+
+  @override
+  String get categoryGallerySortNew => 'New';
+
+  @override
+  String get categoryGallerySortClassic => 'Classic';
+
+  @override
+  String get categoryGallerySortForYou => 'For You';
+
+  @override
   String get categoriesCouldNotLoadCategories =>
       'Impossibile caricare le categorie';
 
@@ -5284,7 +5377,17 @@ class AppLocalizationsIt extends AppLocalizations {
       'When people interact with your content, you\'ll see it here';
 
   @override
+  String get appsPermissionsTitle => 'Integration Permissions';
+
+  @override
   String get appsPermissionsRevoke => 'Revoke';
+
+  @override
+  String get appsPermissionsEmptyTitle => 'No saved integration permissions';
+
+  @override
+  String get appsPermissionsEmptySubtitle =>
+      'Approved integrations will appear here after you remember an access approval.';
 
   @override
   String nostrAppPermissionTitle(String appName) {
@@ -5314,7 +5417,88 @@ class AppLocalizationsIt extends AppLocalizations {
   String get bugReportSendReport => 'Send Report';
 
   @override
+  String get supportSubjectRequiredLabel => 'Subject *';
+
+  @override
+  String get supportRequiredHelper => 'Required';
+
+  @override
+  String get bugReportSubjectHint => 'Brief summary of the issue';
+
+  @override
+  String get bugReportDescriptionRequiredLabel => 'What happened? *';
+
+  @override
+  String get bugReportDescriptionHint => 'Describe the issue you encountered';
+
+  @override
+  String get bugReportStepsLabel => 'Steps to Reproduce';
+
+  @override
+  String get bugReportStepsHint => '1. Go to...\n2. Tap on...\n3. See error';
+
+  @override
+  String get bugReportExpectedBehaviorLabel => 'Expected Behavior';
+
+  @override
+  String get bugReportExpectedBehaviorHint =>
+      'What should have happened instead?';
+
+  @override
+  String get bugReportDiagnosticsNotice =>
+      'Device info and logs will be included automatically.';
+
+  @override
+  String get bugReportSuccessMessage =>
+      'Thank you! We\'ve received your report and will use it to make Divine better.';
+
+  @override
+  String get bugReportSendFailed =>
+      'Failed to send bug report. Please try again later.';
+
+  @override
+  String bugReportFailedWithError(String error) {
+    return 'Bug report failed to send: $error';
+  }
+
+  @override
   String get featureRequestSendRequest => 'Send Request';
+
+  @override
+  String get featureRequestSubjectHint => 'Brief summary of your idea';
+
+  @override
+  String get featureRequestDescriptionRequiredLabel => 'What would you like? *';
+
+  @override
+  String get featureRequestDescriptionHint => 'Describe the feature you want';
+
+  @override
+  String get featureRequestUsefulnessLabel => 'How would this be useful?';
+
+  @override
+  String get featureRequestUsefulnessHint =>
+      'Explain the benefit this feature would provide';
+
+  @override
+  String get featureRequestWhenLabel => 'When would you use this?';
+
+  @override
+  String get featureRequestWhenHint =>
+      'Describe the situations where this would help';
+
+  @override
+  String get featureRequestSuccessMessage =>
+      'Thank you! We\'ve received your feature request and will review it.';
+
+  @override
+  String get featureRequestSendFailed =>
+      'Failed to send feature request. Please try again later.';
+
+  @override
+  String featureRequestFailedWithError(String error) {
+    return 'Feature request failed to send: $error';
+  }
 
   @override
   String get notificationFollowBack => 'Segui a tua volta';
@@ -5332,6 +5516,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Impossibile caricare la lista dei seguiti';
 
   @override
+  String get followingEmptyTitle => 'Not following anyone yet';
+
+  @override
   String get followersTitle => 'Followers';
 
   @override
@@ -5342,6 +5529,9 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get followersFailedToLoadList =>
       'Impossibile caricare la lista dei follower';
+
+  @override
+  String get followersEmptyTitle => 'No followers yet';
 
   @override
   String get followersUpdateFollowFailed =>
@@ -5375,6 +5565,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get hashtagSearchSubtitle => 'Discover trending topics and content';
+
+  @override
+  String hashtagSearchNoResults(String query) {
+    return 'No hashtags found for \"$query\"';
+  }
+
+  @override
+  String get hashtagSearchFailed => 'Search failed';
 
   @override
   String get userNotAvailableTitle => 'Account not available';

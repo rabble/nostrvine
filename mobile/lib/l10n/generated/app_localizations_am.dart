@@ -739,6 +739,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'የምስል ምርጫ አልተሳካም። እባክህ በምትኩ ምስል URL ከታች ለጥፍ።';
 
   @override
+  String get profileSetupImagesTypeGroup => 'ምስሎች';
+
+  @override
   String profileSetupCameraAccessFailed(Object error) {
     return 'የካሜራ መዳረሻ አልተሳካም፦ $error';
   }
@@ -839,6 +842,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileSetupNip05AddressLabel => 'NIP-05 አድራሻ';
+
+  @override
+  String get profileSetupExternalNip05InvalidFormat =>
+      'ልክ ያልሆነ NIP-05 ቅርጸት (ለምሳሌ name@domain.com)';
+
+  @override
+  String get profileSetupExternalNip05DivineDomain =>
+      'ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ';
 
   @override
   String get profileSetupProfilePicturePreview => 'የመገለጫ ስዕል ቅድመ እይታ';
@@ -1153,6 +1164,30 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get contentWarningViewAnyway => 'ለማንኛውም ይመልከቱ';
+
+  @override
+  String get contentWarningReportContentTooltip => 'ይዘትን ሪፖርት አድርግ';
+
+  @override
+  String get contentWarningBlockUserTooltip => 'ተጠቃሚን አግድ';
+
+  @override
+  String get contentWarningBlockedTitle => 'ይዘት ታግዷል';
+
+  @override
+  String get contentWarningBlockedPolicy => 'ይህ ይዘት በፖሊሲ ጥሰቶች ምክንያት ታግዷል።';
+
+  @override
+  String get contentWarningNoticeTitle => 'የይዘት ማሳሰቢያ';
+
+  @override
+  String get contentWarningPotentiallyHarmfulTitle => 'ሊጎዳ የሚችል ይዘት';
+
+  @override
+  String get contentWarningView => 'ይመልከቱ';
+
+  @override
+  String get contentWarningReportAction => 'ሪፖርት';
 
   @override
   String get contentWarningHideAllLikeThis => 'ሁሉንም እንደዚህ ያሉ ይዘቶችን ደብቅ';
@@ -4915,6 +4950,47 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get discoverListsTitle => 'ዝርዝሮችን ያግኙ';
+
+  @override
+  String get discoverListsFailedToLoad => 'ዝርዝሮችን መጫን አልተሳካም';
+
+  @override
+  String discoverListsFailedToLoadWithError(String error) {
+    return 'ዝርዝሮችን መጫን አልተሳካም፦ $error';
+  }
+
+  @override
+  String get discoverListsLoading => 'የህዝብ ዝርዝሮችን በመፈለግ ላይ...';
+
+  @override
+  String get discoverListsEmptyTitle => 'ምንም የህዝብ ዝርዝሮች አልተገኙም';
+
+  @override
+  String get discoverListsEmptySubtitle => 'ለአዳዲስ ዝርዝሮች ቆይተው ይመልከቱ';
+
+  @override
+  String get discoverListsByAuthorPrefix => 'በ';
+
+  @override
+  String get curatedListEmptyTitle => 'በዚህ ዝርዝር ውስጥ ምንም ቪዲዮዎች የሉም';
+
+  @override
+  String get curatedListEmptySubtitle => 'ለመጀመር ቪዲዮዎችን ያክሉ';
+
+  @override
+  String get curatedListLoadingVideos => 'ቪዲዮዎችን በመጫን ላይ...';
+
+  @override
+  String get curatedListFailedToLoad => 'ዝርዝሩን መጫን አልተሳካም';
+
+  @override
+  String get curatedListNoVideosAvailable => 'ምንም ቪዲዮዎች የሉም';
+
+  @override
+  String get curatedListVideoNotAvailable => 'ቪዲዮው አይገኝም';
+
+  @override
   String get commonRetry => 'እንደገና ይሞክሩ';
 
   @override
@@ -5124,6 +5200,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get categoryGalleryNoVideosInCategory => 'በዚህ ምድብ ውስጥ ምንም ቪዲዮዎች የሉም';
 
   @override
+  String get categoryGallerySortOptionsLabel => 'የምድብ መደርደሪያ አማራጮች';
+
+  @override
+  String get categoryGallerySortHot => 'ታዋቂ';
+
+  @override
+  String get categoryGallerySortNew => 'አዲስ';
+
+  @override
+  String get categoryGallerySortClassic => 'ክላሲክ';
+
+  @override
+  String get categoryGallerySortForYou => 'ለእርስዎ';
+
+  @override
   String get categoriesCouldNotLoadCategories => 'ምድቦችን መጫን አልተቻለም';
 
   @override
@@ -5136,7 +5227,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsEmptySubtitle => 'ሰዎች ከይዘትዎ ጋር ሲገናኙ እዚህ ያያሉ';
 
   @override
+  String get appsPermissionsTitle => 'የተዋሃዱ መተግበሪያዎች ፈቃዶች';
+
+  @override
   String get appsPermissionsRevoke => 'ሰርዝ';
+
+  @override
+  String get appsPermissionsEmptyTitle => 'ምንም የተቀመጡ የተዋሃዱ መተግበሪያ ፈቃዶች የሉም';
+
+  @override
+  String get appsPermissionsEmptySubtitle =>
+      'አንድ የመዳረሻ ፈቃድ እንዲታወስ ከፈቀዱ በኋላ የተፈቀዱ መተግበሪያዎች እዚህ ይታያሉ።';
 
   @override
   String nostrAppPermissionTitle(String appName) {
@@ -5166,7 +5267,83 @@ class AppLocalizationsAm extends AppLocalizations {
   String get bugReportSendReport => 'ሪፖርት ላክ';
 
   @override
+  String get supportSubjectRequiredLabel => 'ርዕስ *';
+
+  @override
+  String get supportRequiredHelper => 'ያስፈልጋል';
+
+  @override
+  String get bugReportSubjectHint => 'የችግሩ አጭር ማጠቃለያ';
+
+  @override
+  String get bugReportDescriptionRequiredLabel => 'ምን ተከሰተ? *';
+
+  @override
+  String get bugReportDescriptionHint => 'ያጋጠመዎትን ችግር ይግለጹ';
+
+  @override
+  String get bugReportStepsLabel => 'ለመድገም የሚወሰዱ እርምጃዎች';
+
+  @override
+  String get bugReportStepsHint =>
+      '1. ወደ... ይሂዱ\n2. ... ላይ መታ ያድርጉ\n3. ስህተቱን ይመልከቱ';
+
+  @override
+  String get bugReportExpectedBehaviorLabel => 'የሚጠበቀው ባህሪ';
+
+  @override
+  String get bugReportExpectedBehaviorHint => 'በምትኩ ምን መሆን ነበረበት?';
+
+  @override
+  String get bugReportDiagnosticsNotice => 'የመሳሪያ መረጃ እና ሎጎች በራስ-ሰር ይካተታሉ።';
+
+  @override
+  String get bugReportSuccessMessage =>
+      'እናመሰግናለን! ሪፖርትዎን ተቀብለናል፣ Divineን ለማሻሻል እንጠቀምበታለን።';
+
+  @override
+  String get bugReportSendFailed => 'የሳንካ ሪፖርት መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።';
+
+  @override
+  String bugReportFailedWithError(String error) {
+    return 'የሳንካ ሪፖርት መላክ አልተሳካም፦ $error';
+  }
+
+  @override
   String get featureRequestSendRequest => 'ጥያቄ ላክ';
+
+  @override
+  String get featureRequestSubjectHint => 'የሀሳብዎ አጭር ማጠቃለያ';
+
+  @override
+  String get featureRequestDescriptionRequiredLabel => 'ምን ይፈልጋሉ? *';
+
+  @override
+  String get featureRequestDescriptionHint => 'የሚፈልጉትን ባህሪ ይግለጹ';
+
+  @override
+  String get featureRequestUsefulnessLabel => 'ይህ እንዴት ይጠቅማል?';
+
+  @override
+  String get featureRequestUsefulnessHint => 'ይህ ባህሪ የሚሰጠውን ጥቅም ያብራሩ';
+
+  @override
+  String get featureRequestWhenLabel => 'ይህን መቼ ይጠቀማሉ?';
+
+  @override
+  String get featureRequestWhenHint => 'ይህ የሚረዳባቸውን ሁኔታዎች ይግለጹ';
+
+  @override
+  String get featureRequestSuccessMessage =>
+      'እናመሰግናለን! የባህሪ ጥያቄዎን ተቀብለናል፣ እንመለከተዋለን።';
+
+  @override
+  String get featureRequestSendFailed => 'የባህሪ ጥያቄ መላክ አልተሳካም። እባክዎ ቆይተው ይሞክሩ።';
+
+  @override
+  String featureRequestFailedWithError(String error) {
+    return 'የባህሪ ጥያቄ መላክ አልተሳካም፦ $error';
+  }
 
   @override
   String get notificationFollowBack => 'ተመለስ ተከታተል።';
@@ -5183,6 +5360,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get followingFailedToLoadList => 'የሚከተለውን ዝርዝር መጫን አልተሳካም።';
 
   @override
+  String get followingEmptyTitle => 'እስካሁን ማንንም አይከተሉም';
+
+  @override
   String get followersTitle => 'ተከታዮች';
 
   @override
@@ -5192,6 +5372,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get followersFailedToLoadList => 'የተከታዮች ዝርዝርን መጫን አልተሳካም።';
+
+  @override
+  String get followersEmptyTitle => 'እስካሁን ምንም ተከታዮች የሉም';
 
   @override
   String get followersUpdateFollowFailed =>
@@ -5225,6 +5408,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get hashtagSearchSubtitle => 'በመታየት ላይ ያሉ ርዕሶችን እና ይዘትን ያግኙ';
+
+  @override
+  String hashtagSearchNoResults(String query) {
+    return 'ለ\"$query\" ምንም ሃሽታጎች አልተገኙም';
+  }
+
+  @override
+  String get hashtagSearchFailed => 'ፍለጋው አልተሳካም';
 
   @override
   String get userNotAvailableTitle => 'መለያው አይገኝም';

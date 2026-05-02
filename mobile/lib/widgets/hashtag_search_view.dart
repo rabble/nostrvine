@@ -196,7 +196,7 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No hashtags found for "$query"',
+            context.l10n.hashtagSearchNoResults(query),
             style: VineTheme.titleSmallFont(),
           ),
         ],
@@ -221,7 +221,7 @@ class _HashtagSearchErrorState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Search failed',
+            context.l10n.hashtagSearchFailed,
             style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
           ),
         ],

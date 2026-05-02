@@ -74,11 +74,9 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
           _isSubmitting = false;
           _isSuccess = success;
           if (success) {
-            _resultMessage =
-                "Thank you! We've received your feature request and will review it.";
+            _resultMessage = context.l10n.featureRequestSuccessMessage;
           } else {
-            _resultMessage =
-                'Failed to send feature request. Please try again later.';
+            _resultMessage = context.l10n.featureRequestSendFailed;
           }
         });
 
@@ -103,7 +101,7 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
         setState(() {
           _isSubmitting = false;
           _isSuccess = false;
-          _resultMessage = 'Feature request failed to send: $e';
+          _resultMessage = context.l10n.featureRequestFailedWithError('$e');
         });
       }
     }
@@ -113,9 +111,9 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
-      title: const Text(
-        'Request a Feature',
-        style: TextStyle(color: VineTheme.whiteText),
+      title: Text(
+        context.l10n.supportRequestFeature,
+        style: const TextStyle(color: VineTheme.whiteText),
       ),
       content: SizedBox(
         width: 400,
@@ -130,9 +128,9 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'Subject *',
-                  hint: 'Brief summary of your idea',
-                  helper: 'Required',
+                  label: context.l10n.supportSubjectRequiredLabel,
+                  hint: context.l10n.featureRequestSubjectHint,
+                  helper: context.l10n.supportRequiredHelper,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -146,9 +144,9 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'What would you like? *',
-                  hint: 'Describe the feature you want',
-                  helper: 'Required',
+                  label: context.l10n.featureRequestDescriptionRequiredLabel,
+                  hint: context.l10n.featureRequestDescriptionHint,
+                  helper: context.l10n.supportRequiredHelper,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -162,8 +160,8 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'How would this be useful?',
-                  hint: 'Explain the benefit this feature would provide',
+                  label: context.l10n.featureRequestUsefulnessLabel,
+                  hint: context.l10n.featureRequestUsefulnessHint,
                 ),
                 onChanged: (_) => setState(() {}),
               ),
@@ -177,8 +175,8 @@ class _FeatureRequestDialogState extends State<FeatureRequestDialog> {
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
                 decoration: buildSupportInputDecoration(
-                  label: 'When would you use this?',
-                  hint: 'Describe the situations where this would help',
+                  label: context.l10n.featureRequestWhenLabel,
+                  hint: context.l10n.featureRequestWhenHint,
                 ),
                 onChanged: (_) => setState(() {}),
               ),

@@ -200,15 +200,22 @@ class _FollowingEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_add_outlined, size: 64, color: VineTheme.lightText),
-          SizedBox(height: 16),
+          const Icon(
+            Icons.person_add_outlined,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'Not following anyone yet',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+            context.l10n.followingEmptyTitle,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 16,
+            ),
           ),
         ],
       ),

@@ -385,6 +385,7 @@
   "profileSetupImageUrlTitle": "Add image URL",
   "profileSetupPictureUploaded": "Profile picture uploaded successfully!",
   "profileSetupImageSelectionFailed": "Image selection failed. Please paste an image URL below instead.",
+  "profileSetupImagesTypeGroup": "images",
   "profileSetupCameraAccessFailed": "Camera access failed: {error}",
   "@profileSetupCameraAccessFailed": {
     "placeholders": {
@@ -435,6 +436,8 @@
   "profileSetupSelectButton": "Select",
   "profileSetupUseOwnNip05": "Use your own NIP-05 address",
   "profileSetupNip05AddressLabel": "NIP-05 Address",
+  "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (e.g., name@domain.com)",
+  "profileSetupExternalNip05DivineDomain": "Use the username field above for divine.video",
   "profileSetupProfilePicturePreview": "Profile picture preview",
   "nostrInfoIntroBuiltOn": "DiVine is built on Nostr,",
   "nostrInfoIntroDescription": " a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ",
@@ -563,6 +566,14 @@
   "contentWarningDetailsSubtitle": "The creator applied these labels:",
   "contentWarningManageFilters": "Manage content filters",
   "contentWarningViewAnyway": "View Anyway",
+  "contentWarningReportContentTooltip": "Report Content",
+  "contentWarningBlockUserTooltip": "Block User",
+  "contentWarningBlockedTitle": "Content Blocked",
+  "contentWarningBlockedPolicy": "This content has been blocked due to policy violations.",
+  "contentWarningNoticeTitle": "Content Notice",
+  "contentWarningPotentiallyHarmfulTitle": "Potentially Harmful Content",
+  "contentWarningView": "View",
+  "contentWarningReportAction": "Report",
   "contentWarningHideAllLikeThis": "Hide all content like this",
   "contentWarningNoFilterYet": "No saved filter for this warning yet.",
   "contentWarningHiddenConfirmation": "We'll hide posts like this from now on.",
@@ -2647,6 +2658,27 @@
       }
     }
   },
+  "discoverListsTitle": "Discover Lists",
+  "discoverListsFailedToLoad": "Failed to load lists",
+  "discoverListsFailedToLoadWithError": "Failed to load lists: {error}",
+  "@discoverListsFailedToLoadWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "discoverListsLoading": "Discovering public lists...",
+  "discoverListsEmptyTitle": "No public lists found",
+  "discoverListsEmptySubtitle": "Check back later for new lists",
+  "discoverListsByAuthorPrefix": "by",
+
+  "curatedListEmptyTitle": "No videos in this list",
+  "curatedListEmptySubtitle": "Add some videos to get started",
+  "curatedListLoadingVideos": "Loading videos...",
+  "curatedListFailedToLoad": "Failed to load list",
+  "curatedListNoVideosAvailable": "No videos available",
+  "curatedListVideoNotAvailable": "Video not available",
 
   "commonRetry": "Retry",
   "commonNext": "Next",
@@ -2769,13 +2801,21 @@
 
   "categoryGalleryCouldNotLoadVideos": "Could not load videos",
   "categoryGalleryNoVideosInCategory": "No videos in this category",
+  "categoryGallerySortOptionsLabel": "Category sort options",
+  "categoryGallerySortHot": "Hot",
+  "categoryGallerySortNew": "New",
+  "categoryGallerySortClassic": "Classic",
+  "categoryGallerySortForYou": "For You",
   "categoriesCouldNotLoadCategories": "Could not load categories",
   "categoriesNoCategoriesAvailable": "No categories available",
 
   "notificationsEmptyTitle": "No activity yet",
   "notificationsEmptySubtitle": "When people interact with your content, you'll see it here",
 
+  "appsPermissionsTitle": "Integration Permissions",
   "appsPermissionsRevoke": "Revoke",
+  "appsPermissionsEmptyTitle": "No saved integration permissions",
+  "appsPermissionsEmptySubtitle": "Approved integrations will appear here after you remember an access approval.",
 
   "nostrAppPermissionTitle": "{appName} wants your approval",
   "@nostrAppPermissionTitle": {
@@ -2793,7 +2833,44 @@
   "nostrAppPermissionAllow": "Allow",
 
   "bugReportSendReport": "Send Report",
+  "supportSubjectRequiredLabel": "Subject *",
+  "supportRequiredHelper": "Required",
+  "bugReportSubjectHint": "Brief summary of the issue",
+  "bugReportDescriptionRequiredLabel": "What happened? *",
+  "bugReportDescriptionHint": "Describe the issue you encountered",
+  "bugReportStepsLabel": "Steps to Reproduce",
+  "bugReportStepsHint": "1. Go to...\n2. Tap on...\n3. See error",
+  "bugReportExpectedBehaviorLabel": "Expected Behavior",
+  "bugReportExpectedBehaviorHint": "What should have happened instead?",
+  "bugReportDiagnosticsNotice": "Device info and logs will be included automatically.",
+  "bugReportSuccessMessage": "Thank you! We've received your report and will use it to make Divine better.",
+  "bugReportSendFailed": "Failed to send bug report. Please try again later.",
+  "bugReportFailedWithError": "Bug report failed to send: {error}",
+  "@bugReportFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "featureRequestSendRequest": "Send Request",
+  "featureRequestSubjectHint": "Brief summary of your idea",
+  "featureRequestDescriptionRequiredLabel": "What would you like? *",
+  "featureRequestDescriptionHint": "Describe the feature you want",
+  "featureRequestUsefulnessLabel": "How would this be useful?",
+  "featureRequestUsefulnessHint": "Explain the benefit this feature would provide",
+  "featureRequestWhenLabel": "When would you use this?",
+  "featureRequestWhenHint": "Describe the situations where this would help",
+  "featureRequestSuccessMessage": "Thank you! We've received your feature request and will review it.",
+  "featureRequestSendFailed": "Failed to send feature request. Please try again later.",
+  "featureRequestFailedWithError": "Feature request failed to send: {error}",
+  "@featureRequestFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
 
   "notificationFollowBack": "Follow back",
 
@@ -2807,6 +2884,7 @@
     }
   },
   "followingFailedToLoadList": "Failed to load following list",
+  "followingEmptyTitle": "Not following anyone yet",
   "followersTitle": "Followers",
   "followersTitleForName": "{displayName}'s Followers",
   "@followersTitleForName": {
@@ -2817,6 +2895,7 @@
     }
   },
   "followersFailedToLoadList": "Failed to load followers list",
+  "followersEmptyTitle": "No followers yet",
   "followersUpdateFollowFailed": "Failed to update follow status. Please try again.",
 
   "reportMessageTitle": "Report Message",
@@ -2830,6 +2909,15 @@
 
   "hashtagSearchTitle": "Search for hashtags",
   "hashtagSearchSubtitle": "Discover trending topics and content",
+  "hashtagSearchNoResults": "No hashtags found for \"{query}\"",
+  "@hashtagSearchNoResults": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "hashtagSearchFailed": "Search failed",
 
   "userNotAvailableTitle": "Account not available",
   "userNotAvailableBody": "This account isn't available right now.",
