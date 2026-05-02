@@ -1,5 +1,4 @@
 import 'package:divine_video_player/src/divine_video_player_controller.dart';
-import 'package:divine_video_player/src/video_player_state.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
