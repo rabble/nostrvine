@@ -4,8 +4,11 @@
 <dict>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<!-- divine.video plus the canonical login hostname -->
+		<!-- Claim both the apex and canonical www host so externally shared
+		     Divine links can hand off to the app regardless of which host a
+		     browser or chat client surfaces. -->
 		<string>applinks:divine.video</string>
+		<string>applinks:www.divine.video</string>
 		<string>applinks:login.divine.video</string>
 		<string>webcredentials:divine.video</string>
 		<string>webcredentials:login.divine.video</string>

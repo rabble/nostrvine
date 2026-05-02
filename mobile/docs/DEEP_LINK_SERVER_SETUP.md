@@ -1,14 +1,19 @@
 # Deep Link Server Setup for divine.video
 
-To enable iOS universal links and Android app links, you need to host two verification files on the divine.video server.
+To enable iOS universal links and Android app links, you need to host the
+verification files on every hostname the app claims. Today that means the apex
+`divine.video` host and, if `www` links are expected to open the app too,
+`www.divine.video` as well.
 
 ## Files to Create
 
 ### 1. iOS Universal Links Verification
 
 **File**: `apple-app-site-association` (no file extension)
-**Location**: `https://divine.video/.well-known/apple-app-site-association`
+**Primary Location**: `https://divine.video/.well-known/apple-app-site-association`
 **Alternative Location**: `https://divine.video/apple-app-site-association`
+**If `www` links are supported**: also serve the same file from
+`https://www.divine.video/.well-known/apple-app-site-association`
 
 ```json
 {
@@ -95,6 +100,12 @@ https://divine.video/.well-known/
 └── assetlinks.json
 ```
 
+If the app claims `www.divine.video` too, mirror the AASA file there:
+```
+https://www.divine.video/.well-known/
+└── apple-app-site-association
+```
+
 ### CORS Headers (if needed)
 
 If you're hosting these files on a different domain or CDN, ensure CORS headers allow access:
@@ -158,6 +169,7 @@ co.openvine.app:
 
 - **Links open in Safari instead of app**:
   - Verify the `apple-app-site-association` file is accessible
+  - Verify the `www.divine.video` AASA file too if the failing link used `www`
   - Check that Team ID matches your Apple Developer account
   - Reinstall the app (iOS caches the association file)
 
