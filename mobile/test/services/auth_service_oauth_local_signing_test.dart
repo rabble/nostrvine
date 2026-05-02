@@ -374,5 +374,45 @@ void main() {
         );
       },
     );
+
+    test(
+      'exports local nsec for Divine OAuth account with matching local key',
+      () async {
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            matchingContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => matchingContainer);
+
+        authService = createAuthService();
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        expect(authService.canExportLocalNsec, isTrue);
+        expect(await authService.exportNsec(), equals(_matchingNsec));
+      },
+    );
+
+    test(
+      'does not export nsec for Divine OAuth account without local key',
+      () async {
+        authService = createAuthService();
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInWithDivineOAuth(session),
+        );
+
+        expect(authService.canExportLocalNsec, isFalse);
+        expect(await authService.exportNsec(), isNull);
+        verifyNever(
+          () => mockKeyStorage.exportNsec(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        );
+      },
+    );
   });
 }

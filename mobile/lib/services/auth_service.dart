@@ -343,6 +343,18 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Returns true if authenticated via Divine OAuth, false for anonymous/imported keys
   bool get isRegistered => _authSource == AuthenticationSource.divineOAuth;
 
+  /// Whether the active account has a local private key that can be exported.
+  bool get canExportLocalNsec {
+    if (!isAuthenticated) return false;
+    if (_currentKeyContainer?.hasPrivateKey != true) return false;
+    return switch (_authSource) {
+      AuthenticationSource.automatic ||
+      AuthenticationSource.importedKeys ||
+      AuthenticationSource.divineOAuth => true,
+      _ => false,
+    };
+  }
+
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
 
@@ -3534,7 +3546,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     if (!isAuthenticated) return null;
 
     if (authenticationSource != AuthenticationSource.automatic &&
-        authenticationSource != AuthenticationSource.importedKeys) {
+        authenticationSource != AuthenticationSource.importedKeys &&
+        authenticationSource != AuthenticationSource.divineOAuth) {
       Log.warning(
         'Exporting nsec for $authenticationSource not supported',
         name: 'AuthService',
@@ -3557,6 +3570,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       final container = _currentKeyContainer;
       if (container != null && container.hasPrivateKey) {
         return container.withNsec((nsec) => nsec);
+      }
+
+      if (authenticationSource == AuthenticationSource.divineOAuth) {
+        Log.warning(
+          'Exporting nsec for divineOAuth requires a local private key',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        return null;
       }
 
       return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
