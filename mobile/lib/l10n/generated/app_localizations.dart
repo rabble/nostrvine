@@ -198,6 +198,30 @@ abstract class AppLocalizations {
   /// **'Manage crossposting to Bluesky'**
   String get settingsBlueskyPublishingSubtitle;
 
+  /// Title for the Settings toggle that levels per-vine audio loudness.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio Loudness Match'**
+  String get settingsLoudnessNormalizationTitle;
+
+  /// Subtitle for the loudness-match toggle. Brand voice: direct, slightly playful.
+  ///
+  /// In en, this message translates to:
+  /// **'Even out quiet and loud vines so you don\'t have to ride the volume button.'**
+  String get settingsLoudnessNormalizationSubtitle;
+
+  /// Screen-reader announcement when the user enables loudness normalization.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio loudness match on'**
+  String get settingsLoudnessNormalizationEnabledAnnouncement;
+
+  /// Screen-reader announcement when the user disables loudness normalization.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio loudness match off'**
+  String get settingsLoudnessNormalizationDisabledAnnouncement;
+
   /// No description provided for @settingsNostrSettings.
   ///
   /// In en, this message translates to:

@@ -45,6 +45,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsBlueskyPublishingSubtitle => 'Bluesky로의 크로스 포스팅을 관리해요';
 
   @override
+  String get settingsLoudnessNormalizationTitle => 'Audio Loudness Match';
+
+  @override
+  String get settingsLoudnessNormalizationSubtitle =>
+      'Even out quiet and loud vines so you don\'t have to ride the volume button.';
+
+  @override
+  String get settingsLoudnessNormalizationEnabledAnnouncement =>
+      'Audio loudness match on';
+
+  @override
+  String get settingsLoudnessNormalizationDisabledAnnouncement =>
+      'Audio loudness match off';
+
+  @override
   String get settingsNostrSettings => 'Nostr 설정';
 
   @override

@@ -47,6 +47,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Gère la diffusion croisée vers Bluesky';
 
   @override
+  String get settingsLoudnessNormalizationTitle => 'Audio Loudness Match';
+
+  @override
+  String get settingsLoudnessNormalizationSubtitle =>
+      'Even out quiet and loud vines so you don\'t have to ride the volume button.';
+
+  @override
+  String get settingsLoudnessNormalizationEnabledAnnouncement =>
+      'Audio loudness match on';
+
+  @override
+  String get settingsLoudnessNormalizationDisabledAnnouncement =>
+      'Audio loudness match off';
+
+  @override
   String get settingsNostrSettings => 'Réglages Nostr';
 
   @override

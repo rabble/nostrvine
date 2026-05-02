@@ -4,11 +4,14 @@
 import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/locale/locale_cubit.dart';
+import 'package:openvine/blocs/loudness_normalization/loudness_normalization_cubit.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -29,6 +32,9 @@ class GeneralSettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showBluesky = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.blueskyPublishing),
+    );
+    final showLoudness = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.loudnessNormalization),
     );
 
     return Scaffold(
@@ -69,6 +75,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
               const _SectionHeader('VIEWING'),
               const _ClosedCaptionsToggle(),
               const _FeedAspectRatioPreferenceTile(),
+              if (showLoudness && !kIsWeb) const _LoudnessNormalizationToggle(),
               const _SectionHeader('CREATING'),
               const _AudioSharingToggle(),
               const _SectionHeader('APP'),
@@ -124,6 +131,47 @@ class _ClosedCaptionsToggle extends ConsumerWidget {
       subtitle: const Text('Show captions when videos include them'),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.closed_caption, color: VineTheme.vineGreen),
+    );
+  }
+}
+
+class _LoudnessNormalizationToggle extends StatelessWidget {
+  const _LoudnessNormalizationToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return BlocBuilder<LoudnessNormalizationCubit, LoudnessNormalizationState>(
+      builder: (context, state) {
+        return SwitchListTile(
+          value: state.isEnabled,
+          onChanged: (value) {
+            context.read<LoudnessNormalizationCubit>().setEnabled(
+              enabled: value,
+            );
+            SemanticsService.sendAnnouncement(
+              View.of(context),
+              value
+                  ? l10n.settingsLoudnessNormalizationEnabledAnnouncement
+                  : l10n.settingsLoudnessNormalizationDisabledAnnouncement,
+              Directionality.of(context),
+            );
+          },
+          title: Text(
+            l10n.settingsLoudnessNormalizationTitle,
+            style: _titleStyle,
+          ),
+          subtitle: Text(
+            l10n.settingsLoudnessNormalizationSubtitle,
+            style: _subtitleStyle,
+          ),
+          activeThumbColor: VineTheme.vineGreen,
+          secondary: const Icon(
+            Icons.graphic_eq,
+            color: VineTheme.vineGreen,
+          ),
+        );
+      },
     );
   }
 }

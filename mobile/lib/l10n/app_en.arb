@@ -18,6 +18,22 @@
   "settingsModerationControls": "Moderation Controls",
   "settingsBlueskyPublishing": "Bluesky Publishing",
   "settingsBlueskyPublishingSubtitle": "Manage crossposting to Bluesky",
+  "settingsLoudnessNormalizationTitle": "Audio Loudness Match",
+  "@settingsLoudnessNormalizationTitle": {
+    "description": "Title for the Settings toggle that levels per-vine audio loudness."
+  },
+  "settingsLoudnessNormalizationSubtitle": "Even out quiet and loud vines so you don't have to ride the volume button.",
+  "@settingsLoudnessNormalizationSubtitle": {
+    "description": "Subtitle for the loudness-match toggle. Brand voice: direct, slightly playful."
+  },
+  "settingsLoudnessNormalizationEnabledAnnouncement": "Audio loudness match on",
+  "@settingsLoudnessNormalizationEnabledAnnouncement": {
+    "description": "Screen-reader announcement when the user enables loudness normalization."
+  },
+  "settingsLoudnessNormalizationDisabledAnnouncement": "Audio loudness match off",
+  "@settingsLoudnessNormalizationDisabledAnnouncement": {
+    "description": "Screen-reader announcement when the user disables loudness normalization."
+  },
   "settingsNostrSettings": "Nostr Settings",
   "settingsIntegratedApps": "Integrated Apps",
   "settingsIntegratedAppsSubtitle": "Approved third-party apps that run inside Divine",
