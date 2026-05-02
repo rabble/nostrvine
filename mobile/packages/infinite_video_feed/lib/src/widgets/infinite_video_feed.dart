@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'dart:io';
 
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/foundation.dart' show ValueListenable, kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
@@ -52,6 +53,13 @@ class InfiniteVideoFeed extends StatefulWidget {
     this.preloadGracePeriod = const Duration(seconds: 3),
     super.key,
   });
+
+  /// Whether the native video player is supported on the current platform.
+  ///
+  /// Returns `true` on Android, iOS, and macOS. Returns `false` on web and
+  /// all other desktop platforms.
+  static bool isSupported =
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
   /// The list of videos to display.
   final List<VideoEvent> videos;
@@ -930,7 +938,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             // Loading layer — shown while the video surface is not yet
             // available. Removed once the first frame is rendered so the
             // widget (and any timers it owns) are properly disposed.
-            if (!hasError && !hasVideoSize)
+            if (!hasError &&
+                (!hasVideoSize ||
+                    controller?.state.isFirstFrameRendered != true))
               ?widget.loadingBuilder?.call(
                 context,
                 index,

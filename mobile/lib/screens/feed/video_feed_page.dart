@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
-    show VideoErrorType;
+    show InfiniteVideoFeed, VideoErrorType;
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -327,13 +327,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void handleVideoController([VideoFeedState? state]) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (!ownsController) return;
-    if (ref
-        .read(featureFlagServiceProvider)
-        .isEnabled(
-          FeatureFlag.newVideoFeedPlayer,
-        )) {
-      return;
-    }
+    if (InfiniteVideoFeed.isSupported) return;
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
     if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
@@ -635,10 +629,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       ref.watch(mediaViewerAuthServiceProvider),
                     )
                   : null;
-              final featureFlagService = ref.watch(featureFlagServiceProvider);
-              final isNewVideoPlayerEnabled = featureFlagService.isEnabled(
-                FeatureFlag.newVideoFeedPlayer,
-              );
 
               // Pull-to-refresh: a [RefreshIndicator] wraps the feed and
               // listens for overscroll notifications from the inner
@@ -651,7 +641,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 onRefresh: () => _refreshFeed(context),
                 child: Stack(
                   children: [
-                    if (isNewVideoPlayerEnabled)
+                    if (InfiniteVideoFeed.isSupported)
                       FeedVideos(
                         videos: state.videos,
                         contextTitle: state.mode.name,

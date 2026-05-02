@@ -28,7 +28,7 @@ void main() {
 
     test('should include expected flags for OpenVine', () {
       expect(FeatureFlag.values, contains(FeatureFlag.newCameraUI));
-      expect(FeatureFlag.values, contains(FeatureFlag.newVideoFeedPlayer));
+      expect(FeatureFlag.values, contains(FeatureFlag.accountSwitching));
       expect(FeatureFlag.values, contains(FeatureFlag.enhancedAnalytics));
       expect(FeatureFlag.values, contains(FeatureFlag.newProfileLayout));
       expect(FeatureFlag.values, contains(FeatureFlag.livestreamingBeta));

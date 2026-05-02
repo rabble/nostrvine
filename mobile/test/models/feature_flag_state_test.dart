@@ -44,14 +44,14 @@ void main() {
       const state1 = FeatureFlagState({FeatureFlag.newCameraUI: false});
 
       final state2 = state1.copyWith(FeatureFlag.newCameraUI, true);
-      final state3 = state2.copyWith(FeatureFlag.newVideoFeedPlayer, true);
+      final state3 = state2.copyWith(FeatureFlag.accountSwitching, true);
 
       expect(state3.isEnabled(FeatureFlag.newCameraUI), isTrue);
-      expect(state3.isEnabled(FeatureFlag.newVideoFeedPlayer), isTrue);
+      expect(state3.isEnabled(FeatureFlag.accountSwitching), isTrue);
 
       // Original states should remain unchanged
       expect(state1.isEnabled(FeatureFlag.newCameraUI), isFalse);
-      expect(state2.isEnabled(FeatureFlag.newVideoFeedPlayer), isFalse);
+      expect(state2.isEnabled(FeatureFlag.accountSwitching), isFalse);
     });
 
     test('should support equality comparison', () {

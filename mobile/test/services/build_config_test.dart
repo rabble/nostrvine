@@ -24,7 +24,7 @@ void main() {
 
       // When FF_NEW_CAMERA_UI is not set, should default to false
       expect(config.getDefault(FeatureFlag.newCameraUI), isFalse);
-      expect(config.getDefault(FeatureFlag.newVideoFeedPlayer), isFalse);
+      expect(config.getDefault(FeatureFlag.accountSwitching), isFalse);
       expect(config.getDefault(FeatureFlag.enhancedAnalytics), isFalse);
       expect(config.getDefault(FeatureFlag.newProfileLayout), isFalse);
       expect(config.getDefault(FeatureFlag.livestreamingBeta), isFalse);

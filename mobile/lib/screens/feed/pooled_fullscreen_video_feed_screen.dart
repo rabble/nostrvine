@@ -12,7 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart'
-    show VideoErrorType;
+    show InfiniteVideoFeed, VideoErrorType;
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -403,13 +403,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (_controller != null) return;
-    if (ref
-        .read(featureFlagServiceProvider)
-        .isEnabled(
-          FeatureFlag.newVideoFeedPlayer,
-        )) {
-      return;
-    }
+    if (InfiniteVideoFeed.isSupported) return;
 
     final state = context.read<FullscreenFeedBloc>().state;
     if (!state.hasPooledVideos) return;
@@ -832,10 +826,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   )
                 : null;
 
-            final isNewVideoPlayerEnabled = featureFlagService.isEnabled(
-              FeatureFlag.newVideoFeedPlayer,
-            );
-
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
               extendBodyBehindAppBar: true,
@@ -847,7 +837,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 forceMaterialTransparency: true,
                 actions: [?editAction],
               ),
-              body: isNewVideoPlayerEnabled
+              body: InfiniteVideoFeed.isSupported
                   ? FeedVideos(
                       key: _feedVideosKey,
                       videos: state.videos,

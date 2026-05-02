@@ -1,7 +1,6 @@
 // ABOUTME: Build configuration service providing compile-time feature flag defaults
 // ABOUTME: Maps environment variables to feature flag defaults for build-time configuration
 
-import 'package:flutter/foundation.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 
 class BuildConfiguration {
@@ -12,13 +11,6 @@ class BuildConfiguration {
     switch (flag) {
       case FeatureFlag.newCameraUI:
         return const bool.fromEnvironment('FF_NEW_CAMERA_UI');
-      case FeatureFlag.newVideoFeedPlayer:
-        if (kIsWeb) return false;
-        if (defaultTargetPlatform == TargetPlatform.linux ||
-            defaultTargetPlatform == TargetPlatform.windows) {
-          return false;
-        }
-        return const bool.fromEnvironment('FF_NEW_VIDEO_FEED_PLAYER');
       case FeatureFlag.enhancedAnalytics:
         return const bool.fromEnvironment('FF_ENHANCED_ANALYTICS');
       case FeatureFlag.newProfileLayout:
@@ -72,8 +64,6 @@ class BuildConfiguration {
     switch (flag) {
       case FeatureFlag.newCameraUI:
         return 'FF_NEW_CAMERA_UI';
-      case FeatureFlag.newVideoFeedPlayer:
-        return 'FF_NEW_VIDEO_FEED_PLAYER';
       case FeatureFlag.enhancedAnalytics:
         return 'FF_ENHANCED_ANALYTICS';
       case FeatureFlag.newProfileLayout:

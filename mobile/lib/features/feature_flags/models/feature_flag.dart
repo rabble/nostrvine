@@ -3,11 +3,6 @@
 
 enum FeatureFlag {
   newCameraUI('New Camera UI', 'Enhanced camera interface with new controls'),
-  newVideoFeedPlayer(
-    'New video player',
-    'Improve the feed with a better video player',
-    mobileAndMacOsOnly: true,
-  ),
   enhancedAnalytics(
     'Enhanced Analytics',
     'Detailed usage tracking and insights',
@@ -69,14 +64,9 @@ enum FeatureFlag {
 
   const FeatureFlag(
     this.displayName,
-    this.description, {
-    this.mobileAndMacOsOnly = false,
-  });
+    this.description,
+  );
 
   final String displayName;
   final String description;
-
-  /// Whether this flag is only available on Android, iOS, and macOS.
-  /// On web, Linux, and Windows the flag is always disabled and hidden.
-  final bool mobileAndMacOsOnly;
 }

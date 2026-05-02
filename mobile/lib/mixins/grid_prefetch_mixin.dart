@@ -3,9 +3,9 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -81,13 +81,8 @@ mixin GridPrefetchMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     openVineMediaCache.preCacheFiles(items);
   }
 
-  bool get _shouldPrefetch {
-    final featureFlagService = ref.read(featureFlagServiceProvider);
-    final isNewVideoPlayerEnabled = featureFlagService.isEnabled(
-      .newVideoFeedPlayer,
-    );
-    return !kIsWeb &&
-        BandwidthTrackerService.instance.shouldUseHighQuality &&
-        !isNewVideoPlayerEnabled;
-  }
+  bool get _shouldPrefetch =>
+      !kIsWeb &&
+      BandwidthTrackerService.instance.shouldUseHighQuality &&
+      !InfiniteVideoFeed.isSupported;
 }

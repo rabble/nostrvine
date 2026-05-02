@@ -8,7 +8,6 @@ import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
@@ -61,9 +60,6 @@ void main() {
     ).thenAnswer((_) async {});
 
     mockFeatureFlagService = _MockFeatureFlagService();
-    when(
-      () => mockFeatureFlagService.isEnabled(FeatureFlag.newVideoFeedPlayer),
-    ).thenReturn(false);
 
     // Ensure high quality so prefetching is enabled
     BandwidthTrackerService.instance.clearSamples();
