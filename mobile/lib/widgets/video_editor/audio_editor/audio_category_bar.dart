@@ -30,6 +30,11 @@ class AudioCategoryBar extends StatelessWidget {
             isSelected: category == .community,
             label: context.l10n.videoEditorAudioCategoryCommunity,
           ),
+          _Chip(
+            onTap: () => onSelect(.mySounds),
+            isSelected: category == .mySounds,
+            label: context.l10n.soundsSavedLibraryTitle,
+          ),
         ],
       ),
     );
@@ -76,4 +81,4 @@ class _Chip extends StatelessWidget {
   }
 }
 
-enum AudioCategory { diVine, community }
+enum AudioCategory { diVine, community, mySounds }
