@@ -120,18 +120,30 @@ These ARB keys go in `mobile/lib/l10n/app_en.arb`. Other locales
 follow the existing translation workflow — out of scope for this PR
 beyond English.
 
-| ARB key                                | Value (draft)                                                                                                                          |
-|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| `videoRecorderUploadModeLabel`         | `Upload`                                                                                                                               |
-| `videoRecorderUploadTitle`             | `Other apps let anyone upload anything.`                                                                                               |
-| `videoRecorderUploadBody`              | `Divine doesn't. Every video here was filmed on a real camera, by a real person — verified, end-to-end. That's how we keep this place free of AI slop.` |
-| `videoRecorderUploadBodyCta`           | `Want to post? Switch to Capture or Classic and roll something real.`                                                                  |
-| `videoRecorderUploadLearnMore`         | `Learn how verification works`                                                                                                         |
+Copy is adapted from the existing support-team reply when users
+ask why uploads aren't allowed, so the in-app explainer says what
+the team already says in writing — same hedges, same humility, same
+"camera-direct" framing. Notably:
 
-The mode label replaces the existing hardcoded English strings in
-`VideoRecorderMode.label` for the new case only. `capture` and
-`classic` stay hardcoded to scope the migration; converting all three
-is a follow-up issue.
+- "better guarantee" not "guarantee" — we don't claim perfect
+  verification (C2PA is future).
+- "as much as we can" — honest about not being airtight.
+- Avoids the brand-guideline phrase "AI slop" in favour of
+  "synthetic content"; the support reply uses the latter and this
+  surface should match.
+
+| ARB key                          | Value                                                                                                                                                                          |
+|----------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `videoRecorderUploadTitle`       | `Why no upload?`                                                                                                                                                               |
+| `videoRecorderUploadBody`        | `What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.` |
+| `videoRecorderUploadBodyDetail`  | `By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.`               |
+| `videoRecorderUploadBodyCta`     | `Switch to Capture or Classic to roll something real.`                                                                                                                         |
+| `videoRecorderUploadLearnMore`   | `Learn how verification works`                                                                                                                                                 |
+
+There is no `videoRecorderUploadModeLabel` key — the mode tab label
+stays hardcoded `'Upload'` to match the existing hardcoded `'Capture'`
+and `'Classic'` in `VideoRecorderMode.label`. Migrating all three is
+a follow-up issue.
 
 ### 6. Mode-switcher wheel
 

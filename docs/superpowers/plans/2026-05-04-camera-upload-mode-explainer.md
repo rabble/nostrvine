@@ -212,7 +212,9 @@ End state after this chunk: selecting `Upload` shows the real branded explainer 
 - Modify: `mobile/lib/l10n/app_en.arb`
 - Generated: `mobile/lib/l10n/generated/*` (do not hand-edit)
 
-- [ ] **Step 1: Insert the five new keys**
+- [ ] **Step 1: Insert the new keys**
+
+Copy is taken from the existing support-team reply when users ask why uploads aren't allowed — match the team's voice verbatim, including the deliberate hedges ("better guarantee", "as much as we can"). Do not retitle, rephrase, or "tighten" the copy. If you think it should be punchier, file a follow-up — copy alignment with the support team is a non-goal of this PR.
 
 In `mobile/lib/l10n/app_en.arb`, find the line:
 
@@ -223,18 +225,22 @@ In `mobile/lib/l10n/app_en.arb`, find the line:
 Immediately after that line, add:
 
 ```json
-  "videoRecorderUploadTitle": "Other apps let anyone upload anything.",
-  "videoRecorderUploadBody": "Divine doesn't. Every video here was filmed on a real camera, by a real person — verified, end-to-end. That's how we keep this place free of AI slop.",
-  "videoRecorderUploadBodyCta": "Want to post? Switch to Capture or Classic and roll something real.",
+  "videoRecorderUploadTitle": "Why no upload?",
+  "videoRecorderUploadBody": "What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.",
+  "videoRecorderUploadBodyDetail": "By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.",
+  "videoRecorderUploadBodyCta": "Switch to Capture or Classic to roll something real.",
   "videoRecorderUploadLearnMore": "Learn how verification works",
   "@videoRecorderUploadTitle": {
-    "description": "Headline on the camera Upload mode explainer panel. Sets up the brand contrast: other apps allow uploads, Divine does not."
+    "description": "Headline on the camera Upload mode explainer panel. Phrased as the question the user is implicitly asking by tapping the Upload tab."
   },
   "@videoRecorderUploadBody": {
-    "description": "Main body paragraph on the Upload explainer. Explains the verification stance and the no-AI-slop promise."
+    "description": "First body paragraph on the Upload explainer. States the camera-direct mission and contrasts with platforms that allow produced or AI-generated uploads."
+  },
+  "@videoRecorderUploadBodyDetail": {
+    "description": "Second body paragraph on the Upload explainer. Explains why keeping creation in-app supports the realness goal. Note the deliberate hedges 'better guarantee' and 'as much as we can' — do not strengthen these claims."
   },
   "@videoRecorderUploadBodyCta": {
-    "description": "Secondary line on the Upload explainer pointing the user back to the Capture and Classic recording modes."
+    "description": "Closing line on the Upload explainer pointing the user back to the Capture and Classic recording modes."
   },
   "@videoRecorderUploadLearnMore": {
     "description": "Outbound link label that opens divine.video/proofmode in the browser."
@@ -314,12 +320,14 @@ void main() {
           home: const Scaffold(body: VideoRecorderUploadStack()),
         );
 
-    testWidgets('renders title, body, cta, and learn-more link', (tester) async {
+    testWidgets('renders title, body paragraphs, cta, and learn-more link',
+        (tester) async {
       await tester.pumpWidget(pumpStack());
       final l10n = lookupAppLocalizations(const Locale('en'));
 
       expect(find.text(l10n.videoRecorderUploadTitle), findsOneWidget);
       expect(find.text(l10n.videoRecorderUploadBody), findsOneWidget);
+      expect(find.text(l10n.videoRecorderUploadBodyDetail), findsOneWidget);
       expect(find.text(l10n.videoRecorderUploadBodyCta), findsOneWidget);
       expect(find.text(l10n.videoRecorderUploadLearnMore), findsOneWidget);
     });
@@ -468,6 +476,12 @@ class VideoRecorderUploadStack extends StatelessWidget {
               ),
               Text(
                 l10n.videoRecorderUploadBody,
+                style: VineTheme.bodyMediumFont(
+                  color: VineTheme.secondaryText,
+                ),
+              ),
+              Text(
+                l10n.videoRecorderUploadBodyDetail,
                 style: VineTheme.bodyMediumFont(
                   color: VineTheme.secondaryText,
                 ),
