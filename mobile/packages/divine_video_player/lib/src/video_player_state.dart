@@ -289,6 +289,5 @@ class DivineVideoPlayerState {
       'firstFrame: $isFirstFrameRendered, '
       '${errorCode != null ? 'errorCode: $errorCode, ' : ''}'
       '${errorMessage != null ? 'error: $errorMessage, ' : ''}'
-      'rotation: $rotationDegrees, '
-      'firstFrame: $isFirstFrameRendered)';
+      'rotation: $rotationDegrees)';
 }

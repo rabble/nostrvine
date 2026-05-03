@@ -492,6 +492,11 @@ class __OverlayState extends ConsumerState<_Overlay> {
           isAutoAdvanceActive: effectiveAutoActive,
           onSkipBrokenVideo: _skipToNextVideo,
           child: BlocProvider<VideoInteractionsBloc>(
+            key: ValueKey((
+              likesRepository,
+              commentsRepository,
+              repostsRepository,
+            )),
             create: (_) =>
                 VideoInteractionsBloc(
                     eventId: video.id,
