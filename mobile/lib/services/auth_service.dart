@@ -26,7 +26,6 @@ import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/local_key_signer.dart';
 import 'package:openvine/services/nostr_identity.dart';
-import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
@@ -165,7 +164,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
-    PendingVerificationService? pendingVerificationService,
     PreFetchFollowingCallback? preFetchFollowing,
     String? profileCheckIndexerUrl,
     List<String>? indexerRelays,
@@ -176,7 +174,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
-       _pendingVerificationService = pendingVerificationService,
        _preFetchFollowing = preFetchFollowing,
        _profileCheckIndexerUrl = profileCheckIndexerUrl,
        _primaryRelayUrl = primaryRelayUrl ?? AppConstants.defaultRelayUrl,
@@ -191,7 +188,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
-  final PendingVerificationService? _pendingVerificationService;
   final PreFetchFollowingCallback? _preFetchFollowing;
   final String? _profileCheckIndexerUrl;
 
@@ -3121,10 +3117,6 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           await KeycastSession.clear(_flutterSecureStorage);
         }
       } catch (_) {}
-
-      // Clear any pending verification data
-      // (fire-and-forget since it's best-effort)
-      unawaited(_pendingVerificationService?.clear());
 
       // Redirect recovery prefs AFTER all signer cleanup so that
       // _restoreSignerInfo can re-stage the remaining account's archived
