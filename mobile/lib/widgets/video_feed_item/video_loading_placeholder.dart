@@ -100,19 +100,21 @@ class _VideoLoadingPlaceholderState extends State<VideoLoadingPlaceholder> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          VineCachedImage(
-            imageUrl: widget.thumbnailUrl!,
-            fit: boxFit,
-            fadeInDuration: Duration.zero,
-            fadeOutDuration: Duration.zero,
-            placeholder: (context, url) {
-              _logStartIfNeeded();
-              return const SizedBox.shrink();
-            },
-            errorWidget: (context, url, error) {
-              _logErrorIfNeeded(error);
-              return const SizedBox.shrink();
-            },
+          ExcludeSemantics(
+            child: VineCachedImage(
+              imageUrl: widget.thumbnailUrl!,
+              fit: boxFit,
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
+              placeholder: (context, url) {
+                _logStartIfNeeded();
+                return const SizedBox.shrink();
+              },
+              errorWidget: (context, url, error) {
+                _logErrorIfNeeded(error);
+                return const SizedBox.shrink();
+              },
+            ),
           ),
           // Always show the loading indicator on top of the thumbnail so
           // users see immediate feedback that the player is initializing,

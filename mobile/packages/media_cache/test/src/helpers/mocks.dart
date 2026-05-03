@@ -178,6 +178,9 @@ class FakeCancellableDownloader implements CancellableDownloader {
   /// All downloads issued via this fake, in order.
   final List<FakeCancellableDownload> downloads = [];
 
+  /// Whether [close] was called.
+  bool closed = false;
+
   @override
   CancellableDownload download({
     required String url,
@@ -191,5 +194,10 @@ class FakeCancellableDownloader implements CancellableDownloader {
     );
     downloads.add(dl);
     return dl;
+  }
+
+  @override
+  Future<void> close() async {
+    closed = true;
   }
 }

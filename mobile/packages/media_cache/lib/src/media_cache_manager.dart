@@ -262,7 +262,10 @@ class MediaCacheManager extends CacheManager {
   Future<void> _aliasWriteQueue = Future<void>.value();
 
   /// Tracks keys currently being cached to prevent duplicate requests.
-  final Map<String, Future<File?>> _pendingCacheOperations = {};
+  final Map<String, Completer<File?>> _pendingCacheOperations = {};
+
+  /// Tracks cancellable operations currently in-flight.
+  final Set<CancellableCacheOperation> _activeCancellableOperations = {};
 
   /// Tracks keys that were downloaded via [preCacheFiles] (prefetched).
   final Set<String> _prefetchedKeys = {};
@@ -272,6 +275,8 @@ class MediaCacheManager extends CacheManager {
 
   /// Whether the cache manifest has been initialized.
   bool _manifestInitialized = false;
+
+  bool _isClosed = false;
 
   /// Whether this cache manager has been initialized.
   bool get isInitialized => _manifestInitialized;
@@ -452,6 +457,8 @@ class MediaCacheManager extends CacheManager {
     required String key,
     Map<String, String>? authHeaders,
   }) async {
+    if (_isClosed) return null;
+
     // Check if already cached
     final existingFile = await getFileFromCache(key);
     if (existingFile != null && existingFile.file.existsSync()) {
@@ -464,33 +471,39 @@ class MediaCacheManager extends CacheManager {
 
     // Check if already being cached
     if (_pendingCacheOperations.containsKey(key)) {
-      return _pendingCacheOperations[key];
+      return _pendingCacheOperations[key]!.future;
     }
 
     // Start caching
     final completer = Completer<File?>();
-    _pendingCacheOperations[key] = completer.future;
+    _pendingCacheOperations[key] = completer;
 
-    try {
-      final fileInfo = await downloadFile(
-        url,
-        key: key,
-        authHeaders: authHeaders ?? {},
-      );
+    unawaited(
+      () async {
+        try {
+          final fileInfo = await downloadFile(
+            url,
+            key: key,
+            authHeaders: authHeaders ?? {},
+          );
 
-      // Update manifest
-      if (_config.enableSyncManifest) {
-        _cacheManifest[key] = fileInfo.file.path;
-      }
+          // Update manifest
+          if (_config.enableSyncManifest && !_isClosed) {
+            _cacheManifest[key] = fileInfo.file.path;
+          }
 
-      completer.complete(fileInfo.file);
-      return fileInfo.file;
-    } on Exception {
-      completer.complete(null);
-      return null;
-    } finally {
-      unawaited(Future(() => _pendingCacheOperations.remove(key)));
-    }
+          if (!completer.isCompleted) {
+            completer.complete(_isClosed ? null : fileInfo.file);
+          }
+        } on Exception {
+          if (!completer.isCompleted) completer.complete(null);
+        } finally {
+          _pendingCacheOperations.remove(key);
+        }
+      }(),
+    );
+
+    return completer.future;
   }
 
   /// Downloads and caches a file with the ability to cancel mid-download.
@@ -515,6 +528,10 @@ class MediaCacheManager extends CacheManager {
     String? aliasKey,
     Map<String, String>? authHeaders,
   }) {
+    if (_isClosed) {
+      return CancellableCacheOperation.fromDownload(_CompletedNullDownload());
+    }
+
     // Fast path: already cached on disk.
     if (_config.enableSyncManifest) {
       final cached =
@@ -580,7 +597,7 @@ class MediaCacheManager extends CacheManager {
 
     unawaited(startDownload());
 
-    return CancellableCacheOperation.fromDownload(
+    final operation = CancellableCacheOperation.fromDownload(
       _DeferredDownload(
         future: completer.future,
         cancel: () {
@@ -592,6 +609,15 @@ class MediaCacheManager extends CacheManager {
       ),
       cacheKey: key,
     );
+
+    _activeCancellableOperations.add(operation);
+    unawaited(
+      operation.file.whenComplete(() {
+        _activeCancellableOperations.remove(operation);
+      }),
+    );
+
+    return operation;
   }
 
   /// Returns the base cache directory, resolving and caching it on first use.
@@ -622,10 +648,8 @@ class MediaCacheManager extends CacheManager {
     try {
       final uri = Uri.parse(url);
       final last = uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
-      final dot = last.lastIndexOf('.');
-      if (dot > 0 && dot < last.length - 1 && dot >= last.length - 6) {
-        return last.substring(dot);
-      }
+      final ext = path.extension(last);
+      if (ext.isNotEmpty) return ext;
     } on Object catch (_) {
       // Fall through to default.
     }
@@ -735,9 +759,34 @@ class MediaCacheManager extends CacheManager {
   void resetForTesting() {
     _manifestInitialized = false;
     _cacheManifest.clear();
+    _activeCancellableOperations.clear();
     _pendingCacheOperations.clear();
     _prefetchedKeys.clear();
     metrics.reset();
+  }
+
+  /// Closes this manager and releases owned downloader resources.
+  ///
+  /// Cancels active cancellable downloads and completes pending cache
+  /// operations with `null` so awaiting callers do not hang.
+  Future<void> close() async {
+    if (_isClosed) return;
+    _isClosed = true;
+
+    final activeOps = _activeCancellableOperations.toList(growable: false);
+    for (final operation in activeOps) {
+      operation.cancel();
+    }
+    _activeCancellableOperations.clear();
+
+    final pending = _pendingCacheOperations.values.toList(growable: false);
+    for (final completer in pending) {
+      if (!completer.isCompleted) completer.complete();
+    }
+    _pendingCacheOperations.clear();
+
+    await _downloader.close();
+    super.dispose();
   }
 }
 
@@ -765,4 +814,15 @@ class _DeferredDownload implements CancellableDownload {
 
   @override
   void cancel() => _cancel();
+}
+
+class _CompletedNullDownload implements CancellableDownload {
+  @override
+  Future<File?> get file async => null;
+
+  @override
+  bool get isCancelled => false;
+
+  @override
+  void cancel() {}
 }

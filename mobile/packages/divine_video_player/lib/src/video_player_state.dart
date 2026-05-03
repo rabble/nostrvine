@@ -286,10 +286,9 @@ class DivineVideoPlayerState {
       'duration: $duration, buffered: $bufferedPosition, '
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
-      'rotation: $rotationDegrees, '
-      'firstFrame: $isFirstFrameRendered'
-      '${errorCode != null ? ', errorCode: $errorCode' : ''}'
-      '${errorMessage != null ? ', error: $errorMessage' : ''})'
+      'firstFrame: $isFirstFrameRendered, '
+      '${errorCode != null ? 'errorCode: $errorCode, ' : ''}'
+      '${errorMessage != null ? 'error: $errorMessage, ' : ''}'
       'rotation: $rotationDegrees, '
       'firstFrame: $isFirstFrameRendered)';
 }

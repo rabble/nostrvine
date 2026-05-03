@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_video_player/divine_video_player.dart'
     hide PlaybackStatus;
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
+import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
@@ -30,40 +32,6 @@ import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_loading_placeholder.dart';
-
-// Scroll-fraction constants for overlay opacity during page transitions.
-//
-// Opacity is scroll-driven: it changes continuously as the page scrolls,
-// tracking the finger position rather than running on a separate timer.
-// A small transition band around each threshold gives a smooth cross-fade.
-const double _kOverlayFullOpacityThreshold = 0.1; // fully visible below 10 %
-const double _kOverlayHideThreshold = 0.5; // fully hidden above 50 %
-const double _kOverlayDimmedOpacity = 0.5; // opacity while in the dim band
-// Half-width of the smooth cross-fade zone around each threshold.
-// e.g. 0.03 -> full<->dim transition spans 7 %–13 %, dim<->hidden spans
-// 47 %–53 %.
-const double _kOverlayFadeHalfWidth = 0.03;
-
-/// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
-/// opacity using smooth linear interpolation around each threshold.
-double _scrollDrivenOpacity(double distance) {
-  const dimLo = _kOverlayFullOpacityThreshold - _kOverlayFadeHalfWidth;
-  const dimHi = _kOverlayFullOpacityThreshold + _kOverlayFadeHalfWidth;
-  const hideLo = _kOverlayHideThreshold - _kOverlayFadeHalfWidth;
-  const hideHi = _kOverlayHideThreshold + _kOverlayFadeHalfWidth;
-
-  if (distance <= dimLo) return 1.0;
-  if (distance <= dimHi) {
-    final t = (distance - dimLo) / (dimHi - dimLo);
-    return 1.0 + (_kOverlayDimmedOpacity - 1.0) * t;
-  }
-  if (distance <= hideLo) return _kOverlayDimmedOpacity;
-  if (distance <= hideHi) {
-    final t = (distance - hideLo) / (hideHi - hideLo);
-    return _kOverlayDimmedOpacity * (1.0 - t);
-  }
-  return 0.0;
-}
 
 class FeedVideos extends ConsumerStatefulWidget {
   const FeedVideos({
@@ -322,9 +290,48 @@ class _Overlay extends ConsumerStatefulWidget {
   ConsumerState<_Overlay> createState() => __OverlayState();
 }
 
+sealed class _OverlayMode {
+  const _OverlayMode();
+}
+
+class _OverlayForbiddenMode extends _OverlayMode {
+  const _OverlayForbiddenMode();
+}
+
+class _OverlayAgeRestrictedMode extends _OverlayMode {
+  const _OverlayAgeRestrictedMode();
+}
+
+class _OverlayContentWarningMode extends _OverlayMode {
+  const _OverlayContentWarningMode(this.labels);
+
+  final List<String> labels;
+}
+
+class _OverlayInteractiveMode extends _OverlayMode {
+  const _OverlayInteractiveMode({required this.isReady});
+
+  final bool isReady;
+}
+
 class __OverlayState extends ConsumerState<_Overlay> {
   final _heartTrigger = ValueNotifier<HeartTrigger?>(null);
   int _heartTriggerId = 0;
+  InfiniteVideoFeedState? _feedState;
+  ValueListenable<double>? _pagePositionListenable;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _feedState = context.findAncestorStateOfType<InfiniteVideoFeedState>();
+    _pagePositionListenable = _feedState?.pagePositionListenable;
+  }
+
+  @override
+  void dispose() {
+    _heartTrigger.dispose();
+    super.dispose();
+  }
 
   void _handleDoubleTapLike(BuildContext context, TapDownDetails details) {
     final showWarning = shouldShowContentWarningOverlay(
@@ -360,11 +367,10 @@ class __OverlayState extends ConsumerState<_Overlay> {
 
   bool _contentWarningRevealed = false;
 
-  /// Advances the feed to the next page by finding the nearest
-  /// [InfiniteVideoFeedState] ancestor and calling its public
-  /// [InfiniteVideoFeedState.animateToPage].
+  /// Advances the feed to the next page via the cached
+  /// [InfiniteVideoFeedState] reference.
   void _skipToNextVideo() {
-    final feedState = context.findAncestorStateOfType<InfiniteVideoFeedState>();
+    final feedState = _feedState;
     assert(
       feedState != null,
       'ModeratedContentOverlay must be mounted inside InfiniteVideoFeed',
@@ -383,12 +389,26 @@ class __OverlayState extends ConsumerState<_Overlay> {
     );
   }
 
+  _OverlayMode _resolveOverlayMode({
+    required PlaybackStatus playbackStatus,
+    required List<String> overlayLabels,
+    required bool showContentWarningOverlay,
+    required bool isReady,
+  }) {
+    return switch (playbackStatus) {
+      PlaybackStatus.forbidden => const _OverlayForbiddenMode(),
+      PlaybackStatus.ageRestricted => const _OverlayAgeRestrictedMode(),
+      _ =>
+        showContentWarningOverlay && !_contentWarningRevealed
+            ? _OverlayContentWarningMode(overlayLabels)
+            : _OverlayInteractiveMode(isReady: isReady),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
-    final pagePositionListenable = context
-        .findAncestorStateOfType<InfiniteVideoFeedState>()
-        ?.pagePositionListenable;
+    final pagePositionListenable = _pagePositionListenable;
 
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
@@ -424,143 +444,240 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final playbackStatus = context.select(
       (VideoPlaybackStatusCubit cubit) => cubit.state.statusFor(video.id),
     );
-    if (playbackStatus == .forbidden || playbackStatus == .ageRestricted) {
-      return ModeratedContentOverlay(
-        status: playbackStatus,
-        onSkip: _skipToNextVideo,
-        onVerifyAge: playbackStatus == .ageRestricted
-            ? _verifyAgeForVideo
-            : null,
-      );
-    }
-    if (showContentWarningOverlay && !_contentWarningRevealed) {
-      return ContentWarningBlurOverlay(
-        labels: overlayLabels,
-        onReveal: () => setState(() {
-          _contentWarningRevealed = true;
-        }),
-        onHideSimilar: () {
-          hideContentWarningsLikeThese(
-            context: context,
-            ref: ref,
-            labels: overlayLabels,
-          );
-        },
-      );
-    }
+
     final isReady =
         widget.controller != null &&
         widget.controller?.state.isFirstFrameRendered == true &&
         widget.controller?.state.hasError == false;
+    final mode = _resolveOverlayMode(
+      playbackStatus: playbackStatus,
+      overlayLabels: overlayLabels,
+      showContentWarningOverlay: showContentWarningOverlay,
+      isReady: isReady,
+    );
 
-    return FeedAutoAdvancePastErrorListener(
-      videoId: video.id,
-      isActive: widget.isActive,
-      isAutoAdvanceActive: effectiveAutoActive,
-      onSkipBrokenVideo: _skipToNextVideo,
-      child: BlocProvider<VideoInteractionsBloc>(
-        create: (_) =>
-            VideoInteractionsBloc(
-                eventId: video.id,
-                authorPubkey: video.pubkey,
-                likesRepository: likesRepository,
-                commentsRepository: commentsRepository,
-                repostsRepository: repostsRepository,
-                addressableId: video.addressableId,
-                initialLikeCount: video.nostrLikeCount != null
-                    ? video.totalLikes
-                    : null,
-              )
-              ..add(const VideoInteractionsSubscriptionRequested())
-              ..add(const VideoInteractionsFetchRequested()),
-        child: Builder(
-          builder: (context) {
-            return Semantics(
-              button: true,
-              hint: isReady
-                  ? 'Tap to play or pause. Double tap to like.'
-                  : null,
-              child: GestureDetector(
-                behavior: .translucent,
-                onTap: isReady ? _handlePlayerTap : null,
-                onDoubleTapDown: isReady
-                    ? (details) => _handleDoubleTapLike(context, details)
-                    : null,
-                child: Stack(
-                  children: [
-                    if (widget.controller != null) ...[
-                      PausedVideoOverlay(
-                        controller: widget.controller!,
-                        isVisible: widget.isActive,
-                        onVolumeToggle: (v) => context
-                            .findAncestorStateOfType<InfiniteVideoFeedState>()
-                            ?.setVolume(v),
-                      ),
-                    ],
-                    if (pagePositionListenable != null)
-                      ValueListenableBuilder<double>(
-                        valueListenable: pagePositionListenable,
-                        builder: (context, page, _) {
-                          final distance = (page - widget.index).abs().clamp(
-                            0.0,
-                            1.0,
-                          );
-                          return VideoOverlayActions(
-                            video: video,
-                            isVisible: true,
-                            isActive: true,
-                            overlayOpacity: _scrollDrivenOpacity(distance),
-                            hasBottomNavigation: false,
-                            contextTitle: widget.contextTitle,
-                            isFullscreen: true,
-                            topOffset: isOwnVideo ? 64 : 8,
-                            showAutoButton: autoAdvanceAvailable,
-                            isAutoEnabled: effectiveAutoEnabled,
-                            onAutoPressed: widget.onToggleAutoAdvance,
-                            onInteracted: widget.onSuppressAutoAdvance,
-                            subtitleLayer:
-                                video.hasSubtitles && widget.controller != null
-                                ? _SubtitleLayer(
-                                    video: video,
-                                    controller: widget.controller!,
-                                  )
-                                : null,
-                          );
-                        },
-                      )
-                    else
-                      VideoOverlayActions(
-                        video: video,
-                        isVisible: true,
-                        isActive: true,
-                        hasBottomNavigation: false,
-                        contextTitle: widget.contextTitle,
-                        isFullscreen: true,
-                        topOffset: isOwnVideo ? 64 : 8,
-                        showAutoButton: autoAdvanceAvailable,
-                        isAutoEnabled: effectiveAutoEnabled,
-                        onAutoPressed: widget.onToggleAutoAdvance,
-                        onInteracted: widget.onSuppressAutoAdvance,
-                        subtitleLayer:
-                            video.hasSubtitles && widget.controller != null
-                            ? _SubtitleLayer(
-                                video: video,
-                                controller: widget.controller!,
-                              )
-                            : null,
-                      ),
-                    Positioned.fill(
-                      child: DoubleTapHeartOverlay(
-                        trigger: _heartTrigger,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+    switch (mode) {
+      case _OverlayForbiddenMode():
+        return ModeratedContentOverlay(
+          status: playbackStatus,
+          onSkip: _skipToNextVideo,
+        );
+      case _OverlayAgeRestrictedMode():
+        return ModeratedContentOverlay(
+          status: playbackStatus,
+          onSkip: _skipToNextVideo,
+          onVerifyAge: _verifyAgeForVideo,
+        );
+      case _OverlayContentWarningMode(:final labels):
+        return ContentWarningBlurOverlay(
+          labels: labels,
+          onReveal: () => setState(() {
+            _contentWarningRevealed = true;
+          }),
+          onHideSimilar: () {
+            hideContentWarningsLikeThese(
+              context: context,
+              ref: ref,
+              labels: labels,
             );
           },
-        ),
-      ),
+        );
+      case _OverlayInteractiveMode(isReady: final interactiveReady):
+        return FeedAutoAdvancePastErrorListener(
+          videoId: video.id,
+          isActive: widget.isActive,
+          isAutoAdvanceActive: effectiveAutoActive,
+          onSkipBrokenVideo: _skipToNextVideo,
+          child: BlocProvider<VideoInteractionsBloc>(
+            create: (_) =>
+                VideoInteractionsBloc(
+                    eventId: video.id,
+                    authorPubkey: video.pubkey,
+                    likesRepository: likesRepository,
+                    commentsRepository: commentsRepository,
+                    repostsRepository: repostsRepository,
+                    addressableId: video.addressableId,
+                    initialLikeCount: video.nostrLikeCount != null
+                        ? video.totalLikes
+                        : null,
+                  )
+                  ..add(const VideoInteractionsSubscriptionRequested())
+                  ..add(const VideoInteractionsFetchRequested()),
+            child: Builder(
+              builder: (context) {
+                return Semantics(
+                  button: true,
+                  hint: interactiveReady
+                      ? 'Tap to play or pause. Double tap to like.'
+                      : null,
+                  child: GestureDetector(
+                    behavior: .translucent,
+                    onTap: interactiveReady ? _handlePlayerTap : null,
+                    onDoubleTapDown: interactiveReady
+                        ? (details) => _handleDoubleTapLike(context, details)
+                        : null,
+                    child: Stack(
+                      children: [
+                        if (widget.controller != null) ...[
+                          PausedVideoOverlay(
+                            controller: widget.controller!,
+                            isVisible: widget.isActive,
+                            onVolumeToggle: (v) => _feedState?.setVolume(v),
+                          ),
+                        ],
+                        _FeedItemActions(
+                          video: video,
+                          index: widget.index,
+                          contextTitle: widget.contextTitle,
+                          isOwnVideo: isOwnVideo,
+                          autoAdvanceAvailable: autoAdvanceAvailable,
+                          effectiveAutoEnabled: effectiveAutoEnabled,
+                          onToggleAutoAdvance: widget.onToggleAutoAdvance,
+                          onSuppressAutoAdvance: widget.onSuppressAutoAdvance,
+                          subtitleLayer:
+                              video.hasSubtitles && widget.controller != null
+                              ? _SubtitleLayer(
+                                  video: video,
+                                  controller: widget.controller!,
+                                )
+                              : null,
+                          pagePositionListenable: pagePositionListenable,
+                        ),
+                        Positioned.fill(
+                          child: DoubleTapHeartOverlay(
+                            trigger: _heartTrigger,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+    }
+  }
+}
+
+class _FeedItemActions extends StatelessWidget {
+  const _FeedItemActions({
+    required this.video,
+    required this.index,
+    required this.contextTitle,
+    required this.isOwnVideo,
+    required this.autoAdvanceAvailable,
+    required this.effectiveAutoEnabled,
+    required this.onToggleAutoAdvance,
+    required this.onSuppressAutoAdvance,
+    this.subtitleLayer,
+    this.pagePositionListenable,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final String? contextTitle;
+  final bool isOwnVideo;
+  final bool autoAdvanceAvailable;
+  final bool effectiveAutoEnabled;
+  final VoidCallback? onToggleAutoAdvance;
+  final VoidCallback? onSuppressAutoAdvance;
+  final Widget? subtitleLayer;
+  final ValueListenable<double>? pagePositionListenable;
+
+  @override
+  Widget build(BuildContext context) {
+    final listenable = pagePositionListenable;
+    if (listenable == null) {
+      return _FeedItemOverlayActions(
+        video: video,
+        contextTitle: contextTitle,
+        isOwnVideo: isOwnVideo,
+        autoAdvanceAvailable: autoAdvanceAvailable,
+        effectiveAutoEnabled: effectiveAutoEnabled,
+        onToggleAutoAdvance: onToggleAutoAdvance,
+        onSuppressAutoAdvance: onSuppressAutoAdvance,
+        subtitleLayer: subtitleLayer,
+      );
+    }
+
+    return ValueListenableBuilder<double>(
+      valueListenable: listenable,
+      builder: (context, page, _) {
+        final distance = (page - index).abs().clamp(0.0, 1.0);
+        return _FeedItemOverlayActions(
+          video: video,
+          contextTitle: contextTitle,
+          isOwnVideo: isOwnVideo,
+          autoAdvanceAvailable: autoAdvanceAvailable,
+          effectiveAutoEnabled: effectiveAutoEnabled,
+          onToggleAutoAdvance: onToggleAutoAdvance,
+          onSuppressAutoAdvance: onSuppressAutoAdvance,
+          subtitleLayer: subtitleLayer,
+          overlayOpacity: scrollDrivenOpacity(distance),
+        );
+      },
+    );
+  }
+}
+
+class _FeedItemOverlayActions extends StatelessWidget {
+  const _FeedItemOverlayActions({
+    required this.video,
+    required this.contextTitle,
+    required this.isOwnVideo,
+    required this.autoAdvanceAvailable,
+    required this.effectiveAutoEnabled,
+    required this.onToggleAutoAdvance,
+    required this.onSuppressAutoAdvance,
+    this.subtitleLayer,
+    this.overlayOpacity,
+  });
+
+  final VideoEvent video;
+  final String? contextTitle;
+  final bool isOwnVideo;
+  final bool autoAdvanceAvailable;
+  final bool effectiveAutoEnabled;
+  final VoidCallback? onToggleAutoAdvance;
+  final VoidCallback? onSuppressAutoAdvance;
+  final Widget? subtitleLayer;
+  final double? overlayOpacity;
+
+  @override
+  Widget build(BuildContext context) {
+    final opacity = overlayOpacity;
+    if (opacity == null) {
+      return VideoOverlayActions(
+        video: video,
+        isVisible: true,
+        isActive: true,
+        hasBottomNavigation: false,
+        contextTitle: contextTitle,
+        isFullscreen: true,
+        topOffset: isOwnVideo ? 64 : 8,
+        showAutoButton: autoAdvanceAvailable,
+        isAutoEnabled: effectiveAutoEnabled,
+        onAutoPressed: onToggleAutoAdvance,
+        onInteracted: onSuppressAutoAdvance,
+        subtitleLayer: subtitleLayer,
+      );
+    }
+
+    return VideoOverlayActions(
+      video: video,
+      isVisible: true,
+      isActive: true,
+      overlayOpacity: opacity,
+      hasBottomNavigation: false,
+      contextTitle: contextTitle,
+      isFullscreen: true,
+      topOffset: isOwnVideo ? 64 : 8,
+      showAutoButton: autoAdvanceAvailable,
+      isAutoEnabled: effectiveAutoEnabled,
+      onAutoPressed: onToggleAutoAdvance,
+      onInteracted: onSuppressAutoAdvance,
+      subtitleLayer: subtitleLayer,
     );
   }
 }

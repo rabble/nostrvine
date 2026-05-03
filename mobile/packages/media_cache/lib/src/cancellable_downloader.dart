@@ -23,7 +23,6 @@ abstract class CancellableDownload {
 ///
 /// Default implementation uses an [http.Client]. Tests inject a fake to
 /// drive completion deterministically.
-// ignore: one_member_abstracts
 abstract class CancellableDownloader {
   /// Starts a cancellable download of [url] into [targetFile].
   CancellableDownload download({
@@ -31,6 +30,9 @@ abstract class CancellableDownloader {
     required File targetFile,
     Map<String, String>? headers,
   });
+
+  /// Releases any resources owned by this downloader.
+  Future<void> close();
 }
 
 /// Default [CancellableDownloader] backed by an [http.Client].
@@ -56,6 +58,11 @@ class HttpCancellableDownloader implements CancellableDownloader {
     final dl = _HttpDownload(_client, url, targetFile, headers);
     unawaited(dl._start());
     return dl;
+  }
+
+  @override
+  Future<void> close() async {
+    _client.close();
   }
 }
 

@@ -3,7 +3,6 @@
 // ABOUTME: Uses FullscreenFeedBloc for state management
 
 import 'dart:async';
-import 'dart:ui' show lerpDouble;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, listEquals;
@@ -36,6 +35,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
+import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -52,57 +52,17 @@ import 'package:openvine/widgets/web_video_auth_header_provider.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:pooled_video_player/pooled_video_player.dart'
-    hide VideoErrorType;
-import 'package:pooled_video_player/pooled_video_player.dart'
     as pvp
     show VideoErrorType;
+import 'package:pooled_video_player/pooled_video_player.dart'
+    hide VideoErrorType;
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
-
-// Scroll-fraction constants for overlay opacity during page transitions.
-//
-// Opacity is scroll-driven: it changes continuously as the page scrolls,
-// tracking the finger position rather than running on a separate timer.
-// A small transition band around each threshold gives a smooth cross-fade.
-const double _kOverlayFullOpacityThreshold = 0.1; // fully visible below 10 %
-const double _kOverlayHideThreshold = 0.5; // fully hidden above 50 %
-const double _kOverlayDimmedOpacity = 0.5; // opacity while in the dim band
-// Half-width of the smooth cross-fade zone around each threshold.
-// e.g. 0.03 → full↔dim transition spans 7 %–13 %, dim↔hidden spans 47 %–53 %.
-const double _kOverlayFadeHalfWidth = 0.03;
 
 @visibleForTesting
 Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return isPortrait ? Alignment.center : Alignment.topCenter;
 }
-
-/// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
-/// opacity using smooth linear interpolation around each threshold.
-double _scrollDrivenOpacity(double distance) {
-  const dimLo = _kOverlayFullOpacityThreshold - _kOverlayFadeHalfWidth;
-  const dimHi = _kOverlayFullOpacityThreshold + _kOverlayFadeHalfWidth;
-  const hideLo = _kOverlayHideThreshold - _kOverlayFadeHalfWidth;
-  const hideHi = _kOverlayHideThreshold + _kOverlayFadeHalfWidth;
-
-  if (distance <= dimLo) return 1.0;
-  if (distance <= dimHi) {
-    return lerpDouble(
-      1.0,
-      _kOverlayDimmedOpacity,
-      (distance - dimLo) / (dimHi - dimLo),
-    )!;
-  }
-  if (distance <= hideLo) return _kOverlayDimmedOpacity;
-  if (distance <= hideHi) {
-    return lerpDouble(
-      _kOverlayDimmedOpacity,
-      0.0,
-      (distance - hideLo) / (hideHi - hideLo),
-    )!;
-  }
-  return 0.0;
-}
-
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
 /// Uses a stream-based approach where the source BLoC/provider remains
@@ -1373,7 +1333,7 @@ class _PooledFullscreenItemContentState
                           // the hard-cut guard is not needed in fullscreen.
                           isVisible: true,
                           isActive: widget.isActive,
-                          overlayOpacity: _scrollDrivenOpacity(distance),
+                          overlayOpacity: scrollDrivenOpacity(distance),
                           hasBottomNavigation: false,
                           contextTitle: widget.contextTitle,
                           isFullscreen: true,

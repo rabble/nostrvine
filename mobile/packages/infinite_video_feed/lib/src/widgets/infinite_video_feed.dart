@@ -133,7 +133,7 @@ class InfiniteVideoFeed extends StatefulWidget {
   /// Number of videos ahead of the current index to prefetch to disk.
   ///
   /// These videos are downloaded via [MediaCacheManager] and played
-  /// from local storage when the user reaches them. Defaults to 20.
+  /// from local storage when the user reaches them.
   final int prefetchCount;
 
   /// Controls how videos are fitted into the feed viewport.
@@ -209,6 +209,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   static const _logName = 'InfiniteVideoFeed';
   static const _loopEndThreshold = Duration(seconds: 1);
   static const _loopStartThreshold = Duration(seconds: 1);
+  static const _pageJumpDuration = Duration(milliseconds: 300);
+  static const Cubic _pageJumpCurve = Curves.easeInOut;
 
   late final PageController _pageController;
   late final ValueNotifier<double> _pagePosition;
@@ -294,8 +296,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     final targetIndex = index.clamp(0, widget.videos.length - 1);
     await _pageController.animateToPage(
       targetIndex,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      duration: _pageJumpDuration,
+      curve: _pageJumpCurve,
     );
   }
 
@@ -483,6 +485,18 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     final prefetchStart = widget.keepNextAlive ? index + 2 : index + 1;
     final prefetchEnd = (index + widget.prefetchCount).clamp(0, lastIndex);
 
+    bool isHlsManifest(String url) {
+      try {
+        final uri = Uri.parse(url);
+        final lastSegment = uri.pathSegments.isEmpty
+            ? ''
+            : uri.pathSegments.last;
+        return lastSegment.endsWith('.m3u8');
+      } on FormatException {
+        return false;
+      }
+    }
+
     await _prefetcher.run(
       startIndex: prefetchStart,
       endIndex: prefetchEnd,
@@ -490,7 +504,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       resolveUrls: (video) => resolvePlaybackSources(
         video,
         urlResolver: widget.urlResolver,
-      ).where((url) => !url.contains('.m3u8')).toList(),
+        // Exclude HLS manifests: prefetch writes static files to disk,
+        // but HLS playback needs re-streaming the manifest + segments.
+      ).where((url) => !isHlsManifest(url)).toList(),
     );
     // coverage:ignore-end
   }
@@ -943,8 +959,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         );
 
         final hasVideoSize =
-            controller?.state.videoHeight != null &&
-            controller?.state.videoHeight != 0;
+            controller != null && controller.state.videoHeight != 0;
 
         return Stack(
           fit: StackFit.expand,
@@ -954,7 +969,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             // widget (and any timers it owns) are properly disposed.
             if (!hasError &&
                 (!hasVideoSize ||
-                    controller?.state.isFirstFrameRendered != true))
+                    controller.state.isFirstFrameRendered != true))
               ?widget.loadingBuilder?.call(
                 context,
                 index,

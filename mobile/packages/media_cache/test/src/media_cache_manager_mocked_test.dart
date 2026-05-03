@@ -17,6 +17,9 @@ class _ThrowingCancellableDownloader implements CancellableDownloader {
   }) {
     throw Exception('download setup failed');
   }
+
+  @override
+  Future<void> close() async {}
 }
 
 void main() {
@@ -912,6 +915,58 @@ void main() {
 
         downloader.downloads.single.completeNull();
         await op.file;
+      });
+
+      test('preserves long extension from URL path', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final downloader = FakeCancellableDownloader();
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'long_ext_$timestamp',
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.jpeg2000',
+          key: 'long_ext_key',
+        );
+
+        await pumpDownloads(downloader);
+        expect(
+          downloader.downloads.single.targetFile.path,
+          endsWith('.jpeg2000'),
+        );
+
+        downloader.downloads.single.completeNull();
+        await op.file;
+      });
+
+      test('close cancels active operations and closes downloader', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final downloader = FakeCancellableDownloader();
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'close_ops_$timestamp',
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'close_key',
+        );
+
+        await pumpDownloads(downloader);
+        await cacheManager.close();
+
+        expect(op.isCancelled, isTrue);
+        expect(await op.file, isNull);
+        expect(downloader.closed, isTrue);
       });
 
       test(
