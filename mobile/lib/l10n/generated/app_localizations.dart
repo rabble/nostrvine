@@ -4611,7 +4611,7 @@ abstract class AppLocalizations {
   /// No description provided for @authWelcomeToDivine.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to Divine!'**
+  /// **'Welcome Home!'**
   String get authWelcomeToDivine;
 
   /// No description provided for @authEmailVerified.

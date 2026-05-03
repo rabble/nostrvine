@@ -2608,7 +2608,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authOpenEmailApp => 'Open email app';
 
   @override
-  String get authWelcomeToDivine => 'Welcome to Divine!';
+  String get authWelcomeToDivine => 'Welcome Home!';
 
   @override
   String get authEmailVerified => 'Your email has been verified.';

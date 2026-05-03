@@ -23,6 +23,7 @@ Then social media grew darker. It got hateful and heavier. It learned how to div
 At Divine, we say: fuck that.
 
 We want you to own what you make. Choose what you see. Trade doom scrolling for joy scrolling. Trade keyboard wars for a playground of human creativity. Crack the algorithm open and make it work for you. Bring your weird unfiltered self. Chances are you'll find someone just like you. Together, we'll put the power of creativity back in human hands.
+When people arrive, we want the feeling to be simple: Welcome Home.
 
 ---
 
@@ -44,6 +45,7 @@ We want you to own what you make. Choose what you see. Trade doom scrolling for 
 - Your content and data stay yours
 - Space to play and experiment
 - Access to 100,000+ archived Vine videos from the original era
+- A place that feels like arrival, not conversion
 
 ---
 

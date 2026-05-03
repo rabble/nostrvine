@@ -51,6 +51,7 @@ Divine is a decentralized short-form video app reviving Vine's 6-second format, 
 
 ## Key Messages
 
+- **Welcome Home**: our arrival greeting for people coming to Divine or returning to it. It signals inclusion, belonging, and a human place to land on the internet.
 - **No AI slop**: Human-made content only. We detect and remove machine-generated content.
 - **User ownership**: Your content, your data, your feed. Built on Nostr where you own everything.
 - **Joy scrolling**: Trade doom scrolling for delight. Quick bursts of real human creativity.
@@ -92,6 +93,7 @@ Secondary accent colors: Yellow `#FFF140`, Lime `#D2FF40`, Pink `#FF7FAF`, Orang
 
 ## Taglines / Phrases to Use
 
+- "Welcome Home"
 - "Life in Loops"
 - "Live, Love, Loop"
 - "Your playground for human creativity"

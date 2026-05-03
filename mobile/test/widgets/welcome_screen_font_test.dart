@@ -21,7 +21,7 @@ void main() {
       );
 
       // Verify hero tagline text
-      expect(find.text('Authentic moments.'), findsOneWidget);
+      expect(find.text('Welcome Home.'), findsOneWidget);
       expect(find.text('Human creativity.'), findsOneWidget);
     });
 
@@ -37,7 +37,7 @@ void main() {
         ),
       );
 
-      final greenText = tester.widget<Text>(find.text('Authentic moments.'));
+      final greenText = tester.widget<Text>(find.text('Welcome Home.'));
       expect(greenText.style?.fontFamily, equals('BricolageGrotesque'));
       expect(greenText.style?.fontWeight, equals(FontWeight.w800));
 

@@ -22,10 +22,10 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('displays "Authentic moments." text', (tester) async {
+      testWidgets('displays "Welcome Home." text', (tester) async {
         await tester.pumpWidget(createTestWidget());
 
-        expect(find.text('Authentic moments.'), findsOneWidget);
+        expect(find.text('Welcome Home.'), findsOneWidget);
       });
 
       testWidgets('displays "Human creativity." text', (tester) async {
@@ -34,12 +34,12 @@ void main() {
         expect(find.text('Human creativity.'), findsOneWidget);
       });
 
-      testWidgets('uses vineGreen color for "Authentic moments."', (
+      testWidgets('uses vineGreen color for "Welcome Home."', (
         tester,
       ) async {
         await tester.pumpWidget(createTestWidget());
 
-        final text = tester.widget<Text>(find.text('Authentic moments.'));
+        final text = tester.widget<Text>(find.text('Welcome Home.'));
         expect(text.style?.color, equals(VineTheme.vineGreen));
       });
 

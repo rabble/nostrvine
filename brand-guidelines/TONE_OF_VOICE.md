@@ -81,6 +81,10 @@ We have three tone of voice principles that shape how we sound. They ensure cons
 - Calling AI-generated content "creative" -- this is a human creativity space
 - Sounding polished or sterile -- a little rough around the edges is on brand
 
+### Arrival Language
+
+When someone is arriving for the first time or coming back, use "Welcome Home" as the default greeting if the copy needs to feel warm, direct, and inclusive.
+
 ### Tone Dial by Context
 
 | Context | Rebel | Playful |

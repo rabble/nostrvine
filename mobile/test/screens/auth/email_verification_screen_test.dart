@@ -236,7 +236,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Welcome to Divine!'), findsOneWidget);
+        expect(find.text('Welcome Home!'), findsOneWidget);
         expect(find.text('Your email has been verified.'), findsOneWidget);
       });
 

@@ -7,7 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// Hero section with large tagline text and decorative 3D emoji stickers.
 ///
-/// Displays "Authentic moments." in green and "Human creativity." in white,
+/// Displays "Welcome Home." in green and "Human creativity." in white,
 /// with positioned sticker images and the Divine wordmark logo.
 class AuthHeroSection extends StatelessWidget {
   const AuthHeroSection({super.key});
@@ -28,9 +28,9 @@ class AuthHeroSection extends StatelessWidget {
                 padding: EdgeInsets.symmetric(vertical: 20),
                 child: Column(
                   children: [
-                    // "Authentic moments." - green, BricolageGrotesque font
+                    // "Welcome Home." - green, BricolageGrotesque font
                     Text(
-                      'Authentic moments.',
+                      'Welcome Home.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: VineTheme.fontFamilyBricolage,
