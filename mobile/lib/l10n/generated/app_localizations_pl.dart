@@ -2559,22 +2559,22 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authPasswordLabel => 'Hasło';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => 'Potwierdź hasło';
 
   @override
-  String get authEmailRequired => 'Email is required';
+  String get authEmailRequired => 'E-mail jest wymagany';
 
   @override
-  String get authEmailInvalid => 'Please enter a valid email';
+  String get authEmailInvalid => 'Wprowadź prawidłowy e-mail';
 
   @override
-  String get authPasswordRequired => 'Password is required';
+  String get authPasswordRequired => 'Hasło jest wymagane';
 
   @override
-  String get authConfirmPasswordRequired => 'Please confirm your password';
+  String get authConfirmPasswordRequired => 'Potwierdź swoje hasło';
 
   @override
-  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+  String get authPasswordsDoNotMatch => 'Hasła nie pasują do siebie';
 
   @override
   String get authForgotPassword => 'Zapomniałeś hasła?';
@@ -2831,7 +2831,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get authNewPasswordLabel => 'Nowe hasło';
 
   @override
-  String get authConfirmNewPasswordLabel => 'Confirm new password';
+  String get authConfirmNewPasswordLabel => 'Potwierdź nowe hasło';
 
   @override
   String get authPasswordTooShort => 'Hasło musi mieć przynajmniej 8 znaków';

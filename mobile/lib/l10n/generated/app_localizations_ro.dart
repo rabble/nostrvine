@@ -2566,22 +2566,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authPasswordLabel => 'Parolă';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => 'Confirmă parola';
 
   @override
-  String get authEmailRequired => 'Email is required';
+  String get authEmailRequired => 'Emailul este obligatoriu';
 
   @override
-  String get authEmailInvalid => 'Please enter a valid email';
+  String get authEmailInvalid => 'Introdu o adresă de email validă';
 
   @override
-  String get authPasswordRequired => 'Password is required';
+  String get authPasswordRequired => 'Parola este obligatorie';
 
   @override
-  String get authConfirmPasswordRequired => 'Please confirm your password';
+  String get authConfirmPasswordRequired => 'Confirmă parola';
 
   @override
-  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+  String get authPasswordsDoNotMatch => 'Parolele nu se potrivesc';
 
   @override
   String get authForgotPassword => 'Ai uitat parola?';
@@ -2838,7 +2838,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authNewPasswordLabel => 'Parolă nouă';
 
   @override
-  String get authConfirmNewPasswordLabel => 'Confirm new password';
+  String get authConfirmNewPasswordLabel => 'Confirmă noua parolă';
 
   @override
   String get authPasswordTooShort =>

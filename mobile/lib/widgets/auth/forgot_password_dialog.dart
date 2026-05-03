@@ -61,6 +61,7 @@ class _ForgotPasswordSheetContentState
 
   @override
   Widget build(BuildContext context) {
+    final validationMessages = AuthValidationMessages.fromL10n(context.l10n);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Form(
@@ -98,7 +99,8 @@ class _ForgotPasswordSheetContentState
                   ),
                 ),
               ),
-              validator: Validators.validateEmail,
+              validator: (value) =>
+                  Validators.validateEmail(value, messages: validationMessages),
             ),
             const SizedBox(height: 24),
             Row(

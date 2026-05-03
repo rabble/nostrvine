@@ -2484,22 +2484,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authPasswordLabel => 'Lösenord';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => 'Bekräfta lösenord';
 
   @override
-  String get authEmailRequired => 'Email is required';
+  String get authEmailRequired => 'E-post krävs';
 
   @override
-  String get authEmailInvalid => 'Please enter a valid email';
+  String get authEmailInvalid => 'Ange en giltig e-postadress';
 
   @override
-  String get authPasswordRequired => 'Password is required';
+  String get authPasswordRequired => 'Lösenord krävs';
 
   @override
-  String get authConfirmPasswordRequired => 'Please confirm your password';
+  String get authConfirmPasswordRequired => 'Bekräfta ditt lösenord';
 
   @override
-  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+  String get authPasswordsDoNotMatch => 'Lösenorden matchar inte';
 
   @override
   String get authForgotPassword => 'Glömt lösenord?';
@@ -2756,7 +2756,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authNewPasswordLabel => 'Nytt lösenord';
 
   @override
-  String get authConfirmNewPasswordLabel => 'Confirm new password';
+  String get authConfirmNewPasswordLabel => 'Bekräfta nytt lösenord';
 
   @override
   String get authPasswordTooShort => 'Lösenordet måste vara minst 8 tecken';

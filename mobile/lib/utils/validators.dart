@@ -1,5 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 
+/// Bundled error strings shown by [Validators]. Construct via
+/// [AuthValidationMessages.fromL10n] in any code path that has a
+/// [BuildContext]; only fall back to [englishDefaults] in tests or in
+/// non-Flutter helpers where l10n is unavailable.
 class AuthValidationMessages {
   const AuthValidationMessages({
     required this.emailRequired,
@@ -21,7 +26,10 @@ class AuthValidationMessages {
     );
   }
 
-  static const defaults = AuthValidationMessages(
+  /// English-only fallback. Intended for tests and non-Flutter helpers; do
+  /// not use from screens or BLoCs that have access to localizations.
+  @visibleForTesting
+  static const englishDefaults = AuthValidationMessages(
     emailRequired: 'Email is required',
     invalidEmail: 'Please enter a valid email',
     passwordRequired: 'Password is required',
@@ -41,7 +49,7 @@ class AuthValidationMessages {
 class Validators {
   static String? validateEmail(
     String? value, {
-    AuthValidationMessages messages = AuthValidationMessages.defaults,
+    required AuthValidationMessages messages,
   }) {
     final email = value?.trim() ?? '';
     if (email.isEmpty) {
@@ -88,8 +96,10 @@ class Validators {
 
   static String? validatePassword(
     String? value, {
-    AuthValidationMessages messages = AuthValidationMessages.defaults,
+    required AuthValidationMessages messages,
   }) {
+    // Note: passwords are intentionally not trimmed — leading/trailing
+    // whitespace is a legitimate part of a user's secret.
     if (value == null || value.isEmpty) {
       return messages.passwordRequired;
     }
@@ -102,7 +112,7 @@ class Validators {
   static String? validateConfirmPassword(
     String? value, {
     required String password,
-    AuthValidationMessages messages = AuthValidationMessages.defaults,
+    required AuthValidationMessages messages,
   }) {
     if (value == null || value.isEmpty) {
       return messages.confirmPasswordRequired;

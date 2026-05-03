@@ -610,7 +610,10 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
-    final emailError = Validators.validateEmail(email);
+    final emailError = Validators.validateEmail(
+      email,
+      messages: AuthValidationMessages.fromL10n(context.l10n),
+    );
 
     if (emailError != null) {
       setState(() {

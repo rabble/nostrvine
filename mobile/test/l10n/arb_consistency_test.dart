@@ -331,8 +331,9 @@ const _knownUntranslatedDebt = {
   'badgesIssuedNoRecipients',
   'badgesRecipientAcceptedStatus',
   'badgesRecipientWaitingStatus',
-  // Added with signup credential validation. Existing locales fall back to
-  // English until the next translation pass.
+  // Added with signup credential validation. Translated for es/fr/de/it/pt/
+  // nl/sv/pl/ro/bg/id/tr; ja/ko/ar/am still fall back to English pending a
+  // native-speaker translation pass.
   'authConfirmPasswordLabel',
   'authEmailRequired',
   'authEmailInvalid',

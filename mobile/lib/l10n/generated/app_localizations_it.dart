@@ -2515,22 +2515,22 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authPasswordLabel => 'Password';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => 'Conferma password';
 
   @override
-  String get authEmailRequired => 'Email is required';
+  String get authEmailRequired => 'L\'email è obbligatoria';
 
   @override
-  String get authEmailInvalid => 'Please enter a valid email';
+  String get authEmailInvalid => 'Inserisci un\'email valida';
 
   @override
-  String get authPasswordRequired => 'Password is required';
+  String get authPasswordRequired => 'La password è obbligatoria';
 
   @override
-  String get authConfirmPasswordRequired => 'Please confirm your password';
+  String get authConfirmPasswordRequired => 'Conferma la tua password';
 
   @override
-  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+  String get authPasswordsDoNotMatch => 'Le password non corrispondono';
 
   @override
   String get authForgotPassword => 'Password dimenticata?';
@@ -2789,7 +2789,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authNewPasswordLabel => 'Nuova password';
 
   @override
-  String get authConfirmNewPasswordLabel => 'Confirm new password';
+  String get authConfirmNewPasswordLabel => 'Conferma nuova password';
 
   @override
   String get authPasswordTooShort =>
