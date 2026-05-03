@@ -9,7 +9,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// on a per-video basis during publishing.
 class AudioSharingPreferenceService {
   AudioSharingPreferenceService(this._prefs)
-    : _isAudioSharingEnabled = _prefs.getBool(prefsKey) ?? true;
+    : _isAudioSharingEnabled = _prefs.getBool(prefsKey) ?? false;
 
   /// SharedPreferences key for the audio sharing preference
   static const String prefsKey = 'audio_sharing_enabled';

@@ -101,12 +101,6 @@ Duration outerPublishTimeoutFor(int relayCount) {
   return derived;
 }
 
-final RegExp _nostrEventIdPattern = RegExp(r'^[0-9a-fA-F]{64}$');
-
-bool _isNostrEventId(String? eventId) {
-  return eventId != null && _nostrEventIdPattern.hasMatch(eventId);
-}
-
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -799,9 +793,7 @@ class VideoEventPublisher {
       final hasSelectedAudioEventId =
           selectedAudioEventId != null && selectedAudioEventId.isNotEmpty;
       final reusableSelectedAudioEventId =
-          _isNostrEventId(
-            selectedAudioEventId,
-          )
+          NostrHexUtils.isValidEventId(selectedAudioEventId)
           ? selectedAudioEventId
           : null;
       if (hasSelectedAudioEventId && reusableSelectedAudioEventId == null) {

@@ -14,7 +14,7 @@ void main() {
 
       expect(state.isProcessing, isFalse);
       expect(state.isSavingDraft, isFalse);
-      expect(state.allowAudioReuse, isTrue);
+      expect(state.allowAudioReuse, isFalse);
       expect(state.title, isEmpty);
       expect(state.description, isEmpty);
       expect(state.tags, isEmpty);
