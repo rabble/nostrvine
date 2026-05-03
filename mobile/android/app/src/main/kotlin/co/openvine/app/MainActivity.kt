@@ -61,23 +61,7 @@ class MainActivity : FlutterActivity() {
     private var nostrSignerPlugin: NostrSignerPlugin? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        try {
-            super.configureFlutterEngine(flutterEngine)
-        } catch (e: Exception) {
-            Log.e(PROOFMODE_TAG, "Exception during FlutterEngine configuration", e)
-            Log.e(PROOFMODE_TAG, "Exception message: ${e.message}")
-            Log.e(PROOFMODE_TAG, "Exception cause: ${e.cause?.message}")
-
-            // Handle FFmpegKit initialization failure on Android (not needed - using continuous recording)
-            // FFmpegKit is only used on iOS/macOS for video processing
-            if (e.message?.contains("FFmpegKit") == true || e.cause?.message?.contains("ffmpegkit") == true) {
-                Log.w(PROOFMODE_TAG, "FFmpegKit plugin failed to initialize (expected on Android)", e)
-                // Continue without FFmpegKit - Android uses camera-based continuous recording
-            } else {
-                // Re-throw other exceptions
-                throw e
-            }
-        }
+        super.configureFlutterEngine(flutterEngine)
 
         // Set up ProofMode platform channel
         setupProofModeChannel(flutterEngine)

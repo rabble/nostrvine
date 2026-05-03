@@ -81,8 +81,3 @@
 # Flutter's embedding layer references these, but we're not using split installs
 -dontwarn com.google.android.play.core.splitinstall.**
 -dontwarn com.google.android.play.core.tasks.**
-
-# Ignore FFmpegKit classes (not needed on Android - using continuous recording)
-# iOS/macOS use FFmpeg for video processing, but Android uses camera-based recording
--dontwarn com.arthenica.ffmpegkit.**
--dontwarn com.antonkarpenko.ffmpegkit.**
