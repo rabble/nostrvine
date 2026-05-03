@@ -4320,10 +4320,10 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get reportOtherRequiresDetails =>
-      'Please describe the issue when selecting Other';
+      'Моля, опиши проблема, когато избираш „Друго“';
 
   @override
-  String get reportDetailsRequired => 'Please describe the issue';
+  String get reportDetailsRequired => 'Моля, опиши проблема';
 
   @override
   String get reportReasonSpam => 'Спам или нежелано съдържание';
