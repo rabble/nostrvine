@@ -2,7 +2,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 
 class UserName extends ConsumerWidget {
@@ -77,13 +79,16 @@ class UserName extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
+    late String effectivePubkey;
     UserProfile? resolvedProfile;
     if (userProfile case final userProfile?) {
       resolvedProfile = userProfile;
+      effectivePubkey = userProfile.pubkey;
       displayName = userProfile.betterDisplayName(anonymousName);
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
       resolvedProfile = profileAsync.value;
+      effectivePubkey = pubkey!;
 
       // Use embedded name from REST API as fallback, then generated name.
       final fallbackName =
@@ -109,6 +114,11 @@ class UserName extends ConsumerWidget {
           fontSize: 10,
           fontWeight: FontWeight.w400,
         );
+    final isOgViner = ref.watch(
+      ogVinerCacheServiceProvider.select(
+        (service) => service.isOgViner(effectivePubkey),
+      ),
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -130,6 +140,7 @@ class UserName extends ConsumerWidget {
         ),
         if (shouldShowSpecialProfileCheckmark(resolvedProfile))
           const SpecialProfileCheckmark(),
+        if (isOgViner) const OgVinerBadge(),
       ],
     );
   }

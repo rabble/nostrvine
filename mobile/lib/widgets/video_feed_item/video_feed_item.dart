@@ -18,6 +18,7 @@ import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
+import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -37,6 +38,7 @@ import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -1476,6 +1478,11 @@ class VideoOverlayActions extends ConsumerWidget {
                             profile?.bestDisplayName ??
                             video.authorName ??
                             UserProfile.generatedNameFor(video.pubkey);
+                        final isOgViner = ref.watch(
+                          ogVinerCacheServiceProvider.select(
+                            (service) => service.isOgViner(video.pubkey),
+                          ),
+                        );
 
                         void navigateToProfile() {
                           onInteracted?.call();
@@ -1548,6 +1555,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                           profile,
                                         ))
                                           const SpecialProfileCheckmark(),
+                                        if (isOgViner) const OgVinerBadge(),
                                       ],
                                     ),
                                     Text(
