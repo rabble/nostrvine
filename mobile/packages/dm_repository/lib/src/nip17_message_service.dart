@@ -3,6 +3,7 @@
 // ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -12,6 +13,21 @@ import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+/// Builds a NIP-59 gift-wrapped event for [recipientPubkey] from
+/// [rumorEvent], using [nostr] for signing. Returns `null` when the
+/// underlying SDK declines to produce one (e.g. an internal encryption
+/// step yields a null result without throwing).
+///
+/// Defaults to [GiftWrapUtil.getGiftWrapEvent]; injectable for tests
+/// so the `null`-return branch in [NIP17MessageService] can be
+/// exercised without conjuring valid gift-wrapped events by hand.
+typedef GiftWrapBuilder =
+    Future<Event?> Function(
+      Nostr nostr,
+      Event rumorEvent,
+      String recipientPubkey,
+    );
 
 /// Service for sending encrypted private messages using NIP-17 gift wrapping.
 ///
@@ -23,13 +39,16 @@ class NIP17MessageService {
     required NostrSigner signer,
     required String senderPublicKey,
     required NostrClient nostrService,
+    @visibleForTesting GiftWrapBuilder? giftWrapBuilder,
   }) : _signer = signer,
        _senderPublicKey = senderPublicKey,
-       _nostrService = nostrService;
+       _nostrService = nostrService,
+       _giftWrapBuilder = giftWrapBuilder ?? GiftWrapUtil.getGiftWrapEvent;
 
   final NostrSigner _signer;
   final String _senderPublicKey;
   final NostrClient _nostrService;
+  final GiftWrapBuilder _giftWrapBuilder;
 
   /// Access to the underlying NostrService for relay management
   NostrClient get nostrService => _nostrService;
@@ -73,12 +92,7 @@ class NIP17MessageService {
         ...additionalTags,
       ];
 
-      final rumorEvent = Event(
-        _senderPublicKey,
-        eventKind,
-        rumorTags,
-        content,
-      );
+      final rumorEvent = Event(_senderPublicKey, eventKind, rumorTags, content);
 
       Log.debug(
         'Created kind $eventKind rumor event',
@@ -86,7 +100,7 @@ class NIP17MessageService {
       );
 
       // Create gift wrap for the recipient
-      final giftWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
+      final giftWrapEvent = await _giftWrapBuilder(
         nostr,
         rumorEvent,
         recipientPubkey,
@@ -111,40 +125,52 @@ class NIP17MessageService {
         return NIP17SendResult.failure(errorMsg);
       }
 
-      // NIP-17: publish a self-addressed gift wrap so our own sent messages
-      // are recoverable from relays after reinstall or data loss.
-      // Wrapped in its own try-catch because the message was already
-      // delivered to the recipient — self-wrap failure is non-fatal.
-      // The result is reported as `selfWrapPublished` so callers can
-      // distinguish full success from recipient-only partial success.
+      // NIP-17: publish a self-addressed gift wrap so our own sent
+      // messages are recoverable from relays after reinstall or data
+      // loss. Three independent failure modes — track them separately
+      // so the result can distinguish recipient-only delivery from
+      // full delivery. Re-publishing the recipient wrap would
+      // double-deliver, so any future retry handling must target only
+      // the self-wrap (see #3909).
       var selfWrapPublished = false;
       try {
-        final selfWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
+        final selfWrapEvent = await _giftWrapBuilder(
           nostr,
           rumorEvent,
           _senderPublicKey,
         );
-        if (selfWrapEvent != null) {
-          final selfSent = await _nostrService.publishEvent(selfWrapEvent);
-          selfWrapPublished = selfSent is PublishSuccess;
+        if (selfWrapEvent == null) {
+          Log.warning(
+            'Self-wrap creation returned null — recipient was '
+            'delivered, but the sender will not see this message on '
+            'other devices or after a reinstall.',
+            category: LogCategory.system,
+          );
+        } else {
+          final published = await _nostrService.publishEvent(selfWrapEvent);
+          if (published is! PublishSuccess) {
+            Log.warning(
+              'Self-wrap publish failed — recipient was '
+              'delivered, but the sender will not see this message on '
+              'other devices or after a reinstall.',
+              category: LogCategory.system,
+            );
+          } else {
+            selfWrapPublished = true;
+          }
         }
       } on Object catch (e) {
         Log.error(
-          'Self-wrap failed (non-fatal): $e',
-          category: LogCategory.system,
-        );
-      }
-
-      if (!selfWrapPublished) {
-        Log.warning(
-          'NIP-17 self-wrap not published — sender other devices will not '
-          'see this message on relay restore',
+          'Self-wrap failed (non-fatal): recipient was delivered, but '
+          'the sender will not see this message on other devices or '
+          'after a reinstall: $e',
           category: LogCategory.system,
         );
       }
 
       Log.info(
-        'Successfully published NIP-17 message',
+        'Successfully published NIP-17 message '
+        '(selfWrapPublished=$selfWrapPublished)',
         category: LogCategory.system,
       );
       return NIP17SendResult.success(

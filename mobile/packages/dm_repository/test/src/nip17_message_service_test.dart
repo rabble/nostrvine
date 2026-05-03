@@ -9,6 +9,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 
@@ -432,6 +433,54 @@ void main() {
           expect(result.success, isTrue);
           expect(result.selfWrapPublished, isFalse);
           verify(() => mockNostrClient.publishEvent(any())).called(2);
+        });
+
+        test('returns selfWrapPublished=false when self-wrap event '
+            'creation returns null (defensive null-event branch)', () async {
+          // The recipient wrap is built by the real GiftWrapUtil so a
+          // valid kind-1059 event flows into the publish path; the
+          // self-wrap call returns null without throwing, exercising
+          // the previously-untested defensive branch in the service.
+          var builderCalls = 0;
+          final service = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (nostr, rumor, recipientPubkey) async {
+              builderCalls++;
+              if (builderCalls == 1) {
+                return GiftWrapUtil.getGiftWrapEvent(
+                  nostr,
+                  rumor,
+                  recipientPubkey,
+                );
+              }
+              return null;
+            },
+          );
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => invocation.positionalArguments[0] as Event,
+          );
+
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+          expect(
+            builderCalls,
+            equals(2),
+            reason:
+                'Both the recipient wrap and the self-wrap go through '
+                'the injected builder; the second call returning null '
+                'is what we are exercising here.',
+          );
+          // Only the recipient publish runs because the self-wrap event is
+          // never built.
+          verify(() => mockNostrClient.publishEvent(any())).called(1);
         });
       });
 
