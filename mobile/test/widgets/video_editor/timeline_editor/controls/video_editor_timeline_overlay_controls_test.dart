@@ -22,6 +22,7 @@ class _MockTimelineOverlayBloc
 void main() {
   group(TimelineOverlayControls, () {
     late _MockTimelineOverlayBloc overlayBloc;
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       overlayBloc = _MockTimelineOverlayBloc();
@@ -72,6 +73,11 @@ void main() {
       await tester.pumpWidget(build(item));
 
       expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
+      expect(find.text(l10n.videoEditorDeleteLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDuplicateLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorSplitLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDoneLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorEditLabel), findsNothing);
     });
 
     testWidgets('renders $VideoEditorTimelineControls for filter', (
@@ -87,6 +93,11 @@ void main() {
       await tester.pumpWidget(build(item));
 
       expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
+      expect(find.text(l10n.videoEditorDeleteLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDuplicateLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorSplitLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDoneLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorEditLabel), findsNothing);
     });
 
     testWidgets('renders $VideoEditorTimelineControls for sound', (
@@ -102,6 +113,11 @@ void main() {
       await tester.pumpWidget(build(item));
 
       expect(find.byType(VideoEditorTimelineControls), findsOneWidget);
+      expect(find.text(l10n.videoEditorDeleteLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorEditLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDuplicateLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorSplitLabel), findsOneWidget);
+      expect(find.text(l10n.videoEditorDoneLabel), findsOneWidget);
     });
   });
 }
