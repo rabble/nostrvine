@@ -5444,6 +5444,213 @@ void main() {
         },
       );
 
+      // Liz flagged that the retry helper's contract has to cover both
+      // signals: retriable HTTP statuses and the transient network
+      // failures that _uploadToServer catches and converts to result-typed
+      // failures with statusCode: null. The four tests below pin the
+      // default-host legacy PUT path for each transient DioExceptionType
+      // (connection / send / receive timeout, connection error). Without
+      // the isTransientNetworkFailure signal these would each short-circuit
+      // after one attempt — exactly the user-facing failure mode #3862
+      // describes when media.divine.video has a transient network blip.
+      test(
+        'retries on connectionTimeout from default-host legacy PUT',
+        () async {
+          stubAuth();
+          stubLegacyHead();
+
+          final imageFile = await tempImage('legacy_conn_timeout');
+          var attempt = 0;
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async {
+            attempt++;
+            if (attempt == 1) {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload'),
+                type: DioExceptionType.connectionTimeout,
+              );
+            }
+            return uploadOkResponse();
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            attempt,
+            equals(2),
+            reason:
+                'connectionTimeout caught inside _uploadToServer is converted '
+                'to a result with statusCode: null, so the retry helper has '
+                'to look at isTransientNetworkFailure to retry.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'retries on connectionError from default-host legacy PUT',
+        () async {
+          stubAuth();
+          stubLegacyHead();
+
+          final imageFile = await tempImage('legacy_conn_error');
+          var attempt = 0;
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async {
+            attempt++;
+            if (attempt == 1) {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload'),
+                type: DioExceptionType.connectionError,
+              );
+            }
+            return uploadOkResponse();
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(attempt, equals(2));
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'retries on sendTimeout from default-host legacy PUT',
+        () async {
+          stubAuth();
+          stubLegacyHead();
+
+          final imageFile = await tempImage('legacy_send_timeout');
+          var attempt = 0;
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async {
+            attempt++;
+            if (attempt == 1) {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload'),
+                type: DioExceptionType.sendTimeout,
+              );
+            }
+            return uploadOkResponse();
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(attempt, equals(2));
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'retries on receiveTimeout from default-host legacy PUT',
+        () async {
+          stubAuth();
+          stubLegacyHead();
+
+          final imageFile = await tempImage('legacy_recv_timeout');
+          var attempt = 0;
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async {
+            attempt++;
+            if (attempt == 1) {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload'),
+                type: DioExceptionType.receiveTimeout,
+              );
+            }
+            return uploadOkResponse();
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(attempt, equals(2));
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'does NOT retry on cancel from default-host legacy PUT',
+        () async {
+          // Opposing-symmetry guard: cancel is a user action, not a
+          // transient network condition. _uploadToServer catches it but
+          // must NOT mark the result transient — otherwise we'd loop on a
+          // cancelled upload.
+          stubAuth();
+          stubLegacyHead();
+
+          final imageFile = await tempImage('legacy_cancel');
+          var attempt = 0;
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async {
+            attempt++;
+            throw DioException(
+              requestOptions: RequestOptions(path: '/upload'),
+              type: DioExceptionType.cancel,
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(attempt, equals(1));
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
       test(
         'falls through to next server after exhausting retries on the first',
         () async {

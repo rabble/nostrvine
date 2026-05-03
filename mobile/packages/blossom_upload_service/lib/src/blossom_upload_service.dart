@@ -33,6 +33,7 @@ class BlossomUploadResult {
     this.blurhash,
     this.errorMessage,
     this.statusCode,
+    this.isTransientNetworkFailure = false,
   });
 
   /// Whether the upload succeeded.
@@ -70,6 +71,13 @@ class BlossomUploadResult {
 
   /// HTTP status code on failure.
   final int? statusCode;
+
+  /// Whether this failure was caused by a transient network condition
+  /// (connection / send / receive timeout, or connection error) that the
+  /// upload internals caught and converted to a result instead of
+  /// rethrowing. Surfaced as a retry signal symmetric with [statusCode]
+  /// for the cases where there is no HTTP status to classify on.
+  final bool isTransientNetworkFailure;
 
   /// Convenience getter for backwards compatibility.
   String? get cdnUrl => fallbackUrl ?? url;
@@ -439,11 +447,19 @@ class BlossomUploadService {
 
   /// Whether a [BlossomUploadResult] failure is transient and worth retrying.
   ///
-  /// Some failure modes are caught inside the upload internals and surface as
-  /// `success: false` with a `statusCode`, rather than re-throwing — this
-  /// predicate covers that case symmetrically with [_isTransientUploadError].
+  /// Some failure modes are caught inside the upload internals (notably the
+  /// legacy PUT path through [_uploadToServer]) and surface as
+  /// `success: false` rather than re-throwing. Two signals classify a
+  /// caught failure as transient, symmetric with [_isTransientUploadError]:
+  ///
+  ///   * `statusCode` is in the retriable set (5xx, 429, 408), or
+  ///   * `isTransientNetworkFailure` is `true` — set by [_uploadToServer]
+  ///     when it caught a [DioException] of type connection / send /
+  ///     receive timeout or connection error and converted it to a result
+  ///     (these have no HTTP status to classify on).
   bool _isTransientUploadResult(BlossomUploadResult result) {
     if (result.success) return false;
+    if (result.isTransientNetworkFailure) return true;
     final statusCode = result.statusCode;
     return statusCode != null &&
         _retriableUploadStatusCodes.contains(statusCode);
@@ -1299,24 +1315,28 @@ class BlossomUploadService {
           success: false,
           statusCode: statusCode,
           errorMessage: 'Connection timeout - check server URL',
+          isTransientNetworkFailure: true,
         );
       } else if (e.type == DioExceptionType.sendTimeout) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Send timeout - upload too slow or connection dropped',
+          isTransientNetworkFailure: true,
         );
       } else if (e.type == DioExceptionType.receiveTimeout) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Receive timeout - server not responding',
+          isTransientNetworkFailure: true,
         );
       } else if (e.type == DioExceptionType.connectionError) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Cannot connect to Blossom server: $errorDetail',
+          isTransientNetworkFailure: true,
         );
       } else if (e.type == DioExceptionType.cancel) {
         return BlossomUploadResult(
