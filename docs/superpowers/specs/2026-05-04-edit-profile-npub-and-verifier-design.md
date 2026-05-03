@@ -80,7 +80,9 @@ Layered per project rules (UI → BLoC → Repository → Client).
 - New `IdentityClaimsRepository`:
   - `parseClaims(Kind0Event) → List<IdentityClaim>` (filters `['i', '<platform>:<identity>',
     '<proof>']` tags, case-insensitive dedupe matching verifier's behavior at
-    `divine-identify-verification-service/src/index.ts:1784`, caps batch size at 50).
+    `divine-identify-verification-service/src/index.ts:1784`). Caps the batch at 10
+    to match `MAX_BATCH_SIZE` in
+    `divine-identify-verification-service/src/routes/verify.ts:12`.
   - `verifiedClaims(String pubkey, Kind0Event) → Future<List<IdentityClaim>>` — parses then
     forwards to the verifier client, returns only successes.
 
@@ -126,7 +128,8 @@ Layered per project rules (UI → BLoC → Repository → Client).
   No error strings in state (project rule). BLoC reports error via `addError` for
   observability.
 - Malformed `i` tags → parser skips silently.
-- Tag count cap (50) before batch call to bound payload size.
+- Tag count cap (10) before batch call, matching the verifier's
+  server-side `MAX_BATCH_SIZE`.
 - Unknown platform names → still sent to verifier (forwards-compatible: verifier may add
   platforms before mobile does); chips for unknown platforms render with the generic
   globe icon and the raw handle.
@@ -134,7 +137,7 @@ Layered per project rules (UI → BLoC → Repository → Client).
 ## Testing
 
 - Unit: `IdentityClaimsRepository.parseClaims` — well-formed, malformed, duplicate tags,
-  case-insensitive dedupe, 50-cap.
+  case-insensitive dedupe, 10-cap.
 - Mock `VerifierClient`: success, 4xx, 5xx, timeout — all map to empty verified list
   without crash.
 - BLoC tests: read happy path + verifier failure; write path (launch event +
