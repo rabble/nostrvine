@@ -7,8 +7,6 @@ import 'package:openvine/models/collaborator_invite.dart';
 class CollaboratorInviteParser {
   const CollaboratorInviteParser._();
 
-  static final _hexPubkey = RegExp(r'^[0-9a-fA-F]{64}$');
-
   static CollaboratorInvite? parse(DmMessage message) {
     final tags = message.tags;
     if (!tags.any(_isInviteMarker)) return null;
@@ -91,7 +89,7 @@ class CollaboratorInviteParser {
     return trimmed;
   }
 
-  static bool _isPubkey(String value) => _hexPubkey.hasMatch(value);
+  static bool _isPubkey(String value) => NostrHexUtils.isValidPubkey(value);
 
   static T? _firstWhereOrNull<T>(Iterable<T> values, bool Function(T) test) {
     for (final value in values) {

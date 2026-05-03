@@ -134,19 +134,19 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Publish this sound'), findsOneWidget);
-        expect(
-          find.text("Let others save and reuse this video's audio."),
-          findsOneWidget,
-        );
-        expect(container.read(videoEditorProvider).allowAudioReuse, isTrue);
-
-        await tester.ensureVisible(find.byType(Switch));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(Switch));
-        await tester.pump();
-
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(find.text(l10n.videoMetadataAudioReuseTitle), findsOneWidget);
+        expect(find.text(l10n.videoMetadataAudioReuseSubtitle), findsOneWidget);
         expect(container.read(videoEditorProvider).allowAudioReuse, isFalse);
+
+        await tester.ensureVisible(
+          find.text(l10n.videoMetadataAudioReuseTitle),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.videoMetadataAudioReuseTitle));
+        await tester.pumpAndSettle();
+
+        expect(container.read(videoEditorProvider).allowAudioReuse, isTrue);
 
         await tester.pumpWidget(const SizedBox.shrink());
         container.dispose();

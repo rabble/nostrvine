@@ -146,36 +146,23 @@ class _VideoMetadataAudioReuseToggle extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const .all(16),
-      child: Row(
-        spacing: 16,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: .start,
-              spacing: 6,
-              children: [
-                Text(
-                  context.l10n.videoMetadataAudioReuseTitle,
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-                ),
-                Text(
-                  context.l10n.videoMetadataAudioReuseSubtitle,
-                  style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: allowAudioReuse,
-            activeThumbColor: VineTheme.vineGreen,
-            onChanged: (value) {
-              ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
-            },
-          ),
-        ],
+      padding: const .symmetric(horizontal: 4),
+      child: SwitchListTile(
+        value: allowAudioReuse,
+        title: Text(
+          context.l10n.videoMetadataAudioReuseTitle,
+          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        ),
+        subtitle: Text(
+          context.l10n.videoMetadataAudioReuseSubtitle,
+          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+        ),
+        contentPadding: const .symmetric(horizontal: 12, vertical: 4),
+        activeThumbColor: VineTheme.vineGreen,
+        inactiveThumbColor: VineTheme.lightText,
+        onChanged: (value) {
+          ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
+        },
       ),
     );
   }

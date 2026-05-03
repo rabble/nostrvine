@@ -95,7 +95,7 @@ void main() {
       expect(draft.publishAttempts, 0);
     });
 
-    test('should migrate old drafts without allowAudioReuse to on', () {
+    test('should migrate old drafts without allowAudioReuse to off', () {
       final json = {
         'id': 'old_draft',
         'videoFilePath': 'video.mp4',
@@ -110,7 +110,7 @@ void main() {
 
       final draft = DivineVideoDraft.fromJson(json, '/path/to');
 
-      expect(draft.allowAudioReuse, isTrue);
+      expect(draft.allowAudioReuse, isFalse);
     });
 
     test('should serialize publishError when present', () {

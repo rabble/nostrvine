@@ -15,8 +15,8 @@ void main() {
       service = AudioSharingPreferenceService(prefs);
     });
 
-    test('default preference is true (ON)', () {
-      expect(service.isAudioSharingEnabled, isTrue);
+    test('default preference is false (OFF)', () {
+      expect(service.isAudioSharingEnabled, isFalse);
     });
 
     test('can enable audio sharing', () async {

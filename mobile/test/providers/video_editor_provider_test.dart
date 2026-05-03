@@ -28,9 +28,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
     });
 
@@ -64,8 +62,8 @@ void main() {
         );
         expect(
           state.allowAudioReuse,
-          true,
-          reason: 'allowAudioReuse should default to true',
+          false,
+          reason: 'allowAudioReuse should default to false',
         );
         expect(state.title, isEmpty, reason: 'title should default to empty');
         expect(
@@ -806,9 +804,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
     });
 
@@ -928,9 +924,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       container = ProviderContainer(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-        ],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
       );
     });
 
@@ -990,6 +984,7 @@ void main() {
       final original = VideoEditorProviderState(
         isProcessing: true,
         isSavingDraft: true,
+        allowAudioReuse: true,
         title: 'Test',
         description: 'Desc',
         tags: const {'tag1'},
