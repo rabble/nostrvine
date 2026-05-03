@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:meta/meta.dart';
+import 'package:models/src/nostr_identity_claim.dart';
 import 'package:models/src/user_profile_result.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:text_sanitizer/text_sanitizer.dart';
@@ -32,6 +33,7 @@ class UserProfile {
     this.nip05,
     this.lud16,
     this.lud06,
+    this.identityClaims = const [],
   });
 
   /// Create UserProfile from a Nostr kind 0 event
@@ -43,6 +45,12 @@ class UserProfile {
     try {
       // Parse the JSON content
       final content = jsonDecode(event.content) as Map<String, dynamic>;
+
+      final claims = <NostrIdentityClaim>[];
+      for (final tag in event.tags) {
+        final claim = NostrIdentityClaim.fromTag(tag);
+        if (claim != null) claims.add(claim);
+      }
 
       return UserProfile(
         pubkey: event.pubkey,
@@ -60,6 +68,7 @@ class UserProfile {
         rawData: content,
         createdAt: event.createdAtDateTime,
         eventId: event.id,
+        identityClaims: claims,
       );
     } on FormatException {
       // If JSON parsing fails, create a minimal profile
@@ -160,6 +169,12 @@ class UserProfile {
   final Map<String, dynamic> rawData;
   final DateTime createdAt;
   final String eventId;
+
+  /// NIP-39 external identity claims parsed from the event's `i` tags.
+  ///
+  /// These are *unverified* claims; verification is performed separately
+  /// by `IdentityVerificationRepository`.
+  final List<NostrIdentityClaim> identityClaims;
 
   /// Get shortened pubkey for display
   String get shortPubkey {
@@ -393,6 +408,7 @@ class UserProfile {
     String? lud16,
     String? lud06,
     Map<String, dynamic>? rawData,
+    List<NostrIdentityClaim>? identityClaims,
   }) => UserProfile(
     pubkey: pubkey,
     name: name ?? this.name,
@@ -407,6 +423,7 @@ class UserProfile {
     rawData: rawData ?? this.rawData,
     createdAt: createdAt,
     eventId: eventId,
+    identityClaims: identityClaims ?? this.identityClaims,
   );
 
   @override

@@ -1287,5 +1287,69 @@ void main() {
         expect(result, contains('hasAvatar: true'));
       });
     });
+
+    group('NIP-39 identityClaims', () {
+      test('parses verified github + bluesky claims from event tags', () {
+        final event = Event.fromJson({
+          'id': 'a' * 64,
+          'pubkey': '0' * 64,
+          'created_at': 1700000000,
+          'kind': 0,
+          'tags': [
+            ['i', 'github:rabble', 'https://gist.github.com/x'],
+            ['i', 'bluesky:rabble.bsky.social', 'at://did:plc:y/post/z'],
+            ['p', '1' * 64], // unrelated tag, must be ignored
+          ],
+          'content': '{"name":"rabble"}',
+          'sig': '0' * 128,
+        });
+        final profile = UserProfile.fromNostrEvent(event);
+        expect(profile.identityClaims, hasLength(2));
+        expect(
+          profile.identityClaims.first.platform,
+          equals(IdentityPlatform.github),
+        );
+        expect(profile.identityClaims.first.identity, equals('rabble'));
+      });
+
+      test('drops malformed and unknown-platform i tags silently', () {
+        final event = Event.fromJson({
+          'id': 'a' * 64,
+          'pubkey': '0' * 64,
+          'created_at': 1700000000,
+          'kind': 0,
+          'tags': [
+            ['i', 'github:rabble', 'p'], // ok
+            ['i', 'myspace:tom', 'p'], // unknown platform
+            ['i', 'malformed-no-colon', 'p'], // malformed value
+            ['i'], // too short
+          ],
+          'content': '{}',
+          'sig': '0' * 128,
+        });
+        final profile = UserProfile.fromNostrEvent(event);
+        expect(profile.identityClaims, hasLength(1));
+        expect(
+          profile.identityClaims.single.platform,
+          equals(IdentityPlatform.github),
+        );
+      });
+
+      test('returns empty list when content JSON is malformed', () {
+        final event = Event.fromJson({
+          'id': 'a' * 64,
+          'pubkey': '0' * 64,
+          'created_at': 1700000000,
+          'kind': 0,
+          'tags': [
+            ['i', 'github:rabble', 'p'],
+          ],
+          'content': 'not-json',
+          'sig': '0' * 128,
+        });
+        final profile = UserProfile.fromNostrEvent(event);
+        expect(profile.identityClaims, isEmpty);
+      });
+    });
   });
 }
