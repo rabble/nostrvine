@@ -76,7 +76,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
       if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.blossomServerUrlInvalid),
+            content: Text(context.l10n.blossomValidServerUrl),
             backgroundColor: VineTheme.error,
           ),
         );

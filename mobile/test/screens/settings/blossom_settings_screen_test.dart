@@ -85,7 +85,7 @@ void main() {
         () => mockService.setBlossomServer('https://blossom.band'),
       ).called(1);
       expect(find.text(l10n.blossomServerUrlMustUseHttps), findsNothing);
-      expect(find.text(l10n.blossomServerUrlInvalid), findsNothing);
+      expect(find.text(l10n.blossomValidServerUrl), findsNothing);
     });
 
     testWidgets('saves loopback http://10.0.2.2 URL', (tester) async {
@@ -140,7 +140,7 @@ void main() {
     ) async {
       await pumpAndSave(tester, 'not a url');
 
-      expect(find.text(l10n.blossomServerUrlInvalid), findsOneWidget);
+      expect(find.text(l10n.blossomValidServerUrl), findsOneWidget);
       verifyNever(() => mockService.setBlossomServer(any()));
     });
 
@@ -155,14 +155,14 @@ void main() {
         // Pinned to whichever localization is wired up — just confirm the
         // English (active locale) is rendered, while the German variant
         // would only appear if l10n was actually being read.
-        expect(find.text(l10n.blossomServerUrlInvalid), findsOneWidget);
+        expect(find.text(l10n.blossomValidServerUrl), findsOneWidget);
         // Sanity check: this proves we are in fact looking at the l10n
         // pipeline (the rendered string equals the lookup output for the
         // active locale; if the widget had hardcoded English, the German
         // lookup would return a different translation and the Finder
         // below would still find zero occurrences — the assertion that
         // matters is the one above).
-        expect(german.blossomServerUrlInvalid, isNotEmpty);
+        expect(german.blossomValidServerUrl, isNotEmpty);
       },
     );
   });

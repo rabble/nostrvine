@@ -70,8 +70,7 @@ const _knownUntranslatedDebt = {
   'notificationAndConnector',
   'notificationOthersCount',
   // Added by #3837 (Blossom URL scheme validation under strict ATS).
-  // English fallbacks ship until translators pick these up.
-  'blossomServerUrlInvalid',
+  // English fallback ships until translators pick this up.
   'blossomServerUrlMustUseHttps',
   // Added while localizing the settings taxonomy and related settings flows
   // for Amharic. Existing locales fall back to English until the next
