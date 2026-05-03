@@ -1023,7 +1023,7 @@ void main() {
       const collaborator2 =
           'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
-      Map<String, dynamic> buildJson(List<List<String>> tags) => {
+      Map<String, dynamic> buildJson(List<List<Object?>> tags) => {
         'id': 'video-id',
         'pubkey': authorPubkey,
         'created_at': 1700000000,
@@ -1174,6 +1174,22 @@ void main() {
           stats.collaboratorPubkeys,
           equals([collaborator1, collaborator2]),
         );
+      });
+
+      test('ignores malformed non-string collaborator markers', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            <Object?>[
+              'p',
+              collaborator1,
+              '',
+              {'role': 'collaborator'},
+            ],
+            ['p', collaborator2, '', 'collaborator'],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator2]));
       });
     });
 

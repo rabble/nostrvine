@@ -271,7 +271,7 @@ class VideoStats {
           }
           if (tagName == 'p' && tagValue.isNotEmpty) {
             final normalized = tagValue.toLowerCase();
-            final role = tag.length >= 4
+            final role = tag.length >= 4 && tag[3] is String
                 ? (tag[3] as String).toLowerCase()
                 : null;
             if (role == 'collaborator' &&
