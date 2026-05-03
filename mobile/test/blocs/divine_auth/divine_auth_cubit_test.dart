@@ -856,11 +856,17 @@ void main() {
                 password: testPassword,
                 isSubmitting: true,
               ),
-              isA<DivineAuthFormState>().having(
-                (s) => s.generalError,
-                'generalError',
-                contains('already registered'),
-              ),
+              isA<DivineAuthFormState>()
+                  .having(
+                    (s) => s.generalError,
+                    'generalError',
+                    contains('already registered'),
+                  )
+                  .having(
+                    (s) => s.showLoginOptionsRecovery,
+                    'showLoginOptionsRecovery',
+                    isTrue,
+                  ),
             ],
           );
 
@@ -1577,7 +1583,7 @@ void main() {
           obscurePassword: false,
           isSubmitting: true,
         );
-        expect(state.props, hasLength(15));
+        expect(state.props, hasLength(16));
       });
     });
 

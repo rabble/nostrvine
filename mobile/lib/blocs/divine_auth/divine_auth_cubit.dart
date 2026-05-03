@@ -53,11 +53,16 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   final bool _requirePasswordConfirmation;
 
   /// Initialize form with default state (sign up mode)
-  void initialize({bool isSignIn = false, String? initialEmail}) {
+  void initialize({
+    bool isSignIn = false,
+    String? initialEmail,
+    String? initialGeneralError,
+  }) {
     emit(
       DivineAuthFormState(
         isSignIn: isSignIn,
         email: initialEmail ?? '',
+        generalError: initialGeneralError,
         requiresPasswordConfirmation: _requirePasswordConfirmation && !isSignIn,
       ),
     );
@@ -254,7 +259,13 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
 
       final current = state;
       if (current is DivineAuthFormState) {
-        emit(current.copyWith(isSubmitting: false, generalError: errorMsg));
+        emit(
+          current.copyWith(
+            isSubmitting: false,
+            generalError: errorMsg,
+            showLoginOptionsRecovery: result.errorCode == 'CONFLICT',
+          ),
+        );
       }
       return;
     }

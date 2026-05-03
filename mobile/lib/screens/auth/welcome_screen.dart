@@ -50,6 +50,26 @@ class WelcomeScreen extends ConsumerWidget {
     queryParameters: {selectedPubkeyParam: pubkeyHex},
   ).toString();
 
+  /// Build a login-options path with optional recovery context prefilled.
+  static String loginOptionsPathWithRecovery({
+    String? email,
+    String? error,
+  }) {
+    final queryParameters = <String, String>{};
+
+    if (email != null && email.isNotEmpty) {
+      queryParameters['email'] = email;
+    }
+    if (error != null && error.isNotEmpty) {
+      queryParameters['error'] = error;
+    }
+
+    return Uri(
+      path: loginOptionsPath,
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    ).toString();
+  }
+
   /// Build invite gate path with optional recovery context prefilled.
   static String inviteGatePathWithCode(
     String code, {

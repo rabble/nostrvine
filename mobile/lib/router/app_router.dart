@@ -644,7 +644,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'login-options',
             name: LoginOptionsScreen.routeName,
-            builder: (_, _) => const LoginOptionsScreen(),
+            builder: (_, state) => LoginOptionsScreen(
+              initialEmail: state.uri.queryParameters['email'],
+              initialError: state.uri.queryParameters['error'],
+            ),
             routes: [
               // Route for deep link when resetting password
               GoRoute(

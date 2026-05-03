@@ -31,6 +31,7 @@ class DivineAuthFormState extends DivineAuthState {
     this.showInviteGateRecovery = false,
     this.inviteRecoveryCode,
     this.inviteRecoverySourceSlug,
+    this.showLoginOptionsRecovery = false,
     this.obscurePassword = true,
     this.isSubmitting = false,
     this.isSkipping = false,
@@ -72,6 +73,9 @@ class DivineAuthFormState extends DivineAuthState {
   /// Creator source slug to preserve when recovery falls back to waitlist.
   final String? inviteRecoverySourceSlug;
 
+  /// Whether the UI should route the user to sign in instead.
+  final bool showLoginOptionsRecovery;
+
   /// Whether password is obscured in the UI
   final bool obscurePassword;
 
@@ -105,6 +109,7 @@ class DivineAuthFormState extends DivineAuthState {
     bool? showInviteGateRecovery,
     String? inviteRecoveryCode,
     String? inviteRecoverySourceSlug,
+    bool? showLoginOptionsRecovery,
     bool? obscurePassword,
     bool? isSubmitting,
     bool? isSkipping,
@@ -140,6 +145,8 @@ class DivineAuthFormState extends DivineAuthState {
       inviteRecoverySourceSlug: clearInviteGateRecovery
           ? null
           : (inviteRecoverySourceSlug ?? this.inviteRecoverySourceSlug),
+      showLoginOptionsRecovery:
+          showLoginOptionsRecovery ?? this.showLoginOptionsRecovery,
       obscurePassword: obscurePassword ?? this.obscurePassword,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSkipping: isSkipping ?? this.isSkipping,
@@ -160,6 +167,7 @@ class DivineAuthFormState extends DivineAuthState {
     showInviteGateRecovery,
     inviteRecoveryCode,
     inviteRecoverySourceSlug,
+    showLoginOptionsRecovery,
     obscurePassword,
     isSubmitting,
     isSkipping,

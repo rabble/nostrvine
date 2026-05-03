@@ -30,7 +30,13 @@ class LoginOptionsScreen extends ConsumerWidget {
   /// Route path for this screen.
   static const String path = '/login-options';
 
-  const LoginOptionsScreen({super.key});
+  const LoginOptionsScreen({this.initialEmail, this.initialError, super.key});
+
+  /// Optional email to prefill from create-account recovery.
+  final String? initialEmail;
+
+  /// Optional error to display when arriving from create-account recovery.
+  final String? initialError;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,12 +48,17 @@ class LoginOptionsScreen extends ConsumerWidget {
     );
 
     return BlocProvider(
-      create: (_) => DivineAuthCubit(
-        oauthClient: oauthClient,
-        authService: authService,
-        pendingVerificationService: pendingVerificationService,
-        validationMessages: AuthValidationMessages.fromL10n(l10n),
-      )..initialize(isSignIn: true),
+      create: (_) =>
+          DivineAuthCubit(
+            oauthClient: oauthClient,
+            authService: authService,
+            pendingVerificationService: pendingVerificationService,
+            validationMessages: AuthValidationMessages.fromL10n(l10n),
+          )..initialize(
+            isSignIn: true,
+            initialEmail: initialEmail,
+            initialGeneralError: initialError,
+          ),
       child: const _LoginOptionsView(),
     );
   }

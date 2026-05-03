@@ -69,8 +69,19 @@ class _CreateAccountView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<DivineAuthCubit, DivineAuthState>(
       listenWhen: (prev, next) =>
-          next is DivineAuthEmailVerification || next is DivineAuthSuccess,
+          next is DivineAuthEmailVerification ||
+          next is DivineAuthSuccess ||
+          next is DivineAuthFormState && next.showLoginOptionsRecovery,
       listener: (context, state) {
+        if (state is DivineAuthFormState && state.showLoginOptionsRecovery) {
+          context.go(
+            WelcomeScreen.loginOptionsPathWithRecovery(
+              email: state.email,
+              error: state.generalError,
+            ),
+          );
+          return;
+        }
         if (state is DivineAuthEmailVerification) {
           TextInput.finishAutofillContext();
           final encodedEmail = Uri.encodeComponent(state.email);

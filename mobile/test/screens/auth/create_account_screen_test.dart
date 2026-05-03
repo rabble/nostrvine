@@ -19,6 +19,7 @@ import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -384,6 +385,110 @@ void main() {
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(recorder.didFinishAutofillContext, isTrue);
+        },
+      );
+
+      testWidgets(
+        'navigates to sign in when registration reports duplicate email',
+        (tester) async {
+          when(
+            () => mockOAuth.headlessRegister(
+              email: any(named: 'email'),
+              password: any(named: 'password'),
+              scope: any(named: 'scope'),
+            ),
+          ).thenAnswer(
+            (_) async => (
+              HeadlessRegisterResult.error(
+                'This email is already registered.',
+                code: 'CONFLICT',
+              ),
+              'test-verifier',
+            ),
+          );
+
+          final router = GoRouter(
+            initialLocation: '/',
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) => ProviderScope(
+                  overrides: [
+                    ...getStandardTestOverrides(
+                      mockAuthService: mockAuthService,
+                    ),
+                    oauthClientProvider.overrideWithValue(mockOAuth),
+                    pendingVerificationServiceProvider.overrideWithValue(
+                      mockPendingVerification,
+                    ),
+                  ],
+                  child: RepositoryProvider<InviteApiClient>.value(
+                    value: mockInviteApiClient,
+                    child: BlocProvider(
+                      create: (_) =>
+                          InviteGateBloc(inviteApiClient: mockInviteApiClient),
+                      child: const CreateAccountScreen(),
+                    ),
+                  ),
+                ),
+              ),
+              GoRoute(
+                path: WelcomeScreen.loginOptionsPath,
+                builder: (_, state) => Scaffold(
+                  body: Text(
+                    'login:${state.uri.queryParameters['email'] ?? ''}|'
+                    'error:${state.uri.queryParameters['error'] ?? ''}',
+                  ),
+                ),
+              ),
+            ],
+          );
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              theme: VineTheme.theme,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Email'),
+              matching: find.byType(TextField),
+            ),
+            'person@example.com',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(DivineAuthTextField, 'Password'),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(
+                DivineAuthTextField,
+                'Confirm password',
+              ),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
+
+          await tester.tap(find.widgetWithText(DivineButton, 'Create account'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text(
+              'login:person@example.com|error:'
+              'This email is already registered. Please sign in instead.',
+            ),
+            findsOneWidget,
+          );
         },
       );
 

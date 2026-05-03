@@ -36,7 +36,7 @@ void main() {
     mockPendingVerification = _MockPendingVerificationService();
   });
 
-  Widget createTestWidget() {
+  Widget createTestWidget({String initialLocation = LoginOptionsScreen.path}) {
     return ProviderScope(
       overrides: [
         ...getStandardTestOverrides(mockAuthService: mockAuthService),
@@ -50,12 +50,15 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         theme: VineTheme.theme,
         routerConfig: GoRouter(
-          initialLocation: LoginOptionsScreen.path,
+          initialLocation: initialLocation,
           routes: [
             GoRoute(path: '/', builder: (_, _) => const Scaffold()),
             GoRoute(
               path: LoginOptionsScreen.path,
-              builder: (_, _) => const LoginOptionsScreen(),
+              builder: (_, state) => LoginOptionsScreen(
+                initialEmail: state.uri.queryParameters['email'],
+                initialError: state.uri.queryParameters['error'],
+              ),
             ),
             GoRoute(
               path: '/import-key',
@@ -88,6 +91,32 @@ void main() {
                 widget is Text &&
                 widget.data == 'Sign in' &&
                 widget.style?.fontSize == 28,
+          ),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('prefills email and shows recovery error from query params', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            initialLocation:
+                '${LoginOptionsScreen.path}?email=person%40example.com&error=This%20email%20is%20already%20registered.%20Please%20sign%20in%20instead.',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final emailField = find.descendant(
+          of: find.widgetWithText(DivineAuthTextField, 'Email'),
+          matching: find.byType(TextField),
+        );
+        final emailTextField = tester.widget<TextField>(emailField);
+        expect(emailTextField.controller?.text, 'person@example.com');
+
+        expect(
+          find.text(
+            'This email is already registered. Please sign in instead.',
           ),
           findsOneWidget,
         );
