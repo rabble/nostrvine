@@ -23,6 +23,7 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/delete_failure_localization.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/watermark_text_resolver.dart';
@@ -35,16 +36,6 @@ import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-const _collaboratorInviteRelayHint = 'wss://relay.divine.video';
-
-@visibleForTesting
-List<String> buildCollaboratorPTag(String pubkey) => [
-  'p',
-  pubkey,
-  _collaboratorInviteRelayHint,
-  'collaborator',
-];
-
 @visibleForTesting
 Future<Map<String, CollaboratorInviteResult>>
 sendPostPublishCollaboratorInvites({
@@ -52,7 +43,7 @@ sendPostPublishCollaboratorInvites({
   required VideoEvent video,
   required Iterable<String> previousCollaboratorPubkeys,
   required Iterable<String> updatedCollaboratorPubkeys,
-  String relayHint = _collaboratorInviteRelayHint,
+  String relayHint = collaboratorInviteRelayHint,
 }) async {
   final previous = previousCollaboratorPubkeys.toSet();
   final newCollaborators = updatedCollaboratorPubkeys
