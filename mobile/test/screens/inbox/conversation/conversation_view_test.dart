@@ -4,6 +4,7 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -627,6 +628,91 @@ void main() {
           final retryEvent = captured.last as ConversationMessageSent;
           expect(retryEvent.content, equals(failedSendContent));
           expect(retryEvent.recipientPubkeys, equals(const [otherPubkey]));
+        },
+      );
+
+      // accessibility.md requires explicit `SemanticsService.announce` (or
+      // its non-deprecated `sendAnnouncement` form) on async visible state
+      // changes — Material's default SnackBar semantics are platform-
+      // dependent and weaker than the written rule. The test intercepts
+      // the platform's accessibility channel, where both APIs ultimately
+      // deliver the announcement, and pins the localized failure string.
+      testWidgets(
+        'announces the localized failure message via SemanticsService '
+        'when the SnackBar fires',
+        (tester) async {
+          final announcements = <Map<Object?, Object?>>[];
+          tester.binding.defaultBinaryMessenger
+              .setMockDecodedMessageHandler<Object?>(
+                SystemChannels.accessibility,
+                (Object? message) async {
+                  if (message is Map) announcements.add(message);
+                  return null;
+                },
+              );
+          addTearDown(
+            () => tester.binding.defaultBinaryMessenger
+                .setMockDecodedMessageHandler<Object?>(
+                  SystemChannels.accessibility,
+                  null,
+                ),
+          );
+
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.failed,
+                lastFailedSend: failedSend,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: const ConversationView(
+                    participantPubkeys: [otherPubkey],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          final announceCalls = announcements.where(
+            (m) => m['type'] == 'announce',
+          );
+          expect(
+            announceCalls,
+            isNotEmpty,
+            reason:
+                'expected SemanticsService.sendAnnouncement to deliver an '
+                "'announce' event on SystemChannels.accessibility",
+          );
+          final announcedMessages = announceCalls
+              .map((m) => (m['data'] as Map?)?['message'])
+              .toList();
+          expect(
+            announcedMessages,
+            contains(l10n.dmSendFailedMessage),
+            reason: 'announce payload must carry the localized failure copy',
+          );
         },
       );
     });

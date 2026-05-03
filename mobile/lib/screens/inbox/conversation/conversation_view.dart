@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -160,6 +161,14 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
           },
         ),
       ),
+    );
+    // Per `accessibility.md`, async visible state changes must announce
+    // explicitly — relying on Material's default SnackBar semantics is
+    // weaker than the written rule and not guaranteed across platforms.
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      l10n.dmSendFailedMessage,
+      Directionality.of(context),
     );
   }
 }
