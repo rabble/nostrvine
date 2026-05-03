@@ -271,7 +271,9 @@ class VideoStats {
           }
           if (tagName == 'p' && tagValue.isNotEmpty) {
             final normalized = tagValue.toLowerCase();
-            if (normalized != pubkey &&
+            final role = tag.length >= 4 ? tag[3].toString() : null;
+            if (role == 'collaborator' &&
+                normalized != pubkey &&
                 !collaboratorPubkeys.contains(normalized)) {
               collaboratorPubkeys.add(normalized);
             }

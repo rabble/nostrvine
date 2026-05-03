@@ -433,9 +433,12 @@ class VideoEvent {
             );
           }
         case 'p':
-          // NIP-71 p-tag: collaborator if pubkey differs from event author
+          // NIP-71 collaborator p-tag:
+          // ["p", "<pubkey>", "<relay>", "collaborator"]
           if (tagValue.isNotEmpty && tagValue != event.pubkey) {
-            if (!collaboratorPubkeys.contains(tagValue)) {
+            final role = tag.length >= 4 ? tag[3] : null;
+            if (role == 'collaborator' &&
+                !collaboratorPubkeys.contains(tagValue)) {
               collaboratorPubkeys.add(tagValue);
             }
           }
