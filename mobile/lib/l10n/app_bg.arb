@@ -2481,7 +2481,9 @@
     },
     "collaboratorInviteDmBody": "Поканени сте да си сътрудничите по {title}: {url}\n\nOpen diVine to review and accept.",
     "collaboratorInviteDmBodyUntitled": "Поканени сте да си сътрудничите по видеоклип: {url}\n\nOpen diVine to review and accept.",
-    "reportDialogCancel": "Отказ",
+    "dmSendFailedMessage": "Съобщението не мина",
+  "dmSendFailedRetry": "Опитай пак",
+  "reportDialogCancel": "Отказ",
     "reportDialogReport": "Докладвай",
     "exploreVideoId": "ID: {id}",
     "@exploreVideoId": {

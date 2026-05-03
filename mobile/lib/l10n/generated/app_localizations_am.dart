@@ -5089,10 +5089,10 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'እንደገና ይሞክሩ';
 
   @override
   String get reportDialogCancel => 'ሰርዝ';

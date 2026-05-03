@@ -5323,10 +5323,10 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Nie udało się wysłać wiadomości';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Spróbuj ponownie';
 
   @override
   String get reportDialogCancel => 'Anuluj';

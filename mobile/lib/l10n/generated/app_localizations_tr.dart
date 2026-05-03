@@ -5172,10 +5172,10 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Mesaj gönderilemedi';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Tekrar Dene';
 
   @override
   String get reportDialogCancel => 'İptal';

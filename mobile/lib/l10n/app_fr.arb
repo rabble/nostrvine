@@ -2433,6 +2433,8 @@
     "notificationFollowBack": "Suivre en retour",
     "profileSetupUploadSuccess": "Photo de profil importée avec succès !",
     "proofmodeCheckAiGenerated": "Vérifier si généré par IA",
+    "dmSendFailedMessage": "Impossible d'envoyer le message",
+    "dmSendFailedRetry": "Réessayer",
     "reportDialogCancel": "Annuler",
     "reportDialogReport": "Signaler",
     "routerInvalidCreator": "Créateur non valide",

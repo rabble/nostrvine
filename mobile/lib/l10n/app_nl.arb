@@ -2433,6 +2433,8 @@
     "notificationFollowBack": "Terugvolgen",
     "profileSetupUploadSuccess": "Profielfoto succesvol geüpload!",
     "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
+    "dmSendFailedMessage": "Bericht kon niet worden verzonden",
+    "dmSendFailedRetry": "Opnieuw",
     "reportDialogCancel": "Annuleren",
     "reportDialogReport": "Rapporteren",
     "routerInvalidCreator": "Ongeldige maker",

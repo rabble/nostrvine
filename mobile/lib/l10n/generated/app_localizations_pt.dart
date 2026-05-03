@@ -5222,10 +5222,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Falha ao enviar a mensagem';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Tentar novamente';
 
   @override
   String get reportDialogCancel => 'Cancelar';

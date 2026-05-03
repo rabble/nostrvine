@@ -5261,10 +5261,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Impossible d\'envoyer le message';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Réessayer';
 
   @override
   String get reportDialogCancel => 'Annuler';

@@ -2433,6 +2433,8 @@
     "notificationFollowBack": "Zurückfolgen",
     "profileSetupUploadSuccess": "Profilbild erfolgreich hochgeladen!",
     "proofmodeCheckAiGenerated": "Prüfen, ob KI-generiert",
+    "dmSendFailedMessage": "Nachricht konnte nicht gesendet werden",
+    "dmSendFailedRetry": "Erneut versuchen",
     "reportDialogCancel": "Abbrechen",
     "reportDialogReport": "Melden",
     "routerInvalidCreator": "Ungültiger Ersteller",

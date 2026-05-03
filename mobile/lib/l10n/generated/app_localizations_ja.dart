@@ -4977,10 +4977,10 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'メッセージを送信できなかった';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'もう一回';
 
   @override
   String get reportDialogCancel => 'キャンセル';

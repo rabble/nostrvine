@@ -5163,10 +5163,10 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Pesan gagal dikirim';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Coba Lagi';
 
   @override
   String get reportDialogCancel => 'Batal';

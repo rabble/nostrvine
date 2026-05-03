@@ -1721,6 +1721,8 @@
     "notificationFollowBack": "맞팔로우",
     "profileSetupUploadSuccess": "프로필 사진이 성공적으로 업로드되었어요!",
     "proofmodeCheckAiGenerated": "AI 생성 여부 확인",
+    "dmSendFailedMessage": "메시지를 보내지 못했어요",
+    "dmSendFailedRetry": "다시 시도",
     "reportDialogCancel": "취소",
     "reportDialogReport": "신고",
     "routerInvalidCreator": "유효하지 않은 크리에이터",

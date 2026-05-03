@@ -5210,10 +5210,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Bericht kon niet worden verzonden';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Opnieuw';
 
   @override
   String get reportDialogCancel => 'Annuleren';

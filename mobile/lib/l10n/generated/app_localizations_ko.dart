@@ -4994,10 +4994,10 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => '메시지를 보내지 못했어요';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => '다시 시도';
 
   @override
   String get reportDialogCancel => '취소';

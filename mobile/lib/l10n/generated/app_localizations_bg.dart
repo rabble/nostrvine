@@ -5241,10 +5241,10 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'Съобщението не мина';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'Опитай пак';
 
   @override
   String get reportDialogCancel => 'Отказ';

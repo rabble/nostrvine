@@ -5145,10 +5145,10 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+  String get dmSendFailedMessage => 'تعذّر إرسال الرسالة';
 
   @override
-  String get dmSendFailedRetry => 'Retry';
+  String get dmSendFailedRetry => 'إعادة المحاولة';
 
   @override
   String get reportDialogCancel => 'إلغاء';

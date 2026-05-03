@@ -2433,6 +2433,8 @@
     "notificationFollowBack": "Följ tillbaka",
     "profileSetupUploadSuccess": "Profilbilden laddades upp!",
     "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
+    "dmSendFailedMessage": "Meddelandet kunde inte skickas",
+    "dmSendFailedRetry": "Försök igen",
     "reportDialogCancel": "Avbryt",
     "reportDialogReport": "Rapportera",
     "routerInvalidCreator": "Ogiltig skapare",

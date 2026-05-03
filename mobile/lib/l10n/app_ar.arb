@@ -2425,6 +2425,8 @@
     "notificationFollowBack": "متابعة بالمقابل",
     "profileSetupUploadSuccess": "تم رفع صورة الملف الشخصي بنجاح!",
     "proofmodeCheckAiGenerated": "التحقق إذا كان مُنشأً بالذكاء الاصطناعي",
+    "dmSendFailedMessage": "تعذّر إرسال الرسالة",
+    "dmSendFailedRetry": "إعادة المحاولة",
     "reportDialogCancel": "إلغاء",
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",

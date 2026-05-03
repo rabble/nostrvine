@@ -2432,6 +2432,8 @@
     "notificationFollowBack": "Ikuti balik",
     "profileSetupUploadSuccess": "Foto profil berhasil diunggah!",
     "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
+    "dmSendFailedMessage": "Pesan gagal dikirim",
+    "dmSendFailedRetry": "Coba Lagi",
     "reportDialogCancel": "Batal",
     "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",

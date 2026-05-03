@@ -2432,6 +2432,8 @@
     "notificationFollowBack": "Geri takip et",
     "profileSetupUploadSuccess": "Profil fotoğrafı başarıyla yüklendi!",
     "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",
+    "dmSendFailedMessage": "Mesaj gönderilemedi",
+    "dmSendFailedRetry": "Tekrar Dene",
     "reportDialogCancel": "İptal",
     "reportDialogReport": "Bildir",
     "routerInvalidCreator": "Geçersiz içerik üretici",
