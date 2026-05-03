@@ -30,6 +30,7 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/web_video_feed.dart';
@@ -553,6 +554,38 @@ void main() {
           expect(find.text('home-sentinel'), findsOneWidget);
         },
       );
+
+      group('native-player branch', () {
+        setUp(() {
+          InfiniteVideoFeed.debugSetIsSupportedOverride(true);
+        });
+
+        tearDown(() {
+          InfiniteVideoFeed.debugSetIsSupportedOverride(false);
+        });
+
+        testWidgets(
+          'renders FeedVideos + InfiniteVideoFeed when supported',
+          (tester) async {
+            final videos = createTestVideos();
+
+            await tester.pumpWidget(
+              buildSubject(
+                state: FullscreenFeedState(
+                  status: FullscreenFeedStatus.ready,
+                  videos: videos,
+                ),
+              ),
+            );
+            await tester.pump();
+
+            expect(find.byType(FeedVideos), findsOneWidget);
+            expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+            expect(find.byType(PooledVideoFeed), findsNothing);
+            expect(find.byType(WebVideoFeed), findsNothing);
+          },
+        );
+      });
 
       testWidgets('resumes playback when app resumes on current route', (
         tester,

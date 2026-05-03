@@ -13,6 +13,7 @@ import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Entry point for the divine_video_player plugin on Android.
@@ -230,17 +231,17 @@ class DivineVideoPlayerPlugin : FlutterPlugin, MethodChannel.MethodCallHandler, 
  * instances created by [DivineVideoPlayerPlugin].
  */
 internal object PlayerRegistry {
-    private val players = mutableMapOf<Int, DivineVideoPlayerInstance>()
+    private val players = ConcurrentHashMap<Int, DivineVideoPlayerInstance>()
 
     fun get(id: Int): DivineVideoPlayerInstance? = players[id]
     fun put(id: Int, instance: DivineVideoPlayerInstance) { players[id] = instance }
     fun remove(id: Int): DivineVideoPlayerInstance? = players.remove(id)
     fun forAll(action: (DivineVideoPlayerInstance) -> Unit) {
-        players.values.forEach(action)
+        players.values.toList().forEach(action)
     }
     val size: Int get() = players.size
     fun disposeAll() {
-        players.values.forEach { it.dispose() }
+        players.values.toList().forEach { it.dispose() }
         players.clear()
     }
 }

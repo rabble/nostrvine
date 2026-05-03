@@ -287,10 +287,19 @@ void main() {
     });
 
     group('preCacheFiles with mocks', () {
+      Future<void> pumpDownloads(
+        FakeCancellableDownloader downloader, {
+        int expected = 1,
+      }) async {
+        for (var i = 0; i < 50 && downloader.downloads.length < expected; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+      }
+
       test('skips already cached files', () async {
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();
-        var downloadCount = 0;
+        final downloader = FakeCancellableDownloader();
 
         when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
@@ -303,10 +312,7 @@ void main() {
             enableSyncManifest: true,
           ),
           mockGetFileFromCache: (key) async => mockFileInfo,
-          mockDownloadFile: (url, {key, authHeaders}) async {
-            downloadCount++;
-            return mockFileInfo;
-          },
+          downloaderOverride: downloader,
         );
 
         await cacheManager.preCacheFiles([
@@ -315,42 +321,54 @@ void main() {
         ]);
 
         // Should skip downloads since files are cached
-        expect(downloadCount, 0);
+        expect(downloader.downloads, isEmpty);
       });
 
-      test('uses auth headers provider', () async {
-        final mockFile = MockFile();
-        final mockFileInfo = MockFileInfo();
-        final capturedHeaders = <String, Map<String, String>?>{};
+      test(
+        'uses native cancellable downloader with auth headers provider',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'precache_auth_$timestamp';
+          final sourceDir = Directory.systemTemp.createTempSync(
+            'precache_auth_src_',
+          );
+          final v1File = await createTestFile(sourceDir, 'v1.mp4');
+          final v2File = await createTestFile(sourceDir, 'v2.mp4');
+          final downloader = FakeCancellableDownloader();
 
-        when(mockFile.existsSync).thenReturn(true);
-        when(() => mockFile.path).thenReturn('/test/path/video.mp4');
-        when(() => mockFileInfo.file).thenReturn(mockFile);
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            mockGetFileFromCache: (key) async => null,
+            downloaderOverride: downloader,
+          );
 
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        cacheManager = TestableMediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: 'precache_auth_$timestamp',
-            enableSyncManifest: true,
-          ),
-          mockGetFileFromCache: (key) async => null,
-          mockDownloadFile: (url, {key, authHeaders}) async {
-            capturedHeaders[key!] = authHeaders;
-            return mockFileInfo;
-          },
-        );
+          final preCacheFuture = cacheManager.preCacheFiles(
+            [
+              (url: 'https://example.com/v1.mp4', key: 'v1'),
+              (url: 'https://example.com/v2.mp4', key: 'v2'),
+            ],
+            authHeadersProvider: (key) => {'X-Key': key},
+          );
 
-        await cacheManager.preCacheFiles(
-          [
-            (url: 'https://example.com/v1.mp4', key: 'v1'),
-            (url: 'https://example.com/v2.mp4', key: 'v2'),
-          ],
-          authHeadersProvider: (key) => {'X-Key': key},
-        );
+          await pumpDownloads(downloader, expected: 2);
+          expect(downloader.downloads, hasLength(2));
+          downloader.downloads[0].completeWith(v1File);
+          downloader.downloads[1].completeWith(v2File);
+          await preCacheFuture;
 
-        expect(capturedHeaders['v1'], {'X-Key': 'v1'});
-        expect(capturedHeaders['v2'], {'X-Key': 'v2'});
-      });
+          expect(downloader.downloads[0].url, 'https://example.com/v1.mp4');
+          expect(downloader.downloads[0].headers, {'X-Key': 'v1'});
+          expect(downloader.downloads[1].url, 'https://example.com/v2.mp4');
+          expect(downloader.downloads[1].headers, {'X-Key': 'v2'});
+
+          final cacheDir = Directory('$testTempPath/$cacheKey');
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+          if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
+        },
+      );
 
       test('tracks prefetched files when later used synchronously', () async {
         final mockFile = MockFile();
@@ -1088,7 +1106,6 @@ void main() {
         expect(cacheManager.getCachedFileSync('video_id')?.path, result!.path);
 
         await cacheManager.removeCachedFile('video_id__fb1');
-        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(cacheManager.getCachedFileSync('video_id'), isNull);
 
@@ -1136,7 +1153,6 @@ void main() {
         await op.file;
 
         await cacheManager.clearCache();
-        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(cacheManager.getCachedFileSync('video_id'), isNull);
 

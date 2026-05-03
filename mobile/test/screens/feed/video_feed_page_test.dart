@@ -22,6 +22,8 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
+import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -820,6 +822,72 @@ void main() {
         );
       },
     );
+  });
+
+  group('VideoFeedView native-player branch', () {
+    late VideoFeedBloc videoFeedBloc;
+    late VideoFeedController videoFeedController;
+    late _MockVideoVolumeCubit videoVolumeCubit;
+
+    setUp(() {
+      InfiniteVideoFeed.debugSetIsSupportedOverride(true);
+      videoFeedBloc = _MockVideoFeedBloc();
+      videoFeedController = _MockVideoFeedController();
+      videoVolumeCubit = _MockVideoVolumeCubit();
+      when(() => videoVolumeCubit.state).thenReturn(const VideoVolumeState());
+
+      when(() => videoFeedController.videoCount).thenReturn(1);
+      when(() => videoFeedController.videos).thenReturn([
+        const VideoItem(id: 'video-1', url: 'https://example.com/video.mp4'),
+      ]);
+      when(() => videoFeedController.currentIndex).thenReturn(0);
+      when(() => videoFeedController.addListener(any())).thenReturn(null);
+      when(() => videoFeedController.removeListener(any())).thenReturn(null);
+      when(() => videoFeedController.dispose()).thenReturn(null);
+    });
+
+    tearDown(() {
+      InfiniteVideoFeed.debugSetIsSupportedOverride(false);
+    });
+
+    Widget buildSubject(VideoFeedState state) {
+      when(() => videoFeedBloc.state).thenReturn(state);
+
+      return testMaterialApp(
+        additionalOverrides: [
+          routerLocationStreamProvider.overrideWith(
+            (ref) => Stream.value('/home'),
+          ),
+        ],
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<VideoFeedBloc>.value(value: videoFeedBloc),
+            BlocProvider<VideoVolumeCubit>.value(value: videoVolumeCubit),
+            BlocProvider<VideoPlaybackStatusCubit>(
+              create: (_) => VideoPlaybackStatusCubit(),
+            ),
+          ],
+          child: VideoFeedView(controller: videoFeedController),
+        ),
+      );
+    }
+
+    testWidgets('renders FeedVideos + InfiniteVideoFeed when supported', (
+      tester,
+    ) async {
+      final state = VideoFeedState(
+        status: VideoFeedStatus.success,
+        videos: [createTestVideoEvent()],
+      );
+
+      await tester.pumpWidget(buildSubject(state));
+      await tester.pump();
+
+      expect(find.byType(FeedVideos), findsOneWidget);
+      expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+      expect(find.byType(PooledVideoFeed), findsNothing);
+      expect(find.byType(WebVideoFeed), findsNothing);
+    });
   });
 
   group('VideoFeedView auto advance', () {

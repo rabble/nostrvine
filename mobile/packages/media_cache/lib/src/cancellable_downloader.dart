@@ -88,7 +88,13 @@ class _HttpDownload implements CancellableDownload {
 
   Future<void> _start() async {
     try {
-      final req = http.Request('GET', Uri.parse(_url));
+      final uri = Uri.parse(_url);
+      if (uri.scheme.toLowerCase() != 'https') {
+        _safeComplete(null);
+        return;
+      }
+
+      final req = http.Request('GET', uri);
       if (_headers != null) {
         req.headers.addAll(_headers);
       }

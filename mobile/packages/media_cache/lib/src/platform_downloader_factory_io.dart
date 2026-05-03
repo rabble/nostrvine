@@ -54,6 +54,9 @@ CancellableDownloader createPlatformDownloaderImpl({
     }
   } else if (Platform.isAndroid) {
     try {
+      // `cronet_http` does not expose per-client connect/idle timeout knobs.
+      // On Android, `connectionTimeout` and `idleTimeout` therefore do not
+      // apply while Cronet is active.
       return HttpCancellableDownloader(CronetClient.defaultCronetEngine());
     } on Object catch (e, st) {
       debugPrint(

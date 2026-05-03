@@ -134,6 +134,30 @@ void main() {
       expect(target.existsSync(), isFalse);
     });
 
+    test('rejects non-https urls before sending request', () async {
+      var sendCalled = false;
+      final client = _CallbackClient((_) async {
+        sendCalled = true;
+        return http.StreamedResponse(
+          Stream<List<int>>.value(utf8.encode('insecure')),
+          200,
+        );
+      });
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/http_not_allowed.mp4');
+
+      final file = await downloader
+          .download(
+            url: 'http://example.com/insecure.mp4',
+            targetFile: target,
+          )
+          .file;
+
+      expect(file, isNull);
+      expect(sendCalled, isFalse);
+      expect(target.existsSync(), isFalse);
+    });
+
     test('cancels before response arrives', () async {
       final responseCompleter = Completer<http.StreamedResponse>();
       final client = _CallbackClient((_) => responseCompleter.future);

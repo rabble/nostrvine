@@ -82,9 +82,17 @@ class MediaCacheConfig {
   final int maxNrOfCacheObjects;
 
   /// Timeout for establishing HTTP connections.
+  ///
+  /// Applied on Apple (`cupertino_http`) and dart:io fallback clients.
+  /// Android Cronet currently ignores this value because `cronet_http` does
+  /// not expose a matching configuration API.
   final Duration connectionTimeout;
 
   /// Timeout for idle HTTP connections.
+  ///
+  /// Applied on dart:io fallback clients.
+  /// Android Cronet currently ignores this value because `cronet_http` does
+  /// not expose a matching configuration API.
   final Duration idleTimeout;
 
   /// Maximum concurrent connections per host.
@@ -528,6 +536,21 @@ class MediaCacheManager extends CacheManager {
     String? aliasKey,
     Map<String, String>? authHeaders,
   }) {
+    return _cacheFileCancellable(
+      url,
+      key: key,
+      aliasKey: aliasKey,
+      authHeaders: authHeaders,
+    );
+  }
+
+  CancellableCacheOperation _cacheFileCancellable(
+    String url, {
+    required String key,
+    String? aliasKey,
+    Map<String, String>? authHeaders,
+    bool trackPrefetchMetrics = true,
+  }) {
     if (_isClosed) {
       return CancellableCacheOperation.fromDownload(_CompletedNullDownload());
     }
@@ -540,8 +563,10 @@ class MediaCacheManager extends CacheManager {
       if (cached != null) return CancellableCacheOperation.completed(cached);
     }
 
-    _prefetchedKeys.add(key);
-    metrics.prefetchedTotal++;
+    if (trackPrefetchMetrics) {
+      _prefetchedKeys.add(key);
+      metrics.prefetchedTotal++;
+    }
 
     final relativePath = _relativePathFor(key, url);
     final completer = Completer<File?>();
@@ -694,6 +719,8 @@ class MediaCacheManager extends CacheManager {
     }
     metrics.prefetchedTotal += items.length;
 
+    final inFlightByKey = <String, Future<File?>>{};
+
     // Process in batches
     for (var i = 0; i < items.length; i += batchSize) {
       final batch = <Future<File?>>[];
@@ -707,13 +734,25 @@ class MediaCacheManager extends CacheManager {
           continue;
         }
 
-        batch.add(
-          cacheFile(
-            item.url,
-            key: item.key,
-            authHeaders: authHeadersProvider?.call(item.key),
-          ),
-        );
+        final existingDownload = inFlightByKey[item.key];
+        if (existingDownload != null) {
+          batch.add(existingDownload);
+          continue;
+        }
+
+        final downloadFuture =
+            _cacheFileCancellable(
+              item.url,
+              key: item.key,
+              authHeaders: authHeadersProvider?.call(item.key),
+              trackPrefetchMetrics: false,
+            ).file.whenComplete(
+              () {
+                inFlightByKey.removeWhere((key, _) => key == item.key);
+              },
+            );
+        inFlightByKey[item.key] = downloadFuture;
+        batch.add(downloadFuture);
       }
 
       // Wait for batch to complete
@@ -736,7 +775,7 @@ class MediaCacheManager extends CacheManager {
       _cacheManifest.remove(aliasKey);
     }
     if (aliasKeysToRemove.isNotEmpty) {
-      unawaited(_persistAliasMap());
+      await _persistAliasMap();
     }
 
     // Remove from manifest
@@ -752,7 +791,7 @@ class MediaCacheManager extends CacheManager {
     _cacheManifest.clear();
     if (_aliasMap.isNotEmpty) {
       _aliasMap.clear();
-      unawaited(_persistAliasMap());
+      await _persistAliasMap();
     }
     _pendingCacheOperations.clear();
   }
