@@ -33,7 +33,7 @@ class AudioCategoryBar extends StatelessWidget {
           _Chip(
             onTap: () => onSelect(.mySounds),
             isSelected: category == .mySounds,
-            label: context.l10n.videoEditorAudioCategoryMySounds,
+            label: context.l10n.soundsSavedLibraryTitle,
           ),
         ],
       ),

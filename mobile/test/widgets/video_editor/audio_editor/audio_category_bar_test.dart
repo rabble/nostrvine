@@ -32,7 +32,7 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.videoEditorAudioCategoryDivine), findsOneWidget);
       expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsOneWidget);
-      expect(find.text(l10n.videoEditorAudioCategoryMySounds), findsOneWidget);
+      expect(find.text(l10n.soundsSavedLibraryTitle), findsOneWidget);
     });
 
     testWidgets('calls onSelect with diVine when first chip is tapped', (
@@ -86,7 +86,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      await tester.tap(find.text(l10n.videoEditorAudioCategoryMySounds));
+      await tester.tap(find.text(l10n.soundsSavedLibraryTitle));
       await tester.pumpAndSettle();
 
       expect(selected, equals(AudioCategory.mySounds));
@@ -119,7 +119,7 @@ void main() {
       );
       final mySoundsSemantics = tester.widget<Semantics>(
         find.ancestor(
-          of: find.text(l10n.videoEditorAudioCategoryMySounds),
+          of: find.text(l10n.soundsSavedLibraryTitle),
           matching: find.byWidgetPredicate(
             (w) => w is Semantics && w.properties.selected != null,
           ),

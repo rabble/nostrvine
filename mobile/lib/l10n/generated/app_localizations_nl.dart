@@ -6350,16 +6350,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
-
-  @override
-  String get videoEditorAudioNoSavedSoundsTitle => 'No saved sounds yet';
-
-  @override
-  String get videoEditorAudioNoSavedSoundsSubtitle =>
-      'Tap Use Sound on a video to save it here.';
-
-  @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pijlgereedschap';
 
   @override

@@ -256,6 +256,10 @@ class _AudioSelectionBottomSheetState
                     selectedSound: _selectedItem,
                     audioService: _audioService,
                     onSelect: _selectSound,
+                    emptyTitle:
+                        context.l10n.videoEditorAudioNoSoundsAvailableTitle,
+                    emptySubtitle:
+                        context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
                   ),
 
                   nostrSoundsAsync.when(
@@ -266,6 +270,11 @@ class _AudioSelectionBottomSheetState
                         selectedSound: _selectedItem,
                         audioService: _audioService,
                         onSelect: _selectSound,
+                        emptyTitle:
+                            context.l10n.videoEditorAudioNoSoundsAvailableTitle,
+                        emptySubtitle: context
+                            .l10n
+                            .videoEditorAudioNoSoundsAvailableSubtitle,
                       );
                     },
                     loading: () =>
@@ -279,9 +288,8 @@ class _AudioSelectionBottomSheetState
                     selectedSound: _selectedItem,
                     audioService: _audioService,
                     onSelect: _selectSound,
-                    emptyTitle: context.l10n.videoEditorAudioNoSavedSoundsTitle,
-                    emptySubtitle:
-                        context.l10n.videoEditorAudioNoSavedSoundsSubtitle,
+                    emptyTitle: context.l10n.soundsSavedEmptyTitle,
+                    emptySubtitle: context.l10n.soundsSavedEmptyDescription,
                   ),
                 ],
               ),
@@ -315,8 +323,8 @@ class _SoundsContent extends StatelessWidget {
     required this.selectedSound,
     required this.audioService,
     required this.onSelect,
-    this.emptyTitle,
-    this.emptySubtitle,
+    required this.emptyTitle,
+    required this.emptySubtitle,
   });
 
   final ScrollController scrollController;
@@ -324,8 +332,8 @@ class _SoundsContent extends StatelessWidget {
   final AudioEvent? selectedSound;
   final AudioPlaybackService audioService;
   final ValueChanged<AudioEvent> onSelect;
-  final String? emptyTitle;
-  final String? emptySubtitle;
+  final String emptyTitle;
+  final String emptySubtitle;
 
   static const _bottomSpace = 120.0;
 
@@ -378,10 +386,10 @@ class _SoundsContent extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({this.title, this.subtitle});
+  const _EmptyState({required this.title, required this.subtitle});
 
-  final String? title;
-  final String? subtitle;
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -391,13 +399,10 @@ class _EmptyState extends StatelessWidget {
         children: [
           const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
           const SizedBox(height: 16),
-          Text(
-            title ?? context.l10n.videoEditorAudioNoSoundsAvailableTitle,
-            style: VineTheme.bodyLargeFont(),
-          ),
+          Text(title, style: VineTheme.bodyLargeFont()),
           const SizedBox(height: 8),
           Text(
-            subtitle ?? context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
+            subtitle,
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),
