@@ -89,7 +89,7 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
       deepLinkSource.add(
-        const DeepLink(type: DeepLinkType.video, videoId: 'late-a'),
+        const DeepLink(type: DeepLinkType.video, videoRef: 'late-a'),
       );
 
       expect(serviceA.receivedDeepLinks, isEmpty);
@@ -113,7 +113,7 @@ void main() {
 
       await Future<void>.delayed(Duration.zero);
       deepLinkSource.add(
-        const DeepLink(type: DeepLinkType.video, videoId: 'late-b'),
+        const DeepLink(type: DeepLinkType.video, videoRef: 'late-b'),
       );
 
       expect(serviceB.isDisposed, isFalse);

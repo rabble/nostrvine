@@ -24,7 +24,10 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   /// Path pattern for this route.
   static const path = '/video/:id';
 
-  /// Build path for a specific video ID.
+  /// Build path for a specific video route reference.
+  ///
+  /// The route segment may be a raw event ID, a stable ID / d-tag, or
+  /// a NIP-19 reference such as `note1...`, `nevent1...`, or `naddr1...`.
   static String pathForId(String id) => '$basePath/$id';
 
   const VideoDetailScreen({
@@ -54,7 +57,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   Future<void> _loadVideo() async {
     try {
       Log.info(
-        '📱 Loading video by ID: ${widget.videoId}',
+        '📱 Loading video from route ref: ${widget.videoId}',
         name: 'VideoDetailScreen',
         category: LogCategory.video,
       );
@@ -62,7 +65,9 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       // fetchVideoWithStats handles cache→relay lookup and bulk-stats
       // hydration in one call, matching what feed providers do.
       final videosRepository = ref.read(videosRepositoryProvider);
-      final video = await videosRepository.fetchVideoWithStats(widget.videoId);
+      final video = await videosRepository.fetchVideoWithStatsForRouteId(
+        widget.videoId,
+      );
 
       if (video != null) {
         Log.info(
@@ -123,10 +128,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (_error != null) {
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: const DiVineAppBar(
-          title: '',
-          backgroundMode: DiVineAppBarBackgroundMode.transparent,
-        ),
+        appBar: _buildExitAppBar(context),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -148,9 +150,10 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
 
     if (_video == null || videoEventService.shouldHideVideo(_video!)) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        body: Center(
+        appBar: _buildExitAppBar(context),
+        body: const Center(
           child: Text(
             'Video not found',
             style: TextStyle(color: VineTheme.primaryText),
@@ -189,5 +192,23 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           contextTitle: 'Shared Video',
           trafficSource: ViewTrafficSource.share,
         );
+  }
+
+  DiVineAppBar _buildExitAppBar(BuildContext context) {
+    return DiVineAppBar(
+      title: '',
+      showBackButton: true,
+      onBackPressed: () => _handleExit(context),
+      backButtonSemanticLabel: 'Close video player',
+      backgroundMode: DiVineAppBarBackgroundMode.transparent,
+    );
+  }
+
+  void _handleExit(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/');
   }
 }

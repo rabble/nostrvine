@@ -6,6 +6,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -6137,9 +6138,7 @@ void main() {
         );
         final result = await repo.fetchVideoWithStats('');
         expect(result, isNull);
-        verifyNever(
-          () => mockNostrClient.queryEvents(any()),
-        );
+        verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
       test('returns null when event is not found on relay', () async {
@@ -6211,9 +6210,7 @@ void main() {
             () => mockNostrClient.queryEvents(any()),
           ).thenAnswer((_) async => [nostrEvent]);
 
-          when(
-            () => mockFunnelcakeClient.isAvailable,
-          ).thenReturn(false);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
 
           final repo = VideosRepository(
             nostrClient: mockNostrClient,
@@ -6224,6 +6221,139 @@ void main() {
           expect(result, isNotNull);
           expect(result!.id, equals(eventId));
           expect(result.originalLoops, isNull);
+        },
+      );
+    });
+
+    group('fetchVideoWithStatsForRouteId', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+      });
+
+      test('resolves note1 route IDs via event ID lookup', () async {
+        const eventId =
+            'a695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+        final noteId = Nip19.encodeNoteId(eventId);
+        final event = _createVideoEvent(
+          id: eventId,
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1739350000,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(noteId);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+      });
+
+      test('resolves nevent route IDs via event ID lookup', () async {
+        const eventId =
+            'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+        const author =
+            '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+        final nevent = NIP19Tlv.encodeNevent(
+          Nevent(id: eventId, author: author),
+        );
+        final event = _createVideoEvent(
+          id: eventId,
+          pubkey: author,
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1739350000,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(nevent);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+      });
+
+      test('resolves naddr route IDs via addressable lookup', () async {
+        const eventId =
+            'c695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+        const author =
+            '4bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+        const dTag = 'shared-video';
+        final naddr = NIP19Tlv.encodeNaddr(
+          Naddr(id: dTag, author: author, kind: EventKind.videoVertical),
+        );
+        final event = _createVideoEventWithDTag(
+          id: eventId,
+          pubkey: author,
+          dTag: dTag,
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1739350000,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(naddr);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+        expect(result.vineId, equals(dTag));
+      });
+
+      test(
+        'resolves plain stable IDs from local storage before relay',
+        () async {
+          const eventId =
+              'd695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const stableId = 'shared-video';
+          final event = _createVideoEventWithDTag(
+            id: eventId,
+            pubkey: 'pubkey-1',
+            dTag: stableId,
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1739350000,
+          );
+          final mockLocalStorage = MockVideoLocalStorage();
+
+          when(
+            () => mockLocalStorage.getEventsByDTag(stableId),
+          ).thenAnswer((_) async => [event]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(stableId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          verify(() => mockLocalStorage.getEventsByDTag(stableId)).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
         },
       );
     });

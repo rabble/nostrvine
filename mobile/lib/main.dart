@@ -1153,9 +1153,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
           switch (deepLink.type) {
             case DeepLinkType.video:
-              if (deepLink.videoId != null) {
+              if (deepLink.videoRef != null) {
                 final targetPath = VideoDetailScreen.pathForId(
-                  deepLink.videoId!,
+                  deepLink.videoRef!,
                 );
                 Log.info(
                   '📱 Navigating to video: $targetPath',
@@ -1183,7 +1183,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 }
               } else {
                 Log.warning(
-                  '⚠️ Video deep link missing videoId',
+                  '⚠️ Video deep link missing videoRef',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );

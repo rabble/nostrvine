@@ -20,9 +20,9 @@ String? divineUrlToPushRoute(Uri uri) {
   final deepLink = DeepLinkService.parseDeepLink(uri.toString());
   switch (deepLink.type) {
     case DeepLinkType.video:
-      final videoId = deepLink.videoId;
-      if (videoId == null || videoId.isEmpty) return null;
-      return VideoDetailScreen.pathForId(videoId);
+      final videoRef = deepLink.videoRef;
+      if (videoRef == null || videoRef.isEmpty) return null;
+      return VideoDetailScreen.pathForId(videoRef);
     case DeepLinkType.profile:
       final npub = deepLink.npub;
       if (npub == null || npub.isEmpty) return null;
