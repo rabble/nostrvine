@@ -6388,7 +6388,8 @@ void main() {
         'falls back to relay lookup for stable IDs missing from local cache',
         () async {
           const eventId =
-              'f695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+              'f695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
           const stableId = 'relay-only-video';
           final event = _createVideoEventWithDTag(
             id: eventId,
