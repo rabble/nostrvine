@@ -29,9 +29,8 @@ class OgVinerBadge extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: VineTheme.onPrimary,
-              fontFamily: 'Inter',
-              fontSize: size * 0.64,
-              fontWeight: FontWeight.w900,
+              fontFamily: 'Pacifico',
+              fontSize: size * 0.85,
               height: 1,
             ),
           ),
