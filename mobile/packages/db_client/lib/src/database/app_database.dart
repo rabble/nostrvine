@@ -32,6 +32,7 @@ const _notificationRetentionDays = 7;
     Clips,
     DirectMessages,
     Conversations,
+    OutgoingDms,
   ],
   daos: [
     UserProfilesDao,
@@ -49,6 +50,7 @@ const _notificationRetentionDays = 7;
     ClipsDao,
     DirectMessagesDao,
     ConversationsDao,
+    OutgoingDmsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -413,6 +415,55 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_conversation_owner_pubkey
       ON conversations (owner_pubkey)
     ''');
+
+    // Check if outgoing_dms table exists, create if missing.
+    // Added for #3909 (durable outgoing-DM queue + self-wrap retry).
+    // Schema version stays at 1 — same runtime CREATE-IF-NOT-EXISTS
+    // pattern as personal_reposts and nip05_verifications above.
+    final outgoingDmsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='outgoing_dms'",
+    ).get();
+
+    if (outgoingDmsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE outgoing_dms (
+          id TEXT NOT NULL PRIMARY KEY,
+          conversation_id TEXT NOT NULL,
+          recipient_pubkey TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          rumor_event_json TEXT NOT NULL,
+          message_kind INTEGER NOT NULL DEFAULT 14,
+          reply_to_id TEXT,
+          recipient_wrap_status TEXT NOT NULL,
+          self_wrap_status TEXT NOT NULL,
+          recipient_wrap_event_id TEXT,
+          self_wrap_event_id TEXT,
+          retry_count INTEGER NOT NULL DEFAULT 0,
+          last_error TEXT,
+          last_attempt_at INTEGER,
+          queued_at INTEGER NOT NULL,
+          owner_pubkey TEXT NOT NULL
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_conversation
+        ON outgoing_dms (owner_pubkey, conversation_id, created_at DESC)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_recipient_status
+        ON outgoing_dms (owner_pubkey, recipient_wrap_status)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_self_status
+        ON outgoing_dms (owner_pubkey, self_wrap_status)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_queued_at
+        ON outgoing_dms (queued_at)
+      ''');
+    }
 
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();

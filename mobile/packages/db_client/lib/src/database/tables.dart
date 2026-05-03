@@ -906,3 +906,143 @@ class PersonalReposts extends Table {
     ),
   ];
 }
+
+/// Durable queue of outgoing NIP-17 direct messages.
+///
+/// Holds rows for messages that the user has attempted to send but whose
+/// publish to relays is not yet fully confirmed. NIP-17 is **two**
+/// independent kind-1059 publishes (recipient gift wrap + self gift
+/// wrap), tracked separately so a partial-delivery state can be retried
+/// without re-publishing the recipient wrap and double-delivering.
+///
+/// Lifecycle:
+/// - Insert with both statuses = `pending` immediately before
+///   `NIP17MessageService.sendPrivateMessage`.
+/// - On result: update each status to `sent` or `failed` based on the
+///   per-wrap publish outcome (`NIP17SendResult.success` for recipient,
+///   `NIP17SendResult.selfWrapPublished` for self).
+/// - When **both** statuses are `sent`: delete the row in the same
+///   transaction that inserts the corresponding `direct_messages` row.
+///   Atomicity prevents the watcher from observing a window where the
+///   message is in neither table.
+/// - When **either** status is `failed`: keep the row, populate
+///   `last_error` and `last_attempt_at`, increment `retry_count`.
+///   Background retry service replays only the still-failed wrap.
+///
+/// `rumor_event_json` stores the serialized rumor (kind 14/15 unsigned
+/// event) so retries re-wrap the **same** rumor — preserves the
+/// rumor's `id` (a hash of its fields) so the receiver's gift-wrap
+/// dedup correctly drops the duplicate publish on retry.
+@DataClassName('OutgoingDmRow')
+class OutgoingDms extends Table {
+  @override
+  String get tableName => 'outgoing_dms';
+
+  /// Primary key. Equal to the rumor's event id (`rumor_event_json` →
+  /// `id`), so a single logical message has exactly one queue row even
+  /// across retries.
+  TextColumn get id => text()();
+
+  /// Deterministic conversation identifier (SHA-256 of sorted
+  /// participant pubkeys). Same shape as `direct_messages.conversation_id`
+  /// so the BLoC can `Rx.combineLatest2(watchMessages, watchOutgoing)`
+  /// for a conversation view.
+  TextColumn get conversationId => text().named('conversation_id')();
+
+  /// Recipient's hex pubkey for the 1:1 path. (Group sends file one row
+  /// per participant — `conversation_id` is the group conversation, but
+  /// each row is targeted at one recipient.)
+  TextColumn get recipientPubkey => text().named('recipient_pubkey')();
+
+  /// Plaintext message content. Stored alongside `rumor_event_json` so
+  /// the UI can render the bubble without re-parsing the rumor on every
+  /// rebuild. Authoritative source for retries is `rumor_event_json`.
+  TextColumn get content => text()();
+
+  /// Unix timestamp from the rumor event's `created_at`. Stable across
+  /// retries because the rumor itself is reused.
+  IntColumn get createdAt => integer().named('created_at')();
+
+  /// Serialized JSON of the unsigned NIP-17 rumor (kind 14 or 15). Used
+  /// on retry so we re-wrap the same rumor — preserving `rumor.id`,
+  /// which is what the receiver's gift-wrap dedup keys on.
+  TextColumn get rumorEventJson => text().named('rumor_event_json')();
+
+  /// The rumor event kind (14 = text, 15 = file). Defaults to 14.
+  IntColumn get messageKind =>
+      integer().withDefault(const Constant(14)).named('message_kind')();
+
+  /// Optional reply target rumor id.
+  TextColumn get replyToId => text().nullable().named('reply_to_id')();
+
+  /// Status of the recipient gift-wrap publish: `pending` | `sent` |
+  /// `failed`. Stored as a string so adding new states (e.g. `cancelled`)
+  /// is a non-migration change.
+  TextColumn get recipientWrapStatus => text().named('recipient_wrap_status')();
+
+  /// Status of the self-addressed gift-wrap publish: same enum as
+  /// `recipient_wrap_status`. The `false` value of
+  /// `NIP17SendResult.selfWrapPublished` flips this to `failed`; a row
+  /// with `recipient: sent, self: failed` is the partial-delivery state
+  /// from #3909 / #3902.
+  TextColumn get selfWrapStatus => text().named('self_wrap_status')();
+
+  /// Recipient gift-wrap event id (kind 1059) once published. Null while
+  /// `recipient_wrap_status` is `pending` or `failed`.
+  TextColumn get recipientWrapEventId =>
+      text().nullable().named('recipient_wrap_event_id')();
+
+  /// Self gift-wrap event id (kind 1059) once published. Null while
+  /// `self_wrap_status` is `pending` or `failed`.
+  TextColumn get selfWrapEventId =>
+      text().nullable().named('self_wrap_event_id')();
+
+  /// How many publish attempts this row has survived. Caps growth at the
+  /// retry policy's max; once exhausted the UI surfaces a manual retry
+  /// affordance.
+  IntColumn get retryCount =>
+      integer().withDefault(const Constant(0)).named('retry_count')();
+
+  /// Last error message from a failed publish attempt. `null` when the
+  /// most recent transition was a success.
+  TextColumn get lastError => text().nullable().named('last_error')();
+
+  /// Wall-clock timestamp of the most recent publish attempt. Drives
+  /// the retry service's backoff scheduling.
+  DateTimeColumn get lastAttemptAt =>
+      dateTime().nullable().named('last_attempt_at')();
+
+  /// Wall-clock timestamp of the row's creation. Used to order the queue
+  /// when retrying.
+  DateTimeColumn get queuedAt => dateTime().named('queued_at')();
+
+  /// Hex pubkey of the account that queued this send. Mirrors
+  /// `direct_messages.owner_pubkey` for multi-account isolation.
+  TextColumn get ownerPubkey => text().named('owner_pubkey')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_outgoing_dms_owner_conversation',
+      'CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_conversation '
+          'ON outgoing_dms (owner_pubkey, conversation_id, created_at DESC)',
+    ),
+    Index(
+      'idx_outgoing_dms_owner_recipient_status',
+      'CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_recipient_status '
+          'ON outgoing_dms (owner_pubkey, recipient_wrap_status)',
+    ),
+    Index(
+      'idx_outgoing_dms_owner_self_status',
+      'CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_self_status '
+          'ON outgoing_dms (owner_pubkey, self_wrap_status)',
+    ),
+    Index(
+      'idx_outgoing_dms_queued_at',
+      'CREATE INDEX IF NOT EXISTS idx_outgoing_dms_queued_at '
+          'ON outgoing_dms (queued_at)',
+    ),
+  ];
+}

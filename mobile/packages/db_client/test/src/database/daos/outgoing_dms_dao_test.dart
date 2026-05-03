@@ -1,0 +1,487 @@
+// ABOUTME: Unit tests for OutgoingDmsDao — durable outgoing-DM queue
+// ABOUTME: with per-wrap publish status. Tests CRUD, reactive streams,
+// ABOUTME: retry filtering, and owner-pubkey isolation.
+
+import 'dart:io';
+
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  late AppDatabase database;
+  late OutgoingDmsDao dao;
+  late String tempDbPath;
+
+  // Valid 64-char hex pubkeys for testing.
+  const ownerA =
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const ownerB =
+      'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+  const recipient =
+      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+  const recipient2 =
+      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+  const conversationId =
+      'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+  const conversationId2 =
+      'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+
+  // Helper: build a fresh queued OutgoingDm with both wraps pending.
+  OutgoingDm makeDm({
+    required String id,
+    String owner = ownerA,
+    String recipientPubkey = recipient,
+    String conversationIdValue = conversationId,
+    OutgoingWrapStatus recipientStatus = OutgoingWrapStatus.pending,
+    OutgoingWrapStatus selfStatus = OutgoingWrapStatus.pending,
+    int retryCount = 0,
+    DateTime? queuedAt,
+    int createdAt = 1700000000,
+  }) {
+    return OutgoingDm(
+      id: id,
+      conversationId: conversationIdValue,
+      recipientPubkey: recipientPubkey,
+      content: 'hello',
+      createdAt: createdAt,
+      rumorEventJson: '{"id":"$id","kind":14,"content":"hello"}',
+      recipientWrapStatus: recipientStatus,
+      selfWrapStatus: selfStatus,
+      retryCount: retryCount,
+      queuedAt: queuedAt ?? DateTime.utc(2026, 5),
+      ownerPubkey: owner,
+    );
+  }
+
+  setUp(() async {
+    final tempDir = Directory.systemTemp.createTempSync('outgoing_dms_test_');
+    tempDbPath = '${tempDir.path}/test.db';
+
+    database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+    dao = database.outgoingDmsDao;
+  });
+
+  tearDown(() async {
+    await database.close();
+    final file = File(tempDbPath);
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+    final dir = Directory(tempDbPath).parent;
+    if (dir.existsSync()) {
+      dir.deleteSync(recursive: true);
+    }
+  });
+
+  group('OutgoingDmsDao', () {
+    group('enqueue', () {
+      test('inserts a new row in pending/pending state', () async {
+        final dm = makeDm(id: 'aaaa');
+        await dao.enqueue(dm);
+
+        final fetched = await dao.getById('aaaa');
+        expect(fetched, isNotNull);
+        expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.pending);
+        expect(fetched.selfWrapStatus, OutgoingWrapStatus.pending);
+        expect(fetched.retryCount, equals(0));
+        expect(fetched.lastError, isNull);
+      });
+
+      test(
+        're-enqueueing the same id replaces the row (idempotent retry)',
+        () async {
+          await dao.enqueue(makeDm(id: 'aaaa'));
+          await dao.enqueue(
+            makeDm(id: 'aaaa', retryCount: 3),
+          );
+
+          final fetched = await dao.getById('aaaa');
+          expect(fetched!.retryCount, equals(3));
+        },
+      );
+    });
+
+    group('markRecipientWrapStatus / markSelfWrapStatus', () {
+      test('flips recipient status to sent and records eventId', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+
+        final ok = await dao.markRecipientWrapStatus(
+          id: 'aaaa',
+          status: OutgoingWrapStatus.sent,
+          eventId: 'rcpt-evt-id',
+        );
+
+        expect(ok, isTrue);
+        final fetched = await dao.getById('aaaa');
+        expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.sent);
+        expect(fetched.recipientWrapEventId, equals('rcpt-evt-id'));
+        expect(fetched.lastAttemptAt, isNotNull);
+        expect(
+          fetched.selfWrapStatus,
+          OutgoingWrapStatus.pending,
+          reason: 'self status is independent of recipient status',
+        );
+      });
+
+      test(
+        'flips self status to failed and records lastError independent '
+        'of recipient status (the partial-delivery state)',
+        () async {
+          await dao.enqueue(makeDm(id: 'aaaa'));
+          await dao.markRecipientWrapStatus(
+            id: 'aaaa',
+            status: OutgoingWrapStatus.sent,
+            eventId: 'rcpt-evt-id',
+          );
+
+          final ok = await dao.markSelfWrapStatus(
+            id: 'aaaa',
+            status: OutgoingWrapStatus.failed,
+            lastError: 'self-wrap relay rejected',
+          );
+
+          expect(ok, isTrue);
+          final fetched = await dao.getById('aaaa');
+          expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.sent);
+          expect(fetched.selfWrapStatus, OutgoingWrapStatus.failed);
+          expect(fetched.lastError, equals('self-wrap relay rejected'));
+          expect(fetched.isFullyDelivered, isFalse);
+          expect(fetched.hasRetryableFailure, isTrue);
+        },
+      );
+
+      test('returns false when the row does not exist', () async {
+        final ok = await dao.markRecipientWrapStatus(
+          id: 'missing',
+          status: OutgoingWrapStatus.sent,
+        );
+        expect(ok, isFalse);
+      });
+    });
+
+    group('incrementRetry', () {
+      test('increases retry_count by one and updates lastAttemptAt', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+
+        final before = await dao.getById('aaaa');
+        expect(before!.retryCount, equals(0));
+        expect(before.lastAttemptAt, isNull);
+
+        await dao.incrementRetry('aaaa');
+        await dao.incrementRetry('aaaa');
+
+        final after = await dao.getById('aaaa');
+        expect(after!.retryCount, equals(2));
+        expect(after.lastAttemptAt, isNotNull);
+      });
+    });
+
+    group('deleteById', () {
+      test('removes the row and returns the affected count', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+
+        final deleted = await dao.deleteById('aaaa');
+
+        expect(deleted, equals(1));
+        expect(await dao.getById('aaaa'), isNull);
+      });
+
+      test('returns 0 when the row does not exist', () async {
+        expect(await dao.deleteById('missing'), equals(0));
+      });
+    });
+
+    group('watchForConversation', () {
+      test('emits initial empty list for an empty conversation', () async {
+        final stream = dao.watchForConversation(
+          conversationId: conversationId,
+          ownerPubkey: ownerA,
+        );
+
+        await expectLater(
+          stream,
+          emits(isEmpty),
+        );
+      });
+
+      test('emits a new list after enqueue', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+
+        // After the row is committed, the stream's first emission to a
+        // fresh subscriber is the post-enqueue state.
+        await expectLater(
+          dao.watchForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          ),
+          emits(
+            allOf(
+              hasLength(1),
+              contains(
+                isA<OutgoingDm>()
+                    .having((e) => e.id, 'id', 'aaaa')
+                    .having(
+                      (e) => e.recipientWrapStatus,
+                      'recipientWrapStatus',
+                      OutgoingWrapStatus.pending,
+                    ),
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('emits the new status after markRecipientWrapStatus', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+        await dao.markRecipientWrapStatus(
+          id: 'aaaa',
+          status: OutgoingWrapStatus.sent,
+          eventId: 'evt-1',
+        );
+
+        await expectLater(
+          dao.watchForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          ),
+          emits(
+            contains(
+              isA<OutgoingDm>().having(
+                (e) => e.recipientWrapStatus,
+                'recipientWrapStatus',
+                OutgoingWrapStatus.sent,
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('emits empty after deleteById', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+        await dao.deleteById('aaaa');
+
+        await expectLater(
+          dao.watchForConversation(
+            conversationId: conversationId,
+            ownerPubkey: ownerA,
+          ),
+          emits(isEmpty),
+        );
+      });
+
+      test('owner-pubkey isolation — does not include other owners', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+        await dao.enqueue(makeDm(id: 'bbbb', owner: ownerB));
+
+        final stream = dao.watchForConversation(
+          conversationId: conversationId,
+          ownerPubkey: ownerA,
+        );
+
+        await expectLater(
+          stream,
+          emits(
+            allOf(
+              hasLength(1),
+              contains(isA<OutgoingDm>().having((e) => e.id, 'id', 'aaaa')),
+            ),
+          ),
+        );
+      });
+
+      test('does not include rows from a different conversation', () async {
+        await dao.enqueue(makeDm(id: 'aaaa'));
+        await dao.enqueue(
+          makeDm(id: 'bbbb', conversationIdValue: conversationId2),
+        );
+
+        final stream = dao.watchForConversation(
+          conversationId: conversationId,
+          ownerPubkey: ownerA,
+        );
+
+        await expectLater(
+          stream,
+          emits(
+            allOf(
+              hasLength(1),
+              contains(isA<OutgoingDm>().having((e) => e.id, 'id', 'aaaa')),
+            ),
+          ),
+        );
+      });
+    });
+
+    group('getRetryableForOwner', () {
+      test(
+        'returns rows where either wrap is failed and retry_count is '
+        'under the cap',
+        () async {
+          // Both pending: not retryable yet (no failure recorded).
+          await dao.enqueue(makeDm(id: 'pending'));
+          // Recipient failed: retryable.
+          await dao.enqueue(
+            makeDm(
+              id: 'rcpt-failed',
+              recipientStatus: OutgoingWrapStatus.failed,
+            ),
+          );
+          // Self failed (the F3 partial-delivery): retryable.
+          await dao.enqueue(
+            makeDm(
+              id: 'self-failed',
+              recipientStatus: OutgoingWrapStatus.sent,
+              selfStatus: OutgoingWrapStatus.failed,
+            ),
+          );
+          // Both sent: not retryable.
+          await dao.enqueue(
+            makeDm(
+              id: 'both-sent',
+              recipientStatus: OutgoingWrapStatus.sent,
+              selfStatus: OutgoingWrapStatus.sent,
+            ),
+          );
+          // Failed but past the retry cap: excluded.
+          await dao.enqueue(
+            makeDm(
+              id: 'exhausted',
+              recipientStatus: OutgoingWrapStatus.failed,
+              retryCount: 5,
+            ),
+          );
+
+          final retryable = await dao.getRetryableForOwner(
+            ownerPubkey: ownerA,
+            maxRetries: 5,
+          );
+
+          expect(
+            retryable.map((e) => e.id),
+            unorderedEquals(['rcpt-failed', 'self-failed']),
+          );
+        },
+      );
+
+      test('owner-pubkey isolation', () async {
+        await dao.enqueue(
+          makeDm(
+            id: 'aaaa',
+            recipientStatus: OutgoingWrapStatus.failed,
+          ),
+        );
+        await dao.enqueue(
+          makeDm(
+            id: 'bbbb',
+            owner: ownerB,
+            recipientStatus: OutgoingWrapStatus.failed,
+          ),
+        );
+
+        final retryable = await dao.getRetryableForOwner(
+          ownerPubkey: ownerA,
+          maxRetries: 5,
+        );
+
+        expect(retryable.map((e) => e.id), equals(['aaaa']));
+      });
+    });
+
+    group('getStillPendingForOwner', () {
+      test('returns rows with at least one wrap still pending', () async {
+        await dao.enqueue(makeDm(id: 'pending'));
+        await dao.enqueue(
+          makeDm(
+            id: 'half-pending',
+            recipientStatus: OutgoingWrapStatus.sent,
+          ),
+        );
+        await dao.enqueue(
+          makeDm(
+            id: 'both-sent',
+            recipientStatus: OutgoingWrapStatus.sent,
+            selfStatus: OutgoingWrapStatus.sent,
+          ),
+        );
+        await dao.enqueue(
+          makeDm(
+            id: 'failed',
+            recipientStatus: OutgoingWrapStatus.failed,
+            selfStatus: OutgoingWrapStatus.failed,
+          ),
+        );
+
+        final pending = await dao.getStillPendingForOwner(ownerA);
+
+        expect(
+          pending.map((e) => e.id),
+          unorderedEquals(['pending', 'half-pending']),
+        );
+      });
+    });
+
+    group('isFullyDelivered + hasRetryableFailure (model getters)', () {
+      test('isFullyDelivered is true only when both wraps are sent', () async {
+        final dm = makeDm(id: 'aaaa');
+        expect(dm.isFullyDelivered, isFalse);
+        expect(
+          dm
+              .copyWith(
+                recipientWrapStatus: OutgoingWrapStatus.sent,
+                selfWrapStatus: OutgoingWrapStatus.sent,
+              )
+              .isFullyDelivered,
+          isTrue,
+        );
+        expect(
+          dm
+              .copyWith(
+                recipientWrapStatus: OutgoingWrapStatus.sent,
+                selfWrapStatus: OutgoingWrapStatus.failed,
+              )
+              .isFullyDelivered,
+          isFalse,
+        );
+      });
+
+      test('hasRetryableFailure is true if either wrap is failed', () async {
+        final dm = makeDm(id: 'aaaa');
+        expect(dm.hasRetryableFailure, isFalse);
+        expect(
+          dm
+              .copyWith(recipientWrapStatus: OutgoingWrapStatus.failed)
+              .hasRetryableFailure,
+          isTrue,
+        );
+        expect(
+          dm
+              .copyWith(selfWrapStatus: OutgoingWrapStatus.failed)
+              .hasRetryableFailure,
+          isTrue,
+        );
+      });
+    });
+
+    test(
+      'multiple owners + recipients + conversations stay isolated end-to-end',
+      () async {
+        await dao.enqueue(makeDm(id: 'a-1'));
+        await dao.enqueue(makeDm(id: 'a-2', recipientPubkey: recipient2));
+        await dao.enqueue(makeDm(id: 'b-1', owner: ownerB));
+
+        final ownerAStream = dao.watchAllForOwner(ownerA);
+        await expectLater(
+          ownerAStream,
+          emits(hasLength(2)),
+        );
+
+        final ownerBStream = dao.watchAllForOwner(ownerB);
+        await expectLater(
+          ownerBStream,
+          emits(hasLength(1)),
+        );
+      },
+    );
+  });
+}
