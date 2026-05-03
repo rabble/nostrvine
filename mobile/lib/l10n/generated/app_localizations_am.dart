@@ -770,6 +770,10 @@ class AppLocalizationsAm extends AppLocalizations {
       'ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';
 
   @override

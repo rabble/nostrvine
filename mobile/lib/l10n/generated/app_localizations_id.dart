@@ -781,6 +781,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Gagal mengunggah gambar. Server kami sedang tidak tersedia untuk sementara. Coba lagi sebentar lagi.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';
 
   @override

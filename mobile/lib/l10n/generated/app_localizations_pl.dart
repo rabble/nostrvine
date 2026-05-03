@@ -807,6 +807,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie udało się przesłać obrazu. Nasze serwery są tymczasowo niedostępne. Spróbuj ponownie za chwilę.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Sprawdzanie dostępności...';
 
   @override

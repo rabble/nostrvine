@@ -1156,6 +1156,27 @@ class _ProfileSetupScreenViewState
 
   /// Platform-aware image selection
   Future<void> _pickImage(ImageSource source) async {
+    // TODO(#3887): Remove when the upload pipeline accepts bytes / XFile.
+    // The current path constructs `dart:io File` from `image_picker`, which
+    // hands back a blob URL on web and fails at the first I/O call.
+    if (kIsWeb) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.profileSetupUploadUnsupportedOnWeb),
+            backgroundColor: VineTheme.error,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: context.l10n.profileSetupGotItButton,
+              textColor: VineTheme.whiteText,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     try {
       Log.info(
         '🖼️ Attempting to pick image from ${source.name} on ${defaultTargetPlatform.name}',

@@ -825,6 +825,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
 
   @override

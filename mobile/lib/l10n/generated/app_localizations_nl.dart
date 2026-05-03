@@ -797,6 +797,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Uploaden van afbeelding mislukt. Onze servers zijn tijdelijk niet beschikbaar. Probeer het zo opnieuw.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Beschikbaarheid controleren...';
 
   @override

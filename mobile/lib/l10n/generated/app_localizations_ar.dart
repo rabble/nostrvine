@@ -773,6 +773,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل رفع الصورة. خوادمنا غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى بعد قليل.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';
 
   @override

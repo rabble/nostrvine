@@ -740,6 +740,10 @@ class AppLocalizationsJa extends AppLocalizations {
       '画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
 
   @override

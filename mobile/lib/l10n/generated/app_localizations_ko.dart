@@ -742,6 +742,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '이미지를 올리지 못했어요. 서버가 일시적으로 사용할 수 없어요. 잠시 후 다시 시도해주세요.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';
 
   @override

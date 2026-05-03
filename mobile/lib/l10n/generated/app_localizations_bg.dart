@@ -806,6 +806,10 @@ class AppLocalizationsBg extends AppLocalizations {
       'Качването на изображението се провали. Сървърите ни временно не са достъпни. Опитай пак след малко.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
 
   @override

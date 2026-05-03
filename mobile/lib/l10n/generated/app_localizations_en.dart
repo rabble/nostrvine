@@ -796,6 +796,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Upload failed. Our servers are temporarily unavailable. Please try again in a moment.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Checking availability...';
 
   @override

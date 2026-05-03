@@ -781,6 +781,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.';
 
   @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+
+  @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';
 
   @override

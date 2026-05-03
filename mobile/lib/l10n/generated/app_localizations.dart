@@ -1472,6 +1472,12 @@ abstract class AppLocalizations {
   /// **'Upload failed. Our servers are temporarily unavailable. Please try again in a moment.'**
   String get profileSetupUploadServerError;
 
+  /// No description provided for @profileSetupUploadUnsupportedOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.'**
+  String get profileSetupUploadUnsupportedOnWeb;
+
   /// No description provided for @profileSetupUsernameChecking.
   ///
   /// In en, this message translates to:
