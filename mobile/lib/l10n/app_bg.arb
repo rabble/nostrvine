@@ -2104,6 +2104,8 @@
   "reportCancel": "Отказ",
   "reportSubmit": "Докладвай",
   "reportSelectReason": "Избери причина за докладване на това съдържание",
+  "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+  "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "Спам или нежелано съдържание",
   "reportReasonHarassment": "Тормоз, малтретиране или заплахи",
   "reportReasonViolence": "Насилствено или екстремистко съдържание",

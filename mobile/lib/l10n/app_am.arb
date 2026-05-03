@@ -2203,6 +2203,8 @@
   "reportCancel": "ሰርዝ",
   "reportSubmit": "ሪፖርት አድርግ",
   "reportSelectReason": "እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ",
+  "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+  "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት",
   "reportReasonHarassment": "ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት",
   "reportReasonViolence": "የጥቃት ወይም ጽንፈኛ ይዘት",

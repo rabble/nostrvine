@@ -4319,6 +4319,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Избери причина за докладване на това съдържание';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
+
+  @override
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override
