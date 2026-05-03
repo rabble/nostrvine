@@ -29,7 +29,8 @@ class PausedVideoOverlay extends StatefulWidget {
   State<PausedVideoOverlay> createState() => _PausedVideoOverlayState();
 }
 
-class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
+class _PausedVideoOverlayState extends State<PausedVideoOverlay>
+    with SingleTickerProviderStateMixin {
   StreamSubscription<DivineVideoPlayerState>? _subscription;
 
   /// Latching flag: set once this player emits a [PlaybackStatus.playing]
@@ -48,20 +49,41 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
   /// Whether the transient unpause pause-icon is currently visible.
   bool _showUnpauseFeedback = false;
 
-  /// Animated opacity of the unpause feedback icon.
-  double _unpauseFeedbackOpacity = 1;
-
-  Timer? _unpauseFadeTimer;
-  Timer? _unpauseHideTimer;
+  late final AnimationController _unpauseFeedbackController;
+  late final Animation<double> _unpauseFeedbackOpacity;
 
   static const _unpauseFadeStartDelay = Duration(milliseconds: 50);
-  static const _unpauseFadeDuration = Duration(milliseconds: 500);
   static const _unpauseHideDelay = Duration(milliseconds: 550);
   static const _minPauseForFeedback = Duration(milliseconds: 150);
 
   @override
   void initState() {
     super.initState();
+    _unpauseFeedbackController =
+        AnimationController(
+          vsync: this,
+          duration: _unpauseHideDelay,
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed && mounted) {
+            setState(() {
+              _showUnpauseFeedback = false;
+            });
+          }
+        });
+    _unpauseFeedbackOpacity =
+        Tween<double>(
+          begin: 1,
+          end: 0,
+        ).animate(
+          CurvedAnimation(
+            parent: _unpauseFeedbackController,
+            curve: Interval(
+              _unpauseFadeStartDelay.inMilliseconds /
+                  _unpauseHideDelay.inMilliseconds,
+              1,
+            ),
+          ),
+        );
     _subscribe();
   }
 
@@ -75,7 +97,8 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
       _previouslyPaused = false;
       _pausedAt = null;
       _showUnpauseFeedback = false;
-      _unpauseFeedbackOpacity = 1;
+      _unpauseFeedbackController.stop();
+      _unpauseFeedbackController.value = 0;
       _subscribe();
       return;
     }
@@ -105,7 +128,6 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
         setState(() {
           _hasStartedPlaying = false;
           _showUnpauseFeedback = false;
-          _unpauseFeedbackOpacity = 1;
         });
       }
       _pausedAt = null;
@@ -140,36 +162,23 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
     _cancelUnpauseFeedbackTimers();
     setState(() {
       _showUnpauseFeedback = true;
-      _unpauseFeedbackOpacity = 1;
     });
-
-    _unpauseFadeTimer = Timer(_unpauseFadeStartDelay, () {
-      if (!mounted) return;
-      setState(() {
-        _unpauseFeedbackOpacity = 0;
-      });
-    });
-
-    _unpauseHideTimer = Timer(_unpauseHideDelay, () {
-      if (!mounted) return;
-      setState(() {
-        _showUnpauseFeedback = false;
-        _unpauseFeedbackOpacity = 1;
-      });
-    });
+    _unpauseFeedbackController
+      ..stop()
+      ..value = 0
+      ..forward();
   }
 
   void _cancelUnpauseFeedbackTimers() {
-    _unpauseFadeTimer?.cancel();
-    _unpauseHideTimer?.cancel();
-    _unpauseFadeTimer = null;
-    _unpauseHideTimer = null;
+    _unpauseFeedbackController.stop();
+    _unpauseFeedbackController.value = 0;
   }
 
   @override
   void dispose() {
     unawaited(_subscription?.cancel());
     _cancelUnpauseFeedbackTimers();
+    _unpauseFeedbackController.dispose();
     super.dispose();
   }
 
@@ -257,9 +266,8 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay> {
           );
         } else if (shouldShowUnpauseFeedback) {
           child = IgnorePointer(
-            child: AnimatedOpacity(
+            child: FadeTransition(
               opacity: _unpauseFeedbackOpacity,
-              duration: _unpauseFadeDuration,
               child: const CenterPlaybackControl(
                 state: CenterPlaybackControlState.pause,
               ),
