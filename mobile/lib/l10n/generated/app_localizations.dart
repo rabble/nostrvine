@@ -1445,8 +1445,8 @@ abstract class AppLocalizations {
   /// No description provided for @profileSetupUploadFailedGeneric.
   ///
   /// In en, this message translates to:
-  /// **'Failed to upload image: {error}'**
-  String profileSetupUploadFailedGeneric(Object error);
+  /// **'Upload failed. Please try again later.'**
+  String get profileSetupUploadFailedGeneric;
 
   /// No description provided for @profileSetupUploadNetworkError.
   ///
@@ -1465,6 +1465,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File too large: Please choose a smaller image (max 10MB).'**
   String get profileSetupUploadFileTooLarge;
+
+  /// No description provided for @profileSetupUploadServerError.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload failed. Our servers are temporarily unavailable. Please try again in a moment.'**
+  String get profileSetupUploadServerError;
+
+  /// No description provided for @profileSetupUploadUnsupportedOnWeb.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.'**
+  String get profileSetupUploadUnsupportedOnWeb;
 
   /// No description provided for @profileSetupUsernameChecking.
   ///
@@ -4392,6 +4404,42 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get authPasswordLabel;
 
+  /// No description provided for @authConfirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authConfirmPasswordLabel;
+
+  /// No description provided for @authEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required'**
+  String get authEmailRequired;
+
+  /// No description provided for @authEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get authEmailInvalid;
+
+  /// No description provided for @authPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get authPasswordRequired;
+
+  /// No description provided for @authConfirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get authConfirmPasswordRequired;
+
+  /// No description provided for @authPasswordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match'**
+  String get authPasswordsDoNotMatch;
+
   /// No description provided for @authForgotPassword.
   ///
   /// In en, this message translates to:
@@ -4701,8 +4749,14 @@ abstract class AppLocalizations {
   /// No description provided for @authJoinWaitlistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Share your email and we\'ll send updates as access opens up.'**
+  /// **'Share your email and we\'ll send an invite code as access opens up.'**
   String get authJoinWaitlistDescription;
+
+  /// No description provided for @authJoinWaitlistNewsletterOptIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Send me Divine inspiration'**
+  String get authJoinWaitlistNewsletterOptIn;
 
   /// No description provided for @authInviteAccessHelp.
   ///
@@ -4847,6 +4901,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New Password'**
   String get authNewPasswordLabel;
+
+  /// No description provided for @authConfirmNewPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get authConfirmNewPasswordLabel;
 
   /// No description provided for @authPasswordTooShort.
   ///
@@ -7469,6 +7529,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please select a reason for reporting this content'**
   String get reportSelectReason;
+
+  /// No description provided for @reportOtherRequiresDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the issue when selecting Other'**
+  String get reportOtherRequiresDetails;
+
+  /// No description provided for @reportDetailsRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please describe the issue'**
+  String get reportDetailsRequired;
 
   /// No description provided for @reportReasonSpam.
   ///

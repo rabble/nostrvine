@@ -786,9 +786,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get profileSetupGotItButton => 'Capito';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Impossibile caricare l\'immagine: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Impossibile caricare l\'immagine. Riprova più tardi.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -801,6 +800,14 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'File troppo grande: scegli un\'immagine più piccola (max 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Impossibile caricare l\'immagine. I nostri server sono temporaneamente non disponibili. Riprova tra un attimo.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Il caricamento della foto profilo non è ancora disponibile sul web. Usa l\'app iOS o Android oppure incolla l\'URL di un\'immagine.';
 
   @override
   String get profileSetupUsernameChecking => 'Controllo disponibilità...';
@@ -2515,6 +2522,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authPasswordLabel => 'Password';
 
   @override
+  String get authConfirmPasswordLabel => 'Conferma password';
+
+  @override
+  String get authEmailRequired => 'L\'email è obbligatoria';
+
+  @override
+  String get authEmailInvalid => 'Inserisci un\'email valida';
+
+  @override
+  String get authPasswordRequired => 'La password è obbligatoria';
+
+  @override
+  String get authConfirmPasswordRequired => 'Conferma la tua password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Le password non corrispondono';
+
+  @override
   String get authForgotPassword => 'Password dimenticata?';
 
   @override
@@ -2692,6 +2717,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Condividi la tua email e ti manderemo aggiornamenti quando si aprirà l\'accesso.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Aiuto accesso tramite invito';
 
   @override
@@ -2769,6 +2797,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Nuova password';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Conferma nuova password';
 
   @override
   String get authPasswordTooShort =>
@@ -4283,6 +4314,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Seleziona un motivo per segnalare questo contenuto';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Spam o contenuto indesiderato';

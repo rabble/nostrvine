@@ -395,17 +395,12 @@
     }
   },
   "profileSetupGotItButton": "Got it",
-  "profileSetupUploadFailedGeneric": "Failed to upload image: {error}",
-  "@profileSetupUploadFailedGeneric": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileSetupUploadFailedGeneric": "Upload failed. Please try again later.",
   "profileSetupUploadNetworkError": "Network error: Please check your internet connection and try again.",
   "profileSetupUploadAuthError": "Authentication error: Please try logging out and back in.",
   "profileSetupUploadFileTooLarge": "File too large: Please choose a smaller image (max 10MB).",
+  "profileSetupUploadServerError": "Upload failed. Our servers are temporarily unavailable. Please try again in a moment.",
+  "profileSetupUploadUnsupportedOnWeb": "Profile picture upload isn't available on web yet. Use the iOS or Android app, or paste an image URL.",
   "profileSetupUsernameChecking": "Checking availability...",
   "profileSetupUsernameAvailable": "Username available!",
   "profileSetupUsernameTakenIndicator": "Username already taken",
@@ -1326,6 +1321,12 @@
   "authSignInTitle": "Sign in",
   "authEmailLabel": "Email",
   "authPasswordLabel": "Password",
+  "authConfirmPasswordLabel": "Confirm password",
+  "authEmailRequired": "Email is required",
+  "authEmailInvalid": "Please enter a valid email",
+  "authPasswordRequired": "Password is required",
+  "authConfirmPasswordRequired": "Please confirm your password",
+  "authPasswordsDoNotMatch": "Passwords don't match",
   "authForgotPassword": "Forgot password?",
   "authImportNostrKey": "Import Nostr key",
   "authConnectSignerApp": "Connect with a signer app",
@@ -1393,7 +1394,8 @@
   "authNext": "Next",
   "authJoinWaitlist": "Join waitlist",
   "authJoinWaitlistTitle": "Join the waitlist",
-  "authJoinWaitlistDescription": "Share your email and we'll send updates as access opens up.",
+  "authJoinWaitlistDescription": "Share your email and we'll send an invite code as access opens up.",
+  "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
   "authInviteAccessHelp": "Invite access help",
   "authGeneratingConnection": "Generating connection...",
   "authConnectedAuthenticating": "Connected! Authenticating...",
@@ -1426,6 +1428,7 @@
   "authResetPasswordTitle": "Reset Password",
   "authResetPasswordSubtitle": "Please enter your new password. It must be at least 8 characters in length.",
   "authNewPasswordLabel": "New Password",
+  "authConfirmNewPasswordLabel": "Confirm new password",
   "authPasswordTooShort": "Password must be at least 8 characters",
   "authPasswordResetSuccess": "Password reset successful. Please log in.",
   "authPasswordResetFailed": "Password reset failed",
@@ -2201,6 +2204,8 @@
   "reportCancel": "Cancel",
   "reportSubmit": "Report",
   "reportSelectReason": "Please select a reason for reporting this content",
+  "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+  "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "Spam or Unwanted Content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",
   "reportReasonViolence": "Violent or Extremist Content",

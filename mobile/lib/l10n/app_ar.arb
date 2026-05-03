@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "فهمت",
-    "profileSetupUploadFailedGeneric": "فشل رفع الصورة: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.",
     "profileSetupUploadNetworkError": "خطأ في الشبكة: يرجى التحقق من اتصالك والمحاولة مرّة أخرى.",
     "profileSetupUploadAuthError": "خطأ في المصادقة: حاول تسجيل الخروج ثم الدخول مجددًا.",
     "profileSetupUploadFileTooLarge": "الملف كبير جدًا: يرجى اختيار صورة أصغر (10 ميغابايت كحد أقصى).",
+    "profileSetupUploadServerError": "فشل رفع الصورة. خوادمنا غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى بعد قليل.",
+    "profileSetupUploadUnsupportedOnWeb": "رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.",
     "profileSetupUsernameChecking": "جاري التحقق من التوفر...",
     "profileSetupUsernameAvailable": "اسم المستخدم متاح!",
     "profileSetupUsernameTakenIndicator": "اسم المستخدم مأخوذ مسبقًا",
@@ -1217,6 +1212,7 @@
     "authJoinWaitlist": "انضم لقائمة الانتظار",
     "authJoinWaitlistTitle": "انضم إلى قائمة الانتظار",
     "authJoinWaitlistDescription": "شاركنا بريدك وسنرسل لك التحديثات عند فتح الوصول.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "مساعدة وصول الدعوة",
     "authGeneratingConnection": "جاري إنشاء الاتصال...",
     "authConnectedAuthenticating": "تم الاتصال! جاري المصادقة...",
@@ -1899,6 +1895,8 @@
     "reportCancel": "إلغاء",
     "reportSubmit": "إبلاغ",
     "reportSelectReason": "يُرجى اختيار سبب للإبلاغ عن هذا المحتوى",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "محتوى غير مرغوب فيه أو مزعج",
     "reportReasonHarassment": "تحرُّش أو تنمُّر أو تهديدات",
     "reportReasonViolence": "محتوى عنيف أو متطرف",

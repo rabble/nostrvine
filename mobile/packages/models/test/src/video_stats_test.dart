@@ -1039,8 +1039,8 @@ void main() {
       test('extracts p-tag pubkeys from flat JSON', () {
         final stats = VideoStats.fromJson(
           buildJson([
-            ['p', collaborator1],
-            ['p', collaborator2],
+            ['p', collaborator1, '', 'collaborator'],
+            ['p', collaborator2, '', 'collaborator'],
           ]),
         );
 
@@ -1060,7 +1060,7 @@ void main() {
             'tags': [
               ['d', 'video-1'],
               ['url', 'https://example.com/video.mp4'],
-              ['p', collaborator1],
+              ['p', collaborator1, '', 'collaborator'],
             ],
           },
           'stats': {
@@ -1077,8 +1077,8 @@ void main() {
       test('excludes the event author pubkey', () {
         final stats = VideoStats.fromJson(
           buildJson([
-            ['p', authorPubkey],
-            ['p', collaborator1],
+            ['p', authorPubkey, '', 'collaborator'],
+            ['p', collaborator1, '', 'collaborator'],
           ]),
         );
 
@@ -1088,9 +1088,9 @@ void main() {
       test('deduplicates repeated p tags', () {
         final stats = VideoStats.fromJson(
           buildJson([
-            ['p', collaborator1],
-            ['p', collaborator1],
-            ['p', collaborator2],
+            ['p', collaborator1, '', 'collaborator'],
+            ['p', collaborator1, '', 'collaborator'],
+            ['p', collaborator2, '', 'collaborator'],
           ]),
         );
 
@@ -1103,8 +1103,8 @@ void main() {
       test('lowercases uppercase p-tag values and compares against author', () {
         final stats = VideoStats.fromJson(
           buildJson([
-            ['p', collaborator1.toUpperCase()],
-            ['p', authorPubkey.toUpperCase()],
+            ['p', collaborator1.toUpperCase(), '', 'collaborator'],
+            ['p', authorPubkey.toUpperCase(), '', 'collaborator'],
           ]),
         );
 
@@ -1114,8 +1114,8 @@ void main() {
       test('ignores empty p tags', () {
         final stats = VideoStats.fromJson(
           buildJson([
-            ['p', ''],
-            ['p', collaborator1],
+            ['p', '', '', 'collaborator'],
+            ['p', collaborator1, '', 'collaborator'],
           ]),
         );
 
@@ -1136,8 +1136,8 @@ void main() {
       test('forwards collaboratorPubkeys through toVideoEvent', () {
         final stats = VideoStats.fromJson(
           buildJson([
-            ['p', collaborator1],
-            ['p', collaborator2],
+            ['p', collaborator1, '', 'collaborator'],
+            ['p', collaborator2, '', 'collaborator'],
           ]),
         );
 
@@ -1148,6 +1148,32 @@ void main() {
           equals([collaborator1, collaborator2]),
         );
         expect(event.hasCollaborators, isTrue);
+      });
+
+      test('ignores non-collaborator p-tag markers and unmarked p-tags', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1, '', 'collaborator'],
+            ['p', collaborator2, '', 'mention'],
+            ['p', collaborator2],
+          ]),
+        );
+
+        expect(stats.collaboratorPubkeys, equals([collaborator1]));
+      });
+
+      test('accepts historical capitalized collaborator markers', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1, '', 'Collaborator'],
+            ['p', collaborator2, '', 'COLLABORATOR'],
+          ]),
+        );
+
+        expect(
+          stats.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
       });
     });
 

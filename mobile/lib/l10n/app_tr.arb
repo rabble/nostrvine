@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Anlaşıldı",
-    "profileSetupUploadFailedGeneric": "Görsel yüklenemedi: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Görsel yüklenemedi. Lütfen daha sonra tekrar dene.",
     "profileSetupUploadNetworkError": "Ağ hatası: Lütfen internet bağlantını kontrol et ve tekrar dene.",
     "profileSetupUploadAuthError": "Kimlik doğrulama hatası: Lütfen çıkış yapıp tekrar giriş yap.",
     "profileSetupUploadFileTooLarge": "Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).",
+    "profileSetupUploadServerError": "Görsel yüklenemedi. Sunucularımız geçici olarak kullanılamıyor. Lütfen birazdan tekrar dene.",
+    "profileSetupUploadUnsupportedOnWeb": "Profil resmi yükleme henüz web'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL'si yapıştır.",
     "profileSetupUsernameChecking": "Uygunluk kontrol ediliyor...",
     "profileSetupUsernameAvailable": "Kullanıcı adı uygun!",
     "profileSetupUsernameTakenIndicator": "Kullanıcı adı zaten alınmış",
@@ -1149,6 +1144,12 @@
     "authSignInTitle": "Giriş yap",
     "authEmailLabel": "E-posta",
     "authPasswordLabel": "Parola",
+    "authConfirmPasswordLabel": "Parolayı onayla",
+    "authEmailRequired": "E-posta gereklidir",
+    "authEmailInvalid": "Geçerli bir e-posta girin",
+    "authPasswordRequired": "Parola gereklidir",
+    "authConfirmPasswordRequired": "Lütfen parolanızı onaylayın",
+    "authPasswordsDoNotMatch": "Parolalar eşleşmiyor",
     "authForgotPassword": "Parolanı mı unuttun?",
     "authImportNostrKey": "Nostr anahtarını içe aktar",
     "authConnectSignerApp": "Bir imzalama uygulaması ile bağlan",
@@ -1217,6 +1218,7 @@
     "authJoinWaitlist": "Bekleme listesine katıl",
     "authJoinWaitlistTitle": "Bekleme listesine katıl",
     "authJoinWaitlistDescription": "E-postanı paylaş, erişim açıldıkça güncelleme gönderelim.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Davet erişimi yardımı",
     "authGeneratingConnection": "Bağlantı oluşturuluyor...",
     "authConnectedAuthenticating": "Bağlandı! Kimlik doğrulanıyor...",
@@ -1249,6 +1251,7 @@
     "authResetPasswordTitle": "Parolayı Sıfırla",
     "authResetPasswordSubtitle": "Lütfen yeni parolanı gir. En az 8 karakter olmalıdır.",
     "authNewPasswordLabel": "Yeni Parola",
+    "authConfirmNewPasswordLabel": "Yeni parolayı onayla",
     "authPasswordTooShort": "Parola en az 8 karakter olmalı",
     "authPasswordResetSuccess": "Parola sıfırlama başarılı. Lütfen giriş yap.",
     "authPasswordResetFailed": "Parola sıfırlama başarısız",
@@ -1899,6 +1902,8 @@
     "reportCancel": "İptal",
     "reportSubmit": "Bildir",
     "reportSelectReason": "Lütfen bu içeriği bildirmek için bir sebep seç",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam veya İstenmeyen İçerik",
     "reportReasonHarassment": "Taciz, Zorbalık veya Tehdit",
     "reportReasonViolence": "Şiddet veya Aşırı İçerik",

@@ -13,6 +13,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/utils/collaborator_tags.dart';
 
 class _MockUploadManager extends Mock implements UploadManager {}
 
@@ -69,12 +70,12 @@ void main() {
     when(() => nostrClient.isInitialized).thenReturn(true);
     when(() => nostrClient.configuredRelayCount).thenReturn(1);
     when(() => nostrClient.connectedRelayCount).thenReturn(1);
-    when(() => nostrClient.configuredRelays).thenReturn([
-      'wss://relay.divine.video',
-    ]);
-    when(() => nostrClient.connectedRelays).thenReturn([
-      'wss://relay.divine.video',
-    ]);
+    when(
+      () => nostrClient.configuredRelays,
+    ).thenReturn(['wss://relay.divine.video']);
+    when(
+      () => nostrClient.connectedRelays,
+    ).thenReturn(['wss://relay.divine.video']);
     when(() => nostrClient.publicKey).thenReturn('');
 
     when(() => authService.isAuthenticated).thenReturn(true);
@@ -122,9 +123,9 @@ void main() {
       return publishedEvent;
     });
 
-    when(() => nostrClient.publishEvent(any())).thenAnswer(
-      (_) async => publishedEvent,
-    );
+    when(
+      () => nostrClient.publishEvent(any()),
+    ).thenAnswer((_) async => publishedEvent);
     when(
       () => nostrClient.queryEvents(
         any(),
@@ -149,12 +150,7 @@ void main() {
 
       expect(result, isTrue);
       expect(
-        _containsTag(capturedTags, const [
-          'p',
-          collaboratorPubkey,
-          'wss://relay.divine.video',
-          'collaborator',
-        ]),
+        _containsTag(capturedTags, buildCollaboratorPTag(collaboratorPubkey)),
         isTrue,
       );
       // Verify no capitalized form is emitted

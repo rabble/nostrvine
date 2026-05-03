@@ -750,9 +750,8 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupGotItButton => 'ገባኝ';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'ምስል መስቀል አልተሳካም፦ $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -765,6 +764,14 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'ፋይሉ በጣም ትልቅ ነው፡ እባክዎን ትንሽ ምስል ይምረጡ (ከፍተኛ 10 ሜባ)።';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
 
   @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';
@@ -2441,6 +2448,24 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authPasswordLabel => 'የይለፍ ቃል';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'የይለፍ ቃል ረሱ?';
 
   @override
@@ -2613,6 +2638,9 @@ class AppLocalizationsAm extends AppLocalizations {
       'ኢሜልዎን ያጋሩ እና መዳረሻ ሲከፈት ማሻሻያዎችን እንልካለን።';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'የመዳረሻ እገዛን ጋብዝ';
 
   @override
@@ -2688,6 +2716,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'አዲስ የይለፍ ቃል';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት።';
@@ -4147,6 +4178,13 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get reportSelectReason => 'እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';

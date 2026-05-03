@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Rozumiem",
-    "profileSetupUploadFailedGeneric": "Nie udało się przesłać obrazu: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Nie udało się przesłać obrazu. Spróbuj ponownie później.",
     "profileSetupUploadNetworkError": "Błąd sieci: Sprawdź połączenie z internetem i spróbuj ponownie.",
     "profileSetupUploadAuthError": "Błąd uwierzytelnienia: Wyloguj się i zaloguj ponownie.",
     "profileSetupUploadFileTooLarge": "Plik za duży: Wybierz mniejszy obraz (maks. 10 MB).",
+    "profileSetupUploadServerError": "Nie udało się przesłać obrazu. Nasze serwery są tymczasowo niedostępne. Spróbuj ponownie za chwilę.",
+    "profileSetupUploadUnsupportedOnWeb": "Przesyłanie zdjęcia profilowego nie jest jeszcze dostępne w wersji webowej. Użyj aplikacji na iOS lub Androida albo wklej URL obrazu.",
     "profileSetupUsernameChecking": "Sprawdzanie dostępności...",
     "profileSetupUsernameAvailable": "Nazwa użytkownika dostępna!",
     "profileSetupUsernameTakenIndicator": "Nazwa użytkownika już zajęta",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Zaloguj się",
     "authEmailLabel": "E-mail",
     "authPasswordLabel": "Hasło",
+    "authConfirmPasswordLabel": "Potwierdź hasło",
+    "authEmailRequired": "E-mail jest wymagany",
+    "authEmailInvalid": "Wprowadź prawidłowy e-mail",
+    "authPasswordRequired": "Hasło jest wymagane",
+    "authConfirmPasswordRequired": "Potwierdź swoje hasło",
+    "authPasswordsDoNotMatch": "Hasła nie pasują do siebie",
     "authForgotPassword": "Zapomniałeś hasła?",
     "authImportNostrKey": "Importuj klucz Nostr",
     "authConnectSignerApp": "Połącz z aplikacją do podpisywania",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Dołącz do listy oczekujących",
     "authJoinWaitlistTitle": "Dołącz do listy oczekujących",
     "authJoinWaitlistDescription": "Podaj swój e-mail, a będziemy wysyłać aktualizacje, gdy dostęp się otworzy.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Pomoc z dostępem z zaproszenia",
     "authGeneratingConnection": "Generowanie połączenia...",
     "authConnectedAuthenticating": "Połączono! Uwierzytelnianie...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Zresetuj hasło",
     "authResetPasswordSubtitle": "Wprowadź nowe hasło. Musi mieć przynajmniej 8 znaków.",
     "authNewPasswordLabel": "Nowe hasło",
+    "authConfirmNewPasswordLabel": "Potwierdź nowe hasło",
     "authPasswordTooShort": "Hasło musi mieć przynajmniej 8 znaków",
     "authPasswordResetSuccess": "Reset hasła udany. Zaloguj się.",
     "authPasswordResetFailed": "Reset hasła nieudany",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Anuluj",
     "reportSubmit": "Zgłoś",
     "reportSelectReason": "Wybierz powód zgłoszenia tej treści",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam lub niechciana treść",
     "reportReasonHarassment": "Nagabywanie, zniesławianie lub groźby",
     "reportReasonViolence": "Treści brutalne lub ekstremistyczne",

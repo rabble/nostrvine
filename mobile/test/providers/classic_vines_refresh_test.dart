@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -113,6 +114,37 @@ void main() {
         expect(limits, everyElement(lessThanOrEqualTo(50)));
       },
     );
+
+    test('caches OG Viner pubkeys from loaded archive videos', () async {
+      when(
+        () =>
+            mockFunnelcakeClient.getClassicVines(offset: any(named: 'offset')),
+      ).thenAnswer((_) async {
+        return [
+          _videoStats(
+            'classic-og',
+            pubkey:
+                'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+            isOriginalVine: true,
+          ),
+        ];
+      });
+
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      await container.read(funnelcakeAvailableProvider.future);
+      await container.read(classicVinesFeedProvider.future);
+      await Future<void>.delayed(Duration.zero);
+
+      final cache = container.read(ogVinerCacheServiceProvider);
+      expect(
+        cache.isOgViner(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        ),
+        isTrue,
+      );
+    });
 
     test('refresh selects a fresh random classics page', () async {
       final offsets = <int>[];
@@ -302,10 +334,14 @@ void main() {
   });
 }
 
-VideoStats _videoStats(String id) {
+VideoStats _videoStats(
+  String id, {
+  String? pubkey,
+  bool isOriginalVine = false,
+}) {
   return VideoStats(
     id: id,
-    pubkey: 'author-$id',
+    pubkey: pubkey ?? 'author-$id',
     createdAt: DateTime(2026, 3, 17),
     kind: 34236,
     dTag: id,
@@ -317,5 +353,6 @@ VideoStats _videoStats(String id) {
     reposts: 0,
     engagementScore: 0,
     loops: 100,
+    rawTags: isOriginalVine ? const {'platform': 'vine'} : const {},
   );
 }

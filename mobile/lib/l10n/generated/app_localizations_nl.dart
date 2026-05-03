@@ -777,9 +777,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupGotItButton => 'Begrepen';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Afbeelding uploaden mislukt: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Uploaden van afbeelding mislukt. Probeer het later opnieuw.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -792,6 +791,14 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Bestand te groot: kies een kleinere afbeelding (max 10 MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Uploaden van afbeelding mislukt. Onze servers zijn tijdelijk niet beschikbaar. Probeer het zo opnieuw.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Het uploaden van een profielfoto is nog niet beschikbaar op web. Gebruik de iOS- of Android-app, of plak een afbeeldings-URL.';
 
   @override
   String get profileSetupUsernameChecking => 'Beschikbaarheid controleren...';
@@ -2497,6 +2504,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authPasswordLabel => 'Wachtwoord';
 
   @override
+  String get authConfirmPasswordLabel => 'Wachtwoord bevestigen';
+
+  @override
+  String get authEmailRequired => 'E-mail is verplicht';
+
+  @override
+  String get authEmailInvalid => 'Voer een geldig e-mailadres in';
+
+  @override
+  String get authPasswordRequired => 'Wachtwoord is verplicht';
+
+  @override
+  String get authConfirmPasswordRequired => 'Bevestig je wachtwoord';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Wachtwoorden komen niet overeen';
+
+  @override
   String get authForgotPassword => 'Wachtwoord vergeten?';
 
   @override
@@ -2674,6 +2699,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Deel je e-mailadres en we sturen updates zodra toegang opengaat.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Hulp bij invite-toegang';
 
   @override
@@ -2749,6 +2777,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Nieuw wachtwoord';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Nieuw wachtwoord bevestigen';
 
   @override
   String get authPasswordTooShort => 'Wachtwoord moet minstens 8 tekens zijn';
@@ -4257,6 +4288,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Selecteer een reden om deze inhoud te melden';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Spam of ongewenste inhoud';

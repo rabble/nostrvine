@@ -32,15 +32,21 @@ class AuthFormScaffold extends StatelessWidget {
     required this.passwordController,
     required this.primaryButton,
     super.key,
+    this.confirmPasswordController,
     this.emailError,
     this.passwordError,
+    this.confirmPasswordError,
     this.enabled = true,
     this.onEmailChanged,
     this.onPasswordChanged,
+    this.onConfirmPasswordChanged,
     this.errorWidget,
     this.headerWidget,
     this.secondaryButton,
     this.onBack,
+    this.emailLabel = 'Email',
+    this.passwordLabel = 'Password',
+    this.confirmPasswordLabel = 'Confirm password',
   });
 
   /// The title displayed below the back button.
@@ -52,11 +58,18 @@ class AuthFormScaffold extends StatelessWidget {
   /// Controller for the password text field.
   final TextEditingController passwordController;
 
+  /// Controller for the confirm-password text field. When null, no
+  /// confirmation field is rendered.
+  final TextEditingController? confirmPasswordController;
+
   /// Error message for the email field (null = no error).
   final String? emailError;
 
   /// Error message for the password field (null = no error).
   final String? passwordError;
+
+  /// Error message for the confirm password field (null = no error).
+  final String? confirmPasswordError;
 
   /// Whether the form fields are enabled.
   final bool enabled;
@@ -66,6 +79,9 @@ class AuthFormScaffold extends StatelessWidget {
 
   /// Called when the password field text changes.
   final ValueChanged<String>? onPasswordChanged;
+
+  /// Called when the confirm password field text changes.
+  final ValueChanged<String>? onConfirmPasswordChanged;
 
   /// Optional error widget displayed below the dog sticker.
   final Widget? errorWidget;
@@ -83,123 +99,156 @@ class AuthFormScaffold extends StatelessWidget {
   /// behavior.
   final VoidCallback? onBack;
 
+  /// Label for the email field.
+  final String emailLabel;
+
+  /// Label for the password field.
+  final String passwordLabel;
+
+  /// Label for the optional confirm-password field.
+  final String confirmPasswordLabel;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 8),
 
-                    // Back button
-                    AuthBackButton(onPressed: onBack),
+                          // Back button
+                          AuthBackButton(onPressed: onBack),
 
-                    const SizedBox(height: 32),
+                          const SizedBox(height: 32),
 
-                    // Title
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontFamily: VineTheme.fontFamilyBricolage,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: VineTheme.whiteText,
-                      ),
-                    ),
-
-                    if (headerWidget != null) ...[
-                      const SizedBox(height: 12),
-                      headerWidget!,
-                      const SizedBox(height: 24),
-                    ] else
-                      const SizedBox(height: 32),
-
-                    // AutofillGroup + Form enables password manager
-                    // autofill for the email and password fields.
-                    AutofillGroup(
-                      child: Form(
-                        child: Column(
-                          children: [
-                            // Email field
-                            DivineAuthTextField(
-                              controller: emailController,
-                              label: 'Email',
-                              keyboardType: TextInputType.emailAddress,
-                              errorText: emailError,
-                              enabled: enabled,
-                              autocorrect: false,
-                              autofillHints: const [AutofillHints.email],
-                              onChanged: onEmailChanged,
+                          // Title
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontFamily: VineTheme.fontFamilyBricolage,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: VineTheme.whiteText,
                             ),
-
-                            const SizedBox(height: 16),
-
-                            // Password field
-                            DivineAuthTextField(
-                              controller: passwordController,
-                              label: 'Password',
-                              obscureText: true,
-                              autofillHints: const [AutofillHints.newPassword],
-                              errorText: passwordError,
-                              enabled: enabled,
-                              onChanged: onPasswordChanged,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Dog sticker
-                    Align(
-                      alignment: AlignmentDirectional.centerEnd,
-                      child: Transform.translate(
-                        offset: const Offset(20, 0),
-                        child: Transform.rotate(
-                          angle: 12 * pi / 180,
-                          child: SvgPicture.asset(
-                            'assets/stickers/samoyed_dog.svg',
-                            width: 174,
-                            height: 174,
                           ),
-                        ),
+
+                          if (headerWidget != null) ...[
+                            const SizedBox(height: 12),
+                            headerWidget!,
+                            const SizedBox(height: 24),
+                          ] else
+                            const SizedBox(height: 32),
+
+                          // AutofillGroup + Form enables password manager
+                          // autofill for the email and password fields.
+                          AutofillGroup(
+                            child: Form(
+                              child: Column(
+                                children: [
+                                  // Email field
+                                  DivineAuthTextField(
+                                    controller: emailController,
+                                    label: emailLabel,
+                                    keyboardType: TextInputType.emailAddress,
+                                    errorText: emailError,
+                                    enabled: enabled,
+                                    autocorrect: false,
+                                    autofillHints: const [
+                                      AutofillHints.email,
+                                    ],
+                                    onChanged: onEmailChanged,
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  // Password field
+                                  DivineAuthTextField(
+                                    controller: passwordController,
+                                    label: passwordLabel,
+                                    obscureText: true,
+                                    autofillHints: const [
+                                      AutofillHints.newPassword,
+                                    ],
+                                    errorText: passwordError,
+                                    enabled: enabled,
+                                    onChanged: onPasswordChanged,
+                                  ),
+
+                                  if (confirmPasswordController != null) ...[
+                                    const SizedBox(height: 16),
+                                    DivineAuthTextField(
+                                      controller: confirmPasswordController,
+                                      label: confirmPasswordLabel,
+                                      obscureText: true,
+                                      autofillHints: const [
+                                        AutofillHints.newPassword,
+                                      ],
+                                      errorText: confirmPasswordError,
+                                      enabled: enabled,
+                                      onChanged: onConfirmPasswordChanged,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Dog sticker
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: Transform.translate(
+                              offset: const Offset(20, 0),
+                              child: Transform.rotate(
+                                angle: 12 * pi / 180,
+                                child: SvgPicture.asset(
+                                  'assets/stickers/samoyed_dog.svg',
+                                  width: 174,
+                                  height: 174,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Error display
+                          if (errorWidget != null) ...[
+                            const SizedBox(height: 16),
+                            errorWidget!,
+                          ],
+
+                          const SizedBox(height: 16),
+                        ],
                       ),
                     ),
-
-                    // Error display
-                    if (errorWidget != null) ...[
-                      const SizedBox(height: 16),
-                      errorWidget!,
-                    ],
-
-                    // Push buttons to bottom
-                    const Spacer(),
-
-                    // Primary button
-                    primaryButton,
-
-                    // Secondary button (optional)
-                    if (secondaryButton != null) ...[
-                      const SizedBox(height: 12),
-                      secondaryButton!,
-                    ],
-
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // Primary button
+              primaryButton,
+
+              // Secondary button (optional)
+              if (secondaryButton != null) ...[
+                const SizedBox(height: 12),
+                secondaryButton!,
+              ],
+
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

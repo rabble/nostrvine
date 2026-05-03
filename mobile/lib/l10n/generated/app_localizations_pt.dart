@@ -788,9 +788,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileSetupGotItButton => 'Entendi';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Falha ao enviar imagem: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Não foi possível enviar a imagem. Tente novamente mais tarde.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -803,6 +802,14 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Arquivo muito grande: escolha uma imagem menor (máx. 10 MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Não foi possível enviar a imagem. Nossos servidores estão temporariamente indisponíveis. Tente novamente em instantes.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'O envio de foto de perfil ainda não está disponível na web. Use o app para iOS ou Android ou cole a URL de uma imagem.';
 
   @override
   String get profileSetupUsernameChecking => 'Verificando disponibilidade...';
@@ -2509,6 +2516,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authPasswordLabel => 'Senha';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirmar senha';
+
+  @override
+  String get authEmailRequired => 'O e-mail é obrigatório';
+
+  @override
+  String get authEmailInvalid => 'Insira um e-mail válido';
+
+  @override
+  String get authPasswordRequired => 'A senha é obrigatória';
+
+  @override
+  String get authConfirmPasswordRequired => 'Confirme sua senha';
+
+  @override
+  String get authPasswordsDoNotMatch => 'As senhas não coincidem';
+
+  @override
   String get authForgotPassword => 'Esqueceu a senha?';
 
   @override
@@ -2686,6 +2711,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Compartilhe seu e-mail e enviaremos novidades conforme o acesso for liberado.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Ajuda com acesso por convite';
 
   @override
@@ -2761,6 +2789,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Nova senha';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirmar nova senha';
 
   @override
   String get authPasswordTooShort => 'A senha deve ter pelo menos 8 caracteres';
@@ -4267,6 +4298,13 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Selecione um motivo para denunciar este conteúdo';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Spam ou conteúdo indesejado';

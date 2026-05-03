@@ -373,17 +373,12 @@
     }
   },
   "profileSetupGotItButton": "Разбрах",
-  "profileSetupUploadFailedGeneric": "Неуспешно качване на изображение: {error}",
-  "@profileSetupUploadFailedGeneric": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileSetupUploadFailedGeneric": "Качването на изображението се провали. Опитай отново след малко.",
   "profileSetupUploadNetworkError": "Мрежова грешка: провери интернет връзката си и опитай пак.",
   "profileSetupUploadAuthError": "Грешка при удостоверяване: излез и влез отново.",
   "profileSetupUploadFileTooLarge": "Файлът е твърде голям. Избери по-малко изображение (макс. 10 MB).",
+  "profileSetupUploadServerError": "Качването на изображението се провали. Сървърите ни временно не са достъпни. Опитай пак след малко.",
+  "profileSetupUploadUnsupportedOnWeb": "Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.",
   "profileSetupUsernameChecking": "Проверява се наличността...",
   "profileSetupUsernameAvailable": "Потребителското име е свободно!",
   "profileSetupUsernameTakenIndicator": "Потребителското име вече е заето",
@@ -1226,6 +1221,12 @@
   "authSignInTitle": "Влез",
   "authEmailLabel": "Имейл",
   "authPasswordLabel": "Парола",
+  "authConfirmPasswordLabel": "Потвърди паролата",
+  "authEmailRequired": "Имейлът е задължителен",
+  "authEmailInvalid": "Моля, въведи валиден имейл",
+  "authPasswordRequired": "Паролата е задължителна",
+  "authConfirmPasswordRequired": "Моля, потвърди паролата си",
+  "authPasswordsDoNotMatch": "Паролите не съвпадат",
   "authForgotPassword": "Забравена парола?",
   "authImportNostrKey": "Импортиране на ключ Nostr",
   "authConnectSignerApp": "Свържи приложение за подписване",
@@ -1294,6 +1295,7 @@
   "authJoinWaitlist": "Присъедини се към списъка с чакащи",
   "authJoinWaitlistTitle": "Присъедини се към списъка с чакащи",
   "authJoinWaitlistDescription": "Остави имейла си и ще ти пишем, когато достъпът се отвори.",
+  "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
   "authInviteAccessHelp": "Помощ с поканите",
   "authGeneratingConnection": "Генериране на връзка...",
   "authConnectedAuthenticating": "Свързан! Удостоверява се...",
@@ -1326,6 +1328,7 @@
   "authResetPasswordTitle": "Нулиране на парола",
   "authResetPasswordSubtitle": "Въведи новата си парола. Трябва да е поне 8 знака.",
   "authNewPasswordLabel": "Нова парола",
+  "authConfirmNewPasswordLabel": "Потвърди новата парола",
   "authPasswordTooShort": "Паролата трябва да е поне 8 знака",
   "authPasswordResetSuccess": "Паролата е сменена. Влез отново.",
   "authPasswordResetFailed": "Неуспешно нулиране на паролата",
@@ -2101,6 +2104,8 @@
   "reportCancel": "Отказ",
   "reportSubmit": "Докладвай",
   "reportSelectReason": "Избери причина за докладване на това съдържание",
+  "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+  "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "Спам или нежелано съдържание",
   "reportReasonHarassment": "Тормоз, малтретиране или заплахи",
   "reportReasonViolence": "Насилствено или екстремистко съдържание",

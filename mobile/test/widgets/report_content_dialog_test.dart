@@ -181,6 +181,31 @@ void main() {
       },
     );
 
+    testWidgets(
+      'Submit button shows error when Other selected without details',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // Select "Other"
+        await tester.tap(find.text('Other Policy Violation'));
+        await tester.pumpAndSettle();
+
+        // Tap Report without entering details
+        final reportButton = find.widgetWithText(TextButton, 'Report');
+        await tester.tap(reportButton);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Please describe the issue when selecting Other'),
+          findsOneWidget,
+          reason: 'Should require details when Other is selected',
+        );
+      },
+    );
+
     testWidgets('Block user checkbox is visible and can be toggled', (
       tester,
     ) async {
@@ -523,6 +548,36 @@ void main() {
           authorPubkey: any(named: 'authorPubkey'),
           reason: any(named: 'reason'),
           details: captureAny(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('Other reason with details submits successfully', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select Other
+      await tester.tap(find.text('Other Policy Violation'));
+      await tester.pumpAndSettle();
+
+      // Enter details
+      await tester.enterText(find.byType(TextField), 'Custom report details');
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: ContentFilterReason.other,
+          details: 'Custom report details',
           additionalContext: any(named: 'additionalContext'),
           hashtags: any(named: 'hashtags'),
         ),

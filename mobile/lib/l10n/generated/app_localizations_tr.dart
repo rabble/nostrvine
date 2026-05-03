@@ -759,9 +759,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupGotItButton => 'Anlaşıldı';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Görsel yüklenemedi: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Görsel yüklenemedi. Lütfen daha sonra tekrar dene.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -774,6 +773,14 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Görsel yüklenemedi. Sunucularımız geçici olarak kullanılamıyor. Lütfen birazdan tekrar dene.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Profil resmi yükleme henüz web\'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL\'si yapıştır.';
 
   @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';
@@ -2471,6 +2478,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authPasswordLabel => 'Parola';
 
   @override
+  String get authConfirmPasswordLabel => 'Parolayı onayla';
+
+  @override
+  String get authEmailRequired => 'E-posta gereklidir';
+
+  @override
+  String get authEmailInvalid => 'Geçerli bir e-posta girin';
+
+  @override
+  String get authPasswordRequired => 'Parola gereklidir';
+
+  @override
+  String get authConfirmPasswordRequired => 'Lütfen parolanızı onaylayın';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Parolalar eşleşmiyor';
+
+  @override
   String get authForgotPassword => 'Parolanı mı unuttun?';
 
   @override
@@ -2648,6 +2673,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'E-postanı paylaş, erişim açıldıkça güncelleme gönderelim.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Davet erişimi yardımı';
 
   @override
@@ -2723,6 +2751,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Yeni Parola';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Yeni parolayı onayla';
 
   @override
   String get authPasswordTooShort => 'Parola en az 8 karakter olmalı';
@@ -4225,6 +4256,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Lütfen bu içeriği bildirmek için bir sebep seç';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';

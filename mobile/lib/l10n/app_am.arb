@@ -395,17 +395,12 @@
     }
   },
   "profileSetupGotItButton": "ገባኝ",
-  "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም፦ {error}",
-  "@profileSetupUploadFailedGeneric": {
-    "placeholders": {
-      "error": {
-        "type": "Object"
-      }
-    }
-  },
+  "profileSetupUploadFailedGeneric": "ምስል መስቀል አልተሳካም። ቆይተህ እንደገና ሞክር።",
   "profileSetupUploadNetworkError": "የአውታረ መረብ ስህተት፡ እባክህ የበይነመረብ ግንኙነትህን ፈትሽ እና እንደገና ሞክር።",
   "profileSetupUploadAuthError": "የማረጋገጫ ስህተት፡ እባክዎ ዘግተው ለመውጣት ይሞክሩ።",
   "profileSetupUploadFileTooLarge": "ፋይሉ በጣም ትልቅ ነው፡ እባክዎን ትንሽ ምስል ይምረጡ (ከፍተኛ 10 ሜባ)።",
+  "profileSetupUploadServerError": "ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።",
+  "profileSetupUploadUnsupportedOnWeb": "የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።",
   "profileSetupUsernameChecking": "ተገኝነትን በማጣራት ላይ...",
   "profileSetupUsernameAvailable": "የተጠቃሚ ስም አለ!",
   "profileSetupUsernameTakenIndicator": "የተጠቃሚ ስም አስቀድሞ ተወስዷል",
@@ -1400,6 +1395,7 @@
   "authJoinWaitlist": "የተጠባባቂ ዝርዝሩን ይቀላቀሉ",
   "authJoinWaitlistTitle": "የተጠባባቂ ዝርዝሩን ይቀላቀሉ",
   "authJoinWaitlistDescription": "ኢሜልዎን ያጋሩ እና መዳረሻ ሲከፈት ማሻሻያዎችን እንልካለን።",
+  "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
   "authInviteAccessHelp": "የመዳረሻ እገዛን ጋብዝ",
   "authGeneratingConnection": "ግንኙነት በማመንጨት ላይ...",
   "authConnectedAuthenticating": "ተገናኝቷል! በማረጋገጥ ላይ...",
@@ -2207,6 +2203,8 @@
   "reportCancel": "ሰርዝ",
   "reportSubmit": "ሪፖርት አድርግ",
   "reportSelectReason": "እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ",
+  "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+  "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት",
   "reportReasonHarassment": "ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት",
   "reportReasonViolence": "የጥቃት ወይም ጽንፈኛ ይዘት",

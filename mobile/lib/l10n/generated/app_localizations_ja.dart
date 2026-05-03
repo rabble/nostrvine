@@ -722,9 +722,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupGotItButton => '了解！';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return '画像のアップロードがうまくいかなかった: $error';
-  }
+  String get profileSetupUploadFailedGeneric => '画像をアップロードできなかった。あとでもう一度試してみて。';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -736,6 +734,14 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。';
+
+  @override
+  String get profileSetupUploadServerError =>
+      '画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。';
 
   @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
@@ -2370,6 +2376,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authPasswordLabel => 'パスワード';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'パスワードを忘れた?';
 
   @override
@@ -2537,6 +2561,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'メールアドレスを教えてね。アクセス開放に合わせてアップデートを送るよ。';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => '招待アクセスのヘルプ';
 
   @override
@@ -2609,6 +2636,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => '新しいパスワード';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'パスワードは8文字以上にしてね';
@@ -4048,6 +4078,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get reportSelectReason => '報告する理由を選んでね';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'スパムや迷惑なコンテンツ';

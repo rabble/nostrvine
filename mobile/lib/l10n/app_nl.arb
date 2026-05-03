@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Begrepen",
-    "profileSetupUploadFailedGeneric": "Afbeelding uploaden mislukt: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Uploaden van afbeelding mislukt. Probeer het later opnieuw.",
     "profileSetupUploadNetworkError": "Netwerkfout: check je internetverbinding en probeer opnieuw.",
     "profileSetupUploadAuthError": "Authenticatiefout: log uit en weer in.",
     "profileSetupUploadFileTooLarge": "Bestand te groot: kies een kleinere afbeelding (max 10 MB).",
+    "profileSetupUploadServerError": "Uploaden van afbeelding mislukt. Onze servers zijn tijdelijk niet beschikbaar. Probeer het zo opnieuw.",
+    "profileSetupUploadUnsupportedOnWeb": "Het uploaden van een profielfoto is nog niet beschikbaar op web. Gebruik de iOS- of Android-app, of plak een afbeeldings-URL.",
     "profileSetupUsernameChecking": "Beschikbaarheid controleren...",
     "profileSetupUsernameAvailable": "Gebruikersnaam beschikbaar!",
     "profileSetupUsernameTakenIndicator": "Gebruikersnaam al in gebruik",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Inloggen",
     "authEmailLabel": "E-mail",
     "authPasswordLabel": "Wachtwoord",
+    "authConfirmPasswordLabel": "Wachtwoord bevestigen",
+    "authEmailRequired": "E-mail is verplicht",
+    "authEmailInvalid": "Voer een geldig e-mailadres in",
+    "authPasswordRequired": "Wachtwoord is verplicht",
+    "authConfirmPasswordRequired": "Bevestig je wachtwoord",
+    "authPasswordsDoNotMatch": "Wachtwoorden komen niet overeen",
     "authForgotPassword": "Wachtwoord vergeten?",
     "authImportNostrKey": "Nostr-sleutel importeren",
     "authConnectSignerApp": "Verbinden met een signer-app",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Op de wachtlijst",
     "authJoinWaitlistTitle": "Op de wachtlijst",
     "authJoinWaitlistDescription": "Deel je e-mailadres en we sturen updates zodra toegang opengaat.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Hulp bij invite-toegang",
     "authGeneratingConnection": "Verbinding genereren...",
     "authConnectedAuthenticating": "Verbonden! Authenticeren...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Wachtwoord resetten",
     "authResetPasswordSubtitle": "Voer je nieuwe wachtwoord in. Minimaal 8 tekens.",
     "authNewPasswordLabel": "Nieuw wachtwoord",
+    "authConfirmNewPasswordLabel": "Nieuw wachtwoord bevestigen",
     "authPasswordTooShort": "Wachtwoord moet minstens 8 tekens zijn",
     "authPasswordResetSuccess": "Wachtwoord gereset. Log in.",
     "authPasswordResetFailed": "Wachtwoord resetten mislukt",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Annuleren",
     "reportSubmit": "Melden",
     "reportSelectReason": "Selecteer een reden om deze inhoud te melden",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam of ongewenste inhoud",
     "reportReasonHarassment": "Intimidatie, pesten of bedreigingen",
     "reportReasonViolence": "Gewelddadige of extremistische inhoud",

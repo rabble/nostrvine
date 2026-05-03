@@ -753,9 +753,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSetupGotItButton => 'فهمت';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'فشل رفع الصورة: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'فشل رفع الصورة. يُرجى المحاولة مرة أخرى لاحقًا.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -768,6 +767,14 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'الملف كبير جدًا: يرجى اختيار صورة أصغر (10 ميغابايت كحد أقصى).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'فشل رفع الصورة. خوادمنا غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى بعد قليل.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.';
 
   @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';
@@ -2463,6 +2470,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authPasswordLabel => 'كلمة المرور';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'نسيت كلمة المرور؟';
 
   @override
@@ -2637,6 +2662,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'شاركنا بريدك وسنرسل لك التحديثات عند فتح الوصول.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'مساعدة وصول الدعوة';
 
   @override
@@ -2712,6 +2740,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'كلمة المرور الجديدة';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'يجب ألّا تقل كلمة المرور عن 8 أحرف';
@@ -4199,6 +4230,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reportSelectReason => 'يُرجى اختيار سبب للإبلاغ عن هذا المحتوى';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'محتوى غير مرغوب فيه أو مزعج';

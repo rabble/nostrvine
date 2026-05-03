@@ -601,6 +601,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
   String? _emailError;
   String? _generalError;
   bool _isSubmitting = false;
+  bool _newsletterOptIn = true;
 
   @override
   void dispose() {
@@ -610,7 +611,10 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
 
   Future<void> _submit() async {
     final email = _emailController.text.trim();
-    final emailError = Validators.validateEmail(email);
+    final emailError = Validators.validateEmail(
+      email,
+      messages: AuthValidationMessages.fromL10n(context.l10n),
+    );
 
     if (emailError != null) {
       setState(() {
@@ -630,6 +634,7 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
       await widget.inviteApiClient.joinWaitlist(
         contact: email,
         sourceSlug: widget.sourceSlug,
+        newsletterOptIn: _newsletterOptIn,
       );
       if (!mounted) return;
       Navigator.of(context).pop(email);
@@ -715,6 +720,32 @@ class _WaitlistEntrySheetState extends State<_WaitlistEntrySheet> {
                   color: VineTheme.lightText,
                 ),
                 textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              MergeSemantics(
+                child: Semantics(
+                  checked: _newsletterOptIn,
+                  enabled: !_isSubmitting,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _isSubmitting
+                        ? null
+                        : () => setState(() {
+                            _newsletterOptIn = !_newsletterOptIn;
+                          }),
+                    child: DivineCheckbox(
+                      state: _newsletterOptIn
+                          ? DivineCheckboxState.selected
+                          : DivineCheckboxState.unselected,
+                      label: Text(
+                        context.l10n.authJoinWaitlistNewsletterOptIn,
+                        style: VineTheme.bodyLargeFont(
+                          color: VineTheme.lightText,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               DivineAuthTextField(

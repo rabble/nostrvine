@@ -26,9 +26,11 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     required KeycastOAuth oauthClient,
     required AuthService authService,
     required PendingVerificationService pendingVerificationService,
+    required AuthValidationMessages validationMessages,
     InviteApiClient? inviteApiClient,
     String? inviteCode,
     String? inviteSourceSlug,
+    bool requirePasswordConfirmation = false,
   }) : _oauthClient = oauthClient,
        _authService = authService,
        _pendingVerificationService = pendingVerificationService,
@@ -37,6 +39,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
            ? null
            : InviteApiClient.normalizeCode(inviteCode),
        _inviteSourceSlug = inviteSourceSlug,
+       _validationMessages = validationMessages,
+       _requirePasswordConfirmation = requirePasswordConfirmation,
        super(const DivineAuthInitial());
 
   final KeycastOAuth _oauthClient;
@@ -45,10 +49,18 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   final InviteApiClient? _inviteApiClient;
   final String? _inviteCode;
   final String? _inviteSourceSlug;
+  final AuthValidationMessages _validationMessages;
+  final bool _requirePasswordConfirmation;
 
   /// Initialize form with default state (sign up mode)
   void initialize({bool isSignIn = false, String? initialEmail}) {
-    emit(DivineAuthFormState(isSignIn: isSignIn, email: initialEmail ?? ''));
+    emit(
+      DivineAuthFormState(
+        isSignIn: isSignIn,
+        email: initialEmail ?? '',
+        requiresPasswordConfirmation: _requirePasswordConfirmation && !isSignIn,
+      ),
+    );
   }
 
   /// Update email field
@@ -75,6 +87,22 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       current.copyWith(
         password: password,
         clearPasswordError: true,
+        clearConfirmPasswordError: true,
+        clearGeneralError: true,
+        clearInviteGateRecovery: true,
+      ),
+    );
+  }
+
+  /// Update confirm password field
+  void updateConfirmPassword(String confirmPassword) {
+    final current = state;
+    if (current is! DivineAuthFormState) return;
+
+    emit(
+      current.copyWith(
+        confirmPassword: confirmPassword,
+        clearConfirmPasswordError: true,
         clearGeneralError: true,
         clearInviteGateRecovery: true,
       ),
@@ -96,12 +124,35 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     if (current.isSubmitting || current.isSkipping) return;
 
     // Validate fields
-    final emailError = Validators.validateEmail(current.email);
-    final passwordError = Validators.validatePassword(current.password);
+    final emailError = Validators.validateEmail(
+      current.email,
+      messages: _validationMessages,
+    );
+    final passwordError = Validators.validatePassword(
+      current.password,
+      messages: _validationMessages,
+    );
+    final confirmPasswordError =
+        current.requiresPasswordConfirmation && !current.isSignIn
+        ? Validators.validateConfirmPassword(
+            current.confirmPassword,
+            password: current.password,
+            messages: _validationMessages,
+          )
+        : null;
 
-    if (emailError != null || passwordError != null) {
+    if (emailError != null ||
+        passwordError != null ||
+        confirmPasswordError != null) {
       emit(
-        current.copyWith(emailError: emailError, passwordError: passwordError),
+        current.copyWith(
+          emailError: emailError,
+          passwordError: passwordError,
+          confirmPasswordError: confirmPasswordError,
+          clearEmailError: emailError == null,
+          clearPasswordError: passwordError == null,
+          clearConfirmPasswordError: confirmPasswordError == null,
+        ),
       );
       return;
     }
@@ -443,9 +494,18 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   void returnToForm() {
     final current = state;
     if (current is DivineAuthEmailVerification) {
-      emit(DivineAuthFormState(email: current.email));
+      emit(
+        DivineAuthFormState(
+          email: current.email,
+          requiresPasswordConfirmation: _requirePasswordConfirmation,
+        ),
+      );
     } else {
-      emit(const DivineAuthFormState());
+      emit(
+        DivineAuthFormState(
+          requiresPasswordConfirmation: _requirePasswordConfirmation,
+        ),
+      );
     }
   }
 

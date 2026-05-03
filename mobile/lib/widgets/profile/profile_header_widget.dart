@@ -763,11 +763,10 @@ class _ProfileStatsRowState extends State<_ProfileStatsRow> {
       enableSwitchAnimation: true,
       effect: vineSkeletonEffect,
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           for (int i = 0; i < columns.length; i++) ...[
             if (i > 0) const _StatDivider(),
-            columns[i],
+            Expanded(child: columns[i]),
           ],
         ],
       ),

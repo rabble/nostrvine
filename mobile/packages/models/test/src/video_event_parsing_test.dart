@@ -301,8 +301,8 @@ void main() {
         34236,
         [
           ['url', 'https://example.com/video.mp4'],
-          ['p', collabPubkey1, 'wss://relay.divine.video'],
-          ['p', collabPubkey2, 'wss://relay.divine.video'],
+          ['p', collabPubkey1, 'wss://relay.divine.video', 'collaborator'],
+          ['p', collabPubkey2, 'wss://relay.divine.video', 'collaborator'],
         ],
         'Test video',
         createdAt: 1757385263,
@@ -322,8 +322,13 @@ void main() {
         34236,
         [
           ['url', 'https://example.com/video.mp4'],
-          ['p', authorPubkey, 'wss://relay.divine.video'], // Author self-tag
-          ['p', collabPubkey1, 'wss://relay.divine.video'],
+          [
+            'p',
+            authorPubkey,
+            'wss://relay.divine.video',
+            'collaborator',
+          ], // Author self-tag
+          ['p', collabPubkey1, 'wss://relay.divine.video', 'collaborator'],
         ],
         'Test video',
         createdAt: 1757385263,
@@ -345,8 +350,13 @@ void main() {
         34236,
         [
           ['url', 'https://example.com/video.mp4'],
-          ['p', collabPubkey1, 'wss://relay.divine.video'],
-          ['p', collabPubkey1, 'wss://relay.divine.video'], // Duplicate
+          ['p', collabPubkey1, 'wss://relay.divine.video', 'collaborator'],
+          [
+            'p',
+            collabPubkey1,
+            'wss://relay.divine.video',
+            'collaborator',
+          ], // Duplicate
         ],
         'Test video',
         createdAt: 1757385263,
@@ -355,6 +365,56 @@ void main() {
       final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
 
       expect(videoEvent.collaboratorPubkeys, hasLength(1));
+    });
+
+    test('should only include collaborator-marked p-tags', () {
+      const strayMentionPubkey =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          [
+            'p',
+            collabPubkey1,
+            'wss://relay.divine.video',
+            'collaborator',
+          ],
+          ['p', strayMentionPubkey, 'wss://relay.divine.video', 'mention'],
+          ['p', collabPubkey2, 'wss://relay.divine.video'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, equals([collabPubkey1]));
+    });
+
+    test('should accept historical capitalized collaborator markers', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['p', collabPubkey1, 'wss://relay.divine.video', 'Collaborator'],
+          ['p', collabPubkey2, 'wss://relay.divine.video', 'COLLABORATOR'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(
+        videoEvent.collaboratorPubkeys,
+        equals([
+          collabPubkey1,
+          collabPubkey2,
+        ]),
+      );
     });
 
     test('should return empty collaborators when no p-tags', () {

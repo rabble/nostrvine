@@ -723,9 +723,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupGotItButton => '알겠어요';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return '이미지를 올리지 못했어요: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      '이미지를 올리지 못했어요. 잠시 후 다시 시도해주세요.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -737,6 +736,14 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       '파일이 너무 커요: 더 작은 이미지를 고르세요 (최대 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      '이미지를 올리지 못했어요. 서버가 일시적으로 사용할 수 없어요. 잠시 후 다시 시도해주세요.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      '프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.';
 
   @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';
@@ -2379,6 +2386,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authPasswordLabel => '비밀번호';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => '비밀번호를 잊으셨나요?';
 
   @override
@@ -2548,6 +2573,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authJoinWaitlistDescription => '이메일을 알려주시면 접근이 열릴 때 업데이트를 보내드릴게요.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => '초대 접근 도움말';
 
   @override
@@ -2620,6 +2648,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => '새 비밀번호';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => '비밀번호는 최소 8자 이상이어야 해요';
@@ -4061,6 +4092,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reportSelectReason => '이 콘텐츠를 신고하는 이유를 선택해 주세요';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';

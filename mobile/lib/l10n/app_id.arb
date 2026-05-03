@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Mengerti",
-    "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Gagal mengunggah gambar. Coba lagi nanti.",
     "profileSetupUploadNetworkError": "Kesalahan jaringan: Silakan cek koneksi internetmu dan coba lagi.",
     "profileSetupUploadAuthError": "Kesalahan autentikasi: Silakan keluar dan masuk kembali.",
     "profileSetupUploadFileTooLarge": "File terlalu besar: Pilih gambar yang lebih kecil (maks 10MB).",
+    "profileSetupUploadServerError": "Gagal mengunggah gambar. Server kami sedang tidak tersedia untuk sementara. Coba lagi sebentar lagi.",
+    "profileSetupUploadUnsupportedOnWeb": "Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.",
     "profileSetupUsernameChecking": "Mengecek ketersediaan...",
     "profileSetupUsernameAvailable": "Username tersedia!",
     "profileSetupUsernameTakenIndicator": "Username sudah diambil",
@@ -1149,6 +1144,12 @@
     "authSignInTitle": "Masuk",
     "authEmailLabel": "Email",
     "authPasswordLabel": "Kata Sandi",
+    "authConfirmPasswordLabel": "Konfirmasi kata sandi",
+    "authEmailRequired": "Email wajib diisi",
+    "authEmailInvalid": "Masukkan email yang valid",
+    "authPasswordRequired": "Kata sandi wajib diisi",
+    "authConfirmPasswordRequired": "Konfirmasikan kata sandi Anda",
+    "authPasswordsDoNotMatch": "Kata sandi tidak cocok",
     "authForgotPassword": "Lupa kata sandi?",
     "authImportNostrKey": "Impor kunci Nostr",
     "authConnectSignerApp": "Hubungkan dengan aplikasi signer",
@@ -1217,6 +1218,7 @@
     "authJoinWaitlist": "Gabung daftar tunggu",
     "authJoinWaitlistTitle": "Gabung daftar tunggu",
     "authJoinWaitlistDescription": "Bagikan emailmu dan kami akan mengirim pembaruan saat akses terbuka.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Bantuan akses undangan",
     "authGeneratingConnection": "Membuat koneksi...",
     "authConnectedAuthenticating": "Terhubung! Mengautentikasi...",
@@ -1249,6 +1251,7 @@
     "authResetPasswordTitle": "Reset Kata Sandi",
     "authResetPasswordSubtitle": "Masukkan kata sandi barumu. Harus minimal 8 karakter.",
     "authNewPasswordLabel": "Kata Sandi Baru",
+    "authConfirmNewPasswordLabel": "Konfirmasi kata sandi baru",
     "authPasswordTooShort": "Kata sandi harus minimal 8 karakter",
     "authPasswordResetSuccess": "Reset kata sandi berhasil. Silakan login.",
     "authPasswordResetFailed": "Reset kata sandi gagal",
@@ -1899,6 +1902,8 @@
     "reportCancel": "Batal",
     "reportSubmit": "Laporkan",
     "reportSelectReason": "Silakan pilih alasan untuk melaporkan konten ini",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam atau Konten Tidak Diinginkan",
     "reportReasonHarassment": "Pelecehan, Perundungan, atau Ancaman",
     "reportReasonViolence": "Konten Kekerasan atau Ekstremis",

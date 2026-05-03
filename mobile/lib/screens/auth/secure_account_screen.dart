@@ -35,9 +35,11 @@ class SecureAccountScreen extends ConsumerStatefulWidget {
 class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   String? _emailError;
   String? _passwordError;
+  String? _confirmPasswordError;
   String? _generalError;
 
   void _setGeneralError(String? message) {
@@ -50,17 +52,33 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
-    final emailError = Validators.validateEmail(_emailController.text.trim());
-    final passwordError = Validators.validatePassword(_passwordController.text);
+    final messages = AuthValidationMessages.fromL10n(context.l10n);
+    final emailError = Validators.validateEmail(
+      _emailController.text.trim(),
+      messages: messages,
+    );
+    final passwordError = Validators.validatePassword(
+      _passwordController.text,
+      messages: messages,
+    );
+    final confirmPasswordError = Validators.validateConfirmPassword(
+      _confirmPasswordController.text,
+      password: _passwordController.text,
+      messages: messages,
+    );
 
-    if (emailError != null || passwordError != null) {
+    if (emailError != null ||
+        passwordError != null ||
+        confirmPasswordError != null) {
       setState(() {
         _emailError = emailError;
         _passwordError = passwordError;
+        _confirmPasswordError = confirmPasswordError;
       });
       return;
     }
@@ -69,6 +87,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       _isLoading = true;
       _emailError = null;
       _passwordError = null;
+      _confirmPasswordError = null;
       _generalError = null;
     });
 
@@ -141,7 +160,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
         _showVerificationDialog(email);
       }
     } else {
-      _setGeneralError('Registration complete. Please check your email.');
+      _setGeneralError(context.l10n.authRegistrationComplete);
     }
   }
 
@@ -180,24 +199,39 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   @override
   Widget build(BuildContext context) {
     return AuthFormScaffold(
-      title: 'Secure account',
+      title: context.l10n.authSecureAccountTitle,
       emailController: _emailController,
       passwordController: _passwordController,
+      confirmPasswordController: _confirmPasswordController,
+      emailLabel: context.l10n.authEmailLabel,
+      passwordLabel: context.l10n.authPasswordLabel,
+      confirmPasswordLabel: context.l10n.authConfirmPasswordLabel,
       emailError: _emailError,
       passwordError: _passwordError,
+      confirmPasswordError: _confirmPasswordError,
       enabled: !_isLoading,
       onEmailChanged: (_) {
         if (_emailError != null) setState(() => _emailError = null);
       },
       onPasswordChanged: (_) {
-        if (_passwordError != null) setState(() => _passwordError = null);
+        if (_passwordError != null || _confirmPasswordError != null) {
+          setState(() {
+            _passwordError = null;
+            _confirmPasswordError = null;
+          });
+        }
+      },
+      onConfirmPasswordChanged: (_) {
+        if (_confirmPasswordError != null) {
+          setState(() => _confirmPasswordError = null);
+        }
       },
       errorWidget: _generalError != null
           ? AuthErrorBox(message: _generalError!)
           : null,
       primaryButton: DivineButton(
         expanded: true,
-        label: 'Secure account',
+        label: context.l10n.authSecureAccountTitle,
         isLoading: _isLoading,
         onPressed: _handleSubmit,
       ),

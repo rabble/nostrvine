@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "了解！",
-    "profileSetupUploadFailedGeneric": "画像のアップロードがうまくいかなかった: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "画像をアップロードできなかった。あとでもう一度試してみて。",
     "profileSetupUploadNetworkError": "ネットワークエラー: ネット接続を確認してもう一回試してみて。",
     "profileSetupUploadAuthError": "認証エラー: 一度ログアウトしてもう一回ログインしてみて。",
     "profileSetupUploadFileTooLarge": "ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。",
+    "profileSetupUploadServerError": "画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。",
+    "profileSetupUploadUnsupportedOnWeb": "プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。",
     "profileSetupUsernameChecking": "使えるか確認中...",
     "profileSetupUsernameAvailable": "このユーザー名、使えるよ！",
     "profileSetupUsernameTakenIndicator": "このユーザー名はもう使われてる",
@@ -1217,6 +1212,7 @@
     "authJoinWaitlist": "ウェイトリストに参加",
     "authJoinWaitlistTitle": "ウェイトリストに参加",
     "authJoinWaitlistDescription": "メールアドレスを教えてね。アクセス開放に合わせてアップデートを送るよ。",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "招待アクセスのヘルプ",
     "authGeneratingConnection": "接続を生成中...",
     "authConnectedAuthenticating": "接続OK！認証中...",
@@ -1899,6 +1895,8 @@
     "reportCancel": "キャンセル",
     "reportSubmit": "報告",
     "reportSelectReason": "報告する理由を選んでね",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "スパムや迷惑なコンテンツ",
     "reportReasonHarassment": "嫌がらせ、いじめ、脅迫",
     "reportReasonViolence": "暴力的・過激なコンテンツ",

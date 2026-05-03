@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Jag fattar",
-    "profileSetupUploadFailedGeneric": "Kunde inte ladda upp bilden: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Det gick inte att ladda upp bilden. Försök igen senare.",
     "profileSetupUploadNetworkError": "Nätverksfel: Kolla din internetanslutning och försök igen.",
     "profileSetupUploadAuthError": "Autentiseringsfel: Logga ut och in igen.",
     "profileSetupUploadFileTooLarge": "Filen är för stor: Välj en mindre bild (max 10 MB).",
+    "profileSetupUploadServerError": "Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.",
+    "profileSetupUploadUnsupportedOnWeb": "Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.",
     "profileSetupUsernameChecking": "Kollar tillgänglighet...",
     "profileSetupUsernameAvailable": "Användarnamnet är ledigt!",
     "profileSetupUsernameTakenIndicator": "Användarnamnet är redan taget",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Logga in",
     "authEmailLabel": "E-post",
     "authPasswordLabel": "Lösenord",
+    "authConfirmPasswordLabel": "Bekräfta lösenord",
+    "authEmailRequired": "E-post krävs",
+    "authEmailInvalid": "Ange en giltig e-postadress",
+    "authPasswordRequired": "Lösenord krävs",
+    "authConfirmPasswordRequired": "Bekräfta ditt lösenord",
+    "authPasswordsDoNotMatch": "Lösenorden matchar inte",
     "authForgotPassword": "Glömt lösenord?",
     "authImportNostrKey": "Importera Nostr-nyckel",
     "authConnectSignerApp": "Anslut med en sign-app",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Ansluta till väntelistan",
     "authJoinWaitlistTitle": "Ansluta till väntelistan",
     "authJoinWaitlistDescription": "Dela din e-post så skickar vi uppdateringar när åtkomst öppnas.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Hjälp med inbjudningsåtkomst",
     "authGeneratingConnection": "Genererar anslutning...",
     "authConnectedAuthenticating": "Ansluten! Autentiserar...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Återställ lösenord",
     "authResetPasswordSubtitle": "Ange ditt nya lösenord. Det måste vara minst 8 tecken långt.",
     "authNewPasswordLabel": "Nytt lösenord",
+    "authConfirmNewPasswordLabel": "Bekräfta nytt lösenord",
     "authPasswordTooShort": "Lösenordet måste vara minst 8 tecken",
     "authPasswordResetSuccess": "Lösenordet återställdes. Logga in.",
     "authPasswordResetFailed": "Lösenordsåterställning misslyckades",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Avbryt",
     "reportSubmit": "Rapportera",
     "reportSelectReason": "Välj en anledning för att rapportera det här innehållet",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Skräppost eller ovälkommet innehåll",
     "reportReasonHarassment": "Trakasserier, mobbning eller hot",
     "reportReasonViolence": "Våldsamt eller extremistiskt innehåll",

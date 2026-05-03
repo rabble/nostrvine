@@ -805,9 +805,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupGotItButton => 'Am înțeles';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Încărcarea imaginii a eșuat: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -820,6 +819,14 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Fișier prea mare: alege o imagine mai mică (maxim 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.';
 
   @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
@@ -2566,6 +2573,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authPasswordLabel => 'Parolă';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirmă parola';
+
+  @override
+  String get authEmailRequired => 'Emailul este obligatoriu';
+
+  @override
+  String get authEmailInvalid => 'Introdu o adresă de email validă';
+
+  @override
+  String get authPasswordRequired => 'Parola este obligatorie';
+
+  @override
+  String get authConfirmPasswordRequired => 'Confirmă parola';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Parolele nu se potrivesc';
+
+  @override
   String get authForgotPassword => 'Ai uitat parola?';
 
   @override
@@ -2742,6 +2767,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Dă-ne emailul tău și âți vom trimite noutăți pe măsură ce se deschide accesul.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Ajutor pentru accesul prin invitație';
 
   @override
@@ -2818,6 +2846,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Parolă nouă';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirmă noua parolă';
 
   @override
   String get authPasswordTooShort =>
@@ -4357,6 +4388,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Alege un motiv pentru raportarea acestui conținut';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Spam sau conținut nedorit';

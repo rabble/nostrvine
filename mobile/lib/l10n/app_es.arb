@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Entendido",
-    "profileSetupUploadFailedGeneric": "No se pudo subir la imagen: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "No se pudo subir la imagen. Probá de nuevo más tarde.",
     "profileSetupUploadNetworkError": "Error de red: revisá tu conexión a internet y probá de nuevo.",
     "profileSetupUploadAuthError": "Error de autenticación: cerrá sesión y volvé a iniciarla.",
     "profileSetupUploadFileTooLarge": "Archivo demasiado grande: elegí una imagen más chica (máx 10MB).",
+    "profileSetupUploadServerError": "No se pudo subir la imagen. Nuestros servidores están temporalmente fuera de servicio. Probá de nuevo en un momento.",
+    "profileSetupUploadUnsupportedOnWeb": "La subida de foto de perfil todavía no está disponible en la web. Usá la app de iOS o Android o pegá la URL de una imagen.",
     "profileSetupUsernameChecking": "Verificando disponibilidad...",
     "profileSetupUsernameAvailable": "¡Nombre de usuario disponible!",
     "profileSetupUsernameTakenIndicator": "Ese nombre de usuario ya está ocupado",
@@ -1156,6 +1151,12 @@
     "authSignInTitle": "Iniciar sesión",
     "authEmailLabel": "Email",
     "authPasswordLabel": "Contraseña",
+    "authConfirmPasswordLabel": "Confirmar contraseña",
+    "authEmailRequired": "El email es obligatorio",
+    "authEmailInvalid": "Introduce un email válido",
+    "authPasswordRequired": "La contraseña es obligatoria",
+    "authConfirmPasswordRequired": "Confirma tu contraseña",
+    "authPasswordsDoNotMatch": "Las contraseñas no coinciden",
     "authForgotPassword": "¿Olvidaste tu contraseña?",
     "authImportNostrKey": "Importar clave de Nostr",
     "authConnectSignerApp": "Conectar con una app firmante",
@@ -1224,6 +1225,7 @@
     "authJoinWaitlist": "Unirme a la lista de espera",
     "authJoinWaitlistTitle": "Unite a la lista de espera",
     "authJoinWaitlistDescription": "Dejanos tu email y te mandamos novedades cuando haya cupos.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Ayuda con el acceso por invitación",
     "authGeneratingConnection": "Generando conexión...",
     "authConnectedAuthenticating": "¡Conectado! Autenticando...",
@@ -1256,6 +1258,7 @@
     "authResetPasswordTitle": "Restablecer contraseña",
     "authResetPasswordSubtitle": "Ingresá tu nueva contraseña. Tiene que tener al menos 8 caracteres.",
     "authNewPasswordLabel": "Nueva contraseña",
+    "authConfirmNewPasswordLabel": "Confirmar nueva contraseña",
     "authPasswordTooShort": "La contraseña tiene que tener al menos 8 caracteres",
     "authPasswordResetSuccess": "Contraseña restablecida. Iniciá sesión.",
     "authPasswordResetFailed": "Falló el restablecimiento de la contraseña",
@@ -1904,6 +1907,8 @@
     "reportCancel": "Cancelar",
     "reportSubmit": "Reportar",
     "reportSelectReason": "Elegí un motivo para reportar este contenido",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam o contenido no deseado",
     "reportReasonHarassment": "Acoso, bullying o amenazas",
     "reportReasonViolence": "Contenido violento o extremista",

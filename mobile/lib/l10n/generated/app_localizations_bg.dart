@@ -786,9 +786,8 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupGotItButton => 'Разбрах';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Неуспешно качване на изображение: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Качването на изображението се провали. Опитай отново след малко.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -801,6 +800,14 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Файлът е твърде голям. Избери по-малко изображение (макс. 10 MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Качването на изображението се провали. Сървърите ни временно не са достъпни. Опитай пак след малко.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
 
   @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
@@ -2530,6 +2537,24 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authPasswordLabel => 'Парола';
 
   @override
+  String get authConfirmPasswordLabel => 'Потвърди паролата';
+
+  @override
+  String get authEmailRequired => 'Имейлът е задължителен';
+
+  @override
+  String get authEmailInvalid => 'Моля, въведи валиден имейл';
+
+  @override
+  String get authPasswordRequired => 'Паролата е задължителна';
+
+  @override
+  String get authConfirmPasswordRequired => 'Моля, потвърди паролата си';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Паролите не съвпадат';
+
+  @override
   String get authForgotPassword => 'Забравена парола?';
 
   @override
@@ -2707,6 +2732,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Остави имейла си и ще ти пишем, когато достъпът се отвори.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Помощ с поканите';
 
   @override
@@ -2784,6 +2812,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Нова парола';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Потвърди новата парола';
 
   @override
   String get authPasswordTooShort => 'Паролата трябва да е поне 8 знака';
@@ -4286,6 +4317,13 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Избери причина за докладване на това съдържание';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Спам или нежелано съдържание';

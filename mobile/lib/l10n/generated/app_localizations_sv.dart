@@ -761,9 +761,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileSetupGotItButton => 'Jag fattar';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Kunde inte ladda upp bilden: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Det gick inte att ladda upp bilden. Försök igen senare.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -776,6 +775,14 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'Filen är för stor: Välj en mindre bild (max 10 MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.';
 
   @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';
@@ -2484,6 +2491,24 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authPasswordLabel => 'Lösenord';
 
   @override
+  String get authConfirmPasswordLabel => 'Bekräfta lösenord';
+
+  @override
+  String get authEmailRequired => 'E-post krävs';
+
+  @override
+  String get authEmailInvalid => 'Ange en giltig e-postadress';
+
+  @override
+  String get authPasswordRequired => 'Lösenord krävs';
+
+  @override
+  String get authConfirmPasswordRequired => 'Bekräfta ditt lösenord';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Lösenorden matchar inte';
+
+  @override
   String get authForgotPassword => 'Glömt lösenord?';
 
   @override
@@ -2661,6 +2686,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Dela din e-post så skickar vi uppdateringar när åtkomst öppnas.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Hjälp med inbjudningsåtkomst';
 
   @override
@@ -2736,6 +2764,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Nytt lösenord';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Bekräfta nytt lösenord';
 
   @override
   String get authPasswordTooShort => 'Lösenordet måste vara minst 8 tecken';
@@ -4238,6 +4269,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Välj en anledning för att rapportera det här innehållet';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Skräppost eller ovälkommet innehåll';

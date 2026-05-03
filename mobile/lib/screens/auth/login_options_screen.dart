@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
+import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/forgot_password_dialog.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -33,6 +34,7 @@ class LoginOptionsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final oauthClient = ref.watch(oauthClientProvider);
     final authService = ref.watch(authServiceProvider);
     final pendingVerificationService = ref.watch(
@@ -44,6 +46,7 @@ class LoginOptionsScreen extends ConsumerWidget {
         oauthClient: oauthClient,
         authService: authService,
         pendingVerificationService: pendingVerificationService,
+        validationMessages: AuthValidationMessages.fromL10n(l10n),
       )..initialize(isSignIn: true),
       child: const _LoginOptionsView(),
     );

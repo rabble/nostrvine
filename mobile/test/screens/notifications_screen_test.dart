@@ -368,7 +368,7 @@ void main() {
         expect(find.byType(NotificationListItem), findsNothing);
       });
 
-      testWidgets('shows invite card when only invites are available', (
+      testWidgets('hides invite card when remaining is zero', (
         WidgetTester tester,
       ) async {
         final mockNotifier = _MockEmptyRelayNotifications();
@@ -393,10 +393,8 @@ void main() {
 
         expect(
           find.text('You have 2 invites to share with friends!'),
-          findsOneWidget,
+          findsNothing,
         );
-        expect(find.text('No notifications yet'), findsNothing);
-        expect(find.byType(NotificationListItem), findsNothing);
       });
 
       testWidgets('shows invite card when invite capacity is available', (

@@ -10,6 +10,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/utils/validators.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
@@ -70,6 +71,7 @@ void main() {
         pendingVerificationService: mockPendingVerification,
         inviteApiClient: mockInviteApiClient,
         inviteCode: inviteCode,
+        validationMessages: AuthValidationMessages.englishDefaults,
       );
     }
 
@@ -1575,7 +1577,7 @@ void main() {
           obscurePassword: false,
           isSubmitting: true,
         );
-        expect(state.props, hasLength(12));
+        expect(state.props, hasLength(15));
       });
     });
 

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -176,6 +177,7 @@ class _ForgotPasswordForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final validationMessages = AuthValidationMessages.fromL10n(context.l10n);
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: SingleChildScrollView(
@@ -208,7 +210,10 @@ class _ForgotPasswordForm extends StatelessWidget {
                 keyboardType: TextInputType.emailAddress,
                 autocorrect: false,
                 autofillHints: const [AutofillHints.email],
-                validator: Validators.validateEmail,
+                validator: (value) => Validators.validateEmail(
+                  value,
+                  messages: validationMessages,
+                ),
               ),
               if (errorMessage != null) ...[
                 const SizedBox(height: 16),

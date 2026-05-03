@@ -21,6 +21,7 @@ class _MockResponse extends Mock implements http.Response {}
 
 void main() {
   late _MockInviteApiClient mockInviteApiClient;
+  final l10n = lookupAppLocalizations(const Locale('en'));
 
   setUpAll(() {
     registerFallbackValue(Uri.parse('https://example.com'));
@@ -215,6 +216,7 @@ void main() {
         () => mockInviteApiClient.joinWaitlist(
           contact: any(named: 'contact'),
           sourceSlug: any(named: 'sourceSlug'),
+          newsletterOptIn: any(named: 'newsletterOptIn'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -262,6 +264,7 @@ void main() {
 
       await tester.tap(find.widgetWithText(DivineButton, 'Join waitlist'));
       await tester.pumpAndSettle();
+      expect(find.byType(DivineCheckbox), findsOneWidget);
       await tester.enterText(find.byType(TextField).last, 'fan@example.com');
       await tester.tap(find.widgetWithText(DivineButton, 'Join waitlist').last);
       await tester.pumpAndSettle();
@@ -270,6 +273,85 @@ void main() {
         () => mockInviteApiClient.joinWaitlist(
           contact: 'fan@example.com',
           sourceSlug: 'lele-pons',
+          newsletterOptIn: true,
+        ),
+      ).called(1);
+    });
+
+    testWidgets('passes newsletterOptIn false when checkbox is unchecked', (
+      tester,
+    ) async {
+      when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
+        (_) async => const InviteClientConfig(
+          mode: OnboardingMode.inviteCodeRequired,
+          supportEmail: 'support@divine.video',
+        ),
+      );
+      when(
+        () => mockInviteApiClient.joinWaitlist(
+          contact: any(named: 'contact'),
+          sourceSlug: any(named: 'sourceSlug'),
+          newsletterOptIn: any(named: 'newsletterOptIn'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const WaitlistJoinResult(id: 'waitlist-entry-2', message: 'Joined'),
+      );
+
+      await tester.pumpWidget(
+        RepositoryProvider<InviteApiClient>.value(
+          value: mockInviteApiClient,
+          child: BlocProvider(
+            create: (_) => InviteGateBloc(inviteApiClient: mockInviteApiClient),
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              theme: VineTheme.theme,
+              routerConfig: GoRouter(
+                initialLocation:
+                    '${WelcomeScreen.inviteGatePath}?code=LELE-PONS'
+                    '&error=This%20creator%27s%20invites%20are%20full'
+                    '&sourceSlug=lele-pons',
+                routes: [
+                  GoRoute(
+                    path: WelcomeScreen.path,
+                    builder: (context, state) =>
+                        const Scaffold(body: Text('Welcome')),
+                    routes: [
+                      GoRoute(
+                        path: 'invite',
+                        builder: (context, state) => InviteGateScreen(
+                          initialCode: state.uri.queryParameters['code'],
+                          initialError: state.uri.queryParameters['error'],
+                          initialSourceSlug:
+                              state.uri.queryParameters['sourceSlug'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(DivineButton, 'Join waitlist'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DivineCheckbox), findsOneWidget);
+      await tester.tap(find.text(l10n.authJoinWaitlistNewsletterOptIn));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'fan@example.com');
+      await tester.tap(find.widgetWithText(DivineButton, 'Join waitlist').last);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockInviteApiClient.joinWaitlist(
+          contact: 'fan@example.com',
+          sourceSlug: 'lele-pons',
+          // ignore: avoid_redundant_argument_values
+          newsletterOptIn: false,
         ),
       ).called(1);
     });

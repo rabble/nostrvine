@@ -24,6 +24,7 @@ import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/utils/collaborator_tags.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -315,9 +316,7 @@ class VideoEventPublisher {
       try {
         sentEvent = await _nostrService
             .publishEvent(event)
-            .timeout(
-              outerTimeout,
-            );
+            .timeout(outerTimeout);
       } on TimeoutException {
         Log.error(
           '⏱️ publishEvent timed out after ${outerTimeout.inSeconds}s for '
@@ -770,9 +769,9 @@ class VideoEventPublisher {
         tags.add(['expiration', expirationTimestamp.toString()]);
       }
 
-      // Add collaborator p-tags (standard NIP-71 format)
+      // Add Divine collaborator-marked p-tags for this NIP-71 video event.
       for (final pubkey in collaboratorPubkeys) {
-        tags.add(['p', pubkey, 'wss://relay.divine.video', 'collaborator']);
+        tags.add(buildCollaboratorPTag(pubkey));
       }
 
       // Add Inspired By a-tag (specific video reference)

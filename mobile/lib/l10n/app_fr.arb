@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Compris",
-    "profileSetupUploadFailedGeneric": "Échec de l'envoi de l'image : {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "L'envoi de l'image a échoué. Réessaie plus tard.",
     "profileSetupUploadNetworkError": "Erreur réseau : vérifie ta connexion internet et réessaie.",
     "profileSetupUploadAuthError": "Erreur d'authentification : déconnecte-toi et reconnecte-toi.",
     "profileSetupUploadFileTooLarge": "Fichier trop gros : choisis une image plus petite (10 Mo max).",
+    "profileSetupUploadServerError": "L'envoi de l'image a échoué. Nos serveurs sont temporairement indisponibles. Réessaie dans un instant.",
+    "profileSetupUploadUnsupportedOnWeb": "L'envoi d'une photo de profil n'est pas encore disponible sur le web. Utilise l'app iOS ou Android, ou colle l'URL d'une image.",
     "profileSetupUsernameChecking": "Vérification de la disponibilité...",
     "profileSetupUsernameAvailable": "Nom d'utilisateur disponible !",
     "profileSetupUsernameTakenIndicator": "Nom d'utilisateur déjà pris",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Se connecter",
     "authEmailLabel": "E-mail",
     "authPasswordLabel": "Mot de passe",
+    "authConfirmPasswordLabel": "Confirmer le mot de passe",
+    "authEmailRequired": "L'e-mail est obligatoire",
+    "authEmailInvalid": "Veuillez saisir un e-mail valide",
+    "authPasswordRequired": "Le mot de passe est obligatoire",
+    "authConfirmPasswordRequired": "Veuillez confirmer votre mot de passe",
+    "authPasswordsDoNotMatch": "Les mots de passe ne correspondent pas",
     "authForgotPassword": "Mot de passe oublié ?",
     "authImportNostrKey": "Importer une clé Nostr",
     "authConnectSignerApp": "Se connecter avec une app de signature",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Rejoindre la liste d'attente",
     "authJoinWaitlistTitle": "Rejoindre la liste d'attente",
     "authJoinWaitlistDescription": "Partage ton e-mail et on t'enverra des mises à jour dès que l'accès s'ouvre.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Aide pour l'accès par invitation",
     "authGeneratingConnection": "Génération de la connexion...",
     "authConnectedAuthenticating": "Connecté ! Authentification...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Réinitialiser le mot de passe",
     "authResetPasswordSubtitle": "Entre ton nouveau mot de passe. Il doit faire au moins 8 caractères.",
     "authNewPasswordLabel": "Nouveau mot de passe",
+    "authConfirmNewPasswordLabel": "Confirmer le nouveau mot de passe",
     "authPasswordTooShort": "Le mot de passe doit faire au moins 8 caractères",
     "authPasswordResetSuccess": "Mot de passe réinitialisé avec succès. Connecte-toi.",
     "authPasswordResetFailed": "Échec de la réinitialisation du mot de passe",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Annuler",
     "reportSubmit": "Signaler",
     "reportSelectReason": "Sélectionne une raison pour signaler ce contenu",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam ou contenu indésirable",
     "reportReasonHarassment": "Harcèlement, intimidation ou menaces",
     "reportReasonViolence": "Contenu violent ou extrémiste",

@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Entendi",
-    "profileSetupUploadFailedGeneric": "Falha ao enviar imagem: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Não foi possível enviar a imagem. Tente novamente mais tarde.",
     "profileSetupUploadNetworkError": "Erro de rede: verifique sua conexão com a internet e tente novamente.",
     "profileSetupUploadAuthError": "Erro de autenticação: tente sair e entrar novamente.",
     "profileSetupUploadFileTooLarge": "Arquivo muito grande: escolha uma imagem menor (máx. 10 MB).",
+    "profileSetupUploadServerError": "Não foi possível enviar a imagem. Nossos servidores estão temporariamente indisponíveis. Tente novamente em instantes.",
+    "profileSetupUploadUnsupportedOnWeb": "O envio de foto de perfil ainda não está disponível na web. Use o app para iOS ou Android ou cole a URL de uma imagem.",
     "profileSetupUsernameChecking": "Verificando disponibilidade...",
     "profileSetupUsernameAvailable": "Nome de usuário disponível!",
     "profileSetupUsernameTakenIndicator": "Nome de usuário já em uso",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Entrar",
     "authEmailLabel": "E-mail",
     "authPasswordLabel": "Senha",
+    "authConfirmPasswordLabel": "Confirmar senha",
+    "authEmailRequired": "O e-mail é obrigatório",
+    "authEmailInvalid": "Insira um e-mail válido",
+    "authPasswordRequired": "A senha é obrigatória",
+    "authConfirmPasswordRequired": "Confirme sua senha",
+    "authPasswordsDoNotMatch": "As senhas não coincidem",
     "authForgotPassword": "Esqueceu a senha?",
     "authImportNostrKey": "Importar chave Nostr",
     "authConnectSignerApp": "Conectar com um app signer",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Entrar na lista de espera",
     "authJoinWaitlistTitle": "Entre na lista de espera",
     "authJoinWaitlistDescription": "Compartilhe seu e-mail e enviaremos novidades conforme o acesso for liberado.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Ajuda com acesso por convite",
     "authGeneratingConnection": "Gerando conexão...",
     "authConnectedAuthenticating": "Conectado! Autenticando...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Redefinir senha",
     "authResetPasswordSubtitle": "Digite sua nova senha. Ela deve ter pelo menos 8 caracteres.",
     "authNewPasswordLabel": "Nova senha",
+    "authConfirmNewPasswordLabel": "Confirmar nova senha",
     "authPasswordTooShort": "A senha deve ter pelo menos 8 caracteres",
     "authPasswordResetSuccess": "Senha redefinida com sucesso. Faça login.",
     "authPasswordResetFailed": "Falha ao redefinir a senha",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Cancelar",
     "reportSubmit": "Denunciar",
     "reportSelectReason": "Selecione um motivo para denunciar este conteúdo",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam ou conteúdo indesejado",
     "reportReasonHarassment": "Assédio, bullying ou ameaças",
     "reportReasonViolence": "Conteúdo violento ou extremista",

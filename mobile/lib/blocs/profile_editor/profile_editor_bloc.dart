@@ -1,10 +1,11 @@
 // ABOUTME: BLoC for orchestrating profile save and username claiming
-// ABOUTME: Handles rollback when username claim fails
+// ABOUTME: Claims the username on the registry before publishing kind 0,
+// ABOUTME: so kind 0 with a divine.video nip05 is never broadcast unless the
+// ABOUTME: corresponding registry entry is in place.
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -349,7 +350,14 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
   }
 
-  /// Core profile save logic (extracted for reuse)
+  /// Core profile save logic (extracted for reuse).
+  ///
+  /// Order of operations is **claim first, publish second**: when a divine.video
+  /// username is requested, the registry claim runs before the kind 0 metadata
+  /// event is broadcast. Kind 0 is gossiped to relays and effectively immutable
+  /// once sent, so publishing it before confirming the claim could leave the
+  /// user advertising a `_@<name>.divine.video` identifier that the registry
+  /// has no record of — irrecoverable without manual intervention.
   Future<void> _saveProfile(
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
@@ -389,10 +397,55 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
     );
 
-    // 1. Publish profile
-    UserProfile savedProfile;
+    // 1. Claim the divine.video username FIRST when one is requested.
+    //
+    // If the claim fails for any reason — taken, reserved, network error,
+    // server unreachable — we abort *before* publishing kind 0. This keeps
+    // the user's metadata in sync with the registry by construction.
+    if (username != null) {
+      Log.info(
+        '📝 Attempting to claim username: $username',
+        name: 'ProfileEditorBloc',
+      );
+
+      final result = await _profileRepository.claimUsername(username: username);
+
+      Log.info('📝 Username claim result: $result', name: 'ProfileEditorBloc');
+
+      final claimError = switch (result) {
+        UsernameClaimSuccess() => null,
+        UsernameClaimTaken() => ProfileEditorError.usernameTaken,
+        UsernameClaimReserved() => ProfileEditorError.usernameReserved,
+        UsernameClaimError() => ProfileEditorError.claimFailed,
+      };
+
+      if (claimError != null) {
+        final usernameStatus = switch (claimError) {
+          ProfileEditorError.usernameReserved => UsernameStatus.reserved,
+          ProfileEditorError.usernameTaken => UsernameStatus.taken,
+          _ => null,
+        };
+
+        final reservedUsernames = usernameStatus == UsernameStatus.reserved
+            ? {...state.reservedUsernames, username}
+            : null;
+
+        emit(
+          state.copyWith(
+            status: ProfileEditorStatus.failure,
+            error: claimError,
+            usernameStatus: usernameStatus,
+            reservedUsernames: reservedUsernames,
+          ),
+        );
+        return;
+      }
+    }
+
+    // 2. Publish kind 0 metadata. By this point either no divine.video
+    // username was requested, or the claim has been confirmed.
     try {
-      savedProfile = await _profileRepository.saveProfileEvent(
+      final savedProfile = await _profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
         username: username,
@@ -407,6 +460,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         name: 'ProfileEditorBloc',
       );
       await _profileRepository.cacheProfile(savedProfile);
+      emit(state.copyWith(status: ProfileEditorStatus.success));
     } catch (error, stackTrace) {
       addError(error, stackTrace);
       Log.error('Failed to publish profile: $error', name: 'ProfileEditorBloc');
@@ -419,80 +473,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           error: profileError,
         ),
       );
-      return;
     }
-
-    // 2. No username to claim - done (external NIP-05 or no NIP-05)
-    if (username == null) {
-      Log.info(
-        '📝 No username to claim '
-        '${externalNip05 != null ? "(external NIP-05)" : ""}, SUCCESS',
-        name: 'ProfileEditorBloc',
-      );
-      emit(state.copyWith(status: ProfileEditorStatus.success));
-      return;
-    }
-
-    // 3. Claim username
-    Log.info(
-      '📝 Attempting to claim username: $username',
-      name: 'ProfileEditorBloc',
-    );
-
-    final result = await _profileRepository.claimUsername(username: username);
-
-    Log.info('📝 Username claim result: $result', name: 'ProfileEditorBloc');
-
-    final error = switch (result) {
-      UsernameClaimSuccess() => null,
-      UsernameClaimTaken() => ProfileEditorError.usernameTaken,
-      UsernameClaimReserved() => ProfileEditorError.usernameReserved,
-      UsernameClaimError() => ProfileEditorError.claimFailed,
-    };
-
-    if (error == null) {
-      Log.info('📝 Username claim SUCCESS', name: 'ProfileEditorBloc');
-      emit(state.copyWith(status: ProfileEditorStatus.success));
-      return;
-    }
-
-    // 4. Rollback on failure
-    Log.info(
-      '📝 Rolling back to nip05=${currentProfile?.nip05}',
-      name: 'ProfileEditorBloc',
-    );
-    try {
-      final rolledBack = await _profileRepository.saveProfileEvent(
-        displayName: displayName,
-        about: about,
-        picture: picture,
-        banner: banner,
-        currentProfile: currentProfile,
-      );
-      await _profileRepository.cacheProfile(rolledBack);
-      Log.info('📝 Rollback complete', name: 'ProfileEditorBloc');
-    } catch (e) {
-      Log.error('Rollback failed: $e', name: 'ProfileEditorBloc');
-    }
-
-    final usernameStatus = switch (error) {
-      ProfileEditorError.usernameReserved => UsernameStatus.reserved,
-      ProfileEditorError.usernameTaken => UsernameStatus.taken,
-      _ => null,
-    };
-
-    final reservedUsernames = usernameStatus == UsernameStatus.reserved
-        ? {...state.reservedUsernames, username}
-        : null;
-
-    emit(
-      state.copyWith(
-        status: ProfileEditorStatus.failure,
-        error: error,
-        usernameStatus: usernameStatus,
-        reservedUsernames: reservedUsernames,
-      ),
-    );
   }
 }
 

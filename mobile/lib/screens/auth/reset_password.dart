@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -38,10 +39,13 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   TextEditingController? _emailController;
 
   bool _isLoading = false;
-  String? _errorMessage;
+  String? _passwordError;
+  String? _confirmPasswordError;
+  String? _generalError;
 
   bool get _hasEmail => widget.email != null && widget.email!.isNotEmpty;
 
@@ -56,22 +60,36 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   @override
   void dispose() {
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _emailController?.dispose();
     super.dispose();
   }
 
   Future<void> _handleSubmit() async {
+    final messages = AuthValidationMessages.fromL10n(context.l10n);
     final password = _passwordController.text;
-    if (password.length < 8) {
+    final passwordError = Validators.validatePassword(
+      password,
+      messages: messages,
+    );
+    final confirmPasswordError = Validators.validateConfirmPassword(
+      _confirmPasswordController.text,
+      password: password,
+      messages: messages,
+    );
+    if (passwordError != null || confirmPasswordError != null) {
       setState(() {
-        _errorMessage = context.l10n.authPasswordTooShort;
+        _passwordError = passwordError;
+        _confirmPasswordError = confirmPasswordError;
       });
       return;
     }
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      _passwordError = null;
+      _confirmPasswordError = null;
+      _generalError = null;
     });
 
     try {
@@ -93,7 +111,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         );
       } else {
         setState(() {
-          _errorMessage =
+          _generalError =
               result.message ?? context.l10n.authPasswordResetFailed;
         });
       }
@@ -105,7 +123,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       );
       if (mounted) {
         setState(() {
-          _errorMessage = context.l10n.authUnexpectedError;
+          _generalError = context.l10n.authUnexpectedError;
         });
       }
     } finally {
@@ -119,7 +137,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -191,11 +209,34 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 autofillHints: const [
                                   AutofillHints.newPassword,
                                 ],
-                                errorText: _errorMessage,
+                                errorText: _passwordError,
                                 enabled: !_isLoading,
                                 onChanged: (_) {
-                                  if (_errorMessage != null) {
-                                    setState(() => _errorMessage = null);
+                                  if (_passwordError != null ||
+                                      _confirmPasswordError != null) {
+                                    setState(() {
+                                      _passwordError = null;
+                                      _confirmPasswordError = null;
+                                    });
+                                  }
+                                },
+                                textInputAction: TextInputAction.next,
+                              ),
+                              const SizedBox(height: 16),
+                              DivineAuthTextField(
+                                controller: _confirmPasswordController,
+                                label: context.l10n.authConfirmNewPasswordLabel,
+                                obscureText: true,
+                                autofillHints: const [
+                                  AutofillHints.newPassword,
+                                ],
+                                errorText: _confirmPasswordError,
+                                enabled: !_isLoading,
+                                onChanged: (_) {
+                                  if (_confirmPasswordError != null) {
+                                    setState(
+                                      () => _confirmPasswordError = null,
+                                    );
                                   }
                                 },
                                 textInputAction: TextInputAction.done,
@@ -205,6 +246,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           ),
                         ),
                       ),
+
+                      if (_generalError != null) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          _generalError!,
+                          style: VineTheme.bodyMediumFont(
+                            color: VineTheme.error,
+                          ),
+                        ),
+                      ],
 
                       const SizedBox(height: 32),
 

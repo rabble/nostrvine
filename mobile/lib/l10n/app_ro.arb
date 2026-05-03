@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Am înțeles",
-    "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Încărcarea imaginii a eșuat. Încearcă din nou mai târziu.",
     "profileSetupUploadNetworkError": "Eroare de rețea: verifică conexiunea la internet și încearcă din nou.",
     "profileSetupUploadAuthError": "Eroare de autentificare: deconectează-te și autentifică-te din nou.",
     "profileSetupUploadFileTooLarge": "Fișier prea mare: alege o imagine mai mică (maxim 10MB).",
+    "profileSetupUploadServerError": "Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.",
+    "profileSetupUploadUnsupportedOnWeb": "Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.",
     "profileSetupUsernameChecking": "Se verifică disponibilitatea...",
     "profileSetupUsernameAvailable": "Numele e disponibil!",
     "profileSetupUsernameTakenIndicator": "Numele e deja luat",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Autentificare",
     "authEmailLabel": "Email",
     "authPasswordLabel": "Parolă",
+    "authConfirmPasswordLabel": "Confirmă parola",
+    "authEmailRequired": "Emailul este obligatoriu",
+    "authEmailInvalid": "Introdu o adresă de email validă",
+    "authPasswordRequired": "Parola este obligatorie",
+    "authConfirmPasswordRequired": "Confirmă parola",
+    "authPasswordsDoNotMatch": "Parolele nu se potrivesc",
     "authForgotPassword": "Ai uitat parola?",
     "authImportNostrKey": "Importă cheia Nostr",
     "authConnectSignerApp": "Conectează o aplicație de semnare",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Alătură-te listei de așteptare",
     "authJoinWaitlistTitle": "Alătură-te listei de așteptare",
     "authJoinWaitlistDescription": "Dă-ne emailul tău și âți vom trimite noutăți pe măsură ce se deschide accesul.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Ajutor pentru accesul prin invitație",
     "authGeneratingConnection": "Se generează conexiunea...",
     "authConnectedAuthenticating": "Conectat! Se autentifică...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Resetează parola",
     "authResetPasswordSubtitle": "Introdu parola nouă. Trebuie să aibă cel puțin 8 caractere.",
     "authNewPasswordLabel": "Parolă nouă",
+    "authConfirmNewPasswordLabel": "Confirmă noua parolă",
     "authPasswordTooShort": "Parola trebuie să aibă cel puțin 8 caractere",
     "authPasswordResetSuccess": "Parola a fost resetată cu succes. Autentifică-te.",
     "authPasswordResetFailed": "Resetarea parolei a eșuat",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Anulează",
     "reportSubmit": "Raportează",
     "reportSelectReason": "Alege un motiv pentru raportarea acestui conținut",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam sau conținut nedorit",
     "reportReasonHarassment": "Hărțuire, bullying sau amenințări",
     "reportReasonViolence": "Conținut violent sau extremist",

@@ -271,7 +271,11 @@ class VideoStats {
           }
           if (tagName == 'p' && tagValue.isNotEmpty) {
             final normalized = tagValue.toLowerCase();
-            if (normalized != pubkey &&
+            final role = tag.length >= 4
+                ? (tag[3] as String).toLowerCase()
+                : null;
+            if (role == 'collaborator' &&
+                normalized != pubkey &&
                 !collaboratorPubkeys.contains(normalized)) {
               collaboratorPubkeys.add(normalized);
             }
@@ -467,9 +471,9 @@ class VideoStats {
   /// Author-applied content warning labels parsed from NIP-32/NIP-36 tags.
   final List<String> contentWarningLabels;
 
-  /// Pubkeys of NIP-71 collaborators (`p` tags whose value differs from the
-  /// event author). Empty when the event has no collaborators or when the
-  /// REST payload did not include tag data.
+  /// Pubkeys from Divine's collaborator-marked `p` tags whose value differs
+  /// from the event author. Empty when the event has no collaborator markers
+  /// or when the REST payload did not include tag data.
   final List<String> collaboratorPubkeys;
 
   /// Addressable coordinates for subtitle event (from `text-track` tag or

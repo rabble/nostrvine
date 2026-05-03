@@ -317,7 +317,7 @@ class _AccountHeader extends StatelessWidget {
               _AccountHeaderProfile(pubkey: pubkey),
               BlocBuilder<InviteStatusCubit, InviteStatusState>(
                 builder: (context, inviteState) {
-                  if (!inviteState.hasAvailableInvites) {
+                  if (!inviteState.hasInviteActivity) {
                     return const SizedBox.shrink();
                   }
                   return Semantics(
@@ -353,22 +353,23 @@ class _AccountHeader extends StatelessWidget {
                                 color: VineTheme.vineGreen,
                               ),
                             ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: VineTheme.vineGreen,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${inviteState.availableInviteCount}',
-                                style: VineTheme.labelSmallFont(
-                                  color: VineTheme.backgroundColor,
+                            if (inviteState.hasAvailableInvites)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: VineTheme.vineGreen,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '${inviteState.availableInviteCount}',
+                                  style: VineTheme.labelSmallFont(
+                                    color: VineTheme.backgroundColor,
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),

@@ -208,7 +208,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Invites'), findsOneWidget);
-      expect(find.text('1'), findsOneWidget);
+      expect(find.text('1'), findsNothing);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();

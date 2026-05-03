@@ -972,9 +972,6 @@ AuthService authService(Ref ref) {
   final oauthClient = ref.watch(oauthClientProvider);
   final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
   final oauthConfig = ref.watch(oauthConfigProvider);
-  final pendingVerificationService = ref.watch(
-    pendingVerificationServiceProvider,
-  );
   // NOTE: We construct FunnelcakeApiClient directly here instead of using
   // funnelcakeApiClientProvider to avoid a circular dependency:
   //   authService → funnelcakeApiClient → nostrService → authService
@@ -987,7 +984,6 @@ AuthService authService(Ref ref) {
     oauthClient: oauthClient,
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
-    pendingVerificationService: pendingVerificationService,
     profileCheckIndexerUrl: authEnv.indexerRelays.first,
     indexerRelays: authEnv.indexerRelays,
     primaryRelayUrl: authEnv.relayUrl,

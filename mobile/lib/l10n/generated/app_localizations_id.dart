@@ -761,9 +761,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileSetupGotItButton => 'Mengerti';
 
   @override
-  String profileSetupUploadFailedGeneric(Object error) {
-    return 'Gagal mengunggah gambar: $error';
-  }
+  String get profileSetupUploadFailedGeneric =>
+      'Gagal mengunggah gambar. Coba lagi nanti.';
 
   @override
   String get profileSetupUploadNetworkError =>
@@ -776,6 +775,14 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get profileSetupUploadFileTooLarge =>
       'File terlalu besar: Pilih gambar yang lebih kecil (maks 10MB).';
+
+  @override
+  String get profileSetupUploadServerError =>
+      'Gagal mengunggah gambar. Server kami sedang tidak tersedia untuk sementara. Coba lagi sebentar lagi.';
+
+  @override
+  String get profileSetupUploadUnsupportedOnWeb =>
+      'Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.';
 
   @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';
@@ -2463,6 +2470,24 @@ class AppLocalizationsId extends AppLocalizations {
   String get authPasswordLabel => 'Kata Sandi';
 
   @override
+  String get authConfirmPasswordLabel => 'Konfirmasi kata sandi';
+
+  @override
+  String get authEmailRequired => 'Email wajib diisi';
+
+  @override
+  String get authEmailInvalid => 'Masukkan email yang valid';
+
+  @override
+  String get authPasswordRequired => 'Kata sandi wajib diisi';
+
+  @override
+  String get authConfirmPasswordRequired => 'Konfirmasikan kata sandi Anda';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Kata sandi tidak cocok';
+
+  @override
   String get authForgotPassword => 'Lupa kata sandi?';
 
   @override
@@ -2639,6 +2664,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Bagikan emailmu dan kami akan mengirim pembaruan saat akses terbuka.';
 
   @override
+  String get authJoinWaitlistNewsletterOptIn => 'Send me Divine inspiration';
+
+  @override
   String get authInviteAccessHelp => 'Bantuan akses undangan';
 
   @override
@@ -2715,6 +2743,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Kata Sandi Baru';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Konfirmasi kata sandi baru';
 
   @override
   String get authPasswordTooShort => 'Kata sandi harus minimal 8 karakter';
@@ -4214,6 +4245,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get reportSelectReason =>
       'Silakan pilih alasan untuk melaporkan konten ini';
+
+  @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
 
   @override
   String get reportReasonSpam => 'Spam atau Konten Tidak Diinginkan';

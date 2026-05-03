@@ -344,17 +344,12 @@
         }
     },
     "profileSetupGotItButton": "Capito",
-    "profileSetupUploadFailedGeneric": "Impossibile caricare l'immagine: {error}",
-    "@profileSetupUploadFailedGeneric": {
-        "placeholders": {
-            "error": {
-                "type": "Object"
-            }
-        }
-    },
+    "profileSetupUploadFailedGeneric": "Impossibile caricare l'immagine. Riprova più tardi.",
     "profileSetupUploadNetworkError": "Errore di rete: controlla la connessione a internet e riprova.",
     "profileSetupUploadAuthError": "Errore di autenticazione: prova a uscire e a rientrare.",
     "profileSetupUploadFileTooLarge": "File troppo grande: scegli un'immagine più piccola (max 10MB).",
+    "profileSetupUploadServerError": "Impossibile caricare l'immagine. I nostri server sono temporaneamente non disponibili. Riprova tra un attimo.",
+    "profileSetupUploadUnsupportedOnWeb": "Il caricamento della foto profilo non è ancora disponibile sul web. Usa l'app iOS o Android oppure incolla l'URL di un'immagine.",
     "profileSetupUsernameChecking": "Controllo disponibilità...",
     "profileSetupUsernameAvailable": "Nome utente disponibile!",
     "profileSetupUsernameTakenIndicator": "Nome utente già preso",
@@ -1152,6 +1147,12 @@
     "authSignInTitle": "Accedi",
     "authEmailLabel": "Email",
     "authPasswordLabel": "Password",
+    "authConfirmPasswordLabel": "Conferma password",
+    "authEmailRequired": "L'email è obbligatoria",
+    "authEmailInvalid": "Inserisci un'email valida",
+    "authPasswordRequired": "La password è obbligatoria",
+    "authConfirmPasswordRequired": "Conferma la tua password",
+    "authPasswordsDoNotMatch": "Le password non corrispondono",
     "authForgotPassword": "Password dimenticata?",
     "authImportNostrKey": "Importa chiave Nostr",
     "authConnectSignerApp": "Connettiti con un'app signer",
@@ -1220,6 +1221,7 @@
     "authJoinWaitlist": "Entra in lista d'attesa",
     "authJoinWaitlistTitle": "Entra nella lista d'attesa",
     "authJoinWaitlistDescription": "Condividi la tua email e ti manderemo aggiornamenti quando si aprirà l'accesso.",
+    "authJoinWaitlistNewsletterOptIn": "Send me Divine inspiration",
     "authInviteAccessHelp": "Aiuto accesso tramite invito",
     "authGeneratingConnection": "Generazione connessione...",
     "authConnectedAuthenticating": "Connesso! Autenticazione...",
@@ -1252,6 +1254,7 @@
     "authResetPasswordTitle": "Reimposta password",
     "authResetPasswordSubtitle": "Inserisci la tua nuova password. Deve essere di almeno 8 caratteri.",
     "authNewPasswordLabel": "Nuova password",
+    "authConfirmNewPasswordLabel": "Conferma nuova password",
     "authPasswordTooShort": "La password deve avere almeno 8 caratteri",
     "authPasswordResetSuccess": "Password reimpostata. Accedi.",
     "authPasswordResetFailed": "Reimpostazione password fallita",
@@ -1900,6 +1903,8 @@
     "reportCancel": "Annulla",
     "reportSubmit": "Segnala",
     "reportSelectReason": "Seleziona un motivo per segnalare questo contenuto",
+    "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
+    "reportDetailsRequired": "Please describe the issue",
     "reportReasonSpam": "Spam o contenuto indesiderato",
     "reportReasonHarassment": "Molestie, bullismo o minacce",
     "reportReasonViolence": "Contenuto violento o estremista",

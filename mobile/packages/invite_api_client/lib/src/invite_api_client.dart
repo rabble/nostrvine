@@ -143,6 +143,7 @@ class InviteApiClient {
     required String contact,
     String? pubkey,
     String? sourceSlug,
+    bool newsletterOptIn = false,
   }) async {
     final uri = Uri.parse('$_baseUrl/v1/waitlist');
     final payload = <String, dynamic>{'contact': contact};
@@ -152,6 +153,7 @@ class InviteApiClient {
     if (sourceSlug != null && sourceSlug.isNotEmpty) {
       payload['source_slug'] = sourceSlug;
     }
+    payload['newsletter_opt_in'] = newsletterOptIn;
 
     try {
       final response = await _client
