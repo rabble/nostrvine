@@ -841,7 +841,7 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations.clear();
 
     await _downloader.close();
-    super.dispose();
+    await super.dispose();
   }
 }
 

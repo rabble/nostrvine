@@ -64,9 +64,13 @@ class InfiniteVideoFeed extends StatefulWidget {
 
   static bool? _isSupportedOverrideForTesting;
 
-  /// Overrides [isSupported] in tests. Pass `null` to clear override.
+  /// Current test override for [isSupported].
   @visibleForTesting
-  static void debugSetIsSupportedOverride(bool? value) {
+  static bool? get debugIsSupportedOverride => _isSupportedOverrideForTesting;
+
+  /// Overrides [isSupported] in tests. Set to `null` to clear override.
+  @visibleForTesting
+  static set debugIsSupportedOverride(bool? value) {
     _isSupportedOverrideForTesting = value;
   }
 
@@ -997,8 +1001,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             // available. Removed once the first frame is rendered so the
             // widget (and any timers it owns) are properly disposed.
             if (!hasError &&
-                (!hasVideoSize ||
-                    controller.state.isFirstFrameRendered != true))
+                (!hasVideoSize || !controller.state.isFirstFrameRendered))
               ?widget.loadingBuilder?.call(
                 context,
                 index,

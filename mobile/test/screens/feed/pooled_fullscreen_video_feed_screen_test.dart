@@ -245,7 +245,7 @@ void main() {
     setUpAll(() {
       // This suite validates pooled controller behavior; force the widget
       // to stay on the pooled/native fallback path regardless of host OS.
-      InfiniteVideoFeed.debugSetIsSupportedOverride(false);
+      InfiniteVideoFeed.debugIsSupportedOverride = false;
 
       registerFallbackValue(const FullscreenFeedStarted());
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
@@ -283,7 +283,7 @@ void main() {
     });
 
     tearDownAll(() {
-      InfiniteVideoFeed.debugSetIsSupportedOverride(null);
+      InfiniteVideoFeed.debugIsSupportedOverride = null;
     });
 
     List<VideoEvent> createTestVideos({int count = 3}) {
@@ -557,11 +557,11 @@ void main() {
 
       group('native-player branch', () {
         setUp(() {
-          InfiniteVideoFeed.debugSetIsSupportedOverride(true);
+          InfiniteVideoFeed.debugIsSupportedOverride = true;
         });
 
         tearDown(() {
-          InfiniteVideoFeed.debugSetIsSupportedOverride(false);
+          InfiniteVideoFeed.debugIsSupportedOverride = false;
         });
 
         testWidgets(

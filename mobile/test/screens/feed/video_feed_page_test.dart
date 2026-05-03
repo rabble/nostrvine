@@ -78,11 +78,11 @@ void main() {
   setUpAll(() {
     // This test suite validates pooled-feed behavior; pin the runtime branch
     // so host platform support changes do not flip widget paths.
-    InfiniteVideoFeed.debugSetIsSupportedOverride(false);
+    InfiniteVideoFeed.debugIsSupportedOverride = false;
   });
 
   tearDownAll(() {
-    InfiniteVideoFeed.debugSetIsSupportedOverride(null);
+    InfiniteVideoFeed.debugIsSupportedOverride = null;
   });
 
   group(FeedEmptyWidget, () {
@@ -830,7 +830,7 @@ void main() {
     late _MockVideoVolumeCubit videoVolumeCubit;
 
     setUp(() {
-      InfiniteVideoFeed.debugSetIsSupportedOverride(true);
+      InfiniteVideoFeed.debugIsSupportedOverride = true;
       videoFeedBloc = _MockVideoFeedBloc();
       videoFeedController = _MockVideoFeedController();
       videoVolumeCubit = _MockVideoVolumeCubit();
@@ -847,7 +847,7 @@ void main() {
     });
 
     tearDown(() {
-      InfiniteVideoFeed.debugSetIsSupportedOverride(false);
+      InfiniteVideoFeed.debugIsSupportedOverride = false;
     });
 
     Widget buildSubject(VideoFeedState state) {
