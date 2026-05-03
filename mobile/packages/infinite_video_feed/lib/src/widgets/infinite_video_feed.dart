@@ -13,7 +13,6 @@ import 'package:infinite_video_feed/src/services/load_watchdog.dart';
 import 'package:infinite_video_feed/src/services/playback_source_registry.dart';
 import 'package:infinite_video_feed/src/services/stale_playback_detector.dart';
 import 'package:infinite_video_feed/src/utils/playback_sources.dart';
-import 'package:infinite_video_feed/src/utils/snap_scroll_physics.dart';
 import 'package:infinite_video_feed/src/utils/source_loader.dart';
 import 'package:infinite_video_feed/src/widgets/video_item.dart';
 import 'package:media_cache/media_cache.dart';
@@ -928,7 +927,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     return PageView.builder(
       allowImplicitScrolling: true,
       controller: _pageController,
-      physics: widget.scrollPhysics ?? const SnapScrollPhysics(),
+      physics: widget.scrollPhysics,
       scrollDirection: widget.scrollDirection,
       onPageChanged: _onPageChanged,
       itemCount: widget.videos.length,
