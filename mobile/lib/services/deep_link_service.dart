@@ -30,6 +30,7 @@ class DeepLink {
   });
 
   final DeepLinkType type;
+
   /// Raw `/video/:id` route reference from the incoming URL.
   ///
   /// This may be a hex event ID, a first-party stable ID / d-tag, or a
