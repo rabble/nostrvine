@@ -57,6 +57,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         child: switch (recorderMode) {
           .capture => const VideoMetadataCaptureStack(),
           .classic => const VideoMetadataClassicStack(),
+          // TODO(camera-upload-mode-explainer): replace placeholder with the
+          // upload-mode metadata stack in Task 2.
+          .upload => const SizedBox.shrink(),
         },
       ),
     );

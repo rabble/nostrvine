@@ -365,6 +365,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                         fromEditor: widget.fromEditor,
                       ),
                       .classic => const VideoRecorderClassicStack(),
+                      // TODO(camera-upload-mode-explainer): replace placeholder
+                      // with the upload-mode explainer stack in Task 2.
+                      .upload => const SizedBox.shrink(),
                     },
                   ),
                 ),
