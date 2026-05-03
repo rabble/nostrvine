@@ -1075,6 +1075,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'تعديل الفيديو';
 
   @override
+  String get videoPlayerTapHint =>
+      'اضغط للتشغيل أو الإيقاف المؤقت. اضغط مرتين للإعجاب.';
+
+  @override
   String get contentWarningLabel => 'تحذير محتوى';
 
   @override

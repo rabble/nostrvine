@@ -1970,6 +1970,12 @@ abstract class AppLocalizations {
   /// **'Edit video'**
   String get videoPlayerEditVideoTooltip;
 
+  /// No description provided for @videoPlayerTapHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to play or pause. Double tap to like.'**
+  String get videoPlayerTapHint;
+
   /// No description provided for @contentWarningLabel.
   ///
   /// In en, this message translates to:

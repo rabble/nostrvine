@@ -51,9 +51,12 @@ enum NativePlayerErrorCode {
 
   /// Whether a source failover should be attempted for this error code.
   ///
-  /// Network / timeout errors are transient — retrying the same source may
-  /// succeed. HTTP 4xx and parse errors indicate the source itself is bad,
-  /// so the feed should skip to the next available source.
+  /// This is the routing decision axis: when `true`, callers should advance
+  /// to the next source instead of retrying the current one.
+  ///
+  /// Network / timeout errors are transient and should stay on the same
+  /// source. HTTP 4xx/5xx and parse errors indicate the current source is not
+  /// usable right now, so the feed should skip to the next available source.
   bool get shouldFailover => switch (this) {
     httpClientError => true,
     httpServerError => true,
@@ -66,11 +69,14 @@ enum NativePlayerErrorCode {
 
   /// Whether this error is worth retrying (same source, no failover).
   ///
+  /// This is only for same-source retry decisions and must not overlap with
+  /// [shouldFailover] for the same error code.
+  ///
   /// Transient conditions like network loss or timeout may resolve on retry.
   bool get isTransient => switch (this) {
     networkError => true,
     timeout => true,
-    httpServerError => true,
+    httpServerError => false,
     httpClientError => false,
     parseError => false,
     decoderError => false,

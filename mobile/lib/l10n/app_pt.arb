@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Ativar som do vídeo",
     "videoPlayerEditVideo": "Editar vídeo",
     "videoPlayerEditVideoTooltip": "Editar vídeo",
+    "videoPlayerTapHint": "Toque para reproduzir ou pausar. Toque duplo para curtir.",
     "contentWarningLabel": "Aviso de conteúdo",
     "contentWarningNudity": "Nudez",
     "contentWarningSexualContent": "Conteúdo sexual",

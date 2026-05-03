@@ -73,17 +73,14 @@ Widget _buildEmptyFeedSubject(VideoFeedState state) {
 }
 
 void main() {
-  late bool originalInfiniteFeedSupport;
-
   setUpAll(() {
     // This test suite validates pooled-feed behavior; pin the runtime branch
     // so host platform support changes do not flip widget paths.
-    originalInfiniteFeedSupport = InfiniteVideoFeed.isSupported;
-    InfiniteVideoFeed.isSupported = false;
+    InfiniteVideoFeed.debugSetIsSupportedOverride(false);
   });
 
   tearDownAll(() {
-    InfiniteVideoFeed.isSupported = originalInfiniteFeedSupport;
+    InfiniteVideoFeed.debugSetIsSupportedOverride(null);
   });
 
   group(FeedEmptyWidget, () {

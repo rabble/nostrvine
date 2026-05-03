@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Video-Ton einschalten",
     "videoPlayerEditVideo": "Video bearbeiten",
     "videoPlayerEditVideoTooltip": "Video bearbeiten",
+    "videoPlayerTapHint": "Tippe zum Abspielen oder Pausieren. Doppelt tippen zum Liken.",
     "contentWarningLabel": "Inhaltswarnung",
     "contentWarningNudity": "Nacktheit",
     "contentWarningSexualContent": "Sexuelle Inhalte",

@@ -270,6 +270,7 @@
     "videoPlayerUnmute": "영상 음소거 해제",
     "videoPlayerEditVideo": "영상 편집",
     "videoPlayerEditVideoTooltip": "영상 편집",
+    "videoPlayerTapHint": "탭하여 재생하거나 일시정지하세요. 이중 탭으로 좋아요.",
     "contentWarningLabel": "콘텐츠 경고",
     "contentWarningNudity": "노출",
     "contentWarningSexualContent": "성적 콘텐츠",

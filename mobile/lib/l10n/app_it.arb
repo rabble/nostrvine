@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Riattiva audio video",
     "videoPlayerEditVideo": "Modifica video",
     "videoPlayerEditVideoTooltip": "Modifica video",
+    "videoPlayerTapHint": "Tocca per riprodurre o mettere in pausa. Doppio tocco per mettere mi piace.",
     "contentWarningLabel": "Avviso sui contenuti",
     "contentWarningNudity": "Nudità",
     "contentWarningSexualContent": "Contenuto sessuale",

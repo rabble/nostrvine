@@ -216,8 +216,6 @@ class _PopCountingObserver extends NavigatorObserver {
 }
 
 void main() {
-  late bool originalInfiniteFeedSupport;
-
   group('PooledFullscreenVideoFeedScreen', () {
     group('fullscreen video media alignment', () {
       test('top-aligns contained square and landscape videos', () {
@@ -246,8 +244,7 @@ void main() {
     setUpAll(() {
       // This suite validates pooled controller behavior; force the widget
       // to stay on the pooled/native fallback path regardless of host OS.
-      originalInfiniteFeedSupport = InfiniteVideoFeed.isSupported;
-      InfiniteVideoFeed.isSupported = false;
+      InfiniteVideoFeed.debugSetIsSupportedOverride(false);
 
       registerFallbackValue(const FullscreenFeedStarted());
       registerFallbackValue(const FullscreenFeedIndexChanged(0));
@@ -285,7 +282,7 @@ void main() {
     });
 
     tearDownAll(() {
-      InfiniteVideoFeed.isSupported = originalInfiniteFeedSupport;
+      InfiniteVideoFeed.debugSetIsSupportedOverride(null);
     });
 
     List<VideoEvent> createTestVideos({int count = 3}) {

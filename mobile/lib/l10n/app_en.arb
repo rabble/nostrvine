@@ -525,6 +525,7 @@
   "videoPlayerUnmute": "Unmute video",
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
+  "videoPlayerTapHint": "Tap to play or pause. Double tap to like.",
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",

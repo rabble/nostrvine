@@ -3,7 +3,8 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart' show ValueListenable, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show ValueListenable, kIsWeb, visibleForTesting;
 import 'package:flutter/widgets.dart';
 import 'package:infinite_video_feed/src/models/builders.dart';
 import 'package:infinite_video_feed/src/models/video_error_type.dart';
@@ -57,8 +58,17 @@ class InfiniteVideoFeed extends StatefulWidget {
   ///
   /// Returns `true` on Android, iOS, and macOS. Returns `false` on web and
   /// all other desktop platforms.
-  static bool isSupported =
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+  static bool get isSupported =>
+      _isSupportedOverrideForTesting ??
+      (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS));
+
+  static bool? _isSupportedOverrideForTesting;
+
+  /// Overrides [isSupported] in tests. Pass `null` to clear override.
+  @visibleForTesting
+  static void debugSetIsSupportedOverride(bool? value) {
+    _isSupportedOverrideForTesting = value;
+  }
 
   /// The list of videos to display.
   final List<VideoEvent> videos;
@@ -454,10 +464,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // comes first — so fast connections don't delay neighbour init at all.
     final currentController = _controllers[index];
     if (currentController != null) {
-      await Future.any([
-        currentController.firstFrameRendered,
-        Future<void>.delayed(widget.preloadGracePeriod),
-      ]);
+      await _waitForFirstFrameOrGracePeriod(currentController);
     }
 
     if (_playerWindowGeneration != generation || !mounted) return;
@@ -474,6 +481,26 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         index + 1 <= lastIndex &&
         !_controllers.containsKey(index + 1)) {
       unawaited(_initController(index + 1));
+    }
+  }
+
+  Future<void> _waitForFirstFrameOrGracePeriod(
+    DivineVideoPlayerController controller,
+  ) async {
+    final gracePeriodElapsed = Completer<void>();
+    final graceTimer = Timer(widget.preloadGracePeriod, () {
+      if (!gracePeriodElapsed.isCompleted) {
+        gracePeriodElapsed.complete();
+      }
+    });
+
+    try {
+      await Future.any([
+        controller.firstFrameRendered,
+        gracePeriodElapsed.future,
+      ]);
+    } finally {
+      graceTimer.cancel();
     }
   }
 
@@ -537,7 +564,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _log('Disposing player at index $index');
     _subscriptions.unsubscribe(index);
     _watchdog.stop(index);
+    if (index == _currentIndex) _staleDetector.stop();
     _staleDetector.forget(index);
+    _errors.remove(index);
     _loopSeekInProgress.remove(index);
     _failoverInFlight.remove(index);
     _loadedFromCache.remove(index);

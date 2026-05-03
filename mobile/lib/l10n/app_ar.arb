@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "إلغاء كتم الفيديو",
     "videoPlayerEditVideo": "تعديل الفيديو",
     "videoPlayerEditVideoTooltip": "تعديل الفيديو",
+    "videoPlayerTapHint": "اضغط للتشغيل أو الإيقاف المؤقت. اضغط مرتين للإعجاب.",
     "contentWarningLabel": "تحذير محتوى",
     "contentWarningNudity": "عري",
     "contentWarningSexualContent": "محتوى جنسي",

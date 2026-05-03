@@ -1016,6 +1016,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '動画を編集';
 
   @override
+  String get videoPlayerTapHint => 'タップで再生・一時停止。ダブルタップでいいね。';
+
+  @override
   String get contentWarningLabel => 'コンテンツ警告';
 
   @override

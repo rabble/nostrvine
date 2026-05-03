@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Videogeluid inschakelen",
     "videoPlayerEditVideo": "Video bewerken",
     "videoPlayerEditVideoTooltip": "Video bewerken",
+    "videoPlayerTapHint": "Tik om af te spelen of te pauzeren. Dubbel tikken om te liken.",
     "contentWarningLabel": "Inhoudswaarschuwing",
     "contentWarningNudity": "Naaktheid",
     "contentWarningSexualContent": "Seksuele inhoud",

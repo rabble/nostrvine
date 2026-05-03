@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Slå på ljudet för videon",
     "videoPlayerEditVideo": "Redigera video",
     "videoPlayerEditVideoTooltip": "Redigera video",
+    "videoPlayerTapHint": "Tryck för att spela eller pausa. Dubbeltryck för att gilla.",
     "contentWarningLabel": "Innehållsvarning",
     "contentWarningNudity": "Nakenhet",
     "contentWarningSexualContent": "Sexuellt innehåll",

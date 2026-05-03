@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Réactiver le son de la vidéo",
     "videoPlayerEditVideo": "Modifier la vidéo",
     "videoPlayerEditVideoTooltip": "Modifier la vidéo",
+    "videoPlayerTapHint": "Appuyez pour lire ou mettre en pause. Double appui pour aimer.",
     "contentWarningLabel": "Avertissement de contenu",
     "contentWarningNudity": "Nudité",
     "contentWarningSexualContent": "Contenu sexuel",

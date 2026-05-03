@@ -122,6 +122,9 @@ class _HttpDownload implements CancellableDownload {
           _safeComplete(null);
         },
         onDone: () async {
+          // Mark as done before async finalization so cancel() cannot race
+          // into this window and delete a successfully written file.
+          _isDone = true;
           try {
             await _sink?.flush();
             await _sink?.close();
@@ -129,7 +132,6 @@ class _HttpDownload implements CancellableDownload {
             // Best-effort.
           }
           _sink = null;
-          _isDone = true;
           if (_isCancelled) {
             await _safeDelete();
             _safeComplete(null);

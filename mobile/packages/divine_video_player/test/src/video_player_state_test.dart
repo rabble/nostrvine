@@ -42,8 +42,8 @@ void main() {
         expect(NativePlayerErrorCode.timeout.isTransient, isTrue);
       });
 
-      test('returns true for httpServerError', () {
-        expect(NativePlayerErrorCode.httpServerError.isTransient, isTrue);
+      test('returns false for httpServerError', () {
+        expect(NativePlayerErrorCode.httpServerError.isTransient, isFalse);
       });
 
       test('returns false for httpClientError', () {

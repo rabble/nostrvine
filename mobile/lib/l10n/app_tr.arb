@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Videonun sesini aç",
     "videoPlayerEditVideo": "Videoyu düzenle",
     "videoPlayerEditVideoTooltip": "Videoyu düzenle",
+    "videoPlayerTapHint": "Oynatmak veya duraklatmak için dokunun. Beğenmek için çift dokunun.",
     "contentWarningLabel": "İçerik Uyarısı",
     "contentWarningNudity": "Çıplaklık",
     "contentWarningSexualContent": "Cinsel İçerik",

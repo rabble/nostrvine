@@ -8,12 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_video_feed/infinite_video_feed.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/feed_loading_moderation/feed_loading_moderation_cubit.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
@@ -410,9 +412,10 @@ class __OverlayState extends ConsumerState<_Overlay> {
     final video = widget.video;
     final pagePositionListenable = _pagePositionListenable;
 
-    final likesRepository = ref.read(likesRepositoryProvider);
-    final commentsRepository = ref.read(commentsRepositoryProvider);
-    final repostsRepository = ref.read(repostsRepositoryProvider);
+    // See _PooledFullscreenItem.build for the rationale on watch + key. #3503.
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
 
     final authService = ref.watch(authServiceProvider);
     final currentUserPubkey = authService.currentPublicKeyHex;
@@ -508,7 +511,7 @@ class __OverlayState extends ConsumerState<_Overlay> {
                 return Semantics(
                   button: true,
                   hint: interactiveReady
-                      ? 'Tap to play or pause. Double tap to like.'
+                      ? context.l10n.videoPlayerTapHint
                       : null,
                   child: GestureDetector(
                     behavior: .translucent,
@@ -716,13 +719,15 @@ class _SubtitleLayer extends ConsumerWidget {
 
 /// Shows [VideoLoadingPlaceholder] initially.
 ///
-/// If the video is still loading after [_kModerationCheckDelay], the
-/// moderation API is queried. Cached videos load immediately and never
-/// reach the delay, so no unnecessary API calls are made. Once the
-/// moderation check returns a restricted status the overlay switches to
-/// [PooledVideoErrorOverlay] without waiting for the native player to
-/// time out with a 404.
-class _FeedLoadingOrRestrictedOverlay extends ConsumerStatefulWidget {
+/// Shows [VideoLoadingPlaceholder] initially.
+///
+/// If the video is still loading after the moderation-check delay, the
+/// moderation API is queried via [FeedLoadingModerationCubit]. Cached
+/// videos load immediately and never reach the delay, so no unnecessary
+/// API calls are made. Once the moderation check returns a restricted
+/// status the view switches to [PooledVideoErrorOverlay] without waiting
+/// for the native player to time out with a 404.
+class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
   const _FeedLoadingOrRestrictedOverlay({
     required this.video,
     required this.index,
@@ -738,78 +743,64 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerStatefulWidget {
   final bool shouldPortraitExpand;
 
   @override
-  ConsumerState<_FeedLoadingOrRestrictedOverlay> createState() =>
-      _FeedLoadingOrRestrictedOverlayState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final service = ref.read(videoModerationStatusServiceProvider);
+    return BlocProvider<FeedLoadingModerationCubit>(
+      create: (_) => FeedLoadingModerationCubit(
+        service: service,
+        explicitSha256: video.sha256,
+        videoUrl: video.videoUrl,
+      )..start(),
+      child: _FeedLoadingOrRestrictedOverlayView(
+        video: video,
+        index: index,
+        feedMode: feedMode,
+        isSquare: isSquare,
+        shouldPortraitExpand: shouldPortraitExpand,
+      ),
+    );
+  }
 }
 
-class _FeedLoadingOrRestrictedOverlayState
-    extends ConsumerState<_FeedLoadingOrRestrictedOverlay> {
-  static const _kModerationCheckDelay = Duration(seconds: 2);
+class _FeedLoadingOrRestrictedOverlayView extends StatelessWidget {
+  const _FeedLoadingOrRestrictedOverlayView({
+    required this.video,
+    required this.index,
+    required this.feedMode,
+    required this.isSquare,
+    required this.shouldPortraitExpand,
+  });
 
-  Timer? _timer;
-  bool _checkModeration = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final shouldCheck = VideoModerationStatusService.shouldCheckModeration(
-      widget.video.videoUrl,
-    );
-    if (shouldCheck) {
-      final sha256 = VideoModerationStatusService.resolveSha256(
-        explicitSha256: widget.video.sha256,
-        videoUrl: widget.video.videoUrl,
-      );
-      if (sha256 != null) {
-        _timer = Timer(_kModerationCheckDelay, () {
-          if (mounted) setState(() => _checkModeration = true);
-        });
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
+  final VideoEvent video;
+  final int index;
+  final String? feedMode;
+  final bool isSquare;
+  final bool shouldPortraitExpand;
 
   @override
   Widget build(BuildContext context) {
-    if (_checkModeration) {
-      final sha256 = VideoModerationStatusService.resolveSha256(
-        explicitSha256: widget.video.sha256,
-        videoUrl: widget.video.videoUrl,
+    final isRestricted = context.select(
+      (FeedLoadingModerationCubit c) => c.state.isRestricted,
+    );
+
+    if (isRestricted) {
+      return PooledVideoErrorOverlay(
+        video: video,
+        // Retry is hidden for moderation-restricted content.
+        onRetry: () {},
+        errorType: VideoErrorType.notFound,
+        shouldPortraitExpand: shouldPortraitExpand,
+        isSquare: isSquare,
       );
-      if (sha256 != null) {
-        final isRestricted =
-            ref
-                .watch(videoModerationStatusProvider(sha256))
-                .whenOrNull(
-                  data: (status) =>
-                      status?.isUnavailableDueToModeration ?? false,
-                ) ??
-            false;
-        if (isRestricted) {
-          return PooledVideoErrorOverlay(
-            video: widget.video,
-            // Retry is hidden for moderation-restricted content.
-            onRetry: () {},
-            errorType: VideoErrorType.notFound,
-            shouldPortraitExpand: widget.shouldPortraitExpand,
-            isSquare: widget.isSquare,
-          );
-        }
-      }
     }
 
     return VideoLoadingPlaceholder(
-      videoId: widget.video.id,
-      index: widget.index,
-      feedMode: widget.feedMode,
-      thumbnailUrl: widget.video.thumbnailUrl,
-      isSquare: widget.isSquare,
-      shouldPortraitExpand: widget.shouldPortraitExpand,
+      videoId: video.id,
+      index: index,
+      feedMode: feedMode,
+      thumbnailUrl: video.thumbnailUrl,
+      isSquare: isSquare,
+      shouldPortraitExpand: shouldPortraitExpand,
     );
   }
 }

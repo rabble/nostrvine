@@ -1,5 +1,6 @@
 import AVFoundation
 import Flutter
+import os
 import QuartzCore
 
 /// Bridges an `AVPlayer` to Flutter's texture system.
@@ -48,6 +49,18 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// `true`, expiry without a frame does NOT fire `onSeekStuck` again,
     /// preventing an infinite retry loop on persistently broken content.
     private var forceWindowIsRetry = false
+
+    /// Consecutive `outputMediaDataWillChange` calls that returned `nil`
+    /// from `copyPixelBuffer`. Reset on flush, forceRefresh, and successful
+    /// frame delivery. Capped to prevent an infinite re-arm loop when a
+    /// seek target is persistently un-decodable.
+    private var mediaDataRearmCount = 0
+    private static let maxMediaDataRearmCount = 10
+
+    /// Serialises access to `latestPixelBuffer`, which is written on the
+    /// display-link callback (main thread) and read on Flutter's render
+    /// thread via `copyPixelBuffer()`.
+    private var pixelBufferLock = os_unfair_lock()
 
     /// Fired when the force window expires without a frame; caller should
     /// retry the seek with tolerance. Suppressed for retry windows.
@@ -101,6 +114,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
         attachedItem = item
         hasDeliveredFirstFrame = false
         pendingSeekTime = .invalid
+        mediaDataRearmCount = 0
 
         // The first `copyPixelBuffer` attempt right after attach often
         // races decoder init (especially on HEVC 10-bit / HDR), and
@@ -139,6 +153,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     /// Pass `isRetry: true` for a tolerant-seek retry; suppresses
     /// `onSeekStuck` on expiry to break recovery loops.
     func forceRefresh(for seekTime: CMTime, isRetry: Bool = false) {
+        mediaDataRearmCount = 0
         pendingSeekTime = seekTime
         forceRefreshDeadline = CACurrentMediaTime() + 0.6
         forceWindowFailCount = 0
@@ -150,6 +165,7 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
 
     /// Called after a seek flushes the output queue.
     func outputSequenceWasFlushed(_ output: AVPlayerItemOutput) {
+        mediaDataRearmCount = 0
         (output as? AVPlayerItemVideoOutput)?
             .requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
     }
@@ -175,9 +191,13 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
             itemTimeForDisplay: nil
         )
         guard let pixelBuffer = pb else {
-            videoOutput.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+            mediaDataRearmCount += 1
+            if mediaDataRearmCount < VideoTextureOutput.maxMediaDataRearmCount {
+                videoOutput.requestNotificationOfMediaDataChange(withAdvanceInterval: 0)
+            }
             return
         }
+        mediaDataRearmCount = 0
         pendingSeekTime = .invalid
         forceRefreshDeadline = 0
         forceWindowFailCount = 0
@@ -198,7 +218,10 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     // MARK: - FlutterTexture
 
     func copyPixelBuffer() -> Unmanaged<CVPixelBuffer>? {
-        guard let pixelBuffer = latestPixelBuffer else { return nil }
+        os_unfair_lock_lock(&pixelBufferLock)
+        let pixelBuffer = latestPixelBuffer
+        os_unfair_lock_unlock(&pixelBufferLock)
+        guard let pixelBuffer else { return nil }
         return Unmanaged.passRetained(pixelBuffer)
     }
 
@@ -220,7 +243,9 @@ final class VideoTextureOutput: NSObject, FlutterTexture, AVPlayerItemOutputPull
     }
 
     private func deliverFrame(_ pixelBuffer: CVPixelBuffer) {
+        os_unfair_lock_lock(&pixelBufferLock)
         latestPixelBuffer = pixelBuffer
+        os_unfair_lock_unlock(&pixelBufferLock)
         registry.textureFrameAvailable(textureId)
         if !hasDeliveredFirstFrame {
             hasDeliveredFirstFrame = true

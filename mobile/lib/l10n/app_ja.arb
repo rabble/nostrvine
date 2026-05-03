@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "動画のミュートを解除",
     "videoPlayerEditVideo": "動画を編集",
     "videoPlayerEditVideoTooltip": "動画を編集",
+    "videoPlayerTapHint": "タップで再生・一時停止。ダブルタップでいいね。",
     "contentWarningLabel": "コンテンツ警告",
     "contentWarningNudity": "ヌード",
     "contentWarningSexualContent": "性的コンテンツ",

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
@@ -1048,6 +1049,102 @@ void main() {
         expect(result, isNotNull);
         // In-memory alias still resolves even if persistence failed.
         expect(cacheManager.getCachedFileSync('video_id')?.path, result!.path);
+
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        final sourceDir = cachedFile.parent;
+        if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
+      });
+
+      test('removeCachedFile removes alias mapping and persists it', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'alias_remove_$timestamp';
+        final cacheDir = Directory('$testTempPath/$cacheKey');
+        final cachedFile = await createTestFile(
+          Directory.systemTemp.createTempSync('alias_remove_src_'),
+          'video.mp4',
+        );
+
+        final downloader = FakeCancellableDownloader();
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+          tempDirectoryProvider: () async => Directory(testTempPath),
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'video_id__fb1',
+          aliasKey: 'video_id',
+        );
+
+        await pumpDownloads(downloader);
+        downloader.downloads.single.completeWith(cachedFile);
+        final result = await op.file;
+
+        expect(result, isNotNull);
+        expect(cacheManager.getCachedFileSync('video_id')?.path, result!.path);
+
+        await cacheManager.removeCachedFile('video_id__fb1');
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(cacheManager.getCachedFileSync('video_id'), isNull);
+
+        final aliasFile = File('${cacheDir.path}/aliases.json');
+        expect(aliasFile.existsSync(), isTrue);
+        final decoded = jsonDecode(aliasFile.readAsStringSync());
+        expect(decoded, isA<Map<String, dynamic>>());
+        expect(
+          (decoded as Map<String, dynamic>).containsKey('video_id'),
+          isFalse,
+        );
+
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        final sourceDir = cachedFile.parent;
+        if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
+      });
+
+      test('clearCache clears alias mapping and persists it', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'alias_clear_$timestamp';
+        final cacheDir = Directory('$testTempPath/$cacheKey');
+        final cachedFile = await createTestFile(
+          Directory.systemTemp.createTempSync('alias_clear_src_'),
+          'video.mp4',
+        );
+
+        final downloader = FakeCancellableDownloader();
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+          tempDirectoryProvider: () async => Directory(testTempPath),
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'video_id__fb1',
+          aliasKey: 'video_id',
+        );
+
+        await pumpDownloads(downloader);
+        downloader.downloads.single.completeWith(cachedFile);
+        await op.file;
+
+        await cacheManager.clearCache();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(cacheManager.getCachedFileSync('video_id'), isNull);
+
+        final aliasFile = File('${cacheDir.path}/aliases.json');
+        expect(aliasFile.existsSync(), isTrue);
+        final decoded = jsonDecode(aliasFile.readAsStringSync());
+        expect(decoded, isA<Map<String, dynamic>>());
+        expect((decoded as Map<String, dynamic>).isEmpty, isTrue);
 
         if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
         final sourceDir = cachedFile.parent;

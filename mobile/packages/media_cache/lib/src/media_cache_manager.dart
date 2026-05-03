@@ -727,6 +727,18 @@ class MediaCacheManager extends CacheManager {
   Future<void> removeCachedFile(String key) async {
     await removeFile(key);
 
+    final aliasKeysToRemove = _aliasMap.entries
+        .where((entry) => entry.value == key)
+        .map((entry) => entry.key)
+        .toList(growable: false);
+    for (final aliasKey in aliasKeysToRemove) {
+      _aliasMap.remove(aliasKey);
+      _cacheManifest.remove(aliasKey);
+    }
+    if (aliasKeysToRemove.isNotEmpty) {
+      unawaited(_persistAliasMap());
+    }
+
     // Remove from manifest
     _cacheManifest.remove(key);
     unawaited(Future(() => _pendingCacheOperations.remove(key)));
@@ -738,6 +750,10 @@ class MediaCacheManager extends CacheManager {
 
     // Clear manifest
     _cacheManifest.clear();
+    if (_aliasMap.isNotEmpty) {
+      _aliasMap.clear();
+      unawaited(_persistAliasMap());
+    }
     _pendingCacheOperations.clear();
   }
 

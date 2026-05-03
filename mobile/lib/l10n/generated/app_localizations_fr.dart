@@ -1116,6 +1116,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Modifier la vidéo';
 
   @override
+  String get videoPlayerTapHint =>
+      'Appuyez pour lire ou mettre en pause. Double appui pour aimer.';
+
+  @override
   String get contentWarningLabel => 'Avertissement de contenu';
 
   @override

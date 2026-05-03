@@ -472,6 +472,7 @@
     "videoPlayerUnmute": "Activar sonido del video",
     "videoPlayerEditVideo": "Editar video",
     "videoPlayerEditVideoTooltip": "Editar video",
+    "videoPlayerTapHint": "Toca para reproducir o pausar. Toca dos veces para dar me gusta.",
     "contentWarningLabel": "Advertencia de contenido",
     "contentWarningNudity": "Desnudez",
     "contentWarningSexualContent": "Contenido sexual",

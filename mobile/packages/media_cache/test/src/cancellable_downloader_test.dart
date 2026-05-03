@@ -183,7 +183,7 @@ void main() {
     });
 
     test(
-      'cancel during stream completion returns null and removes file',
+      'cancel during stream completion keeps successful file',
       () async {
         final controller = StreamController<List<int>>();
         final client = _CallbackClient(
@@ -206,9 +206,9 @@ void main() {
         dl.cancel();
 
         final file = await dl.file;
-        expect(file, isNull);
-        expect(dl.isCancelled, isTrue);
-        expect(target.existsSync(), isFalse);
+        expect(file, isNotNull);
+        expect(dl.isCancelled, isFalse);
+        expect(target.existsSync(), isTrue);
       },
     );
   });
