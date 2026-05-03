@@ -46,11 +46,13 @@ void main() {
       mockDmRepository = _MockDmRepository();
     });
 
-    ConversationBloc buildBloc() => ConversationBloc(
-      dmRepository: mockDmRepository,
-      conversationId: conversationId,
-      currentUserPubkey: senderPubkey,
-    );
+    ConversationBloc buildBloc({String Function()? pendingIdFactory}) =>
+        ConversationBloc(
+          dmRepository: mockDmRepository,
+          conversationId: conversationId,
+          currentUserPubkey: senderPubkey,
+          pendingIdFactory: pendingIdFactory,
+        );
 
     test('initial state is correct', () {
       when(
@@ -532,6 +534,124 @@ void main() {
                   (s) => s.messages,
                   'messages preserves existing testMessage',
                   equals(const [testMessage]),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+      });
+
+      // Regression for #3908 review feedback. The failure cleanup strips by
+      // `m.id != pendingId`, so the contract relies on every optimistic row
+      // having a unique id. The original implementation derived `pendingId`
+      // from a second-resolution timestamp; two sends within the same second
+      // collided, and the second one's failure stripped the first one's row
+      // along with its own. The fix replaces the timestamp with a UUID v4
+      // and exposes a test-only [ConversationBloc.pendingIdFactory] hook so
+      // this regression can be pinned without depending on real wall-clock
+      // timing.
+      group('pendingId uniqueness', () {
+        blocTest<ConversationBloc, ConversationState>(
+          "failure cleanup strips only the failing attempt's optimistic "
+          'when a sibling optimistic from a prior send is still in state',
+          setUp: () {
+            var callCount = 0;
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: any(named: 'content'),
+              ),
+            ).thenAnswer((_) async {
+              callCount++;
+              if (callCount == 1) {
+                // First send resolves successfully but `watchMessages`
+                // stays silent — this models the production window where
+                // the DB write has committed but the stream emission has
+                // not yet reached the bloc, so the optimistic row from
+                // the first send is still present in `state.messages`.
+                return NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey,
+                );
+              }
+              return NIP17SendResult.failure('Relay timeout');
+            });
+          },
+          build: () {
+            var counter = 0;
+            return buildBloc(
+              pendingIdFactory: () => 'pending-${++counter}',
+            );
+          },
+          act: (bloc) async {
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'First',
+              ),
+            );
+            // Sequential() already serialises the two events; the explicit
+            // wait makes the timeline observable in the captured states.
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Second',
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 30),
+          expect: () => [
+            // First attempt: optimistic added with pending-1.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.messages.first.id,
+                  'first attempt pending id',
+                  'pending-1',
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
+            // Second attempt starts before the watch stream has cleared
+            // the first's optimistic — both rows coexist, with distinct
+            // ids so the upcoming strip can target the right one.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 2)
+                .having(
+                  (s) => s.messages.first.id,
+                  'second attempt pending id',
+                  'pending-2',
+                )
+                .having(
+                  (s) => s.messages.last.id,
+                  'first attempt sibling still present',
+                  'pending-1',
+                ),
+            // Second attempt fails. Cleanup strips pending-2 only; the
+            // sibling pending-1 row remains. Under the old timestamp-
+            // based id this state would be `messages: isEmpty`.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.messages.single.id,
+                  'sibling optimistic preserved',
+                  'pending-1',
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend records the failing attempt only',
+                  equals(
+                    const FailedSend(
+                      content: 'Second',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
                 ),
           ],
           errors: () => [isA<Exception>()],

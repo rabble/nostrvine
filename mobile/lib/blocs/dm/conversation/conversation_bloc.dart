@@ -8,7 +8,9 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
+import 'package:uuid/uuid.dart';
 
 part 'conversation_event.dart';
 part 'conversation_state.dart';
@@ -18,9 +20,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     required DmRepository dmRepository,
     required String conversationId,
     required String currentUserPubkey,
+    @visibleForTesting String Function()? pendingIdFactory,
   }) : _dmRepository = dmRepository,
        _conversationId = conversationId,
        _currentUserPubkey = currentUserPubkey,
+       _pendingIdFactory = pendingIdFactory ?? _defaultPendingIdFactory,
        super(const ConversationState()) {
     on<ConversationStarted>(_onStarted, transformer: restartable());
     on<ConversationMessageSent>(_onMessageSent, transformer: sequential());
@@ -30,6 +34,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   final DmRepository _dmRepository;
   final String _conversationId;
   final String _currentUserPubkey;
+  final String Function() _pendingIdFactory;
+
+  static const _uuid = Uuid();
+  static String _defaultPendingIdFactory() => 'pending-${_uuid.v4()}';
 
   Future<void> _onStarted(
     ConversationStarted event,
@@ -83,8 +91,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     // happened, and a phantom optimistic that lingers until the bloc is
     // disposed reproduces as "looks sent, then disappeared" once the user
     // navigates away and back.
+    //
+    // [pendingId] must be unique per attempt. The failure cleanup strips by
+    // `m.id != pendingId`, so any two coincident pending rows that share an
+    // id would both be removed when one fails. Second-resolution timestamps
+    // collide on rapid sends; a UUID does not.
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    final pendingId = 'pending-$now';
+    final pendingId = _pendingIdFactory();
     final optimisticMessage = DmMessage(
       id: pendingId,
       conversationId: _conversationId,
