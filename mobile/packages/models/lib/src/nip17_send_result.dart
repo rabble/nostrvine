@@ -29,7 +29,12 @@ class NIP17SendResult {
     this.error,
     this.timestamp,
     this.selfWrapPublished,
-  });
+  }) : assert(
+         !success || selfWrapPublished != null,
+         'selfWrapPublished must be set when success is true. Use '
+         'NIP17SendResult.success(selfWrapPublished: ...) so the '
+         'three-state invariant in the dartdoc is preserved.',
+       );
 
   /// Create success result. [selfWrapPublished] defaults to `true` so
   /// existing call sites that don't yet care about per-wrap status are

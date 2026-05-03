@@ -3,7 +3,7 @@
 // ABOUTME: (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 // ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -22,6 +22,7 @@ import 'package:unified_logger/unified_logger.dart';
 /// Defaults to [GiftWrapUtil.getGiftWrapEvent]; injectable for tests
 /// so the `null`-return branch in [NIP17MessageService] can be
 /// exercised without conjuring valid gift-wrapped events by hand.
+@internal
 typedef GiftWrapBuilder =
     Future<Event?> Function(
       Nostr nostr,
