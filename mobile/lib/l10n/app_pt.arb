@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Erro de autenticação: tente sair e entrar novamente.",
     "profileSetupUploadFileTooLarge": "Arquivo muito grande: escolha uma imagem menor (máx. 10 MB).",
     "profileSetupUploadServerError": "Não foi possível enviar a imagem. Nossos servidores estão temporariamente indisponíveis. Tente novamente em instantes.",
+    "profileSetupUploadUnsupportedOnWeb": "O envio de foto de perfil ainda não está disponível na web. Use o app para iOS ou Android ou cole a URL de uma imagem.",
     "profileSetupUsernameChecking": "Verificando disponibilidade...",
     "profileSetupUsernameAvailable": "Nome de usuário disponível!",
     "profileSetupUsernameTakenIndicator": "Nome de usuário já em uso",

@@ -771,7 +771,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
-      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+      'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
 
   @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';

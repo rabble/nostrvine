@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Błąd uwierzytelnienia: Wyloguj się i zaloguj ponownie.",
     "profileSetupUploadFileTooLarge": "Plik za duży: Wybierz mniejszy obraz (maks. 10 MB).",
     "profileSetupUploadServerError": "Nie udało się przesłać obrazu. Nasze serwery są tymczasowo niedostępne. Spróbuj ponownie za chwilę.",
+    "profileSetupUploadUnsupportedOnWeb": "Przesyłanie zdjęcia profilowego nie jest jeszcze dostępne w wersji webowej. Użyj aplikacji na iOS lub Androida albo wklej URL obrazu.",
     "profileSetupUsernameChecking": "Sprawdzanie dostępności...",
     "profileSetupUsernameAvailable": "Nazwa użytkownika dostępna!",
     "profileSetupUsernameTakenIndicator": "Nazwa użytkownika już zajęta",

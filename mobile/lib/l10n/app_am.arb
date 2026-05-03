@@ -400,6 +400,7 @@
   "profileSetupUploadAuthError": "የማረጋገጫ ስህተት፡ እባክዎ ዘግተው ለመውጣት ይሞክሩ።",
   "profileSetupUploadFileTooLarge": "ፋይሉ በጣም ትልቅ ነው፡ እባክዎን ትንሽ ምስል ይምረጡ (ከፍተኛ 10 ሜባ)።",
   "profileSetupUploadServerError": "ምስል መስቀል አልተሳካም። አገልጋዮቻችን ለጊዜው አይገኙም። ትንሽ ቆይተህ እንደገና ሞክር።",
+  "profileSetupUploadUnsupportedOnWeb": "የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።",
   "profileSetupUsernameChecking": "ተገኝነትን በማጣራት ላይ...",
   "profileSetupUsernameAvailable": "የተጠቃሚ ስም አለ!",
   "profileSetupUsernameTakenIndicator": "የተጠቃሚ ስም አስቀድሞ ተወስዷል",

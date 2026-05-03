@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "خطأ في المصادقة: حاول تسجيل الخروج ثم الدخول مجددًا.",
     "profileSetupUploadFileTooLarge": "الملف كبير جدًا: يرجى اختيار صورة أصغر (10 ميغابايت كحد أقصى).",
     "profileSetupUploadServerError": "فشل رفع الصورة. خوادمنا غير متاحة مؤقتًا. يُرجى المحاولة مرة أخرى بعد قليل.",
+    "profileSetupUploadUnsupportedOnWeb": "رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.",
     "profileSetupUsernameChecking": "جاري التحقق من التوفر...",
     "profileSetupUsernameAvailable": "اسم المستخدم متاح!",
     "profileSetupUsernameTakenIndicator": "اسم المستخدم مأخوذ مسبقًا",

@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "認証エラー: 一度ログアウトしてもう一回ログインしてみて。",
     "profileSetupUploadFileTooLarge": "ファイルが大きすぎる: もっと小さい画像を選んでね (最大 10MB)。",
     "profileSetupUploadServerError": "画像をアップロードできなかった。サーバーが一時的に利用できないよ。少し待ってからもう一度試してみて。",
+    "profileSetupUploadUnsupportedOnWeb": "プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。",
     "profileSetupUsernameChecking": "使えるか確認中...",
     "profileSetupUsernameAvailable": "このユーザー名、使えるよ！",
     "profileSetupUsernameTakenIndicator": "このユーザー名はもう使われてる",

@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Eroare de autentificare: deconectează-te și autentifică-te din nou.",
     "profileSetupUploadFileTooLarge": "Fișier prea mare: alege o imagine mai mică (maxim 10MB).",
     "profileSetupUploadServerError": "Încărcarea imaginii a eșuat. Serverele noastre sunt temporar indisponibile. Încearcă din nou imediat.",
+    "profileSetupUploadUnsupportedOnWeb": "Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.",
     "profileSetupUsernameChecking": "Se verifică disponibilitatea...",
     "profileSetupUsernameAvailable": "Numele e disponibil!",
     "profileSetupUsernameTakenIndicator": "Numele e deja luat",

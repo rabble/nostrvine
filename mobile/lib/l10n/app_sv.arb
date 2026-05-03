@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Autentiseringsfel: Logga ut och in igen.",
     "profileSetupUploadFileTooLarge": "Filen är för stor: Välj en mindre bild (max 10 MB).",
     "profileSetupUploadServerError": "Det gick inte att ladda upp bilden. Våra servrar är tillfälligt otillgängliga. Försök igen om en liten stund.",
+    "profileSetupUploadUnsupportedOnWeb": "Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.",
     "profileSetupUsernameChecking": "Kollar tillgänglighet...",
     "profileSetupUsernameAvailable": "Användarnamnet är ledigt!",
     "profileSetupUsernameTakenIndicator": "Användarnamnet är redan taget",

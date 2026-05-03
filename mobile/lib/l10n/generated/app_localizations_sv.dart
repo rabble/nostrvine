@@ -782,7 +782,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileSetupUploadUnsupportedOnWeb =>
-      'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
+      'Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.';
 
   @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';

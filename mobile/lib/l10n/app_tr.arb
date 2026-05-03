@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Kimlik doğrulama hatası: Lütfen çıkış yapıp tekrar giriş yap.",
     "profileSetupUploadFileTooLarge": "Dosya çok büyük: Lütfen daha küçük bir görsel seç (maks. 10MB).",
     "profileSetupUploadServerError": "Görsel yüklenemedi. Sunucularımız geçici olarak kullanılamıyor. Lütfen birazdan tekrar dene.",
+    "profileSetupUploadUnsupportedOnWeb": "Profil resmi yükleme henüz web'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL'si yapıştır.",
     "profileSetupUsernameChecking": "Uygunluk kontrol ediliyor...",
     "profileSetupUsernameAvailable": "Kullanıcı adı uygun!",
     "profileSetupUsernameTakenIndicator": "Kullanıcı adı zaten alınmış",

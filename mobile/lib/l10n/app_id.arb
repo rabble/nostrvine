@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Kesalahan autentikasi: Silakan keluar dan masuk kembali.",
     "profileSetupUploadFileTooLarge": "File terlalu besar: Pilih gambar yang lebih kecil (maks 10MB).",
     "profileSetupUploadServerError": "Gagal mengunggah gambar. Server kami sedang tidak tersedia untuk sementara. Coba lagi sebentar lagi.",
+    "profileSetupUploadUnsupportedOnWeb": "Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.",
     "profileSetupUsernameChecking": "Mengecek ketersediaan...",
     "profileSetupUsernameAvailable": "Username tersedia!",
     "profileSetupUsernameTakenIndicator": "Username sudah diambil",

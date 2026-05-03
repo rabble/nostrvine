@@ -349,6 +349,7 @@
     "profileSetupUploadAuthError": "Authenticatiefout: log uit en weer in.",
     "profileSetupUploadFileTooLarge": "Bestand te groot: kies een kleinere afbeelding (max 10 MB).",
     "profileSetupUploadServerError": "Uploaden van afbeelding mislukt. Onze servers zijn tijdelijk niet beschikbaar. Probeer het zo opnieuw.",
+    "profileSetupUploadUnsupportedOnWeb": "Het uploaden van een profielfoto is nog niet beschikbaar op web. Gebruik de iOS- of Android-app, of plak een afbeeldings-URL.",
     "profileSetupUsernameChecking": "Beschikbaarheid controleren...",
     "profileSetupUsernameAvailable": "Gebruikersnaam beschikbaar!",
     "profileSetupUsernameTakenIndicator": "Gebruikersnaam al in gebruik",
