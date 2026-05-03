@@ -6831,6 +6831,86 @@ void main() {
           });
         },
       );
+
+      group('via applyContentPreferences (cache-restoration path)', () {
+        VideoEvent buildVideo({required String id, required String videoUrl}) {
+          return VideoEvent(
+            id: id,
+            pubkey: 'test-pubkey',
+            createdAt: 1704067200,
+            content: '',
+            timestamp: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+            videoUrl: videoUrl,
+          );
+        }
+
+        test('filters out non-loopback http:// video URLs', () {
+          final repo = VideosRepository(nostrClient: mockNostrClient);
+          final cleartext = buildVideo(
+            id: 'cleartext-id',
+            videoUrl: 'http://example.com/video.mp4',
+          );
+          final secure = buildVideo(
+            id: 'https-id',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+
+          final result = repo.applyContentPreferences([cleartext, secure]);
+
+          expect(result, hasLength(1));
+          expect(result.single.id, equals('https-id'));
+        });
+
+        test('allows loopback http:// hosts', () {
+          final repo = VideosRepository(nostrClient: mockNostrClient);
+          final emulator = buildVideo(
+            id: 'android-emulator-host',
+            videoUrl: 'http://10.0.2.2:8000/video.mp4',
+          );
+          final localhost = buildVideo(
+            id: 'localhost-host',
+            videoUrl: 'http://localhost:8000/video.mp4',
+          );
+          final ipv4 = buildVideo(
+            id: 'ipv4-loopback',
+            videoUrl: 'http://127.0.0.1:8000/video.mp4',
+          );
+
+          final result = repo.applyContentPreferences([
+            emulator,
+            localhost,
+            ipv4,
+          ]);
+
+          expect(
+            result.map((v) => v.id),
+            equals([
+              'android-emulator-host',
+              'localhost-host',
+              'ipv4-loopback',
+            ]),
+          );
+        });
+
+        test(
+          'rejects hostnames that contain but do not equal a loopback host',
+          () {
+            final repo = VideosRepository(nostrClient: mockNostrClient);
+            final spoofA = buildVideo(
+              id: 'spoof-a',
+              videoUrl: 'http://10.0.2.2.example.com/video.mp4',
+            );
+            final spoofB = buildVideo(
+              id: 'spoof-b',
+              videoUrl: 'http://localhost.evil.com/video.mp4',
+            );
+
+            final result = repo.applyContentPreferences([spoofA, spoofB]);
+
+            expect(result, isEmpty);
+          },
+        );
+      });
     });
   });
 }

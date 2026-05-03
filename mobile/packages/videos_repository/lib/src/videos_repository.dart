@@ -990,9 +990,9 @@ class VideosRepository {
   ///
   /// Use this when you have videos that were not produced by this
   /// repository's own parsing paths (e.g. entries restored from a local
-  /// cache). Videos that fail the block filter or content filter are
-  /// removed; surviving videos have their `warnLabels` rewritten to
-  /// reflect the current resolver output.
+  /// cache). Videos that fail the block filter, transport-scheme check
+  /// (#3836), or content filter are removed; surviving videos have their
+  /// `warnLabels` rewritten to reflect the current resolver output.
   ///
   /// This is a pure, synchronous operation. It does not touch the network
   /// or local storage.
@@ -1000,6 +1000,7 @@ class VideosRepository {
     final out = <VideoEvent>[];
     for (final video in videos) {
       if (_blockFilter?.call(video.pubkey) ?? false) continue;
+      if (!_hasAllowedTransportScheme(video)) continue;
       final processed = _applyContentPreferences(video);
       if (processed != null) out.add(processed);
     }
