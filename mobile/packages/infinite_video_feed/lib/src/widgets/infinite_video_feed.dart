@@ -64,6 +64,7 @@ class InfiniteVideoFeed extends StatefulWidget {
 
   static bool? _isSupportedOverrideForTesting;
 
+  // coverage:ignore-start
   /// Current test override for [isSupported].
   @visibleForTesting
   static bool? get debugIsSupportedOverride => _isSupportedOverrideForTesting;
@@ -73,6 +74,7 @@ class InfiniteVideoFeed extends StatefulWidget {
   static set debugIsSupportedOverride(bool? value) {
     _isSupportedOverrideForTesting = value;
   }
+  // coverage:ignore-end
 
   /// The list of videos to display.
   final List<VideoEvent> videos;

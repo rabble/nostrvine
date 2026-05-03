@@ -11,10 +11,17 @@ class _CallbackClient extends http.BaseClient {
 
   final Future<http.StreamedResponse> Function(http.BaseRequest request)
   _onSend;
+  bool closed = false;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) =>
       _onSend(request);
+
+  @override
+  void close() {
+    closed = true;
+    super.close();
+  }
 }
 
 void main() {
@@ -65,6 +72,17 @@ void main() {
         equals('Bearer token'),
       );
       expect(download.isCancelled, isFalse);
+    });
+
+    test('close releases the underlying client', () async {
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(const Stream.empty(), 200),
+      );
+      final downloader = HttpCancellableDownloader(client);
+
+      await downloader.close();
+
+      expect(client.closed, isTrue);
     });
 
     test('returns null for non-2xx responses', () async {
@@ -235,5 +253,31 @@ void main() {
         expect(target.existsSync(), isTrue);
       },
     );
+
+    test('cancel queued before stream done deletes the target file', () async {
+      final controller = StreamController<List<int>>();
+      final client = _CallbackClient(
+        (_) async => http.StreamedResponse(controller.stream, 200),
+      );
+      final downloader = HttpCancellableDownloader(client);
+      final target = File('${tempDir.path}/cancel_before_done.mp4');
+
+      final dl = downloader.download(
+        url: 'https://example.com/cancel_before_done.mp4',
+        targetFile: target,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+      controller.add(utf8.encode('partial'));
+      final closeFuture = controller.close();
+      dl.cancel();
+
+      final file = await dl.file;
+      await closeFuture;
+
+      expect(file, isNull);
+      expect(dl.isCancelled, isTrue);
+      expect(target.existsSync(), isFalse);
+    });
   });
 }

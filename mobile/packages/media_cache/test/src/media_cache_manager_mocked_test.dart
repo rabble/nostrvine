@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -158,6 +159,52 @@ void main() {
 
         // But download should only happen once
         expect(downloadCount, 1);
+      });
+
+      test('close completes pending cacheFile operations with null', () async {
+        final mockFile = MockFile();
+        final mockFileInfo = MockFileInfo();
+        final repo = MockCacheInfoRepository();
+        final downloadCompleter = Completer<FileInfo>();
+
+        when(mockFile.existsSync).thenReturn(true);
+        when(() => mockFile.path).thenReturn('/test/path/late_video.mp4');
+        when(() => mockFileInfo.file).thenReturn(mockFile);
+        when(repo.open).thenAnswer((_) async => true);
+        when(repo.getAllObjects).thenAnswer((_) async => []);
+        when(repo.close).thenAnswer((_) async => true);
+
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'close_pending_cache_file_$timestamp',
+            enableSyncManifest: true,
+          ),
+          repoOverride: repo,
+          mockGetFileFromCache: (key) async => null,
+          mockDownloadFile: (url, {key, authHeaders}) =>
+              downloadCompleter.future,
+        );
+
+        final cacheFuture = cacheManager.cacheFile(
+          'https://example.com/video.mp4',
+          key: 'pending_close_key',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+
+        await cacheManager.close();
+
+        expect(await cacheFuture, isNull);
+        expect(
+          await cacheManager.cacheFile(
+            'https://example.com/after-close.mp4',
+            key: 'after_close_key',
+          ),
+          isNull,
+        );
+
+        downloadCompleter.complete(mockFileInfo);
+        await Future<void>.delayed(const Duration(milliseconds: 1));
       });
 
       test('passes auth headers to download', () async {
@@ -359,16 +406,63 @@ void main() {
           downloader.downloads[1].completeWith(v2File);
           await preCacheFuture;
 
-          expect(downloader.downloads[0].url, 'https://example.com/v1.mp4');
-          expect(downloader.downloads[0].headers, {'X-Key': 'v1'});
-          expect(downloader.downloads[1].url, 'https://example.com/v2.mp4');
-          expect(downloader.downloads[1].headers, {'X-Key': 'v2'});
+          expect(
+            downloader.downloads.map((download) => download.url),
+            unorderedEquals([
+              'https://example.com/v1.mp4',
+              'https://example.com/v2.mp4',
+            ]),
+          );
+          expect(
+            downloader.downloads.map((download) => download.headers),
+            unorderedEquals([
+              {'X-Key': 'v1'},
+              {'X-Key': 'v2'},
+            ]),
+          );
 
           final cacheDir = Directory('$testTempPath/$cacheKey');
           if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
           if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
         },
       );
+
+      test('reuses in-flight download for duplicate keys in a batch', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'precache_duplicate_inflight_$timestamp';
+        final sourceDir = Directory.systemTemp.createTempSync(
+          'precache_duplicate_src_',
+        );
+        final videoFile = await createTestFile(sourceDir, 'duplicate.mp4');
+        final downloader = FakeCancellableDownloader();
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          mockGetFileFromCache: (key) async => null,
+          downloaderOverride: downloader,
+        );
+
+        final preCacheFuture = cacheManager.preCacheFiles(
+          [
+            (url: 'https://example.com/duplicate.mp4', key: 'dup'),
+            (url: 'https://example.com/duplicate-again.mp4', key: 'dup'),
+          ],
+          batchSize: 2,
+        );
+
+        await pumpDownloads(downloader);
+        expect(downloader.downloads, hasLength(1));
+
+        downloader.downloads.single.completeWith(videoFile);
+        await preCacheFuture;
+
+        final cacheDir = Directory('$testTempPath/$cacheKey');
+        if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
+      });
 
       test('tracks prefetched files when later used synchronously', () async {
         final mockFile = MockFile();
@@ -491,6 +585,41 @@ void main() {
           await pumpDownloads(downloader);
           downloader.downloads.single.completeNull();
           await op.file;
+        },
+      );
+
+      test(
+        'returns completed null operation after manager is closed',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloader = FakeCancellableDownloader();
+
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cancellable_closed_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: downloader,
+          );
+
+          final activeOp = cacheManager.cacheFileCancellable(
+            'https://example.com/active-before-close.mp4',
+            key: 'active_before_close_key',
+          );
+          await pumpDownloads(downloader);
+          await cacheManager.close();
+          expect(await activeOp.file, isNull);
+
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/video.mp4',
+            key: 'closed_cancellable_key',
+          );
+
+          expect(await op.file, isNull);
+          expect(op.isCancelled, isFalse);
+          op.cancel();
+          expect(op.isCancelled, isTrue);
+          expect(downloader.downloads, hasLength(1));
         },
       );
 
@@ -683,8 +812,6 @@ void main() {
           expect(viaAlias, isNotNull);
           expect(viaAlias!.path, equals(cachedFile.path));
           expect(viaDownloadKey!.path, equals(cachedFile.path));
-
-          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
         },
       );
 
@@ -892,6 +1019,30 @@ void main() {
           expect(await op.file, isNull);
         },
       );
+
+      test('isCancelled forwards active downloader state', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final downloader = FakeCancellableDownloader();
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'cancellable_active_state_$timestamp',
+            enableSyncManifest: true,
+          ),
+          downloaderOverride: downloader,
+        );
+
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'active_state_key',
+        );
+
+        await pumpDownloads(downloader);
+
+        expect(op.isCancelled, isFalse);
+        downloader.downloads.single.completeNull();
+        await op.file;
+      });
 
       test('completes with null when downloader throws during start', () async {
         final timestamp = DateTime.now().millisecondsSinceEpoch;

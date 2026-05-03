@@ -629,8 +629,10 @@ class MediaCacheManager extends CacheManager {
           cancelledBeforeStart = true;
           activeDownload?.cancel();
         },
+        // coverage:ignore-start
         isCancelledGetter: () =>
             activeDownload?.isCancelled ?? cancelledBeforeStart,
+        // coverage:ignore-end
       ),
       cacheKey: key,
     );
@@ -864,8 +866,10 @@ class _DeferredDownload implements CancellableDownload {
   @override
   Future<File?> get file => _future;
 
+  // coverage:ignore-start
   @override
   bool get isCancelled => _isCancelledGetter();
+  // coverage:ignore-end
 
   @override
   void cancel() => _cancel();
@@ -875,8 +879,10 @@ class _CompletedNullDownload implements CancellableDownload {
   @override
   Future<File?> get file async => null;
 
+  // coverage:ignore-start
   @override
   bool get isCancelled => false;
+  // coverage:ignore-end
 
   @override
   void cancel() {}

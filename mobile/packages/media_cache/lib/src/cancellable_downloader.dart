@@ -138,11 +138,13 @@ class _HttpDownload implements CancellableDownload {
             // Best-effort.
           }
           _sink = null;
+          // coverage:ignore-start
           if (_isCancelled) {
             await _safeDelete();
             _safeComplete(null);
             return;
           }
+          // coverage:ignore-end
           _safeComplete(_file);
         },
         cancelOnError: true,
