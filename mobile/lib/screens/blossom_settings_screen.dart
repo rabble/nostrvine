@@ -76,7 +76,26 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
       if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.blossomValidServerUrl),
+            content: Text(context.l10n.blossomServerUrlInvalid),
+            backgroundColor: VineTheme.error,
+          ),
+        );
+        return;
+      }
+      // Reject non-loopback http:// — release native transport security
+      // (#3358 / PR #3788) blocks the upload at the OS layer with no
+      // user-facing hint. Loopback http:// (10.0.2.2, localhost,
+      // 127.0.0.1) keeps working for the local Docker stack — mirrors
+      // the allowlist pinned in the native configs.
+      final scheme = uri.scheme.toLowerCase();
+      final host = uri.host.toLowerCase();
+      final isLoopbackHttp =
+          scheme == 'http' &&
+          (host == '10.0.2.2' || host == 'localhost' || host == '127.0.0.1');
+      if (scheme != 'https' && !isLoopbackHttp) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.blossomServerUrlMustUseHttps),
             backgroundColor: VineTheme.error,
           ),
         );

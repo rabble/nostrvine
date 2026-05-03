@@ -5387,6 +5387,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get blossomPopularServers => 'Popular Blossom Servers';
 
   @override
+  String get blossomServerUrlInvalid =>
+      'Please enter a valid server URL (e.g., https://blossom.band)';
+
+  @override
+  String get blossomServerUrlMustUseHttps =>
+      'Blossom server URL must use https://';
+
+  @override
   String get blueskyFailedToUpdateCrosspost => '크로스포스트 설정 업데이트에 실패했어요';
 
   @override
