@@ -108,18 +108,46 @@ Future<List<NotificationItem>> _enrichAndGroup(List<RelayNotification> raw) asyn
       .toSet()
       .toList();
 
-  // Parallel: profiles + video stats. Single round-trip for each.
-  final (profiles, videoStats) = await (
-    _profileRepository.fetchBatchProfiles(pubkeys: pubkeys),
-    _funnelcakeApiClient.getBulkVideoStats(eventIds),
-  ).wait;
+  // Parallel: profiles (one batched call) + video stats (N parallel
+  // per-event calls). The bulk stats endpoint returns engagement counts
+  // only — no thumbnail or title — so we use the per-event
+  // getVideoStats which returns full VideoStats. With ~50 notifications
+  // referencing ~20 distinct videos, that's 20 concurrent HTTPS calls
+  // wrapped in one Future.wait. Acceptable until backend adds
+  // referenced_event_title (see 2026-04-20-funnelcake-notifications-
+  // api-changes.md).
+  final profilesFuture = _profileRepository.fetchBatchProfiles(
+    pubkeys: pubkeys,
+  );
+  final videosFuture = _fetchVideoMetadata(eventIds);
+  final (profiles, videosById) = await (profilesFuture, videosFuture).wait;
 
   final consolidated = _consolidateFollows(raw);
-  final videoNotifications = _groupVideoAnchored(consolidated, profiles, videoStats);
+  final videoNotifications =
+      _groupVideoAnchored(consolidated, profiles, videosById);
   final actorNotifications = _mapActorAnchored(consolidated, profiles);
 
   return [...videoNotifications, ...actorNotifications]
     ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+}
+
+/// Fetches VideoStats for each id in parallel; tolerates per-id failures.
+Future<Map<String, VideoStats>> _fetchVideoMetadata(
+  List<String> eventIds,
+) async {
+  if (eventIds.isEmpty) return const {};
+  final futures = eventIds.map(
+    (id) => _funnelcakeApiClient.getVideoStats(id).catchError(
+      (_) => null,
+    ),
+  );
+  final results = await Future.wait(futures);
+  final map = <String, VideoStats>{};
+  for (var i = 0; i < eventIds.length; i++) {
+    final stats = results[i];
+    if (stats != null) map[eventIds[i]] = stats;
+  }
+  return map;
 }
 ```
 
