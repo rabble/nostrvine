@@ -1,5 +1,6 @@
 // ABOUTME: Tests for NIP17SendResult including the per-wrap status
-// ABOUTME: surfaced for the DM outgoing-message queue (#3909).
+// ABOUTME: that surfaces partial delivery (recipient delivered but
+// ABOUTME: self-wrap dropped); future retry handling tracked in #3909.
 
 import 'package:models/models.dart';
 import 'package:test/test.dart';
@@ -38,21 +39,18 @@ void main() {
         );
       });
 
-      test(
-        'preserves selfWrapPublished=false when explicitly passed '
-        '(NIP17MessageService partial-delivery path)',
-        () {
-          final result = NIP17SendResult.success(
-            rumorEventId: rumorEventId,
-            messageEventId: messageEventId,
-            recipientPubkey: recipientPubkey,
-            selfWrapPublished: false,
-          );
+      test('preserves selfWrapPublished=false when explicitly passed '
+          '(NIP17MessageService partial-delivery path)', () {
+        final result = NIP17SendResult.success(
+          rumorEventId: rumorEventId,
+          messageEventId: messageEventId,
+          recipientPubkey: recipientPubkey,
+          selfWrapPublished: false,
+        );
 
-          expect(result.success, isTrue);
-          expect(result.selfWrapPublished, isFalse);
-        },
-      );
+        expect(result.success, isTrue);
+        expect(result.selfWrapPublished, isFalse);
+      });
     });
 
     group('failure factory', () {
@@ -67,20 +65,17 @@ void main() {
         expect(result.timestamp, isNull);
       });
 
-      test(
-        'leaves selfWrapPublished as null on the failure branch — the '
-        'field is meaningful only when success is true (self-wrap is '
-        'never attempted when the recipient publish fails)',
-        () {
-          final result = NIP17SendResult.failure('publish to relays failed');
+      test('leaves selfWrapPublished as null on the failure branch — the '
+          'field is meaningful only when success is true (self-wrap is '
+          'never attempted when the recipient publish fails)', () {
+        final result = NIP17SendResult.failure('publish to relays failed');
 
-          expect(result.success, isFalse);
-          // Type-level guarantee: a failure cannot carry a misleading
-          // success-like `true`. The bool? shape encodes "not
-          // applicable on this branch."
-          expect(result.selfWrapPublished, isNull);
-        },
-      );
+        expect(result.success, isFalse);
+        // Type-level guarantee: a failure cannot carry a misleading
+        // success-like `true`. The bool? shape encodes "not
+        // applicable on this branch."
+        expect(result.selfWrapPublished, isNull);
+      });
     });
 
     group('toString', () {

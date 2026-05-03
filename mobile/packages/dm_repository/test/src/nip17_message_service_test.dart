@@ -230,46 +230,44 @@ void main() {
         expect(result.rumorEventId, isNotNull);
       });
 
+      test('returns success with selfWrapPublished=false when self-wrap '
+          'publish throws (recipient delivered, sender will not see this '
+          'message on other devices)', () async {
+        var callCount = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (invocation) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            throw Exception('self-wrap relay error');
+          },
+        );
+
+        final result = await service.sendPrivateMessage(
+          recipientPubkey: _recipientPubkey,
+          content: 'Test message',
+        );
+
+        expect(result.success, isTrue);
+        expect(result.rumorEventId, isNotNull);
+        expect(
+          result.selfWrapPublished,
+          isFalse,
+          reason:
+              'Self-wrap throws were silently swallowed before; the '
+              'result must now reflect that the sender will not see '
+              'this message on other devices until the self-wrap is '
+              're-published (#3909 tracks the future retry path).',
+        );
+      });
+
       test(
         'returns success with selfWrapPublished=false '
-        'when self-wrap publish throws',
+        'when self-wrap publish returns PublishFailed',
         () async {
-          var callCount = 0;
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-            (invocation) async {
-              callCount++;
-              if (callCount == 1) {
-                // Recipient publish succeeds.
-                return PublishSuccess(
-                  event: invocation.positionalArguments[0] as Event,
-                );
-              }
-              // Self-wrap publish throws — should be non-fatal but
-              // surfaced via selfWrapPublished so callers can react.
-              throw Exception('self-wrap relay error');
-            },
-          );
-
-          final result = await service.sendPrivateMessage(
-            recipientPubkey: _recipientPubkey,
-            content: 'Test message',
-          );
-
-          expect(result.success, isTrue);
-          expect(result.rumorEventId, isNotNull);
-          expect(result.selfWrapPublished, isFalse);
-        },
-      );
-
-      test(
-        'returns success with selfWrapPublished=false '
-        'when self-wrap publish returns null',
-        () async {
-          // Mirrors the silent-failure shape the reviewer flagged on
-          // PR #3908: publishEvent returns null with no exception, so
-          // the previous version of sendPrivateMessage marked the send
-          // as fully successful even though the sender's other devices
-          // would never see the message on a relay-only restore.
           final signer = LocalNostrSigner(_testPrivateKey);
           final senderPublicKey = (await signer.getPublicKey())!;
           final matchingService = NIP17MessageService(
@@ -282,12 +280,10 @@ void main() {
             (invocation) async {
               callCount++;
               if (callCount == 1) {
-                // Recipient publish succeeds.
                 return PublishSuccess(
                   event: invocation.positionalArguments[0] as Event,
                 );
               }
-              // Self-wrap publish fails silently.
               return const PublishFailed();
             },
           );
@@ -338,6 +334,31 @@ void main() {
         },
       );
 
+      test('returns success with selfWrapPublished=false when self-wrap '
+          'publish returns PublishFailed (relay rejected with no exception)',
+          () async {
+        var callCount = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (invocation) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            return const PublishFailed();
+          },
+        );
+
+        final result = await service.sendPrivateMessage(
+          recipientPubkey: _recipientPubkey,
+          content: 'Test message',
+        );
+
+        expect(result.success, isTrue);
+        expect(result.selfWrapPublished, isFalse);
+      });
+
       test(
         'publishes a self-wrap with selfWrapPublished=true '
         'when sender pubkey matches the signer and publish succeeds',
@@ -378,7 +399,7 @@ void main() {
         // valid secp256k1 point, so the self-wrap's NIP-44 ECDH throws
         // before reaching the publish call. These tests pair the signer
         // with a sender pubkey actually derived from its private key, so
-        // the self-wrap path runs end-to-end and the publish-side
+        // the self-wrap path runs end-to-end and the publish/build-side
         // branches are exercised.
         late NIP17MessageService realKeyService;
 
@@ -437,10 +458,6 @@ void main() {
 
         test('returns selfWrapPublished=false when self-wrap event '
             'creation returns null (defensive null-event branch)', () async {
-          // The recipient wrap is built by the real GiftWrapUtil so a
-          // valid kind-1059 event flows into the publish path; the
-          // self-wrap call returns null without throwing, exercising
-          // the previously-untested defensive branch in the service.
           var builderCalls = 0;
           final service = NIP17MessageService(
             signer: LocalNostrSigner(_testPrivateKey),
@@ -460,7 +477,9 @@ void main() {
           );
 
           when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-            (invocation) async => invocation.positionalArguments[0] as Event,
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
           );
 
           final result = await service.sendPrivateMessage(
@@ -478,10 +497,48 @@ void main() {
                 'the injected builder; the second call returning null '
                 'is what we are exercising here.',
           );
-          // Only the recipient publish runs because the self-wrap event is
-          // never built.
           verify(() => mockNostrClient.publishEvent(any())).called(1);
         });
+
+        test(
+          'returns selfWrapPublished=false when self-wrap builder '
+          'throws (decoupled from SDK internals via injection seam)',
+          () async {
+            var builderCalls = 0;
+            final service = NIP17MessageService(
+              signer: LocalNostrSigner(_testPrivateKey),
+              senderPublicKey: getPublicKey(_testPrivateKey),
+              nostrService: mockNostrClient,
+              giftWrapBuilder: (nostr, rumor, recipientPubkey) async {
+                builderCalls++;
+                if (builderCalls == 1) {
+                  return GiftWrapUtil.getGiftWrapEvent(
+                    nostr,
+                    rumor,
+                    recipientPubkey,
+                  );
+                }
+                throw Exception('builder boom');
+              },
+            );
+
+            when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+              (invocation) async => PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              ),
+            );
+
+            final result = await service.sendPrivateMessage(
+              recipientPubkey: _recipientPubkey,
+              content: 'Test message',
+            );
+
+            expect(result.success, isTrue);
+            expect(result.selfWrapPublished, isFalse);
+            expect(builderCalls, equals(2));
+            verify(() => mockNostrClient.publishEvent(any())).called(1);
+          },
+        );
       });
 
       test(
