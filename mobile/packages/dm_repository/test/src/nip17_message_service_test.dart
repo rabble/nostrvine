@@ -6,6 +6,7 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
@@ -261,7 +262,7 @@ void main() {
 
       test(
         'returns success with selfWrapPublished=false '
-        'when self-wrap publish returns PublishFailed',
+        'when self-wrap publish returns null',
         () async {
           // Mirrors the silent-failure shape the reviewer flagged on
           // PR #3908: publishEvent returns null with no exception, so
@@ -370,6 +371,69 @@ void main() {
           expect(capturedEvents[1].kind, EventKind.giftWrap);
         },
       );
+
+      group('with sender pubkey derived from signer key', () {
+        // Existing tests use a synthetic _testPublicKey that is not a
+        // valid secp256k1 point, so the self-wrap's NIP-44 ECDH throws
+        // before reaching the publish call. These tests pair the signer
+        // with a sender pubkey actually derived from its private key, so
+        // the self-wrap path runs end-to-end and the publish-side
+        // branches are exercised.
+        late NIP17MessageService realKeyService;
+
+        setUp(() {
+          realKeyService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+          );
+        });
+
+        test(
+          'returns selfWrapPublished=true when both publishes succeed',
+          () async {
+            when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+              (invocation) async => PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              ),
+            );
+
+            final result = await realKeyService.sendPrivateMessage(
+              recipientPubkey: _recipientPubkey,
+              content: 'Test message',
+            );
+
+            expect(result.success, isTrue);
+            expect(result.selfWrapPublished, isTrue);
+            verify(() => mockNostrClient.publishEvent(any())).called(2);
+          },
+        );
+
+        test('returns selfWrapPublished=false when self-wrap publish '
+            'returns PublishFailed without throwing', () async {
+          var callCount = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            invocation,
+          ) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            return const PublishFailed();
+          });
+
+          final result = await realKeyService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+          verify(() => mockNostrClient.publishEvent(any())).called(2);
+        });
+      });
 
       test(
         'returns failure when signer throws during key refresh',
