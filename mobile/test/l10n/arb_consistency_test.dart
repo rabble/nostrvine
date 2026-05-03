@@ -341,6 +341,12 @@ const _knownUntranslatedDebt = {
   'authConfirmPasswordRequired',
   'authPasswordsDoNotMatch',
   'authConfirmNewPasswordLabel',
+  // Added by the report-reason validation fix (#3475). The strings exist
+  // in app_en.arb but were not added to app_am.arb / app_bg.arb at the
+  // time. Generated locale files fall back to English until translators
+  // pick them up.
+  'reportOtherRequiresDetails',
+  'reportDetailsRequired',
 };
 
 Map<String, Object?> _readArb(File file) {
