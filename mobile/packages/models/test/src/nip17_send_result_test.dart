@@ -68,17 +68,17 @@ void main() {
       });
 
       test(
-        'leaves selfWrapPublished at the const-default true; the field is '
-        'unused on the failure branch (recipient publish never landed, '
-        'self-wrap is never attempted)',
+        'leaves selfWrapPublished as null on the failure branch — the '
+        'field is meaningful only when success is true (self-wrap is '
+        'never attempted when the recipient publish fails)',
         () {
           final result = NIP17SendResult.failure('publish to relays failed');
 
           expect(result.success, isFalse);
-          // Documented as "unused when success=false"; the test pins
-          // the default so unrelated changes to the constructor do not
-          // accidentally flip its meaning.
-          expect(result.selfWrapPublished, isTrue);
+          // Type-level guarantee: a failure cannot carry a misleading
+          // success-like `true`. The bool? shape encodes "not
+          // applicable on this branch."
+          expect(result.selfWrapPublished, isNull);
         },
       );
     });
