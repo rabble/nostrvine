@@ -272,6 +272,70 @@ void main() {
         expect(result.type, equals(DeepLinkType.video));
         expect(result.videoId, equals(videoId));
       });
+
+      // Regression: an email verification link
+      // (https://login.divine.video/verify-email?...) was previously
+      // rejected with "Ignoring deep link from non-divine.video domain:
+      // login.divine.video". Subdomains of divine.video are still part
+      // of our deployment and must not be rejected at the host check.
+      test('accepts login.divine.video subdomain', () {
+        const videoId = 'abc123';
+        const url = 'https://login.divine.video/video/$videoId';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(
+          result.type,
+          equals(DeepLinkType.video),
+          reason:
+              'Subdomains of divine.video must be accepted as Divine '
+              'hosts. login.divine.video is the OAuth host used by '
+              'verification deep links.',
+        );
+        expect(result.videoId, equals(videoId));
+      });
+
+      test('accepts arbitrary subdomain of divine.video', () {
+        const videoId = 'abc123';
+        const url = 'https://staging.divine.video/video/$videoId';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.video));
+        expect(result.videoId, equals(videoId));
+      });
+
+      test('rejects lookalike domain (divine.video.evil.com)', () {
+        const url = 'https://divine.video.evil.com/video/abc123';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(
+          result.type,
+          equals(DeepLinkType.unknown),
+          reason:
+              'Hosts that merely contain "divine.video" as a non-suffix '
+              'must still be rejected.',
+        );
+      });
+
+      test(
+        'rejects domain that ends with divine.video without separator '
+        '(notdivine.video)',
+        () {
+          const url = 'https://notdivine.video/video/abc123';
+
+          final result = DeepLinkService.parseDeepLink(url);
+
+          expect(
+            result.type,
+            equals(DeepLinkType.unknown),
+            reason:
+                'Only divine.video and *.divine.video should be '
+                'accepted; sibling domains must not match.',
+          );
+        },
+      );
     });
 
     group('DeepLink Data Class', () {

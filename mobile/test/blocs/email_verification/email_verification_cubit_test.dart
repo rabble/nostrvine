@@ -212,6 +212,207 @@ void main() {
           fake.flushMicrotasks();
         });
       });
+
+      // Regression: server returns 409 "Another consumption is in progress;
+      // retry" when invite consumption races (e.g. user double-taps the
+      // verification link or the polling timer hits the same code twice).
+      // The server message literally tells the client to retry, but the
+      // cubit used to give up immediately, leaving the user stuck on the
+      // verify-email screen.
+      test(
+        'retries invite consumption on 409 conflict and succeeds on retry',
+        () {
+          when(() => mockAuthService.isRegistered).thenReturn(false);
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(() => mockOAuth.config).thenReturn(
+            const OAuthConfig(
+              serverUrl: 'https://login.divine.video',
+              clientId: 'client-id',
+              redirectUri: 'divine://auth',
+            ),
+          );
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.complete(testCode));
+          when(
+            () =>
+                mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+          ).thenAnswer(
+            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+          );
+
+          var consumeCallCount = 0;
+          when(
+            () => mockInviteApiClient.consumeInviteWithSession(
+              code: any(named: 'code'),
+              oauthConfig: any(named: 'oauthConfig'),
+              session: any(named: 'session'),
+            ),
+          ).thenAnswer((_) async {
+            consumeCallCount++;
+            if (consumeCallCount == 1) {
+              throw const InviteApiException(
+                'Another consumption is in progress; retry',
+                statusCode: 409,
+              );
+            }
+            return const InviteConsumeResult(
+              message: 'Welcome',
+              codesAllocated: 5,
+            );
+          });
+          when(
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ).thenAnswer((_) async {});
+
+          fakeAsync((fake) {
+            final cubit = buildCubit();
+            cubit.startPolling(
+              deviceCode: testDeviceCode,
+              verifier: testVerifier,
+              email: testEmail,
+              inviteCode: 'ab12ef34',
+            );
+
+            // Poll fires after 3s; retry waits another ~500ms.
+            fake.elapse(const Duration(seconds: 5));
+
+            expect(cubit.state.status, EmailVerificationStatus.success);
+            expect(
+              consumeCallCount,
+              equals(2),
+              reason:
+                  'Cubit should retry once on 409 before considering '
+                  'invite consumption successful.',
+            );
+            verify(
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ).called(1);
+
+            cubit.close();
+            fake.flushMicrotasks();
+          });
+        },
+      );
+
+      test('gives up after exhausting retries on persistent 409', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockOAuth.config).thenReturn(
+          const OAuthConfig(
+            serverUrl: 'https://login.divine.video',
+            clientId: 'client-id',
+            redirectUri: 'divine://auth',
+          ),
+        );
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete(testCode));
+        when(
+          () => mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+
+        var consumeCallCount = 0;
+        when(
+          () => mockInviteApiClient.consumeInviteWithSession(
+            code: any(named: 'code'),
+            oauthConfig: any(named: 'oauthConfig'),
+            session: any(named: 'session'),
+          ),
+        ).thenAnswer((_) async {
+          consumeCallCount++;
+          throw const InviteApiException(
+            'Another consumption is in progress; retry',
+            statusCode: 409,
+          );
+        });
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+            inviteCode: 'ab12ef34',
+          );
+
+          // Generous elapse so all retries can play out.
+          fake.elapse(const Duration(seconds: 30));
+
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            consumeCallCount,
+            greaterThan(1),
+            reason:
+                'Cubit should retry at least once on 409 before giving '
+                'up.',
+          );
+          verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('does NOT retry on non-conflict InviteApiException (e.g. 400)', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockOAuth.config).thenReturn(
+          const OAuthConfig(
+            serverUrl: 'https://login.divine.video',
+            clientId: 'client-id',
+            redirectUri: 'divine://auth',
+          ),
+        );
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete(testCode));
+        when(
+          () => mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+
+        var consumeCallCount = 0;
+        when(
+          () => mockInviteApiClient.consumeInviteWithSession(
+            code: any(named: 'code'),
+            oauthConfig: any(named: 'oauthConfig'),
+            session: any(named: 'session'),
+          ),
+        ).thenAnswer((_) async {
+          consumeCallCount++;
+          throw const InviteApiException(
+            'Invite is not valid',
+            statusCode: 400,
+          );
+        });
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+            inviteCode: 'ab12ef34',
+          );
+
+          fake.elapse(const Duration(seconds: 5));
+
+          expect(cubit.state.status, EmailVerificationStatus.failure);
+          expect(
+            consumeCallCount,
+            equals(1),
+            reason: 'Non-409 invite errors must not be retried.',
+          );
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
     });
 
     group('stopPolling', () {

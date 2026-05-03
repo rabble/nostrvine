@@ -124,9 +124,14 @@ class DeepLinkService {
         return const DeepLink(type: DeepLinkType.signerCallback);
       }
 
-      // Only handle canonical Divine web hosts.
+      // Accept divine.video itself plus any subdomain
+      // (login.divine.video, staging.divine.video, etc.). Sibling and
+      // lookalike hosts like notdivine.video or divine.video.evil.com
+      // must still be rejected.
       final host = uri.host.toLowerCase();
-      if (host != 'divine.video' && host != 'www.divine.video') {
+      final isDivineHost =
+          host == 'divine.video' || host.endsWith('.divine.video');
+      if (!isDivineHost) {
         Log.warning(
           'Ignoring deep link from non-divine.video domain: ${uri.host}',
           name: 'DeepLinkService',
