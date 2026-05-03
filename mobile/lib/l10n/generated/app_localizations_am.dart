@@ -4384,6 +4384,18 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';
+
+  @override
+  String get keyManagementCopyPublicKeyTooltip => 'Copy public key';
+
+  @override
+  String get keyManagementPublicKeyCopied => 'Public key copied';
+
+  @override
+  String get profileEditPublicKeyLink => 'View your public key';
+
+  @override
   String get saveOriginalSavedToCameraRoll => 'ወደ ካሜራ ጥቅል ተቀምጧል';
 
   @override

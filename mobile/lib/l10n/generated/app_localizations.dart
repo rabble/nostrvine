@@ -7884,6 +7884,30 @@ abstract class AppLocalizations {
   /// **'Failed to export key: {error}'**
   String keyManagementExportFailed(Object error);
 
+  /// Label above the truncated npub display on the key management screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your public key (npub)'**
+  String get keyManagementYourPublicKeyLabel;
+
+  /// Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy public key'**
+  String get keyManagementCopyPublicKeyTooltip;
+
+  /// SnackBar shown after the user taps the copy icon next to their npub.
+  ///
+  /// In en, this message translates to:
+  /// **'Public key copied'**
+  String get keyManagementPublicKeyCopied;
+
+  /// Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives.
+  ///
+  /// In en, this message translates to:
+  /// **'View your public key'**
+  String get profileEditPublicKeyLink;
+
   /// No description provided for @saveOriginalSavedToCameraRoll.
   ///
   /// In en, this message translates to:

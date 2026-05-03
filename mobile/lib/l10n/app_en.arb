@@ -2312,6 +2312,22 @@
       }
     }
   },
+  "keyManagementYourPublicKeyLabel": "Your public key (npub)",
+  "@keyManagementYourPublicKeyLabel": {
+    "description": "Label above the truncated npub display on the key management screen."
+  },
+  "keyManagementCopyPublicKeyTooltip": "Copy public key",
+  "@keyManagementCopyPublicKeyTooltip": {
+    "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+  },
+  "keyManagementPublicKeyCopied": "Public key copied",
+  "@keyManagementPublicKeyCopied": {
+    "description": "SnackBar shown after the user taps the copy icon next to their npub."
+  },
+  "profileEditPublicKeyLink": "View your public key",
+  "@profileEditPublicKeyLink": {
+    "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+  },
   "saveOriginalSavedToCameraRoll": "Saved to Camera Roll",
   "saveOriginalShare": "Share",
   "saveOriginalDone": "Done",
