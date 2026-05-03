@@ -6259,6 +6259,33 @@ void main() {
         expect(result!.id, equals(eventId));
       });
 
+      test('normalizes raw 64-char hex route IDs before lookup', () async {
+        const lowerEventId =
+            'e695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+        const upperEventId =
+            'E695F6B60119D9521934A691347D9F78E8770B56DA16BB255EE77AC112B4C1F6';
+        final event = _createVideoEvent(
+          id: lowerEventId,
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1739350000,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(upperEventId);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(lowerEventId));
+      });
+
       test('resolves nevent route IDs via event ID lookup', () async {
         const eventId =
             'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
@@ -6354,6 +6381,54 @@ void main() {
           expect(result!.id, equals(eventId));
           verify(() => mockLocalStorage.getEventsByDTag(stableId)).called(1);
           verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'falls back to relay lookup for stable IDs missing from local cache',
+        () async {
+          const eventId =
+              'f695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+          const stableId = 'relay-only-video';
+          final event = _createVideoEventWithDTag(
+            id: eventId,
+            pubkey: 'pubkey-2',
+            dTag: stableId,
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1739350100,
+          );
+          final mockLocalStorage = MockVideoLocalStorage();
+
+          when(
+            () => mockLocalStorage.getEventsByDTag(stableId),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [event]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(stableId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          verify(() => mockLocalStorage.getEventsByDTag(stableId)).called(1);
+
+          final captured =
+              verify(
+                    () => mockNostrClient.queryEvents(captureAny()),
+                  ).captured.single
+                  as List<Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.d, equals([stableId]));
+          expect(
+            captured.single.kinds,
+            equals(NIP71VideoKinds.getAllVideoKinds()),
+          );
         },
       );
     });
