@@ -11,8 +11,6 @@ final ogVinerCacheServiceProvider = ChangeNotifierProvider<OgVinerCacheService>(
     try {
       final prefs = ref.watch(sharedPreferencesProvider);
       return OgVinerCacheService(prefs: prefs);
-    } on UnimplementedError {
-      return OgVinerCacheService();
     } on ProviderException catch (e) {
       if (e.exception is UnimplementedError) {
         return OgVinerCacheService();
