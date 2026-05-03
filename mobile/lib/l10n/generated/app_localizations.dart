@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_am.dart';
 import 'app_localizations_ar.dart';
 import 'app_localizations_bg.dart';
 import 'app_localizations_de.dart';
@@ -109,6 +110,7 @@ abstract class AppLocalizations {
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
+    Locale('am'),
     Locale('ar'),
     Locale('bg'),
     Locale('de'),
@@ -354,6 +356,84 @@ abstract class AppLocalizations {
   /// **'Use device language'**
   String get settingsAppLanguageUseDeviceLanguage;
 
+  /// No description provided for @settingsGeneralTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'General Settings'**
+  String get settingsGeneralTitle;
+
+  /// No description provided for @settingsContentSafetyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content & Safety'**
+  String get settingsContentSafetyTitle;
+
+  /// No description provided for @generalSettingsSectionIntegrations.
+  ///
+  /// In en, this message translates to:
+  /// **'INTEGRATIONS'**
+  String get generalSettingsSectionIntegrations;
+
+  /// No description provided for @generalSettingsSectionViewing.
+  ///
+  /// In en, this message translates to:
+  /// **'VIEWING'**
+  String get generalSettingsSectionViewing;
+
+  /// No description provided for @generalSettingsSectionCreating.
+  ///
+  /// In en, this message translates to:
+  /// **'CREATING'**
+  String get generalSettingsSectionCreating;
+
+  /// No description provided for @generalSettingsSectionApp.
+  ///
+  /// In en, this message translates to:
+  /// **'APP'**
+  String get generalSettingsSectionApp;
+
+  /// No description provided for @generalSettingsClosedCaptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed Captions'**
+  String get generalSettingsClosedCaptions;
+
+  /// No description provided for @generalSettingsClosedCaptionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show captions when videos include them'**
+  String get generalSettingsClosedCaptionsSubtitle;
+
+  /// No description provided for @generalSettingsVideoShape.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Shape'**
+  String get generalSettingsVideoShape;
+
+  /// No description provided for @generalSettingsVideoShapeSquareOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Square videos only'**
+  String get generalSettingsVideoShapeSquareOnly;
+
+  /// No description provided for @generalSettingsVideoShapeSquareAndPortrait.
+  ///
+  /// In en, this message translates to:
+  /// **'Square and portrait'**
+  String get generalSettingsVideoShapeSquareAndPortrait;
+
+  /// No description provided for @generalSettingsVideoShapeSquareAndPortraitSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the full mix of Divine videos'**
+  String get generalSettingsVideoShapeSquareAndPortraitSubtitle;
+
+  /// No description provided for @generalSettingsVideoShapeSquareOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep feeds in the classic square format'**
+  String get generalSettingsVideoShapeSquareOnlySubtitle;
+
   /// Content preferences screen app bar title
   ///
   /// In en, this message translates to:
@@ -479,6 +559,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unknown Microphone'**
   String get contentPreferencesUnknownMicrophone;
+
+  /// No description provided for @contentFiltersAdultContent.
+  ///
+  /// In en, this message translates to:
+  /// **'ADULT CONTENT'**
+  String get contentFiltersAdultContent;
+
+  /// No description provided for @contentFiltersViolenceGore.
+  ///
+  /// In en, this message translates to:
+  /// **'VIOLENCE & GORE'**
+  String get contentFiltersViolenceGore;
+
+  /// No description provided for @contentFiltersSubstances.
+  ///
+  /// In en, this message translates to:
+  /// **'SUBSTANCES'**
+  String get contentFiltersSubstances;
+
+  /// No description provided for @contentFiltersOther.
+  ///
+  /// In en, this message translates to:
+  /// **'OTHER'**
+  String get contentFiltersOther;
+
+  /// No description provided for @contentFiltersAgeGateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify your age in Safety & Privacy settings to unlock adult content filters'**
+  String get contentFiltersAgeGateMessage;
+
+  /// No description provided for @contentFiltersShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get contentFiltersShow;
+
+  /// No description provided for @contentFiltersWarn.
+  ///
+  /// In en, this message translates to:
+  /// **'Warn'**
+  String get contentFiltersWarn;
+
+  /// No description provided for @contentFiltersFilterOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter Out'**
+  String get contentFiltersFilterOut;
 
   /// No description provided for @profileBlockedAccountNotAvailable.
   ///
@@ -1296,6 +1424,12 @@ abstract class AppLocalizations {
   /// **'Image selection failed. Please paste an image URL below instead.'**
   String get profileSetupImageSelectionFailed;
 
+  /// No description provided for @profileSetupImagesTypeGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'images'**
+  String get profileSetupImagesTypeGroup;
+
   /// No description provided for @profileSetupCameraAccessFailed.
   ///
   /// In en, this message translates to:
@@ -1469,6 +1603,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NIP-05 Address'**
   String get profileSetupNip05AddressLabel;
+
+  /// No description provided for @profileSetupExternalNip05InvalidFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid NIP-05 format (e.g., name@domain.com)'**
+  String get profileSetupExternalNip05InvalidFormat;
+
+  /// No description provided for @profileSetupExternalNip05DivineDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the username field above for divine.video'**
+  String get profileSetupExternalNip05DivineDomain;
 
   /// No description provided for @profileSetupProfilePicturePreview.
   ///
@@ -2027,6 +2173,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View Anyway'**
   String get contentWarningViewAnyway;
+
+  /// No description provided for @contentWarningReportContentTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Content'**
+  String get contentWarningReportContentTooltip;
+
+  /// No description provided for @contentWarningBlockUserTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Block User'**
+  String get contentWarningBlockUserTooltip;
+
+  /// No description provided for @contentWarningBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Blocked'**
+  String get contentWarningBlockedTitle;
+
+  /// No description provided for @contentWarningBlockedPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'This content has been blocked due to policy violations.'**
+  String get contentWarningBlockedPolicy;
+
+  /// No description provided for @contentWarningNoticeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content Notice'**
+  String get contentWarningNoticeTitle;
+
+  /// No description provided for @contentWarningPotentiallyHarmfulTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Potentially Harmful Content'**
+  String get contentWarningPotentiallyHarmfulTitle;
+
+  /// No description provided for @contentWarningView.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get contentWarningView;
+
+  /// No description provided for @contentWarningReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get contentWarningReportAction;
 
   /// No description provided for @contentWarningHideAllLikeThis.
   ///
@@ -2958,6 +3152,12 @@ abstract class AppLocalizations {
   /// **'Relay URL must start with wss:// or ws://'**
   String get relaySettingsInvalidUrl;
 
+  /// Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay URL must use wss:// (ws:// is allowed only for localhost)'**
+  String get relaySettingsInsecureUrl;
+
   /// No description provided for @relaySettingsRestoredDefault.
   ///
   /// In en, this message translates to:
@@ -2981,6 +3181,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to open link'**
   String get relaySettingsFailedToOpenLink;
+
+  /// No description provided for @relaySettingsExternalRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'External relay'**
+  String get relaySettingsExternalRelay;
+
+  /// No description provided for @relaySettingsNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not connected'**
+  String get relaySettingsNotConnected;
+
+  /// No description provided for @relaySettingsDisconnectedAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected {duration} ago'**
+  String relaySettingsDisconnectedAgo(String duration);
+
+  /// No description provided for @relaySettingsSubscriptionsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} subs'**
+  String relaySettingsSubscriptionsSummary(int count);
+
+  /// No description provided for @relaySettingsEventsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} events'**
+  String relaySettingsEventsSummary(String count);
+
+  /// No description provided for @relaySettingsTimeAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} ago'**
+  String relaySettingsTimeAgo(String duration);
+
+  /// No description provided for @nostrSettingsIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.'**
+  String get nostrSettingsIntro;
+
+  /// No description provided for @nostrSettingsSectionNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get nostrSettingsSectionNetwork;
+
+  /// No description provided for @nostrSettingsSectionAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get nostrSettingsSectionAccount;
+
+  /// No description provided for @nostrSettingsSectionDangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger Zone'**
+  String get nostrSettingsSectionDangerZone;
+
+  /// No description provided for @nostrSettingsRelays.
+  ///
+  /// In en, this message translates to:
+  /// **'Relays'**
+  String get nostrSettingsRelays;
+
+  /// No description provided for @nostrSettingsRelaysSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage Nostr relay connections'**
+  String get nostrSettingsRelaysSubtitle;
+
+  /// No description provided for @nostrSettingsRelayDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay Diagnostics'**
+  String get nostrSettingsRelayDiagnostics;
+
+  /// No description provided for @nostrSettingsRelayDiagnosticsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug relay connectivity and network issues'**
+  String get nostrSettingsRelayDiagnosticsSubtitle;
+
+  /// No description provided for @nostrSettingsMediaServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Media Servers'**
+  String get nostrSettingsMediaServers;
+
+  /// No description provided for @nostrSettingsMediaServersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure Blossom upload servers'**
+  String get nostrSettingsMediaServersSubtitle;
+
+  /// No description provided for @nostrSettingsDeveloperOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer Options'**
+  String get nostrSettingsDeveloperOptions;
+
+  /// No description provided for @nostrSettingsDeveloperOptionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment switcher and debug settings'**
+  String get nostrSettingsDeveloperOptionsSubtitle;
+
+  /// No description provided for @nostrSettingsExperimentalFeaturesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle feature flags that may hiccup.'**
+  String get nostrSettingsExperimentalFeaturesSubtitle;
+
+  /// No description provided for @nostrSettingsKeyManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Key Management'**
+  String get nostrSettingsKeyManagement;
+
+  /// No description provided for @nostrSettingsKeyManagementSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Export, backup, and restore your Nostr keys'**
+  String get nostrSettingsKeyManagementSubtitle;
+
+  /// No description provided for @nostrSettingsRemoveKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove Keys from Device'**
+  String get nostrSettingsRemoveKeys;
+
+  /// No description provided for @nostrSettingsRemoveKeysSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.'**
+  String get nostrSettingsRemoveKeysSubtitle;
+
+  /// No description provided for @nostrSettingsCouldNotRemoveKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not remove keys from this device. Please try again.'**
+  String get nostrSettingsCouldNotRemoveKeys;
+
+  /// No description provided for @nostrSettingsFailedToRemoveKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to remove keys: {error}'**
+  String nostrSettingsFailedToRemoveKeys(String error);
+
+  /// No description provided for @nostrSettingsDeleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account and Data'**
+  String get nostrSettingsDeleteAccount;
+
+  /// No description provided for @nostrSettingsDeleteAccountSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.'**
+  String get nostrSettingsDeleteAccountSubtitle;
 
   /// Relay diagnostics screen app bar title
   ///
@@ -3471,6 +3833,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SETTINGS'**
   String get safetySettingsLabel;
+
+  /// No description provided for @safetySettingsWhatYouSee.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT YOU SEE'**
+  String get safetySettingsWhatYouSee;
+
+  /// No description provided for @safetySettingsWhatYouPublish.
+  ///
+  /// In en, this message translates to:
+  /// **'WHAT YOU PUBLISH'**
+  String get safetySettingsWhatYouPublish;
 
   /// No description provided for @safetySettingsShowDivineHostedOnly.
   ///
@@ -7204,6 +7578,18 @@ abstract class AppLocalizations {
   /// **'{count} videos'**
   String listVideoCount(int count);
 
+  /// No description provided for @listPersonCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 person} other{{count} people}}'**
+  String listPersonCount(int count);
+
+  /// No description provided for @listByAuthorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'By '**
+  String get listByAuthorPrefix;
+
   /// No description provided for @listNewList.
   ///
   /// In en, this message translates to:
@@ -7587,6 +7973,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use Sound'**
   String get soundUseSound;
+
+  /// No description provided for @soundUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled sound'**
+  String get soundUntitled;
+
+  /// No description provided for @soundStopPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop preview'**
+  String get soundStopPreview;
+
+  /// No description provided for @soundPreviewSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview {title}'**
+  String soundPreviewSemanticLabel(String title);
+
+  /// No description provided for @soundViewDetailsSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'View details for {title}'**
+  String soundViewDetailsSemanticLabel(String title);
 
   /// No description provided for @soundNoVideoCount.
   ///
@@ -8512,11 +8922,101 @@ abstract class AppLocalizations {
   /// **'Video {current}/{total}'**
   String exploreVideoCounter(int current, int total);
 
+  /// No description provided for @exploreSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get exploreSearchHint;
+
+  /// No description provided for @categoryVideoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} videos'**
+  String categoryVideoCount(String count);
+
   /// No description provided for @discoverListsFailedToUpdateSubscription.
   ///
   /// In en, this message translates to:
   /// **'Failed to update subscription: {error}'**
   String discoverListsFailedToUpdateSubscription(String error);
+
+  /// No description provided for @discoverListsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Lists'**
+  String get discoverListsTitle;
+
+  /// No description provided for @discoverListsFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load lists'**
+  String get discoverListsFailedToLoad;
+
+  /// No description provided for @discoverListsFailedToLoadWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load lists: {error}'**
+  String discoverListsFailedToLoadWithError(String error);
+
+  /// No description provided for @discoverListsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Discovering public lists...'**
+  String get discoverListsLoading;
+
+  /// No description provided for @discoverListsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No public lists found'**
+  String get discoverListsEmptyTitle;
+
+  /// No description provided for @discoverListsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check back later for new lists'**
+  String get discoverListsEmptySubtitle;
+
+  /// No description provided for @discoverListsByAuthorPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'by'**
+  String get discoverListsByAuthorPrefix;
+
+  /// No description provided for @curatedListEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos in this list'**
+  String get curatedListEmptyTitle;
+
+  /// No description provided for @curatedListEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add some videos to get started'**
+  String get curatedListEmptySubtitle;
+
+  /// No description provided for @curatedListLoadingVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading videos...'**
+  String get curatedListLoadingVideos;
+
+  /// No description provided for @curatedListFailedToLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load list'**
+  String get curatedListFailedToLoad;
+
+  /// No description provided for @curatedListNoVideosAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos available'**
+  String get curatedListNoVideosAvailable;
+
+  /// No description provided for @curatedListVideoNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Video not available'**
+  String get curatedListVideoNotAvailable;
 
   /// No description provided for @commonRetry.
   ///
@@ -8541,6 +9041,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get commonCancel;
+
+  /// No description provided for @commonBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get commonBack;
+
+  /// No description provided for @commonClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get commonClose;
 
   /// No description provided for @videoMetadataTags.
   ///
@@ -8848,11 +9360,281 @@ abstract class AppLocalizations {
   /// **'Could not load videos'**
   String get categoryGalleryCouldNotLoadVideos;
 
+  /// No description provided for @categoryGalleryNoVideosInCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'No videos in this category'**
+  String get categoryGalleryNoVideosInCategory;
+
+  /// No description provided for @categoryGallerySortOptionsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category sort options'**
+  String get categoryGallerySortOptionsLabel;
+
+  /// No description provided for @categoryGallerySortHot.
+  ///
+  /// In en, this message translates to:
+  /// **'Hot'**
+  String get categoryGallerySortHot;
+
+  /// No description provided for @categoryGallerySortNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get categoryGallerySortNew;
+
+  /// No description provided for @categoryGallerySortClassic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get categoryGallerySortClassic;
+
+  /// No description provided for @categoryGallerySortForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For You'**
+  String get categoryGallerySortForYou;
+
   /// No description provided for @categoriesCouldNotLoadCategories.
   ///
   /// In en, this message translates to:
   /// **'Could not load categories'**
   String get categoriesCouldNotLoadCategories;
+
+  /// No description provided for @categoriesNoCategoriesAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No categories available'**
+  String get categoriesNoCategoriesAvailable;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No activity yet'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When people interact with your content, you\'ll see it here'**
+  String get notificationsEmptySubtitle;
+
+  /// No description provided for @appsPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration Permissions'**
+  String get appsPermissionsTitle;
+
+  /// No description provided for @appsPermissionsRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get appsPermissionsRevoke;
+
+  /// No description provided for @appsPermissionsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved integration permissions'**
+  String get appsPermissionsEmptyTitle;
+
+  /// No description provided for @appsPermissionsEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved integrations will appear here after you remember an access approval.'**
+  String get appsPermissionsEmptySubtitle;
+
+  /// No description provided for @nostrAppPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{appName} wants your approval'**
+  String nostrAppPermissionTitle(String appName);
+
+  /// No description provided for @nostrAppPermissionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is requesting access through Divine\'s vetted sandbox.'**
+  String get nostrAppPermissionDescription;
+
+  /// No description provided for @nostrAppPermissionOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin'**
+  String get nostrAppPermissionOrigin;
+
+  /// No description provided for @nostrAppPermissionMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get nostrAppPermissionMethod;
+
+  /// No description provided for @nostrAppPermissionCapability.
+  ///
+  /// In en, this message translates to:
+  /// **'Capability'**
+  String get nostrAppPermissionCapability;
+
+  /// No description provided for @nostrAppPermissionEventKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Event kind'**
+  String get nostrAppPermissionEventKind;
+
+  /// No description provided for @nostrAppPermissionAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get nostrAppPermissionAllow;
+
+  /// No description provided for @bugReportSendReport.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Report'**
+  String get bugReportSendReport;
+
+  /// No description provided for @supportSubjectRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Subject *'**
+  String get supportSubjectRequiredLabel;
+
+  /// No description provided for @supportRequiredHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get supportRequiredHelper;
+
+  /// No description provided for @bugReportSubjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief summary of the issue'**
+  String get bugReportSubjectHint;
+
+  /// No description provided for @bugReportDescriptionRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What happened? *'**
+  String get bugReportDescriptionRequiredLabel;
+
+  /// No description provided for @bugReportDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the issue you encountered'**
+  String get bugReportDescriptionHint;
+
+  /// No description provided for @bugReportStepsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps to Reproduce'**
+  String get bugReportStepsLabel;
+
+  /// No description provided for @bugReportStepsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Go to...\n2. Tap on...\n3. See error'**
+  String get bugReportStepsHint;
+
+  /// No description provided for @bugReportExpectedBehaviorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected Behavior'**
+  String get bugReportExpectedBehaviorLabel;
+
+  /// No description provided for @bugReportExpectedBehaviorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should have happened instead?'**
+  String get bugReportExpectedBehaviorHint;
+
+  /// No description provided for @bugReportDiagnosticsNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device info and logs will be included automatically.'**
+  String get bugReportDiagnosticsNotice;
+
+  /// No description provided for @bugReportSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you! We\'ve received your report and will use it to make Divine better.'**
+  String get bugReportSuccessMessage;
+
+  /// No description provided for @bugReportSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send bug report. Please try again later.'**
+  String get bugReportSendFailed;
+
+  /// No description provided for @bugReportFailedWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Bug report failed to send: {error}'**
+  String bugReportFailedWithError(String error);
+
+  /// No description provided for @featureRequestSendRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Request'**
+  String get featureRequestSendRequest;
+
+  /// No description provided for @featureRequestSubjectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief summary of your idea'**
+  String get featureRequestSubjectHint;
+
+  /// No description provided for @featureRequestDescriptionRequiredLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like? *'**
+  String get featureRequestDescriptionRequiredLabel;
+
+  /// No description provided for @featureRequestDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the feature you want'**
+  String get featureRequestDescriptionHint;
+
+  /// No description provided for @featureRequestUsefulnessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'How would this be useful?'**
+  String get featureRequestUsefulnessLabel;
+
+  /// No description provided for @featureRequestUsefulnessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Explain the benefit this feature would provide'**
+  String get featureRequestUsefulnessHint;
+
+  /// No description provided for @featureRequestWhenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'When would you use this?'**
+  String get featureRequestWhenLabel;
+
+  /// No description provided for @featureRequestWhenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe the situations where this would help'**
+  String get featureRequestWhenHint;
+
+  /// No description provided for @featureRequestSuccessMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you! We\'ve received your feature request and will review it.'**
+  String get featureRequestSuccessMessage;
+
+  /// No description provided for @featureRequestSendFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send feature request. Please try again later.'**
+  String get featureRequestSendFailed;
+
+  /// No description provided for @featureRequestFailedWithError.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature request failed to send: {error}'**
+  String featureRequestFailedWithError(String error);
 
   /// No description provided for @notificationFollowBack.
   ///
@@ -8860,17 +9642,137 @@ abstract class AppLocalizations {
   /// **'Follow back'**
   String get notificationFollowBack;
 
+  /// No description provided for @followingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get followingTitle;
+
+  /// No description provided for @followingTitleForName.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName}\'s Following'**
+  String followingTitleForName(String displayName);
+
   /// No description provided for @followingFailedToLoadList.
   ///
   /// In en, this message translates to:
   /// **'Failed to load following list'**
   String get followingFailedToLoadList;
 
+  /// No description provided for @followingEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not following anyone yet'**
+  String get followingEmptyTitle;
+
+  /// No description provided for @followersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers'**
+  String get followersTitle;
+
+  /// No description provided for @followersTitleForName.
+  ///
+  /// In en, this message translates to:
+  /// **'{displayName}\'s Followers'**
+  String followersTitleForName(String displayName);
+
   /// No description provided for @followersFailedToLoadList.
   ///
   /// In en, this message translates to:
   /// **'Failed to load followers list'**
   String get followersFailedToLoadList;
+
+  /// No description provided for @followersEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No followers yet'**
+  String get followersEmptyTitle;
+
+  /// No description provided for @followersUpdateFollowFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update follow status. Please try again.'**
+  String get followersUpdateFollowFailed;
+
+  /// No description provided for @reportMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Report Message'**
+  String get reportMessageTitle;
+
+  /// No description provided for @reportMessageWhyReporting.
+  ///
+  /// In en, this message translates to:
+  /// **'Why are you reporting this message?'**
+  String get reportMessageWhyReporting;
+
+  /// No description provided for @reportMessageSelectReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a reason for reporting this message'**
+  String get reportMessageSelectReason;
+
+  /// No description provided for @newMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New message'**
+  String get newMessageTitle;
+
+  /// No description provided for @newMessageFindPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Find people'**
+  String get newMessageFindPeople;
+
+  /// No description provided for @newMessageNoContacts.
+  ///
+  /// In en, this message translates to:
+  /// **'No contacts found.\nFollow people to see them here.'**
+  String get newMessageNoContacts;
+
+  /// No description provided for @newMessageNoUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get newMessageNoUsersFound;
+
+  /// No description provided for @hashtagSearchTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for hashtags'**
+  String get hashtagSearchTitle;
+
+  /// No description provided for @hashtagSearchSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover trending topics and content'**
+  String get hashtagSearchSubtitle;
+
+  /// No description provided for @hashtagSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No hashtags found for \"{query}\"'**
+  String hashtagSearchNoResults(String query);
+
+  /// No description provided for @hashtagSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Search failed'**
+  String get hashtagSearchFailed;
+
+  /// No description provided for @userNotAvailableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account not available'**
+  String get userNotAvailableTitle;
+
+  /// No description provided for @userNotAvailableBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This account isn\'t available right now.'**
+  String get userNotAvailableBody;
 
   /// No description provided for @classicVinersTitle.
   ///
@@ -8884,23 +9786,143 @@ abstract class AppLocalizations {
   /// **'Failed to save settings: {error}'**
   String blossomFailedToSaveSettings(String error);
 
-  /// Snackbar shown when the Blossom server URL the user typed could not be parsed (no scheme, no authority, etc.).
+  /// No description provided for @blossomValidServerUrl.
   ///
   /// In en, this message translates to:
   /// **'Please enter a valid server URL (e.g., https://blossom.band)'**
-  String get blossomServerUrlInvalid;
+  String get blossomValidServerUrl;
 
-  /// Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead.
+  /// No description provided for @blossomSettingsSaved.
   ///
   /// In en, this message translates to:
-  /// **'Blossom server URL must use https://'**
-  String get blossomServerUrlMustUseHttps;
+  /// **'Blossom settings saved'**
+  String get blossomSettingsSaved;
+
+  /// No description provided for @blossomSaveTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get blossomSaveTooltip;
+
+  /// No description provided for @blossomAboutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'About Blossom'**
+  String get blossomAboutTitle;
+
+  /// No description provided for @blossomAboutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.'**
+  String get blossomAboutDescription;
+
+  /// No description provided for @blossomUseCustomServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Custom Blossom Server'**
+  String get blossomUseCustomServer;
+
+  /// No description provided for @blossomCustomServerEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos will be uploaded to your custom Blossom server'**
+  String get blossomCustomServerEnabledSubtitle;
+
+  /// No description provided for @blossomCustomServerDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos are currently being uploaded to Divine\'s Blossom server'**
+  String get blossomCustomServerDisabledSubtitle;
+
+  /// No description provided for @blossomCustomServerUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Blossom Server URL'**
+  String get blossomCustomServerUrl;
+
+  /// No description provided for @blossomCustomServerHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the URL of your custom Blossom server'**
+  String get blossomCustomServerHelper;
+
+  /// No description provided for @blossomPopularServers.
+  ///
+  /// In en, this message translates to:
+  /// **'Popular Blossom Servers'**
+  String get blossomPopularServers;
 
   /// No description provided for @blueskyFailedToUpdateCrosspost.
   ///
   /// In en, this message translates to:
   /// **'Failed to update crosspost setting'**
   String get blueskyFailedToUpdateCrosspost;
+
+  /// No description provided for @blueskySignInRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to manage Bluesky settings'**
+  String get blueskySignInRequired;
+
+  /// No description provided for @blueskyPublishVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish videos to Bluesky'**
+  String get blueskyPublishVideos;
+
+  /// No description provided for @blueskyEnabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos will be published to Bluesky'**
+  String get blueskyEnabledSubtitle;
+
+  /// No description provided for @blueskyDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your videos will not be published to Bluesky'**
+  String get blueskyDisabledSubtitle;
+
+  /// No description provided for @blueskyHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Bluesky Handle'**
+  String get blueskyHandle;
+
+  /// No description provided for @blueskyStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get blueskyStatus;
+
+  /// No description provided for @blueskyStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Account provisioned and ready'**
+  String get blueskyStatusReady;
+
+  /// No description provided for @blueskyStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Account provisioning in progress...'**
+  String get blueskyStatusPending;
+
+  /// No description provided for @blueskyStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account provisioning failed'**
+  String get blueskyStatusFailed;
+
+  /// No description provided for @blueskyStatusDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Account disabled'**
+  String get blueskyStatusDisabled;
+
+  /// No description provided for @blueskyStatusNotLinked.
+  ///
+  /// In en, this message translates to:
+  /// **'No Bluesky account linked'**
+  String get blueskyStatusNotLinked;
 
   /// No description provided for @invitesTitle.
   ///
@@ -8925,6 +9947,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generate invite'**
   String get invitesGenerateButtonLabel;
+
+  /// No description provided for @invitesNoneAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'No invites available right now'**
+  String get invitesNoneAvailable;
+
+  /// No description provided for @invitesShareWithPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'Share diVine with people you know'**
+  String get invitesShareWithPeople;
+
+  /// No description provided for @invitesUsedInvites.
+  ///
+  /// In en, this message translates to:
+  /// **'Used invites'**
+  String get invitesUsedInvites;
+
+  /// No description provided for @invitesShareMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Join me on diVine! Use invite code {code} to get started:\nhttps://divine.video/invite/{code}'**
+  String invitesShareMessage(String code);
+
+  /// No description provided for @invitesCopyInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy invite'**
+  String get invitesCopyInvite;
+
+  /// No description provided for @invitesCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite copied!'**
+  String get invitesCopied;
+
+  /// No description provided for @invitesShareInvite.
+  ///
+  /// In en, this message translates to:
+  /// **'Share invite'**
+  String get invitesShareInvite;
+
+  /// No description provided for @invitesShareSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Join me on diVine'**
+  String get invitesShareSubject;
+
+  /// No description provided for @invitesClaimed.
+  ///
+  /// In en, this message translates to:
+  /// **'Claimed'**
+  String get invitesClaimed;
+
+  /// No description provided for @invitesCouldNotLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load invites'**
+  String get invitesCouldNotLoad;
+
+  /// No description provided for @invitesRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get invitesRetry;
 
   /// No description provided for @searchSomethingWentWrong.
   ///
@@ -9027,6 +10115,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error: {error}'**
   String keyImportError(String error);
+
+  /// Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host.
+  ///
+  /// In en, this message translates to:
+  /// **'Bunker relay must use wss:// (ws:// is allowed only for localhost)'**
+  String get keyImportInsecureBunkerRelay;
 
   /// Relative time label for less than one minute ago (short form)
   ///
@@ -9303,6 +10397,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Re:'**
   String get commentReplyToPrefix;
+
+  /// Accessibility label for the comment input control that dismisses the keyboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide keyboard'**
+  String get commentHideKeyboard;
 
   /// No description provided for @draftUntitled.
   ///
@@ -10579,6 +11679,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Video removed'**
   String get fullscreenFeedRemovedMessage;
+
+  /// No description provided for @settingsBadgesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges'**
+  String get settingsBadgesTitle;
+
+  /// No description provided for @settingsBadgesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept awards and check issued badge status.'**
+  String get settingsBadgesSubtitle;
+
+  /// No description provided for @badgesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges'**
+  String get badgesTitle;
+
+  /// No description provided for @badgesIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Understand your badge trail'**
+  String get badgesIntroTitle;
+
+  /// No description provided for @badgesIntroBody.
+  ///
+  /// In en, this message translates to:
+  /// **'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.'**
+  String get badgesIntroBody;
+
+  /// No description provided for @badgesOpenApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Open badges app'**
+  String get badgesOpenApp;
+
+  /// No description provided for @badgesLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load badges'**
+  String get badgesLoadError;
+
+  /// No description provided for @badgesUpdateError.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update badge'**
+  String get badgesUpdateError;
+
+  /// No description provided for @badgesAwardedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Awarded to you'**
+  String get badgesAwardedSectionTitle;
+
+  /// No description provided for @badgesAwardedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No badge awards yet'**
+  String get badgesAwardedEmptyTitle;
+
+  /// No description provided for @badgesAwardedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'When someone awards you a Nostr badge, it will land here.'**
+  String get badgesAwardedEmptySubtitle;
+
+  /// No description provided for @badgesStatusAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted'**
+  String get badgesStatusAccepted;
+
+  /// No description provided for @badgesStatusNotAccepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not accepted'**
+  String get badgesStatusNotAccepted;
+
+  /// No description provided for @badgesActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get badgesActionRemove;
+
+  /// No description provided for @badgesActionAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get badgesActionAccept;
+
+  /// No description provided for @badgesActionReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get badgesActionReject;
+
+  /// No description provided for @badgesIssuedSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued by you'**
+  String get badgesIssuedSectionTitle;
+
+  /// No description provided for @badgesIssuedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No issued badges yet'**
+  String get badgesIssuedEmptyTitle;
+
+  /// No description provided for @badgesIssuedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Badges you issue will show acceptance status here.'**
+  String get badgesIssuedEmptySubtitle;
+
+  /// No description provided for @badgesIssuedNoRecipients.
+  ///
+  /// In en, this message translates to:
+  /// **'No recipients found for this award.'**
+  String get badgesIssuedNoRecipients;
+
+  /// No description provided for @badgesRecipientAcceptedStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted by recipient'**
+  String get badgesRecipientAcceptedStatus;
+
+  /// No description provided for @badgesRecipientWaitingStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for recipient'**
+  String get badgesRecipientWaitingStatus;
 }
 
 class _AppLocalizationsDelegate
@@ -10592,6 +11824,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => <String>[
+    'am',
     'ar',
     'bg',
     'de',
@@ -10617,6 +11850,8 @@ class _AppLocalizationsDelegate
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'am':
+      return AppLocalizationsAm();
     case 'ar':
       return AppLocalizationsAr();
     case 'bg':

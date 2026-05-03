@@ -52,6 +52,7 @@ import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/badges/badge_repository.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/broken_video_tracker.dart';
@@ -251,6 +252,16 @@ final nostrAppBridgeServiceProvider = Provider<NostrAppBridgeService>((ref) {
     policy: policy,
     signerFactory: () => authService.requireIdentity,
     auditService: auditService,
+  );
+});
+
+final badgeRepositoryProvider = Provider<BadgeRepository>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  return BadgeRepository(
+    nostrClient: ref.watch(nostrServiceProvider),
+    sharedPreferences: ref.watch(sharedPreferencesProvider),
+    currentPubkey: () => authService.currentPublicKeyHex,
+    signEvent: authService.createAndSignEvent,
   );
 });
 

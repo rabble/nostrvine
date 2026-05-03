@@ -213,21 +213,30 @@ class _CategoryGalleryBody extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Could not load videos',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+              Text(
+                context.l10n.categoryGalleryCouldNotLoadVideos,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+              ElevatedButton(
+                onPressed: onRetry,
+                child: Text(context.l10n.commonRetry),
+              ),
             ],
           ),
         );
       case CategoriesVideosStatus.loaded:
         if (state.videos.isEmpty && galleryOverride == null) {
-          return const Center(
+          return Center(
             child: Text(
-              'No videos in this category',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+              context.l10n.categoryGalleryNoVideosInCategory,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 16,
+              ),
             ),
           );
         }
@@ -306,7 +315,7 @@ class _CategoryGalleryHeader extends StatelessWidget {
                   child: _CategoryHeaderActionButton(
                     decorationKey: const Key('category-header-filter-button'),
                     icon: DivineIconName.funnelSimple,
-                    semanticLabel: 'Category sort options',
+                    semanticLabel: context.l10n.categoryGallerySortOptionsLabel,
                     onPressed: () async {
                       final selected = await _showCategorySortSheet(
                         context: context,
@@ -327,11 +336,25 @@ class _CategoryGalleryHeader extends StatelessWidget {
   }
 }
 
-const _categorySortOptions = <VineBottomSheetSelectionOptionData>[
-  VineBottomSheetSelectionOptionData(label: 'Hot', value: 'trending'),
-  VineBottomSheetSelectionOptionData(label: 'New', value: 'timestamp'),
-  VineBottomSheetSelectionOptionData(label: 'Classic', value: 'classic'),
-  VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
+List<VineBottomSheetSelectionOptionData> _categorySortOptions(
+  AppLocalizations l10n,
+) => [
+  VineBottomSheetSelectionOptionData(
+    label: l10n.categoryGallerySortHot,
+    value: 'trending',
+  ),
+  VineBottomSheetSelectionOptionData(
+    label: l10n.categoryGallerySortNew,
+    value: 'timestamp',
+  ),
+  VineBottomSheetSelectionOptionData(
+    label: l10n.categoryGallerySortClassic,
+    value: 'classic',
+  ),
+  VineBottomSheetSelectionOptionData(
+    label: l10n.categoryGallerySortForYou,
+    value: 'forYou',
+  ),
 ];
 
 const _categoryHeaderActionFill = Color(0xFF3E0C1F);
@@ -478,7 +501,7 @@ class _CategorySortSheet extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final option in _categorySortOptions)
+                  for (final option in _categorySortOptions(context.l10n))
                     _CategorySortSheetOption(
                       option: option,
                       isSelected: option.value == selectedValue,

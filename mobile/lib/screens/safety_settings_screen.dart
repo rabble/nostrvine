@@ -91,7 +91,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Content & Safety',
+        title: context.l10n.settingsContentSafetyTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -108,7 +108,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                 )
               : ListView(
                   children: [
-                    _buildSectionHeader('WHAT YOU SEE'),
+                    _buildSectionHeader(context.l10n.safetySettingsWhatYouSee),
                     ListTile(
                       leading: const Icon(
                         Icons.filter_list,
@@ -153,7 +153,9 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                       context.l10n.safetySettingsBlockedUsers,
                     ),
                     _buildBlockedUsersSection(),
-                    _buildSectionHeader('WHAT YOU PUBLISH'),
+                    _buildSectionHeader(
+                      context.l10n.safetySettingsWhatYouPublish,
+                    ),
                     const AccountContentLabelsTile(),
                   ],
                 ),

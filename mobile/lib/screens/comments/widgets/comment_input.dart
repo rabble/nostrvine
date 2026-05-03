@@ -70,11 +70,48 @@ class CommentInput extends StatefulWidget {
 
 class _CommentInputState extends State<CommentInput> {
   bool _hasText = false;
+  late FocusNode _focusNode;
+  late bool _ownsFocusNode;
 
   @override
   void initState() {
     super.initState();
     _hasText = widget.controller.text.trim().isNotEmpty;
+    _attachFocusNode(widget.focusNode);
+  }
+
+  @override
+  void didUpdateWidget(CommentInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.focusNode != widget.focusNode) {
+      _detachFocusNode();
+      _attachFocusNode(widget.focusNode);
+    }
+  }
+
+  @override
+  void dispose() {
+    _detachFocusNode();
+    super.dispose();
+  }
+
+  void _attachFocusNode(FocusNode? focusNode) {
+    // CommentInput can either own its own FocusNode or mirror one supplied by
+    // the parent comments screen. Tracking ownership lets us show focus-driven
+    // UI without disposing a node we do not own.
+    _ownsFocusNode = focusNode == null;
+    _focusNode = focusNode ?? FocusNode();
+    _focusNode.addListener(_handleFocusChanged);
+  }
+
+  void _detachFocusNode() {
+    _focusNode.removeListener(_handleFocusChanged);
+    if (_ownsFocusNode) _focusNode.dispose();
+  }
+
+  void _handleFocusChanged() {
+    if (mounted) setState(() {});
   }
 
   void _handleTextChanged(String text) {
@@ -137,72 +174,78 @@ class _CommentInputState extends State<CommentInput> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPadding =
-        MediaQuery.of(context).viewInsets.bottom +
-        MediaQuery.of(context).padding.bottom +
-        8;
-
     final isReplying = widget.replyToDisplayName != null;
     final isEditing = widget.isEditing;
+    final showKeyboardDismiss = _focusNode.hasFocus;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Mention overlay (shows above input when suggestions available)
-        if (widget.mentionSuggestions.isNotEmpty)
-          MentionOverlay(
-            suggestions: widget.mentionSuggestions,
-            onSelect: _handleMentionSelected,
-          ),
-        // Input container
-        Container(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: bottomPadding,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
+    return TextFieldTapRegion(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Mention overlay (shows above input when suggestions available)
+          if (widget.mentionSuggestions.isNotEmpty)
+            MentionOverlay(
+              suggestions: widget.mentionSuggestions,
+              onSelect: _handleMentionSelected,
             ),
-            constraints: const BoxConstraints(minHeight: 48),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: _CommentTextField(
-                          controller: widget.controller,
-                          focusNode: widget.focusNode,
-                          isReplying: isReplying,
-                          isEditing: isEditing,
-                          onChanged: _handleTextChanged,
+          // Input container
+          Container(
+            padding: const EdgeInsetsDirectional.only(
+              start: 16,
+              end: 16,
+              top: 16,
+              bottom: 8,
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: VineTheme.iconButtonBackground,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: _CommentTextField(
+                            controller: widget.controller,
+                            focusNode: _focusNode,
+                            isReplying: isReplying,
+                            isEditing: isEditing,
+                            onSubmitted: widget.onSubmit,
+                            onChanged: _handleTextChanged,
+                          ),
                         ),
-                      ),
-                      if (isEditing)
-                        _EditIndicator(onCancel: widget.onCancelEdit!)
-                      else if (isReplying)
-                        _ReplyIndicator(
-                          displayName: widget.replyToDisplayName!,
-                          onCancel: widget.onCancelReply!,
-                        ),
-                    ],
+                        if (isEditing)
+                          _EditIndicator(onCancel: widget.onCancelEdit!)
+                        else if (isReplying)
+                          _ReplyIndicator(
+                            displayName: widget.replyToDisplayName!,
+                            onCancel: widget.onCancelReply!,
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                if (_hasText) ...[
-                  const SizedBox(width: 8),
-                  _SendButton(onSubmit: widget.onSubmit),
+                  if (showKeyboardDismiss || _hasText) ...[
+                    const SizedBox(width: 8),
+                    // Keep an explicit in-field dismiss affordance visible while
+                    // the keyboard is up so the send button does not become the
+                    // only actionable control on compact screens.
+                    if (showKeyboardDismiss)
+                      _KeyboardDismissButton(onPressed: _focusNode.unfocus),
+                    if (showKeyboardDismiss && _hasText)
+                      const SizedBox(width: 4),
+                    if (_hasText) _SendButton(onSubmit: widget.onSubmit),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -212,6 +255,7 @@ class _CommentTextField extends StatelessWidget {
   const _CommentTextField({
     required this.controller,
     required this.isReplying,
+    required this.onSubmitted,
     required this.onChanged,
     this.isEditing = false,
     this.focusNode,
@@ -221,6 +265,7 @@ class _CommentTextField extends StatelessWidget {
   final FocusNode? focusNode;
   final bool isReplying;
   final bool isEditing;
+  final VoidCallback onSubmitted;
   final ValueChanged<String> onChanged;
 
   @override
@@ -236,7 +281,9 @@ class _CommentTextField extends StatelessWidget {
         ? 'Add a reply'
         : 'Add a comment';
     final hintText = isEditing ? 'Edit comment...' : 'Add comment...';
-    final isMultiline = isReplying || isEditing;
+    // Top-level comments keep Enter-to-send for quick posting, while reply/edit
+    // flows stay multiline so users can compose longer text in-place.
+    final isComposingMultiline = isReplying || isEditing;
 
     return Padding(
       padding: const EdgeInsetsDirectional.only(start: 16, bottom: 14, top: 14),
@@ -249,6 +296,11 @@ class _CommentTextField extends StatelessWidget {
           controller: controller,
           focusNode: focusNode,
           onChanged: onChanged,
+          keyboardType: TextInputType.multiline,
+          textInputAction: isComposingMultiline
+              ? TextInputAction.newline
+              : TextInputAction.send,
+          onSubmitted: isComposingMultiline ? null : (_) => onSubmitted(),
           enableInteractiveSelection: true,
           style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
           cursorColor: VineTheme.tabIndicatorGreen,
@@ -261,9 +313,45 @@ class _CommentTextField extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             isDense: true,
           ),
-          maxLines: isMultiline ? 5 : null,
-          minLines: isMultiline ? 1 : null,
-          textAlignVertical: isMultiline ? null : TextAlignVertical.center,
+          maxLines: 5,
+          minLines: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _KeyboardDismissButton extends StatelessWidget {
+  const _KeyboardDismissButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'hide_comment_keyboard_button',
+      button: true,
+      // This label is localized because the control is newly introduced in
+      // this PR rather than inherited legacy copy.
+      label: context.l10n.commentHideKeyboard,
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: VineTheme.containerLow,
+          borderRadius: BorderRadius.circular(17),
+        ),
+        child: IconButton(
+          onPressed: onPressed,
+          padding: EdgeInsets.zero,
+          // Use the design-system icon set for new UI so the bottom-sheet input
+          // stays visually consistent with the rest of Divine.
+          icon: const DivineIcon(
+            icon: DivineIconName.caretDown,
+            color: VineTheme.whiteText,
+            size: 22,
+          ),
         ),
       ),
     );

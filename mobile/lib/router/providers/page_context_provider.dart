@@ -8,6 +8,7 @@ import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/category_gallery_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
@@ -66,6 +67,7 @@ enum RouteType {
   videoMetadata, // Video editor meta screen
   importKey,
   invites, // Invite codes share/list screen
+  badges, // Badge awards dashboard
   settings,
   relaySettings, // Relay configuration screen
   relayDiagnostic, // Relay connectivity diagnostics
@@ -273,6 +275,9 @@ RouteContext parseRoute(String path) {
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
+
+    case 'badges':
+      return const RouteContext(type: RouteType.badges);
 
     case 'apps':
       if (segments.length > 1) {
@@ -529,6 +534,9 @@ String buildRoute(RouteContext context) {
         );
       }
       return SettingsScreen.path;
+
+    case RouteType.badges:
+      return BadgesScreen.path;
 
     case RouteType.relaySettings:
       return RelaySettingsScreen.path;

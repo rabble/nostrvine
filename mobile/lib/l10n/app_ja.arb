@@ -2439,6 +2439,7 @@
   "searchListsLoadingLabel": "リスト結果を読み込み中",
     "searchForLists": "リストを検索",
     "commentReplyToPrefix": "Re:",
+    "commentHideKeyboard": "Hide keyboard",
     "searchSomethingWentWrong": "なんかうまくいかなかった",
     "searchTryAgain": "もう一回",
     "trendingTitle": "トレンド",

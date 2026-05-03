@@ -33,7 +33,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'General Settings',
+        title: context.l10n.settingsGeneralTitle,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -45,7 +45,7 @@ class GeneralSettingsScreen extends ConsumerWidget {
           child: ListView(
             children: [
               if (showBluesky) ...[
-                const _SectionHeader('INTEGRATIONS'),
+                _SectionHeader(context.l10n.generalSettingsSectionIntegrations),
                 ListTile(
                   leading: const Icon(
                     Icons.cloud_upload,
@@ -66,12 +66,12 @@ class GeneralSettingsScreen extends ConsumerWidget {
                   onTap: () => context.push(BlueskySettingsScreen.path),
                 ),
               ],
-              const _SectionHeader('VIEWING'),
+              _SectionHeader(context.l10n.generalSettingsSectionViewing),
               const _ClosedCaptionsToggle(),
               const _FeedAspectRatioPreferenceTile(),
-              const _SectionHeader('CREATING'),
+              _SectionHeader(context.l10n.generalSettingsSectionCreating),
               const _AudioSharingToggle(),
-              const _SectionHeader('APP'),
+              _SectionHeader(context.l10n.generalSettingsSectionApp),
               const _AppLanguageTile(),
             ],
           ),
@@ -120,8 +120,11 @@ class _ClosedCaptionsToggle extends ConsumerWidget {
     return SwitchListTile(
       value: enabled,
       onChanged: (_) => ref.read(subtitleVisibilityProvider.notifier).toggle(),
-      title: const Text('Closed Captions', style: _titleStyle),
-      subtitle: const Text('Show captions when videos include them'),
+      title: Text(
+        context.l10n.generalSettingsClosedCaptions,
+        style: _titleStyle,
+      ),
+      subtitle: Text(context.l10n.generalSettingsClosedCaptionsSubtitle),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.closed_caption, color: VineTheme.vineGreen),
     );
@@ -136,13 +139,15 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
     final service = ref.watch(feedAspectRatioPreferenceServiceProvider);
     final preference = service.preference;
     final subtitle = switch (preference) {
-      FeedAspectRatioPreference.squareOnly => 'Square videos only',
-      FeedAspectRatioPreference.squareAndPortrait => 'Square and portrait',
+      FeedAspectRatioPreference.squareOnly =>
+        context.l10n.generalSettingsVideoShapeSquareOnly,
+      FeedAspectRatioPreference.squareAndPortrait =>
+        context.l10n.generalSettingsVideoShapeSquareAndPortrait,
     };
 
     return ListTile(
       leading: const Icon(Icons.crop_square, color: VineTheme.vineGreen),
-      title: const Text('Video Shape', style: _titleStyle),
+      title: Text(context.l10n.generalSettingsVideoShape, style: _titleStyle),
       subtitle: Text(subtitle, style: _subtitleStyle),
       trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
       onTap: () => _showPicker(context, service),
@@ -164,11 +169,11 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Text(
-                'Video Shape',
-                style: TextStyle(
+                context.l10n.generalSettingsVideoShape,
+                style: const TextStyle(
                   color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -183,17 +188,22 @@ class _FeedAspectRatioPreferenceTile extends ConsumerWidget {
                 await service.setPreference(value);
                 if (context.mounted) Navigator.pop(context);
               },
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _FeedAspectRatioOption(
-                    title: 'Square and portrait',
-                    subtitle: 'Show the full mix of Divine videos',
+                    title:
+                        context.l10n.generalSettingsVideoShapeSquareAndPortrait,
+                    subtitle: context
+                        .l10n
+                        .generalSettingsVideoShapeSquareAndPortraitSubtitle,
                     value: FeedAspectRatioPreference.squareAndPortrait,
                   ),
                   _FeedAspectRatioOption(
-                    title: 'Square videos only',
-                    subtitle: 'Keep feeds in the classic square format',
+                    title: context.l10n.generalSettingsVideoShapeSquareOnly,
+                    subtitle: context
+                        .l10n
+                        .generalSettingsVideoShapeSquareOnlySubtitle,
                     value: FeedAspectRatioPreference.squareOnly,
                   ),
                 ],

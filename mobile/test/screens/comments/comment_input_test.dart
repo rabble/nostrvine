@@ -129,6 +129,120 @@ void main() {
       expect(controller.text, equals('Test comment'));
     });
 
+    testWidgets('top-level comments use send as the keyboard action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      // The composer still supports bounded multiline layout; only the primary
+      // keyboard action changes for top-level comments.
+      expect(textField.keyboardType, TextInputType.multiline);
+      expect(textField.textInputAction, TextInputAction.send);
+      expect(textField.minLines, 1);
+      expect(textField.maxLines, 5);
+    });
+
+    testWidgets('submits top-level comments from the keyboard action', (
+      tester,
+    ) async {
+      var submitted = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              onSubmit: () => submitted = true,
+            ),
+          ),
+        ),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      // Invoke the callback directly so the test asserts our submit wiring
+      // rather than platform text-input plumbing.
+      textField.onSubmitted?.call('Test comment');
+
+      expect(submitted, isTrue);
+    });
+
+    testWidgets('reply input keeps newline as the keyboard action', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              replyToDisplayName: 'alice',
+              onCancelReply: () {},
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      final textField = tester.widget<TextField>(find.byType(TextField));
+
+      // Replies keep newline semantics so they can expand into multi-line
+      // composition without submitting early.
+      expect(textField.textInputAction, TextInputAction.newline);
+      expect(textField.onSubmitted, isNull);
+    });
+
+    testWidgets('shows keyboard dismissal control while focused', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              focusNode: focusNode,
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      // The dismiss control should be focus-driven rather than permanently
+      // visible, otherwise it competes with the send affordance when idle.
+      expect(
+        find.bySemanticsIdentifier('hide_comment_keyboard_button'),
+        findsNothing,
+      );
+
+      focusNode.requestFocus();
+      await tester.pump();
+
+      expect(
+        find.bySemanticsIdentifier('hide_comment_keyboard_button'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'tap inside the bubble but above the TextField keeps focus on iOS '
       '(regression: issue #3770)',

@@ -2,10 +2,18 @@ package com.divinevideo.divine_video_player
 
 import android.content.Context
 import android.os.Handler
+import android.view.Surface
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
+import io.flutter.view.TextureRegistry
+import io.mockk.clearMocks
+import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.junit.Before
@@ -27,6 +35,9 @@ class DivineVideoPlayerInstanceTest {
     private lateinit var mockPlayer: ExoPlayer
     private lateinit var mockHandler: Handler
     private lateinit var mockAudioManager: AudioOverlayManager
+    private lateinit var mockRegistry: TextureRegistry
+    private lateinit var mockProducer: TextureRegistry.SurfaceProducer
+    private lateinit var mockSurface: Surface
     private lateinit var instance: DivineVideoPlayerInstance
 
     @Before
@@ -36,6 +47,12 @@ class DivineVideoPlayerInstanceTest {
         mockPlayer = mockk(relaxed = true)
         mockHandler = mockk(relaxed = true)
         mockAudioManager = mockk(relaxed = true)
+        mockRegistry = mockk(relaxed = true)
+        mockProducer = mockk(relaxed = true)
+        mockSurface = mockk(relaxed = true)
+
+        every { mockRegistry.createSurfaceProducer() } returns mockProducer
+        every { mockProducer.id() } returns 42L
 
         instance = DivineVideoPlayerInstance(
             messenger = messenger,
@@ -110,5 +127,135 @@ class DivineVideoPlayerInstanceTest {
         // Audio overlay pause still runs — the method is also responsible for
         // muting any orphaned overlay even when no main player exists.
         verify { mockAudioManager.pauseAll() }
+    }
+
+    // -- SurfaceProducer.Callback contract --
+
+    @Test
+    fun `onSurfaceAvailable attaches surface to player and clears needsSurface`() {
+        // Start with a null surface so enableTextureOutput leaves needsSurface = true.
+        every { mockProducer.surface } returns null
+        instance.enableTextureOutput(mockRegistry)
+
+        // Surface becomes available; simulate the callback firing with the real surface.
+        every { mockProducer.surface } returns mockSurface
+        materializePlayer()
+
+        // onSurfaceCleanup + onSurfaceAvailable cycle.
+        instance.onSurfaceCleanup()
+        instance.onSurfaceAvailable()
+
+        verify { mockPlayer.setVideoSurface(mockSurface) }
+        // A second onSurfaceAvailable must be a no-op (needsSurface is now false).
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
+        instance.onSurfaceAvailable()
+        verify(exactly = 0) { mockPlayer.setVideoSurface(any()) }
+    }
+
+    @Test
+    fun `onSurfaceAvailable leaves needsSurface true when player has not been created`() {
+        // Surface is null at enableTextureOutput time → needsSurface = true.
+        every { mockProducer.surface } returns null
+        instance.enableTextureOutput(mockRegistry)
+
+        // Surface now available, but player still null.
+        every { mockProducer.surface } returns mockSurface
+        instance.onSurfaceAvailable()
+
+        // No setVideoSurface call — player doesn't exist yet.
+        verify(exactly = 0) { mockPlayer.setVideoSurface(any()) }
+
+        // needsSurface must still be true: ensurePlayer() should attach the surface
+        // when the player is eventually created.
+        materializePlayer()
+        verify { mockPlayer.setVideoSurface(mockSurface) }
+    }
+
+    @Test
+    fun `onSurfaceCleanup detaches surface from player and raises needsSurface`() {
+        every { mockProducer.surface } returns mockSurface
+        instance.enableTextureOutput(mockRegistry)
+        materializePlayer()
+
+        instance.onSurfaceCleanup()
+
+        verify { mockPlayer.setVideoSurface(null) }
+        // needsSurface is now true: onSurfaceAvailable should reattach.
+        instance.onSurfaceAvailable()
+        verify { mockPlayer.setVideoSurface(mockSurface) }
+    }
+
+    @Test
+    fun `onSurfaceCleanup raises needsSurface even when player is null`() {
+        every { mockProducer.surface } returns null
+        instance.enableTextureOutput(mockRegistry)
+        // Player never materialised — setVideoSurface(null) is a no-op via ?.
+
+        instance.onSurfaceCleanup()
+
+        // Surface becomes available and then the player is created.
+        every { mockProducer.surface } returns mockSurface
+        materializePlayer()
+        // ensurePlayer() must attach because needsSurface was left true.
+        verify { mockPlayer.setVideoSurface(mockSurface) }
+    }
+
+    // -- onMediaItemTransition detach/reattach --
+
+    private fun capturePlayerListener(): Player.Listener {
+        val slot = slot<Player.Listener>()
+        every { mockPlayer.addListener(capture(slot)) } just runs
+        materializePlayer()
+        return slot.captured
+    }
+
+    @Test
+    fun `MEDIA_ITEM_TRANSITION_REASON_AUTO forces surface detach then reattach`() {
+        every { mockProducer.surface } returns mockSurface
+        instance.enableTextureOutput(mockRegistry)
+        val listener = capturePlayerListener()
+
+        listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
+
+        verifyOrder {
+            mockPlayer.setVideoSurface(null)
+            mockPlayer.setVideoSurface(mockSurface)
+        }
+    }
+
+    @Test
+    fun `MEDIA_ITEM_TRANSITION_REASON_AUTO is skipped when surface is not yet attached`() {
+        // Surface null during enableTextureOutput → needsSurface = true.
+        every { mockProducer.surface } returns null
+        instance.enableTextureOutput(mockRegistry)
+        every { mockProducer.surface } returns mockSurface
+        val listener = capturePlayerListener()
+        // ensurePlayer attached the surface (needsSurface = false). Force the flag
+        // back to true by calling onSurfaceCleanup to simulate a surface loss before
+        // the auto-transition fires.
+        instance.onSurfaceCleanup()
+        // Clear calls recorded during setup so the assertion only covers the
+        // onMediaItemTransition invocation below.
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
+
+        listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_AUTO)
+
+        // setVideoSurface(null) must NOT be called — needsSurface is true, meaning
+        // no surface is currently attached for ExoPlayer to lose.
+        verify(exactly = 0) { mockPlayer.setVideoSurface(null) }
+    }
+
+    @Test
+    fun `non-auto media item transition does not detach or reattach surface`() {
+        every { mockProducer.surface } returns mockSurface
+        instance.enableTextureOutput(mockRegistry)
+        val listener = capturePlayerListener()
+        // Clear calls recorded during setup (ensurePlayer → setVideoSurface(surface))
+        // so the assertion only covers the onMediaItemTransition invocation below.
+        clearMocks(mockPlayer, answers = false, recordedCalls = true)
+
+        listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
+
+        verify(exactly = 0) { mockPlayer.setVideoSurface(any()) }
     }
 }

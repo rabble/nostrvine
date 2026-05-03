@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 // TODO(SofiaRey): revisit when designs are ready
 /// Screen shown when the target user has blocked us.
@@ -14,7 +15,7 @@ class UserNotAvailableScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
-        title: 'Profile',
+        title: context.l10n.profileTitle,
         showBackButton: true,
         onBackPressed: onBack,
       ),
@@ -34,10 +35,13 @@ class UserNotAvailableScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Text('Account not available', style: VineTheme.titleLargeFont()),
+              Text(
+                context.l10n.userNotAvailableTitle,
+                style: VineTheme.titleLargeFont(),
+              ),
               const SizedBox(height: 8),
               Text(
-                "This account isn't available right now.",
+                context.l10n.userNotAvailableBody,
                 style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
                 textAlign: TextAlign.center,
               ),

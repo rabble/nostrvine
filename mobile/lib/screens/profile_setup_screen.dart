@@ -691,43 +691,44 @@ class _ProfileSetupScreenViewState
                                 style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurface,
                                 ),
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   isCollapsed: true,
-                                  hintText: 'Tell people about yourself...',
-                                  hintStyle: TextStyle(
+                                  hintText: context.l10n.profileSetupBioHint,
+                                  hintStyle: const TextStyle(
                                     color: VineTheme.lightText,
                                   ),
-                                  border: UnderlineInputBorder(
+                                  border: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  enabledBorder: UnderlineInputBorder(
+                                  enabledBorder: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedBorder: UnderlineInputBorder(
+                                  focusedBorder: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  errorBorder: UnderlineInputBorder(
+                                  errorBorder: const UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedErrorBorder: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  contentPadding: EdgeInsets.all(16),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
                                   counterText: '',
                                 ),
                                 maxLines: null,
@@ -746,7 +747,7 @@ class _ProfileSetupScreenViewState
                                   start: 16,
                                 ),
                                 child: Text(
-                                  'Public key (npub)',
+                                  context.l10n.profileSetupPublicKeyLabel,
                                   style: VineTheme.labelMediumFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
@@ -806,7 +807,9 @@ class _ProfileSetupScreenViewState
                                           left: 16,
                                         ),
                                         child: Text(
-                                          'Username (Optional)',
+                                          context
+                                              .l10n
+                                              .profileSetupUsernameLabel,
                                           style: VineTheme.labelMediumFont(
                                             color:
                                                 _usernameFocusNode.hasFocus &&
@@ -829,9 +832,12 @@ class _ProfileSetupScreenViewState
                                             AutovalidateMode.onUserInteraction,
                                         decoration: InputDecoration(
                                           isCollapsed: true,
-                                          hintText: 'username',
-                                          helperText:
-                                              'Your unique identity on Divine',
+                                          hintText: context
+                                              .l10n
+                                              .profileSetupUsernameHint,
+                                          helperText: context
+                                              .l10n
+                                              .profileSetupUsernameHelper,
                                           helperStyle: const TextStyle(
                                             color: VineTheme.onSurfaceMuted,
                                             fontSize: 12,
@@ -946,7 +952,7 @@ class _ProfileSetupScreenViewState
                                   start: 16,
                                 ),
                                 child: Text(
-                                  'Profile Color (Optional)',
+                                  context.l10n.profileSetupProfileColorLabel,
                                   style: VineTheme.labelMediumFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
@@ -1011,7 +1017,7 @@ class _ProfileSetupScreenViewState
                           ),
                         ),
                         child: Text(
-                          'Cancel',
+                          context.l10n.commonCancel,
                           style: VineTheme.titleMediumFont(
                             color: VineTheme.vineGreen,
                           ),
@@ -1029,8 +1035,12 @@ class _ProfileSetupScreenViewState
                             if (_nameController.text.trim().isEmpty) {
                               _nameFocusNode.requestFocus();
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Please enter a display name'),
+                                SnackBar(
+                                  content: Text(
+                                    context
+                                        .l10n
+                                        .profileSetupDisplayNameRequired,
+                                  ),
                                   backgroundColor: VineTheme.error,
                                 ),
                               );
@@ -1159,13 +1169,13 @@ class _ProfileSetupScreenViewState
           SnackBar(
             content: Text(
               source == ImageSource.gallery
-                  ? 'Image selection failed. Please paste an image URL below instead.'
-                  : 'Camera access failed: $e',
+                  ? context.l10n.profileSetupImageSelectionFailed
+                  : context.l10n.profileSetupCameraAccessFailed('$e'),
             ),
             backgroundColor: VineTheme.error,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: 'Got it',
+              label: context.l10n.profileSetupGotItButton,
               textColor: VineTheme.whiteText,
               onPressed: () {},
             ),
@@ -1190,9 +1200,9 @@ class _ProfileSetupScreenViewState
         category: LogCategory.ui,
       );
 
-      const typeGroup = XTypeGroup(
-        label: 'images',
-        extensions: <String>['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
+      final typeGroup = XTypeGroup(
+        label: context.l10n.profileSetupImagesTypeGroup,
+        extensions: const <String>['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
       );
 
       Log.info(
@@ -1275,6 +1285,7 @@ class _ProfileSetupScreenViewState
 
   Future<void> _uploadImage() async {
     if (_selectedImage == null) return;
+    final l10n = context.l10n;
 
     setState(() {
       _isUploadingImage = true;
@@ -1317,7 +1328,7 @@ class _ProfileSetupScreenViewState
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.l10n.profileSetupUploadSuccess),
+              content: Text(l10n.profileSetupUploadSuccess),
               backgroundColor: VineTheme.success,
             ),
           );
@@ -1339,22 +1350,19 @@ class _ProfileSetupScreenViewState
 
       // Check if it's a network connectivity issue
       final errorMessage = e.toString().toLowerCase();
-      String userMessage = 'Failed to upload image: $e';
+      String userMessage = l10n.profileSetupUploadFailedGeneric('$e');
 
       if (errorMessage.contains('network') ||
           errorMessage.contains('connection') ||
           errorMessage.contains('timeout')) {
-        userMessage =
-            'Network error: Please check your internet connection and try again.';
+        userMessage = l10n.profileSetupUploadNetworkError;
       } else if (errorMessage.contains('auth') ||
           errorMessage.contains('401') ||
           errorMessage.contains('403')) {
-        userMessage =
-            'Authentication error: Please try logging out and back in.';
+        userMessage = l10n.profileSetupUploadAuthError;
       } else if (errorMessage.contains('file too large') ||
           errorMessage.contains('size')) {
-        userMessage =
-            'File too large: Please choose a smaller image (max 10MB).';
+        userMessage = l10n.profileSetupUploadFileTooLarge;
       }
 
       if (mounted) {
@@ -1364,7 +1372,7 @@ class _ProfileSetupScreenViewState
             backgroundColor: VineTheme.error,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
-              label: 'Got it',
+              label: l10n.profileSetupGotItButton,
               textColor: VineTheme.whiteText,
               onPressed: () {},
             ),
@@ -1403,7 +1411,7 @@ class _ProfileSetupScreenViewState
       expanded: false,
       isScrollControlled: true,
       title: Text(
-        'Add image URL',
+        context.l10n.profileSetupImageUrlTitle,
         style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       children: [
@@ -1468,11 +1476,11 @@ class UsernameStatusIndicator extends StatelessWidget {
     if (error != null) {
       errorText = switch (error) {
         UsernameValidationError.invalidFormat =>
-          formatMessage ?? 'Only letters, numbers, and hyphens are allowed',
+          formatMessage ?? context.l10n.profileSetupUsernameInvalidFormat,
         UsernameValidationError.invalidLength =>
-          'Username must be 3-20 characters',
+          context.l10n.profileSetupUsernameInvalidLength,
         UsernameValidationError.networkError =>
-          'Could not check availability. Please try again.',
+          context.l10n.profileSetupUsernameNetworkError,
         null => null,
       };
     }
@@ -1484,10 +1492,11 @@ class UsernameStatusIndicator extends StatelessWidget {
       UsernameStatus.reserved => const _UsernameReservedIndicator(),
       UsernameStatus.burned => const _UsernameBurnedIndicator(),
       UsernameStatus.invalidFormat => _UsernameErrorIndicator(
-        message: errorText ?? 'Invalid username format',
+        message:
+            errorText ?? context.l10n.profileSetupUsernameInvalidFormatGeneric,
       ),
       UsernameStatus.error => _UsernameErrorIndicator(
-        message: errorText ?? 'Failed to check availability',
+        message: errorText ?? context.l10n.profileSetupUsernameCheckFailed,
       ),
     };
   }
@@ -1518,19 +1527,22 @@ class _UsernameCheckingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(
-            'Checking availability...',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+            context.l10n.profileSetupUsernameChecking,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -1543,15 +1555,15 @@ class _UsernameAvailableIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
-          SizedBox(width: 8),
+          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
+          const SizedBox(width: 8),
           Text(
-            'Username available!',
-            style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+            context.l10n.profileSetupUsernameAvailable,
+            style: const TextStyle(color: VineTheme.vineGreen, fontSize: 12),
           ),
         ],
       ),
@@ -1564,15 +1576,15 @@ class _UsernameTakenIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Icon(Icons.cancel, color: VineTheme.error, size: 16),
-          SizedBox(width: 8),
+          const Icon(Icons.cancel, color: VineTheme.error, size: 16),
+          const SizedBox(width: 8),
           Text(
-            'Username already taken',
-            style: TextStyle(color: VineTheme.error, fontSize: 12),
+            context.l10n.profileSetupUsernameTakenIndicator,
+            style: const TextStyle(color: VineTheme.error, fontSize: 12),
           ),
         ],
       ),
@@ -1590,13 +1602,16 @@ class _UsernameReservedIndicator extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.lock, color: VineTheme.warning, size: 16),
-              SizedBox(width: 8),
+              const Icon(Icons.lock, color: VineTheme.warning, size: 16),
+              const SizedBox(width: 8),
               Text(
-                'Username is reserved',
-                style: TextStyle(color: VineTheme.warning, fontSize: 12),
+                context.l10n.profileSetupUsernameReserved,
+                style: const TextStyle(
+                  color: VineTheme.warning,
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -1617,9 +1632,9 @@ class _UsernameReservedIndicator extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text(
-                  'Contact support',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.profileSetupContactSupport,
+                  style: const TextStyle(
                     color: VineTheme.vineGreen,
                     fontSize: 12,
                     decoration: TextDecoration.underline,
@@ -1632,9 +1647,9 @@ class _UsernameReservedIndicator extends StatelessWidget {
                 onTap: () => context.read<ProfileEditorBloc>().add(
                   const UsernameRechecked(),
                 ),
-                child: const Text(
-                  'Check again',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.profileSetupCheckAgain,
+                  style: const TextStyle(
                     color: VineTheme.vineGreen,
                     fontSize: 12,
                     decoration: TextDecoration.underline,
@@ -1655,15 +1670,15 @@ class _UsernameBurnedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Icon(Icons.block, color: VineTheme.warning, size: 16),
-          SizedBox(width: 8),
+          const Icon(Icons.block, color: VineTheme.warning, size: 16),
+          const SizedBox(width: 8),
           Text(
-            'This username is no longer available',
-            style: TextStyle(color: VineTheme.warning, fontSize: 12),
+            context.l10n.profileSetupUsernameBurned,
+            style: const TextStyle(color: VineTheme.warning, fontSize: 12),
           ),
         ],
       ),
@@ -1730,13 +1745,13 @@ class _SaveButton extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Saving...',
+                  context.l10n.profileSetupSavingButton,
                   style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
                 ),
               ],
             )
           : Text(
-              'Save',
+              context.l10n.profileSetupSaveButton,
               style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1790,8 +1805,8 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
     if (created) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Support request sent! We'll get back to you soon."),
+        SnackBar(
+          content: Text(context.l10n.profileSetupSupportRequestSent),
           backgroundColor: VineTheme.vineGreen,
         ),
       );
@@ -1807,8 +1822,8 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
       );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Couldn't open email. Send to: names@divine.video"),
+          SnackBar(
+            content: Text(context.l10n.profileSetupCouldntOpenEmail),
           ),
         );
       }
@@ -1819,17 +1834,16 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
-      title: const Text(
-        'Username reserved',
-        style: TextStyle(color: VineTheme.whiteText),
+      title: Text(
+        context.l10n.profileSetupUsernameReservedTitle,
+        style: const TextStyle(color: VineTheme.whiteText),
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'The name ${widget.username} is reserved. Tell us why it should '
-            'be yours.',
+            context.l10n.profileSetupUsernameReservedBody(widget.username),
             style: const TextStyle(color: VineTheme.secondaryText),
           ),
           const SizedBox(height: 12),
@@ -1837,33 +1851,35 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
             controller: _reasonController,
             maxLines: 3,
             style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
-            decoration: const InputDecoration(
-              hintText: "e.g. It's my brand name, stage name, etc.",
-              hintStyle: TextStyle(color: VineTheme.onSurfaceMuted),
-              border: OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
+            decoration: InputDecoration(
+              hintText: context.l10n.profileSetupUsernameReservedHint,
+              hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+              border: const OutlineInputBorder(),
+              enabledBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: VineTheme.surfaceContainer),
               ),
-              focusedBorder: OutlineInputBorder(
+              focusedBorder: const OutlineInputBorder(
                 borderSide: BorderSide(color: VineTheme.vineGreen),
               ),
-              contentPadding: EdgeInsets.all(12),
+              contentPadding: const EdgeInsets.all(12),
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Already contacted support? Tap "Check again" to see if '
-            "it's been released to you.",
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+          Text(
+            context.l10n.profileSetupUsernameReservedCheckHint,
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Close',
-            style: TextStyle(color: VineTheme.lightText),
+          child: Text(
+            context.l10n.commonClose,
+            style: const TextStyle(color: VineTheme.lightText),
           ),
         ),
         TextButton(
@@ -1871,9 +1887,9 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
             context.read<ProfileEditorBloc>().add(const UsernameRechecked());
             Navigator.of(context).pop();
           },
-          child: const Text(
-            'Check again',
-            style: TextStyle(color: VineTheme.vineGreen),
+          child: Text(
+            context.l10n.profileSetupCheckAgain,
+            style: const TextStyle(color: VineTheme.vineGreen),
           ),
         ),
         FilledButton(
@@ -2032,9 +2048,9 @@ class _CustomColorButton extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
-          'Pick a color',
-          style: TextStyle(color: VineTheme.whiteText),
+        title: Text(
+          context.l10n.profileSetupPickColorTitle,
+          style: const TextStyle(color: VineTheme.whiteText),
         ),
         content: SingleChildScrollView(
           child: ColorPicker(
@@ -2048,16 +2064,16 @@ class _CustomColorButton extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: VineTheme.onSurfaceMuted),
+            child: Text(
+              context.l10n.commonCancel,
+              style: const TextStyle(color: VineTheme.onSurfaceMuted),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(pickerColor),
-            child: const Text(
-              'Select',
-              style: TextStyle(color: VineTheme.vineGreen),
+            child: Text(
+              context.l10n.profileSetupSelectButton,
+              style: const TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -2129,7 +2145,7 @@ class _ExternalNip05Section extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Use your own NIP-05 address',
+                        context.l10n.profileSetupUseOwnNip05,
                         style: VineTheme.bodyMediumFont(
                           color: VineTheme.onSurfaceVariant,
                         ),
@@ -2145,7 +2161,7 @@ class _ExternalNip05Section extends StatelessWidget {
               Padding(
                 padding: const EdgeInsetsDirectional.only(start: 16),
                 child: Text(
-                  'NIP-05 Address',
+                  context.l10n.profileSetupNip05AddressLabel,
                   style: VineTheme.labelMediumFont(
                     color: focusNode.hasFocus
                         ? VineTheme.primary
@@ -2185,9 +2201,9 @@ class _ExternalNip05Section extends StatelessWidget {
                   errorMaxLines: 2,
                   errorText: switch (state.externalNip05Error) {
                     ExternalNip05ValidationError.invalidFormat =>
-                      'Invalid NIP-05 format (e.g., name@domain.com)',
+                      context.l10n.profileSetupExternalNip05InvalidFormat,
                     ExternalNip05ValidationError.divineDomain =>
-                      'Use the username field above for divine.video',
+                      context.l10n.profileSetupExternalNip05DivineDomain,
                     null => null,
                   },
                 ),

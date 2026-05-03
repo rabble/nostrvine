@@ -84,6 +84,7 @@ void main() {
           LocalePreferenceService.supportedLocales.keys,
           unorderedEquals(<String>[
             'en',
+            'am',
             'ar',
             'bg',
             'de',
@@ -102,6 +103,7 @@ void main() {
           ]),
         );
         expect(LocalePreferenceService.supportedLocales['en'], 'English');
+        expect(LocalePreferenceService.supportedLocales['am'], 'አማርኛ');
         expect(LocalePreferenceService.supportedLocales['ar'], 'العربية');
         expect(LocalePreferenceService.supportedLocales['bg'], 'Български');
         expect(LocalePreferenceService.supportedLocales['ko'], '한국어');

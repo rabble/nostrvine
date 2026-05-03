@@ -76,26 +76,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
       if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.l10n.blossomServerUrlInvalid),
-            backgroundColor: VineTheme.error,
-          ),
-        );
-        return;
-      }
-      // Reject non-loopback http:// — release native transport security
-      // (#3358 / PR #3788) blocks the upload at the OS layer with no
-      // user-facing hint. Loopback http:// (10.0.2.2, localhost,
-      // 127.0.0.1) keeps working for the local Docker stack — mirrors
-      // the allowlist pinned in the native configs.
-      final scheme = uri.scheme.toLowerCase();
-      final host = uri.host.toLowerCase();
-      final isLoopbackHttp =
-          scheme == 'http' &&
-          (host == '10.0.2.2' || host == 'localhost' || host == '127.0.0.1');
-      if (scheme != 'https' && !isLoopbackHttp) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.blossomServerUrlMustUseHttps),
+            content: Text(context.l10n.blossomValidServerUrl),
             backgroundColor: VineTheme.error,
           ),
         );
@@ -121,10 +102,10 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Blossom settings saved',
-              style: TextStyle(color: VineTheme.whiteText),
+              context.l10n.blossomSettingsSaved,
+              style: const TextStyle(color: VineTheme.whiteText),
             ),
             backgroundColor: VineTheme.vineGreen,
           ),
@@ -159,7 +140,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Media Servers',
+        title: context.l10n.nostrSettingsMediaServers,
         showBackButton: true,
         onBackPressed: context.pop,
         actions: _isLoading
@@ -168,7 +149,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                 DiVineAppBarAction(
                   icon: SvgIconSource(DivineIconName.check.assetPath),
                   onPressed: _isSaving ? null : _saveSettings,
-                  tooltip: 'Save',
+                  tooltip: context.l10n.blossomSaveTooltip,
                 ),
               ],
       ),
@@ -207,9 +188,9 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Text(
-                                  'About Blossom',
-                                  style: TextStyle(
+                                Text(
+                                  context.l10n.blossomAboutTitle,
+                                  style: const TextStyle(
                                     color: VineTheme.vineGreen,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -218,10 +199,9 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                               ],
                             ),
                             const SizedBox(height: 12),
-                            const Text(
-                              'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. '
-                              "By default, videos are uploaded to Divine's Blossom server. Enable the option below to use a custom server instead.",
-                              style: TextStyle(
+                            Text(
+                              context.l10n.blossomAboutDescription,
+                              style: const TextStyle(
                                 color: VineTheme.onSurface,
                                 fontSize: 14,
                               ),
@@ -234,17 +214,17 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
 
                     // Enable/Disable toggle
                     SwitchListTile(
-                      title: const Text(
-                        'Use Custom Blossom Server',
-                        style: TextStyle(
+                      title: Text(
+                        context.l10n.blossomUseCustomServer,
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 16,
                         ),
                       ),
                       subtitle: Text(
                         _isBlossomEnabled
-                            ? 'Videos will be uploaded to your custom Blossom server'
-                            : "Your videos are currently being uploaded to Divine's Blossom server",
+                            ? context.l10n.blossomCustomServerEnabledSubtitle
+                            : context.l10n.blossomCustomServerDisabledSubtitle,
                         style: const TextStyle(color: VineTheme.onSurfaceMuted),
                       ),
                       value: _isBlossomEnabled,
@@ -266,9 +246,9 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Custom Blossom Server URL',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.blossomCustomServerUrl,
+                            style: const TextStyle(
                               color: VineTheme.whiteText,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -318,9 +298,9 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                             autocorrect: false,
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Enter the URL of your custom Blossom server',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.blossomCustomServerHelper,
+                            style: const TextStyle(
                               color: VineTheme.onSurfaceMuted,
                               fontSize: 12,
                             ),
@@ -330,9 +310,9 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                       const SizedBox(height: 30),
 
                       // Popular Blossom servers section
-                      const Text(
-                        'Popular Blossom Servers',
-                        style: TextStyle(
+                      Text(
+                        context.l10n.blossomPopularServers,
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

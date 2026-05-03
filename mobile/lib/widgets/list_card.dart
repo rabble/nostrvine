@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Card for displaying a user list (kind 30000 - people list)
 class UserListCard extends StatelessWidget {
@@ -64,7 +65,7 @@ class UserListCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                '${userList.pubkeys.length} ${userList.pubkeys.length == 1 ? 'person' : 'people'}',
+                context.l10n.listPersonCount(userList.pubkeys.length),
                 style: const TextStyle(
                   color: VineTheme.secondaryText,
                   fontSize: 12,
@@ -147,7 +148,9 @@ class CuratedListCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '${curatedList.videoEventIds.length} ${curatedList.videoEventIds.length == 1 ? 'video' : 'videos'}',
+                    context.l10n.listVideoCount(
+                      curatedList.videoEventIds.length,
+                    ),
                     style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 12,

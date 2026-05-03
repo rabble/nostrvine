@@ -168,6 +168,62 @@ void main() {
         );
 
         expect(find.byType(Texture), findsOneWidget);
+        expect(find.byType(RotatedBox), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'wraps Texture in RotatedBox when state.rotationDegrees is non-zero',
+      (tester) async {
+        final nextId = DivineVideoPlayerController.nextId;
+
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('divine_video_player'),
+              (call) async {
+                if (call.method == 'create') {
+                  TestDefaultBinaryMessengerBinding
+                      .instance
+                      .defaultBinaryMessenger
+                      .setMockMethodCallHandler(
+                        MethodChannel('divine_video_player/player_$nextId'),
+                        (call) async => null,
+                      );
+
+                  TestDefaultBinaryMessengerBinding
+                      .instance
+                      .defaultBinaryMessenger
+                      .setMockStreamHandler(
+                        EventChannel(
+                          'divine_video_player/player_$nextId/events',
+                        ),
+                        _RotatedStreamHandler(),
+                      );
+
+                  return <Object?, Object?>{'textureId': 99};
+                }
+                return null;
+              },
+            );
+
+        final textureController = DivineVideoPlayerController(
+          useTexture: true,
+        );
+        await textureController.initialize();
+
+        await tester.pumpWidget(
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: DivineVideoPlayer(controller: textureController),
+          ),
+        );
+        // Allow the StreamBuilder to receive the initial event.
+        await tester.pump();
+
+        expect(find.byType(Texture), findsOneWidget);
+        final rotatedBox = tester.widget<RotatedBox>(find.byType(RotatedBox));
+        // 90 degrees / 90 = 1 quarter turn.
+        expect(rotatedBox.quarterTurns, equals(1));
       },
     );
 
@@ -265,6 +321,30 @@ class _FirstFrameStreamHandler extends MockStreamHandler {
       'isFirstFrameRendered': true,
       'videoWidth': 1920,
       'videoHeight': 1080,
+    });
+  }
+
+  @override
+  void onCancel(Object? arguments) {}
+}
+
+class _RotatedStreamHandler extends MockStreamHandler {
+  @override
+  void onListen(Object? arguments, MockStreamHandlerEventSink events) {
+    events.success(<Object?, Object?>{
+      'status': 'playing',
+      'positionMs': 0,
+      'durationMs': 1000,
+      'bufferedPositionMs': 0,
+      'currentClipIndex': 0,
+      'clipCount': 1,
+      'isLooping': false,
+      'volume': 1.0,
+      'playbackSpeed': 1.0,
+      'isFirstFrameRendered': true,
+      'videoWidth': 1080,
+      'videoHeight': 1920,
+      'rotationDegrees': 90,
     });
   }
 

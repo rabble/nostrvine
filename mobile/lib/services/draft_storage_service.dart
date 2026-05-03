@@ -291,7 +291,7 @@ class DraftStorageService {
   Future<DivineVideoDraft?> getDraftById(String id) async {
     final row = await _draftsDao.getDraftById(id);
     if (row == null) {
-      Log.error('📝 Draft not found: $id', category: LogCategory.video);
+      Log.debug('📝 Draft not found: $id', category: LogCategory.video);
       return null;
     }
 

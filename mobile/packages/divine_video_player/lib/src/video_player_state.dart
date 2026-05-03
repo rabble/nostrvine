@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 /// Playback status of the video player.
 enum PlaybackStatus {
@@ -63,6 +63,7 @@ class DivineVideoPlayerState {
     this.isFirstFrameRendered = false,
     this.videoWidth = 0,
     this.videoHeight = 0,
+    this.rotationDegrees = 0,
   });
 
   /// Current playback status.
@@ -108,6 +109,15 @@ class DivineVideoPlayerState {
   /// Height of the video in pixels, or 0 if unknown.
   final int videoHeight;
 
+  /// Rotation in degrees (0, 90, 180, 270) that the Dart layer must apply
+  /// to the [Texture] widget to show the video upright.
+  ///
+  /// Non-zero only when the `SurfaceProducer` backend does not handle crop
+  /// and rotation automatically (i.e. when the SurfaceTexture path is used
+  /// instead of Impeller/ImageReader). When the backend handles it, the
+  /// native side sends 0 and no [RotatedBox] is needed.
+  final int rotationDegrees;
+
   /// The aspect ratio of the video (width / height).
   ///
   /// Returns 0 when dimensions are not yet available.
@@ -131,6 +141,7 @@ class DivineVideoPlayerState {
     bool? isFirstFrameRendered,
     int? videoWidth,
     int? videoHeight,
+    int? rotationDegrees,
   }) {
     return DivineVideoPlayerState(
       status: status ?? this.status,
@@ -145,6 +156,7 @@ class DivineVideoPlayerState {
       isFirstFrameRendered: isFirstFrameRendered ?? this.isFirstFrameRendered,
       videoWidth: videoWidth ?? this.videoWidth,
       videoHeight: videoHeight ?? this.videoHeight,
+      rotationDegrees: rotationDegrees ?? this.rotationDegrees,
     );
   }
 
@@ -166,6 +178,7 @@ class DivineVideoPlayerState {
       isFirstFrameRendered: (map['isFirstFrameRendered'] as bool?) ?? false,
       videoWidth: (map['videoWidth'] as int?) ?? 0,
       videoHeight: (map['videoHeight'] as int?) ?? 0,
+      rotationDegrees: (map['rotationDegrees'] as int?) ?? 0,
     );
   }
 
@@ -197,7 +210,8 @@ class DivineVideoPlayerState {
           playbackSpeed == other.playbackSpeed &&
           isFirstFrameRendered == other.isFirstFrameRendered &&
           videoWidth == other.videoWidth &&
-          videoHeight == other.videoHeight;
+          videoHeight == other.videoHeight &&
+          rotationDegrees == other.rotationDegrees;
 
   @override
   int get hashCode => Object.hash(
@@ -213,6 +227,7 @@ class DivineVideoPlayerState {
     isFirstFrameRendered,
     videoWidth,
     videoHeight,
+    rotationDegrees,
   );
 
   @override
@@ -221,5 +236,6 @@ class DivineVideoPlayerState {
       'duration: $duration, buffered: $bufferedPosition, '
       'clipIndex: $currentClipIndex/$clipCount, '
       'size: ${videoWidth}x$videoHeight, '
+      'rotation: $rotationDegrees, '
       'firstFrame: $isFirstFrameRendered)';
 }

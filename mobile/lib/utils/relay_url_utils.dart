@@ -4,6 +4,53 @@
 const _divineRelayHost = 'relay.divine.video';
 const _divineApiBaseUrl = 'https://api.divine.video';
 
+/// Hosts allowed to use cleartext (`ws://` / `http://`) schemes.
+///
+/// Mirrors the loopback allowlist enforced by `network_security_config.xml`
+/// (Android), `NSAllowsLocalNetworking` (iOS/macOS), and the local Docker
+/// stack address `localHost` from `mobile/lib/models/environment_config.dart`.
+/// Any change here must be reflected in:
+///
+///  * `mobile/android/app/src/main/res/xml/network_security_config.xml`
+///  * `mobile/packages/nostr_sdk/lib/nip46/nostr_remote_signer_info.dart`
+///  * `mobile/packages/nostr_client/lib/src/relay_manager.dart`
+const _loopbackHosts = <String>{
+  'localhost',
+  '127.0.0.1',
+  '10.0.2.2',
+  '::1',
+};
+
+/// True if [host] is a recognized loopback address that may be reached over
+/// cleartext (`ws://` / `http://`).
+bool isLoopbackHost(String host) => _loopbackHosts.contains(host.toLowerCase());
+
+/// True if [url] is a relay URL the app is allowed to connect to.
+///
+/// Nostr relays speak WebSocket only — `wss://` is accepted for any host,
+/// and `ws://` is accepted only for a recognized loopback host. Any other
+/// scheme (`https://`, `http://`, `ftp://`, …), a malformed URL, or a missing
+/// host is rejected. This matches the acceptance rule enforced by
+/// `RelayManager._normalizeUrl` in `nostr_client`, so the predicate doubles
+/// as the upstream "is this URL a usable relay endpoint" check.
+///
+/// This predicate is the single source of truth for the application-layer
+/// transport allowlist. The package layer (`nostr_sdk`, `nostr_client`)
+/// duplicates this rule in-package because those packages cannot import from
+/// `mobile/lib/`; any change here must be mirrored there.
+bool isRelayUrlAllowed(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
+  // `wss://http://x` parses as host=`http` and path=`//x`; reject so a
+  // mis-nested URL in a NIP-65 tag or capability-service input cannot
+  // pass the allowlist and target the wrong host downstream.
+  if (uri.path.startsWith('//')) return false;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme == 'wss') return true;
+  if (scheme == 'ws') return isLoopbackHost(uri.host);
+  return false;
+}
+
 /// Convert a relay WebSocket URL to an HTTP(S) base URL.
 ///
 /// Examples:

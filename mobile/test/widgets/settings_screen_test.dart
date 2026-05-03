@@ -20,6 +20,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
+import 'package:openvine/screens/badges/badges_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -50,6 +51,7 @@ void main() {
     late _MockDraftStorageService mockDraftStorageService;
     late _MockLocaleCubit mockLocaleCubit;
     late SharedPreferences sharedPreferences;
+    final l10n = lookupAppLocalizations(const Locale('en'));
     final twoAccounts = [
       KnownAccount(
         pubkeyHex:
@@ -278,10 +280,10 @@ void main() {
 
       // Tiles below the centered header may need scrolling
       for (final title in [
-        'Notifications',
-        'General Settings',
-        'Content & Safety',
-        'Nostr Settings',
+        l10n.settingsNotifications,
+        l10n.settingsGeneralTitle,
+        l10n.settingsContentSafetyTitle,
+        l10n.settingsNostrSettings,
       ]) {
         await tester.scrollUntilVisible(
           find.text(title),
@@ -326,20 +328,80 @@ void main() {
       final mockGoRouter = MockGoRouter();
       when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
 
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+          authServiceProvider.overrideWithValue(mockAuthService),
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
+          ),
+          currentAuthStateProvider.overrideWith(
+            (ref) => AuthState.authenticated,
+          ),
+          userProfileReactiveProvider.overrideWith(
+            (ref, pubkey) => Stream.value(null),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MockGoRouterProvider(
+            goRouter: mockGoRouter,
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MultiBlocProvider(
+                providers: [
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: _createMockInviteCubit(),
+                  ),
+                  BlocProvider<LocaleCubit>.value(value: mockLocaleCubit),
+                ],
+                child: const SettingsScreen(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollable = find.byType(Scrollable);
+      await tester.scrollUntilVisible(
+        find.text(l10n.settingsIntegratedApps),
+        200,
+        scrollable: scrollable,
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(l10n.settingsIntegratedApps));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.push(AppsDirectoryScreen.path)).called(1);
+
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+    });
+
+    testWidgets('tapping Badges opens the badges dashboard', (tester) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
       await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
       await tester.pumpAndSettle();
 
       final scrollable = find.byType(Scrollable);
       await tester.scrollUntilVisible(
-        find.text('Integrated Apps'),
+        find.text(l10n.settingsBadgesTitle),
         200,
         scrollable: scrollable,
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Integrated Apps'));
+      await tester.tap(find.text(l10n.settingsBadgesTitle));
       await tester.pumpAndSettle();
 
-      verify(() => mockGoRouter.push(AppsDirectoryScreen.path)).called(1);
+      verify(() => mockGoRouter.push(BadgesScreen.path)).called(1);
 
       await tester.pumpWidget(const SizedBox());
       await tester.pump();
@@ -460,9 +522,7 @@ void main() {
 
     testWidgets(
       'keeps Bluesky Publishing off the hub when feature flag is on',
-      (
-        tester,
-      ) async {
+      (tester) async {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
@@ -498,7 +558,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('General Settings'), findsOneWidget);
+        expect(find.text(l10n.settingsGeneralTitle), findsOneWidget);
         expect(find.text('Bluesky Publishing'), findsNothing);
 
         await tester.pumpWidget(const SizedBox());

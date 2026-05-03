@@ -58,7 +58,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: DiVineAppBar(
-        title: 'Content Filters',
+        title: context.l10n.contentPreferencesContentFilters,
         showBackButton: true,
         onBackPressed: context.pop,
       ),
@@ -78,7 +78,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
                   children: [
                     if (!_isAgeVerified) _buildAgeGateBanner(),
                     _buildCategoryGroup(
-                      title: 'ADULT CONTENT',
+                      title: context.l10n.contentFiltersAdultContent,
                       labels: [
                         ContentLabel.nudity,
                         ContentLabel.sexual,
@@ -87,7 +87,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
                       locked: !_isAgeVerified,
                     ),
                     _buildCategoryGroup(
-                      title: 'VIOLENCE & GORE',
+                      title: context.l10n.contentFiltersViolenceGore,
                       labels: [
                         ContentLabel.graphicMedia,
                         ContentLabel.violence,
@@ -95,7 +95,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
                       ],
                     ),
                     _buildCategoryGroup(
-                      title: 'SUBSTANCES',
+                      title: context.l10n.contentFiltersSubstances,
                       labels: [
                         ContentLabel.drugs,
                         ContentLabel.alcohol,
@@ -104,7 +104,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
                       ],
                     ),
                     _buildCategoryGroup(
-                      title: 'OTHER',
+                      title: context.l10n.contentFiltersOther,
                       labels: [
                         ContentLabel.profanity,
                         ContentLabel.hate,
@@ -131,15 +131,17 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: VineTheme.onSurfaceDisabled, width: 0.5),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.lock_outline, color: VineTheme.onSurfaceMuted),
-          SizedBox(width: 12),
+          const Icon(Icons.lock_outline, color: VineTheme.onSurfaceMuted),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Verify your age in Safety & Privacy settings to '
-              'unlock adult content filters',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+              context.l10n.contentFiltersAgeGateMessage,
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -248,21 +250,21 @@ class _FilterSegmentedControl extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _buildSegment(
-            label: 'Show',
+            label: context.l10n.contentFiltersShow,
             selected: value == ContentFilterPreference.show,
             onTap: locked
                 ? null
                 : () => onChanged(ContentFilterPreference.show),
           ),
           _buildSegment(
-            label: 'Warn',
+            label: context.l10n.contentFiltersWarn,
             selected: value == ContentFilterPreference.warn,
             onTap: locked
                 ? null
                 : () => onChanged(ContentFilterPreference.warn),
           ),
           _buildSegment(
-            label: 'Filter Out',
+            label: context.l10n.contentFiltersFilterOut,
             selected: value == ContentFilterPreference.hide,
             onTap: locked
                 ? null

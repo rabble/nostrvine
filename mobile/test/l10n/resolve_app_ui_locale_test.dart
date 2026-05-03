@@ -41,6 +41,11 @@ void main() {
       expect(locale.languageCode, 'bg');
     });
 
+    test('matches supported Amharic', () {
+      final locale = resolveAppUiLocale(const [Locale('am', 'ET')], supported);
+      expect(locale.languageCode, 'am');
+    });
+
     test('matches English when preferred', () {
       final locale = resolveAppUiLocale(const [Locale('en', 'US')], supported);
       expect(locale.languageCode, 'en');

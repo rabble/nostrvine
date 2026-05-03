@@ -18,6 +18,9 @@ enum InviteActivationFailureReason {
   /// Creator invite cap has been reached.
   creatorFull,
 
+  /// NIP-98 auth failed (signing, clock skew, or binding mismatch).
+  authFailure,
+
   /// Temporary server or network problem (retryable).
   temporary,
 
@@ -26,6 +29,35 @@ enum InviteActivationFailureReason {
 }
 
 class InviteErrorUtils {
+  static const Set<String> _authCodes = {
+    InviteApiErrorCode.authRequired,
+    InviteApiErrorCode.authInvalid,
+    InviteApiErrorCode.authExpired,
+    InviteApiErrorCode.authInvalidBinding,
+    InviteApiErrorCode.clientAuthFailed,
+  };
+
+  static const Set<String> _invalidCodes = {
+    InviteApiErrorCode.inviteNotFound,
+    InviteApiErrorCode.inviteInvalidFormat,
+    InviteApiErrorCode.inviteRevoked,
+    InviteApiErrorCode.inviteCodeRotated,
+    InviteApiErrorCode.creatorPageDisabled,
+  };
+
+  static const Set<String> _usedCodes = {
+    InviteApiErrorCode.inviteAlreadyUsed,
+    InviteApiErrorCode.userAlreadyJoined,
+  };
+
+  static const Set<String> _temporaryCodes = {
+    InviteApiErrorCode.tooManyRequests,
+    InviteApiErrorCode.storageError,
+    InviteApiErrorCode.internalError,
+    InviteApiErrorCode.clientTimeout,
+    InviteApiErrorCode.clientNetworkError,
+  };
+
   /// Classifies an [InviteApiException] into a reason code.
   ///
   /// Use this from the cubit/BLoC layer so state never carries English copy.
@@ -37,8 +69,31 @@ class InviteErrorUtils {
     final normalizedMessage = error.message.toLowerCase();
     final code = error.code;
 
-    if (code == 'creator_page_full') {
-      return InviteActivationFailureReason.creatorFull;
+    if (code != null) {
+      if (code == InviteApiErrorCode.creatorPageFull) {
+        return InviteActivationFailureReason.creatorFull;
+      }
+      if (_authCodes.contains(code)) {
+        return InviteActivationFailureReason.authFailure;
+      }
+      if (_usedCodes.contains(code)) {
+        return InviteActivationFailureReason.alreadyUsed;
+      }
+      if (_invalidCodes.contains(code)) {
+        return InviteActivationFailureReason.invalid;
+      }
+      if (_temporaryCodes.contains(code)) {
+        return InviteActivationFailureReason.temporary;
+      }
+      if (code == InviteApiErrorCode.clientError) {
+        return InviteActivationFailureReason.unknown;
+      }
+    }
+
+    // Fall back to status code + keyword matching for exceptions that
+    // don't carry a structured error code.
+    if (statusCode == 401) {
+      return InviteActivationFailureReason.authFailure;
     }
 
     final isUsedError =
@@ -91,6 +146,7 @@ class InviteErrorUtils {
       case InviteActivationFailureReason.invalid:
       case InviteActivationFailureReason.creatorFull:
         return EmailVerificationError.inviteInvalid;
+      case InviteActivationFailureReason.authFailure:
       case InviteActivationFailureReason.temporary:
         return EmailVerificationError.inviteTemporary;
       case InviteActivationFailureReason.unknown:
@@ -118,6 +174,7 @@ class InviteErrorUtils {
       case InviteActivationFailureReason.creatorFull:
         return "This creator's invites are full. Join the waitlist and "
             "we'll send an invite when there's room.";
+      case InviteActivationFailureReason.authFailure:
       case InviteActivationFailureReason.temporary:
         return "We couldn't confirm your invite right now. "
             'Go back to your invite code and try again, or contact support.';

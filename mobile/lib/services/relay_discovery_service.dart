@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -363,6 +364,10 @@ class RelayDiscoveryService {
   /// NIP-65 format:
   /// Tags: [["r", "<relay-url>"], ["r", "<relay-url>", "read"],
   ///        ["r", "<relay-url>", "write"]]
+  @visibleForTesting
+  List<DiscoveredRelay> parseRelayListFromJson(Map<String, dynamic> json) =>
+      _parseRelayListFromJson(json);
+
   List<DiscoveredRelay> _parseRelayListFromJson(Map<String, dynamic> json) {
     final relays = <DiscoveredRelay>[];
     final tags = json['tags'] as List<dynamic>? ?? [];
@@ -373,10 +378,10 @@ class RelayDiscoveryService {
 
       final url = tag[1] as String;
 
-      // Only accept WebSocket URLs (wss:// or ws://)
-      if (!url.startsWith('wss://') && !url.startsWith('ws://')) {
+      // Accept wss:// for any host, ws:// only for loopback (#3362).
+      if (!isRelayUrlAllowed(url)) {
         Log.warning(
-          '  Skipping non-WebSocket relay URL: $url',
+          '  Skipping disallowed relay URL: $url',
           name: 'RelayDiscoveryService',
           category: LogCategory.auth,
         );
@@ -445,7 +450,7 @@ class RelayDiscoveryService {
       final relaysList = cacheData['relays'] as List<dynamic>;
       return relaysList
           .map((r) => DiscoveredRelay.fromJson(r as Map<String, dynamic>))
-          .where((r) => r.url.startsWith('wss://') || r.url.startsWith('ws://'))
+          .where((r) => isRelayUrlAllowed(r.url))
           .toList();
     } catch (e) {
       Log.warning(

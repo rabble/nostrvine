@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -191,7 +192,11 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
     if (NostrRemoteSignerInfo.isBunkerUrl(trimmed)) {
       try {
         NostrRemoteSignerInfo.parseBunkerUrl(trimmed);
-      } catch (e) {
+      } on InvalidBunkerRelayException {
+        // Specifically flag the security-relevant rejection (#3362) so the
+        // user understands why a ws:// non-loopback relay was refused.
+        return context.l10n.keyImportInsecureBunkerRelay;
+      } catch (_) {
         return 'Invalid bunker URL';
       }
       return null;

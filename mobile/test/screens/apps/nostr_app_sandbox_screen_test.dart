@@ -134,6 +134,47 @@ void main() {
     );
 
     testWidgets(
+      'bootstraps Android HTML app shells even when the route returns 404',
+      (tester) async {
+        final platform = _BootstrapAwareWebViewPlatform();
+        WebViewPlatform.instance = platform;
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        final bootstrapClient = MockClient(
+          (_) async => http.Response(
+            '<!doctype html><html><head></head><body>App shell</body></html>',
+            404,
+            request: http.Request(
+              'GET',
+              Uri.parse('https://badges.divine.video/me'),
+            ),
+            headers: const {'content-type': 'text/html; charset=utf-8'},
+          ),
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: NostrAppSandboxScreen(
+              app: _fixtureBadgesApp(),
+              bootstrapHttpClientOverride: bootstrapClient,
+              currentUserPubkeyOverride: 'f' * 64,
+            ),
+          ),
+        );
+        await tester.pump();
+        debugDefaultTargetPlatformOverride = null;
+
+        expect(platform.controller.loadRequestCallCount, 0);
+        expect(platform.controller.loadedHtml, hasLength(1));
+        expect(
+          platform.controller.loadedHtml.single,
+          contains('window.__divineNostrBridgeInstalled'),
+        );
+      },
+    );
+
+    testWidgets(
       'shows a loading state before the integration finishes booting',
       (tester) async {
         await tester.pumpWidget(
@@ -510,13 +551,33 @@ NostrAppDirectoryEntry _fixtureApp() {
     iconUrl: 'https://cdn.divine.video/primal.png',
     launchUrl: 'https://primal.net/app',
     allowedOrigins: const ['https://primal.net'],
-    allowedMethods: const ['getPublicKey', 'signEvent'],
+    allowedMethods: const ['getPublicKey', 'getRelays', 'signEvent'],
     allowedSignEventKinds: const [1],
     promptRequiredFor: const ['signEvent'],
     status: 'approved',
     sortOrder: 1,
     createdAt: DateTime.parse('2026-03-24T08:00:00Z'),
     updatedAt: DateTime.parse('2026-03-25T08:00:00Z'),
+  );
+}
+
+NostrAppDirectoryEntry _fixtureBadgesApp() {
+  return NostrAppDirectoryEntry(
+    id: 'bundled-badges',
+    slug: 'badges',
+    name: 'Divine Badges',
+    tagline: 'Manage Nostr badge awards',
+    description: 'Accept, reject, and issue Divine badges.',
+    iconUrl: 'https://badges.divine.video/favicon.ico',
+    launchUrl: 'https://badges.divine.video/me',
+    allowedOrigins: const ['https://badges.divine.video'],
+    allowedMethods: const ['getPublicKey', 'signEvent'],
+    allowedSignEventKinds: const [3, 8, 10002, 10008, 30008, 30009],
+    promptRequiredFor: const ['signEvent'],
+    status: 'approved',
+    sortOrder: 15,
+    createdAt: DateTime.parse('2026-05-02T00:00:00Z'),
+    updatedAt: DateTime.parse('2026-05-02T00:00:00Z'),
   );
 }
 

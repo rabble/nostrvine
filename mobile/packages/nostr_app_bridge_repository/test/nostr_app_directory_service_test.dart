@@ -154,6 +154,36 @@ void main() {
           launchUrl: 'https://jumble.social/',
           allowedOrigin: 'https://jumble.social',
         );
+        _expectBundledApp(
+          apps: apps,
+          slug: 'divine-space',
+          name: 'divine.space',
+          launchUrl: 'https://divine.space/',
+          allowedOrigin: 'https://divine.space',
+        );
+      },
+    );
+
+    test(
+      'fetchApprovedApps with useCacheOnly includes Divine Badges '
+      'with NIP-58 signing permissions',
+      () async {
+        final apps = await service.fetchApprovedApps(useCacheOnly: true);
+        final badges = apps.where((app) => app.slug == 'badges').single;
+
+        expect(badges.name, 'Divine Badges');
+        expect(badges.launchUrl, 'https://badges.divine.video/me');
+        expect(badges.allowedOrigins, ['https://badges.divine.video']);
+        expect(
+          badges.allowedMethods,
+          ['getPublicKey', 'getRelays', 'signEvent'],
+        );
+        expect(
+          badges.allowedSignEventKinds,
+          [3, 8, 10002, 10008, 30008, 30009],
+        );
+        expect(badges.promptRequiredFor, ['signEvent']);
+        expect(badges.autoLoginScript, contains('dbdg_session'));
       },
     );
 
@@ -363,6 +393,8 @@ const List<String> _starterSlugs = [
   'blobbi',
   'espy',
   'jumble',
+  'divine-space',
+  'badges',
 ];
 
 void _expectBundledApp({

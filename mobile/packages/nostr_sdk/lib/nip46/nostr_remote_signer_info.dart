@@ -2,6 +2,58 @@ import '../client_utils/keys.dart';
 import '../nip19/nip19.dart';
 import '../utils/string_util.dart';
 
+/// Hosts allowed to use cleartext (`ws://`) bunker / nostrconnect relays.
+///
+/// Mirrors [`isLoopbackHost` in
+/// `mobile/lib/utils/relay_url_utils.dart`](../../../../../lib/utils/relay_url_utils.dart).
+/// Any change here must be reflected there and in `network_security_config.xml`.
+const _bunkerLoopbackHosts = <String>{
+  'localhost',
+  '127.0.0.1',
+  '10.0.2.2',
+  '::1',
+};
+
+bool _isLoopbackHost(String host) =>
+    _bunkerLoopbackHosts.contains(host.toLowerCase());
+
+/// True if [url] is a relay URL acceptable for a NIP-46 bunker / nostrconnect
+/// connection. Allows `wss://` for any host, and `ws://` only for loopback
+/// addresses.
+bool _isAllowedBunkerRelayUrl(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return false;
+  // `wss://http://x` parses as host=`http` and path=`//x`; reject so a
+  // mis-nested URL smuggled inside a `bunker://` / `nostrconnect://` query
+  // parameter cannot pass the allowlist.
+  if (uri.path.startsWith('//')) return false;
+  final scheme = uri.scheme.toLowerCase();
+  if (scheme == 'wss') return true;
+  if (scheme == 'ws') return _isLoopbackHost(uri.host);
+  return false;
+}
+
+/// Thrown when a NIP-46 bunker:// or nostrconnect:// URL contains a relay URL
+/// that is not allowed (wrong scheme, malformed, or cleartext to a non-loopback
+/// host).
+///
+/// [`toString`] deliberately omits [relayUrl] so log lines do not embed the
+/// user-supplied URL. Callers that need to surface the URL (e.g. UI) should
+/// read [relayUrl] explicitly.
+class InvalidBunkerRelayException implements Exception {
+  /// Creates an exception describing why a bunker relay URL was rejected.
+  InvalidBunkerRelayException(this.relayUrl, this.reason);
+
+  /// The relay URL that was rejected. Not included in [toString].
+  final String relayUrl;
+
+  /// Human-readable reason (English; UI is responsible for localization).
+  final String reason;
+
+  @override
+  String toString() => 'InvalidBunkerRelayException: $reason';
+}
+
 /// NIP-46 remote signer info supporting both bunker:// and nostrconnect:// URLs.
 ///
 /// bunker:// URLs are bunker-initiated: the bunker provides the URL and the
@@ -199,10 +251,14 @@ class NostrRemoteSignerInfo {
       throw Exception("relay parameter missing in bunker url");
     }
 
-    // Validate that all relay URLs are valid WebSocket URLs
+    // Validate that all relay URLs are wss:// (or ws:// for loopback only).
+    // ws:// to a non-loopback host would expose signer traffic in the clear.
     for (final relay in relays) {
-      if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
-        throw Exception("relay $relay should start with wss:// or ws://");
+      if (!_isAllowedBunkerRelayUrl(relay)) {
+        throw InvalidBunkerRelayException(
+          relay,
+          'Relay URL must use wss:// (ws:// allowed only for loopback hosts)',
+        );
       }
     }
 

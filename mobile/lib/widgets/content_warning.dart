@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 
 /// Content warning overlay for filtered content
@@ -91,7 +92,7 @@ class _ContentWarningState extends State<ContentWarning>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _getWarningTitle(widget.moderationResult.severity),
+                    _getWarningTitle(context, widget.moderationResult.severity),
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 16,
@@ -145,7 +146,7 @@ class _ContentWarningState extends State<ContentWarning>
                   foregroundColor: VineTheme.whiteText,
                   side: const BorderSide(color: VineTheme.whiteText),
                 ),
-                child: const Text('View Anyway'),
+                child: Text(context.l10n.contentWarningViewAnyway),
               ),
             ),
 
@@ -158,7 +159,7 @@ class _ContentWarningState extends State<ContentWarning>
                   onPressed: widget.onReport,
                   icon: const Icon(Icons.flag_outlined),
                   color: VineTheme.whiteText,
-                  tooltip: 'Report Content',
+                  tooltip: context.l10n.contentWarningReportContentTooltip,
                 ),
 
               // Block button
@@ -167,7 +168,7 @@ class _ContentWarningState extends State<ContentWarning>
                   onPressed: widget.onBlock,
                   icon: const Icon(Icons.block_outlined),
                   color: VineTheme.whiteText,
-                  tooltip: 'Block User',
+                  tooltip: context.l10n.contentWarningBlockUserTooltip,
                 ),
             ],
           ],
@@ -189,9 +190,9 @@ class _ContentWarningState extends State<ContentWarning>
       children: [
         const Icon(Icons.block, color: VineTheme.whiteText, size: 48),
         const SizedBox(height: 16),
-        const Text(
-          'Content Blocked',
-          style: TextStyle(
+        Text(
+          context.l10n.contentWarningBlockedTitle,
+          style: const TextStyle(
             color: VineTheme.whiteText,
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -209,7 +210,7 @@ class _ContentWarningState extends State<ContentWarning>
           ),
         const SizedBox(height: 16),
         Text(
-          'This content has been blocked due to policy violations.',
+          context.l10n.contentWarningBlockedPolicy,
           style: TextStyle(
             color: VineTheme.whiteText.withValues(alpha: 0.8),
             fontSize: 12,
@@ -253,16 +254,16 @@ class _ContentWarningState extends State<ContentWarning>
     }
   }
 
-  String _getWarningTitle(ContentSeverity severity) {
+  String _getWarningTitle(BuildContext context, ContentSeverity severity) {
     switch (severity) {
       case ContentSeverity.info:
-        return 'Content Notice';
+        return context.l10n.contentWarningNoticeTitle;
       case ContentSeverity.warning:
-        return 'Sensitive Content';
+        return context.l10n.contentWarningSensitiveContent;
       case ContentSeverity.hide:
-        return 'Potentially Harmful Content';
+        return context.l10n.contentWarningPotentiallyHarmfulTitle;
       case ContentSeverity.block:
-        return 'Content Blocked';
+        return context.l10n.contentWarningBlockedTitle;
     }
   }
 }
@@ -385,9 +386,9 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
                   size: 32,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Sensitive Content',
-                  style: TextStyle(
+                Text(
+                  context.l10n.contentWarningSensitiveContent,
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -406,17 +407,17 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
                           });
                           widget.onPlay?.call();
                         },
-                        child: const Text(
-                          'View',
-                          style: TextStyle(color: VineTheme.whiteText),
+                        child: Text(
+                          context.l10n.contentWarningView,
+                          style: const TextStyle(color: VineTheme.whiteText),
                         ),
                       ),
                     if (widget.onReport != null)
                       TextButton(
                         onPressed: widget.onReport,
-                        child: const Text(
-                          'Report',
-                          style: TextStyle(color: VineTheme.error),
+                        child: Text(
+                          context.l10n.contentWarningReportAction,
+                          style: const TextStyle(color: VineTheme.error),
                         ),
                       ),
                   ],
