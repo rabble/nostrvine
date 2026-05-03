@@ -197,9 +197,9 @@ class _IconTabButton extends StatelessWidget {
       label: semanticLabel,
       child: GestureDetector(
         onTap: onTap,
-        child: SizedBox(
-          width: 48,
-          height: 48,
+        behavior: .opaque,
+        child: SizedBox.square(
+          dimension: kMinInteractiveDimension,
           child: Center(
             child: Opacity(
               // Figma: unselected tabs render at 32 % opacity; selected stays
@@ -309,9 +309,9 @@ class _ProfileTabButton extends ConsumerWidget {
       label: semanticLabel,
       child: GestureDetector(
         onTap: onTap,
-        child: SizedBox(
-          width: 48,
-          height: 48,
+        behavior: .opaque,
+        child: SizedBox.square(
+          dimension: kMinInteractiveDimension,
           child: Center(
             child: hasAvatar
                 ? _ProfileAvatarBox(imageUrl: imageUrl, isSelected: isSelected)
