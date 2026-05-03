@@ -2504,10 +2504,17 @@ Upload Timeout Failure:
 
       _updateUploadProgress(upload.id, 0.85);
 
-      // Upload thumbnail to Blossom server
+      // Upload thumbnail to Blossom server.
+      //
+      // `maxAttempts: 1` opts out of `BlossomUploadService.uploadImage`'s
+      // service-level retry (added for #3862). UploadManager already wraps
+      // the entire video+thumbnail pipeline in `AsyncUtils.retryWithBackoff`
+      // (see `_uploadHandler` retry config), so retrying again at the
+      // service layer would compound delays without benefit.
       final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,
+        maxAttempts: 1,
         onProgress: (progress) {
           // Map thumbnail progress to 85%-100% of total upload
           _updateUploadProgress(upload.id, 0.85 + (progress * 0.15));

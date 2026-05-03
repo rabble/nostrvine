@@ -170,6 +170,32 @@ class BlossomUploadService {
   static const int _maxChunkRetries = 2;
   static const Duration _chunkRetryDelay = Duration(seconds: 1);
 
+  /// Default total attempts for a whole-image upload to a single server.
+  /// 1 initial + 2 retries; covers transient 5xx and connection blips on
+  /// `media.divine.video` without compounding when a caller (e.g. the
+  /// app-level UploadManager) already wraps the call in its own retry
+  /// loop — those callers pass `maxAttempts: 1`.
+  static const int _defaultUploadImageMaxAttempts = 3;
+
+  /// Base delay between retried image upload attempts. Doubled on each retry
+  /// up to [_uploadImageRetryMaxDelay].
+  static const Duration _uploadImageRetryBaseDelay = Duration(seconds: 1);
+
+  /// Hard ceiling on the per-attempt backoff for image uploads.
+  static const Duration _uploadImageRetryMaxDelay = Duration(seconds: 30);
+
+  /// HTTP status codes that justify retrying an image upload. Mirrors
+  /// `UploadManager.isRetriableError` so service-level and orchestrator-level
+  /// classification stay in sync.
+  static const Set<int> _retriableUploadStatusCodes = {
+    408, // Request timeout
+    429, // Rate limited
+    500, // Generic server error
+    502, // Bad gateway
+    503, // Service unavailable (the symptom in #3862)
+    504, // Gateway timeout
+  };
+
   /// How long a cached capability discovery result stays valid.
   static const Duration _capabilityCacheTtl = Duration(minutes: 5);
 
@@ -387,6 +413,106 @@ class BlossomUploadService {
       DioExceptionType.connectionError => true, // coverage:ignore-line
       _ => false,
     };
+  }
+
+  /// Whether an image-upload attempt threw a transient, retriable error.
+  ///
+  /// Transient = the same request stands a real chance of succeeding on a
+  /// subsequent attempt (5xx server, rate limit, connection / timeout).
+  bool _isTransientUploadError(Object error) {
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode != null &&
+          _retriableUploadStatusCodes.contains(statusCode)) {
+        return true;
+      }
+      return switch (error.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout ||
+        DioExceptionType.connectionError => true,
+        _ => false,
+      };
+    }
+    return false;
+  }
+
+  /// Whether a [BlossomUploadResult] failure is transient and worth retrying.
+  ///
+  /// Some failure modes are caught inside the upload internals and surface as
+  /// `success: false` with a `statusCode`, rather than re-throwing — this
+  /// predicate covers that case symmetrically with [_isTransientUploadError].
+  bool _isTransientUploadResult(BlossomUploadResult result) {
+    if (result.success) return false;
+    final statusCode = result.statusCode;
+    return statusCode != null &&
+        _retriableUploadStatusCodes.contains(statusCode);
+  }
+
+  /// Run [attempt] up to [maxAttempts] times with exponential backoff,
+  /// stopping early on success or on a non-transient failure.
+  ///
+  /// `maxAttempts == 1` disables retry — useful for callers (UploadManager)
+  /// that already wrap the call in their own retry loop and want to avoid
+  /// compounded delays.
+  Future<BlossomUploadResult> _uploadWithRetry({
+    required Future<BlossomUploadResult> Function() attempt,
+    required int maxAttempts,
+    required String debugContext,
+  }) async {
+    var attemptNumber = 0;
+    while (true) {
+      attemptNumber++;
+      BlossomUploadResult? result;
+      Object? thrown;
+      try {
+        result = await attempt();
+      } on Object catch (e) {
+        thrown = e;
+      }
+
+      // Success path — return immediately.
+      if (result != null && result.success) {
+        return result;
+      }
+
+      // Decide whether the failure is retriable.
+      final retriable = thrown != null
+          ? _isTransientUploadError(thrown)
+          : _isTransientUploadResult(result!);
+
+      // Out of budget, or the failure mode is permanent — surface it.
+      if (attemptNumber >= maxAttempts || !retriable) {
+        if (thrown != null) {
+          // The original throwable is preserved so callers see the same
+          // exception type (DioException, BlossomResumableUploadException,
+          // etc.) they would have seen without the retry wrapper.
+          // ignore: only_throw_errors
+          throw thrown;
+        }
+        return result!;
+      }
+
+      // Compute the next backoff. Exponential: base, base*2, base*4 ...
+      // capped at the configured ceiling. attemptNumber is 1-indexed and
+      // we've just *finished* attempt N, so the multiplier is 2^(N-1).
+      final multiplier = 1 << (attemptNumber - 1);
+      final backoffMs = _uploadImageRetryBaseDelay.inMilliseconds * multiplier;
+      final cappedMs = math.min(
+        backoffMs,
+        _uploadImageRetryMaxDelay.inMilliseconds,
+      );
+      final delay = Duration(milliseconds: cappedMs);
+
+      Log.warning(
+        'Image upload attempt $attemptNumber/$maxAttempts failed '
+        '($debugContext); retrying in ${delay.inMilliseconds}ms',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      await Future<void>.delayed(delay);
+    }
   }
 
   bool _isDivineOwnedUploadHost(String serverUrl) {
@@ -1482,6 +1608,7 @@ class BlossomUploadService {
     required String nostrPubkey,
     String mimeType = 'image/jpeg',
     void Function(double)? onProgress,
+    int maxAttempts = _defaultUploadImageMaxAttempts,
   }) async {
     try {
       // Check authentication
@@ -1491,6 +1618,7 @@ class BlossomUploadService {
           errorMessage: 'Not authenticated',
         );
       }
+      assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
 
       // Report initial progress
       onProgress?.call(0.1);
@@ -1539,39 +1667,51 @@ class BlossomUploadService {
 
           final capability = await _fetchDivineUploadCapability(serverUrl);
 
-          late BlossomUploadResult result;
-          if (capability.supportsResumable) {
-            result = await _uploadWithSingleLegacyFallback(
-              serverUrl: serverUrl,
-              uploadResumable: () => _uploadToServerResumable(
+          // Retry the actual upload work on transient 5xx / network blips
+          // before falling through to the next configured server. Capability
+          // discovery is not retried here — it has its own fail-soft path
+          // (`_isTransientCapabilityDiscoveryError`).
+          //
+          // #3862: previously a single 503 from the only server in the list
+          // (default config has just `media.divine.video`) surfaced to the
+          // user as a hard failure with no automatic recovery.
+          final result = await _uploadWithRetry(
+            attempt: () {
+              if (capability.supportsResumable) {
+                return _uploadWithSingleLegacyFallback(
+                  serverUrl: serverUrl,
+                  uploadResumable: () => _uploadToServerResumable(
+                    serverUrl: serverUrl,
+                    file: strippedFile,
+                    fileHash: fileHash,
+                    fileSize: fileSize,
+                    contentType: mimeType,
+                    onProgress: onProgress,
+                  ),
+                  uploadLegacyFallback: (fallbackReason) =>
+                      _uploadToServerLegacyFallback(
+                        serverUrl: serverUrl,
+                        file: strippedFile,
+                        fileHash: fileHash,
+                        fileSize: fileSize,
+                        contentType: mimeType,
+                        fallbackReason: fallbackReason,
+                        onProgress: onProgress,
+                      ),
+                );
+              }
+              return _uploadToServer(
                 serverUrl: serverUrl,
                 file: strippedFile,
                 fileHash: fileHash,
                 fileSize: fileSize,
                 contentType: mimeType,
                 onProgress: onProgress,
-              ),
-              uploadLegacyFallback: (fallbackReason) =>
-                  _uploadToServerLegacyFallback(
-                    serverUrl: serverUrl,
-                    file: strippedFile,
-                    fileHash: fileHash,
-                    fileSize: fileSize,
-                    contentType: mimeType,
-                    fallbackReason: fallbackReason,
-                    onProgress: onProgress,
-                  ),
-            );
-          } else {
-            result = await _uploadToServer(
-              serverUrl: serverUrl,
-              file: strippedFile,
-              fileHash: fileHash,
-              fileSize: fileSize,
-              contentType: mimeType,
-              onProgress: onProgress,
-            );
-          }
+              );
+            },
+            maxAttempts: maxAttempts,
+            debugContext: 'uploadImage($serverUrl)',
+          );
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash

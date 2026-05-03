@@ -4622,9 +4622,14 @@ void main() {
             );
           });
 
+          // maxAttempts: 1 isolates this test to a single per-server attempt,
+          // which is the property under test (no duplicate legacy fallback
+          // *within* one attempt). The retry behavior across attempts is
+          // covered separately under "uploadImage - retry behavior".
           final result = await service.uploadImage(
             imageFile: imageFile,
             nostrPubkey: _testPublicKey,
+            maxAttempts: 1,
           );
 
           expect(result.success, isFalse);
@@ -4805,6 +4810,700 @@ void main() {
 
         await tempDir.delete(recursive: true);
       });
+    });
+
+    // Regression coverage for #3862: a single transient 5xx from the only
+    // configured server used to surface as a hard failure. The service now
+    // retries the per-server attempt with exponential backoff before falling
+    // through to the next server.
+    group('uploadImage - retry behavior', () {
+      late _MockDio mockDio;
+
+      setUp(() {
+        mockDio = _MockDio();
+        service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+        );
+      });
+
+      // Stock head() mock — capability discovery returns 200 with no
+      // resumable extension, so the legacy PUT path is taken.
+      void stubLegacyHead() {
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: Headers(),
+          ),
+        );
+      }
+
+      void stubAuth() {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+        );
+      }
+
+      Future<File> tempImage(String tag) async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'image_retry_test_${tag}_',
+        );
+        return File('${tempDir.path}/image.jpg')
+          ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+      }
+
+      DioException dioBadResponse(int statusCode) => DioException(
+        requestOptions: RequestOptions(path: '/upload'),
+        type: DioExceptionType.badResponse,
+        response: Response(
+          requestOptions: RequestOptions(path: '/upload'),
+          statusCode: statusCode,
+        ),
+      );
+
+      Response<dynamic> uploadOkResponse() => Response(
+        requestOptions: RequestOptions(path: '/upload'),
+        statusCode: 200,
+        data: {
+          'url': 'https://media.divine.video/hash',
+          'fallbackUrl': 'https://media.divine.video/hash',
+        },
+      );
+
+      test('retries on 503 and succeeds on second attempt', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('503');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          if (attempt == 1) throw dioBadResponse(503);
+          return uploadOkResponse();
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isTrue);
+        expect(attempt, equals(2));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('retries on 504 and succeeds', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('504');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          if (attempt == 1) throw dioBadResponse(504);
+          return uploadOkResponse();
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isTrue);
+        expect(attempt, equals(2));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('retries on 429 and succeeds', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('429');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          if (attempt == 1) throw dioBadResponse(429);
+          return uploadOkResponse();
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isTrue);
+        expect(attempt, equals(2));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('retries on 408 and succeeds', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('408');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          if (attempt == 1) throw dioBadResponse(408);
+          return uploadOkResponse();
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isTrue);
+        expect(attempt, equals(2));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test(
+        'exhausts retries on persistent 503 and returns last error',
+        () async {
+          stubAuth();
+          stubLegacyHead();
+
+          final imageFile = await tempImage('exhaust');
+          var attempt = 0;
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((_) async {
+            attempt++;
+            throw dioBadResponse(503);
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.statusCode, equals(503));
+          expect(attempt, equals(3));
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test('does NOT retry on 401', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('401');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          throw dioBadResponse(401);
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.statusCode, equals(401));
+        expect(attempt, equals(1));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('does NOT retry on 413 (file too large)', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('413');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          throw dioBadResponse(413);
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.statusCode, equals(413));
+        expect(attempt, equals(1));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('does NOT retry on success', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('happy');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          return uploadOkResponse();
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isTrue);
+        expect(attempt, equals(1));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('maxAttempts: 1 disables retry', () async {
+        stubAuth();
+        stubLegacyHead();
+
+        final imageFile = await tempImage('opt_out');
+        var attempt = 0;
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer((_) async {
+          attempt++;
+          throw dioBadResponse(503);
+        });
+
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+          maxAttempts: 1,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.statusCode, equals(503));
+        expect(
+          attempt,
+          equals(1),
+          reason:
+              'maxAttempts: 1 must short-circuit retry so callers with their '
+              'own outer retry loop (UploadManager) do not double-retry.',
+        );
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test(
+        'retries on DioException thrown from non-Divine host resumable init',
+        () async {
+          // Non-Divine hosts re-throw resumable failures (no Divine-only
+          // legacy fallback). The retry helper must classify a DioException
+          // with a 5xx status as transient and retry, exercising the
+          // exception-typed `_isTransientUploadError` branch.
+          await service.setBlossomEnabled(true);
+          await service.setBlossomServer('https://third-party.example');
+
+          stubAuth();
+
+          final imageFile = await tempImage('non_divine_dio');
+
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          // Track init attempts per host so we can distinguish per-server
+          // retry from the multi-server fallback that runs after retries are
+          // exhausted.
+          final initAttemptsByHost = <String, int>{};
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            if (!url.endsWith('/upload/init')) {
+              // Complete endpoint or anything else — return a generic OK so
+              // we only count init attempts in the assertion below.
+              return Response(
+                requestOptions: RequestOptions(path: url),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/hash',
+                  'fallbackUrl': 'https://media.divine.video/hash',
+                },
+              );
+            }
+            final host = Uri.parse(url).host;
+            final n = (initAttemptsByHost[host] ?? 0) + 1;
+            initAttemptsByHost[host] = n;
+            if (host == 'third-party.example' && n == 1) {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                type: DioExceptionType.badResponse,
+                response: Response(
+                  requestOptions: RequestOptions(path: '/upload/init'),
+                  statusCode: 503,
+                ),
+              );
+            }
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 201,
+              data: {
+                'uploadId': 'up_retry_dio',
+                'uploadUrl':
+                    'https://third-party.example/sessions/up_retry_dio',
+                'chunkSize': 1024,
+                'nextOffset': 0,
+                'expiresAt': 9999999999,
+              },
+            );
+          });
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(
+                path: '/sessions/up_retry_dio',
+              ),
+              statusCode: 204,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.uploadOffset: ['3'],
+              }),
+            ),
+          );
+
+          await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(
+            initAttemptsByHost['third-party.example'],
+            equals(2),
+            reason:
+                'A 503 DioException from non-Divine host resumable init must '
+                'be classified as transient by _isTransientUploadError so the '
+                'retry helper schedules another attempt on the same host.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'does NOT retry on DioException with non-retriable status from '
+        'non-Divine host',
+        () async {
+          await service.setBlossomEnabled(true);
+          await service.setBlossomServer('https://third-party.example');
+
+          stubAuth();
+
+          final imageFile = await tempImage('non_divine_dio_401');
+
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          final initAttemptsByHost = <String, int>{};
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            final host = Uri.parse(url).host;
+            initAttemptsByHost[host] = (initAttemptsByHost[host] ?? 0) + 1;
+            throw DioException(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              type: DioExceptionType.badResponse,
+              response: Response(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                statusCode: 401,
+              ),
+            );
+          });
+
+          await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(
+            initAttemptsByHost['third-party.example'],
+            equals(1),
+            reason:
+                '401 is non-retriable, so a single DioException with that '
+                'status must short-circuit the retry helper for the failing '
+                'host.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'retries on DioException of connectionTimeout type from non-Divine '
+        'host',
+        () async {
+          // Connection timeout has no statusCode; classification falls to
+          // the DioExceptionType switch in _isTransientUploadError.
+          await service.setBlossomEnabled(true);
+          await service.setBlossomServer('https://third-party.example');
+
+          stubAuth();
+
+          final imageFile = await tempImage('non_divine_dio_timeout');
+
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          final initAttemptsByHost = <String, int>{};
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            if (!url.endsWith('/upload/init')) {
+              return Response(
+                requestOptions: RequestOptions(path: url),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/hash',
+                  'fallbackUrl': 'https://media.divine.video/hash',
+                },
+              );
+            }
+            final host = Uri.parse(url).host;
+            final n = (initAttemptsByHost[host] ?? 0) + 1;
+            initAttemptsByHost[host] = n;
+            if (host == 'third-party.example' && n == 1) {
+              throw DioException(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                type: DioExceptionType.connectionTimeout,
+              );
+            }
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 201,
+              data: {
+                'uploadId': 'up_retry_timeout',
+                'uploadUrl':
+                    'https://third-party.example/sessions/up_retry_timeout',
+                'chunkSize': 1024,
+                'nextOffset': 0,
+                'expiresAt': 9999999999,
+              },
+            );
+          });
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(
+                path: '/sessions/up_retry_timeout',
+              ),
+              statusCode: 204,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.uploadOffset: ['3'],
+              }),
+            ),
+          );
+
+          await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(
+            initAttemptsByHost['third-party.example'],
+            equals(2),
+            reason:
+                'connectionTimeout is transient and must be retried on the '
+                'same host by _isTransientUploadError.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'falls through to next server after exhausting retries on the first',
+        () async {
+          stubAuth();
+
+          await service.setBlossomEnabled(true);
+          await service.setBlossomServer('https://blossom.example.com');
+
+          final imageFile = await tempImage('multi_server');
+
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers(),
+            ),
+          );
+
+          final attemptsByHost = <String, int>{};
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            final host = Uri.parse(url).host;
+            attemptsByHost[host] = (attemptsByHost[host] ?? 0) + 1;
+            if (host == 'blossom.example.com') {
+              throw dioBadResponse(503);
+            }
+            return uploadOkResponse();
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            attemptsByHost['blossom.example.com'],
+            equals(3),
+            reason: 'Custom server should be tried 3 times before fallback.',
+          );
+          expect(
+            attemptsByHost['media.divine.video'],
+            equals(1),
+            reason:
+                'Default Divine server should succeed on its first attempt '
+                'after the custom server exhausts its retries.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
     });
 
     group('Bug report upload success path', () {
