@@ -59,7 +59,17 @@ void main() {
                   false),
         );
 
-        expect(matchingField, findsOneWidget);
+        expect(matchingField, findsNWidgets(2));
+      });
+
+      testWidgets('renders confirm password field', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.widgetWithText(DivineAuthTextField, 'Confirm new password'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('wraps form in $AutofillGroup', (tester) async {
@@ -151,6 +161,16 @@ void main() {
             ),
             'NewSecure123!',
           );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(
+                DivineAuthTextField,
+                'Confirm new password',
+              ),
+              matching: find.byType(TextField),
+            ),
+            'NewSecure123!',
+          );
 
           await tester.tap(
             find.widgetWithText(DivineButton, 'Update password'),
@@ -161,6 +181,42 @@ void main() {
           expect(recorder.didFinishAutofillContext, isTrue);
         },
       );
+
+      testWidgets('blocks password mismatch before reset request', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'New Password'),
+            matching: find.byType(TextField),
+          ),
+          'NewSecure123!',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(
+              DivineAuthTextField,
+              'Confirm new password',
+            ),
+            matching: find.byType(TextField),
+          ),
+          'DifferentPass123!',
+        );
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Update password'));
+        await tester.pumpAndSettle();
+
+        expect(find.text("Passwords don't match"), findsOneWidget);
+        verifyNever(
+          () => mockOAuth.resetPassword(
+            token: any(named: 'token'),
+            newPassword: any(named: 'newPassword'),
+          ),
+        );
+      });
     });
   });
 }

@@ -2517,6 +2517,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get authPasswordLabel => 'Contraseña';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => '¿Olvidaste tu contraseña?';
 
   @override
@@ -2770,6 +2788,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Nueva contraseña';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort =>

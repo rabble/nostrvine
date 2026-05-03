@@ -2379,6 +2379,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authPasswordLabel => '비밀번호';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => '비밀번호를 잊으셨나요?';
 
   @override
@@ -2620,6 +2638,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => '새 비밀번호';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => '비밀번호는 최소 8자 이상이어야 해요';

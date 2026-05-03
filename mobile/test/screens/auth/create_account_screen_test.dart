@@ -143,6 +143,16 @@ void main() {
         );
       });
 
+      testWidgets('displays confirm password field', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('displays create account button', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -358,6 +368,16 @@ void main() {
             ),
             'SecurePass123!',
           );
+          await tester.enterText(
+            find.descendant(
+              of: find.widgetWithText(
+                DivineAuthTextField,
+                'Confirm password',
+              ),
+              matching: find.byType(TextField),
+            ),
+            'SecurePass123!',
+          );
 
           await tester.tap(find.widgetWithText(DivineButton, 'Create account'));
           await tester.pump();
@@ -366,6 +386,111 @@ void main() {
           expect(recorder.didFinishAutofillContext, isTrue);
         },
       );
+
+      testWidgets('blocks password mismatch before network submission', (
+        tester,
+      ) async {
+        // Stub headlessRegister so submit proceeds
+        when(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        ).thenAnswer(
+          (_) async => (
+            HeadlessRegisterResult(
+              success: true,
+              pubkey: 'test-pubkey',
+              verificationRequired: false,
+              email: 'test@example.com',
+            ),
+            'test-verifier',
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Enter email
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'test@example.com',
+        );
+
+        // Enter password
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+            matching: find.byType(TextField),
+          ),
+          'DifferentPass123!',
+        );
+
+        await tester.tap(find.widgetWithText(DivineButton, 'Create account'));
+        await tester.pumpAndSettle();
+
+        expect(find.text("Passwords don't match"), findsOneWidget);
+        verifyNever(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        );
+      });
+
+      testWidgets('blocks malformed email before network submission', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          'person@gmail..com',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+
+        // Tap create account
+        await tester.tap(find.widgetWithText(DivineButton, 'Create account'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Please enter a valid email'), findsOneWidget);
+        verifyNever(
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            scope: any(named: 'scope'),
+          ),
+        );
+      });
 
       testWidgets('calls submit on create account tap', (tester) async {
         // Stub headlessRegister so submit proceeds
@@ -403,6 +528,15 @@ void main() {
         await tester.enterText(
           find.descendant(
             of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          'SecurePass123!',
+        );
+
+        // Confirm password
+        await tester.enterText(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Confirm password'),
             matching: find.byType(TextField),
           ),
           'SecurePass123!',

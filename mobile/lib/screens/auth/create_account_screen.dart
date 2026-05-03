@@ -17,6 +17,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
 
@@ -33,6 +34,7 @@ class CreateAccountScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
     final oauthClient = ref.watch(oauthClientProvider);
     final authService = ref.watch(authServiceProvider);
     final pendingVerificationService = ref.watch(
@@ -49,6 +51,8 @@ class CreateAccountScreen extends ConsumerWidget {
         inviteApiClient: inviteApiClient,
         inviteCode: inviteAccessGrant?.code,
         inviteSourceSlug: inviteAccessGrant?.creatorSlug,
+        validationMessages: AuthValidationMessages.fromL10n(l10n),
+        requirePasswordConfirmation: true,
       )..initialize(),
       child: _CreateAccountView(inviteAccessGrant: inviteAccessGrant),
     );
@@ -112,12 +116,16 @@ class _CreateAccountBody extends StatefulWidget {
 class _CreateAccountBodyState extends State<_CreateAccountBody> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
+  late TextEditingController _confirmPasswordController;
 
   @override
   void initState() {
     super.initState();
     _emailController = TextEditingController(text: widget.state.email);
     _passwordController = TextEditingController(text: widget.state.password);
+    _confirmPasswordController = TextEditingController(
+      text: widget.state.confirmPassword,
+    );
   }
 
   @override
@@ -129,12 +137,16 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
     if (_passwordController.text != widget.state.password) {
       _passwordController.text = widget.state.password;
     }
+    if (_confirmPasswordController.text != widget.state.confirmPassword) {
+      _confirmPasswordController.text = widget.state.confirmPassword;
+    }
   }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -192,13 +204,20 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
       onBack: isDisabled ? null : () => context.pop(),
       emailController: _emailController,
       passwordController: _passwordController,
+      confirmPasswordController: _confirmPasswordController,
+      emailLabel: context.l10n.authEmailLabel,
+      passwordLabel: context.l10n.authPasswordLabel,
+      confirmPasswordLabel: context.l10n.authConfirmPasswordLabel,
       emailError: widget.state.emailError,
       passwordError: widget.state.passwordError,
+      confirmPasswordError: widget.state.confirmPasswordError,
       enabled: !isDisabled,
       onEmailChanged: (value) =>
           context.read<DivineAuthCubit>().updateEmail(value),
       onPasswordChanged: (value) =>
           context.read<DivineAuthCubit>().updatePassword(value),
+      onConfirmPasswordChanged: (value) =>
+          context.read<DivineAuthCubit>().updateConfirmPassword(value),
       errorWidget: widget.state.generalError != null
           ? Column(
               mainAxisSize: MainAxisSize.min,

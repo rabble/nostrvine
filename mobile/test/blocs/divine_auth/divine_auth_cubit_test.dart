@@ -1575,7 +1575,7 @@ void main() {
           obscurePassword: false,
           isSubmitting: true,
         );
-        expect(state.props, hasLength(12));
+        expect(state.props, hasLength(15));
       });
     });
 

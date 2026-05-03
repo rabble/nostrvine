@@ -2463,6 +2463,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authPasswordLabel => 'كلمة المرور';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'نسيت كلمة المرور؟';
 
   @override
@@ -2712,6 +2730,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'كلمة المرور الجديدة';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'يجب ألّا تقل كلمة المرور عن 8 أحرف';

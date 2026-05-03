@@ -4392,6 +4392,42 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get authPasswordLabel;
 
+  /// No description provided for @authConfirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authConfirmPasswordLabel;
+
+  /// No description provided for @authEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Email is required'**
+  String get authEmailRequired;
+
+  /// No description provided for @authEmailInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get authEmailInvalid;
+
+  /// No description provided for @authPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Password is required'**
+  String get authPasswordRequired;
+
+  /// No description provided for @authConfirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get authConfirmPasswordRequired;
+
+  /// No description provided for @authPasswordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords don\'t match'**
+  String get authPasswordsDoNotMatch;
+
   /// No description provided for @authForgotPassword.
   ///
   /// In en, this message translates to:
@@ -4847,6 +4883,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New Password'**
   String get authNewPasswordLabel;
+
+  /// No description provided for @authConfirmNewPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm new password'**
+  String get authConfirmNewPasswordLabel;
 
   /// No description provided for @authPasswordTooShort.
   ///

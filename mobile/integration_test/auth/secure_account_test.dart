@@ -109,17 +109,20 @@ void main() {
           reason: 'Should be on the Secure Account screen',
         );
 
-        // Fill email and password
+        // Fill email, password, and confirmation
         final textFields = find.byType(DivineAuthTextField);
         expect(
           textFields,
-          findsNWidgets(2),
-          reason: 'Secure account screen should show email and password fields',
+          findsNWidgets(3),
+          reason:
+              'Secure account screen should show email, password, and confirmation',
         );
 
         await tester.enterText(textFields.at(0), testEmail);
         await tester.pumpAndSettle();
         await tester.enterText(textFields.at(1), testPassword);
+        await tester.pumpAndSettle();
+        await tester.enterText(textFields.at(2), testPassword);
         await tester.pumpAndSettle();
 
         // Dismiss keyboard

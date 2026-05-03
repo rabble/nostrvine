@@ -2497,6 +2497,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get authPasswordLabel => 'Wachtwoord';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'Wachtwoord vergeten?';
 
   @override
@@ -2749,6 +2767,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Nieuw wachtwoord';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'Wachtwoord moet minstens 8 tekens zijn';

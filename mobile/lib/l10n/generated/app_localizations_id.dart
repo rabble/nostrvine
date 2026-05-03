@@ -2463,6 +2463,24 @@ class AppLocalizationsId extends AppLocalizations {
   String get authPasswordLabel => 'Kata Sandi';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'Lupa kata sandi?';
 
   @override
@@ -2715,6 +2733,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => 'Kata Sandi Baru';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'Kata sandi harus minimal 8 karakter';

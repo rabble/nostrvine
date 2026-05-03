@@ -2370,6 +2370,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authPasswordLabel => 'パスワード';
 
   @override
+  String get authConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authEmailRequired => 'Email is required';
+
+  @override
+  String get authEmailInvalid => 'Please enter a valid email';
+
+  @override
+  String get authPasswordRequired => 'Password is required';
+
+  @override
+  String get authConfirmPasswordRequired => 'Please confirm your password';
+
+  @override
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+
+  @override
   String get authForgotPassword => 'パスワードを忘れた?';
 
   @override
@@ -2609,6 +2627,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get authNewPasswordLabel => '新しいパスワード';
+
+  @override
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'パスワードは8文字以上にしてね';

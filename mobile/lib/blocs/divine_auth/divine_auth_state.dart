@@ -21,9 +21,12 @@ class DivineAuthFormState extends DivineAuthState {
   const DivineAuthFormState({
     this.email = '',
     this.password = '',
+    this.confirmPassword = '',
     this.isSignIn = false,
+    this.requiresPasswordConfirmation = false,
     this.emailError,
     this.passwordError,
+    this.confirmPasswordError,
     this.generalError,
     this.showInviteGateRecovery = false,
     this.inviteRecoveryCode,
@@ -39,14 +42,23 @@ class DivineAuthFormState extends DivineAuthState {
   /// User's password
   final String password;
 
+  /// Re-entered password for sign-up typo prevention.
+  final String confirmPassword;
+
   /// True for sign in mode, false for sign up mode
   final bool isSignIn;
+
+  /// Whether the current form should require confirm-password validation.
+  final bool requiresPasswordConfirmation;
 
   /// Error message for email field validation
   final String? emailError;
 
   /// Error message for password field validation
   final String? passwordError;
+
+  /// Error message for confirm-password validation
+  final String? confirmPasswordError;
 
   /// General error message (e.g., network error, auth failure)
   final String? generalError;
@@ -73,17 +85,22 @@ class DivineAuthFormState extends DivineAuthState {
   bool get canSubmit =>
       email.isNotEmpty &&
       password.isNotEmpty &&
+      (!requiresPasswordConfirmation || confirmPassword.isNotEmpty) &&
       emailError == null &&
       passwordError == null &&
+      confirmPasswordError == null &&
       !isSubmitting &&
       !isSkipping;
 
   DivineAuthFormState copyWith({
     String? email,
     String? password,
+    String? confirmPassword,
     bool? isSignIn,
+    bool? requiresPasswordConfirmation,
     String? emailError,
     String? passwordError,
+    String? confirmPasswordError,
     String? generalError,
     bool? showInviteGateRecovery,
     String? inviteRecoveryCode,
@@ -93,17 +110,24 @@ class DivineAuthFormState extends DivineAuthState {
     bool? isSkipping,
     bool clearEmailError = false,
     bool clearPasswordError = false,
+    bool clearConfirmPasswordError = false,
     bool clearGeneralError = false,
     bool clearInviteGateRecovery = false,
   }) {
     return DivineAuthFormState(
       email: email ?? this.email,
       password: password ?? this.password,
+      confirmPassword: confirmPassword ?? this.confirmPassword,
       isSignIn: isSignIn ?? this.isSignIn,
+      requiresPasswordConfirmation:
+          requiresPasswordConfirmation ?? this.requiresPasswordConfirmation,
       emailError: clearEmailError ? null : (emailError ?? this.emailError),
       passwordError: clearPasswordError
           ? null
           : (passwordError ?? this.passwordError),
+      confirmPasswordError: clearConfirmPasswordError
+          ? null
+          : (confirmPasswordError ?? this.confirmPasswordError),
       generalError: clearGeneralError
           ? null
           : (generalError ?? this.generalError),
@@ -126,9 +150,12 @@ class DivineAuthFormState extends DivineAuthState {
   List<Object?> get props => [
     email,
     password,
+    confirmPassword,
     isSignIn,
+    requiresPasswordConfirmation,
     emailError,
     passwordError,
+    confirmPasswordError,
     generalError,
     showInviteGateRecovery,
     inviteRecoveryCode,

@@ -57,19 +57,24 @@ Future<void> navigateToLoginOptions(WidgetTester tester) async {
 Future<void> registerNewUser(
   WidgetTester tester,
   String email,
-  String password,
-) async {
-  // CreateAccountScreen uses AuthFormScaffold with 2 fields: email + password
+  String password, {
+  String? confirmPassword,
+}) async {
+  // CreateAccountScreen uses AuthFormScaffold with email, password, and
+  // confirm password fields.
   final textFields = find.byType(DivineAuthTextField);
   expect(
     textFields,
-    findsNWidgets(2),
-    reason: 'Create account screen should show email and password fields',
+    findsNWidgets(3),
+    reason:
+        'Create account screen should show email, password, and confirmation',
   );
 
   await tester.enterText(textFields.at(0), email);
   await tester.pumpAndSettle();
   await tester.enterText(textFields.at(1), password);
+  await tester.pumpAndSettle();
+  await tester.enterText(textFields.at(2), confirmPassword ?? password);
   await tester.pumpAndSettle();
 
   // Dismiss keyboard
