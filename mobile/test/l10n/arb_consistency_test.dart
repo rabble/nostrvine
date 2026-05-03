@@ -373,6 +373,10 @@ const _knownUntranslatedDebt = {
   // divine.video/safety" link). Falls back to English in non-English
   // locales until translated.
   'reportLearnMoreAt',
+  // Added by #3908 (DM send-failure SnackBar + retry). Non-English locales
+  // fall back to English until the next translation pass.
+  'dmSendFailedMessage',
+  'dmSendFailedRetry',
 };
 
 Map<String, Object?> _readArb(File file) {
