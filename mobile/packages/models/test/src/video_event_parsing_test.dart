@@ -393,6 +393,30 @@ void main() {
       expect(videoEvent.collaboratorPubkeys, equals([collabPubkey1]));
     });
 
+    test('should accept historical capitalized collaborator markers', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['p', collabPubkey1, 'wss://relay.divine.video', 'Collaborator'],
+          ['p', collabPubkey2, 'wss://relay.divine.video', 'COLLABORATOR'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(
+        videoEvent.collaboratorPubkeys,
+        equals([
+          collabPubkey1,
+          collabPubkey2,
+        ]),
+      );
+    });
+
     test('should return empty collaborators when no p-tags', () {
       final nostrEvent = Event(
         authorPubkey,

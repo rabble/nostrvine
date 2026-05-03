@@ -1161,6 +1161,20 @@ void main() {
 
         expect(stats.collaboratorPubkeys, equals([collaborator1]));
       });
+
+      test('accepts historical capitalized collaborator markers', () {
+        final stats = VideoStats.fromJson(
+          buildJson([
+            ['p', collaborator1, '', 'Collaborator'],
+            ['p', collaborator2, '', 'COLLABORATOR'],
+          ]),
+        );
+
+        expect(
+          stats.collaboratorPubkeys,
+          equals([collaborator1, collaborator2]),
+        );
+      });
     });
 
     group('toVideoEvent', () {

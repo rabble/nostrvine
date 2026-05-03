@@ -64,6 +64,20 @@ Tags: Array of [tagName, tagValue, ...additionalParams]
 |-----|--------|-------------|----------|
 | `t` | `["t", "funny"]` | Hashtag (without #) | Optional |
 
+### Divine Collaborator Tags
+
+Divine uses a project-specific collaborator marker on top of the standard `p`
+tag shape for NIP-71 video events:
+
+| Tag | Format | Description |
+|-----|--------|-------------|
+| `p` | `["p", "<pubkey>", "<relay>", "collaborator"]` | Marks a tagged pubkey as a collaborator rather than a generic mention. |
+
+This role marker is a Divine convention, not a NIP-71 standardized field.
+Publishing is centralized in `mobile/lib/utils/collaborator_tags.dart`, and
+parsing is enforced in `mobile/packages/models/lib/src/video_event.dart` and
+`mobile/packages/models/lib/src/video_stats.dart`.
+
 ### Event Metadata
 
 | Tag | Format | Description | Required |

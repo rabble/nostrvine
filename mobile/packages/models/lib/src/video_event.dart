@@ -433,10 +433,10 @@ class VideoEvent {
             );
           }
         case 'p':
-          // NIP-71 collaborator p-tag:
+          // Divine collaborator p-tag convention on NIP-71 video events:
           // ["p", "<pubkey>", "<relay>", "collaborator"]
           if (tagValue.isNotEmpty && tagValue != event.pubkey) {
-            final role = tag.length >= 4 ? tag[3] : null;
+            final role = tag.length >= 4 ? tag[3].toLowerCase() : null;
             if (role == 'collaborator' &&
                 !collaboratorPubkeys.contains(tagValue)) {
               collaboratorPubkeys.add(tagValue);
@@ -730,7 +730,7 @@ class VideoEvent {
   final String? authorAvatar;
 
   // Attribution fields (collaborators and Inspired By)
-  /// Pubkeys of collaborators (non-author p-tags).
+  /// Pubkeys of collaborators from Divine's collaborator-marked `p` tags.
   final List<String> collaboratorPubkeys;
 
   /// Reference to the video that inspired this one (a-tag with 34236: prefix).
