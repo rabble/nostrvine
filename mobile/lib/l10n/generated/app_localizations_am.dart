@@ -4180,6 +4180,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportSelectReason => 'እባክዎ ይህን ይዘት ሪፖርት ለማድረግ ምክንያት ይምረጡ';
 
   @override
+  String get reportOtherRequiresDetails =>
+      'Please describe the issue when selecting Other';
+
+  @override
+  String get reportDetailsRequired => 'Please describe the issue';
+
+  @override
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
 
   @override

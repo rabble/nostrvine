@@ -1,5 +1,5 @@
 [tools]
-flutter = "3.41.4-stable"
+flutter = "3.41.4"
 
 [tasks.local_up]
 description = "Start all local E2E services"
