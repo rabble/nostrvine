@@ -5261,6 +5261,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+
+  @override
+  String get dmSendFailedRetry => 'Retry';
+
+  @override
   String get reportDialogCancel => 'Annuler';
 
   @override

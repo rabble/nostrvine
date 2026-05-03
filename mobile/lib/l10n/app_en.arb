@@ -2713,6 +2713,15 @@
     }
   },
 
+  "dmSendFailedMessage": "Message couldn't be sent",
+  "@dmSendFailedMessage": {
+    "description": "SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`."
+  },
+  "dmSendFailedRetry": "Retry",
+  "@dmSendFailedRetry": {
+    "description": "SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message."
+  },
+
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
 

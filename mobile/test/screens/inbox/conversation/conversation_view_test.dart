@@ -63,6 +63,12 @@ void main() {
     setUpAll(() {
       registerFallbackValue(fallbackInvite);
       registerFallbackValue(<CollaboratorInvite>[]);
+      registerFallbackValue(
+        const ConversationMessageSent(
+          recipientPubkeys: [otherPubkey],
+          content: '',
+        ),
+      );
     });
 
     setUp(() {
@@ -446,6 +452,181 @@ void main() {
             find.text('Hey, want to ride together this weekend?'),
             findsOneWidget,
           );
+        },
+      );
+    });
+
+    // Send-failure UX (companion to ConversationBloc's clear-optimistic-on-
+    // failure behavior). On `SendStatus.failed`, the bloc strips the
+    // optimistic message; the UI's job is to surface a retry SnackBar so
+    // the user knows the send actually failed and has a one-tap recovery.
+    // Without this listener, the only visible change would be a brief
+    // spinner flicker, and the user would discover the loss only after
+    // navigating away and back — the "looks sent, then disappeared" bug.
+    group('send-failure SnackBar', () {
+      const failedSendContent = 'Hi there';
+      const failedSend = FailedSend(
+        content: failedSendContent,
+        recipientPubkeys: [otherPubkey],
+      );
+
+      testWidgets(
+        'shows a localized retry SnackBar when sendStatus transitions to '
+        'failed',
+        (tester) async {
+          // Emit loaded → failed so the listenWhen guard fires.
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.failed,
+                lastFailedSend: failedSend,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: const ConversationView(
+                    participantPubkeys: [otherPubkey],
+                  ),
+                ),
+              ),
+            ),
+          );
+          // Drain the controlled stream + SnackBar enter animation.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(
+            find.text(l10n.dmSendFailedMessage),
+            findsOneWidget,
+            reason: 'localized failure message must come from context.l10n',
+          );
+          expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+          // Hardcoded English would silently regress if the widget stopped
+          // reading l10n — guard via the German variant.
+          final lookupGermanFailureMessage = lookupAppLocalizations(
+            const Locale('de'),
+          ).dmSendFailedMessage;
+          if (lookupGermanFailureMessage != l10n.dmSendFailedMessage) {
+            expect(find.text(lookupGermanFailureMessage), findsNothing);
+          }
+        },
+      );
+
+      testWidgets(
+        'does not show a SnackBar when sendStatus stays non-failed '
+        '(e.g. sending → sent)',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sending,
+              ),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sent,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: const ConversationView(
+                    participantPubkeys: [otherPubkey],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'tapping Retry redispatches ConversationMessageSent with the '
+        'last failed content + recipients',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.failed,
+                lastFailedSend: failedSend,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: const ConversationView(
+                    participantPubkeys: [otherPubkey],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(find.text(l10n.dmSendFailedRetry));
+          // Allow the SnackBar dismissal to settle.
+          await tester.pump();
+
+          final captured = verify(() => mockBloc.add(captureAny())).captured;
+          expect(captured, isNotEmpty);
+          final retryEvent = captured.last as ConversationMessageSent;
+          expect(retryEvent.content, equals(failedSendContent));
+          expect(retryEvent.recipientPubkeys, equals(const [otherPubkey]));
         },
       );
     });

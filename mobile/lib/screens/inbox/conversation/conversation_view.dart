@@ -102,34 +102,63 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      body: Column(
-        children: [
-          ConversationAppBar(
-            displayName: displayName,
-            handle: handle,
-            onBack: () => context.pop(),
-            onTitleTap: otherPubkey.isNotEmpty
-                ? () => context.push(
-                    '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
-                  )
-                : null,
-            onOptions: () => _onOptions(otherPubkey, displayName),
-          ),
-          Expanded(
-            child: _ConversationContent(
-              currentPubkey: currentPubkey,
-              otherPubkey: otherPubkey,
+      body: BlocListener<ConversationBloc, ConversationState>(
+        listenWhen: (previous, current) =>
+            previous.sendStatus != current.sendStatus &&
+            current.sendStatus == SendStatus.failed,
+        listener: _onSendFailed,
+        child: Column(
+          children: [
+            ConversationAppBar(
               displayName: displayName,
-              imageUrl: profile?.picture,
-              nip05: profile?.displayNip05,
-              onViewProfile: () {
-                final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                context.push('${OtherProfileScreen.path}/$npub');
-              },
+              handle: handle,
+              onBack: () => context.pop(),
+              onTitleTap: otherPubkey.isNotEmpty
+                  ? () => context.push(
+                      '${OtherProfileScreen.path}/${NostrKeyUtils.encodePubKey(otherPubkey)}',
+                    )
+                  : null,
+              onOptions: () => _onOptions(otherPubkey, displayName),
             ),
-          ),
-          _SendBar(participantPubkeys: widget.participantPubkeys),
-        ],
+            Expanded(
+              child: _ConversationContent(
+                currentPubkey: currentPubkey,
+                otherPubkey: otherPubkey,
+                displayName: displayName,
+                imageUrl: profile?.picture,
+                nip05: profile?.displayNip05,
+                onViewProfile: () {
+                  final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+                  context.push('${OtherProfileScreen.path}/$npub');
+                },
+              ),
+            ),
+            _SendBar(participantPubkeys: widget.participantPubkeys),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onSendFailed(BuildContext context, ConversationState state) {
+    final lastFailedSend = state.lastFailedSend;
+    if (lastFailedSend == null) return;
+    final l10n = context.l10n;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l10n.dmSendFailedMessage),
+        action: SnackBarAction(
+          label: l10n.dmSendFailedRetry,
+          onPressed: () {
+            context.read<ConversationBloc>().add(
+              ConversationMessageSent(
+                recipientPubkeys: lastFailedSend.recipientPubkeys,
+                content: lastFailedSend.content,
+              ),
+            );
+          },
+        ),
       ),
     );
   }

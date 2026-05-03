@@ -4994,6 +4994,12 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+
+  @override
+  String get dmSendFailedRetry => 'Retry';
+
+  @override
   String get reportDialogCancel => '취소';
 
   @override

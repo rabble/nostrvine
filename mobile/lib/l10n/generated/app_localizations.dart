@@ -9210,6 +9210,18 @@ abstract class AppLocalizations {
   /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
   String collaboratorInviteDmBodyUntitled(String url);
 
+  /// SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`.
+  ///
+  /// In en, this message translates to:
+  /// **'Message couldn\'t be sent'**
+  String get dmSendFailedMessage;
+
+  /// SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dmSendFailedRetry;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:

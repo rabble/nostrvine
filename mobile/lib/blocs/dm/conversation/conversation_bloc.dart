@@ -77,8 +77,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     Emitter<ConversationState> emit,
   ) async {
     // Optimistic insert: show the message instantly before the network
-    // round-trip. The stream from watchMessages will replace this with the
-    // persisted version once sendMessage completes and writes to the DB.
+    // round-trip. On success, the stream from watchMessages replaces this
+    // with the persisted version. On failure we strip the optimistic row
+    // ourselves — the watch stream cannot do it because no DB write
+    // happened, and a phantom optimistic that lingers until the bloc is
+    // disposed reproduces as "looks sent, then disappeared" once the user
+    // navigates away and back.
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final pendingId = 'pending-$now';
     final optimisticMessage = DmMessage(
@@ -94,6 +98,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       state.copyWith(
         sendStatus: SendStatus.sending,
         messages: [optimisticMessage, ...state.messages],
+        // A new attempt always supersedes a prior failure — retry replaces it.
+        clearLastFailedSend: true,
       ),
     );
 
@@ -120,7 +126,18 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
-      emit(state.copyWith(sendStatus: SendStatus.failed));
+      emit(
+        state.copyWith(
+          sendStatus: SendStatus.failed,
+          messages: state.messages
+              .where((m) => m.id != pendingId)
+              .toList(growable: false),
+          lastFailedSend: FailedSend(
+            content: event.content,
+            recipientPubkeys: event.recipientPubkeys,
+          ),
+        ),
+      );
     }
   }
 }

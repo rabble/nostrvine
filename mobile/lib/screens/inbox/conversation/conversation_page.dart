@@ -46,7 +46,17 @@ class ConversationPage extends ConsumerWidget {
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
+        // Key tracks the captured Riverpod-provided dependencies so the
+        // bloc is recreated when their identity flips (auth flip, account
+        // switch, sign-out). Without this key, a stale `dmRepository`
+        // captured during a brief unauthenticated window would scope all
+        // reads/writes by an empty/wrong `_userPubkey` for the lifetime of
+        // the bloc, causing sent messages to "disappear" on re-entry.
+        // See `state_management.md` → "Bridging Riverpod-provided
+        // dependencies into BlocProvider" and the canonical four sites in
+        // `video_feed_page.dart` / `pooled_fullscreen_video_feed_screen.dart`.
+        BlocProvider<ConversationBloc>(
+          key: ValueKey((dmRepository, currentPubkey)),
           create: (_) => ConversationBloc(
             dmRepository: dmRepository,
             conversationId: conversationId,
