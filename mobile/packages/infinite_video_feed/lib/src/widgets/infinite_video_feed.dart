@@ -548,7 +548,20 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       '${fromCache ? 'from cache' : 'from network'}',
     );
 
-    final controller = DivineVideoPlayerController(useTexture: true);
+    // Use the legacy Android `SurfaceTextureEntry` backend instead of the
+    // default `SurfaceProducer`. The feed renders many players concurrently;
+    // when a sibling player's decoder is released the Exynos C2 H.264
+    // driver triggers a global format reprobe, and SurfaceProducer's small
+    // ImageReader buffer pool can leak the previously-decoded frame onto a
+    // peer player's surface for one frame (visible flicker). The legacy
+    // single-buffer SurfaceTexture has no shared pool and is immune.
+    // Trade-off: no surface-recreate callback (e.g. permission dialogs);
+    // acceptable for the feed because the screen is always foregrounded
+    // while videos are playing. No effect on iOS/macOS.
+    final controller = DivineVideoPlayerController(
+      useTexture: true,
+      useLegacySurface: true,
+    );
     _controllers[index] = controller;
 
     try {

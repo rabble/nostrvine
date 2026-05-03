@@ -30,12 +30,30 @@ class DivineVideoPlayerController {
   /// on iOS/macOS where `UiKitView`/`AppKitView` are composited as
   /// separate `CALayer`s that bypass Flutter's rendering pipeline.
   /// Defaults to `false` (platform view).
-  DivineVideoPlayerController({this.useTexture = false});
+  ///
+  /// When [useLegacySurface] is `true` AND [useTexture] is `true`, the
+  /// Android side allocates a legacy `SurfaceTextureEntry` instead of
+  /// the default `SurfaceProducer`. The legacy backend has no
+  /// surface-recreate callback (so it can't transparently survive
+  /// permission dialogs / OEM compositor events), but it has no shared
+  /// `ImageReader` buffer pool either — which makes it immune to the
+  /// 1-frame ghost frame that surfaces when many `SurfaceProducer`-backed
+  /// players coexist and a sibling decoder is released (the feed flicker).
+  /// Use it for screens that render many players at once. No effect on
+  /// iOS/macOS. Defaults to `false`.
+  DivineVideoPlayerController({
+    this.useTexture = false,
+    this.useLegacySurface = false,
+  });
 
   /// Whether this player renders via a Flutter texture instead of a
   /// platform view. When `true` the widget should use the [Texture]
   /// widget with [textureId].
   final bool useTexture;
+
+  /// Whether to use the legacy Android `SurfaceTextureEntry` backend
+  /// instead of `SurfaceProducer`. See the constructor docs.
+  final bool useLegacySurface;
 
   static const _globalChannel = MethodChannel('divine_video_player');
 
@@ -184,7 +202,11 @@ class DivineVideoPlayerController {
 
     final result = await _globalChannel.invokeMethod<Map<Object?, Object?>>(
       'create',
-      {'id': _playerId, 'useTexture': useTexture},
+      {
+        'id': _playerId,
+        'useTexture': useTexture,
+        'useLegacySurface': useLegacySurface,
+      },
     );
     if (useTexture && result != null) {
       _textureId = result['textureId'] as int?;

@@ -3,6 +3,7 @@ package com.divinevideo.divine_video_player
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.view.Surface
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -55,13 +56,49 @@ internal class DivineVideoPlayerInstance(
     private var eventSink: EventChannel.EventSink? = null
 
     // Texture rendering (non-null when useTexture is enabled).
+    //
+    // Two backends are supported and selected per player at
+    // [enableTextureOutput] time:
+    //  * [TextureRegistry.SurfaceProducer] (default): Android 14+ ImageReader
+    //    backend. Forwards Surface destroy/recreate events via the
+    //    [TextureRegistry.SurfaceProducer.Callback] callback so playback can
+    //    survive OEM compositor events (Vivo/Android 16, permission dialogs).
+    //    Has a small (3–4) hardcoded buffer pool which can leak a stale
+    //    frame across decoder format reprobes — visible as a 1-frame ghost
+    //    when many players coexist (the feed). See #3416 / feed flicker.
+    //  * [TextureRegistry.SurfaceTextureEntry] (legacy): single-buffer
+    //    SurfaceTexture. No surface-recreate callback, but no shared pool
+    //    either, so it is immune to the cross-decoder ghost-frame issue.
+    //    Used by callers that render many players at once (the feed).
+    //
+    // Exactly one of these is non-null after [enableTextureOutput].
     private var surfaceProducer: TextureRegistry.SurfaceProducer? = null
+    private var legacyEntry: TextureRegistry.SurfaceTextureEntry? = null
+    private var legacySurface: Surface? = null
 
     /**
      * True when ExoPlayer needs a surface re-attached.
      * Set to true on init and after [onSurfaceCleanup]; cleared in [onSurfaceAvailable].
+     * Only meaningful for the [surfaceProducer] backend — the legacy
+     * SurfaceTexture surface is always available for the lifetime of the
+     * player.
      */
     private var needsSurface = true
+
+    /** The currently active output Surface across both backends. */
+    private val activeSurface: Surface?
+        get() = legacySurface ?: surfaceProducer?.surface
+
+    /**
+     * Whether the active backend already applies the GL transform matrix
+     * for video rotation (so Dart must NOT also apply RotatedBox).
+     * True for legacy SurfaceTexture (transform is encoded in the texture)
+     * and for SurfaceProducer when [TextureRegistry.SurfaceProducer.handlesCropAndRotation]
+     * reports true.
+     */
+    private val backendHandlesRotation: Boolean
+        get() = legacyEntry != null ||
+            (surfaceProducer?.handlesCropAndRotation() == true)
 
     /** Accumulated clip durations for global timeline calculation. */
     private var clipOffsets = listOf<Long>()
@@ -140,12 +177,31 @@ internal class DivineVideoPlayerInstance(
      * Must be called before any clips are loaded. Returns the texture
      * ID that Dart should pass to the `Texture` widget.
      *
-     * Uses [TextureRegistry.SurfaceProducer] instead of the legacy
-     * [TextureRegistry.SurfaceTextureEntry] so that Android can notify
-     * us when the underlying surface is destroyed and recreated (e.g.
-     * after a permission dialog or OEM compositor event on Vivo/Android 16).
+     * When [useLegacySurface] is `false` (default) this uses
+     * [TextureRegistry.SurfaceProducer] so Android can notify us when
+     * the underlying surface is destroyed and recreated (permission
+     * dialogs, OEM compositor events on Vivo/Android 16).
+     *
+     * When [useLegacySurface] is `true` this uses the legacy
+     * [TextureRegistry.SurfaceTextureEntry] which does not deliver
+     * surface-recreate callbacks but is immune to the SurfaceProducer
+     * ImageReader-pool ghost-frame issue. Use this for screens that
+     * render many players at once (the feed) where a sibling decoder's
+     * release can leak a stale frame onto a peer's surface.
      */
-    fun enableTextureOutput(registry: TextureRegistry): Long {
+    fun enableTextureOutput(
+        registry: TextureRegistry,
+        useLegacySurface: Boolean = false,
+    ): Long {
+        if (useLegacySurface) {
+            val entry = registry.createSurfaceTexture()
+            legacyEntry = entry
+            val surface = Surface(entry.surfaceTexture())
+            legacySurface = surface
+            needsSurface = false
+            player?.setVideoSurface(surface)
+            return entry.id()
+        }
         val producer = registry.createSurfaceProducer()
         surfaceProducer = producer
         producer.setCallback(this)
@@ -162,7 +218,7 @@ internal class DivineVideoPlayerInstance(
             player = newPlayer
             newPlayer.setSeekParameters(SeekParameters.EXACT)
             newPlayer.addListener(playerListener)
-            val surface = surfaceProducer?.surface
+            val surface = activeSurface
             if (surface != null) {
                 newPlayer.setVideoSurface(surface)
                 needsSurface = false
@@ -644,7 +700,7 @@ internal class DivineVideoPlayerInstance(
             // for the new clip. Not needed for PLAYLIST_CHANGED (reason=3) because
             // the surface is freshly attached at that point.
             if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
-                val surface = surfaceProducer?.surface
+                val surface = activeSurface
                 if (surface != null && !needsSurface) {
                     player?.setVideoSurface(null)
                     player?.setVideoSurface(surface)
@@ -675,18 +731,16 @@ internal class DivineVideoPlayerInstance(
         override fun onVideoSizeChanged(videoSize: androidx.media3.common.VideoSize) {
             videoWidth = videoSize.width
             videoHeight = videoSize.height
-            // Send 0 on the ImageReader/Impeller backend (Android 14+) because
-            // SurfaceProducer.handlesCropAndRotation() == true means the
-            // compositor already applies the GL transform matrix — RotatedBox
-            // in Dart would double-rotate. On the SurfaceTexture fallback
-            // (older devices) rotation is not applied, so Dart must compensate.
-            // This mirrors Flutter's own TextureExoPlayerEventListener which
-            // gates on handlesCropAndRotation() before reading rotationDegrees.
+            // Send 0 when the active backend already applies the GL transform
+            // matrix (legacy SurfaceTexture always does; SurfaceProducer does
+            // when handlesCropAndRotation() reports true on Android 14+).
+            // RotatedBox in Dart would double-rotate in those cases. On the
+            // SurfaceProducer fallback path Dart must compensate.
             //
             // Guard: ExoPlayer emits onVideoSizeChanged(0, 0) as an intermediate
             // reset during seeks and transitions; skip to avoid a brief flash
             // of 0° rotation.
-            val newRotation = if (surfaceProducer?.handlesCropAndRotation() == true) {
+            val newRotation = if (backendHandlesRotation) {
                 0
             } else {
                 player?.videoFormat?.rotationDegrees ?: 0
@@ -763,7 +817,13 @@ internal class DivineVideoPlayerInstance(
             it.stop()
             it.clearVideoSurface()
         }
-        needsSurface = true
+        // Only the SurfaceProducer backend hands the surface back later via
+        // onSurfaceAvailable. The legacy SurfaceTexture surface is owned
+        // for the player's lifetime and reattaches eagerly, so leave
+        // needsSurface untouched in that case.
+        if (surfaceProducer != null) {
+            needsSurface = true
+        }
         audioOverlayManager.pauseAll()
     }
 
@@ -789,6 +849,10 @@ internal class DivineVideoPlayerInstance(
         player = null
         surfaceProducer?.release()
         surfaceProducer = null
+        legacySurface?.release()
+        legacySurface = null
+        legacyEntry?.release()
+        legacyEntry = null
         audioOverlayManager.releaseAll()
         eventSink = null
     }
