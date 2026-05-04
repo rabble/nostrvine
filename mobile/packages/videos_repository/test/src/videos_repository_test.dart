@@ -6286,6 +6286,38 @@ void main() {
         expect(result!.id, equals(lowerEventId));
       });
 
+      test('resolves acceptable legacy video kinds by raw 64-char route ID', () async {
+        const eventId =
+            'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+        final legacyEvent = Event.fromJson({
+          'id': eventId,
+          'pubkey':
+              '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+          'created_at': 1739350000,
+          'kind': 22,
+          'tags': [
+            ['url', 'https://example.com/video.mp4'],
+            ['title', 'Legacy Video'],
+          ],
+          'content': '',
+          'sig': 'sig',
+        });
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [legacyEvent]);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(eventId);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+      });
+
       test(
         'falls back to stable-id lookup when a 64-char hex route is not an '
         'event id',
@@ -6320,6 +6352,56 @@ void main() {
             }
             if (filter.d?.contains(hexStableId) ?? false) {
               return [event];
+            }
+            return <Event>[];
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(hexStableId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.stableId, equals(hexStableId));
+        },
+      );
+
+      test(
+        'falls back to stable-id lookup for acceptable legacy video kinds',
+        () async {
+          const hexStableId =
+              'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+          const eventId =
+              'd695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+          final legacyEvent = Event.fromJson({
+            'id': eventId,
+            'pubkey':
+                '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+            'created_at': 1739350000,
+            'kind': 22,
+            'tags': [
+              ['url', 'https://example.com/video.mp4'],
+              ['title', 'Legacy Stable Video'],
+              ['d', hexStableId],
+            ],
+            'content': '',
+            'sig': 'sig',
+          });
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.single as List<Filter>;
+            final filter = filters.single;
+            if (filter.ids?.contains(hexStableId) ?? false) {
+              return <Event>[];
+            }
+            if (filter.d?.contains(hexStableId) ?? false) {
+              return [legacyEvent];
             }
             return <Event>[];
           });
@@ -6479,7 +6561,7 @@ void main() {
           expect(captured.single.d, equals([stableId]));
           expect(
             captured.single.kinds,
-            equals(NIP71VideoKinds.getAllVideoKinds()),
+            equals(NIP71VideoKinds.getAllAcceptableVideoKinds()),
           );
         },
       );

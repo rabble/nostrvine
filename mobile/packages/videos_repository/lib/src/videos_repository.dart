@@ -922,14 +922,17 @@ class VideosRepository {
   /// - The video has no playable URL
   /// - The video is expired (NIP-40)
   /// - The video fails content filtering
-  VideoEvent? _tryParseAndFilter(Event event) {
+  VideoEvent? _tryParseAndFilter(Event event, {bool permissive = false}) {
     // Skip events that aren't valid video kinds
-    if (!NIP71VideoKinds.isVideoKind(event.kind)) return null;
+    final isSupported = permissive
+        ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
+        : NIP71VideoKinds.isVideoKind(event.kind);
+    if (!isSupported) return null;
 
     // Block filter - check pubkey before parsing for efficiency
     if (_blockFilter?.call(event.pubkey) ?? false) return null;
 
-    final video = VideoEvent.fromNostrEvent(event);
+    final video = VideoEvent.fromNostrEvent(event, permissive: permissive);
 
     // Skip videos without a playable URL
     if (!video.hasVideo) return null;
@@ -1422,7 +1425,7 @@ class VideosRepository {
     if (candidate == null) return null;
 
     if (candidate.eventId != null) {
-      final byEventId = await fetchVideoWithStats(candidate.eventId!);
+      final byEventId = await _fetchRouteVideoByEventId(candidate.eventId!);
       if (byEventId != null) return byEventId;
     }
 
@@ -1437,7 +1440,10 @@ class VideosRepository {
     }
 
     if (candidate.stableId != null) {
-      final byStableId = await _fetchVideoByStableId(candidate.stableId!);
+      final byStableId = await _fetchVideoByStableId(
+        candidate.stableId!,
+        permissive: true,
+      );
       if (byStableId != null) return byStableId;
     }
 
@@ -1504,7 +1510,45 @@ class VideosRepository {
     );
   }
 
-  Future<VideoEvent?> _fetchVideoByStableId(String stableId) async {
+  Future<VideoEvent?> _fetchRouteVideoByEventId(String eventId) async {
+    if (eventId.isEmpty) return null;
+
+    final candidates = <Event>[];
+
+    if (_localStorage != null) {
+      candidates.addAll(await _localStorage.getEventsByIds([eventId]));
+    }
+
+    if (candidates.isEmpty) {
+      candidates.addAll(
+        await _nostrClient.queryEvents([
+          Filter(
+            ids: [eventId],
+            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+          ),
+        ]),
+      );
+    }
+
+    if (candidates.isEmpty) return null;
+
+    final videos = <VideoEvent>[];
+    for (final event in candidates) {
+      final video = _tryParseAndFilter(event, permissive: true);
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+    if (videos.isEmpty) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return hydrated.firstOrNull;
+  }
+
+  Future<VideoEvent?> _fetchVideoByStableId(
+    String stableId, {
+    bool permissive = false,
+  }) async {
     final candidates = <Event>[];
 
     if (_localStorage != null) {
@@ -1515,7 +1559,9 @@ class VideosRepository {
       candidates.addAll(
         await _nostrClient.queryEvents([
           Filter(
-            kinds: NIP71VideoKinds.getAllVideoKinds(),
+            kinds: permissive
+                ? NIP71VideoKinds.getAllAcceptableVideoKinds()
+                : NIP71VideoKinds.getAllVideoKinds(),
             d: [stableId],
             limit: 10,
           ),
@@ -1528,7 +1574,7 @@ class VideosRepository {
     candidates.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final videos = <VideoEvent>[];
     for (final event in candidates) {
-      final video = _tryParseAndFilter(event);
+      final video = _tryParseAndFilter(event, permissive: permissive);
       if (video != null) {
         videos.add(video);
       }

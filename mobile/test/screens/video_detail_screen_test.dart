@@ -42,6 +42,8 @@ void main() {
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
     late _MockVideosRepository mockVideosRepository;
+    late StreamController<Map<String, RelayConnectionStatus>>
+    relayStatusController;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
@@ -49,6 +51,8 @@ void main() {
       mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
       mockVideosRepository = _MockVideosRepository();
+      relayStatusController =
+          StreamController<Map<String, RelayConnectionStatus>>.broadcast();
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
@@ -57,6 +61,9 @@ void main() {
       when(() => mockNostrClient.isInitialized).thenReturn(true);
       when(() => mockNostrClient.hasKeys).thenReturn(false);
       when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrClient.relayStatusStream,
+      ).thenAnswer((_) => relayStatusController.stream);
       when(
         () => mockNostrClient.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
@@ -71,6 +78,10 @@ void main() {
       when(
         () => mockVideoEventService.shouldHideVideo(any()),
       ).thenReturn(false);
+    });
+
+    tearDown(() async {
+      await relayStatusController.close();
     });
 
     Widget buildSubject({String videoId = 'test_video_id'}) {
@@ -209,6 +220,59 @@ void main() {
           expect(find.text('Video not found'), findsOneWidget);
           expect(find.byIcon(Icons.error_outline), findsOneWidget);
           expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'retries once when relays become ready after cold-start miss',
+        (tester) async {
+          var connectedRelayCount = 0;
+          var isInitialized = false;
+          when(() => mockNostrClient.isInitialized).thenAnswer(
+            (_) => isInitialized,
+          );
+          when(() => mockNostrClient.connectedRelayCount).thenAnswer(
+            (_) => connectedRelayCount,
+          );
+
+          final video = createTestVideoEvent(
+            id: 'cold_start_video',
+            pubkey: 'test_pubkey',
+            title: 'Cold Start Video',
+          );
+
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'cold_start_video',
+            ),
+          ).thenAnswer((_) async {
+            if (!isInitialized || connectedRelayCount == 0) {
+              return null;
+            }
+            return video;
+          });
+
+          await tester.pumpWidget(buildSubject(videoId: 'cold_start_video'));
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.text('Video not found'), findsNothing);
+
+          isInitialized = true;
+          connectedRelayCount = 1;
+          relayStatusController.add({
+            'wss://relay.divine.video': RelayConnectionStatus.connected(
+              'wss://relay.divine.video',
+            ),
+          });
+
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
         },
       );
     });

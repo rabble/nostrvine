@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart' show NostrClient;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -47,6 +49,9 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   VideoEvent? _video;
   bool _isLoading = true;
   String? _error;
+  StreamSubscription? _relayReadySubscription;
+  bool _retryScheduled = false;
+  bool _hasRetriedAfterRelayReady = false;
 
   @override
   void initState() {
@@ -54,13 +59,23 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     _loadVideo();
   }
 
-  Future<void> _loadVideo() async {
+  @override
+  void dispose() {
+    _relayReadySubscription?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadVideo({bool allowRelayReadyRetry = true}) async {
     try {
       Log.info(
         '📱 Loading video from route ref: ${widget.videoId}',
         name: 'VideoDetailScreen',
         category: LogCategory.video,
       );
+
+      final nostrClient = ref.read(nostrServiceProvider);
+      final canQueryRelays =
+          nostrClient.isInitialized && nostrClient.connectedRelayCount > 0;
 
       // fetchVideoWithStats handles cache→relay lookup and bulk-stats
       // hydration in one call, matching what feed providers do.
@@ -79,10 +94,21 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           setState(() {
             _video = video;
             _isLoading = false;
+            _error = null;
           });
           ScreenAnalyticsService().markDataLoaded('video_detail');
         }
       } else {
+        if (allowRelayReadyRetry &&
+            !canQueryRelays &&
+            _scheduleRelayReadyRetry(nostrClient)) {
+          Log.info(
+            '⏳ Video lookup deferred until relay connection is ready',
+            name: 'VideoDetailScreen',
+            category: LogCategory.video,
+          );
+          return;
+        }
         Log.warning(
           '❌ Video not found: ${widget.videoId}',
           name: 'VideoDetailScreen',
@@ -96,6 +122,19 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         }
       }
     } catch (e) {
+      final nostrClient = ref.read(nostrServiceProvider);
+      final canQueryRelays =
+          nostrClient.isInitialized && nostrClient.connectedRelayCount > 0;
+      if (allowRelayReadyRetry &&
+          !canQueryRelays &&
+          _scheduleRelayReadyRetry(nostrClient)) {
+        Log.warning(
+          '⏳ Video lookup failed before relay readiness; waiting to retry: $e',
+          name: 'VideoDetailScreen',
+          category: LogCategory.video,
+        );
+        return;
+      }
       Log.error(
         'Error loading video: $e',
         name: 'VideoDetailScreen',
@@ -108,6 +147,43 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         });
       }
     }
+  }
+
+  bool _scheduleRelayReadyRetry(NostrClient nostrClient) {
+    if (_retryScheduled || _hasRetriedAfterRelayReady) {
+      return false;
+    }
+
+    _retryScheduled = true;
+    _relayReadySubscription?.cancel();
+
+    void retry() {
+      _relayReadySubscription?.cancel();
+      _relayReadySubscription = null;
+      _retryScheduled = false;
+      _hasRetriedAfterRelayReady = true;
+      if (!mounted) return;
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      unawaited(_loadVideo(allowRelayReadyRetry: false));
+    }
+
+    if (nostrClient.isInitialized && nostrClient.connectedRelayCount > 0) {
+      retry();
+      return true;
+    }
+
+    _relayReadySubscription = nostrClient.relayStatusStream.listen((statuses) {
+      final hasConnectedRelay = statuses.values.any(
+        (status) => status.isConnected,
+      );
+      if (hasConnectedRelay) {
+        retry();
+      }
+    });
+    return true;
   }
 
   @override
