@@ -2261,6 +2261,212 @@ void main() {
           expect(exception.statusCode, equals(500));
         });
       });
+
+      group(BlossomUploadFailureReason, () {
+        group('fromStatusCode', () {
+          test('returns null for null status', () {
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(null),
+              isNull,
+            );
+          });
+
+          test('returns null for 2xx success codes', () {
+            expect(BlossomUploadFailureReason.fromStatusCode(200), isNull);
+            expect(BlossomUploadFailureReason.fromStatusCode(201), isNull);
+            expect(BlossomUploadFailureReason.fromStatusCode(204), isNull);
+          });
+
+          test('returns null for 3xx redirect codes', () {
+            expect(BlossomUploadFailureReason.fromStatusCode(301), isNull);
+            expect(BlossomUploadFailureReason.fromStatusCode(304), isNull);
+          });
+
+          test('returns auth for 401 and 403', () {
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(401),
+              equals(BlossomUploadFailureReason.auth),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(403),
+              equals(BlossomUploadFailureReason.auth),
+            );
+          });
+
+          test('returns fileTooLarge for 413', () {
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(413),
+              equals(BlossomUploadFailureReason.fileTooLarge),
+            );
+          });
+
+          test('returns server for 5xx codes', () {
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(500),
+              equals(BlossomUploadFailureReason.server),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(502),
+              equals(BlossomUploadFailureReason.server),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(503),
+              equals(BlossomUploadFailureReason.server),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(504),
+              equals(BlossomUploadFailureReason.server),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(599),
+              equals(BlossomUploadFailureReason.server),
+            );
+          });
+
+          test('returns unknown for unmapped 4xx codes', () {
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(400),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(404),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(429),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+          });
+
+          test('returns unknown for codes outside 4xx/5xx', () {
+            expect(
+              BlossomUploadFailureReason.fromStatusCode(600),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+          });
+        });
+
+        group('fromDioException', () {
+          DioException dioException(
+            DioExceptionType type, {
+            int? statusCode,
+          }) {
+            final requestOptions = RequestOptions(path: '/upload');
+            return DioException(
+              requestOptions: requestOptions,
+              type: type,
+              response: statusCode == null
+                  ? null
+                  : Response<dynamic>(
+                      requestOptions: requestOptions,
+                      statusCode: statusCode,
+                    ),
+            );
+          }
+
+          test('returns network for connection timeout', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.connectionTimeout),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns network for send timeout', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.sendTimeout),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns network for receive timeout', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.receiveTimeout),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns network for connection error', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.connectionError),
+              ),
+              equals(BlossomUploadFailureReason.network),
+            );
+          });
+
+          test('returns server for badResponse with 5xx status', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(
+                  DioExceptionType.badResponse,
+                  statusCode: 503,
+                ),
+              ),
+              equals(BlossomUploadFailureReason.server),
+            );
+          });
+
+          test('returns auth for badResponse with 401', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(
+                  DioExceptionType.badResponse,
+                  statusCode: 401,
+                ),
+              ),
+              equals(BlossomUploadFailureReason.auth),
+            );
+          });
+
+          test('returns fileTooLarge for badResponse with 413', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(
+                  DioExceptionType.badResponse,
+                  statusCode: 413,
+                ),
+              ),
+              equals(BlossomUploadFailureReason.fileTooLarge),
+            );
+          });
+
+          test('returns unknown for badResponse with no status', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.badResponse),
+              ),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+          });
+
+          test('returns unknown for cancel', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(DioExceptionType.cancel),
+              ),
+              equals(BlossomUploadFailureReason.unknown),
+            );
+          });
+
+          test('uses status code for badCertificate when present', () {
+            expect(
+              BlossomUploadFailureReason.fromDioException(
+                dioException(
+                  DioExceptionType.badCertificate,
+                  statusCode: 502,
+                ),
+              ),
+              equals(BlossomUploadFailureReason.server),
+            );
+          });
+        });
+      });
     });
 
     group('testServerConnection', () {
@@ -2607,6 +2813,7 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorMessage, equals('Not authenticated'));
+        expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
       });
 
       test('returns failure when all servers fail', () async {
@@ -2641,9 +2848,232 @@ void main() {
         );
 
         expect(result.success, isFalse);
+        // Auth-header build failure (unsigned event) classifies as auth.
+        expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
 
         await tempDir.delete(recursive: true);
       });
+    });
+
+    group('uploadImage - failure classification', () {
+      late _MockDio mockDio;
+
+      setUp(() {
+        mockDio = _MockDio();
+        service = BlossomUploadService(
+          authProvider: mockAuthProvider,
+          dio: mockDio,
+          // Skip retry backoff so each failure test runs in milliseconds.
+          sleep: (_) async {},
+        );
+      });
+
+      Future<File> writeTempImage(String name) async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'image_upload_classification_',
+        );
+        return File('${tempDir.path}/$name')
+          ..writeAsBytesSync([0xFF, 0xD8, 0xFF]);
+      }
+
+      void arrangeAuthenticated() {
+        when(() => mockAuthProvider.isAuthenticated).thenReturn(true);
+        when(
+          () => mockAuthProvider.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer(
+          (_) async => _signedEvent(_testPublicKey, 24242, const [], 'upload'),
+        );
+      }
+
+      void arrangeLegacyCapability() {
+        when(
+          () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+        ).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: 200,
+            headers: Headers(),
+          ),
+        );
+      }
+
+      void arrangePutThrows(DioException exception) {
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenThrow(exception);
+      }
+
+      void arrangePutResponse({
+        required int statusCode,
+        Map<String, dynamic>? data,
+      }) {
+        when(
+          () => mockDio.put<dynamic>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+            onSendProgress: any(named: 'onSendProgress'),
+          ),
+        ).thenAnswer(
+          (_) async => Response<dynamic>(
+            requestOptions: RequestOptions(path: '/upload'),
+            statusCode: statusCode,
+            data: data,
+          ),
+        );
+      }
+
+      test('classifies connection timeout as network', () async {
+        arrangeAuthenticated();
+        arrangeLegacyCapability();
+        arrangePutThrows(
+          DioException(
+            requestOptions: RequestOptions(path: '/upload'),
+            type: DioExceptionType.connectionTimeout,
+          ),
+        );
+
+        final imageFile = await writeTempImage('timeout.jpg');
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.network),
+        );
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('classifies connection error as network', () async {
+        arrangeAuthenticated();
+        arrangeLegacyCapability();
+        arrangePutThrows(
+          DioException(
+            requestOptions: RequestOptions(path: '/upload'),
+            type: DioExceptionType.connectionError,
+            message: 'DNS lookup failed',
+          ),
+        );
+
+        final imageFile = await writeTempImage('connection_error.jpg');
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.network),
+        );
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('classifies HTTP 503 from server as server', () async {
+        arrangeAuthenticated();
+        arrangeLegacyCapability();
+        arrangePutResponse(
+          statusCode: 503,
+          data: {'error': 'Service Unavailable'},
+        );
+
+        final imageFile = await writeTempImage('server_503.jpg');
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.server),
+        );
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('classifies HTTP 401 from server as auth', () async {
+        arrangeAuthenticated();
+        arrangeLegacyCapability();
+        arrangePutResponse(
+          statusCode: 401,
+          data: {'error': 'Unauthorized'},
+        );
+
+        final imageFile = await writeTempImage('auth_401.jpg');
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.failureReason, equals(BlossomUploadFailureReason.auth));
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test('classifies HTTP 413 from server as fileTooLarge', () async {
+        arrangeAuthenticated();
+        arrangeLegacyCapability();
+        arrangePutResponse(
+          statusCode: 413,
+          data: {'error': 'Payload Too Large'},
+        );
+
+        final imageFile = await writeTempImage('too_large.jpg');
+        final result = await service.uploadImage(
+          imageFile: imageFile,
+          nostrPubkey: _testPublicKey,
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.failureReason,
+          equals(BlossomUploadFailureReason.fileTooLarge),
+        );
+
+        await imageFile.parent.delete(recursive: true);
+      });
+
+      test(
+        'classifies HTTP 400 (unmapped 4xx) from server as unknown',
+        () async {
+          arrangeAuthenticated();
+          arrangeLegacyCapability();
+          arrangePutResponse(
+            statusCode: 400,
+            data: {'error': 'Bad Request'},
+          );
+
+          final imageFile = await writeTempImage('bad_request.jpg');
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            result.failureReason,
+            equals(BlossomUploadFailureReason.unknown),
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
     });
 
     group('uploadBugReport - error paths', () {
