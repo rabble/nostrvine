@@ -346,7 +346,32 @@ const _knownUntranslatedDebt = {
   'badgesIssuedNoRecipients',
   'badgesRecipientAcceptedStatus',
   'badgesRecipientWaitingStatus',
+  // Added with signup credential validation. Translated for es/fr/de/it/pt/
+  // nl/sv/pl/ro/bg/id/tr; ja/ko/ar/am still fall back to English pending a
+  // native-speaker translation pass.
+  'authConfirmPasswordLabel',
+  'authEmailRequired',
+  'authEmailInvalid',
+  'authPasswordRequired',
+  'authConfirmPasswordRequired',
+  'authPasswordsDoNotMatch',
+  'authConfirmNewPasswordLabel',
+  // Added by the report-reason validation fix (#3475). The strings exist
+  // in app_en.arb but were not added to app_am.arb / app_bg.arb at the
+  // time. Generated locale files fall back to English until translators
+  // pick them up.
+  'reportOtherRequiresDetails',
+  'reportDetailsRequired',
+  // Added by the npub-demotion / verified-accounts work in #3933.
+  // English-only at first; non-English locales fall back to English until
+  // translators pick them up.
+  'profileEditPublicKeyLink',
+  'keyManagementYourPublicKeyLabel',
+  'keyManagementCopyPublicKeyTooltip',
+  'keyManagementPublicKeyCopied',
+  'verifiedAccountChipSemanticLabel',
 };
+
 Map<String, Object?> _readArb(File file) {
   return (jsonDecode(file.readAsStringSync()) as Map).cast<String, Object?>();
 }
