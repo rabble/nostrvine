@@ -4833,6 +4833,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu împărți niciodată nsec-ul cu nimeni!';
 
   @override
+  String get keyManagementKeycastRemoteSigning =>
+      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+
+  @override
   String get keyManagementPasteKey => 'Lipește cheia ta privată';
 
   @override

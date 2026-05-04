@@ -1,54 +1,44 @@
-// ABOUTME: Widget tests for the public-key (npub) display block on the key
-// ABOUTME: management screen: label, npub display, copy-to-clipboard.
+// ABOUTME: Widget tests for KeyManagementScreen public key and export capability UI
+// ABOUTME: Verifies public key copy plus Keycast local-vs-remote signing states
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
-class _MockAuthService extends Mock implements AuthService {}
-
-class _MockNostrClient extends Mock implements NostrClient {}
+import '../helpers/test_provider_overrides.dart';
 
 void main() {
   group(KeyManagementScreen, () {
     const testNpub =
         'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';
 
-    late _MockAuthService mockAuthService;
-    late _MockNostrClient mockNostrClient;
+    late MockAuthService authService;
 
     setUp(() {
-      mockAuthService = _MockAuthService();
-      mockNostrClient = _MockNostrClient();
-      when(() => mockAuthService.currentNpub).thenReturn(testNpub);
+      authService = createMockAuthService();
+      when(() => authService.currentNpub).thenReturn(testNpub);
+      when(() => authService.authenticationSource).thenReturn(
+        AuthenticationSource.importedKeys,
+      );
+      when(() => authService.canExportLocalNsec).thenReturn(false);
+      when(() => authService.exportNsec()).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject() {
-      return ProviderScope(
-        overrides: [
-          authServiceProvider.overrideWithValue(mockAuthService),
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
+    Future<void> pumpSubject(WidgetTester tester) async {
+      await tester.pumpWidget(
+        testMaterialApp(
           home: const KeyManagementScreen(),
+          mockAuthService: authService,
         ),
       );
     }
 
     testWidgets('renders the public key label', (tester) async {
-      await tester.pumpWidget(buildSubject());
+      await pumpSubject(tester);
       final l10n = lookupAppLocalizations(const Locale('en'));
       expect(find.text(l10n.keyManagementYourPublicKeyLabel), findsOneWidget);
     });
@@ -56,7 +46,7 @@ void main() {
     testWidgets('renders the user npub somewhere on the screen', (
       tester,
     ) async {
-      await tester.pumpWidget(buildSubject());
+      await pumpSubject(tester);
       expect(find.text(testNpub), findsOneWidget);
     });
 
@@ -74,7 +64,7 @@ void main() {
         },
       );
 
-      await tester.pumpWidget(buildSubject());
+      await pumpSubject(tester);
       final l10n = lookupAppLocalizations(const Locale('en'));
 
       await tester.tap(
@@ -85,5 +75,54 @@ void main() {
       expect(clipboardPayload, equals(testNpub));
       expect(find.text(l10n.keyManagementPublicKeyCopied), findsOneWidget);
     });
+
+    testWidgets(
+      'shows private key copy action when Keycast account has a local nsec',
+      (tester) async {
+        when(
+          () => authService.authenticationSource,
+        ).thenReturn(AuthenticationSource.divineOAuth);
+        when(() => authService.canExportLocalNsec).thenReturn(true);
+
+        await pumpSubject(tester);
+
+        expect(
+          find.text('Copy My Private Key (nsec)', skipOffstage: false),
+          findsOneWidget,
+        );
+        expect(
+          find.text(
+            'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.',
+            skipOffstage: false,
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'explains missing local nsec instead of showing copy action for RPC-only Keycast account',
+      (tester) async {
+        when(
+          () => authService.authenticationSource,
+        ).thenReturn(AuthenticationSource.divineOAuth);
+        when(() => authService.canExportLocalNsec).thenReturn(false);
+
+        await pumpSubject(tester);
+
+        expect(
+          find.text('Copy My Private Key (nsec)', skipOffstage: false),
+          findsNothing,
+        );
+        expect(
+          find.text(
+            'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.',
+            skipOffstage: false,
+          ),
+          findsOneWidget,
+        );
+        verifyNever(() => authService.exportNsec());
+      },
+    );
   });
 }

@@ -4819,6 +4819,10 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nigdy nie udostępniaj swojego nsec nikomu!';
 
   @override
+  String get keyManagementKeycastRemoteSigning =>
+      'This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.';
+
+  @override
   String get keyManagementPasteKey => 'Wklej swój klucz prywatny';
 
   @override

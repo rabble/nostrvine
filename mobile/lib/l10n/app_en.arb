@@ -2498,6 +2498,7 @@
   "keyManagementBackupSubtitle": "Save your private key (nsec) to use your account in other Nostr apps.",
   "keyManagementCopyNsec": "Copy My Private Key (nsec)",
   "keyManagementNeverShare": "Never share your nsec with anyone!",
+  "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
   "keyManagementPasteKey": "Please paste your private key",
   "keyManagementInvalidFormat": "Invalid key format. Must start with \"nsec1\"",
   "keyManagementConfirmImportTitle": "Import This Key?",

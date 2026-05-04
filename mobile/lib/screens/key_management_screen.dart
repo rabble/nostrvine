@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/authentication_source.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 
@@ -268,6 +269,12 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
   }
 
   Widget _buildExportSection(BuildContext context) {
+    final authService = ref.watch(authServiceProvider);
+    final canExportLocalNsec = authService.canExportLocalNsec;
+    final showKeycastRemoteSigningInfo =
+        !canExportLocalNsec &&
+        authService.authenticationSource == AuthenticationSource.divineOAuth;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -298,63 +305,99 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isProcessing ? null : () => _exportKey(context),
-                  icon: const Icon(Icons.copy, size: 20),
-                  label: Text(
-                    context.l10n.keyManagementCopyNsec,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: VineTheme.whiteText,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: VineTheme.error.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: VineTheme.error.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.security,
-                      color: VineTheme.error,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        context.l10n.keyManagementNeverShare,
-                        style: const TextStyle(
-                          color: VineTheme.onSurfaceVariant,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
+              if (canExportLocalNsec) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isProcessing ? null : () => _exportKey(context),
+                    icon: const Icon(Icons.copy, size: 20),
+                    label: Text(
+                      context.l10n.keyManagementCopyNsec,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: VineTheme.vineGreen,
+                      foregroundColor: VineTheme.whiteText,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: VineTheme.error.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: VineTheme.error.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.security,
+                        color: VineTheme.error,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          context.l10n.keyManagementNeverShare,
+                          style: const TextStyle(
+                            color: VineTheme.onSurfaceVariant,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (showKeycastRemoteSigningInfo)
+                _buildKeycastRemoteSigningInfo(context),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildKeycastRemoteSigningInfo(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VineTheme.vineGreen.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: VineTheme.vineGreen.withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.cloud_done_outlined,
+            color: VineTheme.vineGreen,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              context.l10n.keyManagementKeycastRemoteSigning,
+              style: const TextStyle(
+                color: VineTheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
