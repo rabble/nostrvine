@@ -350,6 +350,13 @@ const _knownUntranslatedDebt = {
   // pick them up.
   'reportOtherRequiresDetails',
   'reportDetailsRequired',
+  // Added by the npub-demotion / verified-accounts work in #3933.
+  // English-only at first; non-English locales fall back to English until
+  // translators pick them up.
+  'profileEditPublicKeyLink',
+  'keyManagementYourPublicKeyLabel',
+  'keyManagementCopyPublicKeyTooltip',
+  'keyManagementPublicKeyCopied',
 };
 
 Map<String, Object?> _readArb(File file) {
