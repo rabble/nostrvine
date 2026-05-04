@@ -6291,11 +6291,14 @@ void main() {
         'event id',
         () async {
           const hexStableId =
-              'cdb77b012caba00133fc071b568e334b279947f09d30df0ce819aedcd777b749';
+              'cdb77b012caba00133fc071b568e334b27'
+              '9947f09d30df0ce819aedcd777b749';
           const eventId =
-              'd695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+              'd695f6b60119d9521934a691347d9f78e8'
+              '770b56da16bb255ee77ac112b4c1f6';
           const author =
-              '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+              '5bf0c63fcb93463407af97a5e5ee64fa88'
+              '3d107ef9e558472c4eb9aaaefa459d';
           final event = _createVideoEvent(
             id: eventId,
             pubkey: author,
