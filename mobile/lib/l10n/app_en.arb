@@ -3656,5 +3656,13 @@
   "badgesIssuedEmptySubtitle": "Badges you issue will show acceptance status here.",
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
-  "badgesRecipientWaitingStatus": "Waiting for recipient"
+  "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "verifiedAccountChipSemanticLabel": "Verified {platform} account: {identity}",
+  "@verifiedAccountChipSemanticLabel": {
+    "description": "Screen reader label for a verified-account chip on a user's profile.",
+    "placeholders": {
+      "platform": { "type": "String" },
+      "identity": { "type": "String" }
+    }
+  }
 }

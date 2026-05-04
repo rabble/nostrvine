@@ -27,7 +27,9 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
+import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -766,6 +768,8 @@ class _ProfileSetupScreenViewState
                                 onChanged: (_) => setState(() {}),
                               ),
                               const SizedBox(height: 16),
+
+                              const _VerifiedAccountsSection(),
 
                               const _PublicKeyLink(),
                               const SizedBox(height: 16),
@@ -2241,6 +2245,25 @@ class _PublicKeyLink extends StatelessWidget {
           style: VineTheme.labelMediumFont(color: VineTheme.primary),
         ),
       ),
+    );
+  }
+}
+
+class _VerifiedAccountsSection extends StatelessWidget {
+  const _VerifiedAccountsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final claims = context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
+      final state = bloc.state;
+      if (state is MyProfileLoaded) return state.verifiedClaims;
+      if (state is MyProfileUpdated) return state.verifiedClaims;
+      return const [];
+    });
+    if (claims.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: VerifiedAccountsRow(claims: claims),
     );
   }
 }

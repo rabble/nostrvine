@@ -2448,22 +2448,22 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authPasswordLabel => 'የይለፍ ቃል';
 
   @override
-  String get authConfirmPasswordLabel => 'የይለፍ ቃል አረጋግጥ';
+  String get authConfirmPasswordLabel => 'Confirm password';
 
   @override
-  String get authEmailRequired => 'ኢሜይል ያስፈልጋል';
+  String get authEmailRequired => 'Email is required';
 
   @override
-  String get authEmailInvalid => 'እባክህ ትክክለኛ ኢሜይል አስገባ';
+  String get authEmailInvalid => 'Please enter a valid email';
 
   @override
-  String get authPasswordRequired => 'የይለፍ ቃል ያስፈልጋል';
+  String get authPasswordRequired => 'Password is required';
 
   @override
-  String get authConfirmPasswordRequired => 'እባክህ የይለፍ ቃልህን አረጋግጥ';
+  String get authConfirmPasswordRequired => 'Please confirm your password';
 
   @override
-  String get authPasswordsDoNotMatch => 'የይለፍ ቃሎቹ አይዛመዱም';
+  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
 
   @override
   String get authForgotPassword => 'የይለፍ ቃል ረሱ?';
@@ -2735,7 +2735,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authNewPasswordLabel => 'አዲስ የይለፍ ቃል';
 
   @override
-  String get authConfirmNewPasswordLabel => 'አዲሱን የይለፍ ቃል አረጋግጥ';
+  String get authConfirmNewPasswordLabel => 'Confirm new password';
 
   @override
   String get authPasswordTooShort => 'የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት።';
@@ -4429,16 +4429,16 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get keyManagementYourPublicKeyLabel => 'የህዝብ ቁልፍህ (npub)';
+  String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';
 
   @override
-  String get keyManagementCopyPublicKeyTooltip => 'የህዝብ ቁልፍ ቅዳ';
+  String get keyManagementCopyPublicKeyTooltip => 'Copy public key';
 
   @override
-  String get keyManagementPublicKeyCopied => 'የህዝብ ቁልፍ ተቀድቷል';
+  String get keyManagementPublicKeyCopied => 'Public key copied';
 
   @override
-  String get profileEditPublicKeyLink => 'የህዝብ ቁልፍህን ይመልከቱ';
+  String get profileEditPublicKeyLink => 'View your public key';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'ወደ ካሜራ ጥቅል ተቀምጧል';
@@ -5574,7 +5574,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get blossomServerUrlMustUseHttps =>
-      'የBlossom አገልጋይ URL https:// መጠቀም አለበት';
+      'Blossom server URL must use https://';
 
   @override
   String get blueskyFailedToUpdateCrosspost => 'መስቀለኛ መንገድን ማዘመን አልተሳካም።';
@@ -5983,24 +5983,6 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoRecorderWhySixSecondsButton => 'ገባኝ!';
-
-  @override
-  String get videoRecorderUploadTitle => 'ለምን መጫን የለም?';
-
-  @override
-  String get videoRecorderUploadBody =>
-      'በዲቫይን ላይ የምታየው በሰው የተሰራ ነው፦ ጥሬ እና በወቅቱ የተቀረጸ። በከፍተኛ የተዘጋጁ ወይም በAI የተፈጠሩ ጭነቶችን የሚፈቅዱ መድረኮች በተለየ መልኩ፣ የቀጥታ ካሜራ ተሞክሮን ትክክለኛነት እናስቀድማለን።';
-
-  @override
-  String get videoRecorderUploadBodyDetail =>
-      'ፍጠራን ከመተግበሪያው ውስጥ በማቆየት፣ ይዘቱ እውነተኛ እና ያልተስተካከለ መሆኑን በተሻለ ሁኔታ ልንዋስ እንችላለን። ያን እውነተኛነት ለመጠበቅና ማህበረሰባችንን በተቻለ መጠን ከሰው ሰራሽ ይዘት ነጻ ለማድረግ፣ በአሁኑ ጊዜ ከውጪ ጋለሪ መጫን አንፈቅድም።';
-
-  @override
-  String get videoRecorderUploadBodyCta =>
-      'እውነተኛ ነገር ለመቅረጽ ወደ Capture ወይም Classic ቀይር።';
-
-  @override
-  String get videoRecorderUploadLearnMore => 'ማረጋገጫ እንዴት እንደሚሰራ ተማር';
 
   @override
   String get videoRecorderAutosaveFoundTitle => 'በሂደት ላይ ያለ ስራ አግኝተናል';
@@ -6643,69 +6625,77 @@ class AppLocalizationsAm extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'ቪዲዮ ተወግዷል';
 
   @override
-  String get settingsBadgesTitle => 'ባጆች';
+  String get settingsBadgesTitle => 'Badges';
 
   @override
-  String get settingsBadgesSubtitle => 'ሽልማቶችን ተቀበል እና የተሰጡ ባጆችን ሁኔታ ተመልከት።';
+  String get settingsBadgesSubtitle =>
+      'Accept awards and check issued badge status.';
 
   @override
-  String get badgesTitle => 'ባጆች';
+  String get badgesTitle => 'Badges';
 
   @override
-  String get badgesIntroTitle => 'የባጅ ጉዞህን ተረዳ';
+  String get badgesIntroTitle => 'Understand your badge trail';
 
   @override
   String get badgesIntroBody =>
-      'ለአንተ የተላኩ የባጅ ሽልማቶችን ተመልከት፣ በNostr መገለጫህ ላይ የሚሰካውን ምረጥ፣ እና ሰዎች የሰጠሃቸውን ባጆች ተቀብለው እንደሆነ አረጋግጥ።';
+      'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.';
 
   @override
-  String get badgesOpenApp => 'የባጆች መተግበሪያ ክፈት';
+  String get badgesOpenApp => 'Open badges app';
 
   @override
-  String get badgesLoadError => 'ባጆችን መጫን አልተቻለም';
+  String get badgesLoadError => 'Could not load badges';
 
   @override
-  String get badgesUpdateError => 'ባጅን ማዘመን አልተቻለም';
+  String get badgesUpdateError => 'Could not update badge';
 
   @override
-  String get badgesAwardedSectionTitle => 'ለአንተ የተሰጡ';
+  String get badgesAwardedSectionTitle => 'Awarded to you';
 
   @override
-  String get badgesAwardedEmptyTitle => 'እስካሁን ምንም የባጅ ሽልማት የለም';
+  String get badgesAwardedEmptyTitle => 'No badge awards yet';
 
   @override
-  String get badgesAwardedEmptySubtitle => 'አንድ ሰው የNostr ባጅ ሲሸልምህ፣ እዚህ ይታያል።';
+  String get badgesAwardedEmptySubtitle =>
+      'When someone awards you a Nostr badge, it will land here.';
 
   @override
-  String get badgesStatusAccepted => 'ተቀብሏል';
+  String get badgesStatusAccepted => 'Accepted';
 
   @override
-  String get badgesStatusNotAccepted => 'አልተቀበለም';
+  String get badgesStatusNotAccepted => 'Not accepted';
 
   @override
-  String get badgesActionRemove => 'አስወግድ';
+  String get badgesActionRemove => 'Remove';
 
   @override
-  String get badgesActionAccept => 'ተቀበል';
+  String get badgesActionAccept => 'Accept';
 
   @override
-  String get badgesActionReject => 'አትቀበል';
+  String get badgesActionReject => 'Reject';
 
   @override
-  String get badgesIssuedSectionTitle => 'በአንተ የተሰጡ';
+  String get badgesIssuedSectionTitle => 'Issued by you';
 
   @override
-  String get badgesIssuedEmptyTitle => 'እስካሁን ምንም የተሰጡ ባጆች የሉም';
+  String get badgesIssuedEmptyTitle => 'No issued badges yet';
 
   @override
-  String get badgesIssuedEmptySubtitle => 'የምትሰጣቸው ባጆች የመቀበል ሁኔታቸውን እዚህ ያሳያሉ።';
+  String get badgesIssuedEmptySubtitle =>
+      'Badges you issue will show acceptance status here.';
 
   @override
-  String get badgesIssuedNoRecipients => 'ለዚህ ሽልማት ምንም ተቀባዮች አልተገኙም።';
+  String get badgesIssuedNoRecipients => 'No recipients found for this award.';
 
   @override
-  String get badgesRecipientAcceptedStatus => 'ተቀባዩ ተቀብሎታል';
+  String get badgesRecipientAcceptedStatus => 'Accepted by recipient';
 
   @override
-  String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
+  String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Verified $platform account: $identity';
+  }
 }

@@ -12093,6 +12093,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
+
+  /// Screen reader label for a verified-account chip on a user's profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified {platform} account: {identity}'**
+  String verifiedAccountChipSemanticLabel(String platform, String identity);
 }
 
 class _AppLocalizationsDelegate
