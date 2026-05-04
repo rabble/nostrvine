@@ -22,6 +22,7 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
+import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -365,9 +366,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                         fromEditor: widget.fromEditor,
                       ),
                       .classic => const VideoRecorderClassicStack(),
-                      // TODO(camera-upload-mode-explainer): replace placeholder
-                      // with the upload-mode explainer stack in Task 4.
-                      .upload => const SizedBox.shrink(),
+                      .upload => const VideoRecorderUploadStack(),
                     },
                   ),
                 ),
