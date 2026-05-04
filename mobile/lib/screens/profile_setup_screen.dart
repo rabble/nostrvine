@@ -72,6 +72,9 @@ class ProfileSetupScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
+    final identityClaimsRepository = ref.watch(
+      identityClaimsRepositoryProvider,
+    );
 
     final pubkey = authService.currentPublicKeyHex;
 
@@ -94,6 +97,7 @@ class ProfileSetupScreen extends ConsumerWidget {
             final bloc = MyProfileBloc(
               profileRepository: profileRepository,
               pubkey: pubkey,
+              identityClaimsRepository: identityClaimsRepository,
             );
             if (!isNewUser) bloc.add(const MyProfileLoadRequested());
             return bloc;

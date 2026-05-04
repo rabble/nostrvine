@@ -17,7 +17,9 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   MyProfileBloc({
     required ProfileRepository profileRepository,
     required this.pubkey,
+    IdentityClaimsRepository? identityClaimsRepository,
   }) : _profileRepository = profileRepository,
+       _identityClaimsRepository = identityClaimsRepository,
        super(const MyProfileInitial()) {
     on<MyProfileLoadRequested>(_onLoadRequested);
     on<MyProfileSubscriptionRequested>(
@@ -25,9 +27,11 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       transformer: restartable(),
     );
     on<MyProfileFetchRequested>(_onFetchRequested);
+    on<VerifiedClaimsRequested>(_onVerifiedClaimsRequested);
   }
 
   final ProfileRepository _profileRepository;
+  final IdentityClaimsRepository? _identityClaimsRepository;
 
   /// The pubkey of the current user.
   final String pubkey;
@@ -63,6 +67,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             externalNip05: freshProfile.externalNip05,
           ),
         );
+        add(const VerifiedClaimsRequested());
       } else if (cachedProfile != null) {
         emit(
           MyProfileLoaded(
@@ -72,6 +77,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             externalNip05: cachedProfile.externalNip05,
           ),
         );
+        add(const VerifiedClaimsRequested());
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
       }
@@ -85,6 +91,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             externalNip05: cachedProfile.externalNip05,
           ),
         );
+        add(const VerifiedClaimsRequested());
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.networkError));
       }
@@ -101,6 +108,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       _profileRepository.watchProfile(pubkey: pubkey),
       onData: (profile) {
         if (profile != null) {
+          add(const VerifiedClaimsRequested());
           return MyProfileUpdated(
             profile: profile,
             extractedUsername: profile.divineUsername,
@@ -124,6 +132,53 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       await _profileRepository.fetchFreshProfile(pubkey: pubkey);
     } on Exception catch (e, stackTrace) {
       addError(e, stackTrace);
+    }
+  }
+
+  Future<void> _onVerifiedClaimsRequested(
+    VerifiedClaimsRequested event,
+    Emitter<MyProfileState> emit,
+  ) async {
+    final repo = _identityClaimsRepository;
+    if (repo == null) return;
+
+    final current = state;
+    final UserProfile profile;
+    if (current is MyProfileLoaded) {
+      profile = current.profile;
+    } else if (current is MyProfileUpdated) {
+      profile = current.profile;
+    } else {
+      return;
+    }
+
+    try {
+      final claims = await repo.verifiedClaims(
+        pubkey: profile.pubkey,
+        tags: profile.rawTags,
+      );
+      // State may have changed mid-await; re-check before emitting.
+      final latest = state;
+      if (latest is MyProfileLoaded &&
+          latest.profile.pubkey == profile.pubkey) {
+        emit(latest.copyWith(verifiedClaims: claims));
+      } else if (latest is MyProfileUpdated &&
+          latest.profile.pubkey == profile.pubkey) {
+        emit(latest.copyWith(verifiedClaims: claims));
+      }
+    } on Exception catch (e, stackTrace) {
+      // Verifier failures are expected (network/4xx/5xx/timeout). Per
+      // .claude/rules/error_handling.md they are NOT Reportable. Surface as
+      // empty list rather than blocking the UI.
+      addError(e, stackTrace);
+      final latest = state;
+      if (latest is MyProfileLoaded &&
+          latest.profile.pubkey == profile.pubkey) {
+        emit(latest.copyWith(verifiedClaims: const []));
+      } else if (latest is MyProfileUpdated &&
+          latest.profile.pubkey == profile.pubkey) {
+        emit(latest.copyWith(verifiedClaims: const []));
+      }
     }
   }
 }
