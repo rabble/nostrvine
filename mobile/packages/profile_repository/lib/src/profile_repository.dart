@@ -512,6 +512,7 @@ class ProfileRepository {
     String? banner,
     String? website,
     bool clearWebsite = false,
+    List<NostrIdentityClaim>? identityClaims,
     UserProfile? currentProfile,
   }) async {
     // External NIP-05 takes precedence when provided.
@@ -539,8 +540,20 @@ class ProfileRepository {
       profileContent.remove('website');
     }
 
+    // Resolve which i-tag set to publish:
+    //   - identityClaims provided (even empty) → caller is editing the set,
+    //     publish exactly what they passed (clears any previously-set claims)
+    //   - identityClaims null + currentProfile present → preserve the
+    //     existing claims so unrelated saves don't drop them
+    //   - both null → no tags
+    final resolvedClaims = identityClaims ?? currentProfile?.identityClaims;
+    final tags = <List<String>>[
+      for (final c in resolvedClaims ?? const <NostrIdentityClaim>[]) c.toTag(),
+    ];
+
     final result = await _nostrClient.sendProfile(
       profileContent: profileContent,
+      tags: tags,
     );
 
     // Switch exhaustively over the typed result — no post-failure

@@ -838,11 +838,12 @@ class NostrClient {
   ///   other than empty relay list (e.g. serialisation error).
   Future<SendProfileResult> sendProfile({
     required Map<String, dynamic> profileContent,
+    List<List<String>> tags = const [],
   }) async {
     final event = Event(
       publicKey,
       EventKind.metadata,
-      [],
+      tags,
       jsonEncode(profileContent),
     );
 

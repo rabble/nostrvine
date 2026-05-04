@@ -1639,6 +1639,53 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'forwards identityClaims to saveProfileEvent unchanged',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              identityClaims: any(named: 'identityClaims'),
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            identityClaims: [
+              NostrIdentityClaim(
+                platform: IdentityPlatform.github,
+                identity: 'rabble',
+                proof: 'p',
+              ),
+            ],
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              identityClaims: const [
+                NostrIdentityClaim(
+                  platform: IdentityPlatform.github,
+                  identity: 'rabble',
+                  proof: 'p',
+                ),
+              ],
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'leaves clearWebsite false when no current website exists',
         setUp: () {
           when(

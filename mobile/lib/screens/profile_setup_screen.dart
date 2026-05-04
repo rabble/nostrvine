@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:models/models.dart' show IdentityPlatform, NostrIdentityClaim;
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
@@ -135,6 +136,7 @@ class _ProfileSetupScreenViewState
   File? _selectedImage;
   String? _uploadedImageUrl;
   Color? _selectedProfileColor;
+  final List<_ClaimDraft> _claimDrafts = [];
 
   @override
   void initState() {
@@ -173,6 +175,11 @@ class _ProfileSetupScreenViewState
     _usernameFocusNode.dispose();
     _externalNip05FocusNode.dispose();
 
+    for (final draft in _claimDrafts) {
+      draft.dispose();
+    }
+    _claimDrafts.clear();
+
     super.dispose();
   }
 
@@ -196,6 +203,24 @@ class _ProfileSetupScreenViewState
               _bioController.text = profile.about ?? '';
               _websiteController.text = profile.website ?? '';
               _pictureController.text = profile.picture ?? '';
+
+              // Replace seed drafts with the persisted claim set so the
+              // editor reflects the current Kind-0 state. Disposes any
+              // existing drafts first to avoid leaking controllers.
+              for (final draft in _claimDrafts) {
+                draft.dispose();
+              }
+              _claimDrafts
+                ..clear()
+                ..addAll(
+                  profile.identityClaims.map(
+                    (c) => _ClaimDraft(
+                      platform: c.platform,
+                      identity: c.identity,
+                      proof: c.proof,
+                    ),
+                  ),
+                );
               _selectedProfileColor = profile.profileBackgroundColor;
 
               if (extractedUsername != null) {
@@ -826,6 +851,15 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 16),
 
+                              // External identity claims (NIP-39).
+                              _IdentityClaimsSection(
+                                drafts: _claimDrafts,
+                                onAdd: _addClaimDraft,
+                                onRemove: _removeClaimDraft,
+                                onPlatformChanged: _updateClaimPlatform,
+                              ),
+                              const SizedBox(height: 16),
+
                               const _PublicKeyLink(),
                               const SizedBox(height: 16),
 
@@ -1094,6 +1128,7 @@ class _ProfileSetupScreenViewState
                                 displayName: _nameController.text,
                                 about: _bioController.text,
                                 website: _websiteController.text,
+                                identityClaims: _collectClaims(),
                                 username: _nip05Controller.text,
                                 externalNip05: _externalNip05Controller.text,
                                 picture: _pictureController.text,
@@ -1138,8 +1173,34 @@ class _ProfileSetupScreenViewState
         banner: _selectedProfileColor != null
             ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
             : null,
+        identityClaims: _collectClaims(),
       ),
     );
+  }
+
+  /// Returns the NIP-39 claims with non-empty identity, in the order the
+  /// user arranged them. Empty drafts are skipped — they're scaffolded
+  /// rows the user added but never filled in.
+  List<NostrIdentityClaim> _collectClaims() => [
+    for (final draft in _claimDrafts) ?draft.toClaim(),
+  ];
+
+  void _addClaimDraft() {
+    setState(() {
+      _claimDrafts.add(_ClaimDraft(platform: IdentityPlatform.github));
+    });
+  }
+
+  void _removeClaimDraft(int index) {
+    setState(() {
+      _claimDrafts.removeAt(index).dispose();
+    });
+  }
+
+  void _updateClaimPlatform(int index, IdentityPlatform platform) {
+    setState(() {
+      _claimDrafts[index].platform = platform;
+    });
   }
 
   ImageProvider<Object>? _buildProfilePictureProvider() {
@@ -1517,6 +1578,168 @@ class _ProfileSetupScreenViewState
         FocusScope.of(context).unfocus();
       }
     });
+  }
+}
+
+/// External-identity claims editor section.
+///
+/// Renders one [_ClaimDraftRow] per draft plus an add button. The state
+/// (the draft list itself) lives on [_ProfileSetupScreenViewState] so it
+/// survives bloc rebuilds; this widget is a stateless view over it.
+class _IdentityClaimsSection extends StatelessWidget {
+  const _IdentityClaimsSection({
+    required this.drafts,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onPlatformChanged,
+  });
+
+  final List<_ClaimDraft> drafts;
+  final VoidCallback onAdd;
+  final void Function(int index) onRemove;
+  final void Function(int index, IdentityPlatform platform) onPlatformChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l10n.profileSetupExternalAccountsLabel,
+            style: VineTheme.labelMediumFont(
+              color: VineTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.profileSetupExternalAccountsHelper,
+            style: VineTheme.labelSmallFont(
+              color: VineTheme.onSurfaceMuted,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < drafts.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ClaimDraftRow(
+                draft: drafts[i],
+                onPlatformChanged: (p) => onPlatformChanged(i, p),
+                onRemove: () => onRemove(i),
+              ),
+            ),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(l10n.profileSetupAddExternalAccount),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClaimDraftRow extends StatelessWidget {
+  const _ClaimDraftRow({
+    required this.draft,
+    required this.onPlatformChanged,
+    required this.onRemove,
+  });
+
+  final _ClaimDraft draft;
+  final void Function(IdentityPlatform platform) onPlatformChanged;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<IdentityPlatform>(
+                initialValue: draft.platform,
+                isExpanded: true,
+                items: [
+                  for (final p in IdentityPlatform.values)
+                    DropdownMenuItem(value: p, child: Text(p.displayName)),
+                ],
+                onChanged: (value) {
+                  if (value != null) onPlatformChanged(value);
+                },
+              ),
+            ),
+            IconButton(
+              tooltip: l10n.profileSetupRemoveExternalAccount,
+              onPressed: onRemove,
+              icon: const Icon(Icons.close),
+            ),
+          ],
+        ),
+        TextField(
+          controller: draft.identityController,
+          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+          autocorrect: false,
+          enableSuggestions: false,
+          decoration: InputDecoration(
+            isCollapsed: true,
+            hintText: l10n.profileSetupExternalIdentityHint,
+            hintStyle: const TextStyle(color: VineTheme.lightText),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: draft.proofController,
+          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+          keyboardType: TextInputType.url,
+          autocorrect: false,
+          enableSuggestions: false,
+          decoration: InputDecoration(
+            isCollapsed: true,
+            hintText: l10n.profileSetupExternalProofHint,
+            hintStyle: const TextStyle(color: VineTheme.lightText),
+            contentPadding: const EdgeInsets.all(12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// In-memory editor row for one external-identity claim. Owns its own
+/// controllers so each row can be added/removed independently.
+class _ClaimDraft {
+  _ClaimDraft({required this.platform, String identity = '', String proof = ''})
+    : identityController = TextEditingController(text: identity),
+      proofController = TextEditingController(text: proof);
+
+  IdentityPlatform platform;
+  final TextEditingController identityController;
+  final TextEditingController proofController;
+
+  /// Builds a [NostrIdentityClaim] from the current field values, returning
+  /// null when the identity is empty (skip incomplete drafts on save).
+  NostrIdentityClaim? toClaim() {
+    final identity = identityController.text.trim();
+    if (identity.isEmpty) return null;
+    return NostrIdentityClaim(
+      platform: platform,
+      identity: identity,
+      proof: proofController.text.trim(),
+    );
+  }
+
+  void dispose() {
+    identityController.dispose();
+    proofController.dispose();
   }
 }
 

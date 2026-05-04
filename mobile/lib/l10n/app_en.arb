@@ -394,6 +394,30 @@
   "@profileSetupWebsiteHint": {
     "description": "Placeholder shown in the website field when empty."
   },
+  "profileSetupExternalAccountsLabel": "External accounts (Optional)",
+  "@profileSetupExternalAccountsLabel": {
+    "description": "Section header for the NIP-39 external identity claims editor."
+  },
+  "profileSetupExternalAccountsHelper": "Link to other platforms. A proof URL is required for the verified badge to show on your profile.",
+  "@profileSetupExternalAccountsHelper": {
+    "description": "Helper text under the external accounts section."
+  },
+  "profileSetupExternalIdentityHint": "Username on the platform",
+  "@profileSetupExternalIdentityHint": {
+    "description": "Placeholder for the identity input on an external account row."
+  },
+  "profileSetupExternalProofHint": "Proof URL (optional)",
+  "@profileSetupExternalProofHint": {
+    "description": "Placeholder for the proof URL input on an external account row."
+  },
+  "profileSetupAddExternalAccount": "Add account",
+  "@profileSetupAddExternalAccount": {
+    "description": "Button to add a new blank external account row."
+  },
+  "profileSetupRemoveExternalAccount": "Remove account",
+  "@profileSetupRemoveExternalAccount": {
+    "description": "Tooltip on the close button for an external account row."
+  },
   "profileSetupPublicKeyLabel": "Public key (npub)",
   "profileSetupUsernameLabel": "Username (Optional)",
   "profileSetupUsernameHint": "username",

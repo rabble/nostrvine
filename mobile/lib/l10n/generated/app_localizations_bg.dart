@@ -756,6 +756,26 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
+  String get profileSetupExternalAccountsLabel =>
+      'External accounts (Optional)';
+
+  @override
+  String get profileSetupExternalAccountsHelper =>
+      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+
+  @override
+  String get profileSetupExternalIdentityHint => 'Username on the platform';
+
+  @override
+  String get profileSetupExternalProofHint => 'Proof URL (optional)';
+
+  @override
+  String get profileSetupAddExternalAccount => 'Add account';
+
+  @override
+  String get profileSetupRemoveExternalAccount => 'Remove account';
+
+  @override
   String get profileSetupPublicKeyLabel => 'Публичен ключ (npub)';
 
   @override

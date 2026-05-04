@@ -19,6 +19,7 @@ final class ProfileSaved extends ProfileEditorEvent {
     this.picture,
     this.banner,
     this.website,
+    this.identityClaims,
   });
 
   /// User's public key in hex format.
@@ -50,6 +51,12 @@ final class ProfileSaved extends ProfileEditorEvent {
   /// Trimmed-empty input is treated as "clear the field" — see
   /// [ProfileEditorBloc] for the clearWebsite handling.
   final String? website;
+
+  /// NIP-39 external identity claims to publish as `i` tags.
+  ///
+  /// `null` means "leave the existing claims alone." An empty list is
+  /// distinct: the caller is intentionally clearing all claims.
+  final List<NostrIdentityClaim>? identityClaims;
 }
 
 /// Confirmation to proceed with saving profile despite warnings.

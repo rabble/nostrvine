@@ -106,6 +106,7 @@ void main() {
       when(
         () => mockNostrClient.sendProfile(
           profileContent: any(named: 'profileContent'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => SendProfileSuccess(event: mockProfileEvent));
       when(() => mockUserProfilesDao.getProfile(any())).thenAnswer((
@@ -1635,6 +1636,101 @@ void main() {
                 },
               ),
             ).called(1);
+          },
+        );
+      });
+
+      group('identity claims', () {
+        test('passes provided claims as i tags to sendProfile', () async {
+          await profileRepository.saveProfileEvent(
+            displayName: 'Test',
+            identityClaims: const [
+              NostrIdentityClaim(
+                platform: IdentityPlatform.github,
+                identity: 'rabble',
+                proof: 'https://gist.github.com/abc',
+              ),
+              NostrIdentityClaim(
+                platform: IdentityPlatform.mastodon,
+                identity: 'rabble@mastodon.social',
+                proof: '',
+              ),
+            ],
+          );
+
+          final captured = verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: any(named: 'profileContent'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured.single;
+          expect(
+            captured,
+            equals([
+              ['i', 'github:rabble', 'https://gist.github.com/abc'],
+              ['i', 'mastodon:rabble@mastodon.social', ''],
+            ]),
+          );
+        });
+
+        test('publishes empty tags when caller passes an empty list', () async {
+          final currentProfile = await createCurrentProfile({
+            'display_name': 'Old Name',
+          });
+          // Even though currentProfile has no claims, an explicit empty
+          // identityClaims must publish [] (clears any prior claims).
+          await profileRepository.saveProfileEvent(
+            displayName: 'Test',
+            identityClaims: const [],
+            currentProfile: currentProfile,
+          );
+
+          final captured = verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: any(named: 'profileContent'),
+              tags: captureAny(named: 'tags'),
+            ),
+          ).captured.single;
+          expect(captured, isEmpty);
+        });
+
+        test(
+          'preserves existing claims from currentProfile when arg is null',
+          () async {
+            final currentClaims = [
+              const NostrIdentityClaim(
+                platform: IdentityPlatform.github,
+                identity: 'rabble',
+                proof: 'p',
+              ),
+            ];
+            final currentProfile = UserProfile(
+              pubkey: testPubkey,
+              identityClaims: currentClaims,
+              rawData: const {'display_name': 'Old'},
+              createdAt: DateTime.now(),
+              eventId:
+                  'event12345678901234567890123456789012'
+                  '3456789012345678901234567890',
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'Test',
+              currentProfile: currentProfile,
+            );
+
+            final captured = verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: any(named: 'profileContent'),
+                tags: captureAny(named: 'tags'),
+              ),
+            ).captured.single;
+            expect(
+              captured,
+              equals([
+                ['i', 'github:rabble', 'p'],
+              ]),
+            );
           },
         );
       });

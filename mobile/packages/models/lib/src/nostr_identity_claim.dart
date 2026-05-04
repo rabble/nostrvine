@@ -45,6 +45,10 @@ class NostrIdentityClaim extends Equatable {
   final String identity;
   final String proof;
 
+  /// Serialises this claim back to a NIP-39 `i` tag. Always emits a
+  /// 3-element list — the proof slot is empty when no proof is set.
+  List<String> toTag() => ['i', '${platform.name}:$identity', proof];
+
   @override
   List<Object?> get props => [platform, identity, proof];
 }

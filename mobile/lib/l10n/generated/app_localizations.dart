@@ -1388,6 +1388,42 @@ abstract class AppLocalizations {
   /// **'https://your.site'**
   String get profileSetupWebsiteHint;
 
+  /// Section header for the NIP-39 external identity claims editor.
+  ///
+  /// In en, this message translates to:
+  /// **'External accounts (Optional)'**
+  String get profileSetupExternalAccountsLabel;
+
+  /// Helper text under the external accounts section.
+  ///
+  /// In en, this message translates to:
+  /// **'Link to other platforms. A proof URL is required for the verified badge to show on your profile.'**
+  String get profileSetupExternalAccountsHelper;
+
+  /// Placeholder for the identity input on an external account row.
+  ///
+  /// In en, this message translates to:
+  /// **'Username on the platform'**
+  String get profileSetupExternalIdentityHint;
+
+  /// Placeholder for the proof URL input on an external account row.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof URL (optional)'**
+  String get profileSetupExternalProofHint;
+
+  /// Button to add a new blank external account row.
+  ///
+  /// In en, this message translates to:
+  /// **'Add account'**
+  String get profileSetupAddExternalAccount;
+
+  /// Tooltip on the close button for an external account row.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove account'**
+  String get profileSetupRemoveExternalAccount;
+
   /// No description provided for @profileSetupPublicKeyLabel.
   ///
   /// In en, this message translates to:

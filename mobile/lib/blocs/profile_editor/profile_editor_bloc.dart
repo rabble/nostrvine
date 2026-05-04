@@ -6,6 +6,7 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -466,6 +467,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         banner: banner,
         website: website,
         clearWebsite: clearWebsite,
+        identityClaims: event.identityClaims,
         currentProfile: currentProfile,
       );
       Log.info(
