@@ -44,6 +44,10 @@ class _ControlledFunnelcake extends FunnelcakeAvailable {
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.profile);
+  });
+
   const userId =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
@@ -160,6 +164,9 @@ void main() {
       ).thenReturn(() {});
       when(
         () => mockVideoEventService.subscribeToUserVideos(userId),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockVideoEventService.waitForSubscriptionRelayIdle(any()),
       ).thenAnswer((_) async {});
       when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
       when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
@@ -496,6 +503,29 @@ void main() {
             .requireValue;
         expect(refreshedState.videos.length, 12);
         expect(refreshedState.hasMoreContent, isFalse);
+      },
+    );
+
+    test(
+      'refresh calls subscribeToUserVideos then waitForSubscriptionRelayIdle (#3850)',
+      () async {
+        final container = createContainer(funnelcakeAvailable: false);
+        await container.read(funnelcakeAvailableProvider.future);
+
+        await container.read(profileFeedProvider(userId).future);
+        await pumpEventQueue();
+
+        clearInteractions(mockVideoEventService);
+
+        await container.read(profileFeedProvider(userId).notifier).refresh();
+        await pumpEventQueue();
+
+        verifyInOrder([
+          () => mockVideoEventService.subscribeToUserVideos(userId),
+          () => mockVideoEventService.waitForSubscriptionRelayIdle(
+            SubscriptionType.profile,
+          ),
+        ]);
       },
     );
 

@@ -42,6 +42,10 @@ class _AlwaysAvailableFunnelcake extends FunnelcakeAvailable {
 
 void main() {
   group('Explore feed refresh retention', () {
+    setUpAll(() {
+      registerFallbackValue(SubscriptionType.popularNow);
+    });
+
     late SharedPreferences sharedPreferences;
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistRepository mockBlocklistRepository;
@@ -74,6 +78,9 @@ void main() {
       when(
         () => mockAuthService.currentPublicKeyHex,
       ).thenReturn('viewer-pubkey');
+      when(
+        () => mockVideoEventService.waitForSubscriptionRelayIdle(any()),
+      ).thenAnswer((_) async {});
     });
 
     test(
@@ -235,6 +242,12 @@ void main() {
             limit: AppConstants.paginationBatchSize,
             sortBy: VideoSortField.createdAt,
             force: true,
+          ),
+        ).called(1);
+
+        verify(
+          () => mockVideoEventService.waitForSubscriptionRelayIdle(
+            SubscriptionType.popularNow,
           ),
         ).called(1);
       },
