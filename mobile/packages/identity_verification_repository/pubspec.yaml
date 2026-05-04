@@ -1,0 +1,21 @@
+name: identity_verification_repository
+description: Repository wrapping IdentityVerificationClient with session cache and dedup.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.11.0
+
+resolution: workspace
+
+dependencies:
+  identity_verification_client:
+    path: ../identity_verification_client
+  meta: ^1.17.0
+  models:
+    path: ../models
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  test: ^1.26.3
+  very_good_analysis: ^10.0.0

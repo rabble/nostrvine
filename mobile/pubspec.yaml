@@ -44,6 +44,7 @@ workspace:
   - packages/hashtag_repository
   - packages/hls_auth_web_player
   - packages/identity_verification_client
+  - packages/identity_verification_repository
   - packages/image_metadata_stripper
   - packages/invite_api_client
   - packages/keycast_flutter
