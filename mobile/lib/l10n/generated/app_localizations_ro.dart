@@ -770,6 +770,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBioHint => 'Spune-le oamenilor despre tine...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://your.site';
+
+  @override
   String get profileSetupPublicKeyLabel => 'Cheie publică (npub)';
 
   @override

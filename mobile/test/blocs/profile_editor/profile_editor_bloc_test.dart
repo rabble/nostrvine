@@ -1558,6 +1558,120 @@ void main() {
       );
     });
 
+    group('ProfileSaved with website', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'forwards a non-empty trimmed website to saveProfileEvent',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              website: 'https://example.com',
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            website: '  https://example.com  ',
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              website: 'https://example.com',
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite', that: isFalse),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'sets clearWebsite when an empty website replaces an existing one',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: testPubkey,
+              website: 'https://old.com',
+              rawData: const {'website': 'https://old.com'},
+              createdAt: DateTime.now(),
+              eventId:
+                  'old1234567890123456789012345678901234567890123456789012345678',
+            ),
+          );
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            website: '',
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: true,
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'leaves clearWebsite false when no current website exists',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            website: '',
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              clearNip05: any(named: 'clearNip05'),
+              clearWebsite: any(named: 'clearWebsite', that: isFalse),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('isUsernameSaveReady', () {
       test('returns true when username is empty', () {
         const state = ProfileEditorState();

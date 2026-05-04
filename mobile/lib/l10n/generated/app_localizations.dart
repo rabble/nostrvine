@@ -1376,6 +1376,18 @@ abstract class AppLocalizations {
   /// **'Tell people about yourself...'**
   String get profileSetupBioHint;
 
+  /// Label above the website field on the profile editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Website (Optional)'**
+  String get profileSetupWebsiteLabel;
+
+  /// Placeholder shown in the website field when empty.
+  ///
+  /// In en, this message translates to:
+  /// **'https://your.site'**
+  String get profileSetupWebsiteHint;
+
   /// No description provided for @profileSetupPublicKeyLabel.
   ///
   /// In en, this message translates to:

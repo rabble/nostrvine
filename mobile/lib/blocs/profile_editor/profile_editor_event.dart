@@ -18,6 +18,7 @@ final class ProfileSaved extends ProfileEditorEvent {
     this.externalNip05,
     this.picture,
     this.banner,
+    this.website,
   });
 
   /// User's public key in hex format.
@@ -43,6 +44,12 @@ final class ProfileSaved extends ProfileEditorEvent {
 
   /// Banner field - can be a hex color (e.g., "0x33ccbf") or URL (optional).
   final String? banner;
+
+  /// NIP-24 `website` field surfaced on the profile screen (optional).
+  ///
+  /// Trimmed-empty input is treated as "clear the field" — see
+  /// [ProfileEditorBloc] for the clearWebsite handling.
+  final String? website;
 }
 
 /// Confirmation to proceed with saving profile despite warnings.

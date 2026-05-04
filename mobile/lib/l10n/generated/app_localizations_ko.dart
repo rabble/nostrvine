@@ -686,6 +686,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupBioHint => '자신을 소개해보세요...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://your.site';
+
+  @override
   String get profileSetupPublicKeyLabel => '공개 키 (npub)';
 
   @override

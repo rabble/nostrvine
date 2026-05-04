@@ -510,6 +510,8 @@ class ProfileRepository {
     bool clearNip05 = false,
     String? picture,
     String? banner,
+    String? website,
+    bool clearWebsite = false,
     UserProfile? currentProfile,
   }) async {
     // External NIP-05 takes precedence when provided.
@@ -524,6 +526,7 @@ class ProfileRepository {
       'nip05': ?resolvedNip05,
       'picture': picture,
       'banner': banner,
+      'website': ?website,
     };
 
     // When the user explicitly removes their NIP-05 (no username, no external
@@ -531,6 +534,9 @@ class ProfileRepository {
     // value.
     if (clearNip05 && resolvedNip05 == null) {
       profileContent.remove('nip05');
+    }
+    if (clearWebsite) {
+      profileContent.remove('website');
     }
 
     final result = await _nostrClient.sendProfile(

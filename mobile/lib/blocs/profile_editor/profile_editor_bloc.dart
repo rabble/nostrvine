@@ -390,6 +390,17 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       pubkey: event.pubkey,
     );
 
+    // Empty website means "remove" — pass clearWebsite so saveProfileEvent
+    // strips the key out of the spread'd rawData instead of preserving the
+    // old value.
+    final websiteInput = event.website?.trim();
+    final hasWebsite = websiteInput != null && websiteInput.isNotEmpty;
+    final website = hasWebsite ? websiteInput : null;
+    final clearWebsite =
+        event.website != null &&
+        !hasWebsite &&
+        (currentProfile?.website?.isNotEmpty ?? false);
+
     Log.info(
       '📝 saveProfile: displayName=$displayName, '
       'username=$username, externalNip05=$externalNip05, '
@@ -453,6 +464,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         clearNip05: clearNip05,
         picture: picture,
         banner: banner,
+        website: website,
+        clearWebsite: clearWebsite,
         currentProfile: currentProfile,
       );
       Log.info(

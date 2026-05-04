@@ -386,6 +386,14 @@
   "profileSetupDisplayNameRequired": "Please enter a display name",
   "profileSetupBioLabel": "Bio (Optional)",
   "profileSetupBioHint": "Tell people about yourself...",
+  "profileSetupWebsiteLabel": "Website (Optional)",
+  "@profileSetupWebsiteLabel": {
+    "description": "Label above the website field on the profile editor."
+  },
+  "profileSetupWebsiteHint": "https://your.site",
+  "@profileSetupWebsiteHint": {
+    "description": "Placeholder shown in the website field when empty."
+  },
   "profileSetupPublicKeyLabel": "Public key (npub)",
   "profileSetupUsernameLabel": "Username (Optional)",
   "profileSetupUsernameHint": "username",

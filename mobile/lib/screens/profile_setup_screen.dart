@@ -118,6 +118,7 @@ class _ProfileSetupScreenViewState
     extends ConsumerState<ProfileSetupScreenView> {
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _websiteController = TextEditingController();
   final _pictureController = TextEditingController();
   final _nip05Controller = TextEditingController();
   final _externalNip05Controller = TextEditingController();
@@ -126,6 +127,7 @@ class _ProfileSetupScreenViewState
   // Focus nodes for tracking field focus state
   final _nameFocusNode = FocusNode();
   final _bioFocusNode = FocusNode();
+  final _websiteFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
   final _externalNip05FocusNode = FocusNode();
 
@@ -142,6 +144,7 @@ class _ProfileSetupScreenViewState
     // Add focus listeners to update label colors
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
+    _websiteFocusNode.addListener(_onFocusChange);
     _usernameFocusNode.addListener(_onFocusChange);
     _externalNip05FocusNode.addListener(_onFocusChange);
   }
@@ -155,15 +158,18 @@ class _ProfileSetupScreenViewState
     _nameController.removeListener(_onFocusChange);
     _nameController.dispose();
     _bioController.dispose();
+    _websiteController.dispose();
     _pictureController.dispose();
     _nip05Controller.dispose();
     _externalNip05Controller.dispose();
     _nameFocusNode.removeListener(_onFocusChange);
     _bioFocusNode.removeListener(_onFocusChange);
+    _websiteFocusNode.removeListener(_onFocusChange);
     _usernameFocusNode.removeListener(_onFocusChange);
     _externalNip05FocusNode.removeListener(_onFocusChange);
     _nameFocusNode.dispose();
     _bioFocusNode.dispose();
+    _websiteFocusNode.dispose();
     _usernameFocusNode.dispose();
     _externalNip05FocusNode.dispose();
 
@@ -188,6 +194,7 @@ class _ProfileSetupScreenViewState
             setState(() {
               _nameController.text = profile.displayName ?? profile.name ?? '';
               _bioController.text = profile.about ?? '';
+              _websiteController.text = profile.website ?? '';
               _pictureController.text = profile.picture ?? '';
               _selectedProfileColor = profile.profileBackgroundColor;
 
@@ -763,6 +770,62 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 16),
 
+                              // Website
+                              Padding(
+                                padding: const EdgeInsetsDirectional.only(
+                                  start: 16,
+                                ),
+                                child: Text(
+                                  context.l10n.profileSetupWebsiteLabel,
+                                  style: VineTheme.labelMediumFont(
+                                    color: _websiteFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                controller: _websiteController,
+                                focusNode: _websiteFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                keyboardType: TextInputType.url,
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText:
+                                      context.l10n.profileSetupWebsiteHint,
+                                  hintStyle: const TextStyle(
+                                    color: VineTheme.lightText,
+                                  ),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                ),
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                              ),
+                              const SizedBox(height: 16),
+
                               const _PublicKeyLink(),
                               const SizedBox(height: 16),
 
@@ -1030,6 +1093,7 @@ class _ProfileSetupScreenViewState
                                 pubkey: pubkey,
                                 displayName: _nameController.text,
                                 about: _bioController.text,
+                                website: _websiteController.text,
                                 username: _nip05Controller.text,
                                 externalNip05: _externalNip05Controller.text,
                                 picture: _pictureController.text,
@@ -1067,6 +1131,7 @@ class _ProfileSetupScreenViewState
         pubkey: pubkey,
         displayName: _nameController.text,
         about: _bioController.text,
+        website: _websiteController.text,
         username: _nip05Controller.text,
         externalNip05: _externalNip05Controller.text,
         picture: _pictureController.text,

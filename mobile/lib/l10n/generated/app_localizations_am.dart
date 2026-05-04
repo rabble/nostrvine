@@ -716,6 +716,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupBioHint => 'ስለራስዎ ለሰዎች ይንገሩ…';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://your.site';
+
+  @override
   String get profileSetupPublicKeyLabel => 'የህዝብ ቁልፍ (npub)';
 
   @override

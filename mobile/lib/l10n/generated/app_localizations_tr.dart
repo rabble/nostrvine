@@ -724,6 +724,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupBioHint => 'İnsanlara kendinden bahset...';
 
   @override
+  String get profileSetupWebsiteLabel => 'Website (Optional)';
+
+  @override
+  String get profileSetupWebsiteHint => 'https://your.site';
+
+  @override
   String get profileSetupPublicKeyLabel => 'Açık anahtar (npub)';
 
   @override

@@ -19,6 +19,12 @@ class MockEvent extends Mock implements Event {
   @override
   DateTime get createdAtDateTime =>
       DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true);
+
+  // Default to an empty list so UserProfile.fromNostrEvent's NIP-39 i-tag
+  // parsing doesn't NPE when a test forgets to stub `tags`. Tests that need
+  // specific tags can stub via `when(() => mockEvent.tags).thenReturn(...)`.
+  @override
+  List<List<String>> get tags => const <List<String>>[];
 }
 
 class MockUserProfilesDao extends Mock implements UserProfilesDao {}
@@ -1629,6 +1635,62 @@ void main() {
                 },
               ),
             ).called(1);
+          },
+        );
+      });
+
+      group('website handling', () {
+        test('forwards a non-empty website to sendProfile', () async {
+          await profileRepository.saveProfileEvent(
+            displayName: 'Test',
+            website: 'https://example.com',
+          );
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfile(
+                      profileContent: captureAny(named: 'profileContent'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['website'], equals('https://example.com'));
+        });
+
+        test('omits the website key entirely when not provided', () async {
+          await profileRepository.saveProfileEvent(displayName: 'Test');
+
+          final captured =
+              verify(
+                    () => mockNostrClient.sendProfile(
+                      profileContent: captureAny(named: 'profileContent'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured.containsKey('website'), isFalse);
+        });
+
+        test(
+          'clearWebsite drops a website preserved from the rawData spread',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'website': 'https://old.com',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              clearWebsite: true,
+              currentProfile: currentProfile,
+            );
+
+            final captured =
+                verify(
+                      () => mockNostrClient.sendProfile(
+                        profileContent: captureAny(named: 'profileContent'),
+                      ),
+                    ).captured.single
+                    as Map<String, dynamic>;
+            expect(captured.containsKey('website'), isFalse);
           },
         );
       });
