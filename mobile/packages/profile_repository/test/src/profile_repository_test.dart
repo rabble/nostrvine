@@ -19,6 +19,9 @@ class MockEvent extends Mock implements Event {
   @override
   DateTime get createdAtDateTime =>
       DateTime.fromMillisecondsSinceEpoch(createdAt * 1000, isUtc: true);
+
+  @override
+  List<List<String>> get tags => const [];
 }
 
 class MockUserProfilesDao extends Mock implements UserProfilesDao {}
