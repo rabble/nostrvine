@@ -371,7 +371,12 @@ class PopularNowFeed extends _$PopularNowFeed {
     );
   }
 
-  /// Refresh the feed - invalidates self to re-run build() with REST API fallback logic
+  /// Refreshes from Funnelcake REST when available, otherwise via forced Nostr
+  /// subscription.
+  ///
+  /// Uses [funnelcakeAvailableProvider] each call — not [_usingRestApi] — so a
+  /// transient REST failure does not skip REST for the lifetime of this
+  /// keepAlive provider (#3849; parent symptom #3848).
   Future<void> refresh() async {
     Log.info(
       '🆕 PopularNowFeed: Refreshing feed (will try REST API first)',
@@ -392,8 +397,12 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
     }
 
-    // If using REST API, try to refresh from there first
-    if (_usingRestApi) {
+    final funnelcakeAvailable =
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+
+    // Try REST whenever Funnelcake is available — same idea as [build], not
+    // gated on [_usingRestApi] (#3849).
+    if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
         final stats = await client.getWatchingVideos();
@@ -403,7 +412,7 @@ class PopularNowFeed extends _$PopularNowFeed {
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
-          // Reset cursor for pagination
+          _usingRestApi = true;
           _nextCursor = getOldestTimestamp(apiVideos);
 
           final blocklistRepository = ref.read(
@@ -435,6 +444,11 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
           return;
         }
+        Log.warning(
+          '🆕 PopularNowFeed: REST API returned empty on refresh, falling back to Nostr',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
       } catch (e) {
         Log.warning(
           '🆕 PopularNowFeed: REST API refresh failed, falling back to Nostr',
