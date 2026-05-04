@@ -3229,6 +3229,14 @@
       "count": { "type": "int" }
     }
   },
+  "notificationSystemUpdate": "You have a new update",
+  "@notificationSystemUpdate": {
+    "description": "Generic message body shown for a system-type notification when no actor or specific copy is available."
+  },
+  "notificationGroupedSomeoneLiked": "Someone liked your video",
+  "@notificationGroupedSomeoneLiked": {
+    "description": "Fallback message shown for a grouped like notification when the actor list is empty (e.g. actors not yet hydrated)."
+  },
 
   "commentReplyToPrefix": "Re:",
   "@commentReplyToPrefix": {

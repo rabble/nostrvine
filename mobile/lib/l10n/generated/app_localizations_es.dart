@@ -6010,6 +6010,12 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'You have a new update';
+
+  @override
+  String get notificationGroupedSomeoneLiked => 'Someone liked your video';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override
