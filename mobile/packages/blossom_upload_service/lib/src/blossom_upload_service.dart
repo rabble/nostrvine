@@ -1653,6 +1653,7 @@ class BlossomUploadService {
     void Function(double)? onProgress,
     int maxAttempts = _defaultUploadImageMaxAttempts,
   }) async {
+    assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
     try {
       // Check authentication
       if (!authProvider.isAuthenticated) {
@@ -1661,7 +1662,6 @@ class BlossomUploadService {
           errorMessage: 'Not authenticated',
         );
       }
-      assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
 
       // Report initial progress
       onProgress?.call(0.1);
