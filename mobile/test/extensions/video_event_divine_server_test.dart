@@ -197,9 +197,12 @@ void main() {
       );
 
       expect(video.isOriginalVine, isTrue);
-      expect(video.getOptimalVideoUrlForPlatform(), equals(
-        'https://media.divine.video/$hash',
-      ));
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals(
+          'https://media.divine.video/$hash',
+        ),
+      );
       expect(video.getCacheableVideoUrlForPlatform(), isNull);
     });
 

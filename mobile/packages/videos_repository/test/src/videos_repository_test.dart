@@ -6306,8 +6306,11 @@ void main() {
             ],
           );
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer((invocation) async {
-            final filters = invocation.positionalArguments.single as List<Filter>;
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.single as List<Filter>;
             final filter = filters.single;
             if (filter.ids?.contains(hexStableId) ?? false) {
               return <Event>[];
