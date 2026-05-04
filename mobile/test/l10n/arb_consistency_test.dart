@@ -350,6 +350,12 @@ const _knownUntranslatedDebt = {
   // pick them up.
   'reportOtherRequiresDetails',
   'reportDetailsRequired',
+  // Added by #3966 to back the last two `notification.message` callsites
+  // after dropping the hardcoded-English getters from packages/models.
+  // Translators will pick these up in a follow-up pass; until then the
+  // generated l10n APIs fall back to the English source.
+  'notificationSystemUpdate',
+  'notificationGroupedSomeoneLiked',
 };
 
 Map<String, Object?> _readArb(File file) {
