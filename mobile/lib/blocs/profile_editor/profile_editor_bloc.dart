@@ -61,6 +61,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     on<ExternalNip05Changed>(_onExternalNip05Changed);
     on<InitialExternalNip05Set>(_onInitialExternalNip05Set);
     on<UsernameRechecked>(_onUsernameRechecked);
+    on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
+    on<VerifierWebViewDismissed>(_onVerifierWebViewDismissed);
   }
 
   final ProfileRepository _profileRepository;
@@ -474,6 +476,20 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         ),
       );
     }
+  }
+
+  void _onVerifierLaunchRequested(
+    VerifierLaunchRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.launchRequested));
+  }
+
+  void _onVerifierWebViewDismissed(
+    VerifierWebViewDismissed event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.dismissed));
   }
 }
 

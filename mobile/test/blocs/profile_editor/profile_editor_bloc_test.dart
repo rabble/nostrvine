@@ -1669,5 +1669,44 @@ void main() {
         expect(state.isSaveReady, isFalse);
       });
     });
+
+    group('verifier launch flow', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'flips verifierStatus to launchRequested on VerifierLaunchRequested',
+        build: () => ProfileEditorBloc(
+          profileRepository: mockProfileRepository,
+          hasExistingProfile: true,
+          currentUserPubkey: testPubkey,
+        ),
+        act: (bloc) => bloc.add(const VerifierLaunchRequested()),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.verifierStatus,
+            'verifierStatus',
+            VerifierStatus.launchRequested,
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'flips verifierStatus to dismissed on VerifierWebViewDismissed',
+        build: () => ProfileEditorBloc(
+          profileRepository: mockProfileRepository,
+          hasExistingProfile: true,
+          currentUserPubkey: testPubkey,
+        ),
+        seed: () => const ProfileEditorState(
+          verifierStatus: VerifierStatus.launchRequested,
+        ),
+        act: (bloc) => bloc.add(const VerifierWebViewDismissed()),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.verifierStatus,
+            'verifierStatus',
+            VerifierStatus.dismissed,
+          ),
+        ],
+      );
+    });
   });
 }

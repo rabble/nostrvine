@@ -370,6 +370,10 @@ const _knownUntranslatedDebt = {
   'keyManagementCopyPublicKeyTooltip',
   'keyManagementPublicKeyCopied',
   'verifiedAccountChipSemanticLabel',
+  'profileEditVerifiedAccountsTitle',
+  'profileEditGetVerifiedCta',
+  'profileEditGetVerifiedSubtitle',
+  'verifierWebViewTitle',
 };
 
 Map<String, Object?> _readArb(File file) {

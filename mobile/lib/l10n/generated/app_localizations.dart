@@ -12099,6 +12099,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Verified {platform} account: {identity}'**
   String verifiedAccountChipSemanticLabel(String platform, String identity);
+
+  /// Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified accounts'**
+  String get profileEditVerifiedAccountsTitle;
+
+  /// Primary CTA tile on edit profile that opens the in-app verifier WebView.
+  ///
+  /// In en, this message translates to:
+  /// **'Get verified'**
+  String get profileEditGetVerifiedCta;
+
+  /// Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Link your social media accounts so people know it\'s really you.'**
+  String get profileEditGetVerifiedSubtitle;
+
+  /// Title of the in-app WebView screen hosting verifier.divine.video.
+  ///
+  /// In en, this message translates to:
+  /// **'Get verified'**
+  String get verifierWebViewTitle;
 }
 
 class _AppLocalizationsDelegate

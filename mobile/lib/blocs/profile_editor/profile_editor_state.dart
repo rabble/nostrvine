@@ -89,6 +89,22 @@ enum UsernameValidationError {
   networkError,
 }
 
+/// Status of the in-app verifier WebView launch flow.
+///
+/// Used as a one-shot signal — the UI listens for [launchRequested], pushes
+/// the WebView, and dispatches [VerifierWebViewDismissed] on return so the
+/// status flips to [dismissed]. The bloc never navigates itself.
+enum VerifierStatus {
+  /// No launch pending.
+  idle,
+
+  /// User tapped "Get verified" — UI should push the WebView.
+  launchRequested,
+
+  /// WebView was popped — UI should refresh kind 0 to pick up new claims.
+  dismissed,
+}
+
 /// Whether the profile editor is in divine.video username or external NIP-05
 /// mode.
 enum Nip05Mode {
@@ -130,6 +146,7 @@ final class ProfileEditorState extends Equatable {
     this.externalNip05 = '',
     this.initialExternalNip05,
     this.externalNip05Error,
+    this.verifierStatus = VerifierStatus.idle,
   });
 
   /// Current status of the operation.
@@ -170,6 +187,9 @@ final class ProfileEditorState extends Equatable {
 
   /// Validation error for external NIP-05 input.
   final ExternalNip05ValidationError? externalNip05Error;
+
+  /// One-shot signal driving the in-app verifier WebView launch + dismiss.
+  final VerifierStatus verifierStatus;
 
   /// Whether the username state allows saving the profile (divine.video mode).
   bool get isUsernameSaveReady {
@@ -212,6 +232,7 @@ final class ProfileEditorState extends Equatable {
     String? externalNip05,
     String? initialExternalNip05,
     ExternalNip05ValidationError? externalNip05Error,
+    VerifierStatus? verifierStatus,
   }) {
     return ProfileEditorState(
       status: status ?? this.status,
@@ -227,6 +248,7 @@ final class ProfileEditorState extends Equatable {
       externalNip05: externalNip05 ?? this.externalNip05,
       initialExternalNip05: initialExternalNip05 ?? this.initialExternalNip05,
       externalNip05Error: externalNip05Error,
+      verifierStatus: verifierStatus ?? this.verifierStatus,
     );
   }
 
@@ -245,5 +267,6 @@ final class ProfileEditorState extends Equatable {
     externalNip05,
     initialExternalNip05,
     externalNip05Error,
+    verifierStatus,
   ];
 }
