@@ -156,17 +156,24 @@ class _CachedCapability {
 /// Blossom BUD-01 media upload service with resumable upload support.
 class BlossomUploadService {
   /// Creates a [BlossomUploadService].
+  ///
+  /// [sleep] is the awaitable used to space out retries in
+  /// [_uploadWithRetry]. Defaults to `Future<void>.delayed`. Tests pass a
+  /// no-op so the retry-behavior group doesn't pay real wall time on each
+  /// backoff; production code should leave it at the default.
   BlossomUploadService({
     required this.authProvider,
     BlossomPerformanceMonitor? performanceMonitor,
     Dio? dio,
     String? defaultServerUrl,
     DateTime Function()? clock,
+    Future<void> Function(Duration)? sleep,
   }) : _performanceMonitor =
            performanceMonitor ?? const NoOpPerformanceMonitor(),
        dio = dio ?? Dio(),
        _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _sleep = sleep ?? Future<void>.delayed;
 
   static const String _blossomServerKey = 'blossom_server_url';
   static const String _useBlossomKey = 'use_blossom_upload';
@@ -215,6 +222,7 @@ class BlossomUploadService {
   final Dio dio;
   final String _defaultServerUrl;
   final DateTime Function() _clock;
+  final Future<void> Function(Duration) _sleep;
 
   /// In-memory cache of capability discovery results keyed by server URL.
   final Map<String, _CachedCapability> _capabilityCache = {};
@@ -527,7 +535,7 @@ class BlossomUploadService {
         category: LogCategory.video,
       );
 
-      await Future<void>.delayed(delay);
+      await _sleep(delay);
     }
   }
 

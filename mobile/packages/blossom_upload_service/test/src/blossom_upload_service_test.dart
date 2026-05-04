@@ -4821,9 +4821,13 @@ void main() {
 
       setUp(() {
         mockDio = _MockDio();
+        // No-op sleep: assertions in this group are about attempt counts and
+        // final state, not backoff timing. Skipping the real 1s/2s waits cuts
+        // the group's wall time from ~16s to ~1s without changing semantics.
         service = BlossomUploadService(
           authProvider: mockAuthProvider,
           dio: mockDio,
+          sleep: (_) async {},
         );
       });
 
