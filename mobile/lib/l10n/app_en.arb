@@ -3165,6 +3165,13 @@
       "actorName": { "type": "String" }
     }
   },
+  "notificationLikedYourComment": "{actorName} liked your comment",
+  "@notificationLikedYourComment": {
+    "description": "Notification text when someone reacts to a comment the user posted (typically under another user's video).",
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
   "notificationCommentedOnYourVideo": "{actorName} commented on your video",
   "@notificationCommentedOnYourVideo": {
     "placeholders": {

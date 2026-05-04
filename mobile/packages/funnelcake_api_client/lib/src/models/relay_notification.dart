@@ -14,10 +14,19 @@ class RelayNotification {
     required this.read,
     this.referencedEventId,
     this.content,
+    this.isReferencedVideo = false,
+    this.referencedVideoTitle,
   });
 
   /// Parses a notification payload from the FunnelCake API.
   factory RelayNotification.fromJson(Map<String, dynamic> json) {
+    final referencedVideo = json['referenced_video'];
+    final referencedVideoMap = referencedVideo is Map<String, dynamic>
+        ? referencedVideo
+        : null;
+    final videoTitle =
+        referencedVideoMap?['title'] as String? ??
+        json['referenced_event_title'] as String?;
     return RelayNotification(
       id: json['id'] as String? ?? '',
       sourcePubkey: json['source_pubkey'] as String? ?? '',
@@ -30,6 +39,10 @@ class RelayNotification {
       ),
       read: json['read'] as bool? ?? false,
       content: json['content'] as String?,
+      isReferencedVideo: referencedVideoMap != null,
+      referencedVideoTitle: (videoTitle != null && videoTitle.isNotEmpty)
+          ? videoTitle
+          : null,
     );
   }
 
@@ -59,6 +72,16 @@ class RelayNotification {
 
   /// Optional content from the source event (e.g. reaction emoji).
   final String? content;
+
+  /// Whether the referenced event is a video. Set when the API populates
+  /// `referenced_video` (only present for video kinds). Lets the client
+  /// distinguish a like on a video from a like on a comment.
+  final bool isReferencedVideo;
+
+  /// Title of the referenced video, when the referenced event is a video
+  /// with a non-empty title. `null` for non-video targets or untitled
+  /// videos.
+  final String? referencedVideoTitle;
 
   /// Stable dedup key -- falls back to sourceEventId if id is empty.
   String get dedupeKey => id.isNotEmpty ? id : sourceEventId;

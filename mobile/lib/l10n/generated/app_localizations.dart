@@ -10428,6 +10428,12 @@ abstract class AppLocalizations {
   /// **'{actorName} liked your video'**
   String notificationLikedYourVideo(String actorName);
 
+  /// Notification text when someone reacts to a comment the user posted (typically under another user's video).
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} liked your comment'**
+  String notificationLikedYourComment(String actorName);
+
   /// No description provided for @notificationCommentedOnYourVideo.
   ///
   /// In en, this message translates to:

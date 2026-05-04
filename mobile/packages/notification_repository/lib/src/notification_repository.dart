@@ -224,7 +224,8 @@ class NotificationRepository {
 
     for (final n in consolidated) {
       final kind = _mapNotificationKind(n);
-      if (kind == NotificationKind.like) {
+      if (kind == NotificationKind.like ||
+          kind == NotificationKind.likeComment) {
         likes.add(n);
       } else {
         others.add(n);
@@ -232,7 +233,7 @@ class NotificationRepository {
     }
 
     // 4. Group likes by referenced event ID.
-    final groupedLikes = _groupLikesByVideo(likes, profiles);
+    final groupedLikes = _groupLikesByTarget(likes, profiles);
 
     // 5. Map remaining notifications to SingleNotification.
     final singles = others.map((n) {
@@ -245,6 +246,7 @@ class NotificationRepository {
         timestamp: n.createdAt,
         isRead: n.read,
         targetEventId: _resolveTargetEventId(n, kind),
+        videoTitle: n.referencedVideoTitle,
         commentText: _truncateComment(n.content, kind),
       );
     }).toList();
@@ -279,23 +281,28 @@ class NotificationRepository {
 
   /// Groups likes by referenced event ID.
   ///
-  /// 2+ likes on the same video become a [GroupedNotification].
-  /// A single like stays as a [SingleNotification].
-  List<NotificationItem> _groupLikesByVideo(
+  /// 2+ likes on the same target become a [GroupedNotification].
+  /// A single like stays as a [SingleNotification]. The target may be a
+  /// video ([NotificationKind.like]) or a comment
+  /// ([NotificationKind.likeComment]).
+  List<NotificationItem> _groupLikesByTarget(
     List<RelayNotification> likes,
     Map<String, UserProfile> profiles,
   ) {
-    final byVideo = <String, List<RelayNotification>>{};
+    final byTarget = <String, List<RelayNotification>>{};
 
     for (final like in likes) {
       final key = like.referencedEventId ?? like.dedupeKey;
-      (byVideo[key] ??= []).add(like);
+      (byTarget[key] ??= []).add(like);
     }
 
     final items = <NotificationItem>[];
 
-    for (final entry in byVideo.entries) {
+    for (final entry in byTarget.entries) {
       final group = entry.value;
+      // All likes on the same event share the same target kind.
+      final kind = _mapNotificationKind(group.first);
+      final isVideoLike = kind == NotificationKind.like;
       if (group.length >= 2) {
         // Sort by timestamp descending so newest actors come first.
         group.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -307,14 +314,15 @@ class NotificationRepository {
 
         items.add(
           GroupedNotification(
-            // Stable ID based on the video, not the newest liker.
+            // Stable ID based on the target, not the newest liker.
             id: 'group_like_${entry.key}',
-            type: NotificationKind.like,
+            type: kind,
             actors: actors,
             totalCount: group.length,
             timestamp: group.first.createdAt,
             isRead: group.every((n) => n.read),
             targetEventId: entry.key,
+            videoTitle: isVideoLike ? group.first.referencedVideoTitle : null,
           ),
         );
       } else {
@@ -322,11 +330,12 @@ class NotificationRepository {
         items.add(
           SingleNotification(
             id: n.dedupeKey,
-            type: NotificationKind.like,
+            type: kind,
             actor: _buildActor(n.sourcePubkey, profiles),
             timestamp: n.createdAt,
             isRead: n.read,
             targetEventId: n.referencedEventId,
+            videoTitle: isVideoLike ? n.referencedVideoTitle : null,
           ),
         );
       }
@@ -368,16 +377,26 @@ class NotificationRepository {
 
   /// Maps a relay notification type string + source kind to
   /// [NotificationKind].
+  ///
+  /// Likes (and zaps) on a non-video target — typically a kind 1111
+  /// comment — map to [NotificationKind.likeComment] so the UI can
+  /// render "liked your comment" instead of "liked your video".
   static NotificationKind _mapNotificationKind(RelayNotification n) {
+    final reaction = switch (n.notificationType) {
+      'reaction' || 'zap' => true,
+      _ => n.sourceKind == 7,
+    };
+    if (reaction) {
+      return n.isReferencedVideo
+          ? NotificationKind.like
+          : NotificationKind.likeComment;
+    }
     return switch (n.notificationType) {
-      'reaction' => NotificationKind.like,
       'reply' => NotificationKind.reply,
       'comment' => NotificationKind.comment,
       'repost' => NotificationKind.repost,
       'mention' => NotificationKind.mention,
       'follow' || 'contact' => NotificationKind.follow,
-      'zap' => NotificationKind.like,
-      _ when n.sourceKind == 7 => NotificationKind.like,
       _ when n.sourceKind == 6 => NotificationKind.repost,
       _ when n.sourceKind == 3 => NotificationKind.follow,
       _ when n.sourceKind == 1 => NotificationKind.comment,

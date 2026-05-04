@@ -120,7 +120,8 @@ class _TypeIconSpec {
 
 _TypeIconSpec _typeIconSpec(NotificationKind type) {
   return switch (type) {
-    NotificationKind.like => const _TypeIconSpec(
+    NotificationKind.like ||
+    NotificationKind.likeComment => const _TypeIconSpec(
       icon: DivineIconName.heart,
       background: VineTheme.accentPinkBackground,
       foreground: VineTheme.accentPink,
@@ -355,6 +356,9 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
   return switch (type) {
     NotificationKind.like => _stripActorPlaceholder(
       l10n.notificationLikedYourVideo(''),
+    ),
+    NotificationKind.likeComment => _stripActorPlaceholder(
+      l10n.notificationLikedYourComment(''),
     ),
     NotificationKind.comment => _stripActorPlaceholder(
       l10n.notificationCommentedOnYourVideo(''),

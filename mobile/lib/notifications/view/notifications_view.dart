@@ -154,6 +154,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       case NotificationKind.follow:
         _navigateToProfile(context, notification.actor.pubkey);
       case NotificationKind.like:
+      case NotificationKind.likeComment:
       case NotificationKind.comment:
       case NotificationKind.reply:
       case NotificationKind.repost:
@@ -255,7 +256,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply ||
-        notificationKind == NotificationKind.mention;
+        notificationKind == NotificationKind.mention ||
+        notificationKind == NotificationKind.likeComment;
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,

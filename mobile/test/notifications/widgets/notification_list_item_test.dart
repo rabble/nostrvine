@@ -152,6 +152,45 @@ void main() {
         expect(followedBack, isTrue);
       });
 
+      testWidgets(
+        'renders "liked your comment" verb for likeComment type',
+        (tester) async {
+          final notification = SingleNotification(
+            id: 'lc1',
+            type: NotificationKind.likeComment,
+            actor: actor,
+            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+          );
+
+          await tester.pumpWidget(buildSubject(notification));
+          await tester.pump();
+
+          expect(_findRichTextContaining('liked your comment'), findsOneWidget);
+          expect(_findRichTextContaining('liked your video'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'does not render videoTitle for likeComment notification',
+        (tester) async {
+          final notification = SingleNotification(
+            id: 'lc2',
+            type: NotificationKind.likeComment,
+            actor: actor,
+            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+            // videoTitle should never be set on a likeComment, but if it
+            // ever leaks through the data layer, the UI must not show it
+            // as if the comment had a video title.
+            videoTitle: 'Should not appear',
+          );
+
+          await tester.pumpWidget(buildSubject(notification));
+          await tester.pump();
+
+          expect(find.textContaining('Should not appear'), findsNothing);
+        },
+      );
+
       testWidgets('renders reply comment text for reply type', (tester) async {
         final notification = SingleNotification(
           id: '7',
@@ -221,6 +260,25 @@ void main() {
 
         expect(find.byType(NotificationAvatarStack), findsOneWidget);
       });
+
+      testWidgets(
+        'renders "liked your comment" for grouped likeComment',
+        (tester) async {
+          final notification = GroupedNotification(
+            id: 'group_lc',
+            type: NotificationKind.likeComment,
+            actors: const [actor, actor2],
+            totalCount: 2,
+            timestamp: DateTime.now(),
+          );
+
+          await tester.pumpWidget(buildSubject(notification));
+          await tester.pump();
+
+          expect(_findRichTextContaining('liked your comment'), findsOneWidget);
+          expect(_findRichTextContaining('liked your video'), findsNothing);
+        },
+      );
 
       testWidgets('calls onTap when grouped row is tapped', (tester) async {
         var tapped = false;

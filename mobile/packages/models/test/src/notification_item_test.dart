@@ -87,6 +87,21 @@ void main() {
       expect(notification.message, equals('alice_rebel liked your video'));
     });
 
+    test('message for likeComment ignores videoTitle', () {
+      final notification = SingleNotification(
+        id: 'notif_1',
+        type: NotificationKind.likeComment,
+        actor: _testActor,
+        timestamp: DateTime(2026, 4, 6),
+        videoTitle: 'Should be ignored',
+      );
+
+      expect(
+        notification.message,
+        equals('alice_rebel liked your comment'),
+      );
+    });
+
     test('message for comment with title', () {
       final notification = SingleNotification(
         id: 'notif_1',
@@ -361,6 +376,54 @@ void main() {
       );
 
       expect(notification.message, equals('Someone liked your video'));
+    });
+
+    test('grouped likeComment uses comment phrasing', () {
+      const actors = [
+        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
+        ActorInfo(pubkey: _pubkeyBob, displayName: 'bob'),
+      ];
+
+      final notification = GroupedNotification(
+        id: 'group_lc',
+        type: NotificationKind.likeComment,
+        actors: actors,
+        totalCount: 2,
+        timestamp: DateTime(2026, 4, 6),
+      );
+
+      expect(
+        notification.message,
+        equals('alice and 1 other liked your comment'),
+      );
+    });
+
+    test('grouped likeComment with single actor uses comment phrasing', () {
+      const actors = [
+        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
+      ];
+
+      final notification = GroupedNotification(
+        id: 'group_lc',
+        type: NotificationKind.likeComment,
+        actors: actors,
+        totalCount: 1,
+        timestamp: DateTime(2026, 4, 6),
+      );
+
+      expect(notification.message, equals('alice liked your comment'));
+    });
+
+    test('grouped likeComment with empty actors list', () {
+      final notification = GroupedNotification(
+        id: 'group_lc',
+        type: NotificationKind.likeComment,
+        actors: const [],
+        totalCount: 0,
+        timestamp: DateTime(2026, 4, 6),
+      );
+
+      expect(notification.message, equals('Someone liked your comment'));
     });
 
     test('message without title', () {

@@ -11,6 +11,7 @@ import 'package:models/src/actor_info.dart';
 /// `NotificationType` enum in `notification_model.dart`.
 enum NotificationKind {
   like,
+  likeComment,
   comment,
   reply,
   follow,
@@ -88,6 +89,7 @@ class SingleNotification extends NotificationItem {
       NotificationKind.like when title != null =>
         '$name liked your video $title',
       NotificationKind.like => '$name liked your video',
+      NotificationKind.likeComment => '$name liked your comment',
       NotificationKind.comment when title != null =>
         '$name commented on your video $title',
       NotificationKind.comment => '$name commented on your video',
@@ -184,19 +186,21 @@ class GroupedNotification extends NotificationItem {
 
   @override
   String get message {
-    if (actors.isEmpty) return 'Someone liked your video';
+    final isComment = type == NotificationKind.likeComment;
+    final target = isComment ? 'comment' : 'video';
+    if (actors.isEmpty) return 'Someone liked your $target';
     final name = actors.first.displayName;
     final othersCount = totalCount - 1;
-    final title = videoTitle;
+    final title = isComment ? null : videoTitle;
     if (othersCount <= 0) {
       return title != null
-          ? '$name liked your video $title'
-          : '$name liked your video';
+          ? '$name liked your $target $title'
+          : '$name liked your $target';
     }
     final others = '$othersCount ${othersCount == 1 ? 'other' : 'others'}';
     return title != null
-        ? '$name and $others liked your video $title'
-        : '$name and $others liked your video';
+        ? '$name and $others liked your $target $title'
+        : '$name and $others liked your $target';
   }
 
   @override

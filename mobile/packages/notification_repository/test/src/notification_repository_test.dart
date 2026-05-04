@@ -63,6 +63,10 @@ void main() {
   });
 
   /// Helper to create a [RelayNotification] with sensible defaults.
+  ///
+  /// Defaults to a like on a video (`isReferencedVideo: true`); pass
+  /// `isReferencedVideo: false` to model a like on a non-video target
+  /// such as a comment.
   RelayNotification makeNotification({
     String id = 'n1',
     String sourcePubkey = 'pubkey_alice',
@@ -73,6 +77,8 @@ void main() {
     bool read = false,
     String? referencedEventId,
     String? content,
+    bool isReferencedVideo = true,
+    String? referencedVideoTitle,
   }) {
     return RelayNotification(
       id: id,
@@ -84,6 +90,8 @@ void main() {
       read: read,
       referencedEventId: referencedEventId,
       content: content,
+      isReferencedVideo: isReferencedVideo,
+      referencedVideoTitle: referencedVideoTitle,
     );
   }
 
@@ -425,6 +433,136 @@ void main() {
         expect(page.items, hasLength(1));
         expect(page.items.first, isA<SingleNotification>());
       });
+
+      test(
+        'reaction without referenced_video maps to likeComment',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'lc1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'comment_x',
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.first as SingleNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(item.targetEventId, equals('comment_x'));
+          expect(item.videoTitle, isNull);
+        },
+      );
+
+      test(
+        '3 likes on the same comment become 1 GroupedNotification of '
+        'likeComment',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'lc1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'comment_x',
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 1, 3),
+            ),
+            makeNotification(
+              id: 'lc2',
+              sourcePubkey: 'pub_b',
+              referencedEventId: 'comment_x',
+              isReferencedVideo: false,
+              createdAt: DateTime(2025, 1, 2),
+            ),
+            makeNotification(
+              id: 'lc3',
+              sourcePubkey: 'pub_c',
+              referencedEventId: 'comment_x',
+              isReferencedVideo: false,
+              createdAt: DateTime(2025),
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+            'pub_c': makeProfile('pub_c', displayName: 'Charlie'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.first as GroupedNotification;
+          expect(item.type, equals(NotificationKind.likeComment));
+          expect(item.totalCount, equals(3));
+          expect(item.targetEventId, equals('comment_x'));
+          expect(item.videoTitle, isNull);
+        },
+      );
+
+      test(
+        'likes on a video and a comment with same target_id never collide '
+        'because event ids are unique',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'l1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'video_z',
+              referencedVideoTitle: 'Trip recap',
+            ),
+            makeNotification(
+              id: 'lc1',
+              sourcePubkey: 'pub_b',
+              referencedEventId: 'comment_z',
+              isReferencedVideo: false,
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(2));
+          final byKind = {
+            for (final item in page.items.cast<SingleNotification>())
+              item.type: item,
+          };
+          expect(
+            byKind[NotificationKind.like]?.videoTitle,
+            equals('Trip recap'),
+          );
+          expect(byKind[NotificationKind.likeComment]?.videoTitle, isNull);
+        },
+      );
+
+      test(
+        'video like populates videoTitle from referencedVideoTitle',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'l1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'video_y',
+              referencedVideoTitle: 'My funny vine',
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          });
+
+          final page = await repository.getNotifications();
+
+          final item = page.items.first as SingleNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.videoTitle, equals('My funny vine'));
+        },
+      );
 
       test('likes on different videos are not grouped together', () async {
         stubNotifications([
