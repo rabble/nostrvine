@@ -289,6 +289,62 @@ void main() {
       });
     });
 
+    group('border-compensating outer padding', () {
+      // No-border variants wrap their content in a 2px Padding to match the
+      // visual footprint of the secondary type's 2px border.  Removing or
+      // changing that compensation would silently reintroduce the size
+      // mismatch this fix addressed.
+
+      testWidgets(
+        'no-border type (primary) applies 2px outer padding to compensate for '
+        'missing border',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              onPressed: () {},
+            ),
+          );
+
+          // Walk up from AnimatedOpacity: the nearest Padding ancestor is the
+          // border-compensation wrapper, not the inner icon padding.
+          final compensatingPadding = tester.widget<Padding>(
+            find
+                .ancestor(
+                  of: find.byType(AnimatedOpacity),
+                  matching: find.byType(Padding),
+                )
+                .first,
+          );
+          expect(
+            compensatingPadding.padding,
+            equals(const EdgeInsets.all(2)),
+          );
+        },
+      );
+
+      testWidgets(
+        'bordered type (secondary) applies no outer compensating padding',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              type: DivineIconButtonType.secondary,
+              onPressed: () {},
+            ),
+          );
+
+          final compensatingPadding = tester.widget<Padding>(
+            find
+                .ancestor(
+                  of: find.byType(AnimatedOpacity),
+                  matching: find.byType(Padding),
+                )
+                .first,
+          );
+          expect(compensatingPadding.padding, equals(EdgeInsets.zero));
+        },
+      );
+    });
+
     group('all types render in both sizes', () {
       for (final type in DivineIconButtonType.values) {
         for (final size in DivineIconButtonSize.values) {
