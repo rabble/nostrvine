@@ -322,6 +322,17 @@
   },
   "profileShowMore": "Show more",
   "profileShowLess": "Show less",
+  "profileLinkOpenFailed": "Couldn't open link",
+  "@profileLinkOpenFailed": {
+    "description": "Snackbar shown when url_launcher fails to open a link tapped from a profile."
+  },
+  "profileWebsiteSemanticLabel": "Website: {url}",
+  "@profileWebsiteSemanticLabel": {
+    "description": "Screen-reader label for the profile website row.",
+    "placeholders": {
+      "url": {"type": "String"}
+    }
+  },
   "profileCompleteYourProfile": "Complete Your Profile",
   "profileCompleteSubtitle": "Add your name, bio, and picture to get started",
   "profileSetUpButton": "Set Up",

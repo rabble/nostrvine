@@ -11,6 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/blocs/profile_links/profile_links_cubit.dart';
+import 'package:openvine/blocs/profile_links/profile_links_state.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -26,6 +28,7 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/divine_login_banner_dismissal.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/widgets/clickable_text.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
@@ -33,6 +36,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerStatefulWidget {
@@ -262,17 +266,24 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                   ),
                 ),
 
-                // Name, NIP-05, and bio
+                // Name, NIP-05, and bio. The cubit is mounted here so the
+                // about/website/chips subtree can BlocSelect on the verified
+                // identity result without re-fetching when ancestors rebuild.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-                  child: _ProfileNameAndBio(
-                    profile: effectiveProfile,
-                    userIdHex: widget.userIdHex,
-                    nip05: nip05,
-                    about: about,
-                    displayNameHint: widget.displayNameHint,
-                    accentColor: profileColor,
-                    isOwnProfile: widget.isOwnProfile,
+                  child: _ProfileLinksScope(
+                    pubkey: widget.userIdHex,
+                    website: effectiveProfile?.website,
+                    claims: effectiveProfile?.identityClaims ?? const [],
+                    child: _ProfileNameAndBio(
+                      profile: effectiveProfile,
+                      userIdHex: widget.userIdHex,
+                      nip05: nip05,
+                      about: about,
+                      displayNameHint: widget.displayNameHint,
+                      accentColor: profileColor,
+                      isOwnProfile: widget.isOwnProfile,
+                    ),
                   ),
                 ),
                 if (!widget.isOwnProfile) ...[
@@ -393,8 +404,192 @@ class _ProfileNameAndBio extends StatelessWidget {
           const SizedBox(height: 16),
           _AboutText(about: about!),
         ],
+        const _WebsiteRow(),
+        const _IdentityChipsRow(),
       ],
     );
+  }
+}
+
+/// Mounts [ProfileLinksCubit] for the profile-name/bio subtree.
+///
+/// Reads the verifier repository via Riverpod and keys the [BlocProvider]
+/// on the repository identity so a swap (e.g. on auth flip) replaces the
+/// cubit instead of leaving it bound to a stale dependency. The
+/// `lazy: false` flag ensures `load()` runs even when no descendant
+/// reads the cubit synchronously.
+class _ProfileLinksScope extends ConsumerWidget {
+  const _ProfileLinksScope({
+    required this.pubkey,
+    required this.website,
+    required this.claims,
+    required this.child,
+  });
+
+  final String pubkey;
+  final String? website;
+  final List<NostrIdentityClaim> claims;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(identityVerificationRepositoryProvider);
+    return BlocProvider<ProfileLinksCubit>(
+      key: ValueKey(repo),
+      lazy: false,
+      create: (_) =>
+          ProfileLinksCubit(repository: repo)
+            ..load(pubkey: pubkey, website: website, claims: claims),
+      child: child,
+    );
+  }
+}
+
+/// Tappable website row sourced from [ProfileLinksCubit]'s state.
+class _WebsiteRow extends StatelessWidget {
+  const _WebsiteRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<ProfileLinksCubit, ProfileLinksState, String?>(
+      selector: (s) => s.website,
+      builder: (context, website) {
+        if (website == null || website.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: _WebsiteLink(url: website),
+        );
+      },
+    );
+  }
+}
+
+class _WebsiteLink extends StatelessWidget {
+  const _WebsiteLink({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final linkStyle = VineTheme.bodyMediumFont(color: VineTheme.vineGreen);
+
+    return Semantics(
+      label: l10n.profileWebsiteSemanticLabel(url),
+      button: true,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: () => _openUrl(scaffoldMessenger, l10n.profileLinkOpenFailed),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              const DivineIcon(
+                icon: DivineIconName.linkSimple,
+                size: 16,
+                color: VineTheme.vineGreen,
+              ),
+              Flexible(
+                child: Text(
+                  url,
+                  style: linkStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openUrl(
+    ScaffoldMessengerState messenger,
+    String failureMessage,
+  ) async {
+    final normalized = url.startsWith(RegExp('https?://', caseSensitive: false))
+        ? url
+        : 'https://$url';
+    final uri = Uri.tryParse(normalized);
+    if (uri == null || uri.host.isEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(failureMessage)));
+      return;
+    }
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok) {
+      messenger.showSnackBar(SnackBar(content: Text(failureMessage)));
+    }
+  }
+}
+
+/// Horizontally-scrolling row of [IdentityChip]s for verified NIP-39 claims.
+class _IdentityChipsRow extends StatelessWidget {
+  const _IdentityChipsRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      ProfileLinksCubit,
+      ProfileLinksState,
+      List<VerifiedIdentity>
+    >(
+      selector: (s) => s.verifiedIdentities,
+      builder: (context, identities) {
+        if (identities.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              spacing: 8,
+              children: [
+                for (final id in identities)
+                  _VerifiedIdentityChip(identity: id),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _VerifiedIdentityChip extends StatelessWidget {
+  const _VerifiedIdentityChip({required this.identity});
+
+  final VerifiedIdentity identity;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    return IdentityChip(
+      platformDisplayName: identity.platform.displayName,
+      identity: identity.identity,
+      icon: const DivineIcon(
+        icon: DivineIconName.linkSimple,
+        size: 14,
+        color: VineTheme.lightText,
+      ),
+      onTap: () => _openIdentity(scaffoldMessenger, l10n.profileLinkOpenFailed),
+    );
+  }
+
+  Future<void> _openIdentity(
+    ScaffoldMessengerState messenger,
+    String failureMessage,
+  ) async {
+    final ok = await launchUrl(
+      identity.profileUrl,
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok) {
+      messenger.showSnackBar(SnackBar(content: Text(failureMessage)));
+    }
   }
 }
 
@@ -537,18 +732,29 @@ class _AboutTextState extends State<_AboutText> {
 
         _needsExpansion = textPainter.didExceedMaxLines;
 
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        final failureMessage = context.l10n.profileLinkOpenFailed;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_isExpanded)
-              SelectableText(widget.about, style: textStyle)
-            else
-              Text(
-                widget.about,
-                style: textStyle,
-                maxLines: _AboutText._collapsedMaxLines,
-                overflow: TextOverflow.ellipsis,
-              ),
+            ClickableText(
+              text: widget.about,
+              style: textStyle,
+              maxLines: _isExpanded ? null : _AboutText._collapsedMaxLines,
+              overflow: _isExpanded ? null : TextOverflow.ellipsis,
+              onLaunchUrl: (uri) async {
+                final ok = await launchUrl(
+                  uri,
+                  mode: LaunchMode.externalApplication,
+                );
+                if (!ok) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(content: Text(failureMessage)),
+                  );
+                }
+                return ok;
+              },
+            ),
             if (_needsExpansion)
               GestureDetector(
                 onTap: () => setState(() => _isExpanded = !_isExpanded),

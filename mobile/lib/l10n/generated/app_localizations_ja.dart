@@ -544,6 +544,14 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileShowLess => '閉じる';
 
   @override
+  String get profileLinkOpenFailed => 'Couldn\'t open link';
+
+  @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Website: $url';
+  }
+
+  @override
   String get profileCompleteYourProfile => 'プロフィールを完成させよう';
 
   @override

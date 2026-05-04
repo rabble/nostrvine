@@ -576,6 +576,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileShowLess => 'Daha az göster';
 
   @override
+  String get profileLinkOpenFailed => 'Couldn\'t open link';
+
+  @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Website: $url';
+  }
+
+  @override
   String get profileCompleteYourProfile => 'Profilini Tamamla';
 
   @override

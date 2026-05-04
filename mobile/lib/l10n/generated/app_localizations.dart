@@ -1106,6 +1106,18 @@ abstract class AppLocalizations {
   /// **'Show less'**
   String get profileShowLess;
 
+  /// Snackbar shown when url_launcher fails to open a link tapped from a profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open link'**
+  String get profileLinkOpenFailed;
+
+  /// Screen-reader label for the profile website row.
+  ///
+  /// In en, this message translates to:
+  /// **'Website: {url}'**
+  String profileWebsiteSemanticLabel(String url);
+
   /// No description provided for @profileCompleteYourProfile.
   ///
   /// In en, this message translates to:

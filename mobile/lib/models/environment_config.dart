@@ -120,6 +120,23 @@ class EnvironmentConfig {
     ];
   }
 
+  /// Base URI for the NIP-39 identity verification service.
+  ///
+  /// Production hits the verifier worker; local dev points at the
+  /// local Docker stack so the LOCAL env doesn't escape to prod.
+  Uri get verifierBaseUri {
+    switch (environment) {
+      case AppEnvironment.local:
+        return Uri.parse('http://$localHost:$localApiPort');
+      case AppEnvironment.poc:
+      case AppEnvironment.test:
+      case AppEnvironment.staging:
+        return Uri.parse('https://verifier.staging.dvines.org');
+      case AppEnvironment.production:
+        return Uri.parse('https://verifier.divine.video');
+    }
+  }
+
   /// Get relay manager API URL (divine-relay-manager worker)
   String get relayManagerApiUrl {
     switch (environment) {

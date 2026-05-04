@@ -22,6 +22,8 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:hive_ce/hive_ce.dart';
 import 'package:http/http.dart';
+import 'package:identity_verification_client/identity_verification_client.dart';
+import 'package:identity_verification_repository/identity_verification_repository.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -129,6 +131,35 @@ part 'app_providers.g.dart';
 ContentPolicyEngine contentPolicyEngine(Ref ref) {
   return ContentPolicyEngine.defaultRules();
 }
+
+/// HTTP client for [IdentityVerificationClient]. Held by the provider so
+/// it can be closed on disposal — independent from other `http.Client`
+/// instances that already live in their own provider scopes.
+final _identityVerificationHttpClientProvider = Provider<Client>((ref) {
+  final client = Client();
+  ref.onDispose(client.close);
+  return client;
+});
+
+/// Client for the NIP-39 identity verification worker. Identity changes
+/// when the environment flips, so the repository provider keys on it.
+final identityVerificationClientProvider = Provider<IdentityVerificationClient>(
+  (ref) {
+    final env = ref.watch(currentEnvironmentProvider);
+    final httpClient = ref.watch(_identityVerificationHttpClientProvider);
+    return IdentityVerificationClient(
+      baseUri: env.verifierBaseUri,
+      httpClient: httpClient,
+    );
+  },
+);
+
+/// Repository wrapping the verifier client with session-scoped caching.
+final identityVerificationRepositoryProvider =
+    Provider<IdentityVerificationRepository>((ref) {
+      final client = ref.watch(identityVerificationClientProvider);
+      return IdentityVerificationRepository(client: client);
+    });
 
 final nostrAppDirectoryServiceProvider = Provider<NostrAppDirectoryService>((
   ref,

@@ -595,6 +595,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileShowLess => 'Minder weergeven';
 
   @override
+  String get profileLinkOpenFailed => 'Couldn\'t open link';
+
+  @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Website: $url';
+  }
+
+  @override
   String get profileCompleteYourProfile => 'Maak je profiel af';
 
   @override

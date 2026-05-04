@@ -599,6 +599,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileShowLess => 'Weniger anzeigen';
 
   @override
+  String get profileLinkOpenFailed => 'Couldn\'t open link';
+
+  @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Website: $url';
+  }
+
+  @override
   String get profileCompleteYourProfile => 'Profil vervollständigen';
 
   @override

@@ -571,6 +571,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileShowLess => 'عرض أقل';
 
   @override
+  String get profileLinkOpenFailed => 'Couldn\'t open link';
+
+  @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Website: $url';
+  }
+
+  @override
   String get profileCompleteYourProfile => 'أكمل ملفك الشخصي';
 
   @override

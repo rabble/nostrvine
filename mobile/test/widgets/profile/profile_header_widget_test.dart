@@ -4,11 +4,13 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:identity_verification_repository/identity_verification_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -22,6 +24,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/widgets/clickable_text.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,6 +41,23 @@ class _MockOthersFollowersBloc
 
 class _MockPeopleListsBloc extends MockBloc<PeopleListsEvent, PeopleListsState>
     implements PeopleListsBloc {}
+
+/// In-memory verifier — returns whichever subset the test stages.
+class _FakeIdentityVerificationRepository
+    implements IdentityVerificationRepository {
+  _FakeIdentityVerificationRepository(this._verified);
+
+  final List<NostrIdentityClaim> _verified;
+
+  @override
+  Future<List<NostrIdentityClaim>> verifyClaims({
+    required String pubkey,
+    required List<NostrIdentityClaim> claims,
+  }) async => _verified;
+
+  @override
+  void clearCache() {}
+}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -133,6 +153,8 @@ void main() {
       String? about,
       String? picture,
       String? nip05,
+      String? website,
+      List<NostrIdentityClaim> identityClaims = const [],
     }) {
       return UserProfile(
         pubkey: testUserHex,
@@ -142,12 +164,15 @@ void main() {
           'about': ?about,
           'picture': ?picture,
           'nip05': ?nip05,
+          'website': ?website,
         },
         displayName: displayName,
         name: name,
         about: about,
         picture: picture,
         nip05: nip05,
+        website: website,
+        identityClaims: identityClaims,
         createdAt: DateTime.now(),
         eventId: 'test-event',
       );
@@ -178,6 +203,7 @@ void main() {
       MyProfileState? myProfileState,
       bool curatedListsEnabled = false,
       PeopleListsState? peopleListsState,
+      List<NostrIdentityClaim> verifiedIdentities = const [],
     }) {
       final authService = MockAuthService(
         isAnonymousValue: isAnonymous,
@@ -255,6 +281,9 @@ void main() {
           isFeatureEnabledProvider(
             FeatureFlag.curatedLists,
           ).overrideWith((ref) => curatedListsEnabled),
+          identityVerificationRepositoryProvider.overrideWithValue(
+            _FakeIdentityVerificationRepository(verifiedIdentities),
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -1099,6 +1128,121 @@ void main() {
 
           final opacity = readFadeOpacity(tester);
           expect(opacity.opacity, equals(1.0));
+        },
+      );
+    });
+
+    group('Profile Links', () {
+      testWidgets('does not render the website row when website is null', (
+        tester,
+      ) async {
+        final profile = createTestProfile(displayName: 'No-website User');
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('https://example.com'), findsNothing);
+      });
+
+      testWidgets('renders website row when website is present', (
+        tester,
+      ) async {
+        final profile = createTestProfile(
+          displayName: 'Site User',
+          website: 'https://example.com',
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('https://example.com'), findsOneWidget);
+      });
+
+      testWidgets('renders no chip row when no identity is verified', (
+        tester,
+      ) async {
+        final profile = createTestProfile(
+          displayName: 'Chipless User',
+          identityClaims: const [
+            NostrIdentityClaim(
+              platform: IdentityPlatform.github,
+              identity: 'rabble',
+              proof: 'p',
+            ),
+          ],
+        );
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profile,
+            // verifier returns empty → claim is unverified
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(IdentityChip), findsNothing);
+      });
+
+      testWidgets('renders one chip per verified identity', (tester) async {
+        const github = NostrIdentityClaim(
+          platform: IdentityPlatform.github,
+          identity: 'rabble',
+          proof: 'p1',
+        );
+        const mastodon = NostrIdentityClaim(
+          platform: IdentityPlatform.mastodon,
+          identity: 'rabble@mastodon.social',
+          proof: 'p2',
+        );
+
+        final profile = createTestProfile(
+          displayName: 'Verified User',
+          identityClaims: const [github, mastodon],
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profile: profile,
+            verifiedIdentities: const [github, mastodon],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(IdentityChip), findsNWidgets(2));
+        expect(find.text('rabble'), findsOneWidget);
+        expect(find.text('rabble@mastodon.social'), findsOneWidget);
+      });
+
+      testWidgets(
+        'bio with a URL renders ClickableText with a tappable URL span',
+        (tester) async {
+          final profile = createTestProfile(
+            displayName: 'Linker',
+            about: 'see https://divine.video for more',
+          );
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profile: profile,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(ClickableText), findsWidgets);
         },
       );
     });

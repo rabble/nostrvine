@@ -545,6 +545,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileShowLess => '접기';
 
   @override
+  String get profileLinkOpenFailed => 'Couldn\'t open link';
+
+  @override
+  String profileWebsiteSemanticLabel(String url) {
+    return 'Website: $url';
+  }
+
+  @override
   String get profileCompleteYourProfile => '프로필 완성하기';
 
   @override
