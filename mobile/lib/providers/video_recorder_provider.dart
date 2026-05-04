@@ -1130,6 +1130,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     VideoRecorderMode mode, {
     bool keepAutosavedDraft = false,
   }) {
+    final previousMode = state.recorderMode;
     state = state.copyWith(
       recorderMode: mode,
       aspectRatio: mode.defaultAspectRatio,
@@ -1138,12 +1139,21 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setString(kLastUsedRecorderModeKey, mode.name);
 
-    ref
-        .read(clipManagerProvider.notifier)
-        .clearAll(keepAutosavedDraft: keepAutosavedDraft);
-    ref
-        .read(videoEditorProvider.notifier)
-        .reset(keepAutosavedDraft: keepAutosavedDraft);
+    // Upload mode is an explainer-only tab; it doesn't own clips or
+    // editor state. Preserve both when entering or leaving upload so the
+    // user doesn't lose work for tapping a curious tab.
+    final touchesRecordingState =
+        mode != VideoRecorderMode.upload &&
+        previousMode != VideoRecorderMode.upload;
+    if (touchesRecordingState) {
+      ref
+          .read(clipManagerProvider.notifier)
+          .clearAll(keepAutosavedDraft: keepAutosavedDraft);
+      ref
+          .read(videoEditorProvider.notifier)
+          .reset(keepAutosavedDraft: keepAutosavedDraft);
+    }
+
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',

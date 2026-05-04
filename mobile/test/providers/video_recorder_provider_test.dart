@@ -19,6 +19,7 @@ import 'package:openvine/models/video_recorder/video_recorder_provider_state.dar
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -922,6 +923,104 @@ void main() {
         state.aspectRatio,
         equals(VideoRecorderMode.classic.defaultAspectRatio),
       );
+    });
+
+    test('switching to upload preserves recorded clips', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockDraftStorage = _MockDraftStorageService();
+      when(() => mockDraftStorage.deleteDraft(any())).thenAnswer((_) async {});
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+      final notifier = container.read(videoRecorderProvider.notifier);
+
+      // Arrange: in capture mode, with a recorded clip.
+      notifier.setRecorderMode(VideoRecorderMode.capture);
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            limitClipDuration: false,
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 2),
+            targetAspectRatio: AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+          );
+      expect(
+        container.read(clipManagerProvider).hasClips,
+        isTrue,
+        reason: 'precondition: should have clips before switching to upload',
+      );
+
+      // Act: visit upload mode.
+      notifier.setRecorderMode(VideoRecorderMode.upload);
+
+      // Assert: clips survive the upload-mode visit.
+      expect(
+        container.read(clipManagerProvider).hasClips,
+        isTrue,
+        reason: 'clips must survive the upload-mode visit',
+      );
+    });
+
+    test('switching from upload back to capture preserves clips', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockDraftStorage = _MockDraftStorageService();
+      when(() => mockDraftStorage.deleteDraft(any())).thenAnswer((_) async {});
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+          draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+      final notifier = container.read(videoRecorderProvider.notifier);
+
+      notifier.setRecorderMode(VideoRecorderMode.capture);
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            limitClipDuration: false,
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: const Duration(seconds: 2),
+            targetAspectRatio: AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
+          );
+      notifier.setRecorderMode(VideoRecorderMode.upload);
+      notifier.setRecorderMode(VideoRecorderMode.capture);
+
+      expect(container.read(clipManagerProvider).hasClips, isTrue);
     });
 
     test(
