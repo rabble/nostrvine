@@ -23,6 +23,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/verifier_webview_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -365,6 +366,18 @@ class _ProfileSetupScreenViewState
                   break;
               }
             }
+          },
+        ),
+        BlocListener<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) =>
+              prev.verifierStatus != curr.verifierStatus &&
+              curr.verifierStatus == VerifierStatus.launchRequested,
+          listener: (context, state) async {
+            final editorBloc = context.read<ProfileEditorBloc>();
+            final myProfileBloc = context.read<MyProfileBloc>();
+            await context.pushNamed(VerifierWebViewScreen.routeName);
+            editorBloc.add(const VerifierWebViewDismissed());
+            myProfileBloc.add(const MyProfileFetchRequested());
           },
         ),
       ],
@@ -2254,16 +2267,61 @@ class _VerifiedAccountsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final claims = context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
       final state = bloc.state;
       if (state is MyProfileLoaded) return state.verifiedClaims;
       if (state is MyProfileUpdated) return state.verifiedClaims;
       return const [];
     });
-    if (claims.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: VerifiedAccountsRow(claims: claims),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 8),
+            child: Text(
+              l10n.profileEditVerifiedAccountsTitle,
+              style: VineTheme.labelMediumFont(color: VineTheme.lightText),
+            ),
+          ),
+          if (claims.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: VerifiedAccountsRow(claims: claims),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const _GetVerifiedTile(),
+        ],
+      ),
+    );
+  }
+}
+
+class _GetVerifiedTile extends StatelessWidget {
+  const _GetVerifiedTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ListTile(
+      title: Text(
+        l10n.profileEditGetVerifiedCta,
+        style: VineTheme.titleMediumFont(),
+      ),
+      subtitle: Text(
+        l10n.profileEditGetVerifiedSubtitle,
+        style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: VineTheme.lightText,
+      ),
+      onTap: () => context.read<ProfileEditorBloc>().add(
+        const VerifierLaunchRequested(),
+      ),
     );
   }
 }

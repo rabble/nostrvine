@@ -621,6 +621,8 @@ void main() {
         await tester.pump();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.ensureVisible(find.text(l10n.profileEditPublicKeyLink));
+        await tester.pumpAndSettle();
         await tester.tap(find.text(l10n.profileEditPublicKeyLink));
         await tester.pumpAndSettle();
 
