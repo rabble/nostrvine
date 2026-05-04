@@ -21,6 +21,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -780,50 +781,7 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 16),
 
-                              // Public key (npub) - read-only
-                              Padding(
-                                padding: const EdgeInsetsDirectional.only(
-                                  start: 16,
-                                ),
-                                child: Text(
-                                  context.l10n.profileSetupPublicKeyLabel,
-                                  style: VineTheme.labelMediumFont(
-                                    color: VineTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ),
-                              TextFormField(
-                                initialValue: ref
-                                    .watch(authServiceProvider)
-                                    .currentNpub,
-                                readOnly: true,
-                                maxLines: null,
-                                style: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurfaceMuted,
-                                ),
-                                decoration: const InputDecoration(
-                                  isCollapsed: true,
-                                  border: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  contentPadding: EdgeInsets.all(16),
-                                ),
-                              ),
+                              const _PublicKeyLink(),
                               const SizedBox(height: 16),
 
                               // NIP-05 Username (optional)
@@ -2263,6 +2221,25 @@ class _ExternalNip05Section extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _PublicKeyLink extends StatelessWidget {
+  const _PublicKeyLink();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton(
+        onPressed: () => context.goNamed(KeyManagementScreen.routeName),
+        child: Text(
+          l10n.profileEditPublicKeyLink,
+          style: VineTheme.labelMediumFont(color: VineTheme.primary),
+        ),
+      ),
     );
   }
 }

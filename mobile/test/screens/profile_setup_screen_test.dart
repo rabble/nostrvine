@@ -7,10 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+
+import '../helpers/test_provider_overrides.dart';
 
 class _MockProfileEditorBloc
     extends MockBloc<ProfileEditorEvent, ProfileEditorState>
@@ -469,5 +476,108 @@ void main() {
         isFalse,
       );
     });
+  });
+
+  group('$ProfileSetupScreen npub demotion (#3933)', () {
+    const testPubkeyHex =
+        'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
+    const testNpub =
+        'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';
+
+    late MockAuthService mockAuthService;
+    late MockProfileRepository mockProfileRepository;
+
+    setUp(() {
+      mockAuthService = createMockAuthService();
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      when(() => mockAuthService.currentNpub).thenReturn(testNpub);
+      when(() => mockAuthService.hasExistingProfile).thenReturn(true);
+
+      mockProfileRepository = createMockProfileRepository();
+    });
+
+    List<dynamic> baseOverrides() {
+      return [
+        authServiceProvider.overrideWithValue(mockAuthService),
+        profileRepositoryProvider.overrideWith((ref) => mockProfileRepository),
+        fetchUserProfileProvider(testPubkeyHex).overrideWith(
+          (ref) async => null,
+        ),
+        userProfileReactiveProvider(testPubkeyHex).overrideWith(
+          (ref) => Stream<models.UserProfile?>.value(null),
+        ),
+      ];
+    }
+
+    Widget buildSubject() {
+      return testProviderScope(
+        additionalOverrides: baseOverrides(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const ProfileSetupScreen(isNewUser: false),
+        ),
+      );
+    }
+
+    Widget buildSubjectWithRouter() {
+      final router = GoRouter(
+        initialLocation: ProfileSetupScreen.editPath,
+        routes: [
+          GoRoute(
+            path: ProfileSetupScreen.editPath,
+            name: ProfileSetupScreen.editRouteName,
+            builder: (context, state) =>
+                const ProfileSetupScreen(isNewUser: false),
+          ),
+          GoRoute(
+            path: KeyManagementScreen.path,
+            name: KeyManagementScreen.routeName,
+            builder: (context, state) => const KeyManagementScreen(),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        additionalOverrides: baseOverrides(),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          routerConfig: router,
+        ),
+      );
+    }
+
+    testWidgets('does not render the labeled npub field', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.text('Public key (npub)'), findsNothing);
+    });
+
+    testWidgets('renders a "View your public key" link', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileEditPublicKeyLink), findsOneWidget);
+    });
+
+    testWidgets(
+      'navigates to key management when "View your public key" is tapped',
+      (tester) async {
+        await tester.pumpWidget(buildSubjectWithRouter());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.profileEditPublicKeyLink));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KeyManagementScreen), findsOneWidget);
+      },
+    );
   });
 }
