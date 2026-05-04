@@ -2476,6 +2476,8 @@
   "@inboxConversationCollabInvitePreview": {
     "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
   },
+  "collaboratorInviteDmBody": "Поканени сте да си сътрудничите по {title}: {url}\n\nOpen diVine to review and accept.",
+  "collaboratorInviteDmBodyUntitled": "Поканени сте да си сътрудничите по видеоклип: {url}\n\nOpen diVine to review and accept.",
   "reportDialogCancel": "Отказ",
   "reportDialogReport": "Докладвай",
   "exploreVideoId": "ID: {id}",

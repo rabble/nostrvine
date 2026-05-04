@@ -5120,6 +5120,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'Invitation à collaborer';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Tu as été invité(e) à collaborer sur $title : $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Tu as été invité(e) à collaborer sur une vidéo : $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Annuler';
 
   @override

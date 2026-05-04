@@ -8964,6 +8964,18 @@ abstract class AppLocalizations {
   /// **'Collaborator invite'**
   String get inboxConversationCollabInvitePreview;
 
+  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.
+  ///
+  /// In en, this message translates to:
+  /// **'You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.'**
+  String collaboratorInviteDmBody(String title, String url);
+
+  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.
+  ///
+  /// In en, this message translates to:
+  /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
+  String collaboratorInviteDmBodyUntitled(String url);
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:

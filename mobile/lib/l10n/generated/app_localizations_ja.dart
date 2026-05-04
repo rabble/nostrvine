@@ -4851,6 +4851,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'コラボ招待';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return '$titleのコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return '動画のコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'キャンセル';
 
   @override

@@ -1396,6 +1396,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
   Future<void> _updateVideo() async {
     setState(() => _isUpdating = true);
 
+    // Capture l10n eagerly — _updateVideo awaits a publish round-trip
+    // before constructing the invite service, and AppLocalizations.of
+    // can fail if the surrounding widget unmounts mid-flight.
+    final inviteL10n = context.l10n;
+
     try {
       // Parse hashtags from comma-separated string
       final hashtagsText = _hashtagsController.text.trim();
@@ -1586,6 +1591,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       final inviteResults = await sendPostPublishCollaboratorInvites(
         inviteService: CollaboratorInviteService(
           dmRepository: ref.read(dmRepositoryProvider),
+          l10n: inviteL10n,
         ),
         video: updatedVideoEvent,
         previousCollaboratorPubkeys: _initialCollaboratorPubkeys,

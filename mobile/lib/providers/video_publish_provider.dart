@@ -13,11 +13,13 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/router/navigator_keys.dart';
@@ -115,6 +117,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       draftService: _draftService,
       collaboratorInviteService: CollaboratorInviteService(
         dmRepository: ref.read(dmRepositoryProvider),
+        l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
       ),
       languagePreferenceService: ref.read(languagePreferenceServiceProvider),
       onProgressChanged: ({required String draftId, required double progress}) {

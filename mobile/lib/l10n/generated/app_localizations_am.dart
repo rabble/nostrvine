@@ -4953,6 +4953,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'የተባባሪ ግብዣ';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'በ$title ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'ሰርዝ';
 
   @override

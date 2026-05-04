@@ -2290,6 +2290,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
+    "collaboratorInviteDmBody": "Tu as été invité(e) à collaborer sur {title} : {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Tu as été invité(e) à collaborer sur une vidéo : {url}\n\nOpen diVine to review and accept.",
     "inboxCollabInviteSentStatus": "Invitation envoyée",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."

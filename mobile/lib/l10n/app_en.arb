@@ -2613,6 +2613,31 @@
     "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
   },
 
+  "collaboratorInviteDmBody": "You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.",
+  "@collaboratorInviteDmBody": {
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Skate loop"
+      },
+      "url": {
+        "type": "String",
+        "example": "https://divine.video/video/abc123"
+      }
+    }
+  },
+  "collaboratorInviteDmBodyUntitled": "You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.",
+  "@collaboratorInviteDmBodyUntitled": {
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "example": "https://divine.video/video/abc123"
+      }
+    }
+  },
+
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",
 

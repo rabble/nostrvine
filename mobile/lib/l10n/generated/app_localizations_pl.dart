@@ -5181,6 +5181,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zaproszenie do współpracy';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Zaproszono Cię do współpracy nad $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Zaproszono Cię do współpracy nad filmem: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Anuluj';
 
   @override

@@ -75,6 +75,14 @@ void main() {
 
     expect(content, contains('Skate loop'));
     expect(content, contains('collaborate'));
+    expect(
+      content,
+      contains('https://divine.video/video/video-id'),
+      reason:
+          'Plaintext fallback must include a divine.video URL so non-Divine '
+          'Nostr clients can preview the video and verify the invite '
+          'matches a real video before accepting (#3942).',
+    );
     expect(_containsTag(tags, const ['divine', 'collab-invite']), isTrue);
     expect(
       _containsTag(tags, const [
@@ -147,6 +155,101 @@ void main() {
       );
     },
   );
+
+  test('includes divine.video URL when title is missing', () async {
+    when(
+      () => dmRepository.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+        additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: collaboratorPubkey,
+      ),
+    );
+
+    await service.sendInvite(
+      collaboratorPubkey: collaboratorPubkey,
+      creatorPubkey: creatorPubkey,
+      videoAddress: videoAddress,
+    );
+
+    final captured =
+        verify(
+              () => dmRepository.sendMessage(
+                recipientPubkey: collaboratorPubkey,
+                content: captureAny(named: 'content'),
+                replyToId: any(named: 'replyToId'),
+                additionalTags: any(named: 'additionalTags'),
+                skipNip04Fallback: any(named: 'skipNip04Fallback'),
+              ),
+            ).captured.single
+            as String;
+
+    expect(captured, contains('https://divine.video/video/video-id'));
+    expect(
+      captured.endsWith(CollaboratorInviteService.invitePlaintextSuffix),
+      isTrue,
+    );
+  });
+
+  test('URL stableId matches the d-tag of the videoAddress', () async {
+    when(
+      () => dmRepository.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+        additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: collaboratorPubkey,
+      ),
+    );
+
+    const otherVideoAddress =
+        '34236:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:custom-d-tag';
+
+    await service.sendInvite(
+      collaboratorPubkey: collaboratorPubkey,
+      creatorPubkey: creatorPubkey,
+      videoAddress: otherVideoAddress,
+      title: 'Highlight reel',
+    );
+
+    final captured =
+        verify(
+              () => dmRepository.sendMessage(
+                recipientPubkey: collaboratorPubkey,
+                content: captureAny(named: 'content'),
+                replyToId: any(named: 'replyToId'),
+                additionalTags: any(named: 'additionalTags'),
+                skipNip04Fallback: any(named: 'skipNip04Fallback'),
+              ),
+            ).captured.single
+            as String;
+
+    expect(
+      captured,
+      contains('https://divine.video/video/custom-d-tag'),
+      reason:
+          'URL must use the d-tag (third segment of the parameterized '
+          'addressable) so it deep-links via the existing /video/:id route.',
+    );
+    expect(
+      captured,
+      isNot(contains('https://divine.video/video/video-id')),
+      reason: 'URL must reflect the videoAddress passed in, not a default.',
+    );
+  });
 
   test('returns failure when encrypted DM send fails', () async {
     when(

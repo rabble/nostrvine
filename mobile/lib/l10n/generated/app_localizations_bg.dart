@@ -5103,6 +5103,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'Покана за сътрудник';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Поканени сте да си сътрудничите по $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Поканени сте да си сътрудничите по видеоклип: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Отказ';
 
   @override
