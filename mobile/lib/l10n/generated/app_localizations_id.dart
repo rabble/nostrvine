@@ -5930,6 +5930,12 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Kamu punya pembaruan baru';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Seseorang menyukai videomu';
+
+  @override
   String get commentReplyToPrefix => 'Bls:';
 
   @override

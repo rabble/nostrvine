@@ -5739,6 +5739,12 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => '新しいお知らせがあります';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => '誰かがあなたの動画にいいねしました';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override

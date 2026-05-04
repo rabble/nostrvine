@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Je hebt een nieuwe update",
+    "notificationSomeoneLikedYourVideo": "Iemand vond je video leuk",
     "peopleListsAddToList": "Toevoegen aan lijst",
     "peopleListsAddToListSubtitle": "Voeg deze maker toe aan een van je lijsten",
     "peopleListsSheetTitle": "Toevoegen aan lijst",

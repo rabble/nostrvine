@@ -5841,6 +5841,12 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'አዲስ ማሻሻያ አለህ።';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'አንድ ሰው ቪዲዮህን ወድዶታል።';
+
+  @override
   String get commentReplyToPrefix => 'ድጋሚ፡';
 
   @override

@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Kamu punya pembaruan baru",
+    "notificationSomeoneLikedYourVideo": "Seseorang menyukai videomu",
     "peopleListsAddToList": "Tambahkan ke daftar",
     "peopleListsAddToListSubtitle": "Masukkan kreator ini ke salah satu daftarmu",
     "peopleListsSheetTitle": "Tambahkan ke daftar",

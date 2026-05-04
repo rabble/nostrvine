@@ -6032,6 +6032,12 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Tu as une nouvelle mise à jour';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Quelqu\'un a aimé ta vidéo';
+
+  @override
   String get commentReplyToPrefix => 'Re :';
 
   @override

@@ -5953,6 +5953,12 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Du har en ny uppdatering';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Någon gillade din video';
+
+  @override
   String get commentReplyToPrefix => 'Sv:';
 
   @override

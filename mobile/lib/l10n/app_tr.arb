@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Yeni bir güncellemen var",
+    "notificationSomeoneLikedYourVideo": "Birisi videonu beğendi",
     "peopleListsAddToList": "Listeye ekle",
     "peopleListsAddToListSubtitle": "Bu içerik üreticisini listelerinden birine ekle",
     "peopleListsSheetTitle": "Listeye ekle",

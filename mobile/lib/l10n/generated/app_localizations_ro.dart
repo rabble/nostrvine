@@ -6096,6 +6096,13 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Ai o actualizare nouă';
+
+  @override
+  String get notificationSomeoneLikedYourVideo =>
+      'Cineva a apreciat videoclipul tău';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override

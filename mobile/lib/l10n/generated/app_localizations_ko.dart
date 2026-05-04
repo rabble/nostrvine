@@ -5762,6 +5762,12 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => '새로운 업데이트가 있어요';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => '누군가 회원님의 동영상을 좋아해요';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override

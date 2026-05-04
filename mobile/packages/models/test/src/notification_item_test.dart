@@ -61,138 +61,18 @@ void main() {
       expect(notification.videoTitle, isNull);
     });
 
-    test('message includes video title for like', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.like,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-        videoTitle: 'My Video',
-      );
+    test('every NotificationKind round-trips through the constructor', () {
+      for (final kind in NotificationKind.values) {
+        final notification = SingleNotification(
+          id: 'notif_${kind.name}',
+          type: kind,
+          actor: _testActor,
+          timestamp: DateTime(2026, 4, 6),
+        );
 
-      expect(
-        notification.message,
-        equals('alice_rebel liked your video My Video'),
-      );
-    });
-
-    test('message without video title for like', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.like,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(notification.message, equals('alice_rebel liked your video'));
-    });
-
-    test('message for comment with title', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.comment,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-        videoTitle: 'My Video',
-      );
-
-      expect(
-        notification.message,
-        equals('alice_rebel commented on your video My Video'),
-      );
-    });
-
-    test('message for comment without title', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.comment,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(
-        notification.message,
-        equals('alice_rebel commented on your video'),
-      );
-    });
-
-    test('message for reply', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.reply,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(
-        notification.message,
-        equals('alice_rebel replied to your comment'),
-      );
-    });
-
-    test('message for follow', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.follow,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(
-        notification.message,
-        equals('alice_rebel started following you'),
-      );
-    });
-
-    test('message for repost with title', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.repost,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-        videoTitle: 'My Video',
-      );
-
-      expect(
-        notification.message,
-        equals('alice_rebel reposted your video My Video'),
-      );
-    });
-
-    test('message for repost without title', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.repost,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(
-        notification.message,
-        equals('alice_rebel reposted your video'),
-      );
-    });
-
-    test('message for mention', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.mention,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(notification.message, equals('alice_rebel mentioned you'));
-    });
-
-    test('message for system', () {
-      final notification = SingleNotification(
-        id: 'notif_1',
-        type: NotificationKind.system,
-        actor: _testActor,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(notification.message, equals('You have a new update'));
+        expect(notification.type, equals(kind));
+        expect(notification.actor, equals(_testActor));
+      }
     });
 
     test('isRead defaults to false', () {
@@ -278,80 +158,7 @@ void main() {
       expect(notification.videoTitle, equals('Best Post Ever'));
     });
 
-    test('message returns grouped format', () {
-      const actors = [
-        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
-      ];
-
-      final notification = GroupedNotification(
-        id: 'group_1',
-        type: NotificationKind.like,
-        actors: actors,
-        totalCount: 94,
-        timestamp: DateTime(2026, 4, 6),
-        videoTitle: 'Best Post Ever',
-      );
-
-      expect(notification.message, contains('alice'));
-      expect(notification.message, contains('93 others'));
-      expect(notification.message, contains('Best Post Ever'));
-    });
-
-    test('message for single actor group', () {
-      const actors = [
-        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
-      ];
-
-      final notification = GroupedNotification(
-        id: 'group_1',
-        type: NotificationKind.like,
-        actors: actors,
-        totalCount: 1,
-        timestamp: DateTime(2026, 4, 6),
-        videoTitle: 'My Video',
-      );
-
-      expect(
-        notification.message,
-        equals('alice liked your video My Video'),
-      );
-    });
-
-    test('message for single actor group without title', () {
-      const actors = [
-        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
-      ];
-
-      final notification = GroupedNotification(
-        id: 'group_1',
-        type: NotificationKind.like,
-        actors: actors,
-        totalCount: 1,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(notification.message, equals('alice liked your video'));
-    });
-
-    test('message uses singular other for count of 2', () {
-      const actors = [
-        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
-        ActorInfo(pubkey: _pubkeyBob, displayName: 'bob'),
-      ];
-
-      final notification = GroupedNotification(
-        id: 'group_1',
-        type: NotificationKind.like,
-        actors: actors,
-        totalCount: 2,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(notification.message, contains('1 other'));
-      expect(notification.message, isNot(contains('others')));
-    });
-
-    test('message for empty actors list', () {
+    test('preserves an empty actors list with zero totalCount', () {
       final notification = GroupedNotification(
         id: 'group_1',
         type: NotificationKind.like,
@@ -360,26 +167,8 @@ void main() {
         timestamp: DateTime(2026, 4, 6),
       );
 
-      expect(notification.message, equals('Someone liked your video'));
-    });
-
-    test('message without title', () {
-      const actors = [
-        ActorInfo(pubkey: _pubkeyAlice, displayName: 'alice'),
-      ];
-
-      final notification = GroupedNotification(
-        id: 'group_1',
-        type: NotificationKind.like,
-        actors: actors,
-        totalCount: 94,
-        timestamp: DateTime(2026, 4, 6),
-      );
-
-      expect(
-        notification.message,
-        equals('alice and 93 others liked your video'),
-      );
+      expect(notification.actors, isEmpty);
+      expect(notification.totalCount, equals(0));
     });
 
     test('equality works', () {

@@ -3006,6 +3006,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Tienes una nueva actualización",
+    "notificationSomeoneLikedYourVideo": "Alguien le dio like a tu video",
     "peopleListsAddToList": "Añadir a la lista",
     "peopleListsAddToListSubtitle": "Añade este creador a una de tus listas",
     "peopleListsSheetTitle": "Añadir a la lista",

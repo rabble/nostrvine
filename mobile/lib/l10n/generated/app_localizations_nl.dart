@@ -5982,6 +5982,12 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Je hebt een nieuwe update';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Iemand vond je video leuk';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override

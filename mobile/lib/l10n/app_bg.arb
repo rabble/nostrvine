@@ -2879,6 +2879,8 @@
       }
     }
   },
+  "notificationSystemUpdate": "Имаш ново известие",
+  "notificationSomeoneLikedYourVideo": "Някой хареса видеото ти",
   "commentReplyToPrefix": "Отг.:",
   "@commentReplyToPrefix": {
     "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."

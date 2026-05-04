@@ -10482,6 +10482,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 other} other{{count} others}}'**
   String notificationOthersCount(int count);
 
+  /// Default body text for a system notification row when no actor is associated with it (e.g. an app-level update or announcement).
+  ///
+  /// In en, this message translates to:
+  /// **'You have a new update'**
+  String get notificationSystemUpdate;
+
+  /// Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone liked your video'**
+  String get notificationSomeoneLikedYourVideo;
+
   /// Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying.
   ///
   /// In en, this message translates to:

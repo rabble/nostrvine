@@ -2991,6 +2991,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "لديك تحديث جديد",
+    "notificationSomeoneLikedYourVideo": "شخص ما أعجب بفيديوك",
     "peopleListsAddToList": "أضف إلى القائمة",
     "peopleListsAddToListSubtitle": "ضع هذا المنشئ في إحدى قوائمك",
     "peopleListsSheetTitle": "أضف إلى القائمة",

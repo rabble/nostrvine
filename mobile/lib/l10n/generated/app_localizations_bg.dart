@@ -6019,6 +6019,12 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Имаш ново известие';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Някой хареса видеото ти';
+
+  @override
   String get commentReplyToPrefix => 'Отг.:';
 
   @override

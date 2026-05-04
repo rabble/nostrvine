@@ -5912,6 +5912,12 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'لديك تحديث جديد';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'شخص ما أعجب بفيديوك';
+
+  @override
   String get commentReplyToPrefix => 'رد:';
 
   @override

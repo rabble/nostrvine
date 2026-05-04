@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Masz nową aktualizację",
+    "notificationSomeoneLikedYourVideo": "Ktoś polubił(a) Twoje wideo",
     "peopleListsAddToList": "Dodaj do listy",
     "peopleListsAddToListSubtitle": "Dodaj tego twórcę do jednej ze swoich list",
     "peopleListsSheetTitle": "Dodaj do listy",

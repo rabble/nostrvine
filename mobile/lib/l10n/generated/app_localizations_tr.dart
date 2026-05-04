@@ -5938,6 +5938,12 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Yeni bir güncellemen var';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Birisi videonu beğendi';
+
+  @override
   String get commentReplyToPrefix => 'Yan:';
 
   @override

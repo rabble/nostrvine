@@ -2991,6 +2991,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "新しいお知らせがあります",
+    "notificationSomeoneLikedYourVideo": "誰かがあなたの動画にいいねしました",
     "peopleListsAddToList": "リストに追加",
     "peopleListsAddToListSubtitle": "このクリエイターをリストに追加する",
     "peopleListsSheetTitle": "リストに追加",

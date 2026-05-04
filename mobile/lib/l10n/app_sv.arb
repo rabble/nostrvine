@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Du har en ny uppdatering",
+    "notificationSomeoneLikedYourVideo": "Någon gillade din video",
     "peopleListsAddToList": "Lägg till i lista",
     "peopleListsAddToListSubtitle": "Lägg till den här skaparen i en av dina listor",
     "peopleListsSheetTitle": "Lägg till i lista",

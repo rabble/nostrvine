@@ -243,5 +243,55 @@ void main() {
         expect(tapped, isTrue);
       });
     });
+
+    group('localized fallback messages', () {
+      testWidgets('system notification renders localized update text', (
+        tester,
+      ) async {
+        final notification = SingleNotification(
+          id: '20',
+          type: NotificationKind.system,
+          actor: actor,
+          timestamp: DateTime.now(),
+        );
+
+        await tester.pumpWidget(buildSubject(notification));
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          _findRichTextContaining(l10n.notificationSystemUpdate),
+          findsOneWidget,
+        );
+        // Prove the text actually goes through l10n: the German string must
+        // not appear under an English MaterialApp.
+        final deL10n = lookupAppLocalizations(const Locale('de'));
+        expect(
+          _findRichTextContaining(deL10n.notificationSystemUpdate),
+          findsNothing,
+        );
+      });
+
+      testWidgets('grouped notification with empty actors renders fallback', (
+        tester,
+      ) async {
+        final notification = GroupedNotification(
+          id: '21',
+          type: NotificationKind.like,
+          actors: const [],
+          totalCount: 0,
+          timestamp: DateTime.now(),
+        );
+
+        await tester.pumpWidget(buildSubject(notification));
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        expect(
+          _findRichTextContaining(l10n.notificationSomeoneLikedYourVideo),
+          findsOneWidget,
+        );
+      });
+    });
   });
 }

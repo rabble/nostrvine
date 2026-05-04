@@ -6024,6 +6024,13 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Du hast eine neue Aktualisierung';
+
+  @override
+  String get notificationSomeoneLikedYourVideo =>
+      'Jemand hat dein Video geliked';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override

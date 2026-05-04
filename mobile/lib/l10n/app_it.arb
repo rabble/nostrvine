@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Hai un nuovo aggiornamento",
+    "notificationSomeoneLikedYourVideo": "Qualcuno ha messo like al tuo video",
     "peopleListsAddToList": "Aggiungi alla lista",
     "peopleListsAddToListSubtitle": "Inserisci questo creator in una delle tue liste",
     "peopleListsSheetTitle": "Aggiungi alla lista",

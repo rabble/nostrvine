@@ -6098,6 +6098,12 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Masz nową aktualizację';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Ktoś polubił(a) Twoje wideo';
+
+  @override
   String get commentReplyToPrefix => 'Odp.:';
 
   @override

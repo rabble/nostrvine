@@ -2998,6 +2998,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Ai o actualizare nouă",
+    "notificationSomeoneLikedYourVideo": "Cineva a apreciat videoclipul tău",
     "peopleListsAddToList": "Adaugă la listă",
     "peopleListsAddToListSubtitle": "Pune acest creator în una dintre listele tale",
     "peopleListsSheetTitle": "Adaugă la listă",

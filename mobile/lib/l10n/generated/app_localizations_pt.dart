@@ -5991,6 +5991,12 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get notificationSystemUpdate => 'Você tem uma nova atualização';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Alguém curtiu seu vídeo';
+
+  @override
   String get commentReplyToPrefix => 'Re:';
 
   @override

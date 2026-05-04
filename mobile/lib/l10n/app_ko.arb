@@ -2287,6 +2287,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "새로운 업데이트가 있어요",
+    "notificationSomeoneLikedYourVideo": "누군가 회원님의 동영상을 좋아해요",
     "peopleListsAddToList": "목록에 추가",
     "peopleListsAddToListSubtitle": "이 크리에이터를 목록 중 하나에 추가하세요",
     "peopleListsSheetTitle": "목록에 추가",

@@ -3229,6 +3229,14 @@
       "count": { "type": "int" }
     }
   },
+  "notificationSystemUpdate": "You have a new update",
+  "@notificationSystemUpdate": {
+    "description": "Default body text for a system notification row when no actor is associated with it (e.g. an app-level update or announcement)."
+  },
+  "notificationSomeoneLikedYourVideo": "Someone liked your video",
+  "@notificationSomeoneLikedYourVideo": {
+    "description": "Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice."
+  },
 
   "commentReplyToPrefix": "Re:",
   "@commentReplyToPrefix": {
