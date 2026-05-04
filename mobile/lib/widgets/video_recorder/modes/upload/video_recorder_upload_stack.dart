@@ -71,26 +71,30 @@ class _LearnMoreLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      link: true,
-      child: InkWell(
-        onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            spacing: 8,
-            children: [
-              Text(
-                context.l10n.videoRecorderUploadLearnMore,
-                style: VineTheme.bodyMediumFont(color: VineTheme.primary),
-              ),
-              const DivineIcon(
-                icon: DivineIconName.arrowUpRight,
-                size: 16,
-                color: VineTheme.primary,
-              ),
-            ],
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        link: true,
+        child: InkWell(
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              spacing: 8,
+              children: [
+                Text(
+                  context.l10n.videoRecorderUploadLearnMore,
+                  style: VineTheme.bodyMediumFont(color: VineTheme.primary),
+                ),
+                const ExcludeSemantics(
+                  child: DivineIcon(
+                    icon: DivineIconName.arrowUpRight,
+                    size: 16,
+                    color: VineTheme.primary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
