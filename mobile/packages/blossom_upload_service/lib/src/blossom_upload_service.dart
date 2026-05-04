@@ -435,6 +435,16 @@ class BlossomUploadService {
   ///
   /// Transient = the same request stands a real chance of succeeding on a
   /// subsequent attempt (5xx server, rate limit, connection / timeout).
+  ///
+  /// Covers two thrown shapes symmetrically:
+  ///   * [DioException] with a retriable status code (5xx, 429, 408) or a
+  ///     transient connection / timeout type.
+  ///   * [BlossomResumableUploadException] with a retriable status code —
+  ///     thrown when chunk PUT exhausts its internal retry budget on a 5xx
+  ///     and the resumable session bubbles up. An outer retry rebuilds the
+  ///     session via `_initResumableUpload`. 404/410 (session expired) and
+  ///     null statusCode (auth or malformed-response) are intentionally not
+  ///     transient.
   bool _isTransientUploadError(Object error) {
     if (error is DioException) {
       final statusCode = error.response?.statusCode;
@@ -449,6 +459,11 @@ class BlossomUploadService {
         DioExceptionType.connectionError => true,
         _ => false,
       };
+    }
+    if (error is BlossomResumableUploadException) {
+      final statusCode = error.statusCode;
+      return statusCode != null &&
+          _retriableUploadStatusCodes.contains(statusCode);
     }
     return false;
   }

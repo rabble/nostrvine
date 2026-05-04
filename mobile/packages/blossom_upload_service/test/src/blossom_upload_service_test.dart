@@ -5715,6 +5715,187 @@ void main() {
           await imageFile.parent.delete(recursive: true);
         },
       );
+
+      // Symmetry guard for _isTransientUploadError: a
+      // BlossomResumableUploadException whose statusCode is in the retriable
+      // set must be retried by the outer helper, the same way a
+      // DioException(503) already is. The init endpoint throws
+      // BlossomResumableUploadException directly for any non-200/201
+      // response that still passes validateStatus (4xx + 408 + 429 land
+      // here; 5xx is thrown by Dio as DioException(badResponse) instead).
+      test(
+        'retries on BlossomResumableUploadException with retriable status '
+        'from non-Divine host resumable init',
+        () async {
+          await service.setBlossomEnabled(true);
+          await service.setBlossomServer('https://third-party.example');
+
+          stubAuth();
+
+          final imageFile = await tempImage('non_divine_resumable_408');
+
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          final initAttemptsByHost = <String, int>{};
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            if (!url.endsWith('/upload/init')) {
+              return Response(
+                requestOptions: RequestOptions(path: url),
+                statusCode: 200,
+                data: {
+                  'url': 'https://media.divine.video/hash',
+                  'fallbackUrl': 'https://media.divine.video/hash',
+                },
+              );
+            }
+            final host = Uri.parse(url).host;
+            final n = (initAttemptsByHost[host] ?? 0) + 1;
+            initAttemptsByHost[host] = n;
+            if (host == 'third-party.example' && n == 1) {
+              // 408 passes validateStatus (< 500) so init throws a
+              // BlossomResumableUploadException(statusCode: 408) rather
+              // than a DioException.
+              return Response(
+                requestOptions: RequestOptions(path: '/upload/init'),
+                statusCode: 408,
+                data: 'Request timeout',
+              );
+            }
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 201,
+              data: {
+                'uploadId': 'up_resumable_408',
+                'uploadUrl':
+                    'https://third-party.example/sessions/up_resumable_408',
+                'chunkSize': 1024,
+                'nextOffset': 0,
+                'expiresAt': 9999999999,
+              },
+            );
+          });
+
+          when(
+            () => mockDio.put<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+              onSendProgress: any(named: 'onSendProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(
+                path: '/sessions/up_resumable_408',
+              ),
+              statusCode: 204,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.uploadOffset: ['3'],
+              }),
+            ),
+          );
+
+          await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(
+            initAttemptsByHost['third-party.example'],
+            equals(2),
+            reason:
+                'BlossomResumableUploadException with statusCode 408 must be '
+                'classified transient by _isTransientUploadError so the outer '
+                'retry rebuilds the resumable session.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
+
+      test(
+        'does NOT retry on BlossomResumableUploadException with '
+        'non-retriable status (410) from non-Divine host resumable init',
+        () async {
+          // Opposing-symmetry guard: 410 (session expired / gone) is
+          // explicitly non-transient — re-creating the session via outer
+          // retry would only produce another 410. _isTransientUploadError
+          // must short-circuit it to a single attempt.
+          await service.setBlossomEnabled(true);
+          await service.setBlossomServer('https://third-party.example');
+
+          stubAuth();
+
+          final imageFile = await tempImage('non_divine_resumable_410');
+
+          when(
+            () => mockDio.head<dynamic>(any(), options: any(named: 'options')),
+          ).thenAnswer(
+            (_) async => Response(
+              requestOptions: RequestOptions(path: '/upload'),
+              statusCode: 200,
+              headers: Headers.fromMap({
+                DivineUploadHeaders.extensions: [
+                  DivineUploadExtensions.resumableSessions,
+                ],
+              }),
+            ),
+          );
+
+          final initAttemptsByHost = <String, int>{};
+          when(
+            () => mockDio.post<dynamic>(
+              any(),
+              data: any(named: 'data'),
+              options: any(named: 'options'),
+            ),
+          ).thenAnswer((invocation) async {
+            final url = invocation.positionalArguments.first as String;
+            final host = Uri.parse(url).host;
+            initAttemptsByHost[host] = (initAttemptsByHost[host] ?? 0) + 1;
+            return Response(
+              requestOptions: RequestOptions(path: '/upload/init'),
+              statusCode: 410,
+              data: 'Gone',
+            );
+          });
+
+          final result = await service.uploadImage(
+            imageFile: imageFile,
+            nostrPubkey: _testPublicKey,
+          );
+
+          expect(result.success, isFalse);
+          expect(
+            initAttemptsByHost['third-party.example'],
+            equals(1),
+            reason:
+                'A BlossomResumableUploadException with statusCode 410 must '
+                'short-circuit the retry helper — re-initing the session '
+                'would just return another 410.',
+          );
+
+          await imageFile.parent.delete(recursive: true);
+        },
+      );
     });
 
     group('Bug report upload success path', () {
