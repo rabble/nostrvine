@@ -89,15 +89,35 @@ void main() {
       });
 
       test(
-        're-enqueueing the same id replaces the row (idempotent retry)',
+        're-enqueueing the same id is a no-op — leaves mutable delivery '
+        'state on the existing row untouched',
         () async {
           await dao.enqueue(makeDm(id: 'aaaa'));
-          await dao.enqueue(
-            makeDm(id: 'aaaa', retryCount: 3),
+
+          // Move the row out of the initial pending/pending state.
+          await dao.markRecipientWrapStatus(
+            id: 'aaaa',
+            status: OutgoingWrapStatus.sent,
+            eventId: 'rcpt-evt-id',
           );
+          await dao.markSelfWrapStatus(
+            id: 'aaaa',
+            status: OutgoingWrapStatus.failed,
+            lastError: 'self-wrap relay rejected',
+          );
+          await dao.incrementRetry('aaaa');
+
+          // A second enqueue with a fresh OutgoingDm (retry_count = 0,
+          // both wraps pending, no eventId, no lastError) must NOT
+          // overwrite the in-flight delivery state.
+          await dao.enqueue(makeDm(id: 'aaaa'));
 
           final fetched = await dao.getById('aaaa');
-          expect(fetched!.retryCount, equals(3));
+          expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.sent);
+          expect(fetched.recipientWrapEventId, equals('rcpt-evt-id'));
+          expect(fetched.selfWrapStatus, OutgoingWrapStatus.failed);
+          expect(fetched.lastError, equals('self-wrap relay rejected'));
+          expect(fetched.retryCount, equals(1));
         },
       );
     });
@@ -419,6 +439,79 @@ void main() {
           unorderedEquals(['pending', 'half-pending']),
         );
       });
+    });
+
+    group('unknown wrap status', () {
+      // The DAO refuses to coerce unrecognised persisted statuses back
+      // to `pending` because that would silently re-activate a row a
+      // newer client (or a corrupt write) already moved to a terminal
+      // state — for a retry queue, that risks double-delivery. See the
+      // doc on `_parseStatus` and the table-column doc on
+      // `recipient_wrap_status`.
+      test(
+        'getById throws UnknownOutgoingWrapStatusException when a row '
+        'carries an unrecognised recipient_wrap_status',
+        () async {
+          await dao.enqueue(makeDm(id: 'aaaa'));
+          // Simulate a newer client persisting `cancelled`, or a corrupt
+          // write — bypass the DAO and write a raw value directly.
+          await database.customStatement(
+            "UPDATE outgoing_dms SET recipient_wrap_status = 'cancelled' "
+            "WHERE id = 'aaaa'",
+          );
+
+          await expectLater(
+            dao.getById('aaaa'),
+            throwsA(
+              isA<UnknownOutgoingWrapStatusException>().having(
+                (e) => e.rawValue,
+                'rawValue',
+                'cancelled',
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'getById throws when a row carries an unrecognised '
+        'self_wrap_status',
+        () async {
+          await dao.enqueue(makeDm(id: 'aaaa'));
+          await database.customStatement(
+            "UPDATE outgoing_dms SET self_wrap_status = 'archived' "
+            "WHERE id = 'aaaa'",
+          );
+
+          await expectLater(
+            dao.getById('aaaa'),
+            throwsA(
+              isA<UnknownOutgoingWrapStatusException>().having(
+                (e) => e.rawValue,
+                'rawValue',
+                'archived',
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'getStillPendingForOwner does not silently include rows with an '
+        'unknown status — it throws so the caller can surface corruption',
+        () async {
+          await dao.enqueue(makeDm(id: 'aaaa'));
+          await database.customStatement(
+            "UPDATE outgoing_dms SET recipient_wrap_status = 'cancelled' "
+            "WHERE id = 'aaaa'",
+          );
+
+          await expectLater(
+            dao.getStillPendingForOwner(ownerA),
+            throwsA(isA<UnknownOutgoingWrapStatusException>()),
+          );
+        },
+      );
     });
 
     group('isFullyDelivered + hasRetryableFailure (model getters)', () {

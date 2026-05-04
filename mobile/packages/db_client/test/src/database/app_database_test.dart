@@ -185,6 +185,98 @@ void main() {
         expect(result.oldNotificationsDeleted, equals(0));
       });
 
+      test('upgrade path — recreates outgoing_dms when missing', () async {
+        // Simulate an existing install that pre-dates the
+        // outgoing_dms table (added for #3909 / #3911 without a
+        // schema-version bump): drop the table from a fresh database,
+        // close, then reopen and assert the runtime
+        // CREATE-IF-NOT-EXISTS path in `_createMissingTables`
+        // recreated the table, indexes, and that the DAO works.
+        await database.customStatement('DROP TABLE outgoing_dms');
+
+        // Confirm the precondition — table really is gone before reopen.
+        final droppedCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='outgoing_dms'",
+            )
+            .get();
+        expect(
+          droppedCheck,
+          isEmpty,
+          reason: 'precondition: outgoing_dms must be missing before reopen',
+        );
+
+        await database.close();
+
+        // Reopen the same on-disk file. `beforeOpen` runs
+        // `_createMissingTables`, which should detect the missing
+        // outgoing_dms table and recreate it without bumping
+        // schemaVersion.
+        database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+
+        // Trigger `beforeOpen` by issuing a query (Drift opens the
+        // database lazily on first use).
+        final tableCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name='outgoing_dms'",
+            )
+            .get();
+        expect(
+          tableCheck,
+          hasLength(1),
+          reason: 'outgoing_dms must be re-created on reopen',
+        );
+
+        // Assert the indexes are in place too — the runtime path also
+        // owns those, and a missing index would silently degrade
+        // retry-sweep performance without failing the table check.
+        final indexCheck = await database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='index' "
+              "AND tbl_name='outgoing_dms'",
+            )
+            .get();
+        final indexNames = indexCheck
+            .map((row) => row.read<String>('name'))
+            .toSet();
+        expect(
+          indexNames,
+          containsAll(<String>[
+            'idx_outgoing_dms_owner_conversation',
+            'idx_outgoing_dms_owner_recipient_status',
+            'idx_outgoing_dms_owner_self_status',
+            'idx_outgoing_dms_queued_at',
+          ]),
+        );
+
+        // Finally, prove the DAO actually works against the upgraded
+        // schema — a re-created table with mismatched columns or a
+        // botched insert path would break this round-trip.
+        final dao = database.outgoingDmsDao;
+        final dm = OutgoingDm(
+          id: 'upgrade-test-id',
+          conversationId: 'conv-1',
+          recipientPubkey: testPubkey,
+          content: 'hello after upgrade',
+          createdAt: 1700000000,
+          rumorEventJson:
+              '{"id":"upgrade-test-id","kind":14,"content":"hello"}',
+          recipientWrapStatus: OutgoingWrapStatus.pending,
+          selfWrapStatus: OutgoingWrapStatus.pending,
+          queuedAt: DateTime.utc(2026, 5),
+          ownerPubkey: testPubkey,
+        );
+        await dao.enqueue(dm);
+
+        final fetched = await dao.getById('upgrade-test-id');
+        expect(fetched, isNotNull);
+        expect(fetched!.content, equals('hello after upgrade'));
+        expect(fetched.recipientWrapStatus, OutgoingWrapStatus.pending);
+        expect(fetched.selfWrapStatus, OutgoingWrapStatus.pending);
+      });
+
       test('does not delete non-expired data', () async {
         final eventsDao = database.nostrEventsDao;
         final profileStatsDao = database.profileStatsDao;

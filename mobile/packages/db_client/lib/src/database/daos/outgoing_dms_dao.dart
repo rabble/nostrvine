@@ -27,6 +27,34 @@ enum OutgoingWrapStatus {
   failed,
 }
 
+/// Thrown when [OutgoingDmsDao] reads a row whose persisted wrap-status
+/// string does not match any known [OutgoingWrapStatus].
+///
+/// This signals either database corruption or a downgrade from a future
+/// schema that introduced new states. The DAO refuses to coerce the
+/// unknown value back to [OutgoingWrapStatus.pending] because that would
+/// silently re-activate a row the user (or a newer client) already moved
+/// to a terminal state — for a retry queue, that risks double-delivery.
+///
+/// Callers (the retry service, the conversation BLoC) should treat this
+/// as a non-recoverable read failure for the affected row: log it, skip
+/// the row, and surface a corruption alert. It is never safe to retry
+/// the publish based on an unrecognised status.
+class UnknownOutgoingWrapStatusException implements Exception {
+  const UnknownOutgoingWrapStatusException(this.rawValue);
+
+  /// The raw string read from the database that did not parse.
+  final String rawValue;
+
+  @override
+  String toString() {
+    final known = OutgoingWrapStatus.values.map((e) => e.name).join(', ');
+    return 'UnknownOutgoingWrapStatusException: '
+        'unrecognised outgoing_dms wrap status "$rawValue"; '
+        'expected one of $known';
+  }
+}
+
 /// Domain model for one queued outgoing DM.
 ///
 /// Independent of [OutgoingDmRow] (the Drift-generated row) so callers
@@ -191,11 +219,19 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
-  OutgoingWrapStatus _parseStatus(String raw) =>
-      OutgoingWrapStatus.values.firstWhere(
-        (e) => e.name == raw,
-        orElse: () => OutgoingWrapStatus.pending,
-      );
+  /// Parse a persisted wrap-status string back to [OutgoingWrapStatus].
+  ///
+  /// Throws [UnknownOutgoingWrapStatusException] when [raw] does not
+  /// match any known case. Coercing unknown values to
+  /// [OutgoingWrapStatus.pending] would put corrupt or future-schema
+  /// rows back into the retry service's active set — for a retry queue
+  /// that risks double-delivery, so we fail loudly instead.
+  OutgoingWrapStatus _parseStatus(String raw) {
+    for (final status in OutgoingWrapStatus.values) {
+      if (status.name == raw) return status;
+    }
+    throw UnknownOutgoingWrapStatusException(raw);
+  }
 
   // ---------------------------------------------------------------------
   // Writes
@@ -203,12 +239,17 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
 
   /// Enqueue a new outgoing DM with both wraps in [OutgoingWrapStatus.pending].
   ///
-  /// Uses `INSERT OR REPLACE` semantics via `insertOnConflictUpdate` so that
-  /// a retry which re-enqueues the same rumor id is a safe no-op (the row
-  /// already exists, and the PRIMARY KEY clash is resolved by replacing the
-  /// row with the same id — which is the same logical row).
-  Future<void> enqueue(OutgoingDm dm) {
-    return into(outgoingDms).insertOnConflictUpdate(_modelToCompanion(dm));
+  /// Uses `INSERT OR IGNORE` semantics: when a row with [OutgoingDm.id]
+  /// already exists, this call is a true no-op — the existing row's
+  /// mutable delivery state (`recipient_wrap_status`, `self_wrap_status`,
+  /// `retry_count`, `last_error`, `last_attempt_at`, the published wrap
+  /// event ids) is preserved. Use [markRecipientWrapStatus],
+  /// [markSelfWrapStatus], or [incrementRetry] to update a row in place.
+  Future<void> enqueue(OutgoingDm dm) async {
+    await into(outgoingDms).insert(
+      _modelToCompanion(dm),
+      mode: InsertMode.insertOrIgnore,
+    );
   }
 
   /// Update the recipient gift-wrap status for [id]. Pass [eventId] when
