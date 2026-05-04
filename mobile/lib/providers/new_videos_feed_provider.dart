@@ -49,14 +49,17 @@ class NewVideosFeed extends _$NewVideosFeed {
       return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
-    return _loadFirstPage();
+    return _loadFirstPage(bypassRepositoryCache: false);
   }
 
-  Future<VideoFeedState> _loadFirstPage() async {
+  Future<VideoFeedState> _loadFirstPage({
+    bool bypassRepositoryCache = false,
+  }) async {
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
       final videos = await videosRepository.getNewVideos(
         limit: AppConstants.paginationBatchSize,
+        skipCache: bypassRepositoryCache,
       );
 
       if (!ref.mounted) {
@@ -193,7 +196,7 @@ class NewVideosFeed extends _$NewVideosFeed {
       getCurrentState: () => state,
       isMounted: () => ref.mounted,
       setState: (s) => state = s,
-      fetchFresh: _loadFirstPage,
+      fetchFresh: () => _loadFirstPage(bypassRepositoryCache: true),
     );
   }
 

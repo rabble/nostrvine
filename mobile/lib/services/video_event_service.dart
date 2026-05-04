@@ -910,6 +910,55 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     return paginationState?.isLoading ?? false;
   }
 
+  /// Waits until the relay round-trip for [subscriptionType] has quiesced
+  /// ([PaginationState.isLoading] becomes false after EOSE handling), or
+  /// until [timeout] elapses.
+  ///
+  /// [subscribeToVideoFeed] returns as soon as the socket subscription exists,
+  /// before relay events are merged — callers that immediately read
+  /// [popularNowVideos] / profile buckets would otherwise snapshot stale data
+  /// (#3850; parent report #3848).
+  Future<void> waitForSubscriptionRelayIdle(
+    SubscriptionType subscriptionType, {
+    Duration timeout = const Duration(seconds: 20),
+  }) async {
+    if (_isDisposed) {
+      return;
+    }
+
+    if (!isLoadingForSubscription(subscriptionType)) {
+      return;
+    }
+
+    final completer = Completer<void>();
+    late VoidCallback listener;
+    listener = () {
+      if (_isDisposed) {
+        removeListener(listener);
+        if (!completer.isCompleted) completer.complete();
+        return;
+      }
+      if (!isLoadingForSubscription(subscriptionType)) {
+        removeListener(listener);
+        if (!completer.isCompleted) completer.complete();
+      }
+    };
+
+    addListener(listener);
+
+    try {
+      await completer.future.timeout(timeout);
+    } on TimeoutException {
+      Log.warning(
+        'waitForSubscriptionRelayIdle timed out after ${timeout.inMilliseconds}ms for $subscriptionType',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    } finally {
+      removeListener(listener);
+    }
+  }
+
   /// Check if a subscription type has events
   bool hasEvents(SubscriptionType type) => (_eventLists[type] ?? []).isNotEmpty;
 
@@ -4403,8 +4452,16 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           eventList.insert(0, videoEvent);
         }
 
-      case SubscriptionType.editorial:
       case SubscriptionType.popularNow:
+        // Chronological feed: newest-first matches PopularNowFeed sorting /
+        // Explore expectations (relay batch order is not trustworthy alone).
+        if (isHistorical) {
+          eventList.add(videoEvent);
+        } else {
+          eventList.insert(0, videoEvent);
+        }
+
+      case SubscriptionType.editorial:
       case SubscriptionType.trending:
         // Editorial/trending: maintain order from server (always append)
         eventList.add(videoEvent);

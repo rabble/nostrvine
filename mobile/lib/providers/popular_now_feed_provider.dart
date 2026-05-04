@@ -470,6 +470,10 @@ class PopularNowFeed extends _$PopularNowFeed {
         force: true,
       );
 
+      await videoEventService.waitForSubscriptionRelayIdle(
+        SubscriptionType.popularNow,
+      );
+
       if (!ref.mounted) return;
 
       final refreshedVideos = _filterAndSortNostrVideos(
