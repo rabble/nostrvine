@@ -39,9 +39,11 @@ class ProfileFeed extends _$ProfileFeed {
   /// Timeout for funnelcake REST API calls to prevent indefinite loading.
   static const _restApiTimeout = Duration(seconds: 10);
 
-  // REST API mode state
-  bool _usingRestApi = false;
-  int? _nextOffset; // Offset for REST API pagination
+  /// REST API pagination offset. Non-null implies REST is the active source
+  /// for pagination; null means we are in Nostr-fallback mode. Reset on every
+  /// build so a transient REST failure doesn't disable REST for subsequent
+  /// calls — see issue #3849.
+  int? _nextOffset;
   int? _totalVideoCount; // Total count from X-Total-Count header
   // Cache of video metadata from REST API (preserves loops, likes, etc.)
   // Key: video ID, Value: metadata fields
@@ -64,7 +66,6 @@ class ProfileFeed extends _$ProfileFeed {
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset REST pagination state at start of build to ensure clean state.
-    _usingRestApi = false;
     _nextOffset = null;
     _listenersRegistered = false;
 
@@ -94,8 +95,12 @@ class ProfileFeed extends _$ProfileFeed {
     _registerRetainedRealtimeListeners();
 
     if (retainedState != null && retainedState.videos.isNotEmpty) {
-      _usingRestApi = funnelcakeAvailable;
-      _nextOffset = estimateNextRestOffset(retainedState);
+      // Only seed REST pagination state when funnelcake is currently
+      // reachable; otherwise leave _nextOffset null so loadMore falls back
+      // to Nostr until a successful REST call repopulates the offset.
+      if (funnelcakeAvailable) {
+        _nextOffset = estimateNextRestOffset(retainedState);
+      }
       _totalVideoCount = retainedState.totalVideoCount;
       unawaited(Future(() => refresh(retainedState: retainedState)));
       return retainedState.copyWith(
@@ -123,7 +128,7 @@ class ProfileFeed extends _$ProfileFeed {
     }
 
     Log.info(
-      'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=$userId (REST API: $_usingRestApi)',
+      'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=$userId (funnelcakeAvailable: $funnelcakeAvailable)',
       name: 'ProfileFeedProvider',
       category: LogCategory.video,
     );
@@ -281,7 +286,6 @@ class ProfileFeed extends _$ProfileFeed {
 
         final filteredVideos = _videoEventService.filterVideoList(authorVideos);
 
-        _usingRestApi = true;
         _mergeSourceVideos(
           filteredVideos,
           hasMoreContent: apiVideos.length >= AppConstants.paginationBatchSize,
@@ -317,7 +321,6 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
       } else {
-        _usingRestApi = true;
         _mergeSourceVideos(
           const <VideoEvent>[],
           hasMoreContent: false,
@@ -365,7 +368,7 @@ class ProfileFeed extends _$ProfileFeed {
     if (!ref.mounted) return;
 
     Log.info(
-      'ProfileFeed: loadMore() called for user=$userId - isLoadingMore: ${currentState.isLoadingMore}, usingRestApi: $_usingRestApi',
+      'ProfileFeed: loadMore() called for user=$userId - isLoadingMore: ${currentState.isLoadingMore}, restCursor: $_nextOffset',
       name: 'ProfileFeedProvider',
       category: LogCategory.video,
     );
@@ -392,8 +395,12 @@ class ProfileFeed extends _$ProfileFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      // If using REST API, load more using offset-based pagination.
-      if (_usingRestApi) {
+      // Per-call availability check — never trust a sticky flag (#3849).
+      // Paginate REST only when we have an offset (i.e. the active source is
+      // REST) AND funnelcake is currently reachable.
+      final funnelcakeAvailable =
+          ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+      if (funnelcakeAvailable && _nextOffset != null) {
         final client = ref.read(funnelcakeApiClientProvider);
         final offset = _nextOffset ?? estimateNextRestOffset(currentState);
         Log.info(
