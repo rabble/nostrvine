@@ -203,6 +203,10 @@ dependencies:
   # Hashtag Repository - Hashtag search data layer
   hashtag_repository:
 
+  # Identity Verification - NIP-39 external identity claim verification
+  identity_verification_client:
+  identity_verification_repository:
+
   # HLS + NIP-98 Auth Web Player - Web-only video player with per-segment
   # NIP-98 signing for age-restricted media. Gated behind
   # FeatureFlag.hlsAuthWebPlayer.
