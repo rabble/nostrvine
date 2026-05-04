@@ -20,7 +20,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/clickable_text.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
@@ -376,7 +376,7 @@ class _AuthorInfoSection extends ConsumerWidget {
                   onInteracted?.call();
                   MetadataExpandedSheet.show(context, video);
                 },
-                child: ClickableHashtagText(
+                child: ClickableText(
                   text: video.displayContent.trim(),
                   style: VineTheme.bodySmallFont().copyWith(
                     shadows: VineTheme.buttonShadows,

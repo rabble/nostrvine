@@ -11,7 +11,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/widgets/comment_item.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/clickable_text.dart';
 
 import '../../builders/comment_builder.dart';
 
@@ -68,7 +68,7 @@ void main() {
   Text contentText(WidgetTester tester) {
     return tester.widget<Text>(
       find.descendant(
-        of: find.byType(ClickableHashtagText),
+        of: find.byType(ClickableText),
         matching: find.byType(Text),
       ),
     );
@@ -92,7 +92,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(ClickableHashtagText), findsOneWidget);
+    expect(find.byType(ClickableText), findsOneWidget);
     expect(find.textContaining('@npub1'), findsOneWidget);
   });
 
@@ -113,7 +113,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.byType(ClickableHashtagText), findsOneWidget);
+    expect(find.byType(ClickableText), findsOneWidget);
 
     final text = contentText(tester);
     final textSpan = text.textSpan! as TextSpan;

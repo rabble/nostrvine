@@ -12,7 +12,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/clickable_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_sounds_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_stats_row.dart';
@@ -212,7 +212,7 @@ class _TitleSection extends StatelessWidget {
                   if (title != null && title.isNotEmpty)
                     Text(title, style: VineTheme.titleMediumFont()),
                   if (description.isNotEmpty)
-                    ClickableHashtagText(
+                    ClickableText(
                       text: description,
                       style: VineTheme.bodyLargeFont(
                         color: VineTheme.onSurfaceVariant,

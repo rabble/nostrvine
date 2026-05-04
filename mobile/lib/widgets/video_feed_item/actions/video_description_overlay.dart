@@ -5,7 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/clickable_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 
 /// Video description overlay showing title/content and loop count.
@@ -38,7 +38,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
               container: true,
               explicitChildNodes: true,
               label: 'Video description',
-              child: ClickableHashtagText(
+              child: ClickableText(
                 text: video.content.isNotEmpty
                     ? video.content
                     : video.title ?? '',

@@ -37,7 +37,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:openvine/widgets/clickable_text.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
@@ -1637,7 +1637,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           explicitChildNodes: true,
                           label:
                               'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-                          child: ClickableHashtagText(
+                          child: ClickableText(
                             text:
                                 (video.content.isNotEmpty
                                         ? video.content
