@@ -431,6 +431,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     return !MediaQuery.disableAnimationsOf(context);
   }
 
+  void _handleBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/');
+  }
+
   void _toggleAutoAdvance() {
     if (!_isAutoAdvanceAvailable()) return;
 
@@ -698,11 +706,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   showBackButton: true,
                   // The BlocListener above already tried `maybePop` and
                   // failed (otherwise we wouldn't be rendering this
-                  // branch). The same `pop` from the appbar back button
-                  // would also be a no-op, so fall back to the home
-                  // shell to avoid a dead-end UX.
-                  onBackPressed: () =>
-                      context.canPop() ? context.pop() : context.go('/'),
+                  // branch). Keep the same root-route fallback here so
+                  // cold-start deep links never strand the user.
+                  onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
@@ -722,7 +728,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 appBar: DiVineAppBar(
                   title: widget.contextTitle ?? '',
                   showBackButton: true,
-                  onBackPressed: context.pop,
+                  onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
@@ -736,7 +742,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 appBar: DiVineAppBar(
                   title: widget.contextTitle ?? '',
                   showBackButton: true,
-                  onBackPressed: context.pop,
+                  onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
@@ -805,7 +811,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               appBar: DiVineAppBar(
                 title: widget.contextTitle ?? '',
                 showBackButton: true,
-                onBackPressed: context.pop,
+                onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
                 actions: [?editAction],

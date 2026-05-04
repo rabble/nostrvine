@@ -276,10 +276,11 @@ class FullscreenFeedBloc
       return;
     }
 
-    final videoUrl = video.videoUrl;
+    final videoUrl = video.getCacheableVideoUrlForPlatform();
     if (videoUrl == null || videoUrl.isEmpty) {
       Log.warning(
-        'FullscreenFeedBloc: Video ${video.id} has no URL, cannot cache',
+        'FullscreenFeedBloc: Video ${video.id} has no cacheable URL, '
+        'skipping cache',
         name: 'FullscreenFeedBloc',
         category: LogCategory.video,
       );

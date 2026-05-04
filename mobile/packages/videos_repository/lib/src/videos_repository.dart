@@ -1553,7 +1553,10 @@ class _VideoRouteCandidate {
 
     if (trimmed.length == 64 &&
         RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(trimmed)) {
-      return _VideoRouteCandidate(eventId: trimmed.toLowerCase());
+      return _VideoRouteCandidate(
+        eventId: trimmed.toLowerCase(),
+        stableId: trimmed,
+      );
     }
 
     if (Nip19.isNoteId(trimmed)) {

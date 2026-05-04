@@ -6286,6 +6286,51 @@ void main() {
         expect(result!.id, equals(lowerEventId));
       });
 
+      test(
+        'falls back to stable-id lookup when a 64-char hex route is not an '
+        'event id',
+        () async {
+          const hexStableId =
+              'cdb77b012caba00133fc071b568e334b279947f09d30df0ce819aedcd777b749';
+          const eventId =
+              'd695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+          const author =
+              '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+          final event = _createVideoEvent(
+            id: eventId,
+            pubkey: author,
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1739350000,
+            extraTags: [
+              ['d', hexStableId],
+            ],
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((invocation) async {
+            final filters = invocation.positionalArguments.single as List<Filter>;
+            final filter = filters.single;
+            if (filter.ids?.contains(hexStableId) ?? false) {
+              return <Event>[];
+            }
+            if (filter.d?.contains(hexStableId) ?? false) {
+              return [event];
+            }
+            return <Event>[];
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(hexStableId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.stableId, equals(hexStableId));
+        },
+      );
+
       test('resolves nevent route IDs via event ID lookup', () async {
         const eventId =
             'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
@@ -7129,6 +7174,7 @@ Event _createVideoEvent({
   required int createdAt,
   int? loops,
   List<String>? hashtags,
+  List<List<String>>? extraTags,
   bool hasContentWarning = false,
   String content = '',
 }) {
@@ -7138,6 +7184,7 @@ Event _createVideoEvent({
     ['d', id], // Required for addressable events
     if (hashtags != null)
       for (final tag in hashtags) ['t', tag],
+    ...?extraTags,
     if (hasContentWarning) ['content-warning', 'adult content'],
   ];
 

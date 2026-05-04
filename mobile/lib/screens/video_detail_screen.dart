@@ -170,7 +170,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         appBar: DiVineAppBar(
           title: '',
           showBackButton: true,
-          onBackPressed: context.pop,
+          onBackPressed: () => _handleExit(context),
           backButtonSemanticLabel: 'Close video player',
           backgroundMode: DiVineAppBarBackgroundMode.transparent,
         ),
