@@ -274,7 +274,7 @@ class ProfileFeed extends _$ProfileFeed {
       if (!ref.mounted) return;
 
       _totalVideoCount = result.totalCount;
-      _nextOffset = apiVideos.length;
+      _nextOffset = result.nextOffset ?? apiVideos.length;
 
       if (apiVideos.isNotEmpty) {
         final relayVideos = _relayVideosSnapshot();
@@ -288,7 +288,9 @@ class ProfileFeed extends _$ProfileFeed {
 
         _mergeSourceVideos(
           filteredVideos,
-          hasMoreContent: apiVideos.length >= AppConstants.paginationBatchSize,
+          hasMoreContent:
+              result.hasMore ??
+              (apiVideos.length >= AppConstants.paginationBatchSize),
           totalVideoCount: _totalVideoCount,
           isRefreshing: false,
           isInitialLoad: false,
@@ -305,7 +307,8 @@ class ProfileFeed extends _$ProfileFeed {
             _mergeSourceVideos(
               enrichedVideos,
               hasMoreContent:
-                  apiVideos.length >= AppConstants.paginationBatchSize,
+                  result.hasMore ??
+                  (apiVideos.length >= AppConstants.paginationBatchSize),
               totalVideoCount: _totalVideoCount,
               isRefreshing: false,
               isInitialLoad: false,
@@ -419,7 +422,7 @@ class ProfileFeed extends _$ProfileFeed {
 
         if (!ref.mounted) return;
         _totalVideoCount = result.totalCount ?? _totalVideoCount;
-        _nextOffset = offset + apiVideos.length;
+        _nextOffset = result.nextOffset ?? (offset + apiVideos.length);
 
         if (apiVideos.isNotEmpty) {
           var newVideos = apiVideos.where((v) => !v.isRepost).toList();
@@ -449,7 +452,8 @@ class ProfileFeed extends _$ProfileFeed {
               currentState.copyWith(
                 videos: allVideos,
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    result.hasMore ??
+                    (apiVideos.length >= AppConstants.paginationBatchSize),
                 isLoadingMore: false,
                 lastUpdated: DateTime.now(),
                 totalVideoCount: _totalVideoCount,
@@ -464,7 +468,8 @@ class ProfileFeed extends _$ProfileFeed {
             state = AsyncData(
               currentState.copyWith(
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    result.hasMore ??
+                    (apiVideos.length >= AppConstants.paginationBatchSize),
                 isLoadingMore: false,
               ),
             );

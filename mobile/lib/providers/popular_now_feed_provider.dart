@@ -95,11 +95,12 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
 
       try {
-        final stats = await client.getWatchingVideos();
-        final apiVideos = stats.toVideoEvents();
+        final response = await client.getWatchingVideosPage();
+        final apiVideos = response.videos.toVideoEvents();
         if (apiVideos.isNotEmpty) {
-          // Store cursor for pagination (oldest video timestamp)
-          _nextCursor = getOldestTimestamp(apiVideos);
+          // Prefer server pagination metadata; fall back to legacy
+          // oldest-timestamp cursoring when the response is a raw array.
+          _nextCursor = response.nextCursor ?? getOldestTimestamp(apiVideos);
           Log.info(
             '✅ PopularNowFeed: Got ${apiVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
@@ -122,7 +123,8 @@ class PopularNowFeed extends _$PopularNowFeed {
           return VideoFeedState(
             videos: filteredVideos,
             hasMoreContent:
-                apiVideos.length >= AppConstants.paginationBatchSize,
+                response.hasMore ??
+                (apiVideos.length >= AppConstants.paginationBatchSize),
             isInitialLoad: filteredVideos.isEmpty,
             lastUpdated: DateTime.now(),
           );
@@ -237,8 +239,10 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
 
         // Use cursor (before parameter) for pagination
-        final stats = await client.getWatchingVideos(before: _nextCursor);
-        final apiVideos = stats.toVideoEvents();
+        final response = await client.getWatchingVideosPage(
+          before: _nextCursor,
+        );
+        final apiVideos = response.videos.toVideoEvents();
 
         if (!ref.mounted) return;
 
@@ -261,7 +265,7 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
 
           // Update cursor for next pagination
-          _nextCursor = getOldestTimestamp(apiVideos);
+          _nextCursor = response.nextCursor ?? getOldestTimestamp(apiVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = [...currentState.videos, ...newVideos];
@@ -275,7 +279,8 @@ class PopularNowFeed extends _$PopularNowFeed {
               VideoFeedState(
                 videos: allVideos,
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    response.hasMore ??
+                    (apiVideos.length >= AppConstants.paginationBatchSize),
                 lastUpdated: DateTime.now(),
               ),
             );
@@ -406,15 +411,15 @@ class PopularNowFeed extends _$PopularNowFeed {
     if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final stats = await client.getWatchingVideos();
-        final apiVideos = stats.toVideoEvents();
+        final response = await client.getWatchingVideosPage();
+        final apiVideos = response.videos.toVideoEvents();
 
         // Check if provider is still mounted after async gap
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
           // Reset cursor for pagination
-          _nextCursor = getOldestTimestamp(apiVideos);
+          _nextCursor = response.nextCursor ?? getOldestTimestamp(apiVideos);
 
           final blocklistRepository = ref.read(
             contentBlocklistRepositoryProvider,
@@ -432,7 +437,8 @@ class PopularNowFeed extends _$PopularNowFeed {
             VideoFeedState(
               videos: filteredVideos,
               hasMoreContent:
-                  apiVideos.length >= AppConstants.paginationBatchSize,
+                  response.hasMore ??
+                  (apiVideos.length >= AppConstants.paginationBatchSize),
               lastUpdated: DateTime.now(),
             ),
           );

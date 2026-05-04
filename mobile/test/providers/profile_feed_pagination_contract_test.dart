@@ -560,6 +560,74 @@ void main() {
     );
 
     test(
+      'REST loadMore uses server nextOffset from v2 pagination envelope',
+      () async {
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer(
+          (_) async => _videoStats(
+            count: 12,
+            pubkey: userId,
+            nextOffset: 50,
+            hasMore: true,
+          ),
+        );
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(
+            pubkey: userId,
+            offset: 50,
+          ),
+        ).thenAnswer(
+          (_) async => _videoStats(
+            count: 4,
+            pubkey: userId,
+            startIndex: 50,
+            nextOffset: 54,
+            hasMore: false,
+          ),
+        );
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+        final notifier = container.read(profileFeedProvider(userId).notifier);
+
+        await container.read(profileFeedProvider(userId).future);
+
+        final hydrated = Completer<void>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 12 &&
+                value.hasMoreContent &&
+                !hydrated.isCompleted) {
+              hydrated.complete();
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await hydrated.future.timeout(const Duration(milliseconds: 200));
+
+        await notifier.loadMore();
+
+        verifyNever(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(
+            pubkey: userId,
+            offset: 12,
+          ),
+        );
+        verify(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(
+            pubkey: userId,
+            offset: 50,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'REST loadMore dedupes replaceable videos by stable identity',
       () async {
         when(
@@ -765,6 +833,8 @@ VideosByAuthorResponse _videoStats({
   required String pubkey,
   int startIndex = 0,
   int? totalCount,
+  int? nextOffset,
+  bool? hasMore,
 }) {
   final now = DateTime(2026, 3, 30, 12);
 
@@ -786,7 +856,12 @@ VideosByAuthorResponse _videoStats({
       engagementScore: videoIndex,
     );
   });
-  return VideosByAuthorResponse(videos: videos, totalCount: totalCount);
+  return VideosByAuthorResponse(
+    videos: videos,
+    totalCount: totalCount,
+    nextOffset: nextOffset,
+    hasMore: hasMore,
+  );
 }
 
 VideoStats _videoStat({

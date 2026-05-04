@@ -79,18 +79,18 @@ void main() {
     test(
       'popular now keeps existing videos visible while refresh is in flight',
       () async {
-        final refreshCompleter = Completer<List<VideoStats>>();
+        final refreshCompleter = Completer<WatchingVideosResponse>();
         var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) {
           watchingCallCount += 1;
           if (watchingCallCount == 1) {
-            return Future.value([_videoStats('popular-now-initial')]);
+            return Future.value(_watchingResponse(['popular-now-initial']));
           }
           return refreshCompleter.future;
         });
@@ -140,7 +140,7 @@ void main() {
         ]);
         expect(refreshingState.isRefreshing, isTrue);
 
-        refreshCompleter.complete([_videoStats('popular-now-refreshed')]);
+        refreshCompleter.complete(_watchingResponse(['popular-now-refreshed']));
         await refreshFuture;
 
         final finalState = container.read(popularNowFeedProvider).value;
@@ -155,19 +155,19 @@ void main() {
     test(
       'popular now refresh during resume-time rebuild stays on REST path',
       () async {
-        final resumeBuildCompleter = Completer<List<VideoStats>>();
-        final refreshCompleter = Completer<List<VideoStats>>();
+        final resumeBuildCompleter = Completer<WatchingVideosResponse>();
+        final refreshCompleter = Completer<WatchingVideosResponse>();
         var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) {
           watchingCallCount += 1;
           if (watchingCallCount == 1) {
-            return Future.value([_videoStats('popular-now-initial')]);
+            return Future.value(_watchingResponse(['popular-now-initial']));
           }
           if (watchingCallCount == 2) {
             return resumeBuildCompleter.future;
@@ -261,8 +261,10 @@ void main() {
           ),
         );
 
-        resumeBuildCompleter.complete([_videoStats('popular-now-resumed')]);
-        refreshCompleter.complete([_videoStats('popular-now-refreshed')]);
+        resumeBuildCompleter.complete(
+          _watchingResponse(['popular-now-resumed']),
+        );
+        refreshCompleter.complete(_watchingResponse(['popular-now-refreshed']));
         await refreshFuture;
       },
     );
@@ -433,7 +435,7 @@ void main() {
         var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
@@ -445,7 +447,7 @@ void main() {
               statusCode: 500,
             );
           }
-          return [_videoStats('popular-now-call-$watchingCallCount')];
+          return _watchingResponse(['popular-now-call-$watchingCallCount']);
         });
 
         // Mocks needed for the Nostr fall-through that runs after refresh #1
@@ -515,6 +517,18 @@ void main() {
       },
     );
   });
+}
+
+WatchingVideosResponse _watchingResponse(
+  List<String> ids, {
+  int? nextCursor,
+  bool? hasMore,
+}) {
+  return WatchingVideosResponse(
+    videos: ids.map(_videoStats).toList(),
+    nextCursor: nextCursor,
+    hasMore: hasMore,
+  );
 }
 
 VideoEvent _video(String id) {

@@ -688,9 +688,7 @@ void main() {
       test('returns feed from legacy {videos} shape', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validFeedResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validFeedResponse, 200));
 
         final result = await client.getHomeFeed(pubkey: testPubkey);
         expect(result.videos, hasLength(1));
@@ -756,6 +754,55 @@ void main() {
 ]
 ''';
 
+      test('parses v2 envelope pagination metadata', () async {
+        const envelope =
+            '''
+{
+  "data": [
+    {
+      "id": "abc123def456",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "test-video-1",
+      "title": "Test Video",
+      "content": "A test video description",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "reactions": 100,
+      "comments": 10,
+      "reposts": 5,
+      "engagement_score": 115
+    }
+  ],
+  "pagination": {"has_more": true, "next_offset": 50}
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(envelope, 200));
+
+        final result = await client.getVideosByAuthor(pubkey: testPubkey);
+
+        expect(result.videos, hasLength(1));
+        expect(result.nextOffset, 50);
+        expect(result.hasMore, isTrue);
+      });
+
+      test(
+        'returns null pagination metadata for legacy array responses',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(validResponseBody, 200));
+
+          final result = await client.getVideosByAuthor(pubkey: testPubkey);
+
+          expect(result.nextOffset, isNull);
+          expect(result.hasMore, isNull);
+        },
+      );
+
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
@@ -776,6 +823,45 @@ void main() {
         expect(result.videos.first.reactions, equals(100));
         expect(result.totalCount, equals(42));
       });
+
+      test(
+        'getWatchingVideosPage parses v2 envelope pagination metadata',
+        () async {
+          const envelope =
+              '''
+{
+  "data": [
+    {
+      "id": "watching-env-1",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "watching-env-1",
+      "title": "Watching Video",
+      "content": "",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "reactions": 5,
+      "comments": 1,
+      "reposts": 0,
+      "engagement_score": 6
+    }
+  ],
+  "pagination": {"has_more": true, "next_cursor": "1699998000"}
+}
+''';
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelope, 200));
+
+          final result = await client.getWatchingVideosPage();
+
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, 'watching-env-1');
+          expect(result.nextCursor, 1699998000);
+          expect(result.hasMore, isTrue);
+        },
+      );
 
       test(
         'parses total_loops and total_views from author videos response',
@@ -3709,21 +3795,16 @@ void main() {
       });
 
       // Envelope shape tolerance (divine-funnelcake#238 / issue #3521)
-      test(
-        'returns videos from legacy {videos} shape (pre-#238)',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response(validResponse, 200),
-          );
+      test('returns videos from legacy {videos} shape (pre-#238)', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
-          final result = await client.getRecommendations(pubkey: testPubkey);
-          expect(result.videos, hasLength(1));
-          expect(result.videos.first.id, equals('rec123'));
-          expect(result.source, equals('personalized'));
-        },
-      );
+        final result = await client.getRecommendations(pubkey: testPubkey);
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('rec123'));
+        expect(result.source, equals('personalized'));
+      });
 
       test(
         'returns videos from post-#238 {data, pagination} envelope shape',
@@ -4417,18 +4498,11 @@ void main() {
         test('raw-array shape returns items correctly', () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[$videoJson]', 200),
-          );
+          ).thenAnswer((_) async => http.Response('[$videoJson]', 200));
 
           final videos = await client.getTrendingVideos();
           expect(videos, hasLength(1));
-          expect(
-            videos.first.id,
-            equals(
-              'envvideo01',
-            ),
-          );
+          expect(videos.first.id, equals('envvideo01'));
         });
 
         test(
@@ -4450,12 +4524,7 @@ void main() {
 
             final videos = await client.getTrendingVideos();
             expect(videos, hasLength(1));
-            expect(
-              videos.first.id,
-              equals(
-                'envvideo01',
-              ),
-            );
+            expect(videos.first.id, equals('envvideo01'));
           },
         );
 
@@ -4497,11 +4566,9 @@ void main() {
       });
 
       group('searchVideos envelope shape', () {
-        test(
-          'envelope returns videos, uses length for totalCount',
-          () async {
-            const envelope =
-                '''
+        test('envelope returns videos, uses length for totalCount', () async {
+          const envelope =
+              '''
 {
   "data": [$videoJson],
   "pagination": {
@@ -4510,23 +4577,20 @@ void main() {
   }
 }
 ''';
-            when(
-              () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-            ).thenAnswer((_) async => http.Response(envelope, 200));
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(envelope, 200));
 
-            final result = await client.searchVideos(query: 'test');
-            expect(result.videos, hasLength(1));
-            // X-Total-Count header is absent; fallback to videos.length.
-            expect(result.totalCount, equals(1));
-          },
-        );
+          final result = await client.searchVideos(query: 'test');
+          expect(result.videos, hasLength(1));
+          // X-Total-Count header is absent; fallback to videos.length.
+          expect(result.totalCount, equals(1));
+        });
 
         test('raw-array shape still returns videos', () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[$videoJson]', 200),
-          );
+          ).thenAnswer((_) async => http.Response('[$videoJson]', 200));
 
           final result = await client.searchVideos(query: 'test');
           expect(result.videos, hasLength(1));
@@ -4556,9 +4620,7 @@ void main() {
         test('raw-array shape returns hashtags', () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[$hashtagJson]', 200),
-          );
+          ).thenAnswer((_) async => http.Response('[$hashtagJson]', 200));
 
           final hashtags = await client.fetchTrendingHashtags();
           expect(hashtags, hasLength(1));
@@ -4633,9 +4695,7 @@ void main() {
         test('raw-array shape returns categories', () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[$categoryJson]', 200),
-          );
+          ).thenAnswer((_) async => http.Response('[$categoryJson]', 200));
 
           final categories = await client.getCategories();
           expect(categories, hasLength(1));
