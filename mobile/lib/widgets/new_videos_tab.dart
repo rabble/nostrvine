@@ -133,8 +133,7 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
   }
 
   Future<void> _refreshNewVideos() async {
-    ref.invalidate(newVideosFeedProvider);
-    await ref.read(newVideosFeedProvider.future);
+    await ref.read(newVideosFeedProvider.notifier).refresh();
   }
 
   void _trackLoadingState() {
@@ -269,11 +268,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           '🔄 NewVideosTab: Refreshing feed',
           category: LogCategory.video,
         );
-        // Rebuild the provider so the tab can re-query and repopulate even
-        // from an empty-state screen. This mirrors other tab-level refresh
-        // patterns in Explore and keeps pull-to-refresh available here.
-        ref.invalidate(newVideosFeedProvider);
-        await ref.read(newVideosFeedProvider.future);
+        await newVideosFeedNotifier.refresh();
       },
       onLoadMore: () async {
         Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);
