@@ -1017,6 +1017,11 @@ void main() {
             targetAspectRatio: AspectRatio.vertical,
             originalAspectRatio: 9 / 16,
           );
+      expect(
+        container.read(clipManagerProvider).hasClips,
+        isTrue,
+        reason: 'precondition: clip should be staged before any mode switch',
+      );
       notifier.setRecorderMode(VideoRecorderMode.upload);
       notifier.setRecorderMode(VideoRecorderMode.capture);
 

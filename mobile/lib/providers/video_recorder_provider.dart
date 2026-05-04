@@ -1121,7 +1121,12 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
   }
 
-  /// Set the recorder mode (capture / classic).
+  /// Set the recorder mode (capture / classic / upload).
+  ///
+  /// Capture↔classic transitions clear recorded clips and reset the
+  /// editor. Transitions involving [VideoRecorderMode.upload] preserve
+  /// both, since upload is an explainer-only surface that does not own
+  /// recording state — clearing on a curious tab tap would be hostile.
   ///
   /// When [keepAutosavedDraft] is true the autosaved draft in the database
   /// is preserved. This is used during initialisation where the saved mode
@@ -1139,9 +1144,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setString(kLastUsedRecorderModeKey, mode.name);
 
-    // Upload mode is an explainer-only tab; it doesn't own clips or
-    // editor state. Preserve both when entering or leaving upload so the
-    // user doesn't lose work for tapping a curious tab.
+    // Skip clear/reset on upload transitions — see method doc.
     final touchesRecordingState =
         mode != VideoRecorderMode.upload &&
         previousMode != VideoRecorderMode.upload;
