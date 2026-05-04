@@ -69,6 +69,10 @@ const _knownUntranslatedDebt = {
   'notificationRepliedToYourComment',
   'notificationAndConnector',
   'notificationOthersCount',
+  // Added by #3957 (distinguishing likes on comments vs videos).
+  // Translators will pick this up in a follow-up pass; until then the
+  // generated l10n APIs fall back to the English source.
+  'notificationLikedYourComment',
   // Added by #3837 (Blossom URL scheme validation under strict ATS).
   // English fallback ships until translators pick this up.
   'blossomServerUrlMustUseHttps',
