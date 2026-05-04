@@ -46,12 +46,12 @@ void main() {
     });
 
     test(
-      'markFromArchiveVideos stores only original Vine video authors',
+      'learnFromVideos stores only original Vine video authors',
       () async {
         final prefs = await SharedPreferences.getInstance();
         final service = OgVinerCacheService(prefs: prefs);
 
-        final added = await service.markFromArchiveVideos([
+        final added = await service.learnFromVideos([
           _video(pubkey: ogPubkey, isOriginalVine: true),
           _video(pubkey: nonOgPubkey),
         ]);
@@ -67,14 +67,14 @@ void main() {
       },
     );
 
-    test('markFromArchiveVideos does not duplicate existing pubkeys', () async {
+    test('learnFromVideos does not duplicate existing pubkeys', () async {
       SharedPreferences.setMockInitialValues({
         ogVinerPubkeysCacheKey: jsonEncode([ogPubkey]),
       });
       final prefs = await SharedPreferences.getInstance();
       final service = OgVinerCacheService(prefs: prefs);
 
-      final added = await service.markFromArchiveVideos([
+      final added = await service.learnFromVideos([
         _video(pubkey: ogPubkey, isOriginalVine: true),
         _video(pubkey: secondOgPubkey, isOriginalVine: true),
       ]);
@@ -88,7 +88,7 @@ void main() {
     });
 
     test(
-      'markFromArchiveVideos returns zero and skips writes when unchanged',
+      'learnFromVideos returns zero and skips writes when unchanged',
       () async {
         SharedPreferences.setMockInitialValues({
           ogVinerPubkeysCacheKey: jsonEncode([ogPubkey]),
@@ -99,7 +99,7 @@ void main() {
         var notifications = 0;
         service.addListener(() => notifications++);
 
-        final added = await service.markFromArchiveVideos([
+        final added = await service.learnFromVideos([
           _video(pubkey: ogPubkey, isOriginalVine: true),
           _video(pubkey: nonOgPubkey),
         ]);

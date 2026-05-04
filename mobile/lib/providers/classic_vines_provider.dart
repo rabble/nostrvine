@@ -9,7 +9,6 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/feed_refresh_helpers.dart';
-import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -82,14 +81,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     return _random.nextInt(pageCount) * _pageSize;
   }
 
-  void _learnOgVinersFromArchiveVideos(List<VideoEvent> videos) {
-    if (videos.isEmpty) return;
-
-    unawaited(
-      ref.read(ogVinerCacheServiceProvider).markFromArchiveVideos(videos),
-    );
-  }
-
   Future<VideoFeedState> _loadFirstPage({
     required bool funnelcakeAvailable,
     bool preserveCurrentOnEmptyFallback = false,
@@ -119,7 +110,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
                 )
                 .toList(),
           );
-          _learnOgVinersFromArchiveVideos(filteredVideos);
 
           return filteredVideos..shuffle(_random);
         } catch (e) {
@@ -234,8 +224,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       throw restError ?? StateError('Classics API unavailable');
     }
 
-    _learnOgVinersFromArchiveVideos(topClassics);
-
     return VideoFeedState(
       videos: topClassics,
       hasMoreContent: classicVideos.length > _pageSize,
@@ -298,7 +286,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
             .where((v) => !blocklistRepository.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
-      _learnOgVinersFromArchiveVideos(filteredVideos);
 
       final allVideos = [...currentState.videos, ...filteredVideos];
       final followingOffset = nextOffset + _pageSize;

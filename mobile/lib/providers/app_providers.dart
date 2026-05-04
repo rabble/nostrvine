@@ -41,6 +41,7 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/account_label_service.dart';
@@ -1462,6 +1463,17 @@ VideoEventService videoEventService(Ref ref) {
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
+
+  // Teach the OG Viner badge cache from every video that flows through the
+  // service. The cache filters internally (only `isOriginalVine` videos
+  // contribute pubkeys), so it's safe to feed it every batch — popular,
+  // new, classics, profile, hashtag, search, anything.
+  final ogVinerCache = ref.read(ogVinerCacheServiceProvider);
+  final disposeObserver = service.addVideoObserver(
+    (videos) => unawaited(ogVinerCache.learnFromVideos(videos)),
+  );
+  ref.onDispose(disposeObserver);
+
   return service;
 }
 

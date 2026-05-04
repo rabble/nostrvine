@@ -227,6 +227,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   DivineHostFilterService? _divineHostFilterService;
   final SubscriptionManager _subscriptionManager;
 
+  // Side-channel observers that fire for every video that flows through the
+  // service after filtering — both REST-loaded batches via [filterVideoList]
+  // and WebSocket-driven additions via [_addVideoToSubscription], including
+  // historical (paginated) ones that [_notifyNewVideo] intentionally skips.
+  // Composition-root concerns (e.g. badge caches) wire themselves here
+  // without coupling this service to any specific consumer.
+  final List<void Function(Iterable<VideoEvent> videos)> _videoObservers = [];
+
   // Like count batching - accumulates video IDs and fetches counts in batches
   // to prevent ANR issues from too many concurrent relay requests
   final Map<String, SubscriptionType> _pendingLikeCountVideoIds = {};
@@ -296,6 +304,38 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       } catch (e) {
         Log.error(
           'Error in new video callback: $e',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    }
+  }
+
+  /// Register an observer that receives every batch of videos flowing
+  /// through the service after filtering — both REST-loaded results from
+  /// [filterVideoList] and individual WebSocket-driven additions from
+  /// [_addVideoToSubscription], regardless of historical/live status.
+  ///
+  /// Designed for cross-cutting concerns that must learn from any video
+  /// surface (e.g. the OG Viner badge cache) without coupling this service
+  /// to a specific consumer.
+  ///
+  /// Returns a disposer that unregisters the observer.
+  VoidCallback addVideoObserver(
+    void Function(Iterable<VideoEvent> videos) observer,
+  ) {
+    _videoObservers.add(observer);
+    return () => _videoObservers.remove(observer);
+  }
+
+  void _notifyVideoObservers(Iterable<VideoEvent> videos) {
+    if (_videoObservers.isEmpty) return;
+    for (final observer in _videoObservers) {
+      try {
+        observer(videos);
+      } catch (e) {
+        Log.error(
+          'Error in video observer: $e',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -593,9 +633,12 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     final baseVideos = videos
         .where((video) => !shouldHideVideo(video))
         .toList();
-    if (service == null) return baseVideos;
+    if (service == null) {
+      _notifyVideoObservers(baseVideos);
+      return baseVideos;
+    }
 
-    return baseVideos
+    final result = baseVideos
         .map((video) {
           final labels = resolveEffectiveContentLabels(
             video,
@@ -646,6 +689,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           return true;
         })
         .toList();
+
+    _notifyVideoObservers(result);
+    return result;
   }
 
   /// Check if a VideoEvent contains adult content based on hashtags and tags
@@ -4473,6 +4519,8 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     //     '✅ Added $subscriptionType video: ${videoEvent.title ?? videoEvent.id} (total: ${eventList.length})',
     //     name: 'VideoEventService',
     //     category: LogCategory.video);
+
+    _notifyVideoObservers([videoEvent]);
 
     // Schedule frame-based UI update for progressive loading
     _scheduleFrameUpdate();

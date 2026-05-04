@@ -24,7 +24,14 @@ class OgVinerCacheService extends ChangeNotifier {
     return normalized != null && _pubkeys.contains(normalized);
   }
 
-  Future<int> markFromArchiveVideos(Iterable<VideoEvent> videos) async {
+  /// Observe a batch of [videos] and learn the pubkeys of any that are
+  /// archive Vine reposts. Non-archive videos are silently ignored, so this
+  /// method is safe to call from any feed surface — only `isOriginalVine`
+  /// videos contribute new pubkeys to the cache.
+  ///
+  /// Returns the number of newly-added pubkeys (0 if everything was already
+  /// known or no archive videos were present).
+  Future<int> learnFromVideos(Iterable<VideoEvent> videos) async {
     var added = 0;
 
     for (final video in videos) {
