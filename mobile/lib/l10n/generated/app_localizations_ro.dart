@@ -6050,7 +6050,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String notificationLikedYourComment(String actorName) {
-    return '$actorName liked your comment';
+    return '$actorName a apreciat comentariul tău';
   }
 
   @override

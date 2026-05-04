@@ -2502,6 +2502,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName} hat deinen Kommentar geliked",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName} hat dich erwähnt",
     "@notificationMentionedYou": {
         "placeholders": {

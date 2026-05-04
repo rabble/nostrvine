@@ -2502,6 +2502,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName} vond je reactie leuk",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName} heeft je genoemd",
     "@notificationMentionedYou": {
         "placeholders": {

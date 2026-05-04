@@ -2494,6 +2494,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName} أعجب بتعليقك",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName} أشار إليك",
     "@notificationMentionedYou": {
         "placeholders": {

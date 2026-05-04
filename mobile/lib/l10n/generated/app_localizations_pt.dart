@@ -5945,7 +5945,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String notificationLikedYourComment(String actorName) {
-    return '$actorName liked your comment';
+    return '$actorName curtiu seu comentário';
   }
 
   @override

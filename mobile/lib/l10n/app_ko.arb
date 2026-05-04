@@ -1790,6 +1790,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName}님이 회원님의 댓글을 좋아해요",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName}님이 회원님을 언급했어요",
     "@notificationMentionedYou": {
         "placeholders": {

@@ -5717,7 +5717,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String notificationLikedYourComment(String actorName) {
-    return '$actorName liked your comment';
+    return '$actorName님이 회원님의 댓글을 좋아해요';
   }
 
   @override

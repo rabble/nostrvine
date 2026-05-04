@@ -3124,6 +3124,14 @@
       }
     }
   },
+  "notificationLikedYourComment": "{actorName} አስተያየትህን ወደውታል።",
+  "@notificationLikedYourComment": {
+    "placeholders": {
+      "actorName": {
+        "type": "String"
+      }
+    }
+  },
   "notificationCommentedOnYourVideo": "{actorName} በቪዲዮዎ ላይ አስተያየት ሰጥቷል",
   "@notificationCommentedOnYourVideo": {
     "placeholders": {

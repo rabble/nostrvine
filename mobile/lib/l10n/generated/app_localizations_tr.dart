@@ -5892,7 +5892,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String notificationLikedYourComment(String actorName) {
-    return '$actorName liked your comment';
+    return '$actorName yorumunu beğendi';
   }
 
   @override

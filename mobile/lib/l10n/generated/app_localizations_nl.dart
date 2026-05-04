@@ -5935,7 +5935,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String notificationLikedYourComment(String actorName) {
-    return '$actorName liked your comment';
+    return '$actorName vond je reactie leuk';
   }
 
   @override

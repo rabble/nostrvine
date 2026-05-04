@@ -2501,6 +2501,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName} menyukai komentarmu",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName} menyebutmu",
     "@notificationMentionedYou": {
         "placeholders": {

@@ -5694,7 +5694,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String notificationLikedYourComment(String actorName) {
-    return '$actorName liked your comment';
+    return '$actorNameさんがあなたのコメントにいいねしました';
   }
 
   @override

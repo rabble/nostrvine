@@ -2494,6 +2494,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName}さんがあなたのコメントにいいねしました",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName}さんがあなたをメンションしました",
     "@notificationMentionedYou": {
         "placeholders": {

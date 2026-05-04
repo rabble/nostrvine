@@ -2501,6 +2501,14 @@
             }
         }
     },
+    "notificationLikedYourComment": "{actorName} yorumunu beğendi",
+    "@notificationLikedYourComment": {
+        "placeholders": {
+            "actorName": {
+                "type": "String"
+            }
+        }
+    },
     "notificationMentionedYou": "{actorName} senden bahsetti",
     "@notificationMentionedYou": {
         "placeholders": {
