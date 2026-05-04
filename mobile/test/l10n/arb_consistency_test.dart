@@ -357,6 +357,7 @@ const _knownUntranslatedDebt = {
   'keyManagementYourPublicKeyLabel',
   'keyManagementCopyPublicKeyTooltip',
   'keyManagementPublicKeyCopied',
+  'verifiedAccountChipSemanticLabel',
 };
 
 Map<String, Object?> _readArb(File file) {
