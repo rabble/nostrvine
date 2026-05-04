@@ -144,9 +144,11 @@ class CollaboratorInviteService {
   String _videoUrlFor(String videoAddress) {
     // Parameterized addressable format: `<kind>:<pubkey>:<dTag>`. The
     // d-tag is the video's [VideoEvent.stableId], which divine.video
-    // routes via `/video/:id`.
+    // routes via `/video/:id`. NIP-01 doesn't forbid `:` inside a d-tag,
+    // so re-join everything past the kind/pubkey prefix to keep colons
+    // in the stableId intact.
     final parts = videoAddress.split(':');
-    final stableId = parts.length == 3 ? parts[2] : '';
+    final stableId = parts.length >= 3 ? parts.sublist(2).join(':') : '';
     return '$videoLinkBase/$stableId';
   }
 
