@@ -199,6 +199,66 @@ void main() {
       });
 
       testWidgets(
+        'duplicate inserts a copied layer after the selected item, offsets it, '
+        'and selects it',
+        (tester) async {
+          final layerA = TextLayer(
+            text: 'Layer A',
+            id: 'layer-a',
+            offset: const Offset(10, 20),
+            startTime: const Duration(seconds: 1),
+            endTime: const Duration(seconds: 5),
+          );
+          final layerB = TextLayer(
+            text: 'Layer B',
+            id: 'layer-b',
+            offset: const Offset(50, 60),
+            startTime: const Duration(seconds: 5),
+            endTime: const Duration(seconds: 9),
+          );
+          when(() => mockEditor.activeLayers).thenReturn([layerA, layerB]);
+          when(() => mainBloc.state).thenReturn(
+            const VideoEditorMainState(),
+          );
+
+          const item = TimelineOverlayItem(
+            id: 'layer-a',
+            type: TimelineOverlayType.layer,
+            startTime: Duration(seconds: 1),
+            endTime: Duration(seconds: 5),
+          );
+          await tester.pumpWidget(
+            buildWithEditor(item, mockEditor, mainBloc),
+          );
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              l10n.videoEditorDuplicateSelectedItemSemanticLabel,
+            ),
+          );
+          await tester.pump();
+
+          final result = verify(
+            () => mockEditor.addHistory(
+              layers: captureAny(named: 'layers'),
+            ),
+          )..called(1);
+          final layers = result.captured.single as List<Layer>;
+          final inserted = layers[1] as TextLayer;
+
+          expect(layers, hasLength(3));
+          expect(inserted.id, startsWith('layer-a_copy_'));
+          expect(inserted.offset, equals(const Offset(34, 44)));
+          expect(layers[2].id, equals('layer-b'));
+
+          final addEvent = verify(
+            () => overlayBloc.add(captureAny()),
+          ).captured.whereType<TimelineOverlayItemSelected>().last;
+          expect(addEvent.itemId, startsWith('layer-a_copy_'));
+        },
+      );
+
+      testWidgets(
         'duplicate inserts a copy after the selected filter item and selects it',
         (tester) async {
           final filterA = FilterState(
@@ -245,6 +305,71 @@ void main() {
             () => overlayBloc.add(captureAny()),
           ).captured.whereType<TimelineOverlayItemSelected>().last;
           expect(addEvent.itemId, startsWith('filter-a_copy_'));
+        },
+      );
+
+      testWidgets(
+        'split layer inserts the second segment after the original and selects '
+        'it',
+        (tester) async {
+          final layerA = TextLayer(
+            text: 'Layer A',
+            id: 'layer-a',
+            offset: const Offset(10, 20),
+            startTime: const Duration(seconds: 1),
+            endTime: const Duration(seconds: 5),
+          );
+          final layerB = TextLayer(
+            text: 'Layer B',
+            id: 'layer-b',
+            offset: const Offset(50, 60),
+            startTime: const Duration(seconds: 5),
+            endTime: const Duration(seconds: 9),
+          );
+          when(() => mockEditor.activeLayers).thenReturn([layerA, layerB]);
+          when(() => mainBloc.state).thenReturn(
+            const VideoEditorMainState(
+              currentPosition: Duration(seconds: 3),
+            ),
+          );
+
+          const item = TimelineOverlayItem(
+            id: 'layer-a',
+            type: TimelineOverlayType.layer,
+            startTime: Duration(seconds: 1),
+            endTime: Duration(seconds: 5),
+          );
+          await tester.pumpWidget(
+            buildWithEditor(item, mockEditor, mainBloc),
+          );
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              l10n.videoEditorSplitSelectedClipSemanticLabel,
+            ),
+          );
+          await tester.pump();
+
+          final result = verify(
+            () => mockEditor.addHistory(
+              layers: captureAny(named: 'layers'),
+            ),
+          )..called(1);
+          final layers = result.captured.single as List<Layer>;
+          final first = layers[0] as TextLayer;
+          final second = layers[1] as TextLayer;
+
+          expect(layers, hasLength(3));
+          expect(first.endTime, equals(const Duration(seconds: 3)));
+          expect(second.id, startsWith('layer-a_copy_'));
+          expect(second.startTime, equals(const Duration(seconds: 3)));
+          expect(second.endTime, equals(const Duration(seconds: 5)));
+          expect(layers[2].id, equals('layer-b'));
+
+          final addEvent = verify(
+            () => overlayBloc.add(captureAny()),
+          ).captured.whereType<TimelineOverlayItemSelected>().last;
+          expect(addEvent.itemId, startsWith('layer-a_copy_'));
         },
       );
 
@@ -348,6 +473,77 @@ void main() {
               meta: any(named: 'meta'),
             ),
           );
+        },
+      );
+
+      testWidgets(
+        'sound duplicate serializes updated tracks under the audio history key '
+        'and selects the copy',
+        (tester) async {
+          const trackA = AudioEvent(
+            id: 'sound-1',
+            pubkey: 'pub',
+            createdAt: 0,
+            startOffset: Duration(seconds: 2),
+            startTime: Duration(seconds: 3),
+            endTime: Duration(seconds: 8),
+          );
+          const trackB = AudioEvent(
+            id: 'sound-2',
+            pubkey: 'pub',
+            createdAt: 1,
+            startOffset: Duration(seconds: 1),
+            startTime: Duration(seconds: 8),
+            endTime: Duration(seconds: 12),
+          );
+          when(() => mockStateManager.activeMeta).thenReturn({
+            VideoEditorConstants.audioStateHistoryKey: [
+              trackA.toJson(),
+              trackB.toJson(),
+            ],
+          });
+          when(() => mainBloc.state).thenReturn(
+            const VideoEditorMainState(),
+          );
+
+          const item = TimelineOverlayItem(
+            id: 'sound-1',
+            type: TimelineOverlayType.sound,
+            startTime: Duration(seconds: 3),
+            endTime: Duration(seconds: 8),
+          );
+          await tester.pumpWidget(
+            buildWithEditor(item, mockEditor, mainBloc),
+          );
+
+          await tester.tap(
+            find.bySemanticsLabel(
+              l10n.videoEditorDuplicateSelectedItemSemanticLabel,
+            ),
+          );
+          await tester.pump();
+
+          final result = verify(
+            () => mockEditor.addHistory(meta: captureAny(named: 'meta')),
+          )..called(1);
+          final meta = result.captured.single as Map<String, dynamic>;
+          final tracksJson =
+              meta[VideoEditorConstants.audioStateHistoryKey] as List<dynamic>;
+          final copied = AudioEvent.fromJson(
+            tracksJson[1] as Map<String, dynamic>,
+          );
+          final trailing = AudioEvent.fromJson(
+            tracksJson[2] as Map<String, dynamic>,
+          );
+
+          expect(tracksJson, hasLength(3));
+          expect(copied.id, startsWith('sound-1_copy_'));
+          expect(trailing.id, equals('sound-2'));
+
+          final addEvent = verify(
+            () => overlayBloc.add(captureAny()),
+          ).captured.whereType<TimelineOverlayItemSelected>().last;
+          expect(addEvent.itemId, startsWith('sound-1_copy_'));
         },
       );
 
