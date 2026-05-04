@@ -504,10 +504,12 @@ class BlossomUploadService {
       attemptNumber++;
       BlossomUploadResult? result;
       Object? thrown;
+      StackTrace? thrownStackTrace;
       try {
         result = await attempt();
-      } on Object catch (e) {
+      } on Object catch (e, stackTrace) {
         thrown = e;
+        thrownStackTrace = stackTrace;
       }
 
       // Success path — return immediately.
@@ -524,10 +526,10 @@ class BlossomUploadService {
       if (attemptNumber >= maxAttempts || !retriable) {
         if (thrown != null) {
           // The original throwable is preserved so callers see the same
-          // exception type (DioException, BlossomResumableUploadException,
-          // etc.) they would have seen without the retry wrapper.
-          // ignore: only_throw_errors
-          throw thrown;
+          // exception type and stack trace (DioException,
+          // BlossomResumableUploadException, etc.) they would have seen
+          // without the retry wrapper.
+          Error.throwWithStackTrace(thrown, thrownStackTrace!);
         }
         return result!;
       }
