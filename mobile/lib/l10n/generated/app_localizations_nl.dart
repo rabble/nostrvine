@@ -6083,6 +6083,24 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoRecorderWhySixSecondsButton => 'Begrepen!';
 
   @override
+  String get videoRecorderUploadTitle => 'Why no upload?';
+
+  @override
+  String get videoRecorderUploadBody =>
+      'What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.';
+
+  @override
+  String get videoRecorderUploadBodyDetail =>
+      'By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.';
+
+  @override
+  String get videoRecorderUploadBodyCta =>
+      'Switch to Capture or Classic to roll something real.';
+
+  @override
+  String get videoRecorderUploadLearnMore => 'Learn how verification works';
+
+  @override
   String get videoRecorderAutosaveFoundTitle =>
       'We hebben werk in uitvoering gevonden';
 

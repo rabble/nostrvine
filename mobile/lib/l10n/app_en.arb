@@ -3294,6 +3294,26 @@
   "videoRecorderWhySixSecondsTitle": "Why six seconds?",
   "videoRecorderWhySixSecondsSubtitle": "Quick clips make space for spontaneity. The 6-second format helps you capture authentic moments as they happen.",
   "videoRecorderWhySixSecondsButton": "Got it!",
+  "videoRecorderUploadTitle": "Why no upload?",
+  "videoRecorderUploadBody": "What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.",
+  "videoRecorderUploadBodyDetail": "By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.",
+  "videoRecorderUploadBodyCta": "Switch to Capture or Classic to roll something real.",
+  "videoRecorderUploadLearnMore": "Learn how verification works",
+  "@videoRecorderUploadTitle": {
+    "description": "Headline on the camera Upload mode explainer panel. Phrased as the question the user is implicitly asking by tapping the Upload tab."
+  },
+  "@videoRecorderUploadBody": {
+    "description": "First body paragraph on the Upload explainer. States the camera-direct mission and contrasts with platforms that allow produced or AI-generated uploads."
+  },
+  "@videoRecorderUploadBodyDetail": {
+    "description": "Second body paragraph on the Upload explainer. Explains why keeping creation in-app supports the realness goal. Note the deliberate hedges 'better guarantee' and 'as much as we can' — do not strengthen these claims."
+  },
+  "@videoRecorderUploadBodyCta": {
+    "description": "Closing line on the Upload explainer pointing the user back to the Capture and Classic recording modes."
+  },
+  "@videoRecorderUploadLearnMore": {
+    "description": "Outbound link label that opens divine.video/proofmode in the browser."
+  },
   "videoRecorderAutosaveFoundTitle": "We found work in progress",
   "videoRecorderAutosaveFoundSubtitle": "Would you like to continue where you left off?",
   "videoRecorderAutosaveContinueButton": "Yes, continue",

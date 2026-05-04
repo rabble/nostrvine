@@ -10668,6 +10668,36 @@ abstract class AppLocalizations {
   /// **'Got it!'**
   String get videoRecorderWhySixSecondsButton;
 
+  /// Headline on the camera Upload mode explainer panel. Phrased as the question the user is implicitly asking by tapping the Upload tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Why no upload?'**
+  String get videoRecorderUploadTitle;
+
+  /// First body paragraph on the Upload explainer. States the camera-direct mission and contrasts with platforms that allow produced or AI-generated uploads.
+  ///
+  /// In en, this message translates to:
+  /// **'What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.'**
+  String get videoRecorderUploadBody;
+
+  /// Second body paragraph on the Upload explainer. Explains why keeping creation in-app supports the realness goal. Note the deliberate hedges 'better guarantee' and 'as much as we can' — do not strengthen these claims.
+  ///
+  /// In en, this message translates to:
+  /// **'By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.'**
+  String get videoRecorderUploadBodyDetail;
+
+  /// Closing line on the Upload explainer pointing the user back to the Capture and Classic recording modes.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Capture or Classic to roll something real.'**
+  String get videoRecorderUploadBodyCta;
+
+  /// Outbound link label that opens divine.video/proofmode in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn how verification works'**
+  String get videoRecorderUploadLearnMore;
+
   /// No description provided for @videoRecorderAutosaveFoundTitle.
   ///
   /// In en, this message translates to:
