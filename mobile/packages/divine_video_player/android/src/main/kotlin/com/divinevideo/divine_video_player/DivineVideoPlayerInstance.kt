@@ -106,6 +106,22 @@ internal class DivineVideoPlayerInstance(
         seekCompletionResult = null
     }
 
+    /**
+     * Pending result for an async setClips call.
+     * Held until ExoPlayer transitions to STATE_READY (or reports an error),
+     * so `await setClips()` on the Dart side only resolves once the decoder
+     * is truly ready. This replaces the `Future.delayed` workarounds in the
+     * Dart canvas and ensures correctness on OEM decoders (e.g. Mediatek)
+     * that take variable time to reach STATE_READY after prepare().
+     */
+    private var pendingSetClipsResult: MethodChannel.Result? = null
+
+    /** Safety timeout so Dart is never left hanging if STATE_READY is lost. */
+    private val setClipsTimeoutRunnable = Runnable {
+        pendingSetClipsResult?.success(null)
+        pendingSetClipsResult = null
+    }
+
     private val positionUpdater = object : Runnable {
         override fun run() {
             syncAudioOverlays()
@@ -279,7 +295,15 @@ internal class DivineVideoPlayerInstance(
         // position so the timeline doesn't show intermediate values.
         pendingGlobalStartMs = globalStartMs
 
-        result.success(null)
+        // Hold the Dart result until STATE_READY so `await setClips()` only
+        // resolves once the decoder is truly ready. Cancel any previous
+        // in-flight setClips (shouldn't happen, but defensive).
+        mainHandler.removeCallbacks(setClipsTimeoutRunnable)
+        pendingSetClipsResult?.success(null)
+        pendingSetClipsResult = result
+        // 10 s safety net — if STATE_READY never fires (e.g. corrupt file),
+        // Dart is unblocked rather than hanging forever.
+        mainHandler.postDelayed(setClipsTimeoutRunnable, 10_000L)
     }
 
     private fun handleSeekTo(call: MethodCall, result: MethodChannel.Result) {
@@ -572,6 +596,10 @@ internal class DivineVideoPlayerInstance(
                 // Seek complete — switch from reporting target to actual position.
                 pendingGlobalStartMs = 0L
                 completeSeekIfPending()
+                // setClips complete — unblock the Dart await.
+                mainHandler.removeCallbacks(setClipsTimeoutRunnable)
+                pendingSetClipsResult?.success(null)
+                pendingSetClipsResult = null
             }
             sendStateUpdate()
         }
@@ -603,6 +631,15 @@ internal class DivineVideoPlayerInstance(
         }
 
         override fun onPlayerError(error: PlaybackException) {
+            // Unblock a pending setClips with an error so Dart can react
+            // rather than waiting for the 10 s safety timeout.
+            mainHandler.removeCallbacks(setClipsTimeoutRunnable)
+            pendingSetClipsResult?.error(
+                "PLAYER_ERROR",
+                error.message ?: "Unknown playback error",
+                null,
+            )
+            pendingSetClipsResult = null
             sendStateUpdate()
         }
 
@@ -692,8 +729,11 @@ internal class DivineVideoPlayerInstance(
     fun dispose() {
         mainHandler.removeCallbacks(positionUpdater)
         mainHandler.removeCallbacks(seekTimeoutRunnable)
+        mainHandler.removeCallbacks(setClipsTimeoutRunnable)
         seekCompletionResult?.success(null)
         seekCompletionResult = null
+        pendingSetClipsResult?.success(null)
+        pendingSetClipsResult = null
         methodChannel.setMethodCallHandler(null)
         eventChannel.setStreamHandler(null)
         // Release the player before the surface producer. Releasing the
