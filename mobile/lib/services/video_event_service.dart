@@ -926,25 +926,25 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       return;
     }
 
-    if (!isLoadingForSubscription(subscriptionType)) {
-      return;
-    }
-
     final completer = Completer<void>();
-    late VoidCallback listener;
-    listener = () {
+
+    void listener() {
       if (_isDisposed) {
-        removeListener(listener);
         if (!completer.isCompleted) completer.complete();
         return;
       }
       if (!isLoadingForSubscription(subscriptionType)) {
-        removeListener(listener);
         if (!completer.isCompleted) completer.complete();
       }
-    };
+    }
 
     addListener(listener);
+
+    // Check AFTER adding listener to avoid TOCTOU race
+    if (!isLoadingForSubscription(subscriptionType)) {
+      removeListener(listener);
+      return;
+    }
 
     try {
       await completer.future.timeout(timeout);
