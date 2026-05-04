@@ -49,7 +49,7 @@ class NewVideosFeed extends _$NewVideosFeed {
       return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
-    return _loadFirstPage(bypassRepositoryCache: false);
+    return _loadFirstPage();
   }
 
   Future<VideoFeedState> _loadFirstPage({

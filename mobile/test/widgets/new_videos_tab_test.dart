@@ -120,7 +120,6 @@ void main() {
         () => videosRepository.getNewVideos(
           limit: any(named: 'limit'),
           until: any(named: 'until'),
-          skipCache: false,
         ),
       ).called(1);
       verify(
