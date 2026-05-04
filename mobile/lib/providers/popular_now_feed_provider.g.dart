@@ -63,7 +63,7 @@ final class PopularNowFeedProvider
   PopularNowFeed create() => PopularNowFeed();
 }
 
-String _$popularNowFeedHash() => r'89c24e72061f65508d707d794257bc623ea04f08';
+String _$popularNowFeedHash() => r'b9f9fe96c39df3f3266034a298707412c7770741';
 
 /// PopularNow feed provider - shows newest videos (sorted by creation time)
 ///
