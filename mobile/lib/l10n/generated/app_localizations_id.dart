@@ -6742,4 +6742,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Verified $platform account: $identity';
+  }
 }
