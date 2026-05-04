@@ -2006,6 +2006,7 @@
     "keyManagementBackupTitle": "Anahtarını Yedekle",
     "keyManagementBackupSubtitle": "Hesabını diğer Nostr uygulamalarında kullanmak için özel anahtarını (nsec) kaydet.",
     "keyManagementCopyNsec": "Özel Anahtarımı (nsec) Kopyala",
+    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
     "keyManagementNeverShare": "nsec'ini asla kimseyle paylaşma!",
     "keyManagementPasteKey": "Lütfen özel anahtarını yapıştır",
     "keyManagementInvalidFormat": "Geçersiz anahtar formatı. \"nsec1\" ile başlamalı",

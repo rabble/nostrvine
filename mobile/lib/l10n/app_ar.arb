@@ -1999,6 +1999,7 @@
     "keyManagementBackupTitle": "النسخ الاحتياطي لمفتاحك",
     "keyManagementBackupSubtitle": "احفظ مفتاحك الخاص (nsec) لاستخدام حسابك في تطبيقات Nostr أخرى.",
     "keyManagementCopyNsec": "نسخ مفتاحي الخاص (nsec)",
+    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
     "keyManagementNeverShare": "لا تُشارك nsec مع أي شخص أبدًا!",
     "keyManagementPasteKey": "يُرجى لصق مفتاحك الخاص",
     "keyManagementInvalidFormat": "تنسيق مفتاح غير صالح. يجب أن يبدأ بـ \"nsec1\"",

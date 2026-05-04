@@ -2007,6 +2007,7 @@
     "keyManagementBackupTitle": "Zrób kopię zapasową klucza",
     "keyManagementBackupSubtitle": "Zapisz swój klucz prywatny (nsec), żeby używać konta w innych aplikacjach Nostr.",
     "keyManagementCopyNsec": "Kopiuj mój klucz prywatny (nsec)",
+    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
     "keyManagementNeverShare": "Nigdy nie udostępniaj swojego nsec nikomu!",
     "keyManagementPasteKey": "Wklej swój klucz prywatny",
     "keyManagementInvalidFormat": "Nieprawidłowy format klucza. Musi zaczynać się od \"nsec1\"",

@@ -2208,6 +2208,7 @@
     "keyManagementBackupTitle": "Архивирай ключа си",
     "keyManagementBackupSubtitle": "Запази частния си ключ (nsec), за да използваш акаунта си в други Nostr приложения.",
     "keyManagementCopyNsec": "Копирай личния ми ключ (nsec)",
+    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
     "keyManagementNeverShare": "Никога не споделяй своя nsec с никого!",
     "keyManagementPasteKey": "Постави частния си ключ",
     "keyManagementInvalidFormat": "Невалиден формат на ключа. Трябва да започва с \"nsec1\"",

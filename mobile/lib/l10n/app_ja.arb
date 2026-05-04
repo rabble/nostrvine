@@ -1999,6 +1999,7 @@
     "keyManagementBackupTitle": "鍵をバックアップ",
     "keyManagementBackupSubtitle": "秘密鍵 (nsec) を保存して、他の Nostr アプリでもこのアカウントを使えるようにしよう。",
     "keyManagementCopyNsec": "秘密鍵 (nsec) をコピー",
+    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
     "keyManagementNeverShare": "nsec は誰にも共有しないで！",
     "keyManagementPasteKey": "秘密鍵を貼り付けてね",
     "keyManagementInvalidFormat": "鍵の形式が正しくないよ。「nsec1」で始める必要があるよ",

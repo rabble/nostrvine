@@ -2007,6 +2007,7 @@
     "keyManagementBackupTitle": "Schlüssel sichern",
     "keyManagementBackupSubtitle": "Sichere deinen Private Key (nsec), um dein Konto in anderen Nostr-Apps zu nutzen.",
     "keyManagementCopyNsec": "Meinen Private Key (nsec) kopieren",
+    "keyManagementKeycastRemoteSigning": "This account signs with Keycast. No private key is stored on this device, so there is no nsec to copy here.",
     "keyManagementNeverShare": "Teile deinen nsec niemals mit jemandem!",
     "keyManagementPasteKey": "Bitte füg deinen Private Key ein",
     "keyManagementInvalidFormat": "Ungültiges Schlüsselformat. Muss mit \"nsec1\" beginnen",
