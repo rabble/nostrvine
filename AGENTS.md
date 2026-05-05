@@ -9,24 +9,36 @@
 
 ## Worktree-First Task Workflow
 
-- Start every new task from `main`, not from whatever branch or worktree happens to be open.
-- Sync `main` first: `git fetch origin`, `git switch main`, then `git pull --ff-only origin main`.
-- Create a dedicated worktree before making changes. Prefer `.worktrees/` for repo-local worktrees.
-- Use a fresh branch rooted from `main`, for example: `git worktree add .worktrees/<task-name> -b <branch-name> main`.
+> See `.claude/rules/agent_workflow.md` for detailed rationale and forbidden patterns. The bullets below are the operational summary.
+
+- Start every new task in a **new worktree branched from `origin/main`** — never from local `main` (often stale), never from another branch or worktree.
+- Fetch first, then create the worktree:
+  - `git fetch origin`
+  - `git worktree add .worktrees/<task-name> -b <branch-name> origin/main`
 - Keep one task per worktree. Do not mix unrelated fixes, reviews, or experiments in the same tree.
 - If the current checkout is dirty, do not start new work there. Commit it, stash it intentionally, or discard it intentionally first.
+- **Rebase onto fresh `origin/main` before every push**, even on a branch you've already pushed:
+  - `git fetch origin && git rebase origin/main`
+  - `git push --force-with-lease` (never `--force` without `--lease`)
+- Never merge `main` into a feature branch — always rebase.
 
 ## PR Guardrails
 
 - Every PR title must use Conventional Commit format: `type(scope): summary` or `docs: summary` for docs-only PRs.
 - Set the semantic title when creating the PR. Do not rely on editing it afterward.
 - If a PR title must be fixed after opening, rerun the `semantic_pr` workflow because title edits do not reliably retrigger it.
+- **Every PR targets `main`. Never stack PRs.** When features are interdependent, ship them as **one combined PR** with clearly delineated commits and a description that calls out each feature separately. Never `gh pr create --base <other-branch>`.
 - A task is not complete if the intended changes are still uncommitted.
 - Stage only the files that belong to the task. Avoid broad staging when the worktree contains unrelated changes.
 - End each task with a clean `git status` except for changes that are explicitly still in progress and clearly called out.
 - Commit the completed work on the task branch before handoff.
 - Open a pull request for that branch once the change is ready for review. Do not leave finished work sitting only in a local branch or worktree.
-- Keep commits and PRs focused and reviewable. If a task grows, split it into multiple commits or follow-up PRs.
+- Keep PRs focused and reviewable. If two pieces of work are *truly independent*, split them into separate PRs each targeting `main`. If they depend on each other, **combine them into one PR** rather than splitting and stacking.
+
+## No Technical Debt, No Failing Tests
+
+- Do not accumulate technical debt. Fix issues in the PR that touches them; do not defer with TODOs, follow-up issues, skipped tests, or commented-out code. The only acceptable TODO is a transitional-code TODO with a tracking-issue link (see `.claude/rules/code_style.md`).
+- **`origin/main` always passes.** Any failing test on a feature branch is caused by that branch's diff. Never claim flakiness, never `@Skip` to silence a failure, never push red "to see what CI says." Run affected tests + `flutter analyze` before every push. See `.claude/rules/agent_workflow.md` for the diagnostic recipe when a test fails.
 
 ## Architecture And State Management
 
