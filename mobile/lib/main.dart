@@ -1166,9 +1166,18 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   // Skip if already showing this video (getInitialLink
                   // and uriLinkStream can both fire for the same URL).
                   if (currentLocation == targetPath) break;
-                  // Push (not go) so the home route stays underneath,
-                  // allowing back navigation to return to the main screen.
-                  router.push(targetPath);
+                  final isReplacingExistingVideoRoute = currentLocation
+                      .startsWith('${VideoDetailScreen.basePath}/');
+                  if (isReplacingExistingVideoRoute) {
+                    // When another shared video is opened while a shared
+                    // video route is already visible, replace the current
+                    // detail route instead of stacking it.
+                    router.go(targetPath);
+                  } else {
+                    // Keep the home route underneath the first shared video
+                    // so back navigation returns to the main screen.
+                    router.push(targetPath);
+                  }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
                     name: 'DeepLinkHandler',
