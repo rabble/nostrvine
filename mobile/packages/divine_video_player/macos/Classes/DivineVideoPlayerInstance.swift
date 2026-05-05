@@ -1,7 +1,7 @@
 import AVFoundation
 import FlutterMacOS
 
-/// Wraps a single AVPlayer fed by an `AVMutableComposition` that
+/// Wraps a single AVQueuePlayer fed by an `AVMutableComposition` that
 /// stitches multiple clips into a seamless timeline (macOS).
 ///
 /// Communicates with Dart via per-player MethodChannel/EventChannel.
@@ -11,9 +11,12 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     private let methodChannel: FlutterMethodChannel
     private let eventChannel: FlutterEventChannel
 
-    private var player: AVPlayer?
+    private var player: AVQueuePlayer?
+    private var playerLooper: AVPlayerLooper?
+    private var templateItem: AVPlayerItem?
     private var eventSink: FlutterEventSink?
     private var timeObserver: Any?
+    private var currentItemObservation: NSKeyValueObservation?
     private var statusObservation: NSKeyValueObservation?
     /// One-shot KVO that defers `preroll(atRate:)` until `player.status`
     /// is `.readyToPlay`; calling earlier throws `NSInvalidArgumentException`.
@@ -159,27 +162,35 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     throw CompositionError.invalidRenderSize
                 }
                 playerItem.videoComposition = avComposition
-                self.textureOutput?.attach(to: playerItem)
+                self.templateItem = playerItem
+
+                let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
+                let startTime = startPositionMs > 0
+                    ? CMTime(value: startPositionMs, timescale: 1000)
+                    : CMTime.zero
 
                 if let existing = self.player {
-                    existing.replaceCurrentItem(with: playerItem)
-                    await existing.seek(to: .zero)
-                    self.textureOutput?.forceRefresh(for: .zero)
+                    self.configureQueue(with: playerItem)
+                    await existing.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                    self.textureOutput?.forceRefresh(for: startTime)
                 } else {
-                    let newPlayer = AVPlayer(playerItem: playerItem)
+                    let newPlayer = AVQueuePlayer()
                     self.player = newPlayer
                     self.textureOutput?.attachPlayer(newPlayer)
                     self.addTimeObserver()
-                    self.observeStatus()
-                    self.textureOutput?.forceRefresh(for: .zero)
+                    self.observeCurrentItem()
+                    self.configureQueue(with: playerItem)
+                    if startPositionMs > 0 {
+                        await newPlayer.seek(to: startTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                    }
+                    self.textureOutput?.forceRefresh(for: startTime)
                 }
 
-                // Preroll so the texture has a real frame at the start
+                // Preroll so the texture has a real frame at startTime
                 // even while paused. Deferred via safePreroll because
                 // preroll throws before status reaches .readyToPlay.
-                self.safePreroll(at: .zero)
+                self.safePreroll(at: startTime)
 
-                self.observeEnd(for: self.player!.currentItem!)
                 self.currentStatus = "ready"
                 self.sendStateUpdate()
                 result(nil)
@@ -333,6 +344,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             return
         }
         isLooping = loop
+        rebuildQueueForLoopingChange()
         result(nil)
     }
 
@@ -365,7 +377,9 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         audioOverlayManager.pauseAndDeactivateAll()
         // Pause and clear media so the surface goes blank.
         player?.pause()
-        player?.replaceCurrentItem(with: nil)
+        playerLooper = nil
+        templateItem = nil
+        player?.removeAllItems()
         clipOffsets = []
         clipDurations = []
         clipCount = 0
@@ -462,8 +476,56 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
     }
 
-    private func observeStatus() {
-        statusObservation = player?.currentItem?.observe(
+    private func configureQueue(with item: AVPlayerItem) {
+        guard let player else { return }
+        playerLooper = nil
+        player.removeAllItems()
+        if isLooping {
+            playerLooper = AVPlayerLooper(player: player, templateItem: item)
+        } else {
+            player.insert(item, after: nil)
+        }
+        attachCurrentItemOutputs()
+    }
+
+    private func rebuildQueueForLoopingChange() {
+        guard let player, let item = templateItem else { return }
+        let resumeTime = player.currentTime()
+        let shouldResume = player.rate > 0
+        currentStatus = "ready"
+        configureQueue(with: item)
+        player.seek(to: resumeTime, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
+            guard let self else { return }
+            self.textureOutput?.forceRefresh(for: resumeTime)
+            self.syncAudioOverlays()
+            if shouldResume {
+                self.player?.play()
+                self.player?.rate = Float(self.speed)
+                self.audioOverlayManager.resumeActive(speed: self.speed)
+            }
+        }
+    }
+
+    private func observeCurrentItem() {
+        currentItemObservation = player?.observe(
+            \.currentItem,
+            options: [.new]
+        ) { [weak self] _, _ in
+            self?.attachCurrentItemOutputs()
+        }
+        attachCurrentItemOutputs()
+    }
+
+    private func attachCurrentItemOutputs() {
+        guard let item = player?.currentItem else { return }
+        textureOutput?.attach(to: item)
+        observeStatus(for: item)
+        observeEnd(for: item)
+    }
+
+    private func observeStatus(for item: AVPlayerItem) {
+        statusObservation?.invalidate()
+        statusObservation = item.observe(
             \.status,
             options: [.new]
         ) { [weak self] item, _ in
@@ -496,16 +558,10 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
     }
 
     @objc private func playerDidFinish() {
-        if isLooping {
-            player?.seek(to: .zero)
-            player?.play()
-            player?.rate = Float(speed)
-            syncAudioOverlays()
-        } else {
-            audioOverlayManager.pauseAndDeactivateAll()
-            currentStatus = "completed"
-            sendStateUpdate()
-        }
+        guard !isLooping else { return }
+        audioOverlayManager.pauseAndDeactivateAll()
+        currentStatus = "completed"
+        sendStateUpdate()
     }
 
     // MARK: - State broadcasting
@@ -660,14 +716,17 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         }
         statusObservation?.invalidate()
         statusObservation = nil
+        currentItemObservation?.invalidate()
+        currentItemObservation = nil
         pendingPrerollObservation?.invalidate()
         pendingPrerollObservation = nil
         NotificationCenter.default.removeObserver(self)
-        player?.pause()
-        player?.replaceCurrentItem(with: nil)
-        player = nil
         textureOutput?.dispose()
         textureOutput = nil
+        playerLooper = nil
+        player?.pause()
+        player?.removeAllItems()
+        player = nil
         audioOverlayManager.disposeAll()
         eventSink = nil
         methodChannel.setMethodCallHandler(nil)
