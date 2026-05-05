@@ -94,18 +94,17 @@ class ContentReportingService {
     required NostrClient nostrService,
     required AuthService authService,
     required SharedPreferences prefs,
+    required String moderationRelayUrl,
   }) : _nostrService = nostrService,
        _authService = authService,
-       _prefs = prefs {
+       _prefs = prefs,
+       _moderationRelayUrl = moderationRelayUrl {
     _loadReportHistory();
   }
   final NostrClient _nostrService;
   final AuthService _authService;
   final SharedPreferences _prefs;
-
-  // Divine moderation relay for reports
-  static const String moderationRelayUrl =
-      'wss://relay.divine.video'; // Divine moderation relay
+  final String _moderationRelayUrl;
   static const String reportsStorageKey = 'content_reports_history';
 
   final List<ContentReport> _reportHistory = [];
@@ -181,7 +180,7 @@ class ContentReportingService {
 
       final sentEvent = await _nostrService.publishEvent(
         reportEvent,
-        targetRelays: [moderationRelayUrl],
+        targetRelays: [_moderationRelayUrl],
       );
       if (sentEvent is! PublishSuccess) {
         Log.error(

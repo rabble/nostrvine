@@ -3921,7 +3921,7 @@ final class ContentReportingServiceProvider
         argument: null,
         retry: null,
         name: r'contentReportingServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
