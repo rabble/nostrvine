@@ -6120,7 +6120,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      'Al mantener la creación dentro de la app, podemos garantizar mejor que el contenido es real y sin editar — y mantener la comunidad libre de contenido sintético en la medida de lo posible.';
+      'Al mantener la creación dentro de la app, podemos garantizar mejor que el contenido es real y sin editar. No estamos abriendo subidas desde la galería externa por ahora para proteger esa autenticidad y mantener nuestra comunidad libre de contenido sintético en la medida de lo posible.';
 
   @override
   String get videoRecorderUploadBodyCta =>

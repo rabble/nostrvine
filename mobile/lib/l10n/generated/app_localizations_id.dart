@@ -6039,7 +6039,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      'Dengan menjaga kreasi tetap di dalam aplikasi, kami bisa lebih baik menjamin bahwa konten itu nyata dan tidak diedit — dan menjaga komunitas bebas dari konten sintetis sebisa mungkin.';
+      'Dengan menjaga kreasi tetap di dalam aplikasi, kami bisa lebih baik menjamin bahwa konten itu nyata dan tidak diedit. Kami tidak membuka unggahan dari galeri eksternal saat ini untuk melindungi keaslian itu dan menjaga komunitas kami bebas dari konten sintetis sebisa mungkin.';
 
   @override
   String get videoRecorderUploadBodyCta =>

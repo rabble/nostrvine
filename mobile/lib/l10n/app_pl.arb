@@ -2668,7 +2668,7 @@
     "videoRecorderWhySixSecondsButton": "Rozumiem!",
   "videoRecorderUploadTitle": "Dlaczego nie ma uploadu?",
   "videoRecorderUploadBody": "To, co widzisz na Divine, zostało stworzone przez ludzi: surowe i uchwycone w danej chwili. W przeciwieństwie do platform, które zezwalają na mocno wyprodukowane lub generowane przez AI uploady, stawiamy na autentyczność doświadczenia bezpośrednio z kamery.",
-  "videoRecorderUploadBodyDetail": "Trzymając tworzenie wewnątrz aplikacji, możemy lepiej zagwarantować, że treści są prawdziwe i niezmienione — i utrzymać społeczność wolną od syntetycznych treści w jak największym stopniu.",
+  "videoRecorderUploadBodyDetail": "Trzymając tworzenie wewnątrz aplikacji, możemy lepiej zagwarantować, że treści są prawdziwe i niezmienione. Nie otwieramy obecnie uploadów z zewnętrznej galerii, aby chronić tę autentyczność i utrzymać naszą społeczność wolną od syntetycznych treści w jak największym stopniu.",
   "videoRecorderUploadBodyCta": "Przełącz na Capture lub Classic, żeby nakręcić coś prawdziwego.",
   "videoRecorderUploadLearnMore": "Dowiedz się, jak działa weryfikacja",
     "videoRecorderAutosaveFoundTitle": "Znaleźliśmy niedokończoną pracę",

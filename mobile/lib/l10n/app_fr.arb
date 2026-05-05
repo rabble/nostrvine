@@ -2668,7 +2668,7 @@
     "videoRecorderWhySixSecondsButton": "Compris !",
   "videoRecorderUploadTitle": "Pourquoi pas d'envoi ?",
   "videoRecorderUploadBody": "Ce que tu vois sur Divine est fait par des humains : brut et capturé sur le moment. Contrairement aux plateformes qui autorisent les envois très produits ou générés par IA, nous donnons la priorité à l'authenticité de l'expérience caméra-directe.",
-  "videoRecorderUploadBodyDetail": "En gardant la création à l'intérieur de l'app, nous pouvons mieux garantir que le contenu est réel et non édité — et garder la communauté libre de contenu synthétique autant que possible.",
+  "videoRecorderUploadBodyDetail": "En gardant la création à l'intérieur de l'app, nous pouvons mieux garantir que le contenu est réel et non édité. Nous n'ouvrons pas les envois depuis la galerie externe pour le moment, afin de protéger cette authenticité et garder notre communauté libre de contenu synthétique autant que possible.",
   "videoRecorderUploadBodyCta": "Passe à Capture ou Classic pour filmer quelque chose de réel.",
   "videoRecorderUploadLearnMore": "Découvre comment fonctionne la vérification",
     "videoRecorderAutosaveFoundTitle": "Nous avons trouvé un travail en cours",

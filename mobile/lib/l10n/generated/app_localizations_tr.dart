@@ -6047,7 +6047,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      'Yaratımı uygulama içinde tutarak, içeriğin gerçek ve düzenlenmemiş olduğunu daha iyi garanti edebiliyoruz — ve topluluğu sentetik içerikten mümkün olduğunca uzak tutuyoruz.';
+      'Yaratımı uygulama içinde tutarak, içeriğin gerçek ve düzenlenmemiş olduğunu daha iyi garanti edebiliyoruz. Şu anda harici galeriden yüklemelere açmıyoruz; bu özgünlüğü korumak ve topluluğumuzu sentetik içerikten mümkün olduğunca uzak tutmak için.';
 
   @override
   String get videoRecorderUploadBodyCta =>

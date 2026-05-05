@@ -5845,7 +5845,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      '作成をアプリ内に留めることで、コンテンツが本物で未編集であることをより確実に保証でき、できる限りコミュニティを合成コンテンツから守ることができます。';
+      '作成をアプリ内に留めることで、コンテンツが本物で未編集であることをより確実に保証できます。今のところ外部ギャラリーからのアップロードは開放していません。その本物らしさを守り、コミュニティを合成コンテンツからできる限り守るためです。';
 
   @override
   String get videoRecorderUploadBodyCta => '本物を撮るならCaptureかClassicに切り替えてね。';

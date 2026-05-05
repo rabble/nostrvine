@@ -5948,7 +5948,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      'ፍጠራን ከመተግበሪያው ውስጥ በማቆየት፣ ይዘቱ እውነተኛ እና ያልተስተካከለ መሆኑን በተሻለ ሁኔታ ልንዋስ እንችላለን — እና ማህበረሰቡን በተቻለ መጠን ከሰው ሰራሽ ይዘት ነጻ ልናደርገው እንችላለን።';
+      'ፍጠራን ከመተግበሪያው ውስጥ በማቆየት፣ ይዘቱ እውነተኛ እና ያልተስተካከለ መሆኑን በተሻለ ሁኔታ ልንዋስ እንችላለን። ያን እውነተኛነት ለመጠበቅና ማህበረሰባችንን በተቻለ መጠን ከሰው ሰራሽ ይዘት ነጻ ለማድረግ፣ በአሁኑ ጊዜ ከውጪ ጋለሪ መጫን አንፈቅድም።';
 
   @override
   String get videoRecorderUploadBodyCta =>

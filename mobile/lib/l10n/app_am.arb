@@ -3217,7 +3217,7 @@
   "videoRecorderWhySixSecondsButton": "ገባኝ!",
   "videoRecorderUploadTitle": "ለምን መጫን የለም?",
   "videoRecorderUploadBody": "በዲቫይን ላይ የምታየው በሰው የተሰራ ነው፦ ጥሬ እና በወቅቱ የተቀረጸ። በከፍተኛ የተዘጋጁ ወይም በAI የተፈጠሩ ጭነቶችን የሚፈቅዱ መድረኮች በተለየ መልኩ፣ የቀጥታ ካሜራ ተሞክሮን ትክክለኛነት እናስቀድማለን።",
-  "videoRecorderUploadBodyDetail": "ፍጠራን ከመተግበሪያው ውስጥ በማቆየት፣ ይዘቱ እውነተኛ እና ያልተስተካከለ መሆኑን በተሻለ ሁኔታ ልንዋስ እንችላለን — እና ማህበረሰቡን በተቻለ መጠን ከሰው ሰራሽ ይዘት ነጻ ልናደርገው እንችላለን።",
+  "videoRecorderUploadBodyDetail": "ፍጠራን ከመተግበሪያው ውስጥ በማቆየት፣ ይዘቱ እውነተኛ እና ያልተስተካከለ መሆኑን በተሻለ ሁኔታ ልንዋስ እንችላለን። ያን እውነተኛነት ለመጠበቅና ማህበረሰባችንን በተቻለ መጠን ከሰው ሰራሽ ይዘት ነጻ ለማድረግ፣ በአሁኑ ጊዜ ከውጪ ጋለሪ መጫን አንፈቅድም።",
   "videoRecorderUploadBodyCta": "እውነተኛ ነገር ለመቅረጽ ወደ Capture ወይም Classic ቀይር።",
   "videoRecorderUploadLearnMore": "ማረጋገጫ እንዴት እንደሚሰራ ተማር",
   "videoRecorderAutosaveFoundTitle": "በሂደት ላይ ያለ ስራ አግኝተናል",

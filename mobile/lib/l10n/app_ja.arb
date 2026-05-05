@@ -2941,7 +2941,7 @@
     "videoRecorderWhySixSecondsButton": "わかりました！",
   "videoRecorderUploadTitle": "なぜアップロードできないの?",
   "videoRecorderUploadBody": "Divineで見るものは人間が作ったもの。生のまま、その瞬間に撮影されたものです。高度に加工された動画やAI生成のアップロードを許可するプラットフォームとは違い、私たちはカメラ直撮りの体験の本物らしさを優先します。",
-  "videoRecorderUploadBodyDetail": "作成をアプリ内に留めることで、コンテンツが本物で未編集であることをより確実に保証でき、できる限りコミュニティを合成コンテンツから守ることができます。",
+  "videoRecorderUploadBodyDetail": "作成をアプリ内に留めることで、コンテンツが本物で未編集であることをより確実に保証できます。今のところ外部ギャラリーからのアップロードは開放していません。その本物らしさを守り、コミュニティを合成コンテンツからできる限り守るためです。",
   "videoRecorderUploadBodyCta": "本物を撮るならCaptureかClassicに切り替えてね。",
   "videoRecorderUploadLearnMore": "認証の仕組みを見る",
     "videoRecorderWhySixSecondsSubtitle": "短いクリップは自発性のための空間を作ります。6秒フォーマットは起きた瞬間の本物の瞬間を捉えるのに役立ちます。",

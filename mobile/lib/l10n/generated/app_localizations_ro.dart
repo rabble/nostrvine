@@ -6206,7 +6206,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      'Păstrând crearea în aplicație, putem garanta mai bine că conținutul este real și needitat — și putem menține comunitatea liberă de conținut sintetic pe cât posibil.';
+      'Păstrând crearea în aplicație, putem garanta mai bine că conținutul este real și needitat. Nu deschidem upload-uri din galeria externă în acest moment pentru a proteja acea autenticitate și a menține comunitatea noastră liberă de conținut sintetic pe cât posibil.';
 
   @override
   String get videoRecorderUploadBodyCta =>

@@ -10683,7 +10683,7 @@ abstract class AppLocalizations {
   /// Second body paragraph on the Upload explainer. Explains why keeping creation in-app supports the realness goal. Note the deliberate hedges 'better guarantee' and 'as much as we can' — do not strengthen these claims.
   ///
   /// In en, this message translates to:
-  /// **'By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.'**
+  /// **'By keeping creation inside the app, we can better guarantee that content is real and unedited. We aren\'t opening up external gallery uploads at this time to protect that realness and keep our community free of synthetic content as much as we can.'**
   String get videoRecorderUploadBodyDetail;
 
   /// Closing line on the Upload explainer pointing the user back to the Capture and Classic recording modes.

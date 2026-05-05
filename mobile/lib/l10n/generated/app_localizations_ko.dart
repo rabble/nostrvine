@@ -5868,7 +5868,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      '제작을 앱 안에서 유지함으로써, 콘텐츠가 실제이며 편집되지 않았음을 더 잘 보장할 수 있고 — 커뮤니티를 합성 콘텐츠로부터 최대한 자유롭게 유지할 수 있습니다.';
+      '제작을 앱 안에서 유지함으로써, 콘텐츠가 실제이며 편집되지 않았음을 더 잘 보장할 수 있습니다. 그 진정성을 보호하고 커뮤니티를 합성 콘텐츠로부터 최대한 자유롭게 유지하기 위해, 현재로서는 외부 갤러리 업로드를 열어두지 않고 있습니다.';
 
   @override
   String get videoRecorderUploadBodyCta => '진짜를 찍으려면 Capture나 Classic으로 전환하세요.';
