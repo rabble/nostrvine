@@ -1,6 +1,11 @@
+// ABOUTME: Unit tests for redactUriStringForLogs (issue #3360 AC / plan §5).
+// ABOUTME: Query keys token/code/deviceCode/verifier/secret, paths, divine://.
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 
+/// Issue #3360 / plan §5 — URI redaction acceptance: query keys `token`, `code`,
+/// `deviceCode`, `verifier`, `secret`, path `/invite/<code>`, `divine://` callbacks.
 void main() {
   group('redactUriStringForLogs', () {
     test('returns invalid placeholder when parse fails', () {
@@ -9,34 +14,48 @@ void main() {
       expect(redactUriStringForLogs('   '), '[invalid-uri]');
     });
 
-    test(
-      'redacts all query values (token, code, deviceCode, verifier, secret)',
-      () {
-        final raw =
-            'https://divine.video/invite?token=abc&code=CDEF&deviceCode=dd&'
-            'verifier=vv&secret=ss&other=xx';
-        final out = redactUriStringForLogs(raw);
-        expect(out, isNot(contains('abc')));
-        expect(out, isNot(contains('CDEF')));
-        expect(out, isNot(contains('deviceCode=dd')));
-        expect(out, isNot(contains('verifier=vv')));
-        expect(out, isNot(contains('secret=ss')));
-        expect(out, isNot(contains('other=xx')));
-        expect(out, contains('token'));
-        expect(out, contains('deviceCode'));
-        expect(out, contains('verifier'));
-        expect(out, contains('secret'));
-        expect(out, contains(redactedUriComponentForLogs));
-      },
-    );
+    group('AC #3360 — sensitive query keys', () {
+      test(
+        'redacts values for token, code, deviceCode, verifier, secret (and any other query)',
+        () {
+          final raw =
+              'https://divine.video/invite?token=abc&code=CDEF&deviceCode=dd&'
+              'verifier=vv&secret=ss&other=xx';
+          final out = redactUriStringForLogs(raw);
+          expect(out, isNot(contains('abc')));
+          expect(out, isNot(contains('CDEF')));
+          expect(out, isNot(contains('deviceCode=dd')));
+          expect(out, isNot(contains('verifier=vv')));
+          expect(out, isNot(contains('secret=ss')));
+          expect(out, isNot(contains('other=xx')));
+          expect(out, contains('token'));
+          expect(out, contains('deviceCode'));
+          expect(out, contains('verifier'));
+          expect(out, contains('secret'));
+          expect(out, contains(redactedUriComponentForLogs));
+        },
+      );
 
-    test('query key casing is preserved; values remain redacted', () {
-      final raw = 'https://divine.video/path?Code=up&TOKEN=t&VERIFIER=v';
-      final out = redactUriStringForLogs(raw);
-      expect(out, isNot(contains('Code=up')));
-      expect(out, isNot(contains('TOKEN=t')));
-      expect(out, isNot(contains('VERIFIER=v')));
-      expect(out.split('Code=').last, startsWith(redactedUriComponentForLogs));
+      test('each AC-listed value is absent from output (single URL)', () {
+        final uri =
+            'https://divine.video/x?token=w1&code=w2&deviceCode=w3&verifier=w4&secret=w5';
+        final out = redactUriStringForLogs(uri);
+        for (final leaked in ['w1', 'w2', 'w3', 'w4', 'w5']) {
+          expect(out, isNot(contains(leaked)));
+        }
+      });
+
+      test('mixed-case query parameter names still redact values', () {
+        final raw = 'https://divine.video/path?Code=up&TOKEN=t&VERIFIER=v';
+        final out = redactUriStringForLogs(raw);
+        expect(out, isNot(contains('Code=up')));
+        expect(out, isNot(contains('TOKEN=t')));
+        expect(out, isNot(contains('VERIFIER=v')));
+        expect(
+          out.split('Code=').last,
+          startsWith(redactedUriComponentForLogs),
+        );
+      });
     });
 
     test('redacts duplicate query parameter values', () {
@@ -88,7 +107,7 @@ void main() {
       expect(out, endsWith('#$redactedUriComponentForLogs'));
     });
 
-    test('handles divine scheme callback style URIs', () {
+    test('divine:// callback query does not leak token values', () {
       final raw = 'divine://signer-return?token=supersecret&refresh=1';
       final out = redactUriStringForLogs(raw);
       expect(out, startsWith('divine://'));
