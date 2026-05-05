@@ -302,11 +302,12 @@ class Nip07Service {
     }
     try {
       return await nip07.nostr!.nip44!.encrypt(recipientPubkey, message);
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'NIP-44 encryption failed: $e',
         name: 'Nip07Service',
         category: LogCategory.system,
+        stackTrace: stackTrace,
       );
       return null;
     }
@@ -322,11 +323,12 @@ class Nip07Service {
     }
     try {
       return await nip07.nostr!.nip44!.decrypt(senderPubkey, encryptedMessage);
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'NIP-44 decryption failed: $e',
         name: 'Nip07Service',
         category: LogCategory.system,
+        stackTrace: stackTrace,
       );
       return null;
     }
@@ -354,5 +356,6 @@ class Nip07Service {
     'hasRelays': _userRelays != null,
     'relayCount': _userRelays?.length ?? 0,
     'hasNip04': nip07.nostr?.nip04 != null,
+    'hasNip44': nip07.nostr?.nip44 != null,
   };
 }
