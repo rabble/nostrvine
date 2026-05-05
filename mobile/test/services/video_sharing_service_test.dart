@@ -27,6 +27,9 @@ const _testPubkey =
 const _recipientPubkey =
     'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3';
 
+const _testVideoId =
+    'a695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+
 void main() {
   late VideoSharingService service;
   late _MockNostrClient mockNostrService;
@@ -87,7 +90,7 @@ void main() {
 
       final now = DateTime.now();
       final testVideo = VideoEvent(
-        id: 'video1',
+        id: _testVideoId,
         pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -132,7 +135,7 @@ void main() {
 
       final now = DateTime.now();
       final testVideo = VideoEvent(
-        id: 'video1',
+        id: _testVideoId,
         pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -230,7 +233,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -256,7 +259,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -293,7 +296,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -324,7 +327,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -377,7 +380,7 @@ void main() {
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -418,7 +421,7 @@ void main() {
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -454,7 +457,7 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -497,12 +500,14 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
           content: 'Test',
           title: 'Indigenous cultures',
+          vineId: 'indigenous-cultures',
+          rawTags: const {'d': 'indigenous-cultures'},
         ),
         recipientPubkey: _recipientPubkey,
       );
@@ -542,11 +547,13 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
           content: 'Test',
+          vineId: 'shareable-video',
+          rawTags: const {'d': 'shareable-video'},
         ),
         recipientPubkey: _recipientPubkey,
       );
@@ -586,7 +593,7 @@ void main() {
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -624,7 +631,7 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -641,7 +648,7 @@ void main() {
     test('generateShareUrl uses stableId when video has a d tag', () {
       final now = DateTime.now();
       final video = VideoEvent(
-        id: 'video1',
+        id: _testVideoId,
         pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -702,7 +709,7 @@ void main() {
       final now = DateTime.now();
       await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -738,7 +745,7 @@ void main() {
       final now = DateTime.now();
       await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
