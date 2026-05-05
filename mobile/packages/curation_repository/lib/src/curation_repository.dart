@@ -125,6 +125,8 @@ class CurationRepository {
     // Include addressable IDs so reactions on any version of a replaced
     // video (different event ID, same d-tag) are counted via 'a' tag.
     final videoIds = allVideos.map((v) => v.id).toList();
+    // Keep the event-id keys aligned with getLikeCounts' return shape while
+    // still giving the repository the addressable IDs it needs for edited videos.
     final addressableIds = {
       for (final v in allVideos)
         if (v.addressableId != null) v.id: v.addressableId!,

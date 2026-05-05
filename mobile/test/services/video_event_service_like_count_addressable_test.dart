@@ -86,6 +86,8 @@ void main() {
         ).captured;
 
         // The captured value is the addressableIds map passed to getLikeCounts.
+        // The map is keyed by current event ID even when the lookup also fans
+        // out across prior edited versions via addressable IDs.
         final addressableIds = captured.first as Map<String, String>?;
         expect(
           addressableIds,
