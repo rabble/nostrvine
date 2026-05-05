@@ -238,6 +238,10 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Like count batching - accumulates video IDs and fetches counts in batches
   // to prevent ANR issues from too many concurrent relay requests
   final Map<String, SubscriptionType> _pendingLikeCountVideoIds = {};
+  // Addressable IDs (kind:pubkey:d-tag) for pending like count fetches.
+  // Passed to getLikeCounts so reactions on any version of a replaced video
+  // (different event IDs, same d-tag) are also counted via 'a' tag.
+  final Map<String, String> _pendingLikeCountAddressableIds = {};
   Timer? _likeCountBatchTimer;
   static const Duration _likeCountBatchDebounce = Duration(milliseconds: 150);
   static const int _likeCountBatchMaxSize = 50;
@@ -4553,6 +4557,14 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     // Add to pending batch
     _pendingLikeCountVideoIds[videoEvent.id] = subscriptionType;
 
+    // Track addressable ID so the batch fetch can also query by 'a' tag.
+    // This ensures reactions on any version of a replaced video (e.g. after a
+    // metadata edit that changes the event ID) are included in the count.
+    final addressableId = videoEvent.addressableId;
+    if (addressableId != null) {
+      _pendingLikeCountAddressableIds[videoEvent.id] = addressableId;
+    }
+
     // Cancel existing timer
     _likeCountBatchTimer?.cancel();
 
@@ -4575,7 +4587,11 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     // Move pending to current batch
     final batch = Map<String, SubscriptionType>.from(_pendingLikeCountVideoIds);
+    final addressableIds = Map<String, String>.from(
+      _pendingLikeCountAddressableIds,
+    );
     _pendingLikeCountVideoIds.clear();
+    _pendingLikeCountAddressableIds.clear();
     _likeCountBatchTimer?.cancel();
 
     final videoIds = batch.keys.toList();
@@ -4587,8 +4603,13 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     );
 
     try {
-      // Fetch all like counts in a single batched query
-      final likeCounts = await _likesRepository!.getLikeCounts(videoIds);
+      // Fetch like counts via both 'e' tag (event ID) and 'a' tag (addressable
+      // ID).  The 'a' tag query catches reactions on any previous version of the
+      // video so counts stay accurate after a metadata update.
+      final likeCounts = await _likesRepository!.getLikeCounts(
+        videoIds,
+        addressableIds: addressableIds.isEmpty ? null : addressableIds,
+      );
 
       // Apply counts to each video
       var updatedCount = 0;
