@@ -49,13 +49,6 @@ sealed class NotificationItem extends Equatable {
 
   /// Title of the target video, if applicable.
   final String? videoTitle;
-
-  /// Human-readable message for display.
-  ///
-  /// Note: Type icon and formatted timestamp are presentation concerns.
-  /// Use DivineIcon from divine_ui for type icons in the widget layer.
-  /// Use a time formatter for relative timestamps.
-  String get message;
 }
 
 /// A notification from a single actor.
@@ -80,28 +73,6 @@ class SingleNotification extends NotificationItem {
 
   /// Whether the current user is already following this actor back.
   final bool isFollowingBack;
-
-  @override
-  String get message {
-    final name = actor.displayName;
-    final title = videoTitle;
-    return switch (type) {
-      NotificationKind.like when title != null =>
-        '$name liked your video $title',
-      NotificationKind.like => '$name liked your video',
-      NotificationKind.likeComment => '$name liked your comment',
-      NotificationKind.comment when title != null =>
-        '$name commented on your video $title',
-      NotificationKind.comment => '$name commented on your video',
-      NotificationKind.reply => '$name replied to your comment',
-      NotificationKind.follow => '$name started following you',
-      NotificationKind.repost when title != null =>
-        '$name reposted your video $title',
-      NotificationKind.repost => '$name reposted your video',
-      NotificationKind.mention => '$name mentioned you',
-      NotificationKind.system => 'You have a new update',
-    };
-  }
 
   /// Returns a copy with the given fields replaced.
   SingleNotification copyWith({
@@ -182,25 +153,6 @@ class GroupedNotification extends NotificationItem {
       targetEventId: targetEventId ?? this.targetEventId,
       videoTitle: videoTitle ?? this.videoTitle,
     );
-  }
-
-  @override
-  String get message {
-    final isComment = type == NotificationKind.likeComment;
-    final target = isComment ? 'comment' : 'video';
-    if (actors.isEmpty) return 'Someone liked your $target';
-    final name = actors.first.displayName;
-    final othersCount = totalCount - 1;
-    final title = isComment ? null : videoTitle;
-    if (othersCount <= 0) {
-      return title != null
-          ? '$name liked your $target $title'
-          : '$name liked your $target';
-    }
-    final others = '$othersCount ${othersCount == 1 ? 'other' : 'others'}';
-    return title != null
-        ? '$name and $others liked your $target $title'
-        : '$name and $others liked your $target';
   }
 
   @override

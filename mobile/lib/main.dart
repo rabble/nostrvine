@@ -40,6 +40,7 @@ import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
+import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
@@ -1567,6 +1568,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         draftService: ref.read(draftStorageServiceProvider),
         collaboratorInviteService: CollaboratorInviteService(
           dmRepository: ref.read(dmRepositoryProvider),
+          l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
         ),
         onProgressChanged:
             ({required String draftId, required double progress}) {

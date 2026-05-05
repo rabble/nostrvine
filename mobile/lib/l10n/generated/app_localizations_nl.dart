@@ -5073,6 +5073,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Uitnodiging om samen te werken';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Je bent uitgenodigd om samen te werken aan $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Je bent uitgenodigd om samen te werken aan een video: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Annuleren';
 
   @override
@@ -5975,6 +5985,12 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'Je hebt een nieuwe update';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Iemand vond je video leuk';
 
   @override
   String get commentReplyToPrefix => 'Re:';

@@ -5103,6 +5103,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'Покана за сътрудник';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Поканени сте да си сътрудничите по $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Поканени сте да си сътрудничите по видеоклип: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Отказ';
 
   @override
@@ -6012,6 +6022,12 @@ class AppLocalizationsBg extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'Имаш ново известие';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Някой хареса видеото ти';
 
   @override
   String get commentReplyToPrefix => 'Отг.:';

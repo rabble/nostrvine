@@ -4851,6 +4851,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'コラボ招待';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return '$titleのコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return '動画のコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'キャンセル';
 
   @override
@@ -5732,6 +5742,12 @@ class AppLocalizationsJa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => '新しいお知らせがあります';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => '誰かがあなたの動画にいいねしました';
 
   @override
   String get commentReplyToPrefix => 'Re:';

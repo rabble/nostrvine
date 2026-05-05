@@ -2,6 +2,7 @@
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -444,13 +445,13 @@ void main() {
       expect(
         profileSetupUploadErrorMessage(
           l10n,
-          Exception('Server error (503): Service Unavailable'),
+          BlossomUploadFailureReason.server,
         ),
         l10n.profileSetupUploadServerError,
       );
     });
 
-    testWidgets('uses a generic fallback without leaking raw exception text', (
+    testWidgets('maps network failures to the network error message', (
       tester,
     ) async {
       final l10n = await loadL10n(tester);
@@ -458,15 +459,62 @@ void main() {
       expect(
         profileSetupUploadErrorMessage(
           l10n,
-          Exception('weird upstream blob storage failure'),
+          BlossomUploadFailureReason.network,
+        ),
+        l10n.profileSetupUploadNetworkError,
+      );
+    });
+
+    testWidgets('maps auth failures to the auth error message', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          BlossomUploadFailureReason.auth,
+        ),
+        l10n.profileSetupUploadAuthError,
+      );
+    });
+
+    testWidgets('maps fileTooLarge failures to the file-too-large message', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          BlossomUploadFailureReason.fileTooLarge,
+        ),
+        l10n.profileSetupUploadFileTooLarge,
+      );
+    });
+
+    testWidgets('falls back to the generic message for unknown failures', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          BlossomUploadFailureReason.unknown,
         ),
         l10n.profileSetupUploadFailedGeneric,
       );
+    });
+
+    testWidgets('falls back to the generic message when reason is null', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
       expect(
-        l10n.profileSetupUploadFailedGeneric.contains(
-          'weird upstream blob storage failure',
-        ),
-        isFalse,
+        profileSetupUploadErrorMessage(l10n, null),
+        l10n.profileSetupUploadFailedGeneric,
       );
     });
   });

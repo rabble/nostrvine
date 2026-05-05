@@ -5113,6 +5113,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Einladung zur Zusammenarbeit';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Du wurdest eingeladen, an $title mitzuarbeiten: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Du wurdest eingeladen, an einem Video mitzuarbeiten: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Abbrechen';
 
   @override
@@ -6017,6 +6027,13 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'Du hast eine neue Aktualisierung';
+
+  @override
+  String get notificationSomeoneLikedYourVideo =>
+      'Jemand hat dein Video geliked';
 
   @override
   String get commentReplyToPrefix => 'Re:';

@@ -2290,6 +2290,8 @@
     "@inboxConversationCollabInvitePreview": {
         "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list."
     },
+    "collaboratorInviteDmBody": "Sei stato invitato a collaborare a {title}: {url}\n\nOpen diVine to review and accept.",
+    "collaboratorInviteDmBodyUntitled": "Sei stato invitato a collaborare a un video: {url}\n\nOpen diVine to review and accept.",
     "inboxCollabInviteSentStatus": "Invito inviato",
     "@inboxCollabInviteSentStatus": {
         "description": "Shown on the inviter's own outgoing collaborator invite card in their DM with the collaborator. Replaces Accept/Ignore which are recipient-only actions."
@@ -3004,6 +3006,8 @@
             }
         }
     },
+    "notificationSystemUpdate": "Hai un nuovo aggiornamento",
+    "notificationSomeoneLikedYourVideo": "Qualcuno ha messo like al tuo video",
     "peopleListsAddToList": "Aggiungi alla lista",
     "peopleListsAddToListSubtitle": "Inserisci questo creator in una delle tue liste",
     "peopleListsSheetTitle": "Aggiungi alla lista",

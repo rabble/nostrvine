@@ -5181,6 +5181,16 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zaproszenie do współpracy';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Zaproszono Cię do współpracy nad $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Zaproszono Cię do współpracy nad filmem: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Anuluj';
 
   @override
@@ -6091,6 +6101,12 @@ class AppLocalizationsPl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'Masz nową aktualizację';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Ktoś polubił(a) Twoje wideo';
 
   @override
   String get commentReplyToPrefix => 'Odp.:';

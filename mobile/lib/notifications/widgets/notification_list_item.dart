@@ -274,7 +274,7 @@ class _MessageText extends StatelessWidget {
         if (type == NotificationKind.system) {
           spans.add(
             TextSpan(
-              text: notification.message,
+              text: l10n.notificationSystemUpdate,
               style: VineTheme.bodyMediumFont(),
             ),
           );
@@ -303,7 +303,7 @@ class _MessageText extends StatelessWidget {
         if (actors.isEmpty) {
           spans.add(
             TextSpan(
-              text: notification.message,
+              text: l10n.notificationSomeoneLikedYourVideo,
               style: VineTheme.bodyMediumFont(),
             ),
           );

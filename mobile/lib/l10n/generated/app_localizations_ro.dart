@@ -5189,6 +5189,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'Invitație de colaborare';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'Ai fost invitat(ă) să colaborezi la $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'Ai fost invitat(ă) să colaborezi la un videoclip: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Anulează';
 
   @override
@@ -6089,6 +6099,13 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'Ai o actualizare nouă';
+
+  @override
+  String get notificationSomeoneLikedYourVideo =>
+      'Cineva a apreciat videoclipul tău';
 
   @override
   String get commentReplyToPrefix => 'Re:';

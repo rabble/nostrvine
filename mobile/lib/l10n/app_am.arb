@@ -2602,6 +2602,8 @@
   "@inboxConversationCollabInvitePreview": {
     "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
   },
+  "collaboratorInviteDmBody": "በ{title} ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
+  "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
   "reportDialogCancel": "ሰርዝ",
   "reportDialogReport": "ሪፖርት አድርግ",
   "exploreVideoId": "ID: {id}",
@@ -3181,6 +3183,8 @@
       }
     }
   },
+  "notificationSystemUpdate": "አዲስ ማሻሻያ አለህ።",
+  "notificationSomeoneLikedYourVideo": "አንድ ሰው ቪዲዮህን ወድዶታል።",
   "commentReplyToPrefix": "ድጋሚ፡",
   "@commentReplyToPrefix": {
     "description": "Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying."

@@ -5057,6 +5057,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inboxConversationCollabInvitePreview => 'Collaborator invite';
 
   @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'You were invited to collaborate on $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
   String get reportDialogCancel => 'Cancel';
 
   @override
@@ -5955,6 +5965,12 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'You have a new update';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Someone liked your video';
 
   @override
   String get commentReplyToPrefix => 'Re:';

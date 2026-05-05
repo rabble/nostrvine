@@ -629,6 +629,134 @@ void main() {
         );
       },
     );
+
+    // Pins the per-call funnelcake-availability contract from #3849: a
+    // transient REST failure during build must NOT prevent a subsequent
+    // refresh() from re-attempting REST. Will fail loudly if a future
+    // change ever reintroduces a sticky-disable shape that gates
+    // _refreshFromRestApi on previous-call success.
+    test(
+      'refresh after a build-time REST failure re-attempts REST and recovers',
+      () async {
+        var restCallCount = 0;
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer((_) async {
+          restCallCount++;
+          if (restCallCount == 1) {
+            throw const FunnelcakeApiException(
+              message: 'transient server error',
+              statusCode: 500,
+            );
+          }
+          return _videoStats(count: 3, pubkey: userId);
+        });
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+        final notifier = container.read(profileFeedProvider(userId).notifier);
+
+        // Initial build: REST throws on the first call → falls back to relay
+        // (empty in this test setup).
+        final initialState = await container.read(
+          profileFeedProvider(userId).future,
+        );
+        expect(initialState.videos, isEmpty);
+
+        // Wait for the background _refreshFromRestApi triggered by build to
+        // settle so the failure is observed before we trigger refresh().
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // refresh() must re-attempt REST instead of skipping it.
+        await notifier.refresh();
+
+        // Allow the parallel _refreshFromRestApi inside refresh() to complete.
+        final hydrated = Completer<VideoFeedState>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 3 &&
+                !hydrated.isCompleted) {
+              hydrated.complete(value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        final recoveredState = await hydrated.future.timeout(
+          const Duration(milliseconds: 300),
+        );
+        expect(recoveredState.videos, hasLength(3));
+        expect(restCallCount, greaterThanOrEqualTo(2));
+      },
+    );
+
+    // Pins the per-call funnelcake-availability contract from #3849: a REST
+    // failure on loadMore must not poison the pagination state. The next
+    // loadMore should still attempt REST when funnelcake remains available
+    // and the REST cursor (_nextOffset) is set.
+    test(
+      'loadMore retries REST after a transient pagination failure',
+      () async {
+        var nextPageCallCount = 0;
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer((_) async => _videoStats(count: 50, pubkey: userId));
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(
+            pubkey: userId,
+            offset: 50,
+          ),
+        ).thenAnswer((_) async {
+          nextPageCallCount++;
+          if (nextPageCallCount == 1) {
+            throw const FunnelcakeApiException(
+              message: 'service unavailable',
+              statusCode: 503,
+            );
+          }
+          return _videoStats(count: 5, pubkey: userId, startIndex: 50);
+        });
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+        final notifier = container.read(profileFeedProvider(userId).notifier);
+
+        await container.read(profileFeedProvider(userId).future);
+
+        final hydrated = Completer<VideoFeedState>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 50 &&
+                value.hasMoreContent &&
+                !hydrated.isCompleted) {
+              hydrated.complete(value);
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await hydrated.future.timeout(const Duration(milliseconds: 200));
+
+        // First loadMore: REST fails. Pagination state must NOT be wiped.
+        await notifier.loadMore();
+
+        // Second loadMore: REST should be retried (was previously skipped).
+        await notifier.loadMore();
+
+        expect(nextPageCallCount, 2);
+        final updatedState = container
+            .read(profileFeedProvider(userId))
+            .requireValue;
+        expect(updatedState.videos.length, 55);
+      },
+    );
   });
 }
 

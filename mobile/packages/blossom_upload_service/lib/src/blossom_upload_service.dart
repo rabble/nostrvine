@@ -17,6 +17,73 @@ import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Why a Blossom upload failed.
+///
+/// Classification lives at the HTTP/service boundary so that callers
+/// (UI, analytics, telemetry) can branch on a stable enum rather than
+/// inspecting raw [BlossomUploadResult.errorMessage] text or HTTP
+/// status codes themselves.
+enum BlossomUploadFailureReason {
+  /// Connection / send / receive timeout, connection error, transient
+  /// connectivity loss. Caller may show "check your connection".
+  network,
+
+  /// Authentication failure: HTTP 401 / 403, or the service was unable
+  /// to produce a signed Blossom auth header. Caller may prompt the
+  /// user to sign in again.
+  auth,
+
+  /// Server rejected the upload because the file exceeds size limits
+  /// (HTTP 413 "payload too large"). Caller may suggest a smaller file.
+  fileTooLarge,
+
+  /// Server-side error (HTTP 5xx) — usually transient. Caller may show
+  /// "our servers are temporarily unavailable".
+  server,
+
+  /// Anything else: unmapped 4xx, malformed responses, configuration
+  /// errors, or unexpected exceptions. Caller falls back to a generic
+  /// "upload failed" message.
+  unknown
+  ;
+
+  /// Classifies an HTTP [statusCode] into a [BlossomUploadFailureReason].
+  ///
+  /// Returns `null` when [statusCode] is null or represents a success
+  /// (`< 400`), so callers can distinguish "not a failure" from
+  /// `unknown`.
+  static BlossomUploadFailureReason? fromStatusCode(int? statusCode) {
+    if (statusCode == null || statusCode < 400) return null;
+    if (statusCode == 401 || statusCode == 403) {
+      return BlossomUploadFailureReason.auth;
+    }
+    if (statusCode == 413) return BlossomUploadFailureReason.fileTooLarge;
+    if (statusCode >= 500 && statusCode < 600) {
+      return BlossomUploadFailureReason.server;
+    }
+    return BlossomUploadFailureReason.unknown;
+  }
+
+  /// Classifies a [DioException] into a [BlossomUploadFailureReason].
+  ///
+  /// Connection / timeout errors map to [network]. For [bad responses]
+  /// (`DioExceptionType.badResponse`) the status code is used; if no
+  /// status is available the reason falls through to [unknown].
+  ///
+  /// [bad responses]: https://pub.dev/documentation/dio/latest/dio/DioExceptionType.html
+  static BlossomUploadFailureReason fromDioException(DioException error) {
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => BlossomUploadFailureReason.network,
+      _ =>
+        fromStatusCode(error.response?.statusCode) ??
+            BlossomUploadFailureReason.unknown,
+    };
+  }
+}
+
 /// Result type for Blossom upload operations
 class BlossomUploadResult {
   /// Creates a [BlossomUploadResult].
@@ -34,6 +101,7 @@ class BlossomUploadResult {
     this.errorMessage,
     this.statusCode,
     this.isTransientNetworkFailure = false,
+    this.failureReason,
   });
 
   /// Whether the upload succeeded.
@@ -78,6 +146,16 @@ class BlossomUploadResult {
   /// rethrowing. Surfaced as a retry signal symmetric with [statusCode]
   /// for the cases where there is no HTTP status to classify on.
   final bool isTransientNetworkFailure;
+
+  /// Typed reason for the failure, set at the HTTP/service boundary.
+  ///
+  /// Always `null` on success. On failure, callers should switch on this
+  /// rather than parsing [errorMessage] or [statusCode] — the
+  /// classification is owned by the service layer so the contract stays
+  /// stable across UI, analytics, and telemetry. A `null` value on a
+  /// failure result means the boundary couldn't classify the failure;
+  /// callers should treat it as [BlossomUploadFailureReason.unknown].
+  final BlossomUploadFailureReason? failureReason;
 
   /// Convenience getter for backwards compatibility.
   String? get cdnUrl => fallbackUrl ?? url;
@@ -468,6 +546,32 @@ class BlossomUploadService {
     return false;
   }
 
+  /// Classifies a thrown upload exception into a
+  /// [BlossomUploadFailureReason].
+  ///
+  /// Handles the two thrown shapes the upload internals produce:
+  ///
+  ///   * [DioException] — delegated to
+  ///     [BlossomUploadFailureReason.fromDioException].
+  ///   * [BlossomResumableUploadException] — classified by its
+  ///     `statusCode` when present. Throws without a status (auth-header
+  ///     build failure, malformed init response) fall through to
+  ///     [BlossomUploadFailureReason.unknown] — the boundary can't tell
+  ///     them apart from the typed exception alone, and surfacing
+  ///     "authentication error" for a missing init field would mislead.
+  ///
+  /// Anything else falls through to [BlossomUploadFailureReason.unknown].
+  static BlossomUploadFailureReason _classifyUploadException(Object error) {
+    if (error is DioException) {
+      return BlossomUploadFailureReason.fromDioException(error);
+    }
+    if (error is BlossomResumableUploadException) {
+      return BlossomUploadFailureReason.fromStatusCode(error.statusCode) ??
+          BlossomUploadFailureReason.unknown;
+    }
+    return BlossomUploadFailureReason.unknown;
+  }
+
   /// Whether a [BlossomUploadResult] failure is transient and worth retrying.
   ///
   /// Some failure modes are caught inside the upload internals (notably the
@@ -617,6 +721,7 @@ class BlossomUploadService {
       result = BlossomUploadResult(
         success: false,
         errorMessage: error.toString(),
+        failureReason: _classifyUploadException(error),
       );
     }
 
@@ -1204,6 +1309,7 @@ class BlossomUploadService {
       return const BlossomUploadResult(
         success: false,
         errorMessage: 'Upload response missing URL field',
+        failureReason: BlossomUploadFailureReason.unknown,
       );
     }
 
@@ -1227,6 +1333,9 @@ class BlossomUploadService {
       statusCode: response.statusCode,
       errorMessage:
           'Upload failed: ${response.statusCode} - ${xReason ?? response.data}',
+      failureReason:
+          BlossomUploadFailureReason.fromStatusCode(response.statusCode) ??
+          BlossomUploadFailureReason.unknown,
     );
   }
 
@@ -1252,6 +1361,7 @@ class BlossomUploadService {
         return BlossomUploadResult(
           success: false,
           errorMessage: 'Invalid Blossom server URL: $serverUrl',
+          failureReason: BlossomUploadFailureReason.unknown,
         );
         // coverage:ignore-end
       }
@@ -1267,6 +1377,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Failed to create Blossom authentication',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1341,6 +1452,7 @@ class BlossomUploadService {
           statusCode: statusCode,
           errorMessage: 'Connection timeout - check server URL',
           isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.sendTimeout) {
         return BlossomUploadResult(
@@ -1348,6 +1460,7 @@ class BlossomUploadService {
           statusCode: statusCode,
           errorMessage: 'Send timeout - upload too slow or connection dropped',
           isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.receiveTimeout) {
         return BlossomUploadResult(
@@ -1355,6 +1468,7 @@ class BlossomUploadService {
           statusCode: statusCode,
           errorMessage: 'Receive timeout - server not responding',
           isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.connectionError) {
         return BlossomUploadResult(
@@ -1362,30 +1476,37 @@ class BlossomUploadService {
           statusCode: statusCode,
           errorMessage: 'Cannot connect to Blossom server: $errorDetail',
           isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.cancel) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Upload cancelled',
+          failureReason: BlossomUploadFailureReason.unknown,
         );
       } else if (e.type == DioExceptionType.badResponse) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Server error ($statusCode): $errorDetail',
+          failureReason:
+              BlossomUploadFailureReason.fromStatusCode(statusCode) ??
+              BlossomUploadFailureReason.unknown,
         );
       } else {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Network error: $errorDetail',
+          failureReason: BlossomUploadFailureReason.fromDioException(e),
         );
       }
     } on Object catch (e) {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Upload error: $e',
+        failureReason: BlossomUploadFailureReason.unknown,
       );
     }
   }
@@ -1423,6 +1544,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'User not authenticated - please sign in to upload',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1593,6 +1715,7 @@ class BlossomUploadService {
             success: false,
             statusCode: statusCode,
             errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
           );
           Log.warning(
             'Upload to $serverUrl failed: $e, '
@@ -1616,6 +1739,7 @@ class BlossomUploadService {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
           );
     } on Object catch (e) {
       Log.error(
@@ -1627,6 +1751,7 @@ class BlossomUploadService {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Blossom upload failed: $e',
+        failureReason: _classifyUploadException(e),
       );
     } finally {
       // Stop performance trace
@@ -1662,6 +1787,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1796,6 +1922,7 @@ class BlossomUploadService {
             success: false,
             statusCode: statusCode,
             errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
           );
           Log.warning(
             'Upload to $serverUrl failed: $e, '
@@ -1820,6 +1947,7 @@ class BlossomUploadService {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
           );
     } on Object catch (e) {
       Log.error(
@@ -1830,6 +1958,7 @@ class BlossomUploadService {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Image upload failed: $e',
+        failureReason: _classifyUploadException(e),
       );
     }
   }
@@ -2040,6 +2169,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -2126,6 +2256,7 @@ class BlossomUploadService {
             success: false,
             statusCode: statusCode,
             errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
           );
           Log.warning(
             'Upload to $serverUrl failed: $e, '
@@ -2150,6 +2281,7 @@ class BlossomUploadService {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
           );
     } on Object catch (e) {
       Log.error(
@@ -2160,6 +2292,7 @@ class BlossomUploadService {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Audio upload failed: $e',
+        failureReason: _classifyUploadException(e),
       );
     }
   }
