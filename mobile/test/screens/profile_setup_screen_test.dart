@@ -621,7 +621,13 @@ void main() {
         await tester.pump();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.profileEditPublicKeyLink));
+        final link = find.text(l10n.profileEditPublicKeyLink);
+        await tester.scrollUntilVisible(
+          link,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(link);
         await tester.pumpAndSettle();
 
         expect(find.byType(KeyManagementScreen), findsOneWidget);
