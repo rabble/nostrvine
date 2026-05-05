@@ -1,6 +1,7 @@
 // ABOUTME: Repository that fetches raw notifications from FunnelCake,
-// ABOUTME: enriches them with profile data, groups likes by video,
-// ABOUTME: consolidates follow duplicates, and returns NotificationItems.
+// ABOUTME: enriches them with profile + video metadata, groups video-anchored
+// ABOUTME: notifications by (referencedEventId, kind), and maps actor-anchored
+// ABOUTME: notifications.
 
 import 'dart:developer' as developer;
 
@@ -24,11 +25,12 @@ const _maxGroupActors = 3;
 /// Responsibilities:
 /// 1. Fetch raw notifications via [FunnelcakeApiClient.getNotifications]
 /// 2. Batch-fetch profiles via [ProfileRepository.fetchBatchProfiles]
-/// 3. Group likes by referenced video (2+ becomes [GroupedNotification])
-/// 4. Consolidate follow duplicates (keep earliest per source pubkey)
-/// 5. Map relay notification types to [NotificationKind]
-/// 6. Truncate long comment text
-/// 7. Return enriched, grouped [NotificationItem]s
+/// 3. Fetch per-video metadata via [FunnelcakeApiClient.getVideoStats]
+/// 4. Group like/comment/repost by `(referencedEventId, kind)` into
+///    [VideoNotification]s — threshold 1
+/// 5. Map follow/mention/system into [ActorNotification]s
+/// 6. Consolidate follow duplicates (keep earliest per source pubkey)
+/// 7. Truncate long comment text
 class NotificationRepository {
   /// Creates a [NotificationRepository].
   NotificationRepository({
@@ -92,9 +94,7 @@ class NotificationRepository {
 
       _lastCursor = response.nextCursor;
 
-      final items = _applyBlockFilter(
-        await _enrichAndGroup(response.notifications),
-      );
+      final items = await _enrichAndGroup(response.notifications);
 
       return NotificationPage(
         items: items,
@@ -158,105 +158,261 @@ class NotificationRepository {
     await _notificationsDao.markAllAsRead();
   }
 
+  /// Enriches raw relay notifications with profile + video metadata, then
+  /// groups them into [VideoNotification]s and [ActorNotification]s.
+  Future<List<NotificationItem>> _enrichAndGroup(
+    List<RelayNotification> raw,
+  ) async {
+    if (raw.isEmpty) return [];
+
+    final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
+    final eventIds = raw
+        .map((n) => n.referencedEventId)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final profilesFuture = _profileRepository.fetchBatchProfiles(
+      pubkeys: pubkeys,
+    );
+    final videosFuture = _fetchVideoMetadata(eventIds);
+    final (profiles, videosById) = await (
+      profilesFuture,
+      videosFuture,
+    ).wait;
+
+    final consolidated = _consolidateFollows(raw);
+    final videos = _groupVideoAnchored(consolidated, profiles, videosById);
+    final actors = _mapActorAnchored(consolidated, profiles);
+
+    final items = <NotificationItem>[...videos, ...actors]
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    return _applyBlockFilter(items);
+  }
+
   /// Filters notifications from blocked/muted users.
   ///
-  /// - [SingleNotification]: removed if actor is blocked.
-  /// - [GroupedNotification]: blocked actors stripped; entire notification
-  ///   removed if no actors remain.
+  /// - [VideoNotification]: blocked actors stripped; if no actors remain,
+  ///   the entire notification is dropped. The displayed totalCount is
+  ///   recomputed from the remaining actors.
+  /// - [ActorNotification]: dropped if the actor is blocked.
   List<NotificationItem> _applyBlockFilter(List<NotificationItem> items) {
     final filter = _blockFilter;
     if (filter == null) return items;
     return items
         .map(
           (n) => switch (n) {
-            SingleNotification() => filter(n.actor.pubkey) ? null : n,
-            GroupedNotification() => () {
+            VideoNotification() => () {
               final filtered = n.actors
                   .where((a) => !filter(a.pubkey))
                   .toList();
               if (filtered.isEmpty) return null;
               if (filtered.length == n.actors.length) return n;
-              return GroupedNotification(
-                id: n.id,
-                type: n.type,
+              return n.copyWith(
                 actors: filtered,
                 totalCount: filtered.length,
-                timestamp: n.timestamp,
-                isRead: n.isRead,
-                targetEventId: n.targetEventId,
-                videoTitle: n.videoTitle,
               );
             }(),
+            ActorNotification() => filter(n.actor.pubkey) ? null : n,
           },
         )
         .whereType<NotificationItem>()
         .toList();
   }
 
-  /// Filters a single real-time notification.
+  /// Filters a single real-time [NotificationItem].
   ///
-  /// Returns `null` if the notification should be hidden (all actors blocked).
-  /// Use this for WebSocket events that bypass [getNotifications].
+  /// Returns `null` if the notification should be hidden (all actors
+  /// blocked). Use this for WebSocket events that bypass [getNotifications].
   NotificationItem? filterRealtimeNotification(NotificationItem item) {
     final result = _applyBlockFilter([item]);
     return result.isEmpty ? null : result.first;
   }
 
-  /// Enriches raw relay notifications with profile data and groups them.
-  Future<List<NotificationItem>> _enrichAndGroup(
-    List<RelayNotification> raw,
+  /// Fetches [VideoStats] for each id in parallel.
+  ///
+  /// Per-id failures are tolerated — a single failed lookup yields no
+  /// entry in the result map.
+  Future<Map<String, VideoStats>> _fetchVideoMetadata(
+    List<String> eventIds,
   ) async {
-    if (raw.isEmpty) return [];
-
-    // 1. Collect unique pubkeys and batch-fetch profiles.
-    final pubkeys = raw.map((n) => n.sourcePubkey).toSet().toList();
-
-    final profiles = await _profileRepository.fetchBatchProfiles(
-      pubkeys: pubkeys,
+    if (eventIds.isEmpty) return const <String, VideoStats>{};
+    final futures = eventIds.map(
+      (id) async {
+        try {
+          return await _funnelcakeApiClient.getVideoStats(id);
+        } on Object {
+          return null;
+        }
+      },
     );
+    final results = await Future.wait(futures);
+    final map = <String, VideoStats>{};
+    for (var i = 0; i < eventIds.length; i++) {
+      final stats = results[i];
+      if (stats != null) map[eventIds[i]] = stats;
+    }
+    return map;
+  }
 
-    // 2. Consolidate follows — keep earliest per source pubkey.
-    final consolidated = _consolidateFollows(raw);
+  /// Builds [VideoNotification]s by grouping like/comment/repost
+  /// notifications by `(referencedEventId, kind)`.
+  ///
+  /// Threshold is 1 — every video-anchored notification with a non-null
+  /// `referencedEventId` becomes a [VideoNotification], even if only one
+  /// actor interacted. Notifications missing `referencedEventId` are
+  /// dropped.
+  List<VideoNotification> _groupVideoAnchored(
+    List<RelayNotification> raw,
+    Map<String, UserProfile> profiles,
+    Map<String, VideoStats> videosById,
+  ) {
+    bool isVideoAnchored(NotificationKind k) =>
+        k == NotificationKind.like ||
+        k == NotificationKind.comment ||
+        k == NotificationKind.repost;
 
-    // 3. Separate likes for grouping vs everything else.
-    final likes = <RelayNotification>[];
-    final others = <RelayNotification>[];
-
-    for (final n in consolidated) {
+    final groups = <_VideoGroupKey, List<RelayNotification>>{};
+    for (final n in raw) {
       final kind = _mapNotificationKind(n);
-      if (kind == NotificationKind.like ||
-          kind == NotificationKind.likeComment) {
-        likes.add(n);
-      } else {
-        others.add(n);
-      }
+      if (!isVideoAnchored(kind)) continue;
+      final eventId = n.referencedEventId;
+      if (eventId == null || eventId.isEmpty) continue;
+      final key = _VideoGroupKey(eventId, kind);
+      (groups[key] ??= []).add(n);
     }
 
-    // 4. Group likes by referenced event ID.
-    final groupedLikes = _groupLikesByTarget(likes, profiles);
-
-    // 5. Map remaining notifications to SingleNotification.
-    final singles = others.map((n) {
-      final kind = _mapNotificationKind(n);
-      final actor = _buildActor(n.sourcePubkey, profiles);
-      return SingleNotification(
-        id: n.dedupeKey,
-        type: kind,
-        actor: actor,
-        timestamp: n.createdAt,
-        isRead: n.read,
-        targetEventId: _resolveTargetEventId(n, kind),
-        videoTitle: n.referencedVideoTitle,
-        commentText: _truncateComment(n.content, kind),
+    final result = <VideoNotification>[];
+    for (final entry in groups.entries) {
+      final group = entry.value
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final actors = group
+          .take(_maxGroupActors)
+          .map((n) => _buildActor(n.sourcePubkey, profiles))
+          .toList();
+      final video = videosById[entry.key.eventId];
+      result.add(
+        VideoNotification(
+          id: group.first.dedupeKey,
+          type: entry.key.kind,
+          videoEventId: entry.key.eventId,
+          videoThumbnailUrl: _nonEmpty(video?.thumbnail),
+          videoTitle: _nonEmpty(video?.title),
+          actors: actors,
+          totalCount: group.length,
+          timestamp: group.first.createdAt,
+          isRead: group.every((n) => n.read),
+        ),
       );
-    }).toList();
-
-    // 6. Merge and sort by timestamp descending.
-    final items = <NotificationItem>[...groupedLikes, ...singles]
-      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-
-    return items;
+    }
+    return result;
   }
+
+  /// Builds [ActorNotification]s for follow/mention/system kinds.
+  ///
+  /// `reply` and other unmapped kinds are also routed here as
+  /// [ActorNotification] — they don't have a clean video anchor, so we
+  /// surface them as actor-anchored rows.
+  List<ActorNotification> _mapActorAnchored(
+    List<RelayNotification> raw,
+    Map<String, UserProfile> profiles,
+  ) {
+    final result = <ActorNotification>[];
+    for (final n in raw) {
+      final kind = _mapNotificationKind(n);
+      // Skip kinds that became VideoNotifications.
+      if (kind == NotificationKind.like ||
+          kind == NotificationKind.comment ||
+          kind == NotificationKind.repost) {
+        continue;
+      }
+      // ActorNotification supports follow/mention/system/likeComment;
+      // coerce other kinds (e.g. reply) to system.
+      final mapped =
+          (kind == NotificationKind.follow ||
+              kind == NotificationKind.mention ||
+              kind == NotificationKind.system ||
+              kind == NotificationKind.likeComment)
+          ? kind
+          : NotificationKind.system;
+      result.add(
+        ActorNotification(
+          id: n.dedupeKey,
+          type: mapped,
+          actor: _buildActor(n.sourcePubkey, profiles),
+          timestamp: n.createdAt,
+          isRead: n.read,
+          commentText: _truncateComment(n.content, kind),
+        ),
+      );
+    }
+    return result;
+  }
+
+  /// Enriches a single raw [RelayNotification] for realtime insertion.
+  ///
+  /// Fetches the actor's profile and (if applicable) the referenced
+  /// video's stats in parallel. Returns null if the notification cannot
+  /// be turned into a [NotificationItem] (e.g. a video-anchored type
+  /// missing a `referencedEventId`).
+  Future<NotificationItem?> enrichOne(RelayNotification raw) async {
+    final kind = _mapNotificationKind(raw);
+    final referenced = raw.referencedEventId;
+    final isVideoAnchored =
+        kind == NotificationKind.like ||
+        kind == NotificationKind.comment ||
+        kind == NotificationKind.repost;
+
+    final profilesFuture = _profileRepository.fetchBatchProfiles(
+      pubkeys: [raw.sourcePubkey],
+    );
+    final videoFuture = (referenced != null && referenced.isNotEmpty)
+        ? _fetchVideoMetadata([referenced])
+        : Future<Map<String, VideoStats>>.value(const {});
+
+    final (profiles, videosById) = await (
+      profilesFuture,
+      videoFuture,
+    ).wait;
+
+    final actor = _buildActor(raw.sourcePubkey, profiles);
+
+    if (isVideoAnchored) {
+      if (referenced == null || referenced.isEmpty) return null;
+      final video = videosById[referenced];
+      return VideoNotification(
+        id: raw.dedupeKey,
+        type: kind,
+        videoEventId: referenced,
+        videoThumbnailUrl: _nonEmpty(video?.thumbnail),
+        videoTitle: _nonEmpty(video?.title),
+        actors: [actor],
+        totalCount: 1,
+        timestamp: raw.createdAt,
+        isRead: raw.read,
+      );
+    }
+
+    final mapped =
+        (kind == NotificationKind.follow ||
+            kind == NotificationKind.mention ||
+            kind == NotificationKind.system ||
+            kind == NotificationKind.likeComment)
+        ? kind
+        : NotificationKind.system;
+    return ActorNotification(
+      id: raw.dedupeKey,
+      type: mapped,
+      actor: actor,
+      timestamp: raw.createdAt,
+      isRead: raw.read,
+      commentText: _truncateComment(raw.content, kind),
+    );
+  }
+
+  /// Returns null if [s] is null or empty, otherwise [s].
+  static String? _nonEmpty(String? s) => (s == null || s.isEmpty) ? null : s;
 
   /// Consolidates follow notifications — keeps the earliest per pubkey.
   List<RelayNotification> _consolidateFollows(List<RelayNotification> raw) {
@@ -279,71 +435,6 @@ class NotificationRepository {
     return result;
   }
 
-  /// Groups likes by referenced event ID.
-  ///
-  /// 2+ likes on the same target become a [GroupedNotification].
-  /// A single like stays as a [SingleNotification]. The target may be a
-  /// video ([NotificationKind.like]) or a comment
-  /// ([NotificationKind.likeComment]).
-  List<NotificationItem> _groupLikesByTarget(
-    List<RelayNotification> likes,
-    Map<String, UserProfile> profiles,
-  ) {
-    final byTarget = <String, List<RelayNotification>>{};
-
-    for (final like in likes) {
-      final key = like.referencedEventId ?? like.dedupeKey;
-      (byTarget[key] ??= []).add(like);
-    }
-
-    final items = <NotificationItem>[];
-
-    for (final entry in byTarget.entries) {
-      final group = entry.value;
-      // All likes on the same event share the same target kind.
-      final kind = _mapNotificationKind(group.first);
-      final isVideoLike = kind == NotificationKind.like;
-      if (group.length >= 2) {
-        // Sort by timestamp descending so newest actors come first.
-        group.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-        final actors = group
-            .take(_maxGroupActors)
-            .map((n) => _buildActor(n.sourcePubkey, profiles))
-            .toList();
-
-        items.add(
-          GroupedNotification(
-            // Stable ID based on the target, not the newest liker.
-            id: 'group_like_${entry.key}',
-            type: kind,
-            actors: actors,
-            totalCount: group.length,
-            timestamp: group.first.createdAt,
-            isRead: group.every((n) => n.read),
-            targetEventId: entry.key,
-            videoTitle: isVideoLike ? group.first.referencedVideoTitle : null,
-          ),
-        );
-      } else {
-        final n = group.first;
-        items.add(
-          SingleNotification(
-            id: n.dedupeKey,
-            type: kind,
-            actor: _buildActor(n.sourcePubkey, profiles),
-            timestamp: n.createdAt,
-            isRead: n.read,
-            targetEventId: n.referencedEventId,
-            videoTitle: isVideoLike ? n.referencedVideoTitle : null,
-          ),
-        );
-      }
-    }
-
-    return items;
-  }
-
   /// Builds an [ActorInfo] from a pubkey and the profile lookup map.
   ActorInfo _buildActor(
     String pubkey,
@@ -357,24 +448,6 @@ class NotificationRepository {
     );
   }
 
-  /// Resolves the navigation target for a notification.
-  ///
-  /// Mentions sometimes arrive with no `referenced_event_id` (e.g. a mention
-  /// inside a NIP-22 comment). Fall back to the source event so taps still
-  /// land on the post — the UI's resolver walks `E` / `e` tags back to the
-  /// root video. Without this, mention taps route to the mentioner's
-  /// profile (#3168).
-  static String? _resolveTargetEventId(
-    RelayNotification n,
-    NotificationKind kind,
-  ) {
-    if (kind == NotificationKind.mention) {
-      final source = n.sourceEventId;
-      return n.referencedEventId ?? (source.isEmpty ? null : source);
-    }
-    return n.referencedEventId;
-  }
-
   /// Maps a relay notification type string + source kind to
   /// [NotificationKind].
   ///
@@ -382,11 +455,11 @@ class NotificationRepository {
   /// comment — map to [NotificationKind.likeComment] so the UI can
   /// render "liked your comment" instead of "liked your video".
   static NotificationKind _mapNotificationKind(RelayNotification n) {
-    final reaction = switch (n.notificationType) {
+    final isReaction = switch (n.notificationType) {
       'reaction' || 'zap' => true,
       _ => n.sourceKind == 7,
     };
-    if (reaction) {
+    if (isReaction) {
       return n.isReferencedVideo
           ? NotificationKind.like
           : NotificationKind.likeComment;
@@ -415,4 +488,17 @@ class NotificationRepository {
     if (content.length <= _maxCommentLength) return content;
     return '${content.substring(0, _maxCommentLength)}...';
   }
+}
+
+class _VideoGroupKey {
+  const _VideoGroupKey(this.eventId, this.kind);
+  final String eventId;
+  final NotificationKind kind;
+
+  @override
+  bool operator ==(Object other) =>
+      other is _VideoGroupKey && other.eventId == eventId && other.kind == kind;
+
+  @override
+  int get hashCode => Object.hash(eventId, kind);
 }

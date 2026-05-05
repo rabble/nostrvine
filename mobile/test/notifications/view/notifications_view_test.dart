@@ -21,7 +21,10 @@ class _MockNotificationFeedBloc
     implements NotificationFeedBloc {}
 
 /// Pumps [NotificationsView] inside the required providers.
-Future<void> _pumpView(WidgetTester tester, NotificationFeedBloc bloc) async {
+Future<void> _pumpView(
+  WidgetTester tester,
+  NotificationFeedBloc bloc,
+) async {
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
@@ -88,7 +91,9 @@ void main() {
         await tester.tap(find.text('Retry'));
         await tester.pump();
 
-        verify(() => mockBloc.add(NotificationFeedRefreshed())).called(1);
+        verify(
+          () => mockBloc.add(NotificationFeedRefreshed()),
+        ).called(1);
       });
     });
 
@@ -105,16 +110,18 @@ void main() {
     });
 
     group('loaded with notifications', () {
-      final testNotifications = [
-        SingleNotification(
+      // Use system kind for the first item so the tap handler doesn't
+      // attempt navigation through providers we haven't stubbed.
+      final testNotifications = <NotificationItem>[
+        ActorNotification(
           id: 'n1',
-          type: NotificationKind.like,
+          type: NotificationKind.system,
           actor: ActorInfo(pubkey: 'abc123', displayName: 'Alice'),
           timestamp: DateTime(2026),
         ),
-        SingleNotification(
+        ActorNotification(
           id: 'n2',
-          type: NotificationKind.follow,
+          type: NotificationKind.system,
           actor: ActorInfo(pubkey: 'def456', displayName: 'Bob'),
           timestamp: DateTime(2026),
         ),
@@ -164,7 +171,9 @@ void main() {
         // addPostFrameCallback fires after first frame.
         await tester.pump();
 
-        verify(() => mockBloc.add(NotificationFeedMarkAllRead())).called(1);
+        verify(
+          () => mockBloc.add(NotificationFeedMarkAllRead()),
+        ).called(1);
       });
 
       testWidgets('dispatches item tapped on notification tap', (tester) async {
@@ -180,22 +189,24 @@ void main() {
         await tester.tap(find.byType(NotificationListItem).first);
         await tester.pump();
 
-        verify(() => mockBloc.add(NotificationFeedItemTapped('n1'))).called(1);
+        verify(
+          () => mockBloc.add(NotificationFeedItemTapped('n1')),
+        ).called(1);
       });
     });
 
     group('date headers', () {
       testWidgets('shows date header when date changes', (tester) async {
-        final notifications = [
-          SingleNotification(
+        final notifications = <NotificationItem>[
+          ActorNotification(
             id: 'n1',
-            type: NotificationKind.like,
+            type: NotificationKind.mention,
             actor: ActorInfo(pubkey: 'a', displayName: 'Alice'),
             timestamp: DateTime(2026, 4, 6),
           ),
-          SingleNotification(
+          ActorNotification(
             id: 'n2',
-            type: NotificationKind.like,
+            type: NotificationKind.mention,
             actor: ActorInfo(pubkey: 'b', displayName: 'Bob'),
             timestamp: DateTime(2026, 4, 5),
           ),

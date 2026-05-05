@@ -1,40 +1,57 @@
+// ABOUTME: Tests for NotificationListItem dispatcher — verifies the
+// ABOUTME: correct row widget is rendered for each NotificationItem subtype.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/notifications/widgets/actor_notification_row.dart';
 import 'package:openvine/notifications/widgets/notification_list_item.dart';
+import 'package:openvine/notifications/widgets/video_notification_row.dart';
 
-/// Returns a finder that matches [RichText] widgets whose plain text
-/// contains [substring].
-Finder _findRichTextContaining(String substring) {
-  return find.byWidgetPredicate((widget) {
-    if (widget is RichText) {
-      return widget.text.toPlainText().contains(substring);
-    }
-    return false;
-  }, description: 'RichText containing "$substring"');
+const _alice = ActorInfo(
+  pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+  displayName: 'Alice',
+);
+
+VideoNotification _video({
+  bool isRead = false,
+}) {
+  return VideoNotification(
+    id: 'v1',
+    type: NotificationKind.like,
+    videoEventId:
+        '1111111111111111111111111111111111111111111111111111111111111111',
+    actors: const [_alice],
+    totalCount: 1,
+    timestamp: DateTime.utc(2026, 5, 4, 12),
+    isRead: isRead,
+  );
 }
 
-@Tags(['skip_very_good_optimization'])
-void main() {
-  const actor = ActorInfo(
-    pubkey: 'abc123',
-    displayName: 'Alice',
-    pictureUrl: 'https://example.com/alice.jpg',
+ActorNotification _actor({
+  NotificationKind type = NotificationKind.follow,
+  bool isRead = false,
+}) {
+  return ActorNotification(
+    id: 'a1',
+    type: type,
+    actor: _alice,
+    timestamp: DateTime.utc(2026, 5, 4, 12),
+    isRead: isRead,
   );
+}
 
-  const actor2 = ActorInfo(pubkey: 'def456', displayName: 'Bob');
-
-  const actor3 = ActorInfo(pubkey: 'ghi789', displayName: 'Carol');
-
-  Widget buildSubject(
-    NotificationItem notification, {
-    VoidCallback? onTap,
-    VoidCallback? onProfileTap,
-    VoidCallback? onFollowBack,
-  }) {
-    return MaterialApp(
+Future<void> _pump(
+  WidgetTester tester, {
+  required NotificationItem notification,
+  VoidCallback? onTap,
+  VoidCallback? onProfileTap,
+  VoidCallback? onFollowBack,
+  VoidCallback? onThumbnailTap,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
@@ -43,312 +60,81 @@ void main() {
           onTap: onTap ?? () {},
           onProfileTap: onProfileTap,
           onFollowBack: onFollowBack,
+          onThumbnailTap: onThumbnailTap,
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
+void main() {
   group(NotificationListItem, () {
-    group('SingleNotification', () {
-      testWidgets('renders actor name for like notification', (tester) async {
-        final notification = SingleNotification(
-          id: '1',
-          type: NotificationKind.like,
-          actor: actor,
-          timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(_findRichTextContaining('Alice'), findsOneWidget);
-      });
-
-      testWidgets('renders comment text for comment type', (tester) async {
-        final notification = SingleNotification(
-          id: '2',
-          type: NotificationKind.comment,
-          actor: actor,
-          timestamp: DateTime.now().subtract(const Duration(hours: 1)),
-          commentText: 'Great video!',
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(find.textContaining('Great video!'), findsOneWidget);
-      });
-
-      testWidgets('renders follow-back button for follow type', (tester) async {
-        final notification = SingleNotification(
-          id: '3',
-          type: NotificationKind.follow,
-          actor: actor,
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(find.text('Follow back'), findsOneWidget);
-      });
-
-      testWidgets('does not render follow-back button when already following', (
+    group('dispatch', () {
+      testWidgets('renders $VideoNotificationRow for $VideoNotification', (
         tester,
       ) async {
-        final notification = SingleNotification(
-          id: '4',
-          type: NotificationKind.follow,
-          actor: actor,
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          isFollowingBack: true,
-        );
+        await _pump(tester, notification: _video());
 
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(find.text('Follow back'), findsNothing);
+        expect(find.byType(VideoNotificationRow), findsOneWidget);
+        expect(find.byType(ActorNotificationRow), findsNothing);
       });
 
-      testWidgets('calls onTap when tapped', (tester) async {
+      testWidgets('renders $ActorNotificationRow for $ActorNotification', (
+        tester,
+      ) async {
+        await _pump(tester, notification: _actor());
+
+        expect(find.byType(ActorNotificationRow), findsOneWidget);
+        expect(find.byType(VideoNotificationRow), findsNothing);
+      });
+    });
+
+    group('callback wiring', () {
+      testWidgets('row tap on video forwards onTap', (tester) async {
         var tapped = false;
-        final notification = SingleNotification(
-          id: '5',
-          type: NotificationKind.like,
-          actor: actor,
-          timestamp: DateTime.now(),
+
+        await _pump(
+          tester,
+          notification: _video(),
+          onTap: () => tapped = true,
         );
 
-        await tester.pumpWidget(
-          buildSubject(notification, onTap: () => tapped = true),
-        );
-        await tester.pump();
-
-        await tester.tap(find.byType(NotificationListItem));
+        await tester.tap(find.byType(VideoNotificationRow));
         await tester.pump();
 
         expect(tapped, isTrue);
       });
 
-      testWidgets('calls onFollowBack when follow-back button is tapped', (
-        tester,
-      ) async {
-        var followedBack = false;
-        final notification = SingleNotification(
-          id: '6',
-          type: NotificationKind.follow,
-          actor: actor,
-          timestamp: DateTime.now(),
+      testWidgets('row tap on actor forwards onTap', (tester) async {
+        var tapped = false;
+
+        await _pump(
+          tester,
+          notification: _actor(type: NotificationKind.mention),
+          onTap: () => tapped = true,
         );
 
-        await tester.pumpWidget(
-          buildSubject(notification, onFollowBack: () => followedBack = true),
-        );
+        await tester.tap(find.byType(ActorNotificationRow));
         await tester.pump();
+
+        expect(tapped, isTrue);
+      });
+
+      testWidgets('Follow back tap on follow forwards onFollowBack', (
+        tester,
+      ) async {
+        var tapped = false;
+
+        await _pump(
+          tester,
+          notification: _actor(),
+          onFollowBack: () => tapped = true,
+        );
 
         await tester.tap(find.text('Follow back'));
         await tester.pump();
 
-        expect(followedBack, isTrue);
-      });
-
-      testWidgets(
-        'renders "liked your comment" verb for likeComment type',
-        (tester) async {
-          final notification = SingleNotification(
-            id: 'lc1',
-            type: NotificationKind.likeComment,
-            actor: actor,
-            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-          );
-
-          await tester.pumpWidget(buildSubject(notification));
-          await tester.pump();
-
-          expect(_findRichTextContaining('liked your comment'), findsOneWidget);
-          expect(_findRichTextContaining('liked your video'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'does not render videoTitle for likeComment notification',
-        (tester) async {
-          final notification = SingleNotification(
-            id: 'lc2',
-            type: NotificationKind.likeComment,
-            actor: actor,
-            timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-            // videoTitle should never be set on a likeComment, but if it
-            // ever leaks through the data layer, the UI must not show it
-            // as if the comment had a video title.
-            videoTitle: 'Should not appear',
-          );
-
-          await tester.pumpWidget(buildSubject(notification));
-          await tester.pump();
-
-          expect(find.textContaining('Should not appear'), findsNothing);
-        },
-      );
-
-      testWidgets('renders reply comment text for reply type', (tester) async {
-        final notification = SingleNotification(
-          id: '7',
-          type: NotificationKind.reply,
-          actor: actor,
-          timestamp: DateTime.now(),
-          commentText: 'I agree!',
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(find.textContaining('I agree!'), findsOneWidget);
-      });
-
-      testWidgets('uses unread background when not read', (tester) async {
-        final notification = SingleNotification(
-          id: '8',
-          type: NotificationKind.like,
-          actor: actor,
-          timestamp: DateTime.now(),
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        // The NotificationListItem wraps content in a Material widget.
-        // Unread uses VineTheme.cardBackground, read uses backgroundColor.
-        final materials = tester.widgetList<Material>(find.byType(Material));
-
-        // At least one Material should have a non-null color.
-        expect(materials.any((m) => m.color != null), isTrue);
-      });
-    });
-
-    group('GroupedNotification', () {
-      testWidgets('renders grouped message', (tester) async {
-        final notification = GroupedNotification(
-          id: '10',
-          type: NotificationKind.like,
-          actors: const [actor, actor2, actor3],
-          totalCount: 94,
-          timestamp: DateTime.now().subtract(const Duration(days: 1)),
-          videoTitle: 'My Video',
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(_findRichTextContaining('Alice'), findsOneWidget);
-        expect(_findRichTextContaining('93 others'), findsOneWidget);
-      });
-
-      testWidgets('renders $NotificationAvatarStack for grouped', (
-        tester,
-      ) async {
-        final notification = GroupedNotification(
-          id: '11',
-          type: NotificationKind.like,
-          actors: const [actor, actor2],
-          totalCount: 5,
-          timestamp: DateTime.now(),
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        expect(find.byType(NotificationAvatarStack), findsOneWidget);
-      });
-
-      testWidgets(
-        'renders "liked your comment" for grouped likeComment',
-        (tester) async {
-          final notification = GroupedNotification(
-            id: 'group_lc',
-            type: NotificationKind.likeComment,
-            actors: const [actor, actor2],
-            totalCount: 2,
-            timestamp: DateTime.now(),
-          );
-
-          await tester.pumpWidget(buildSubject(notification));
-          await tester.pump();
-
-          expect(_findRichTextContaining('liked your comment'), findsOneWidget);
-          expect(_findRichTextContaining('liked your video'), findsNothing);
-        },
-      );
-
-      testWidgets('calls onTap when grouped row is tapped', (tester) async {
-        var tapped = false;
-        final notification = GroupedNotification(
-          id: '12',
-          type: NotificationKind.like,
-          actors: const [actor],
-          totalCount: 1,
-          timestamp: DateTime.now(),
-        );
-
-        await tester.pumpWidget(
-          buildSubject(notification, onTap: () => tapped = true),
-        );
-        await tester.pump();
-
-        await tester.tap(find.byType(NotificationListItem));
-        await tester.pump();
-
         expect(tapped, isTrue);
-      });
-    });
-
-    group('localized fallback messages', () {
-      testWidgets('system notification renders localized update text', (
-        tester,
-      ) async {
-        final notification = SingleNotification(
-          id: '20',
-          type: NotificationKind.system,
-          actor: actor,
-          timestamp: DateTime.now(),
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          _findRichTextContaining(l10n.notificationSystemUpdate),
-          findsOneWidget,
-        );
-        // Prove the text actually goes through l10n: the German string must
-        // not appear under an English MaterialApp.
-        final deL10n = lookupAppLocalizations(const Locale('de'));
-        expect(
-          _findRichTextContaining(deL10n.notificationSystemUpdate),
-          findsNothing,
-        );
-      });
-
-      testWidgets('grouped notification with empty actors renders fallback', (
-        tester,
-      ) async {
-        final notification = GroupedNotification(
-          id: '21',
-          type: NotificationKind.like,
-          actors: const [],
-          totalCount: 0,
-          timestamp: DateTime.now(),
-        );
-
-        await tester.pumpWidget(buildSubject(notification));
-        await tester.pump();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          _findRichTextContaining(l10n.notificationSomeoneLikedYourVideo),
-          findsOneWidget,
-        );
       });
     });
   });
