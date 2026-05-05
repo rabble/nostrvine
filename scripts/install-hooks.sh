@@ -23,7 +23,8 @@ echo "Installing git hooks..."
 cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 #!/bin/bash
 # Pre-commit hook for divine-mobile
-# Runs format check, analyze, and codegen verification to catch CI failures early
+# Fast format-only check. Analyze + codegen verification run in pre-push so
+# they only execute once per push instead of once per commit.
 
 set -e
 
@@ -33,33 +34,6 @@ cd "$REPO_ROOT/mobile"
 # Unset git env vars that break Flutter/Dart in hooks (especially in worktrees)
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE
 
-list_codegen_inputs() {
-    while IFS= read -r file; do
-        [ -z "$file" ] && continue
-
-        local abs_path="$REPO_ROOT/$file"
-        [ -f "$abs_path" ] || continue
-
-        local base_path="${abs_path%.dart}"
-        if grep -Eq '@Riverpod|@riverpod|@freezed|@Freezed|@JsonSerializable|@GenerateMocks|@DriftDatabase|@UseRowClass|@DataClassName|@UseMoor|@HiveType' "$abs_path" \
-            || grep -Eq "part '.*\\.(g|freezed)\\.dart';" "$abs_path" \
-            || [ -f "${base_path}.g.dart" ] \
-            || [ -f "${base_path}.freezed.dart" ] \
-            || [ -f "${base_path}.mocks.dart" ]; then
-            echo "$file"
-        fi
-    done
-}
-
-capture_generated_status() {
-    git status --porcelain -- "$REPO_ROOT/mobile" \
-        | awk '{print $2}' \
-        | grep -E '^mobile/.*(\.g\.dart|\.freezed\.dart|\.mocks\.dart|\.types\.temp\.dart)$' \
-        | sort -u || true
-}
-
-echo "Running pre-commit checks..."
-
 # Check if any Dart files are staged
 STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM \
     | grep '^mobile/.*\.dart$' \
@@ -67,63 +41,18 @@ STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM \
     | grep -v '\.freezed\.dart$' || true)
 
 if [ -z "$STAGED_DART_FILES" ]; then
-    echo "No Dart files staged, skipping checks"
     exit 0
 fi
 
-# Run dart format check (fast)
-echo "[1/3] Checking format..."
-if ! mise exec -- dart format --output=none --set-exit-if-changed lib test integration_test 2>/dev/null; then
+# Run dart format check on the staged files only (fast).
+# Strip the leading "mobile/" prefix because we cd'd into mobile above.
+STAGED_FORMAT_PATHS=$(echo "$STAGED_DART_FILES" | sed 's|^mobile/||')
+if ! echo "$STAGED_FORMAT_PATHS" | xargs mise exec -- dart format --output=none --set-exit-if-changed 2>/dev/null; then
     echo ""
     echo "Format check failed!"
     echo "Run: cd mobile && mise exec -- dart format lib test integration_test"
     exit 1
 fi
-echo "Format OK"
-
-# Run flutter analyze (medium speed)
-echo "[2/3] Running analyzer..."
-if ! mise exec -- flutter analyze lib test integration_test 2>/dev/null; then
-    echo ""
-    echo "Analysis failed!"
-    echo "Fix the issues above before committing"
-    exit 1
-fi
-echo "Analysis OK"
-
-# Verify generated files when codegen inputs changed
-CODEGEN_INPUTS=$(printf '%s\n' "$STAGED_DART_FILES" | list_codegen_inputs)
-if [ -n "$CODEGEN_INPUTS" ]; then
-    BEFORE_STATUS_FILE=$(mktemp)
-    AFTER_STATUS_FILE=$(mktemp)
-    trap 'rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"' EXIT
-
-    capture_generated_status > "$BEFORE_STATUS_FILE"
-
-    echo "[3/3] Verifying generated files..."
-    mise exec -- dart run build_runner build --delete-conflicting-outputs >/dev/null
-
-    capture_generated_status > "$AFTER_STATUS_FILE"
-    NEW_GENERATED_CHANGES=$(comm -13 "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE" || true)
-
-    rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"
-    trap - EXIT
-
-    if [ -n "$NEW_GENERATED_CHANGES" ]; then
-        echo ""
-        echo "Generated files changed during verification:"
-        echo "$NEW_GENERATED_CHANGES"
-        echo ""
-        echo "Run: cd mobile && mise exec -- dart run build_runner build --delete-conflicting-outputs"
-        echo "Then stage the generated files and commit again."
-        exit 1
-    fi
-
-    echo "Generated files OK"
-fi
-
-echo ""
-echo "All pre-commit checks passed!"
 EOF
 
 chmod +x "$HOOKS_DIR/pre-commit"
