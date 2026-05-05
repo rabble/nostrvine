@@ -60,6 +60,25 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant VideoDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoId == widget.videoId) return;
+
+    _relayReadySubscription?.cancel();
+    _relayReadySubscription = null;
+    _retryScheduled = false;
+    _hasRetriedAfterRelayReady = false;
+
+    setState(() {
+      _video = null;
+      _isLoading = true;
+      _error = null;
+    });
+
+    unawaited(_loadVideo());
+  }
+
+  @override
   void dispose() {
     _relayReadySubscription?.cancel();
     super.dispose();

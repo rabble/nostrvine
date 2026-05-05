@@ -206,6 +206,92 @@ void main() {
           expect(capturedVideo?.rawTags['loops'], equals('99'));
         },
       );
+
+      testWidgets('reloads when the route videoId changes', (tester) async {
+        final firstVideo = createTestVideoEvent(
+          id: 'first_video_id',
+          pubkey: 'first_pubkey',
+          title: 'First Video',
+        );
+        final secondVideo = createTestVideoEvent(
+          id: 'second_video_id',
+          pubkey: 'second_pubkey',
+          title: 'Second Video',
+        );
+
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'first_video_id',
+          ),
+        ).thenAnswer((_) async => firstVideo);
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'second_video_id',
+          ),
+        ).thenAnswer((_) async => secondVideo);
+
+        VideoEvent? capturedVideo;
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
+              ),
+              followRepositoryProvider.overrideWithValue(
+                mockFollowRepository,
+              ),
+              videosRepositoryProvider.overrideWithValue(
+                mockVideosRepository,
+              ),
+            ],
+            home: VideoDetailScreen(
+              videoId: 'first_video_id',
+              videoFeedBuilder: (video) {
+                capturedVideo = video;
+                return const SizedBox(key: Key('video-feed-placeholder'));
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(capturedVideo?.id, equals('first_video_id'));
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
+              ),
+              followRepositoryProvider.overrideWithValue(
+                mockFollowRepository,
+              ),
+              videosRepositoryProvider.overrideWithValue(
+                mockVideosRepository,
+              ),
+            ],
+            home: VideoDetailScreen(
+              videoId: 'second_video_id',
+              videoFeedBuilder: (video) {
+                capturedVideo = video;
+                return const SizedBox(key: Key('video-feed-placeholder'));
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(capturedVideo?.id, equals('second_video_id'));
+      });
     });
 
     group('video not found', () {
