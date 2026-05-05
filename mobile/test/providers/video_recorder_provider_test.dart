@@ -43,8 +43,7 @@ class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
   }
 
   @override
-  Future<bool> get enabled async =>
-      toggleCalls.isNotEmpty && toggleCalls.last;
+  Future<bool> get enabled async => toggleCalls.isNotEmpty && toggleCalls.last;
 }
 
 /// [MockCameraService] variant whose [startRecording] always returns false.
@@ -58,8 +57,7 @@ class _FailingStartCameraService extends MockCameraService {
   Future<bool> startRecording({
     Duration? maxDuration,
     String? outputDirectory,
-  }) async =>
-      false;
+  }) async => false;
 }
 
 /// Helper to set up haptic feedback mock and track calls.
@@ -1129,8 +1127,7 @@ void main() {
     });
 
     test('disables wake lock when recording stops', () async {
-      final notifier =
-          setup.container.read(videoRecorderProvider.notifier);
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
       await notifier.startRecording();
       fakeWakelock.toggleCalls.clear();
 
@@ -1165,8 +1162,7 @@ void main() {
     });
 
     test('disables wake lock on destroy', () async {
-      final notifier =
-          setup.container.read(videoRecorderProvider.notifier);
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
       await notifier.startRecording();
       fakeWakelock.toggleCalls.clear();
 
