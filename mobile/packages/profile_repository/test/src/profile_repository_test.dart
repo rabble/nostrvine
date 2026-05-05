@@ -1597,6 +1597,80 @@ void main() {
         });
 
         test(
+          'preserves nip05 from currentProfile.nip05 when rawData is empty '
+          '(Funnelcake REST API profile with rawData: {})',
+          () async {
+            // Funnelcake profiles have rawData: {} but nip05 on the object.
+            // saveProfileEvent must fall back to the field so editing bio/photo
+            // doesn't silently strip the verified divine.video handle.
+            final funnelcakeProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Old Name',
+              nip05: '_@ike.divine.video',
+              rawData: const {}, // empty — simulates fromUserProfileFound
+              createdAt: DateTime.now(),
+              eventId: 'rest-$testPubkey',
+            );
+
+            when(() => mockProfileEvent.content).thenReturn(
+              jsonEncode({
+                'display_name': 'New Name',
+                'nip05': '_@ike.divine.video',
+              }),
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: funnelcakeProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': '_@ike.divine.video',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'clearNip05 removes nip05 even when sourced from Funnelcake profile '
+          '(rawData: {} but nip05 field set)',
+          () async {
+            final funnelcakeProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Old Name',
+              nip05: '_@ike.divine.video',
+              rawData: const {},
+              createdAt: DateTime.now(),
+              eventId: 'rest-$testPubkey',
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              clearNip05: true,
+              currentProfile: funnelcakeProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
           'clearNip05 is a no-op when a new nip05 is also provided',
           () async {
             final currentProfile = await createCurrentProfile({

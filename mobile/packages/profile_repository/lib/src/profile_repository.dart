@@ -517,11 +517,20 @@ class ProfileRepository {
         nip05 ??
         (username != null ? '_@${username.toLowerCase()}.divine.video' : null);
 
+    // Funnelcake REST API profiles have rawData: {} but nip05 populated on
+    // the object. Fall back to the field so a profile round-trip through the
+    // REST API doesn't silently drop the verified handle from the Kind 0.
+    final existingNip05 =
+        (currentProfile?.rawData.containsKey('nip05') ?? false)
+        ? null // rawData has it; the spread below carries it through
+        : currentProfile?.nip05;
+    final effectiveNip05 = resolvedNip05 ?? existingNip05;
+
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
       'about': about,
-      'nip05': ?resolvedNip05,
+      'nip05': ?effectiveNip05,
       'picture': picture,
       'banner': banner,
     };

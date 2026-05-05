@@ -377,10 +377,18 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         ? null
         : event.externalNip05?.trim().toLowerCase();
 
-    // Explicitly clear NIP-05 when in divine mode with no username. Without
-    // this flag, saveProfileEvent would silently preserve the existing NIP-05
-    // from currentProfile.rawData even though the user opted out of both modes.
-    final clearNip05 = !isExternal && username == null;
+    // Only clear NIP-05 when the user explicitly removes a verified handle
+    // they were known to have: their initialUsername or initialExternalNip05
+    // was loaded by the editor and they are now opting out of it.
+    //
+    // When both are null the editor never loaded the user's existing NIP-05
+    // (e.g. relay race returning an older Kind 0, stale cache). Treating that
+    // as an opt-out would silently destroy a verified handle the user never
+    // intended to remove — exactly the bug that caused #4012.
+    final clearNip05 =
+        !isExternal &&
+        username == null &&
+        (state.initialUsername != null || state.initialExternalNip05 != null);
     final picture = (event.picture?.trim().isEmpty ?? true)
         ? null
         : event.picture;

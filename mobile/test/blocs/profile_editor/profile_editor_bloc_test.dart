@@ -218,7 +218,44 @@ void main() {
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'passes clearNip05: true when no username in divine mode',
+          'passes clearNip05: false when no username and initialUsername is null '
+          '(profile not loaded — must not destroy an unloaded NIP-05)',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: false,
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+            ),
+          ),
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: false,
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'passes clearNip05: true when user explicitly removes a known username',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
@@ -233,14 +270,20 @@ void main() {
             ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
-          act: (bloc) => bloc.add(
-            const ProfileSaved(
-              pubkey: testPubkey,
-              displayName: testDisplayName,
-              about: testAbout,
-              picture: testPicture,
-            ),
-          ),
+          // Dispatch InitialUsernameSet first so the bloc knows the user had
+          // 'testuser' — then saving with no username is an explicit removal.
+          act: (bloc) async {
+            bloc.add(const InitialUsernameSet(testUsername));
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(
+              const ProfileSaved(
+                pubkey: testPubkey,
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+              ),
+            );
+          },
           verify: (_) {
             verify(
               () => mockProfileRepository.saveProfileEvent(
