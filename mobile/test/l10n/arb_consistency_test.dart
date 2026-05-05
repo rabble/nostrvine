@@ -373,7 +373,6 @@ const _knownUntranslatedDebt = {
   'profileEditVerifiedAccountsTitle',
   'profileEditGetVerifiedCta',
   'profileEditGetVerifiedSubtitle',
-  'verifierWebViewTitle',
 };
 
 Map<String, Object?> _readArb(File file) {

@@ -18,7 +18,6 @@ import 'package:openvine/features/people_lists/view/create_people_list_page.dart
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
 import 'package:openvine/screens/apps/app_detail_screen.dart';
@@ -75,7 +74,6 @@ import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
-import 'package:openvine/screens/verifier_webview_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -809,14 +807,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: KeyManagementScreen.path,
         name: KeyManagementScreen.routeName,
         builder: (_, _) => const KeyManagementScreen(),
-      ),
-      GoRoute(
-        path: VerifierWebViewScreen.path,
-        name: VerifierWebViewScreen.routeName,
-        builder: (_, _) {
-          final env = ref.read(currentEnvironmentProvider);
-          return VerifierWebViewScreen(url: Uri.parse(env.verifierBaseUrl));
-        },
       ),
       GoRoute(
         path: RelayDiagnosticScreen.path,

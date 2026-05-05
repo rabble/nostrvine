@@ -12117,12 +12117,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Link your social media accounts so people know it\'s really you.'**
   String get profileEditGetVerifiedSubtitle;
-
-  /// Title of the in-app WebView screen hosting verifier.divine.video.
-  ///
-  /// In en, this message translates to:
-  /// **'Get verified'**
-  String get verifierWebViewTitle;
 }
 
 class _AppLocalizationsDelegate

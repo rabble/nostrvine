@@ -3676,9 +3676,5 @@
   "profileEditGetVerifiedSubtitle": "Link your social media accounts so people know it's really you.",
   "@profileEditGetVerifiedSubtitle": {
     "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
-  },
-  "verifierWebViewTitle": "Get verified",
-  "@verifierWebViewTitle": {
-    "description": "Title of the in-app WebView screen hosting verifier.divine.video."
   }
 }

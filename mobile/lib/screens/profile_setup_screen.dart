@@ -20,10 +20,10 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
-import 'package:openvine/screens/verifier_webview_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -375,7 +375,11 @@ class _ProfileSetupScreenViewState
           listener: (context, state) async {
             final editorBloc = context.read<ProfileEditorBloc>();
             final myProfileBloc = context.read<MyProfileBloc>();
-            await context.pushNamed(VerifierWebViewScreen.routeName);
+            final env = ref.read(currentEnvironmentProvider);
+            await launchUrl(
+              Uri.parse(env.verifierBaseUrl),
+              mode: LaunchMode.externalApplication,
+            );
             editorBloc.add(const VerifierWebViewDismissed());
             myProfileBloc.add(const MyProfileFetchRequested());
           },

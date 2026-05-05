@@ -6890,7 +6890,4 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get profileEditGetVerifiedSubtitle =>
       'Link your social media accounts so people know it\'s really you.';
-
-  @override
-  String get verifierWebViewTitle => 'Get verified';
 }
