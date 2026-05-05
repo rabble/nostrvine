@@ -160,7 +160,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
         ? DivineCameraLens.fromNativeString(savedLensString)
-        : DivineCameraLens.front;
+        : DivineCameraLens.back;
 
     Log.info(
       '📹 Initializing video recorder with quality: ${videoQuality.value}, '

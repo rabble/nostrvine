@@ -721,7 +721,7 @@ void main() {
       expect(mockCamera.currentLens, equals(DivineCameraLens.back));
     });
 
-    test('initialize uses front camera when no saved preference', () async {
+    test('initialize uses back camera when no saved preference', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
@@ -742,8 +742,7 @@ void main() {
 
       await container.read(videoRecorderProvider.notifier).initialize();
 
-      // Verify mock camera was initialized with default front lens
-      expect(mockCamera.currentLens, equals(DivineCameraLens.front));
+      expect(mockCamera.currentLens, equals(DivineCameraLens.back));
     });
   });
 
