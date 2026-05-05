@@ -201,6 +201,16 @@ class ProfileFeed extends _$ProfileFeed {
       if (leftVideo.rawTags['views'] != rightVideo.rawTags['views']) {
         return false;
       }
+      if (leftVideo.originalLikes != rightVideo.originalLikes) return false;
+      if (leftVideo.originalComments != rightVideo.originalComments) {
+        return false;
+      }
+      if (leftVideo.originalReposts != rightVideo.originalReposts) {
+        return false;
+      }
+      if (leftVideo.nostrLikeCount != rightVideo.nostrLikeCount) {
+        return false;
+      }
     }
     return true;
   }
@@ -656,6 +666,10 @@ class ProfileFeed extends _$ProfileFeed {
       return video.copyWith(
         rawTags: mergedTags,
         originalLoops: stats.loops ?? video.originalLoops,
+        originalLikes: video.originalLikes ?? stats.reactions,
+        originalComments: video.originalComments ?? stats.comments,
+        originalReposts: video.originalReposts ?? stats.reposts,
+        nostrLikeCount: video.nostrLikeCount ?? 0,
       );
     }).toList();
     return hydrated;
@@ -719,13 +733,15 @@ class ProfileFeed extends _$ProfileFeed {
           video.rawTags['views'] != null ||
           video.originalLikes != null ||
           video.originalComments != null ||
-          video.originalReposts != null) {
+          video.originalReposts != null ||
+          video.nostrLikeCount != null) {
         _metadataCache[video.id.toLowerCase()] = _VideoMetadataCache(
           originalLoops: video.originalLoops,
           views: video.rawTags['views'],
           originalLikes: video.originalLikes,
           originalComments: video.originalComments,
           originalReposts: video.originalReposts,
+          nostrLikeCount: video.nostrLikeCount,
         );
       }
     }
@@ -743,6 +759,7 @@ class ProfileFeed extends _$ProfileFeed {
         originalLikes: cached.originalLikes,
         originalComments: cached.originalComments,
         originalReposts: cached.originalReposts,
+        nostrLikeCount: cached.nostrLikeCount,
       );
     }).toList();
   }
@@ -755,6 +772,7 @@ class ProfileFeed extends _$ProfileFeed {
     int? originalLikes,
     int? originalComments,
     int? originalReposts,
+    int? nostrLikeCount,
   }) {
     final currentViews = video.rawTags['views'];
     final shouldApply =
@@ -762,7 +780,8 @@ class ProfileFeed extends _$ProfileFeed {
         (currentViews == null && views != null) ||
         (video.originalLikes == null && originalLikes != null) ||
         (video.originalComments == null && originalComments != null) ||
-        (video.originalReposts == null && originalReposts != null);
+        (video.originalReposts == null && originalReposts != null) ||
+        (video.nostrLikeCount == null && nostrLikeCount != null);
 
     if (!shouldApply) return video;
 
@@ -774,6 +793,7 @@ class ProfileFeed extends _$ProfileFeed {
       originalLikes: video.originalLikes ?? originalLikes,
       originalComments: video.originalComments ?? originalComments,
       originalReposts: video.originalReposts ?? originalReposts,
+      nostrLikeCount: video.nostrLikeCount ?? nostrLikeCount,
     );
   }
 
@@ -1080,6 +1100,7 @@ class _VideoMetadataCache {
     this.originalLikes,
     this.originalComments,
     this.originalReposts,
+    this.nostrLikeCount,
   });
 
   final int? originalLoops;
@@ -1087,4 +1108,5 @@ class _VideoMetadataCache {
   final int? originalLikes;
   final int? originalComments;
   final int? originalReposts;
+  final int? nostrLikeCount;
 }

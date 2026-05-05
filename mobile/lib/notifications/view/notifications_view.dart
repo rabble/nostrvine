@@ -142,10 +142,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                             _onItemTap(context, notification),
                         onProfileTap: (pubkey) =>
                             _navigateToProfile(context, pubkey),
-                        onFollowBack: (pubkey) =>
-                            context.read<NotificationFeedBloc>().add(
-                              NotificationFeedFollowBack(pubkey),
-                            ),
+                        onFollowBack: (pubkey) => context
+                            .read<NotificationFeedBloc>()
+                            .add(NotificationFeedFollowBack(pubkey)),
                       ),
                     ),
           };
@@ -165,11 +164,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     switch (notification) {
       case VideoNotification(:final videoEventId, :final type):
-        await _navigateToVideo(
-          context,
-          videoEventId,
-          notificationKind: type,
-        );
+        await _navigateToVideo(context, videoEventId, notificationKind: type);
       case ActorNotification(:final actor, :final type):
         switch (type) {
           case NotificationKind.follow:
@@ -202,6 +197,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     final videoEventService = ref.read(videoEventServiceProvider);
     final nostrService = ref.read(nostrServiceProvider);
+    final videosRepository = ref.read(videosRepositoryProvider);
 
     // Resolve the target event ID to a video event ID.
     final resolver = NotificationTargetResolver(
@@ -214,16 +210,21 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     if (!context.mounted) return;
 
     if (resolvedVideoEventId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Video not found')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Video not found')));
       return;
     }
 
-    // Get video from video event service.
-    var video = videoEventService.getVideoById(resolvedVideoEventId);
+    // Notification entry should use the same hydrated fetch path as feed and
+    // deep-link routes so fullscreen stats don't regress to zero.
+    var video = await videosRepository.fetchVideoWithStats(
+      resolvedVideoEventId,
+    );
 
-    // If not found in cache, try fetching from Nostr.
+    // Keep a defensive fallback for the rare case where the repository misses
+    // but the event is still available directly from the service / relay.
+    video ??= videoEventService.getVideoById(resolvedVideoEventId);
     if (video == null) {
       try {
         final event = await nostrService.fetchEventById(resolvedVideoEventId);
@@ -322,11 +323,7 @@ class _FailureBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 64,
-            color: VineTheme.lightText,
-          ),
+          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
           const Text(
             'Failed to load notifications',
@@ -379,9 +376,7 @@ class _NotificationList extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.all(16),
             child: Center(
-              child: CircularProgressIndicator(
-                color: VineTheme.vineGreen,
-              ),
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
           );
         }

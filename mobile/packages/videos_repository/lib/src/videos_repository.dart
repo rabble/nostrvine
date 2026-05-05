@@ -222,7 +222,12 @@ class VideosRepository {
         .where(
           (video) =>
               video.id.isNotEmpty &&
-              (video.originalLoops == null || video.rawTags['views'] == null),
+              (video.originalLoops == null ||
+                  video.rawTags['views'] == null ||
+                  video.originalLikes == null ||
+                  video.originalComments == null ||
+                  video.originalReposts == null ||
+                  video.nostrLikeCount == null),
         )
         .toList();
     if (videosNeedingStats.isEmpty) return videos;
@@ -248,6 +253,14 @@ class VideosRepository {
 
         return video.copyWith(
           originalLoops: stats.loops ?? video.originalLoops,
+          originalLikes: video.originalLikes ?? stats.reactions,
+          originalComments: video.originalComments ?? stats.comments,
+          originalReposts: video.originalReposts ?? stats.reposts,
+          // REST reaction totals already include the Nostr portion for the
+          // fullscreen entry paths that rely on this hydration. Seeding
+          // nostrLikeCount to 0 preserves totalLikes while still telling the
+          // interactions bloc it has an initial count to display.
+          nostrLikeCount: video.nostrLikeCount ?? 0,
           rawTags: video.rawTags['views'] == null && stats.views != null
               ? {...video.rawTags, 'views': stats.views.toString()}
               : video.rawTags,
