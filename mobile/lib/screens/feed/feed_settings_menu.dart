@@ -169,7 +169,12 @@ class _PlaybackModeToggle extends StatelessWidget {
         }
         announceAutoAdvanceToggle(context, enabled: cubit.state.enabled);
       },
-      child: _PlaybackModeIcon(autoAdvanceEnabled: enabled),
+      child: DivineIcon(
+        icon: enabled
+            ? DivineIconName.playbackModeOn
+            : DivineIconName.playbackModeOff,
+        color: VineTheme.onSurface,
+      ),
     );
   }
 }
@@ -205,8 +210,8 @@ class _AudioToggle extends StatelessWidget {
       },
       child: DivineIcon(
         icon: isMuted
-            ? DivineIconName.speakerSimpleX
-            : DivineIconName.speakerHigh,
+            ? DivineIconName.speakerSimpleSlash
+            : DivineIconName.speakerSimpleHigh,
         color: VineTheme.onSurface,
       ),
     );
@@ -228,8 +233,10 @@ class _CaptionsToggle extends ConsumerWidget {
       onTap: () {
         ref.read(subtitleVisibilityProvider.notifier).toggle();
       },
-      child: const DivineIcon(
-        icon: DivineIconName.closedCaptioning,
+      child: DivineIcon(
+        icon: enabled
+            ? DivineIconName.closedCaptioningFill
+            : DivineIconName.closedCaptioning,
         color: VineTheme.onSurface,
       ),
     );
@@ -272,74 +279,6 @@ class _PopoverToggle extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             child: SizedBox.square(dimension: 24, child: child),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Composite icon for the playback-mode toggle: a clock-clockwise glyph
-/// with a small symbol pinned to the bottom-right corner — `1` when
-/// auto-advance is on (play all), the infinity symbol when it is off
-/// (loop the current video).
-///
-// TODO(#feed-settings-menu): replace with a single SVG asset once the
-// exact Figma glyphs are exported (see node 15749:365671). Composing
-// here keeps us moving and matches the design intent (clock + badge).
-class _PlaybackModeIcon extends StatelessWidget {
-  const _PlaybackModeIcon({required this.autoAdvanceEnabled});
-
-  final bool autoAdvanceEnabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        // Clock occupies the upper-left portion of the 24 px icon box,
-        // leaving room for the badge in the bottom-right.
-        const Positioned(
-          left: 0,
-          top: 0,
-          right: 6,
-          bottom: 6,
-          child: DivineIcon(
-            icon: DivineIconName.clockClockwise,
-            color: VineTheme.onSurface,
-          ),
-        ),
-        Positioned(
-          right: 0,
-          bottom: 0,
-          width: 12,
-          height: 12,
-          child: autoAdvanceEnabled
-              ? const _PlaybackModeBadgeOne()
-              : const DivineIcon(
-                  icon: DivineIconName.infinity,
-                  color: VineTheme.onSurface,
-                ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Bold "1" digit used as the autoplay-on badge, sized to match the
-/// adjacent infinity glyph in the off state.
-class _PlaybackModeBadgeOne extends StatelessWidget {
-  const _PlaybackModeBadgeOne();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        '1',
-        style: TextStyle(
-          color: VineTheme.onSurface,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          height: 1,
         ),
       ),
     );
