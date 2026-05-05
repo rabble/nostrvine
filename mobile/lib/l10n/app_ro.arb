@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Insignele pe care le emiți vor afișa aici starea de acceptare.",
     "badgesIssuedNoRecipients": "Niciun destinatar găsit pentru acest premiu.",
     "badgesRecipientAcceptedStatus": "Acceptată de destinatar",
-    "badgesRecipientWaitingStatus": "Se așteaptă destinatarul"
+    "badgesRecipientWaitingStatus": "Se așteaptă destinatarul",
+    "authSignInWithBrowserExtension": "Conectare cu extensia browserului",
+    "authNip07ConnectionFailed": "Nu s-a putut conecta la extensia browserului.",
+    "authNip07ExtensionNotFound": "Nu a fost găsită nicio extensie de browser. Instalează Alby, nos2x sau altă extensie compatibilă cu NIP-07.",
+    "authInfoBrowserExtensionTitle": "Extensie de Browser",
+    "authInfoBrowserExtensionDescription": "Conectează-te cu o extensie de browser NIP-07 precum Alby sau nos2x. Cheile tale rămân în extensie — Divine nu le vede niciodată."
 }

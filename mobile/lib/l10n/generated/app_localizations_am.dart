@@ -2478,6 +2478,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get authSignInWithAmber => 'በAmber ግባ';
 
   @override
+  String get authSignInWithBrowserExtension => 'በአሳሽ ቅጥያ ይግቡ';
+
+  @override
+  String get authNip07ConnectionFailed => 'ከአሳሽ ቅጥያዎ ጋር መገናኘት አልተቻለም።';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'የአሳሽ ቅጥያ አልተገኘም። Alby፣ nos2x ወይም ሌላ ከ NIP-07 ጋር ተኳሃኝ የሆነ ቅጥያ ይጫኑ።';
+
+  @override
   String get authSignInOptionsTitle => 'የመግባት አማራጮች';
 
   @override
@@ -2504,6 +2514,13 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'የእርስዎን Nostr ቁልፎች ደህንነቱ በተጠበቀ ሁኔታ ለማስተዳደር የAmber ፈራሚ መተግበሪያን በAndroid ይጠቀሙ።';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'አሳሽ ቅጥያ';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'እንደ Alby ወይም nos2x ያሉ የ NIP-07 አሳሽ ቅጥያ በመጠቀም ይግቡ። ቁልፎችዎ በቅጥያው ውስጥ ይቀራሉ — Divine በፍፁም አያያቸውም።';
 
   @override
   String get authCreateAccountTitle => 'መለያ ይፍጠሩ';

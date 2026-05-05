@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Odznaki, które wydasz, pokażą tutaj status akceptacji.",
     "badgesIssuedNoRecipients": "Nie znaleziono odbiorców tej nagrody.",
     "badgesRecipientAcceptedStatus": "Zaakceptowane przez odbiorcę",
-    "badgesRecipientWaitingStatus": "Oczekiwanie na odbiorcę"
+    "badgesRecipientWaitingStatus": "Oczekiwanie na odbiorcę",
+    "authSignInWithBrowserExtension": "Zaloguj się przez rozszerzenie przeglądarki",
+    "authNip07ConnectionFailed": "Nie udało się połączyć z rozszerzeniem przeglądarki.",
+    "authNip07ExtensionNotFound": "Nie znaleziono rozszerzenia przeglądarki. Zainstaluj Alby, nos2x lub inne rozszerzenie zgodne z NIP-07.",
+    "authInfoBrowserExtensionTitle": "Rozszerzenie przeglądarki",
+    "authInfoBrowserExtensionDescription": "Zaloguj się przez rozszerzenie przeglądarki NIP-07, takie jak Alby lub nos2x. Twoje klucze pozostają w rozszerzeniu — Divine nigdy ich nie widzi."
 }

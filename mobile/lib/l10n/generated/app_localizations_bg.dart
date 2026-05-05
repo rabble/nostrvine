@@ -2568,6 +2568,17 @@ class AppLocalizationsBg extends AppLocalizations {
   String get authSignInWithAmber => 'Влез с Amber';
 
   @override
+  String get authSignInWithBrowserExtension => 'Вход с разширение за браузър';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Неуспешно свързване с разширението на браузъра.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Не е открито разширение за браузър. Инсталирайте Alby, nos2x или друго съвместимо с NIP-07 разширение.';
+
+  @override
   String get authSignInOptionsTitle => 'Опции за влизане';
 
   @override
@@ -2594,6 +2605,13 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Използвай Amber Signer на Android, за да управляваш Nostr ключовете си сигурно.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Разширение за браузър';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Влезте чрез NIP-07 разширение за браузър като Alby или nos2x. Ключовете ви остават в разширението — Divine никога не ги вижда.';
 
   @override
   String get authCreateAccountTitle => 'Създаване на акаунт';

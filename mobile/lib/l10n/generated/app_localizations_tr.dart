@@ -2507,6 +2507,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get authSignInWithAmber => 'Amber ile giriş yap';
 
   @override
+  String get authSignInWithBrowserExtension =>
+      'Tarayıcı uzantısı ile giriş yap';
+
+  @override
+  String get authNip07ConnectionFailed => 'Tarayıcı uzantınıza bağlanılamadı.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Tarayıcı uzantısı bulunamadı. Alby, nos2x veya NIP-07 uyumlu başka bir uzantı yükleyin.';
+
+  @override
   String get authSignInOptionsTitle => 'Giriş seçenekleri';
 
   @override
@@ -2533,6 +2544,13 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Nostr anahtarlarını güvenli şekilde yönetmek için Android\'deki Amber imzalama uygulamasını kullan.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Tarayıcı Uzantısı';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Alby veya nos2x gibi bir NIP-07 tarayıcı uzantısıyla giriş yapın. Anahtarlarınız uzantıda kalır — Divine bunları asla görmez.';
 
   @override
   String get authCreateAccountTitle => 'Hesap oluştur';

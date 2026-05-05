@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "ستظهر هنا حالة قبول الشارات التي تمنحها.",
     "badgesIssuedNoRecipients": "لم يُعثر على مستلمين لهذه الجائزة.",
     "badgesRecipientAcceptedStatus": "قبِلها المستلم",
-    "badgesRecipientWaitingStatus": "بانتظار المستلم"
+    "badgesRecipientWaitingStatus": "بانتظار المستلم",
+    "authSignInWithBrowserExtension": "تسجيل الدخول بإضافة المتصفح",
+    "authNip07ConnectionFailed": "تعذّر الاتصال بإضافة المتصفح.",
+    "authNip07ExtensionNotFound": "لم يتم العثور على إضافة متصفح. ثبّت Alby أو nos2x أو أي إضافة متوافقة مع NIP-07.",
+    "authInfoBrowserExtensionTitle": "إضافة المتصفح",
+    "authInfoBrowserExtensionDescription": "سجّل الدخول باستخدام إضافة متصفح NIP-07 مثل Alby أو nos2x. تبقى مفاتيحك داخل الإضافة — Divine لا يراها أبدًا."
 }

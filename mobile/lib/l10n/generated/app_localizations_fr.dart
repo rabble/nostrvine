@@ -2565,6 +2565,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get authSignInWithAmber => 'Se connecter avec Amber';
 
   @override
+  String get authSignInWithBrowserExtension =>
+      'Se connecter avec une extension de navigateur';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Impossible de se connecter à votre extension de navigateur.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Aucune extension de navigateur trouvée. Installez Alby, nos2x ou une autre extension compatible NIP-07.';
+
+  @override
   String get authSignInOptionsTitle => 'Options de connexion';
 
   @override
@@ -2591,6 +2603,13 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Utilise l\'app de signature Amber sur Android pour gérer tes clés Nostr en toute sécurité.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Extension de navigateur';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Connectez-vous avec une extension de navigateur NIP-07 comme Alby ou nos2x. Vos clés restent dans l\'extension — Divine ne les voit jamais.';
 
   @override
   String get authCreateAccountTitle => 'Créer un compte';

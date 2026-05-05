@@ -2396,6 +2396,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get authSignInWithAmber => 'Amber でサインイン';
 
   @override
+  String get authSignInWithBrowserExtension => 'ブラウザ拡張機能でサインイン';
+
+  @override
+  String get authNip07ConnectionFailed => 'ブラウザ拡張機能に接続できませんでした。';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'ブラウザ拡張機能が見つかりません。Alby、nos2x、またはその他の NIP-07 対応拡張機能をインストールしてください。';
+
+  @override
   String get authSignInOptionsTitle => 'サインインオプション';
 
   @override
@@ -2422,6 +2432,13 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Android 向けの Amber 署名アプリで、Nostr 鍵を安全に管理できるよ。';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'ブラウザ拡張機能';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Alby や nos2x のような NIP-07 ブラウザ拡張機能でサインインします。鍵は拡張機能内に保持され、Divine からは見えません。';
 
   @override
   String get authCreateAccountTitle => 'アカウントを作ろう';

@@ -2407,6 +2407,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authSignInWithAmber => 'Amber로 로그인';
 
   @override
+  String get authSignInWithBrowserExtension => '브라우저 확장 프로그램으로 로그인';
+
+  @override
+  String get authNip07ConnectionFailed => '브라우저 확장 프로그램에 연결할 수 없습니다.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      '브라우저 확장 프로그램을 찾을 수 없습니다. Alby, nos2x 또는 다른 NIP-07 호환 확장 프로그램을 설치하세요.';
+
+  @override
   String get authSignInOptionsTitle => '로그인 옵션';
 
   @override
@@ -2433,6 +2443,13 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       '안드로이드에서 Amber 서명 앱으로 Nostr 키를 안전하게 관리해보세요.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => '브라우저 확장 프로그램';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Alby 또는 nos2x와 같은 NIP-07 브라우저 확장 프로그램으로 로그인하세요. 키는 확장 프로그램에 그대로 유지되며 Divine은 절대 볼 수 없습니다.';
 
   @override
   String get authCreateAccountTitle => '계정 만들기';

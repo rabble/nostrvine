@@ -3569,5 +3569,10 @@
     "badgesIssuedEmptySubtitle": "የምትሰጣቸው ባጆች የመቀበል ሁኔታቸውን እዚህ ያሳያሉ።",
     "badgesIssuedNoRecipients": "ለዚህ ሽልማት ምንም ተቀባዮች አልተገኙም።",
     "badgesRecipientAcceptedStatus": "ተቀባዩ ተቀብሎታል",
-    "badgesRecipientWaitingStatus": "ተቀባይን በመጠባበቅ ላይ"
+    "badgesRecipientWaitingStatus": "ተቀባይን በመጠባበቅ ላይ",
+    "authSignInWithBrowserExtension": "በአሳሽ ቅጥያ ይግቡ",
+    "authNip07ConnectionFailed": "ከአሳሽ ቅጥያዎ ጋር መገናኘት አልተቻለም።",
+    "authNip07ExtensionNotFound": "የአሳሽ ቅጥያ አልተገኘም። Alby፣ nos2x ወይም ሌላ ከ NIP-07 ጋር ተኳሃኝ የሆነ ቅጥያ ይጫኑ።",
+    "authInfoBrowserExtensionTitle": "አሳሽ ቅጥያ",
+    "authInfoBrowserExtensionDescription": "እንደ Alby ወይም nos2x ያሉ የ NIP-07 አሳሽ ቅጥያ በመጠቀም ይግቡ። ቁልፎችዎ በቅጥያው ውስጥ ይቀራሉ — Divine በፍፁም አያያቸውም።"
 }

@@ -3575,5 +3575,10 @@
     "badgesIssuedEmptySubtitle": "Значките, които издаваш, ще показват състоянието на приемане тук.",
     "badgesIssuedNoRecipients": "Не са намерени получатели за тази награда.",
     "badgesRecipientAcceptedStatus": "Приета от получателя",
-    "badgesRecipientWaitingStatus": "Очаква получателя"
+    "badgesRecipientWaitingStatus": "Очаква получателя",
+    "authSignInWithBrowserExtension": "Вход с разширение за браузър",
+    "authNip07ConnectionFailed": "Неуспешно свързване с разширението на браузъра.",
+    "authNip07ExtensionNotFound": "Не е открито разширение за браузър. Инсталирайте Alby, nos2x или друго съвместимо с NIP-07 разширение.",
+    "authInfoBrowserExtensionTitle": "Разширение за браузър",
+    "authInfoBrowserExtensionDescription": "Влезте чрез NIP-07 разширение за браузър като Alby или nos2x. Ключовете ви остават в разширението — Divine никога не ги вижда."
 }

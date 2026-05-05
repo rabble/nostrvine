@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Märken du utfärdar visar acceptansstatus här.",
     "badgesIssuedNoRecipients": "Inga mottagare hittades för den här utmärkelsen.",
     "badgesRecipientAcceptedStatus": "Accepterat av mottagare",
-    "badgesRecipientWaitingStatus": "Väntar på mottagare"
+    "badgesRecipientWaitingStatus": "Väntar på mottagare",
+    "authSignInWithBrowserExtension": "Logga in med webbläsartillägg",
+    "authNip07ConnectionFailed": "Det gick inte att ansluta till ditt webbläsartillägg.",
+    "authNip07ExtensionNotFound": "Inget webbläsartillägg hittades. Installera Alby, nos2x eller ett annat NIP-07-kompatibelt tillägg.",
+    "authInfoBrowserExtensionTitle": "Webbläsartillägg",
+    "authInfoBrowserExtensionDescription": "Logga in med ett NIP-07-webbläsartillägg som Alby eller nos2x. Dina nycklar stannar i tillägget — Divine ser dem aldrig."
 }

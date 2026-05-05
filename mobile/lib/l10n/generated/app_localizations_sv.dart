@@ -2521,6 +2521,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get authSignInWithAmber => 'Logga in med Amber';
 
   @override
+  String get authSignInWithBrowserExtension => 'Logga in med webbläsartillägg';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Det gick inte att ansluta till ditt webbläsartillägg.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Inget webbläsartillägg hittades. Installera Alby, nos2x eller ett annat NIP-07-kompatibelt tillägg.';
+
+  @override
   String get authSignInOptionsTitle => 'Inloggningsalternativ';
 
   @override
@@ -2547,6 +2558,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Använd Amber-signappen på Android för att hantera dina Nostr-nycklar säkert.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Webbläsartillägg';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Logga in med ett NIP-07-webbläsartillägg som Alby eller nos2x. Dina nycklar stannar i tillägget — Divine ser dem aldrig.';
 
   @override
   String get authCreateAccountTitle => 'Skapa konto';

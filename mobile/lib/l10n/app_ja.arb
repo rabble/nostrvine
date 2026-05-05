@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "あなたが発行したバッジの承認状況がここに出るよ。",
     "badgesIssuedNoRecipients": "この受賞には受信者が見つからないよ。",
     "badgesRecipientAcceptedStatus": "受信者が承認",
-    "badgesRecipientWaitingStatus": "受信者の承認待ち"
+    "badgesRecipientWaitingStatus": "受信者の承認待ち",
+    "authSignInWithBrowserExtension": "ブラウザ拡張機能でサインイン",
+    "authNip07ConnectionFailed": "ブラウザ拡張機能に接続できませんでした。",
+    "authNip07ExtensionNotFound": "ブラウザ拡張機能が見つかりません。Alby、nos2x、またはその他の NIP-07 対応拡張機能をインストールしてください。",
+    "authInfoBrowserExtensionTitle": "ブラウザ拡張機能",
+    "authInfoBrowserExtensionDescription": "Alby や nos2x のような NIP-07 ブラウザ拡張機能でサインインします。鍵は拡張機能内に保持され、Divine からは見えません。"
 }

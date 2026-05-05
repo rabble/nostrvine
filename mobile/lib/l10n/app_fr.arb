@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Les badges que tu délivres afficheront leur statut d'acceptation ici.",
     "badgesIssuedNoRecipients": "Aucun destinataire trouvé pour cette récompense.",
     "badgesRecipientAcceptedStatus": "Accepté par le destinataire",
-    "badgesRecipientWaitingStatus": "En attente du destinataire"
+    "badgesRecipientWaitingStatus": "En attente du destinataire",
+    "authSignInWithBrowserExtension": "Se connecter avec une extension de navigateur",
+    "authNip07ConnectionFailed": "Impossible de se connecter à votre extension de navigateur.",
+    "authNip07ExtensionNotFound": "Aucune extension de navigateur trouvée. Installez Alby, nos2x ou une autre extension compatible NIP-07.",
+    "authInfoBrowserExtensionTitle": "Extension de navigateur",
+    "authInfoBrowserExtensionDescription": "Connectez-vous avec une extension de navigateur NIP-07 comme Alby ou nos2x. Vos clés restent dans l'extension — Divine ne les voit jamais."
 }

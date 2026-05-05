@@ -2554,6 +2554,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get authSignInWithAmber => 'Accedi con Amber';
 
   @override
+  String get authSignInWithBrowserExtension =>
+      'Accedi con estensione del browser';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Impossibile connettersi alla tua estensione del browser.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Nessuna estensione del browser trovata. Installa Alby, nos2x o un\'altra estensione compatibile con NIP-07.';
+
+  @override
   String get authSignInOptionsTitle => 'Opzioni di accesso';
 
   @override
@@ -2580,6 +2592,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Usa l\'app signer Amber su Android per gestire le tue chiavi Nostr in modo sicuro.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Estensione del Browser';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Accedi con un\'estensione del browser NIP-07 come Alby o nos2x. Le tue chiavi restano nell\'estensione — Divine non le vede mai.';
 
   @override
   String get authCreateAccountTitle => 'Crea account';

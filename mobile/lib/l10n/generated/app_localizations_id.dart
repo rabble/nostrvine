@@ -2499,6 +2499,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get authSignInWithAmber => 'Masuk dengan Amber';
 
   @override
+  String get authSignInWithBrowserExtension => 'Masuk dengan ekstensi peramban';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Tidak dapat terhubung ke ekstensi peramban Anda.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Tidak ditemukan ekstensi peramban. Pasang Alby, nos2x, atau ekstensi lain yang kompatibel dengan NIP-07.';
+
+  @override
   String get authSignInOptionsTitle => 'Opsi masuk';
 
   @override
@@ -2525,6 +2536,13 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Gunakan aplikasi signer Amber di Android untuk mengelola kunci Nostr-mu dengan aman.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Ekstensi Peramban';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Masuk dengan ekstensi peramban NIP-07 seperti Alby atau nos2x. Kunci Anda tetap di ekstensi — Divine tidak pernah melihatnya.';
 
   @override
   String get authCreateAccountTitle => 'Buat akun';

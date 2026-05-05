@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Badges die je uitreikt tonen hier hun acceptatiestatus.",
     "badgesIssuedNoRecipients": "Geen ontvangers gevonden voor deze toekenning.",
     "badgesRecipientAcceptedStatus": "Geaccepteerd door ontvanger",
-    "badgesRecipientWaitingStatus": "Wacht op ontvanger"
+    "badgesRecipientWaitingStatus": "Wacht op ontvanger",
+    "authSignInWithBrowserExtension": "Aanmelden met browserextensie",
+    "authNip07ConnectionFailed": "Kan geen verbinding maken met je browserextensie.",
+    "authNip07ExtensionNotFound": "Geen browserextensie gevonden. Installeer Alby, nos2x of een andere NIP-07-compatibele extensie.",
+    "authInfoBrowserExtensionTitle": "Browserextensie",
+    "authInfoBrowserExtensionDescription": "Meld je aan met een NIP-07-browserextensie zoals Alby of nos2x. Je sleutels blijven in de extensie — Divine ziet ze nooit."
 }

@@ -4464,6 +4464,24 @@ abstract class AppLocalizations {
   /// **'Sign in with Amber'**
   String get authSignInWithAmber;
 
+  /// No description provided for @authSignInWithBrowserExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with browser extension'**
+  String get authSignInWithBrowserExtension;
+
+  /// No description provided for @authNip07ConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect to your browser extension.'**
+  String get authNip07ConnectionFailed;
+
+  /// No description provided for @authNip07ExtensionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No browser extension found. Install Alby, nos2x, or another NIP-07 compatible extension.'**
+  String get authNip07ExtensionNotFound;
+
   /// No description provided for @authSignInOptionsTitle.
   ///
   /// In en, this message translates to:
@@ -4511,6 +4529,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use the Amber signer app on Android to manage your Nostr keys securely.'**
   String get authInfoAmberDescription;
+
+  /// No description provided for @authInfoBrowserExtensionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser Extension'**
+  String get authInfoBrowserExtensionTitle;
+
+  /// No description provided for @authInfoBrowserExtensionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a NIP-07 browser extension like Alby or nos2x. Your keys stay in the extension — Divine never sees them.'**
+  String get authInfoBrowserExtensionDescription;
 
   /// No description provided for @authCreateAccountTitle.
   ///

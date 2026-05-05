@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Verdiğin rozetlerin kabul durumu burada görünecek.",
     "badgesIssuedNoRecipients": "Bu ödül için alıcı bulunamadı.",
     "badgesRecipientAcceptedStatus": "Alıcı tarafından kabul edildi",
-    "badgesRecipientWaitingStatus": "Alıcı bekleniyor"
+    "badgesRecipientWaitingStatus": "Alıcı bekleniyor",
+    "authSignInWithBrowserExtension": "Tarayıcı uzantısı ile giriş yap",
+    "authNip07ConnectionFailed": "Tarayıcı uzantınıza bağlanılamadı.",
+    "authNip07ExtensionNotFound": "Tarayıcı uzantısı bulunamadı. Alby, nos2x veya NIP-07 uyumlu başka bir uzantı yükleyin.",
+    "authInfoBrowserExtensionTitle": "Tarayıcı Uzantısı",
+    "authInfoBrowserExtensionDescription": "Alby veya nos2x gibi bir NIP-07 tarayıcı uzantısıyla giriş yapın. Anahtarlarınız uzantıda kalır — Divine bunları asla görmez."
 }

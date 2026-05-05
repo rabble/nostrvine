@@ -2496,6 +2496,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authSignInWithAmber => 'تسجيل الدخول بـ Amber';
 
   @override
+  String get authSignInWithBrowserExtension => 'تسجيل الدخول بإضافة المتصفح';
+
+  @override
+  String get authNip07ConnectionFailed => 'تعذّر الاتصال بإضافة المتصفح.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'لم يتم العثور على إضافة متصفح. ثبّت Alby أو nos2x أو أي إضافة متوافقة مع NIP-07.';
+
+  @override
   String get authSignInOptionsTitle => 'خيارات تسجيل الدخول';
 
   @override
@@ -2522,6 +2532,13 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'استخدم تطبيق توقيع Amber على أندرويد لإدارة مفاتيح Nostr الخاصة بك بأمان.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'إضافة المتصفح';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'سجّل الدخول باستخدام إضافة متصفح NIP-07 مثل Alby أو nos2x. تبقى مفاتيحك داخل الإضافة — Divine لا يراها أبدًا.';
 
   @override
   String get authCreateAccountTitle => 'إنشاء حساب';

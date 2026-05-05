@@ -2727,5 +2727,10 @@
     "badgesIssuedEmptySubtitle": "발급한 배지는 여기에서 수락 상태를 보여줘요.",
     "badgesIssuedNoRecipients": "이 배지에 대한 수령자를 찾지 못했어요.",
     "badgesRecipientAcceptedStatus": "수령자가 수락했어요",
-    "badgesRecipientWaitingStatus": "수령자를 기다리는 중"
+    "badgesRecipientWaitingStatus": "수령자를 기다리는 중",
+    "authSignInWithBrowserExtension": "브라우저 확장 프로그램으로 로그인",
+    "authNip07ConnectionFailed": "브라우저 확장 프로그램에 연결할 수 없습니다.",
+    "authNip07ExtensionNotFound": "브라우저 확장 프로그램을 찾을 수 없습니다. Alby, nos2x 또는 다른 NIP-07 호환 확장 프로그램을 설치하세요.",
+    "authInfoBrowserExtensionTitle": "브라우저 확장 프로그램",
+    "authInfoBrowserExtensionDescription": "Alby 또는 nos2x와 같은 NIP-07 브라우저 확장 프로그램으로 로그인하세요. 키는 확장 프로그램에 그대로 유지되며 Divine은 절대 볼 수 없습니다."
 }

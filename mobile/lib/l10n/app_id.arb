@@ -3431,5 +3431,10 @@
     "badgesIssuedEmptySubtitle": "Badge yang kamu berikan akan menampilkan status penerimaan di sini.",
     "badgesIssuedNoRecipients": "Tidak ada penerima untuk penghargaan ini.",
     "badgesRecipientAcceptedStatus": "Diterima oleh penerima",
-    "badgesRecipientWaitingStatus": "Menunggu penerima"
+    "badgesRecipientWaitingStatus": "Menunggu penerima",
+    "authSignInWithBrowserExtension": "Masuk dengan ekstensi peramban",
+    "authNip07ConnectionFailed": "Tidak dapat terhubung ke ekstensi peramban Anda.",
+    "authNip07ExtensionNotFound": "Tidak ditemukan ekstensi peramban. Pasang Alby, nos2x, atau ekstensi lain yang kompatibel dengan NIP-07.",
+    "authInfoBrowserExtensionTitle": "Ekstensi Peramban",
+    "authInfoBrowserExtensionDescription": "Masuk dengan ekstensi peramban NIP-07 seperti Alby atau nos2x. Kunci Anda tetap di ekstensi — Divine tidak pernah melihatnya."
 }

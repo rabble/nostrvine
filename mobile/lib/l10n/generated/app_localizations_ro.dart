@@ -2613,6 +2613,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get authSignInWithAmber => 'Autentifică-te cu Amber';
 
   @override
+  String get authSignInWithBrowserExtension =>
+      'Conectare cu extensia browserului';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Nu s-a putut conecta la extensia browserului.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'Nu a fost găsită nicio extensie de browser. Instalează Alby, nos2x sau altă extensie compatibilă cu NIP-07.';
+
+  @override
   String get authSignInOptionsTitle => 'Opțiuni de autentificare';
 
   @override
@@ -2639,6 +2651,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Folosește aplicația de semnare Amber pe Android ca să gestionezi cheile tale Nostr în siguranță.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Extensie de Browser';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Conectează-te cu o extensie de browser NIP-07 precum Alby sau nos2x. Cheile tale rămân în extensie — Divine nu le vede niciodată.';
 
   @override
   String get authCreateAccountTitle => 'Creează cont';
