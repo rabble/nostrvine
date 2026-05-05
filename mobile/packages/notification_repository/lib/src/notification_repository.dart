@@ -299,7 +299,7 @@ class NotificationRepository {
           .map((n) => n.referencedDTag)
           .firstWhere((d) => d != null, orElse: () => null);
       final addressableId = dTag != null && dTag.isNotEmpty
-          ? '34236:$_userPubkey:$dTag'
+          ? '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag'
           : null;
       // Prefer thumbnail from the notification payload — it comes directly from
       // the server and is stable even after a metadata update (unlike the stats
@@ -403,7 +403,7 @@ class NotificationRepository {
       final video = videosById[referenced];
       final dTag = raw.referencedDTag;
       final addressableId = dTag != null && dTag.isNotEmpty
-          ? '34236:$_userPubkey:$dTag'
+          ? '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag'
           : null;
       return VideoNotification(
         id: raw.dedupeKey,

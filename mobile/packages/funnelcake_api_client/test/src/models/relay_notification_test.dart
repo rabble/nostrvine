@@ -123,6 +123,166 @@ void main() {
         },
       );
 
+      test('parses d_tag from referenced_video.d_tag', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_video': {
+            'title': 'My vine',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'd_tag': 'vine-stable-id',
+          },
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.referencedDTag, equals('vine-stable-id'));
+        expect(
+          notification.referencedVideoThumbnail,
+          equals('https://example.com/thumb.jpg'),
+        );
+      });
+
+      test(
+        'falls back to top-level referenced_d_tag when '
+        'referenced_video is absent',
+        () {
+          final json = {
+            'id': 'notif_123',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 7,
+            'referenced_event_id': '55667788' * 8,
+            'referenced_d_tag': 'top-level-dtag',
+            'notification_type': 'reaction',
+            'created_at': 1712345678,
+            'read': false,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(notification.referencedDTag, equals('top-level-dtag'));
+          expect(notification.isReferencedVideo, isFalse);
+        },
+      );
+
+      test(
+        'prefers referenced_video.d_tag over top-level referenced_d_tag',
+        () {
+          final json = {
+            'id': 'notif_123',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 7,
+            'referenced_event_id': '55667788' * 8,
+            'referenced_video': {
+              'title': 'My vine',
+              'd_tag': 'nested-dtag',
+            },
+            'referenced_d_tag': 'top-level-dtag',
+            'notification_type': 'reaction',
+            'created_at': 1712345678,
+            'read': false,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(notification.referencedDTag, equals('nested-dtag'));
+        },
+      );
+
+      test('treats empty referenced_d_tag as null', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_d_tag': '',
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.referencedDTag, isNull);
+      });
+
+      test('parses thumbnail from referenced_video.thumbnail', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_video': {
+            'thumbnail': 'https://cdn.example.com/thumb.jpg',
+          },
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(
+          notification.referencedVideoThumbnail,
+          equals('https://cdn.example.com/thumb.jpg'),
+        );
+      });
+
+      test(
+        'falls back to referenced_event_thumbnail when '
+        'referenced_video is absent',
+        () {
+          final json = {
+            'id': 'notif_123',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 7,
+            'referenced_event_id': '55667788' * 8,
+            'referenced_event_thumbnail':
+                'https://cdn.example.com/fallback.jpg',
+            'notification_type': 'reaction',
+            'created_at': 1712345678,
+            'read': false,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(
+            notification.referencedVideoThumbnail,
+            equals('https://cdn.example.com/fallback.jpg'),
+          );
+          expect(notification.isReferencedVideo, isFalse);
+        },
+      );
+
+      test('treats empty referenced_video.thumbnail as null thumbnail', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_video': {'thumbnail': ''},
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.referencedVideoThumbnail, isNull);
+      });
+
       test('treats empty referenced_video.title as null title', () {
         final json = {
           'id': 'notif_123',
