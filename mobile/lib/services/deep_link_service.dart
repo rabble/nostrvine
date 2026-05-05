@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Types of deep links supported by the app
@@ -55,7 +56,7 @@ class DeepLink {
       case DeepLinkType.search:
         return 'DeepLink(type: search, searchTerm: $searchTerm$indexStr)';
       case DeepLinkType.invite:
-        return 'DeepLink(type: invite, inviteCode: $inviteCode)';
+        return 'DeepLink(type: invite, inviteCode: $redactedSensitiveLogPlaceholder)';
       case DeepLinkType.signerCallback:
         return 'DeepLink(type: signerCallback)';
       case DeepLinkType.unknown:
@@ -82,7 +83,7 @@ class DeepLinkService {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         Log.info(
-          '📱 App opened with deep link: $initialUri',
+          '📱 App opened with deep link: ${redactUriStringForLogs(initialUri.toString())}',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
@@ -93,7 +94,7 @@ class DeepLinkService {
       // Listen for deep links while app is running
       _subscription = _appLinks.uriLinkStream.listen((uri) {
         Log.info(
-          '📱 Received deep link while running: $uri',
+          '📱 Received deep link while running: ${redactUriStringForLogs(uri.toString())}',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
@@ -122,7 +123,7 @@ class DeepLinkService {
       // listeners can trigger relay reconnection for the nostrconnect session.
       if (uri.scheme == 'divine') {
         Log.info(
-          'Received NIP-46 signer callback: $url',
+          'Received NIP-46 signer callback: ${redactUriStringForLogs(url)}',
           name: 'DeepLinkService',
           category: LogCategory.auth,
         );
@@ -220,7 +221,7 @@ class DeepLinkService {
 
         if (inviteCode != null && inviteCode.isNotEmpty) {
           Log.info(
-            'Parsed invite deep link: $inviteCode',
+            'Parsed invite deep link (code $redactedSensitiveLogPlaceholder)',
             name: 'DeepLinkService',
             category: LogCategory.ui,
           );

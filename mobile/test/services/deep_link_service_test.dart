@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 
 void main() {
   group('DeepLinkService URL Parsing', () {
@@ -455,14 +456,16 @@ void main() {
         );
       });
 
-      test('formats invite deep link', () {
+      test('formats invite deep link without exposing raw invite code', () {
         const link = DeepLink(
           type: DeepLinkType.invite,
           inviteCode: 'ABCD-EFGH',
         );
         expect(
           link.toString(),
-          equals('DeepLink(type: invite, inviteCode: ABCD-EFGH)'),
+          equals(
+            'DeepLink(type: invite, inviteCode: $redactedSensitiveLogPlaceholder)',
+          ),
         );
       });
 
