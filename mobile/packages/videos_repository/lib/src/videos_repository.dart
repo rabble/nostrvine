@@ -1446,10 +1446,7 @@ class VideosRepository {
     }
 
     if (candidate.stableId != null) {
-      final byStableId = await _fetchVideoByStableId(
-        candidate.stableId!,
-        permissive: true,
-      );
+      final byStableId = await _fetchVideoByStableId(candidate.stableId!);
       if (byStableId != null) return byStableId;
     }
 
@@ -1564,10 +1561,7 @@ class VideosRepository {
     return hydrated.firstOrNull;
   }
 
-  Future<VideoEvent?> _fetchVideoByStableId(
-    String stableId, {
-    bool permissive = false,
-  }) async {
+  Future<VideoEvent?> _fetchVideoByStableId(String stableId) async {
     final candidates = <Event>[];
 
     if (_localStorage != null) {
@@ -1578,9 +1572,7 @@ class VideosRepository {
       candidates.addAll(
         await _nostrClient.queryEvents([
           Filter(
-            kinds: permissive
-                ? NIP71VideoKinds.getAllAcceptableVideoKinds()
-                : NIP71VideoKinds.getAllVideoKinds(),
+            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
             d: [stableId],
             limit: 10,
           ),
@@ -1595,7 +1587,7 @@ class VideosRepository {
     for (final event in candidates) {
       final video = _tryParseAndFilter(
         event,
-        permissive: permissive,
+        permissive: true,
         ignoreBlockFilter: true,
       );
       if (video != null) {

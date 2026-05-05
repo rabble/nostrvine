@@ -6287,6 +6287,39 @@ void main() {
       });
 
       test(
+        'resolves event-id routes from local storage before relay',
+        () async {
+          const eventId =
+              'e96357668c72c8923340b0ecf4bfacea'
+              '505172c4190e9953e603124c67175f3b';
+          final mockLocalStorage = MockVideoLocalStorage();
+          final event = _createVideoEvent(
+            id: eventId,
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1739350000,
+          );
+
+          when(() => mockLocalStorage.getEventsByIds([eventId])).thenAnswer(
+            (_) async => [event],
+          );
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            localStorage: mockLocalStorage,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(eventId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          verify(() => mockLocalStorage.getEventsByIds([eventId])).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
         'resolves acceptable legacy video kinds by raw 64-char route ID',
         () async {
           const eventId =
