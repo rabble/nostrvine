@@ -1528,6 +1528,8 @@ class VideosRepository {
     final candidates = <Event>[];
 
     if (_localStorage != null) {
+      // Shared links should be able to reopen a video from local cache on a
+      // cold start before the relay layer has finished connecting.
       candidates.addAll(await _localStorage.getEventsByIds([eventId]));
     }
 
@@ -1572,6 +1574,8 @@ class VideosRepository {
       candidates.addAll(
         await _nostrClient.queryEvents([
           Filter(
+            // Route-specific lookups accept all supported NIP-71 video kinds so
+            // older shared links still resolve instead of failing as not found.
             kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
             d: [stableId],
             limit: 10,

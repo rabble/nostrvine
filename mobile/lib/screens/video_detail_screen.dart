@@ -64,6 +64,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.videoId == widget.videoId) return;
 
+    // Deep links can retarget an already-mounted video screen. Reset the
+    // previous request state so the second shared link triggers a fresh load.
     _relayReadySubscription?.cancel();
     _relayReadySubscription = null;
     _retryScheduled = false;
@@ -121,6 +123,9 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         if (allowRelayReadyRetry &&
             !canQueryRelays &&
             _scheduleRelayReadyRetry(nostrClient)) {
+          // Cold-start links can arrive before the relay layer is queryable.
+          // Retry once after the first relay connection instead of surfacing a
+          // permanent "Video not found" during startup.
           Log.info(
             '⏳ Video lookup deferred until relay connection is ready',
             name: 'VideoDetailScreen',
