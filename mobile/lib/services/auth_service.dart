@@ -850,6 +850,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           _setAuthState(AuthState.unauthenticated);
           return;
+
+        case AuthenticationSource.nip07:
+          Log.info(
+            'initialize: restoring NIP-07 session...',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          if (kIsWeb) {
+            await _reconnectNip07();
+            return;
+          }
+          Log.warning(
+            'initialize: persisted nip07 source on non-web platform — '
+            'falling back to unauthenticated',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          _setAuthState(AuthState.unauthenticated);
+          return;
       }
 
       Log.info(
@@ -1154,6 +1173,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         case AuthenticationSource.divineOAuth:
           final session = await KeycastSession.load(_flutterSecureStorage);
           pubkeyHex = session?.userPubkey;
+
+        case AuthenticationSource.nip07:
+          // NIP-07 was introduced after the legacy migration; no archived
+          // hint to recover. Leave pubkeyHex null so this path is skipped.
+          break;
 
         case AuthenticationSource.none:
           break;
@@ -1571,6 +1595,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         case AuthenticationSource.automatic:
         case AuthenticationSource.importedKeys:
         case AuthenticationSource.none:
+        case AuthenticationSource.nip07:
           // Clear any stale global signer keys so they don't hijack signing
           // operations for the non-bunker/non-keycast account.
           await _clearBunkerInfo();
@@ -1686,6 +1711,23 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             category: LogCategory.auth,
           );
           throw Exception('No archived Bunker info found for $pubkeyHex');
+        }
+
+      case AuthenticationSource.nip07:
+        Log.info(
+          'signInForAccount: restoring NIP-07 session...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        if (kIsWeb) {
+          await _reconnectNip07();
+        } else {
+          Log.error(
+            'signInForAccount: persisted nip07 source on non-web platform',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          throw Exception('NIP-07 sign-in is only available on the web.');
         }
 
       case AuthenticationSource.divineOAuth:
@@ -2147,6 +2189,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         category: LogCategory.auth,
       );
     }
+  }
+
+  /// Reconnect using the browser's NIP-07 extension.
+  ///
+  /// Filled in by Task T7. Until then, falls back to unauthenticated so
+  /// initialize() doesn't leave the app in `authenticating` forever.
+  Future<void> _reconnectNip07() async {
+    _setAuthState(AuthState.unauthenticated);
   }
 
   /// Reconnect to Amber using saved connection info
