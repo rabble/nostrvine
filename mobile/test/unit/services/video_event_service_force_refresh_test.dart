@@ -249,54 +249,5 @@ void main() {
         'video1_aaaabbbbccccddddeeeeffffgggghhhhiiiijjjjkkkkllllmmmmnnnnoooopppp',
       );
     });
-
-    test(
-      'waitForSubscriptionRelayIdle completes after EOSE clears pagination loading (#3850)',
-      () async {
-        late void Function() pendingEose;
-
-        when(
-          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
-        ).thenAnswer((invocation) {
-          pendingEose =
-              invocation.namedArguments[const Symbol('onEose')]
-                  as void Function();
-          return eventStreamController.stream;
-        });
-
-        videoEventService.dispose();
-        videoEventService = VideoEventService(
-          mockNostrService,
-          subscriptionManager: testSubscriptionManager,
-        );
-
-        await videoEventService.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.popularNow,
-          limit: 50,
-        );
-
-        expect(
-          videoEventService.isLoadingForSubscription(
-            SubscriptionType.popularNow,
-          ),
-          isTrue,
-        );
-
-        final waitFuture = videoEventService.waitForSubscriptionRelayIdle(
-          SubscriptionType.popularNow,
-          timeout: const Duration(seconds: 2),
-        );
-
-        pendingEose();
-        await waitFuture;
-
-        expect(
-          videoEventService.isLoadingForSubscription(
-            SubscriptionType.popularNow,
-          ),
-          isFalse,
-        );
-      },
-    );
   });
 }

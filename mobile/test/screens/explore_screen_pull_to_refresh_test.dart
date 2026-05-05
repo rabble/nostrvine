@@ -76,9 +76,6 @@ void main() {
           force: any(named: 'force'),
         ),
       ).thenAnswer((_) async {});
-      when(
-        () => mockService.waitForSubscriptionRelayIdle(any()),
-      ).thenAnswer((_) async {});
 
       container = ProviderContainer(
         overrides: [
@@ -127,32 +124,6 @@ void main() {
             force: true,
           ),
         ).called(1);
-      },
-    );
-
-    test(
-      'refresh awaits relay idle after forced subscribe (#3850)',
-      () async {
-        when(() => mockService.popularNowVideos).thenReturn([]);
-
-        await container.read(funnelcakeAvailableProvider.future);
-        await container.read(popularNowFeedProvider.future);
-
-        clearInteractions(mockService);
-
-        await container.read(popularNowFeedProvider.notifier).refresh();
-
-        verifyInOrder([
-          () => mockService.subscribeToVideoFeed(
-            subscriptionType: SubscriptionType.popularNow,
-            limit: AppConstants.paginationBatchSize,
-            sortBy: any(named: 'sortBy', that: isNotNull),
-            force: true,
-          ),
-          () => mockService.waitForSubscriptionRelayIdle(
-            SubscriptionType.popularNow,
-          ),
-        ]);
       },
     );
 

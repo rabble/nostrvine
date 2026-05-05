@@ -910,55 +910,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     return paginationState?.isLoading ?? false;
   }
 
-  /// Waits until the relay round-trip for [subscriptionType] has quiesced
-  /// ([PaginationState.isLoading] becomes false after EOSE handling), or
-  /// until [timeout] elapses.
-  ///
-  /// [subscribeToVideoFeed] returns as soon as the socket subscription exists,
-  /// before relay events are merged — callers that immediately read
-  /// [popularNowVideos] / profile buckets would otherwise snapshot stale data
-  /// (#3850; parent report #3848).
-  Future<void> waitForSubscriptionRelayIdle(
-    SubscriptionType subscriptionType, {
-    Duration timeout = const Duration(seconds: 20),
-  }) async {
-    if (_isDisposed) {
-      return;
-    }
-
-    final completer = Completer<void>();
-
-    void listener() {
-      if (_isDisposed) {
-        if (!completer.isCompleted) completer.complete();
-        return;
-      }
-      if (!isLoadingForSubscription(subscriptionType)) {
-        if (!completer.isCompleted) completer.complete();
-      }
-    }
-
-    addListener(listener);
-
-    // Check AFTER adding listener to avoid TOCTOU race
-    if (!isLoadingForSubscription(subscriptionType)) {
-      removeListener(listener);
-      return;
-    }
-
-    try {
-      await completer.future.timeout(timeout);
-    } on TimeoutException {
-      Log.warning(
-        'waitForSubscriptionRelayIdle timed out after ${timeout.inMilliseconds}ms for $subscriptionType',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-    } finally {
-      removeListener(listener);
-    }
-  }
-
   /// Check if a subscription type has events
   bool hasEvents(SubscriptionType type) => (_eventLists[type] ?? []).isNotEmpty;
 

@@ -165,9 +165,6 @@ void main() {
       when(
         () => mockVideoEventService.subscribeToUserVideos(userId),
       ).thenAnswer((_) async {});
-      when(
-        () => mockVideoEventService.waitForSubscriptionRelayIdle(any()),
-      ).thenAnswer((_) async {});
       when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
       when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
         invocation,
@@ -507,7 +504,7 @@ void main() {
     );
 
     test(
-      'refresh calls subscribeToUserVideos then waitForSubscriptionRelayIdle (#3850)',
+      'refresh calls subscribeToUserVideos for Nostr path without blocking on relay idle',
       () async {
         final container = createContainer(funnelcakeAvailable: false);
         await container.read(funnelcakeAvailableProvider.future);
@@ -520,12 +517,9 @@ void main() {
         await container.read(profileFeedProvider(userId).notifier).refresh();
         await pumpEventQueue();
 
-        verifyInOrder([
+        verify(
           () => mockVideoEventService.subscribeToUserVideos(userId),
-          () => mockVideoEventService.waitForSubscriptionRelayIdle(
-            SubscriptionType.profile,
-          ),
-        ]);
+        ).called(greaterThanOrEqualTo(1));
       },
     );
 

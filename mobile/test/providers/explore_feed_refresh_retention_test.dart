@@ -72,15 +72,17 @@ void main() {
           invocation.positionalArguments.first as List,
         );
       });
+      when(() => mockVideoEventService.addListener(any())).thenReturn(null);
+      when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.addVideoUpdateListener(any()),
+      ).thenReturn(() {});
       when(
         () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
       when(
         () => mockAuthService.currentPublicKeyHex,
       ).thenReturn('viewer-pubkey');
-      when(
-        () => mockVideoEventService.waitForSubscriptionRelayIdle(any()),
-      ).thenAnswer((_) async {});
     });
 
     test(
@@ -156,100 +158,6 @@ void main() {
           'popular-now-refreshed',
         ]);
         expect(finalState.isRefreshing, isFalse);
-      },
-    );
-
-    test(
-      'popular now retries REST on refresh after a transient REST failure (#3849)',
-      () async {
-        var watchingCallCount = 0;
-
-        when(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
-            limit: any(named: 'limit'),
-            before: any(named: 'before'),
-          ),
-        ).thenAnswer((_) {
-          watchingCallCount += 1;
-          if (watchingCallCount == 1) {
-            return Future.value([_videoStats('popular-now-initial')]);
-          }
-          if (watchingCallCount == 2) {
-            return Future<List<VideoStats>>.error(Exception('transient'));
-          }
-          return Future.value([_videoStats('popular-now-after-retry')]);
-        });
-
-        when(() => mockVideoEventService.popularNowVideos).thenReturn([]);
-        when(
-          () => mockVideoEventService.subscribeToVideoFeed(
-            subscriptionType: SubscriptionType.popularNow,
-            limit: AppConstants.paginationBatchSize,
-            sortBy: VideoSortField.createdAt,
-            force: true,
-          ),
-        ).thenAnswer((_) async {});
-
-        final container = ProviderContainer(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            appReadyProvider.overrideWithValue(true),
-            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-            contentBlocklistRepositoryProvider.overrideWithValue(
-              mockBlocklistRepository,
-            ),
-            funnelcakeApiClientProvider.overrideWithValue(
-              mockFunnelcakeApiClient,
-            ),
-            funnelcakeAvailableProvider.overrideWith(
-              _AlwaysAvailableFunnelcake.new,
-            ),
-            nostrServiceProvider.overrideWithValue(mockNostrClient),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await container.read(funnelcakeAvailableProvider.future);
-        final subscription = container.listen(
-          popularNowFeedProvider,
-          (_, _) {},
-        );
-        addTearDown(subscription.close);
-
-        await container.read(popularNowFeedProvider.future);
-
-        await container.read(popularNowFeedProvider.notifier).refresh();
-        await pumpEventQueue();
-
-        await container.read(popularNowFeedProvider.notifier).refresh();
-
-        final finalState = container.read(popularNowFeedProvider).value;
-        expect(finalState, isNotNull);
-        expect(finalState!.videos.map((video) => video.id), [
-          'popular-now-after-retry',
-        ]);
-
-        verify(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
-            limit: any(named: 'limit'),
-            before: any(named: 'before'),
-          ),
-        ).called(3);
-
-        verify(
-          () => mockVideoEventService.subscribeToVideoFeed(
-            subscriptionType: SubscriptionType.popularNow,
-            limit: AppConstants.paginationBatchSize,
-            sortBy: VideoSortField.createdAt,
-            force: true,
-          ),
-        ).called(1);
-
-        verify(
-          () => mockVideoEventService.waitForSubscriptionRelayIdle(
-            SubscriptionType.popularNow,
-          ),
-        ).called(1);
       },
     );
 

@@ -842,9 +842,6 @@ class ProfileFeed extends _$ProfileFeed {
   Future<void> _refreshFromNostrSource() async {
     try {
       await _videoEventService.subscribeToUserVideos(userId);
-      await _videoEventService.waitForSubscriptionRelayIdle(
-        SubscriptionType.profile,
-      );
       if (!ref.mounted) return;
 
       final relayVideos = _relayVideosSnapshot();
