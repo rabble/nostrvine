@@ -81,5 +81,19 @@ void main() {
       expect(find.text('Relays'), findsOneWidget);
       expect(find.text('Relay Diagnostics'), findsOneWidget);
     });
+
+    testWidgets('shows NIP-05 address tile in the Account section', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
+      expect(
+        find.text(l10n.nostrSettingsNip05AddressSubtitle),
+        findsOneWidget,
+      );
+    });
   });
 }

@@ -1628,6 +1628,60 @@ abstract class AppLocalizations {
   /// **'Use the username field above for divine.video'**
   String get profileSetupExternalNip05DivineDomain;
 
+  /// Title of the Nostr Settings → Account tile that opens the NIP-05 address sub-screen, and the title of that sub-screen.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 address'**
+  String get nostrSettingsNip05Address;
+
+  /// Subtitle on the Nostr Settings tile and intro text on the NIP-05 sub-screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.'**
+  String get nostrSettingsNip05AddressSubtitle;
+
+  /// Label of the Save button on the NIP-05 settings sub-screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Save NIP-05'**
+  String get nostrSettingsNip05SaveAction;
+
+  /// Snackbar shown after the NIP-05 sub-screen successfully publishes the updated profile.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 saved'**
+  String get nostrSettingsNip05Saved;
+
+  /// Snackbar shown when saving NIP-05 from the sub-screen fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save NIP-05. Please try again.'**
+  String get nostrSettingsNip05SaveFailed;
+
+  /// Title of the confirm dialog shown when a user toggles on the 'Use your own NIP-05 address' option in the NIP-05 settings sub-screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own NIP-05?'**
+  String get profileSetupNip05ConfirmTitle;
+
+  /// Body text explaining the risk before turning on a custom NIP-05 address. Aimed at non-technical users; explains what NIP-05 is and what breaks if misconfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.'**
+  String get profileSetupNip05ConfirmBody;
+
+  /// Primary button on the custom NIP-05 confirm dialog that proceeds with enabling the option.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get profileSetupNip05ConfirmContinue;
+
+  /// Cancel button on the custom NIP-05 confirm dialog that closes the dialog without enabling the option.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get profileSetupNip05ConfirmCancel;
+
   /// No description provided for @profileSetupProfilePicturePreview.
   ///
   /// In en, this message translates to:

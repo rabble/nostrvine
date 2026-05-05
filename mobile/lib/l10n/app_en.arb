@@ -433,6 +433,42 @@
   "profileSetupNip05AddressLabel": "NIP-05 Address",
   "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (e.g., name@domain.com)",
   "profileSetupExternalNip05DivineDomain": "Use the username field above for divine.video",
+  "nostrSettingsNip05Address": "NIP-05 address",
+  "@nostrSettingsNip05Address": {
+    "description": "Title of the Nostr Settings → Account tile that opens the NIP-05 address sub-screen, and the title of that sub-screen."
+  },
+  "nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+  "@nostrSettingsNip05AddressSubtitle": {
+    "description": "Subtitle on the Nostr Settings tile and intro text on the NIP-05 sub-screen."
+  },
+  "nostrSettingsNip05SaveAction": "Save NIP-05",
+  "@nostrSettingsNip05SaveAction": {
+    "description": "Label of the Save button on the NIP-05 settings sub-screen."
+  },
+  "nostrSettingsNip05Saved": "NIP-05 saved",
+  "@nostrSettingsNip05Saved": {
+    "description": "Snackbar shown after the NIP-05 sub-screen successfully publishes the updated profile."
+  },
+  "nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+  "@nostrSettingsNip05SaveFailed": {
+    "description": "Snackbar shown when saving NIP-05 from the sub-screen fails."
+  },
+  "profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+  "@profileSetupNip05ConfirmTitle": {
+    "description": "Title of the confirm dialog shown when a user toggles on the 'Use your own NIP-05 address' option in the NIP-05 settings sub-screen."
+  },
+  "profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+  "@profileSetupNip05ConfirmBody": {
+    "description": "Body text explaining the risk before turning on a custom NIP-05 address. Aimed at non-technical users; explains what NIP-05 is and what breaks if misconfigured."
+  },
+  "profileSetupNip05ConfirmContinue": "Continue",
+  "@profileSetupNip05ConfirmContinue": {
+    "description": "Primary button on the custom NIP-05 confirm dialog that proceeds with enabling the option."
+  },
+  "profileSetupNip05ConfirmCancel": "Cancel",
+  "@profileSetupNip05ConfirmCancel": {
+    "description": "Cancel button on the custom NIP-05 confirm dialog that closes the dialog without enabling the option."
+  },
   "profileSetupProfilePicturePreview": "Profile picture preview",
   "nostrInfoIntroBuiltOn": "DiVine is built on Nostr,",
   "nostrInfoIntroDescription": " a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ",
