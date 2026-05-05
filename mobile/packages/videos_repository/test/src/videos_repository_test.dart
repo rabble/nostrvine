@@ -6419,6 +6419,85 @@ void main() {
         },
       );
 
+      test(
+        'falls back to Funnelcake route lookup when relay misses shared stable ID',
+        () async {
+          const stableId =
+              'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+          const eventId =
+              'e46ff7d0d71d6c8114b58728afa43f08d6286fd9a704683af799fd8f855586c2';
+          final relayMissThenApiHit = Event.fromJson({
+            'id': eventId,
+            'pubkey':
+                '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886',
+            'created_at': 1777868006,
+            'kind': 34236,
+            'tags': [
+              ['d', stableId],
+              ['url', 'https://media.divine.video/$stableId'],
+              ['title', 'Divine team swag'],
+            ],
+            'content': 'Divine team swag!',
+            'sig': 'sig',
+          });
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(stableId),
+          ).thenAnswer((_) async => relayMissThenApiHit);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(stableId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.stableId, equals(stableId));
+          verify(() => mockFunnelcakeClient.getVideoEvent(stableId)).called(1);
+        },
+      );
+
+      test('returns blocked-author videos for direct route lookups', () async {
+        const stableId =
+            'f96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+        const eventId =
+            'f46ff7d0d71d6c8114b58728afa43f08d6286fd9a704683af799fd8f855586c2';
+        const blockedPubkey =
+            '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886';
+        final blockedEvent = _createVideoEvent(
+          id: eventId,
+          pubkey: blockedPubkey,
+          videoUrl: 'https://media.divine.video/$stableId',
+          createdAt: 1777868006,
+          extraTags: [
+            ['d', stableId],
+            ['title', 'Blocked deep-link target'],
+          ],
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [blockedEvent],
+        );
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          blockFilter: (pubkey) => pubkey == blockedPubkey,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(stableId);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+        expect(result.pubkey, equals(blockedPubkey));
+      });
+
       test('resolves nevent route IDs via event ID lookup', () async {
         const eventId =
             'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';

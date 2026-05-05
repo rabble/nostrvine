@@ -2792,6 +2792,67 @@ void main() {
       });
     });
 
+    group('getVideoEvent', () {
+      const testVideoId =
+          'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+      const testEventId =
+          'e46ff7d0d71d6c8114b58728afa43f08d6286fd9a704683af799fd8f855586c2';
+
+      test('returns raw event from wrapped response', () async {
+        const validResponse =
+            '''
+{
+  "event": {
+    "id": "$testEventId",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "tags": [["d", "$testVideoId"], ["url", "https://example.com/video.mp4"]],
+    "content": "",
+    "sig": "sig"
+  },
+  "stats": {
+    "reactions": 1
+  }
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
+
+        final event = await client.getVideoEvent(testVideoId);
+
+        expect(event, isNotNull);
+        expect(event!.id, equals(testEventId));
+      });
+
+      test('constructs correct URL', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Not found', 404));
+
+        await client.getVideoEvent(testVideoId);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos/$testVideoId'));
+      });
+
+      test('returns null on 404', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Not found', 404));
+
+        final event = await client.getVideoEvent(testVideoId);
+
+        expect(event, isNull);
+      });
+    });
+
     group('getVideoComments', () {
       const testVideoId =
           'feedfeedfeedfeedfeedfeedfeedfeed'

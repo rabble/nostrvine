@@ -922,7 +922,11 @@ class VideosRepository {
   /// - The video has no playable URL
   /// - The video is expired (NIP-40)
   /// - The video fails content filtering
-  VideoEvent? _tryParseAndFilter(Event event, {bool permissive = false}) {
+  VideoEvent? _tryParseAndFilter(
+    Event event, {
+    bool permissive = false,
+    bool ignoreBlockFilter = false,
+  }) {
     // Skip events that aren't valid video kinds
     final isSupported = permissive
         ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
@@ -930,7 +934,9 @@ class VideosRepository {
     if (!isSupported) return null;
 
     // Block filter - check pubkey before parsing for efficiency
-    if (_blockFilter?.call(event.pubkey) ?? false) return null;
+    if (!ignoreBlockFilter && (_blockFilter?.call(event.pubkey) ?? false)) {
+      return null;
+    }
 
     final video = VideoEvent.fromNostrEvent(event, permissive: permissive);
 
@@ -1447,6 +1453,15 @@ class VideosRepository {
       if (byStableId != null) return byStableId;
     }
 
+    final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
+    if (funnelcakeRouteId != null) {
+      final byFunnelcake = await _fetchVideoFromRouteApi(
+        funnelcakeRouteId,
+        permissive: true,
+      );
+      if (byFunnelcake != null) return byFunnelcake;
+    }
+
     return null;
   }
 
@@ -1534,7 +1549,11 @@ class VideosRepository {
 
     final videos = <VideoEvent>[];
     for (final event in candidates) {
-      final video = _tryParseAndFilter(event, permissive: true);
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
       if (video != null) {
         videos.add(video);
       }
@@ -1574,7 +1593,11 @@ class VideosRepository {
     candidates.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     final videos = <VideoEvent>[];
     for (final event in candidates) {
-      final video = _tryParseAndFilter(event, permissive: permissive);
+      final video = _tryParseAndFilter(
+        event,
+        permissive: permissive,
+        ignoreBlockFilter: true,
+      );
       if (video != null) {
         videos.add(video);
       }
@@ -1583,6 +1606,28 @@ class VideosRepository {
 
     final hydrated = await _hydrateVideosWithBulkStats(videos);
     return hydrated.isEmpty ? null : hydrated.first;
+  }
+
+  Future<VideoEvent?> _fetchVideoFromRouteApi(
+    String routeId, {
+    bool permissive = false,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+
+    final event = await _funnelcakeApiClient.getVideoEvent(routeId);
+    if (event == null) return null;
+
+    final video = _tryParseAndFilter(
+      event,
+      permissive: permissive,
+      ignoreBlockFilter: true,
+    );
+    if (video == null) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats([video]);
+    return hydrated.firstOrNull;
   }
 }
 

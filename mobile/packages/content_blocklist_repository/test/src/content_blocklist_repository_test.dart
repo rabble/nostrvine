@@ -749,6 +749,71 @@ void main() {
         await controller.close();
       },
     );
+
+    test(
+      'ignores stale older block event after newer unblock event',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const blockerPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+
+        service = ContentBlocklistRepository();
+
+        final newerUnblockEvent =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', 'some_other_pubkey'],
+                ],
+                'Block list',
+                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+              )
+              ..id = 'newer-unblock-event-id'
+              ..sig = 'signature';
+
+        final olderBlockEvent =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', ourPubkey],
+                ],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'older-block-event-id'
+              ..sig = 'signature';
+
+        final controller = StreamController<Event>();
+
+        when(
+          () => mockNostrService.subscribe(
+            any(),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+
+        controller.add(newerUnblockEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+
+        controller.add(olderBlockEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+        expect(service.shouldFilterFromFeeds(blockerPubkey), isFalse);
+
+        await controller.close();
+      },
+    );
   });
 
   group('ContentBlocklistRepository - Relay Block List Restoration', () {

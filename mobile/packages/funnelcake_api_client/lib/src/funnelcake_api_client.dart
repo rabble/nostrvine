@@ -9,6 +9,7 @@ import 'package:funnelcake_api_client/src/models/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 /// HTTP client for the Funnelcake REST API.
 ///
@@ -1251,6 +1252,60 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch video views: $e');
+    }
+  }
+
+  /// Fetches the full Nostr event for a specific video route ID.
+  ///
+  /// [videoId] accepts either a canonical event ID or a stable shared ID
+  /// supported by the Funnelcake API.
+  ///
+  /// Returns the raw [Event] when found, or `null` for 404 responses.
+  Future<Event?> getVideoEvent(String videoId) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (videoId.isEmpty) {
+      throw const FunnelcakeException('Video ID cannot be empty');
+    }
+
+    final uri = Uri.parse('$_baseUrl/api/videos/$videoId');
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          final eventJson = data['event'];
+          if (eventJson is Map<String, dynamic>) {
+            return Event.fromJson(eventJson);
+          }
+          // Some server builds may return the raw event object directly.
+          if (data['id'] is String &&
+              data['pubkey'] is String &&
+              data['created_at'] != null &&
+              data['kind'] != null) {
+            return Event.fromJson(data);
+          }
+        }
+        throw const FunnelcakeException('Malformed video event response');
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch video event',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch video event: $e');
     }
   }
 
