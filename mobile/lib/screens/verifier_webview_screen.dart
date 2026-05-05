@@ -1,5 +1,5 @@
 // ABOUTME: In-app WebView host for https://verifier.divine.video.
-// ABOUTME: User completes external-account verification; verifier publishes kind 0 directly.
+// ABOUTME: User completes external-account verification; verifier publishes the kind 0 update directly.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
