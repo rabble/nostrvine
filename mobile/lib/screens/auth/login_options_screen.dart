@@ -123,6 +123,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
   late FocusNode _emailFocusNode;
   late FocusNode _passwordFocusNode;
   bool _isConnectingAmber = false;
+  bool _isConnectingNip07 = false;
 
   @override
   void initState() {
@@ -151,6 +152,34 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _connectWithNip07() async {
+    setState(() => _isConnectingNip07 = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final result = await authService.connectWithNip07();
+
+      if (!mounted) return;
+
+      if (result.success) {
+        context.go('/');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.errorMessage ?? context.l10n.authNip07ConnectionFailed,
+            ),
+            backgroundColor: VineTheme.error,
+          ),
+        );
+        authService.clearError();
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConnectingNip07 = false);
+      }
+    }
   }
 
   Future<void> _connectWithAmber() async {
@@ -222,7 +251,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
   @override
   Widget build(BuildContext context) {
     final isSubmitting = widget.state.isSubmitting;
-    final isDisabled = isSubmitting || _isConnectingAmber;
+    final isDisabled = isSubmitting || _isConnectingAmber || _isConnectingNip07;
+    final isNip07Available = ref.watch(authServiceProvider).isNip07Available;
 
     return CustomScrollView(
       slivers: [
@@ -243,7 +273,10 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                     RoundedIconButton(
                       onPressed: isDisabled
                           ? null
-                          : () => _showInfoSheet(context),
+                          : () => _showInfoSheet(
+                              context,
+                              showNip07: isNip07Available,
+                            ),
                       icon: const Icon(
                         Icons.info_outline,
                         color: VineTheme.vineGreenLight,
@@ -374,6 +407,17 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                       : () => context.push(NostrConnectScreen.path),
                 ),
 
+                if (isNip07Available) ...[
+                  const SizedBox(height: 12),
+                  DivineButton(
+                    type: .secondary,
+                    expanded: true,
+                    label: context.l10n.authSignInWithBrowserExtension,
+                    isLoading: _isConnectingNip07,
+                    onPressed: isDisabled ? null : _connectWithNip07,
+                  ),
+                ],
+
                 if (!kIsWeb &&
                     defaultTargetPlatform == TargetPlatform.android) ...[
                   const SizedBox(height: 12),
@@ -396,7 +440,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
   }
 }
 
-void _showInfoSheet(BuildContext context) {
+void _showInfoSheet(BuildContext context, {required bool showNip07}) {
   VineBottomSheet.show<void>(
     context: context,
     title: Text(context.l10n.authSignInOptionsTitle),
@@ -424,6 +468,14 @@ void _showInfoSheet(BuildContext context) {
             title: sheetContext.l10n.authInfoSignerAppTitle,
             description: sheetContext.l10n.authInfoSignerAppDescription,
           ),
+          if (showNip07) ...[
+            const SizedBox(height: 16),
+            _InfoItem(
+              title: sheetContext.l10n.authInfoBrowserExtensionTitle,
+              description:
+                  sheetContext.l10n.authInfoBrowserExtensionDescription,
+            ),
+          ],
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
             const SizedBox(height: 16),
             _InfoItem(

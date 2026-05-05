@@ -335,6 +335,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
 
+  /// True only on web targets where `window.nostr` (a NIP-07 extension) is
+  /// reachable. Used by the welcome screen to decide whether to surface the
+  /// browser-extension sign-in button.
+  bool get isNip07Available {
+    if (!kIsWeb && _injectedNip07ServiceForTest == null) return false;
+    return (_injectedNip07ServiceForTest ?? Nip07Service()).isAvailable;
+  }
+
   /// Current RPC capability state.
   AuthRpcCapability get authRpcCapability => _authRpcCapability;
 
