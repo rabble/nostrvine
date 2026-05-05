@@ -613,50 +613,117 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     )
                   : null;
 
-              // Note: RefreshIndicator removed - it conflicts with PageView
-              // scrolling and adds memory overhead. Use the refresh button
-              // instead.
-              return Stack(
-                children: [
-                  if (kIsWeb)
-                    WebVideoFeed(
-                      key: _webFeedKey,
-                      videos: state.videos
-                          .where((v) => v.videoUrl != null)
-                          .toList(),
-                      controllerFactory:
-                          widget.webControllerFactory ??
-                          defaultWebVideoPlayerControllerFactory,
-                      authHeaderProvider: webAuthHeaderProvider,
-                      onActiveVideoChanged: (video, index) {
-                        _currentWebIndex = index;
-                        _pagePosition.value = index.toDouble();
-                        _resumeAutoAdvanceAfterSwipe();
-                      },
-                      onCompleted: (_) => _handleAutoAdvanceCompleted(),
-                      onErrored: _handleWebPlayerErrored,
-                      onRequiresAuth: _handleWebPlayerRequiresAuth,
-                      onNearEnd: (index) {
-                        if (state.hasMore) {
-                          context.read<VideoFeedBloc>().add(
-                            const VideoFeedLoadMoreRequested(),
-                          );
-                        }
-                      },
-                      itemBuilder:
-                          (
-                            context,
-                            video,
-                            index, {
-                            required isActive,
-                            controller,
-                          }) {
+              // Pull-to-refresh: a [RefreshIndicator] wraps the feed and
+              // listens for overscroll notifications from the inner
+              // [PageView]. The default predicate (depth == 0) restricts the
+              // gesture to the outermost scrollable, so inner overlay
+              // scrollables can't trigger a refresh. The PooledVideoFeed
+              // below is given [AlwaysScrollableScrollPhysics] so Android
+              // also produces the start-edge overscroll the indicator needs.
+              return RefreshIndicator(
+                onRefresh: () => _refreshFeed(context),
+                child: Stack(
+                  children: [
+                    if (kIsWeb)
+                      WebVideoFeed(
+                        key: _webFeedKey,
+                        videos: state.videos
+                            .where((v) => v.videoUrl != null)
+                            .toList(),
+                        controllerFactory:
+                            widget.webControllerFactory ??
+                            defaultWebVideoPlayerControllerFactory,
+                        authHeaderProvider: webAuthHeaderProvider,
+                        onActiveVideoChanged: (video, index) {
+                          _currentWebIndex = index;
+                          _pagePosition.value = index.toDouble();
+                          _resumeAutoAdvanceAfterSwipe();
+                        },
+                        onCompleted: (_) => _handleAutoAdvanceCompleted(),
+                        onErrored: _handleWebPlayerErrored,
+                        onRequiresAuth: _handleWebPlayerRequiresAuth,
+                        onNearEnd: (index) {
+                          if (state.hasMore) {
+                            context.read<VideoFeedBloc>().add(
+                              const VideoFeedLoadMoreRequested(),
+                            );
+                          }
+                        },
+                        itemBuilder:
+                            (
+                              context,
+                              video,
+                              index, {
+                              required isActive,
+                              controller,
+                            }) {
+                              final listSources =
+                                  state.listOnlyVideoIds.contains(video.id)
+                                  ? state.videoListSources[video.id]
+                                  : null;
+                              return _WebVideoFeedItem(
+                                video: video,
+                                index: index,
+                                isActive: isActive,
+                                pagePosition: _pagePosition,
+                                contextTitle: state.mode.name,
+                                listSources: listSources,
+                                showAutoButton: autoAdvanceAvailable,
+                                isAutoEnabled: effectiveAutoEnabled,
+                                feedController: null,
+                                onAutoPressed: _toggleAutoAdvance,
+                                onInteracted: _suppressAutoAdvance,
+                              );
+                            },
+                      )
+                    else
+                      KeyedSubtree(
+                        key: ValueKey(state.mode),
+                        child: PooledVideoFeed(
+                          key: _feedKey,
+                          videos: pooledVideos,
+                          maxLoopDuration: VideoEditorConstants.maxDuration,
+                          controller: controller,
+                          // Force always-scrollable physics so Android also
+                          // produces the start-edge OverscrollNotification
+                          // that the wrapping [RefreshIndicator] needs to
+                          // trigger pull-to-refresh from page 0.
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: PageScrollPhysics(),
+                          ),
+                          onScrollOffsetChanged: (page) =>
+                              _pagePosition.value = page,
+                          itemBuilder: (context, video, index, {required isActive}) {
+                            final originalEvent = eventsById[video.id];
+                            if (originalEvent == null) {
+                              Log.debug(
+                                'Feed item missing original event: '
+                                'mode=${state.mode.name}, index=$index, '
+                                'videoId=${video.id}, playbackUrl=${video.url}, '
+                                'stateVideoCount=${state.videos.length}',
+                                name: 'VideoFeedPage',
+                                category: LogCategory.video,
+                              );
+                              return const ColoredBox(
+                                color: VineTheme.backgroundColor,
+                              );
+                            }
+                            Log.debug(
+                              'Feed item build: mode=${state.mode.name}, index=$index, '
+                              'eventId=${originalEvent.id}, isActive=$isActive, '
+                              'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
+                              'thumbnailUrl=${originalEvent.thumbnailUrl}',
+                              name: 'VideoFeedPage',
+                              category: LogCategory.video,
+                            );
                             final listSources =
-                                state.listOnlyVideoIds.contains(video.id)
-                                ? state.videoListSources[video.id]
+                                state.listOnlyVideoIds.contains(
+                                  originalEvent.id,
+                                )
+                                ? state.videoListSources[originalEvent.id]
                                 : null;
-                            return _WebVideoFeedItem(
-                              video: video,
+                            return _PooledVideoFeedItem(
+                              video: originalEvent,
                               index: index,
                               isActive: isActive,
                               pagePosition: _pagePosition,
@@ -664,104 +731,73 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                               listSources: listSources,
                               showAutoButton: autoAdvanceAvailable,
                               isAutoEnabled: effectiveAutoEnabled,
-                              feedController: null,
+                              isAutoAdvanceActive: effectiveAutoActive,
                               onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
+                              onAutoAdvanceCompleted:
+                                  _handleAutoAdvanceCompleted,
                             );
                           },
-                    )
-                  else
-                    KeyedSubtree(
-                      key: ValueKey(state.mode),
-                      child: PooledVideoFeed(
-                        key: _feedKey,
-                        videos: pooledVideos,
-                        maxLoopDuration: VideoEditorConstants.maxDuration,
-                        controller: controller,
-                        onScrollOffsetChanged: (page) =>
-                            _pagePosition.value = page,
-                        itemBuilder: (context, video, index, {required isActive}) {
-                          final originalEvent = eventsById[video.id];
-                          if (originalEvent == null) {
-                            Log.debug(
-                              'Feed item missing original event: '
-                              'mode=${state.mode.name}, index=$index, '
-                              'videoId=${video.id}, playbackUrl=${video.url}, '
-                              'stateVideoCount=${state.videos.length}',
-                              name: 'VideoFeedPage',
-                              category: LogCategory.video,
+                          onActiveVideoChanged: (video, index) {
+                            _resumeAutoAdvanceAfterSwipe();
+                            FeedPerformanceTracker().startVideoSwipeTracking(
+                              video.id,
                             );
-                            return const ColoredBox(
-                              color: VineTheme.backgroundColor,
+                            final sourceIndex = state.videos.indexWhere(
+                              (event) => event.id == video.id,
                             );
-                          }
-                          Log.debug(
-                            'Feed item build: mode=${state.mode.name}, index=$index, '
-                            'eventId=${originalEvent.id}, isActive=$isActive, '
-                            'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
-                            'thumbnailUrl=${originalEvent.thumbnailUrl}',
-                            name: 'VideoFeedPage',
-                            category: LogCategory.video,
-                          );
-                          final listSources =
-                              state.listOnlyVideoIds.contains(originalEvent.id)
-                              ? state.videoListSources[originalEvent.id]
-                              : null;
-                          return _PooledVideoFeedItem(
-                            video: originalEvent,
-                            index: index,
-                            isActive: isActive,
-                            pagePosition: _pagePosition,
-                            contextTitle: state.mode.name,
-                            listSources: listSources,
-                            showAutoButton: autoAdvanceAvailable,
-                            isAutoEnabled: effectiveAutoEnabled,
-                            isAutoAdvanceActive: effectiveAutoActive,
-                            onAutoPressed: _toggleAutoAdvance,
-                            onInteracted: _suppressAutoAdvance,
-                            onAutoAdvanceCompleted: _handleAutoAdvanceCompleted,
-                          );
-                        },
-                        onActiveVideoChanged: (video, index) {
-                          _resumeAutoAdvanceAfterSwipe();
-                          FeedPerformanceTracker().startVideoSwipeTracking(
-                            video.id,
-                          );
-                          final sourceIndex = state.videos.indexWhere(
-                            (event) => event.id == video.id,
-                          );
-                          if (sourceIndex != -1) {
-                            final event = state.videos[sourceIndex];
-                            Log.info(
-                              '📺 Feed active video: mode=${state.mode.name}, '
-                              'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
-                              'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
-                              'thumbnailUrl=${event.thumbnailUrl}',
-                              name: 'VideoFeedPage',
-                              category: LogCategory.video,
-                            );
-                          }
-                        },
-                        onNearEnd: (index) {
-                          // PooledVideoFeed fires this when the user is within
-                          // nearEndThreshold (default 3) of the end, using the
-                          // controller's actual video count (not the BlocBuilder's
-                          // list length, which may differ due to deduplication).
-                          if (state.hasMore) {
-                            context.read<VideoFeedBloc>().add(
-                              const VideoFeedLoadMoreRequested(),
-                            );
-                          }
-                        },
+                            if (sourceIndex != -1) {
+                              final event = state.videos[sourceIndex];
+                              Log.info(
+                                '📺 Feed active video: mode=${state.mode.name}, '
+                                'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
+                                'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
+                                'thumbnailUrl=${event.thumbnailUrl}',
+                                name: 'VideoFeedPage',
+                                category: LogCategory.video,
+                              );
+                            }
+                          },
+                          onNearEnd: (index) {
+                            // PooledVideoFeed fires this when the user is within
+                            // nearEndThreshold (default 3) of the end, using the
+                            // controller's actual video count (not the BlocBuilder's
+                            // list length, which may differ due to deduplication).
+                            if (state.hasMore) {
+                              context.read<VideoFeedBloc>().add(
+                                const VideoFeedLoadMoreRequested(),
+                              );
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  const FeedModeSwitch(),
-                ],
+                    const FeedModeSwitch(),
+                  ],
+                ),
               );
             },
           ),
         ),
       ),
+    );
+  }
+
+  /// Dispatches a refresh and resolves when the bloc settles.
+  ///
+  /// The [RefreshIndicator] keeps its spinner visible until the returned
+  /// future completes, so we await the next non-loading state instead of
+  /// resolving immediately on dispatch. If the bloc is disposed before
+  /// settling (e.g. the user leaves the screen mid-refresh) the stream
+  /// closes without matching and [Stream.firstWhere] returns the bloc's
+  /// last known state via `orElse`.
+  Future<void> _refreshFeed(BuildContext context) async {
+    final bloc = context.read<VideoFeedBloc>();
+    bloc.add(const VideoFeedRefreshRequested());
+    await bloc.stream.firstWhere(
+      (s) =>
+          s.status == VideoFeedStatus.success ||
+          s.status == VideoFeedStatus.failure,
+      orElse: () => bloc.state,
     );
   }
 }

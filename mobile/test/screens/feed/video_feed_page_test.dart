@@ -694,6 +694,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(const VideoFeedStarted());
+      registerFallbackValue(const VideoFeedRefreshRequested());
     });
 
     Widget buildSubject(VideoFeedState state) {
@@ -718,6 +719,18 @@ void main() {
       );
     }
 
+    void stubControllerForVideo(VideoEvent video) {
+      when(() => videoFeedController.videoCount).thenReturn(1);
+      when(
+        () => videoFeedController.videos,
+      ).thenReturn([VideoItem(id: video.id, url: video.videoUrl!)]);
+      when(() => videoFeedController.currentIndex).thenReturn(0);
+      when(() => videoFeedController.onPageChanged(any())).thenReturn(null);
+      when(
+        () => videoFeedController.getIndexNotifier(any()),
+      ).thenReturn(ValueNotifier(const VideoIndexState()));
+    }
+
     testWidgets(
       'renders native pooled feed with a GlobalKey for programmatic control',
       (tester) async {
@@ -727,15 +740,7 @@ void main() {
           videos: [testVideo],
         );
 
-        when(() => videoFeedController.videoCount).thenReturn(1);
-        when(
-          () => videoFeedController.videos,
-        ).thenReturn([VideoItem(id: testVideo.id, url: testVideo.videoUrl!)]);
-        when(() => videoFeedController.currentIndex).thenReturn(0);
-        when(() => videoFeedController.onPageChanged(any())).thenReturn(null);
-        when(
-          () => videoFeedController.getIndexNotifier(any()),
-        ).thenReturn(ValueNotifier(const VideoIndexState()));
+        stubControllerForVideo(testVideo);
 
         await tester.pumpWidget(buildSubject(state));
         await tester.pump();
@@ -745,6 +750,63 @@ void main() {
         );
 
         expect(pooledVideoFeed.key, isA<GlobalKey<PooledVideoFeedState>>());
+      },
+    );
+
+    testWidgets(
+      'wraps the loaded feed in a RefreshIndicator that dispatches '
+      'VideoFeedRefreshRequested on pull',
+      (tester) async {
+        final testVideo = createTestVideoEvent();
+        final state = VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: [testVideo],
+        );
+
+        stubControllerForVideo(testVideo);
+
+        await tester.pumpWidget(buildSubject(state));
+        await tester.pump();
+
+        expect(find.byType(RefreshIndicator), findsOneWidget);
+
+        final indicator = tester.widget<RefreshIndicator>(
+          find.byType(RefreshIndicator),
+        );
+        // _refreshFeed awaits bloc.stream which the mock never emits, so
+        // we don't await — the event is added synchronously.
+        unawaited(indicator.onRefresh());
+        await tester.pump();
+
+        verify(
+          () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'forces always-scrollable physics so Android produces the start-edge '
+      'overscroll the RefreshIndicator listens for',
+      (tester) async {
+        final testVideo = createTestVideoEvent();
+        final state = VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: [testVideo],
+        );
+
+        stubControllerForVideo(testVideo);
+
+        await tester.pumpWidget(buildSubject(state));
+        await tester.pump();
+
+        final pooledVideoFeed = tester.widget<PooledVideoFeed>(
+          find.byType(PooledVideoFeed),
+        );
+
+        expect(
+          pooledVideoFeed.physics,
+          isA<AlwaysScrollableScrollPhysics>(),
+        );
       },
     );
   });

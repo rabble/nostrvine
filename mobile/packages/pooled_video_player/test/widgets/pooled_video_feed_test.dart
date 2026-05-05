@@ -47,6 +47,7 @@ void main() {
       OnActiveVideoChanged? onActiveVideoChanged,
       void Function(int)? onNearEnd,
       int nearEndThreshold = 3,
+      ScrollPhysics? physics,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -61,6 +62,7 @@ void main() {
             onActiveVideoChanged: onActiveVideoChanged,
             onNearEnd: onNearEnd,
             nearEndThreshold: nearEndThreshold,
+            physics: physics,
             itemBuilder: (context, video, index, {required isActive}) {
               return ColoredBox(
                 key: Key('video_item_$index'),
@@ -106,6 +108,28 @@ void main() {
 
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.scrollDirection, equals(Axis.horizontal));
+      });
+
+      testWidgets('defaults physics to null (PageView default)', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildFeed());
+
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.physics, isNull);
+      });
+
+      testWidgets('forwards a custom physics to the inner PageView', (
+        tester,
+      ) async {
+        const physics = AlwaysScrollableScrollPhysics(
+          parent: PageScrollPhysics(),
+        );
+
+        await tester.pumpWidget(buildFeed(physics: physics));
+
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.physics, same(physics));
       });
     });
 
