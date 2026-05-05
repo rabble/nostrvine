@@ -11,6 +11,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/subtitle_service.dart';
+import 'package:openvine/services/transcript_sanitizer.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'subtitle_providers.g.dart';
@@ -51,6 +52,45 @@ Uri? _parseHttpSubtitleUrl(String? textTrackRef) {
   return uri;
 }
 
+/// Parses VTT and strips leaked LLM prompt directives from each cue.
+///
+/// Single funnel for all four subtitle sources (REST embedded, direct HTTP,
+/// Blossom, relay). The transcription pipeline occasionally appends prompt
+/// scaffolding to cue text (#3737); sanitization is content-level domain
+/// logic and lives at this composition layer rather than in the VTT parser.
+List<SubtitleCue> _parseAndSanitize(String vtt) {
+  final raw = SubtitleService.parseVtt(vtt);
+  final cleaned = <SubtitleCue>[];
+  var truncated = 0;
+  var dropped = 0;
+
+  for (final cue in raw) {
+    final sanitized = TranscriptSanitizer.sanitize(cue.text);
+    if (sanitized == null || sanitized.isEmpty) {
+      dropped++;
+      continue;
+    }
+    if (sanitized != cue.text) {
+      truncated++;
+      cleaned.add(
+        SubtitleCue(start: cue.start, end: cue.end, text: sanitized),
+      );
+    } else {
+      cleaned.add(cue);
+    }
+  }
+
+  if (truncated > 0 || dropped > 0) {
+    developer.log(
+      'Sanitized leaked prompt directives from cues '
+      '(truncated=$truncated, dropped=$dropped)',
+      name: 'subtitleCues',
+    );
+  }
+
+  return cleaned;
+}
+
 Future<List<SubtitleCue>?> _fetchBlossomSubtitles({
   required http.Client client,
   required SubtitlePollDelay delay,
@@ -62,7 +102,7 @@ Future<List<SubtitleCue>?> _fetchBlossomSubtitles({
     final response = await client.get(vttUrl);
 
     if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-      return SubtitleService.parseVtt(response.body);
+      return _parseAndSanitize(response.body);
     }
 
     if (response.statusCode == 202) {
@@ -109,7 +149,7 @@ Future<List<SubtitleCue>> subtitleCues(
 }) async {
   // Fast path: REST API already embedded the VTT content
   if (textTrackContent != null && textTrackContent.isNotEmpty) {
-    return SubtitleService.parseVtt(textTrackContent);
+    return _parseAndSanitize(textTrackContent);
   }
 
   final directSubtitleUrl = _parseHttpSubtitleUrl(textTrackRef);
@@ -118,7 +158,7 @@ Future<List<SubtitleCue>> subtitleCues(
     try {
       final response = await client.get(directSubtitleUrl);
       if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-        return SubtitleService.parseVtt(response.body);
+        return _parseAndSanitize(response.body);
       }
     } catch (e) {
       developer.log(
@@ -176,7 +216,7 @@ Future<List<SubtitleCue>> subtitleCues(
   );
 
   if (events.isEmpty) return [];
-  return SubtitleService.parseVtt(events.first.content);
+  return _parseAndSanitize(events.first.content);
 }
 
 /// Tracks global subtitle visibility (CC on/off).

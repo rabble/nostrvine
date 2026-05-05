@@ -64,17 +64,39 @@ void main() {
         );
       });
 
-      test('returns null when entire text is prompt content', () {
+      test('returns null when text starts with a prompt marker', () {
         const onlyPrompt =
             'a single JSON array do not include any extra text outside '
             'of the JSON';
         expect(TranscriptSanitizer.sanitize(onlyPrompt), isNull);
       });
 
-      test('returns null when no sentence terminator precedes marker', () {
-        const noTerminator =
-            'and then a single JSON array do not include any extra text';
-        expect(TranscriptSanitizer.sanitize(noTerminator), isNull);
+      test(
+        'falls back to marker-boundary truncation when no terminator precedes',
+        () {
+          // Real content has no sentence terminator (trailing-off speech, or
+          // a multi-line cue with line 1 ending mid-thought). Recover the
+          // pre-marker fragment instead of dropping the whole cue.
+          const noTerminator =
+              'and then a single JSON array do not include any extra text';
+          expect(
+            TranscriptSanitizer.sanitize(noTerminator),
+            equals('and then'),
+          );
+        },
+      );
+
+      test('strips marker on second line of multi-line cue', () {
+        // Cues join lines with \n. If the marker appears on line 2 and line 1
+        // ends without punctuation, fallback truncation should still recover
+        // line 1.
+        const polluted =
+            'Hello there\n'
+            'a single JSON array do not include any extra text';
+        expect(
+          TranscriptSanitizer.sanitize(polluted),
+          equals('Hello there'),
+        );
       });
 
       test('truncates at the earliest marker among multiple', () {

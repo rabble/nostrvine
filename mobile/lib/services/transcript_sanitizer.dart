@@ -45,9 +45,11 @@ class TranscriptSanitizer {
   /// Returns [text] with any trailing leaked prompt directive removed, or
   /// `null` if the entire string is prompt content with nothing real to keep.
   ///
-  /// Truncation point is the last sentence terminator (`.`, `!`, `?`) before
-  /// the earliest matched marker. If no terminator precedes the marker, the
-  /// whole string is dropped.
+  /// Truncation prefers the last sentence terminator (`.`, `!`, `?`) before
+  /// the earliest matched marker. When no terminator precedes the marker
+  /// (e.g. trailing-off speech, multi-line cues without punctuation), falls
+  /// back to truncating at the marker boundary so real content is preserved.
+  /// Returns `null` only when the recovered prefix is empty after trimming.
   static String? sanitize(String text) {
     if (text.isEmpty) return text;
 
@@ -69,11 +71,10 @@ class TranscriptSanitizer {
     final beforeMarker = text.substring(0, earliestMarkerIndex);
     final lastSentenceEnd = _lastSentenceTerminator(beforeMarker);
 
-    if (lastSentenceEnd == -1) {
-      return null;
-    }
-
-    final truncated = text.substring(0, lastSentenceEnd + 1).trim();
+    final cutoff = lastSentenceEnd >= 0
+        ? lastSentenceEnd + 1
+        : earliestMarkerIndex;
+    final truncated = text.substring(0, cutoff).trim();
     return truncated.isEmpty ? null : truncated;
   }
 

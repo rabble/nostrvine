@@ -457,6 +457,132 @@ void main() {
       expect(cues, isEmpty);
     });
   });
+
+  group('subtitleCues prompt-leak sanitization (#3737)', () {
+    test(
+      'strips leaked LLM directives from embedded textTrackContent',
+      () async {
+        final container = createContainer();
+        addTearDown(container.dispose);
+
+        // Verbatim VTT served by media.divine.video for the issue's video.
+        const pollutedVtt =
+            'WEBVTT\n'
+            '\n'
+            '1\n'
+            '00:00:00.000 --> 00:00:01.000\n'
+            'And I promise you, if I get elected, freedom is the only '
+            "option. Well, that's not really freedom now, is it, you "
+            'freaking idiot? a single JSON array. Do not include any '
+            'extra text outside of the JSON string. When producing '
+            'JSON you must follow the schema provided in the context.\n';
+
+        final cues = await container.read(
+          subtitleCuesProvider(
+            videoId: 'test-id',
+            textTrackContent: pollutedVtt,
+          ).future,
+        );
+
+        expect(cues, hasLength(1));
+        expect(
+          cues[0].text,
+          equals(
+            'And I promise you, if I get elected, freedom is the only '
+            "option. Well, that's not really freedom now, is it, you "
+            'freaking idiot?',
+          ),
+        );
+      },
+    );
+
+    test('strips leaked LLM directives from Blossom-served VTT', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      const pollutedVtt =
+          'WEBVTT\n'
+          '\n'
+          '1\n'
+          '00:00:00.000 --> 00:00:01.000\n'
+          'Hello world. a single JSON array. Do not include any extra '
+          'text outside of the JSON.\n';
+
+      when(() => mockHttpClient.get(any())).thenAnswer(
+        (_) async => http.Response(pollutedVtt, 200),
+      );
+
+      final cues = await container.read(
+        subtitleCuesProvider(videoId: 'test-id', sha256: 'abc123').future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues[0].text, equals('Hello world.'));
+    });
+
+    test('strips leaked LLM directives from relay-served VTT', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      when(
+        () => mockNostrClient.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          Event(
+            testPubkey,
+            39307,
+            [
+              ['d', 'subtitles:test-vine-id'],
+              ['m', 'text/vtt'],
+            ],
+            'WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\n'
+            'Real line! When producing JSON you must follow the schema.\n',
+            createdAt: 1757385263,
+          ),
+        ],
+      );
+
+      final cues = await container.read(
+        subtitleCuesProvider(
+          videoId: 'test-id',
+          textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
+        ).future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues[0].text, equals('Real line!'));
+    });
+
+    test('drops cue whose entire text is prompt content', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      const pollutedVtt =
+          'WEBVTT\n'
+          '\n'
+          '1\n'
+          '00:00:00.000 --> 00:00:01.000\n'
+          'a single JSON array do not include any extra text\n'
+          '\n'
+          '2\n'
+          '00:00:01.000 --> 00:00:02.000\n'
+          'Real caption.\n';
+
+      final cues = await container.read(
+        subtitleCuesProvider(
+          videoId: 'test-id',
+          textTrackContent: pollutedVtt,
+        ).future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues[0].text, equals('Real caption.'));
+      expect(cues[0].start, equals(1000));
+    });
+  });
 }
 
 /// Fake Notifier that returns a pre-configured mock NostrClient.
