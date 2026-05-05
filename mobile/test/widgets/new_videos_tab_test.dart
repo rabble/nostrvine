@@ -45,9 +45,8 @@ void main() {
         ),
       ).thenAnswer((_) async => [_video('popular-video')]);
       when(() => videoEventService.filterVideoList(any())).thenAnswer(
-        (invocation) => List<VideoEvent>.from(
-          invocation.positionalArguments.first as List,
-        ),
+        (invocation) =>
+            List<VideoEvent>.from(invocation.positionalArguments.first as List),
       );
       when(
         () => blocklistRepository.shouldFilterFromFeeds(any()),
@@ -89,6 +88,46 @@ void main() {
           skipCache: any(named: 'skipCache'),
         ),
       );
+    });
+
+    testWidgets('pull-to-refresh bypasses repository cache on retry', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testMaterialApp(
+          additionalOverrides: [
+            appReadyProvider.overrideWithValue(true),
+            videosRepositoryProvider.overrideWithValue(videosRepository),
+            videoEventServiceProvider.overrideWithValue(videoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              blocklistRepository,
+            ),
+          ],
+          home: const Scaffold(body: NewVideosTab()),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final refreshIndicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      await refreshIndicator.onRefresh();
+      await tester.pumpAndSettle();
+
+      verify(
+        () => videosRepository.getNewVideos(
+          limit: any(named: 'limit'),
+          until: any(named: 'until'),
+        ),
+      ).called(1);
+      verify(
+        () => videosRepository.getNewVideos(
+          limit: any(named: 'limit'),
+          until: any(named: 'until'),
+          skipCache: true,
+        ),
+      ).called(1);
     });
   });
 }

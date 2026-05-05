@@ -4403,8 +4403,17 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           eventList.insert(0, videoEvent);
         }
 
-      case SubscriptionType.editorial:
       case SubscriptionType.popularNow:
+        // Chronological feed: live → newest-first, historical → append.
+        // Matches PopularNowFeed downstream sort and Explore expectations;
+        // relay batch order alone is not trustworthy.
+        if (isHistorical) {
+          eventList.add(videoEvent);
+        } else {
+          eventList.insert(0, videoEvent);
+        }
+
+      case SubscriptionType.editorial:
       case SubscriptionType.trending:
         // Editorial/trending: maintain order from server (always append)
         eventList.add(videoEvent);
