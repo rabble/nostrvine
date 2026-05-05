@@ -19,8 +19,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -382,10 +380,21 @@ class _ProfileSetupScreenViewState
             final verifyer = preloadedNostrApps.firstWhere(
               (app) => app.slug == 'verifyer',
             );
-            await context.push(
-              NostrAppSandboxScreen.pathForAppId(verifyer.id),
-              extra: verifyer,
-            );
+            if (nostrAppsSandboxSupported) {
+              await context.push(
+                NostrAppSandboxScreen.pathForAppId(verifyer.id),
+                extra: verifyer,
+              );
+            } else {
+              // Flutter web cannot run the integrated-apps sandbox
+              // (webview_flutter is mobile-only). Fall back to opening
+              // verifyer.divine.video in a new tab so the entry point
+              // still works for web users.
+              await launchUrl(
+                Uri.parse(verifyer.launchUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            }
             editorBloc.add(const VerifierWebViewDismissed());
             myProfileBloc.add(const MyProfileFetchRequested());
           },
@@ -2272,11 +2281,11 @@ class _PublicKeyLink extends StatelessWidget {
   }
 }
 
-class _VerifiedAccountsSection extends ConsumerWidget {
+class _VerifiedAccountsSection extends StatelessWidget {
   const _VerifiedAccountsSection();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final claims = context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
       final state = bloc.state;
@@ -2284,12 +2293,6 @@ class _VerifiedAccountsSection extends ConsumerWidget {
       if (state is MyProfileUpdated) return state.verifiedClaims;
       return const [];
     });
-    final canVerify =
-        nostrAppsSandboxSupported &&
-        ref.watch(isFeatureEnabledProvider(FeatureFlag.integratedApps));
-    if (claims.isEmpty && !canVerify) {
-      return const SizedBox.shrink();
-    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -2309,7 +2312,7 @@ class _VerifiedAccountsSection extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
           ],
-          if (canVerify) const _GetVerifiedTile(),
+          const _GetVerifiedTile(),
         ],
       ),
     );
