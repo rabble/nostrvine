@@ -130,13 +130,15 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
         }
         Log.warning(
-          '🆕 PopularNowFeed: REST API returned empty, falling back to Nostr',
+          'PopularNowFeed: Funnelcake REST returned no videos; '
+          'falling back to Nostr relay WebSocket (monitoring: rest_to_relay_fallback)',
           name: 'PopularNowFeedProvider',
           category: LogCategory.video,
         );
       } catch (e) {
         Log.warning(
-          '🆕 PopularNowFeed: REST API failed ($e), falling back to Nostr',
+          'PopularNowFeed: Funnelcake REST failed ($e); '
+          'falling back to Nostr relay WebSocket (monitoring: rest_to_relay_fallback)',
           name: 'PopularNowFeedProvider',
           category: LogCategory.video,
         );
@@ -451,9 +453,16 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
           return;
         }
+        Log.warning(
+          'PopularNowFeed: Funnelcake REST refresh returned empty; '
+          'falling back to Nostr relay WebSocket (monitoring: rest_to_relay_fallback)',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
       } catch (e) {
         Log.warning(
-          '🆕 PopularNowFeed: REST API refresh failed, falling back to Nostr',
+          'PopularNowFeed: Funnelcake REST refresh failed ($e); '
+          'falling back to Nostr relay WebSocket (monitoring: rest_to_relay_fallback)',
           name: 'PopularNowFeedProvider',
           category: LogCategory.video,
         );

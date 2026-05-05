@@ -341,7 +341,9 @@ class ProfileFeed extends _$ProfileFeed {
       }
     } catch (e) {
       Log.warning(
-        'ProfileFeed: REST API refresh failed ($e)',
+        'ProfileFeed: Funnelcake REST refresh failed for user=$userId ($e). '
+        'Parallel Nostr relay WebSocket path still runs from refresh '
+        '(monitoring: rest_to_relay_fallback)',
         name: 'ProfileFeedProvider',
         category: LogCategory.video,
       );
