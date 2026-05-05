@@ -6613,7 +6613,8 @@ void main() {
               'd695f6b60119d9521934a691347d9f78'
               'e8770b56da16bb255ee77ac112b4c1f6';
           const author =
-              '4bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+              '4bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
           const dTag = 'my-vine-id';
           // Raw addressable coordinate as produced by
           // VideoNotification.videoAddressableId — no bech32 encoding.
@@ -6635,8 +6636,9 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result =
-              await repo.fetchVideoWithStatsForRouteId(rawAddressableId);
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            rawAddressableId,
+          );
 
           expect(result, isNotNull);
           expect(result!.id, equals(eventId));
