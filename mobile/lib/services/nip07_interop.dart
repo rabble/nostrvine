@@ -40,6 +40,22 @@ class NostrExtension {
 
   /// NIP-04 encryption (optional)
   NIP04? get nip04 => null;
+
+  /// NIP-44 encryption (optional)
+  NIP44? get nip44 => null;
+}
+
+/// NIP-44 encryption interface (optional extension feature)
+class NIP44 {
+  const NIP44();
+
+  Future<String> encrypt(String pubkey, String plaintext) async {
+    throw UnsupportedError('NIP-44 only available on web');
+  }
+
+  Future<String> decrypt(String pubkey, String ciphertext) async {
+    throw UnsupportedError('NIP-44 only available on web');
+  }
 }
 
 /// NIP-04 encryption interface (optional extension feature)
