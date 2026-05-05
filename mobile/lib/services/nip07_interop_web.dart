@@ -50,8 +50,22 @@ class _WebNostrExtension implements NostrExtension {
 
   @override
   Future<Map<String, dynamic>> signEvent(Map<String, dynamic> event) async {
-    final jsResult = await _js.signEvent(event.jsify()! as JSObject).toDart;
-    return Map<String, dynamic>.from(jsResult.dartify()! as Map);
+    final jsObj = event.jsify();
+    if (jsObj == null) {
+      throw const Nip07Exception(
+        'Could not serialise event to JS',
+        code: 'SERIALISATION_ERROR',
+      );
+    }
+    final jsResult = await _js.signEvent(jsObj as JSObject).toDart;
+    final dartified = jsResult.dartify();
+    if (dartified is! Map) {
+      throw const Nip07Exception(
+        'Unexpected signEvent response shape from extension',
+        code: 'INVALID_RESPONSE',
+      );
+    }
+    return Map<String, dynamic>.from(dartified);
   }
 
   @override
@@ -65,7 +79,14 @@ class _WebNostrExtension implements NostrExtension {
     JSPromise<JSObject> promise,
   ) async {
     final jsResult = await promise.toDart;
-    return Map<String, dynamic>.from(jsResult.dartify()! as Map);
+    final dartified = jsResult.dartify();
+    if (dartified is! Map) {
+      throw const Nip07Exception(
+        'Unexpected getRelays response shape from extension',
+        code: 'INVALID_RESPONSE',
+      );
+    }
+    return Map<String, dynamic>.from(dartified);
   }
 
   @override
