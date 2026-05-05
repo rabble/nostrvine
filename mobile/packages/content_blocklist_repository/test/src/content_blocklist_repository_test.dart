@@ -498,6 +498,61 @@ void main() {
       },
     );
 
+    test(
+      'ignores stale older mute event after newer unmute event',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const muterPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+
+        final newerUnmuteEvent =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', 'some_other_pubkey'],
+                ],
+                '',
+                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+              )
+              ..id = 'newer-unmute-event-id'
+              ..sig = 'signature';
+
+        final olderMuteEvent =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', ourPubkey],
+                ],
+                '',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'older-mute-event-id'
+              ..sig = 'signature';
+
+        final controller = StreamController<Event>();
+
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => controller.stream);
+
+        await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+
+        controller.add(newerUnmuteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasMutedUs(muterPubkey), isFalse);
+
+        controller.add(olderMuteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasMutedUs(muterPubkey), isFalse);
+        expect(service.shouldFilterFromFeeds(muterPubkey), isFalse);
+
+        await controller.close();
+      },
+    );
+
     test('shouldFilterFromFeeds checks mutual mute blocklist', () async {
       const ourPubkey =
           '0000000000000000000000000000000000000000000000000000000000000001';

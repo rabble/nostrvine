@@ -75,6 +75,8 @@ void main() {
       when(
         () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
+      when(() => mockBlocklistRepository.hasMutedUs(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.hasBlockedUs(any())).thenReturn(false);
       when(
         () => mockVideoEventService.shouldHideVideo(any()),
       ).thenReturn(false);
@@ -295,8 +297,8 @@ void main() {
       );
     });
 
-    group('blocked author', () {
-      testWidgets('renders blocked message for filtered author', (
+    group('explicit route block filtering', () {
+      testWidgets('renders player for author filtered only from feeds', (
         tester,
       ) async {
         final video = createTestVideoEvent(
@@ -318,11 +320,13 @@ void main() {
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
         await tester.pump();
 
-        expect(find.text('This account is not available'), findsOneWidget);
-        expect(find.byKey(const Key('video-feed-placeholder')), findsNothing);
+        expect(find.text('This account is not available'), findsNothing);
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
       });
 
-      testWidgets('renders back button for blocked author', (tester) async {
+      testWidgets('renders player when author has blocked us', (
+        tester,
+      ) async {
         final video = createTestVideoEvent(
           id: 'blocked_video_id',
           pubkey: 'blocked_pubkey',
@@ -336,13 +340,14 @@ void main() {
           ),
         ).thenAnswer((_) async => video);
         when(
-          () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
+          () => mockBlocklistRepository.hasBlockedUs('blocked_pubkey'),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
         await tester.pump();
 
-        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
+        expect(find.text('This account is not available'), findsNothing);
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
       });
 
       testWidgets('renders exit button when video is hidden after load', (

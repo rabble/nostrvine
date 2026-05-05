@@ -238,27 +238,6 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       );
     }
 
-    // Check if video author has muted us (mutual mute blocking)
-    final blocklistRepository = ref.watch(contentBlocklistRepositoryProvider);
-    if (blocklistRepository.shouldFilterFromFeeds(_video!.pubkey)) {
-      return Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
-        appBar: DiVineAppBar(
-          title: '',
-          showBackButton: true,
-          onBackPressed: () => _handleExit(context),
-          backButtonSemanticLabel: 'Close video player',
-          backgroundMode: DiVineAppBarBackgroundMode.transparent,
-        ),
-        body: const Center(
-          child: Text(
-            'This account is not available',
-            style: TextStyle(color: VineTheme.lightText, fontSize: 16),
-          ),
-        ),
-      );
-    }
-
     // Display video in full-screen pooled player
     return widget.videoFeedBuilder?.call(_video!) ??
         PooledFullscreenVideoFeedScreen(
