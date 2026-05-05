@@ -246,6 +246,39 @@ void main() {
       );
 
       test(
+        'publishes a self-wrap when sender pubkey matches the signer',
+        () async {
+          final signer = LocalNostrSigner(_testPrivateKey);
+          final senderPublicKey = (await signer.getPublicKey())!;
+          final capturedEvents = <Event>[];
+
+          final matchingService = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: senderPublicKey,
+            nostrService: mockNostrClient,
+          );
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async {
+              final event = invocation.positionalArguments[0] as Event;
+              capturedEvents.add(event);
+              return event;
+            },
+          );
+
+          final result = await matchingService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(capturedEvents, hasLength(2));
+          expect(capturedEvents[0].kind, EventKind.giftWrap);
+          expect(capturedEvents[1].kind, EventKind.giftWrap);
+        },
+      );
+
+      test(
         'returns failure when signer throws during key refresh',
         () async {
           final mockSigner = _MockNostrSigner();
