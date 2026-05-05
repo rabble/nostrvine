@@ -551,10 +551,20 @@ void main() {
         pubkey: testPublicKey,
         amberSigner: mockSigner,
       );
+      final nip07 = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockSigner,
+      );
 
-      // All four variants expose the same pubkey — it's a final field,
+      // All five variants expose the same pubkey — it's a final field,
       // not a getter that reads from a mutable slot.
-      for (final identity in <NostrIdentity>[local, keycast, bunker, amber]) {
+      for (final identity in <NostrIdentity>[
+        local,
+        keycast,
+        bunker,
+        amber,
+        nip07,
+      ]) {
         expect(identity.pubkey, equals(testPublicKey));
       }
     });
