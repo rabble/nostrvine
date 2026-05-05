@@ -304,3 +304,53 @@ class AmberNostrIdentity extends NostrIdentity {
     // Amber signer lifecycle is managed by AuthService.
   }
 }
+
+/// Identity backed by a NIP-07 browser extension (Alby, nos2x, etc.).
+///
+/// All signing and encryption goes through the extension via
+/// [NostrSigner]; the local container is pub-key-only, so
+/// [signCanonicalPayload] is unsupported.
+class Nip07NostrIdentity extends NostrIdentity {
+  Nip07NostrIdentity({
+    required this.pubkey,
+    required NostrSigner nip07Signer,
+  }) : _nip07Signer = nip07Signer;
+
+  final NostrSigner _nip07Signer;
+
+  @override
+  final String pubkey;
+
+  @override
+  Future<String?> getPublicKey() async => pubkey;
+
+  @override
+  Future<Event?> signEvent(Event event) => _nip07Signer.signEvent(event);
+
+  @override
+  Future<String?> signCanonicalPayload(Uint8List payload) async => null;
+
+  @override
+  Future<Map?> getRelays() => _nip07Signer.getRelays();
+
+  @override
+  Future<String?> encrypt(String pubkey, String plaintext) =>
+      _nip07Signer.encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> decrypt(String pubkey, String ciphertext) =>
+      _nip07Signer.decrypt(pubkey, ciphertext);
+
+  @override
+  Future<String?> nip44Encrypt(String pubkey, String plaintext) =>
+      _nip07Signer.nip44Encrypt(pubkey, plaintext);
+
+  @override
+  Future<String?> nip44Decrypt(String pubkey, String ciphertext) =>
+      _nip07Signer.nip44Decrypt(pubkey, ciphertext);
+
+  @override
+  void close() {
+    // Extension lifecycle is managed by AuthService.
+  }
+}

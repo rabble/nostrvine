@@ -9,7 +9,12 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-VideoEvent _createVideoWithUrl(String url) {
+VideoEvent _createVideoWithUrl(String url, {Map<String, String>? rawTags}) {
+  final tags = <List<String>>[
+    ['url', url],
+    for (final entry in (rawTags ?? const <String, String>{}).entries)
+      [entry.key, entry.value],
+  ];
   final event = Event.fromJson({
     'id': 'aaaa1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
     'pubkey':
@@ -17,9 +22,7 @@ VideoEvent _createVideoWithUrl(String url) {
     'created_at': 1234567890,
     'kind': 34236,
     'content': '',
-    'tags': [
-      ['url', url],
-    ],
+    'tags': tags,
     'sig': 'cccc1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
   });
   return VideoEvent.fromNostrEvent(event);
@@ -185,6 +188,22 @@ void main() {
         video.getCacheableVideoUrlForPlatform(),
         equals('https://media.divine.video/$hash/720p.mp4'),
       );
+    });
+
+    test('skips single-file caching for original Vine raw blobs', () {
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash',
+        rawTags: const {'platform': 'vine'},
+      );
+
+      expect(video.isOriginalVine, isTrue);
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals(
+          'https://media.divine.video/$hash',
+        ),
+      );
+      expect(video.getCacheableVideoUrlForPlatform(), isNull);
     });
 
     test('do not treat quality variants as bare hash paths', () {

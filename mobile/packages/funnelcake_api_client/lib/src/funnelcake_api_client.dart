@@ -9,6 +9,7 @@ import 'package:funnelcake_api_client/src/models/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 /// HTTP client for the Funnelcake REST API.
 ///
@@ -143,6 +144,11 @@ class FunnelcakeApiClient {
     return (items: const <dynamic>[], hasMore: false, nextCursor: null);
   }
 
+  static int? _parseIntPageToken(String? value) {
+    if (value == null) return null;
+    return int.tryParse(value);
+  }
+
   /// Builds the notifications endpoint URI for a user.
   ///
   /// The returned URI includes the same query parameters used by
@@ -228,7 +234,12 @@ class FunnelcakeApiClient {
             ? int.tryParse(totalCountHeader)
             : null;
 
-        return VideosByAuthorResponse(videos: videos, totalCount: totalCount);
+        return VideosByAuthorResponse(
+          videos: videos,
+          totalCount: totalCount,
+          nextOffset: _parseIntPageToken(nextCursor),
+          hasMore: hasMore,
+        );
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Author videos',
@@ -388,6 +399,16 @@ class FunnelcakeApiClient {
     int limit = 50,
     int? before,
   }) async {
+    final response = await getWatchingVideosPage(limit: limit, before: before);
+    return response.videos;
+  }
+
+  /// Fetches videos sorted by 24-hour CDN view count with NO age decay,
+  /// returning pagination metadata when the v2 envelope is available.
+  Future<WatchingVideosResponse> getWatchingVideosPage({
+    int limit = 50,
+    int? before,
+  }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -408,14 +429,20 @@ class FunnelcakeApiClient {
       final response = await _get(uri);
 
       if (response.statusCode == 200) {
-        final (:items, hasMore: _, nextCursor: _) = _unwrapListResponse(
+        final (:items, :hasMore, :nextCursor) = _unwrapListResponse(
           jsonDecode(response.body),
         );
 
-        return items
+        final videos = items
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
+
+        return WatchingVideosResponse(
+          videos: videos,
+          nextCursor: _parseIntPageToken(nextCursor),
+          hasMore: hasMore,
+        );
       } else {
         throw FunnelcakeApiException(
           message: 'Failed to fetch watching videos',
@@ -1251,6 +1278,60 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch video views: $e');
+    }
+  }
+
+  /// Fetches the full Nostr event for a specific video route ID.
+  ///
+  /// [videoId] accepts either a canonical event ID or a stable shared ID
+  /// supported by the Funnelcake API.
+  ///
+  /// Returns the raw [Event] when found, or `null` for 404 responses.
+  Future<Event?> getVideoEvent(String videoId) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (videoId.isEmpty) {
+      throw const FunnelcakeException('Video ID cannot be empty');
+    }
+
+    final uri = Uri.parse('$_baseUrl/api/videos/$videoId');
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          final eventJson = data['event'];
+          if (eventJson is Map<String, dynamic>) {
+            return Event.fromJson(eventJson);
+          }
+          // Some server builds may return the raw event object directly.
+          if (data['id'] is String &&
+              data['pubkey'] is String &&
+              data['created_at'] != null &&
+              data['kind'] != null) {
+            return Event.fromJson(data);
+          }
+        }
+        throw const FunnelcakeException('Malformed video event response');
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch video event',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch video event: $e');
     }
   }
 

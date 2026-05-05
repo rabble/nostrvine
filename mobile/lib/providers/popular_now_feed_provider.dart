@@ -32,8 +32,12 @@ part 'popular_now_feed_provider.g.dart';
 @Riverpod(keepAlive: true) // Keep alive to prevent state loss on tab switches
 class PopularNowFeed extends _$PopularNowFeed {
   VideoFeedBuilder? _builder;
-  bool _usingRestApi = false;
-  int? _nextCursor; // Cursor for REST API pagination
+
+  /// REST API pagination cursor (oldest video timestamp). Non-null implies
+  /// REST is the active source; null means we are in Nostr-fallback mode.
+  /// Reset on every build/refresh so a transient REST failure doesn't
+  /// disable REST for subsequent calls — see issue #3849.
+  int? _nextCursor;
 
   @override
   Future<VideoFeedState> build() async {
@@ -91,12 +95,12 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
 
       try {
-        final stats = await client.getWatchingVideos();
-        final apiVideos = stats.toVideoEvents();
+        final response = await client.getWatchingVideosPage();
+        final apiVideos = response.videos.toVideoEvents();
         if (apiVideos.isNotEmpty) {
-          _usingRestApi = true;
-          // Store cursor for pagination (oldest video timestamp)
-          _nextCursor = getOldestTimestamp(apiVideos);
+          // Prefer server pagination metadata; fall back to legacy
+          // oldest-timestamp cursoring when the response is a raw array.
+          _nextCursor = response.nextCursor ?? getOldestTimestamp(apiVideos);
           Log.info(
             '✅ PopularNowFeed: Got ${apiVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
@@ -119,7 +123,8 @@ class PopularNowFeed extends _$PopularNowFeed {
           return VideoFeedState(
             videos: filteredVideos,
             hasMoreContent:
-                apiVideos.length >= AppConstants.paginationBatchSize,
+                response.hasMore ??
+                (apiVideos.length >= AppConstants.paginationBatchSize),
             isInitialLoad: filteredVideos.isEmpty,
             lastUpdated: DateTime.now(),
           );
@@ -139,7 +144,6 @@ class PopularNowFeed extends _$PopularNowFeed {
     }
 
     // Fall back to Nostr subscription
-    _usingRestApi = false;
     _nextCursor = null;
     _builder = VideoFeedBuilder(videoEventService);
 
@@ -220,8 +224,12 @@ class PopularNowFeed extends _$PopularNowFeed {
     try {
       final videoEventService = ref.read(videoEventServiceProvider);
 
-      // If using REST API, load more using cursor-based pagination
-      if (_usingRestApi) {
+      // Per-call availability check — never trust a sticky flag (#3849).
+      // We paginate REST only when we have a cursor (i.e. the active source
+      // is REST) AND funnelcake is currently reachable.
+      final funnelcakeAvailable =
+          ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+      if (funnelcakeAvailable && _nextCursor != null) {
         final client = ref.read(funnelcakeApiClientProvider);
 
         Log.info(
@@ -231,8 +239,10 @@ class PopularNowFeed extends _$PopularNowFeed {
         );
 
         // Use cursor (before parameter) for pagination
-        final stats = await client.getWatchingVideos(before: _nextCursor);
-        final apiVideos = stats.toVideoEvents();
+        final response = await client.getWatchingVideosPage(
+          before: _nextCursor,
+        );
+        final apiVideos = response.videos.toVideoEvents();
 
         if (!ref.mounted) return;
 
@@ -255,7 +265,7 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
 
           // Update cursor for next pagination
-          _nextCursor = getOldestTimestamp(apiVideos);
+          _nextCursor = response.nextCursor ?? getOldestTimestamp(apiVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = [...currentState.videos, ...newVideos];
@@ -269,7 +279,8 @@ class PopularNowFeed extends _$PopularNowFeed {
               VideoFeedState(
                 videos: allVideos,
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    response.hasMore ??
+                    (apiVideos.length >= AppConstants.paginationBatchSize),
                 lastUpdated: DateTime.now(),
               ),
             );
@@ -353,8 +364,9 @@ class PopularNowFeed extends _$PopularNowFeed {
   /// Call this after a video is updated to sync the provider's state
   /// Only applies to Nostr mode - REST API mode re-fetches on refresh()
   void refreshFromService() {
-    // Skip if using REST API - refreshFromService is only for Nostr mode
-    if (_usingRestApi) return;
+    // Skip if a REST cursor is active — refreshFromService syncs the Nostr
+    // state object, which doesn't reflect REST-loaded videos.
+    if (_nextCursor != null) return;
 
     final videoEventService = ref.read(videoEventServiceProvider);
     final updatedVideos = _filterAndSortNostrVideos(
@@ -371,12 +383,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     );
   }
 
-  /// Refreshes from Funnelcake REST when available, otherwise via forced Nostr
-  /// subscription.
-  ///
-  /// Uses [funnelcakeAvailableProvider] each call — not [_usingRestApi] — so a
-  /// transient REST failure does not skip REST for the lifetime of this
-  /// keepAlive provider (#3849; parent symptom #3848).
+  /// Refresh the feed - invalidates self to re-run build() with REST API fallback logic
   Future<void> refresh() async {
     Log.info(
       '🆕 PopularNowFeed: Refreshing feed (will try REST API first)',
@@ -397,23 +404,22 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
     }
 
+    // Per-call availability check — never trust a sticky flag (#3849).
+    // A previous REST failure must not disable REST for this refresh.
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
-
-    // Try REST whenever Funnelcake is available — same idea as [build], not
-    // gated on [_usingRestApi] (#3849).
     if (funnelcakeAvailable) {
       try {
         final client = ref.read(funnelcakeApiClientProvider);
-        final stats = await client.getWatchingVideos();
-        final apiVideos = stats.toVideoEvents();
+        final response = await client.getWatchingVideosPage();
+        final apiVideos = response.videos.toVideoEvents();
 
         // Check if provider is still mounted after async gap
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
-          _usingRestApi = true;
-          _nextCursor = getOldestTimestamp(apiVideos);
+          // Reset cursor for pagination
+          _nextCursor = response.nextCursor ?? getOldestTimestamp(apiVideos);
 
           final blocklistRepository = ref.read(
             contentBlocklistRepositoryProvider,
@@ -431,7 +437,8 @@ class PopularNowFeed extends _$PopularNowFeed {
             VideoFeedState(
               videos: filteredVideos,
               hasMoreContent:
-                  apiVideos.length >= AppConstants.paginationBatchSize,
+                  response.hasMore ??
+                  (apiVideos.length >= AppConstants.paginationBatchSize),
               lastUpdated: DateTime.now(),
             ),
           );
@@ -444,11 +451,6 @@ class PopularNowFeed extends _$PopularNowFeed {
           );
           return;
         }
-        Log.warning(
-          '🆕 PopularNowFeed: REST API returned empty on refresh, falling back to Nostr',
-          name: 'PopularNowFeedProvider',
-          category: LogCategory.video,
-        );
       } catch (e) {
         Log.warning(
           '🆕 PopularNowFeed: REST API refresh failed, falling back to Nostr',
@@ -459,7 +461,6 @@ class PopularNowFeed extends _$PopularNowFeed {
     }
 
     // Reset cursor state before forced Nostr refresh
-    _usingRestApi = false;
     _nextCursor = null;
 
     try {
@@ -468,10 +469,6 @@ class PopularNowFeed extends _$PopularNowFeed {
         limit: AppConstants.paginationBatchSize,
         sortBy: VideoSortField.createdAt,
         force: true,
-      );
-
-      await videoEventService.waitForSubscriptionRelayIdle(
-        SubscriptionType.popularNow,
       );
 
       if (!ref.mounted) return;
@@ -535,7 +532,9 @@ class PopularNowFeed extends _$PopularNowFeed {
       nostrService: ref.read(nostrServiceProvider),
       callerName: 'PopularNowFeedProvider',
       onEnriched: (enrichedVideos) {
-        if (!ref.mounted || !_usingRestApi || !state.hasValue) return;
+        if (!ref.mounted || !state.hasValue) return;
+        // Skip if we've left REST mode while enrichment was running.
+        if (_nextCursor == null) return;
 
         final currentState = state.value;
         if (currentState == null || currentState.videos.isEmpty) return;

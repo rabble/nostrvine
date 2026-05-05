@@ -160,7 +160,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
     final initialLens = savedLensString != null
         ? DivineCameraLens.fromNativeString(savedLensString)
-        : DivineCameraLens.front;
+        : DivineCameraLens.back;
 
     Log.info(
       '📹 Initializing video recorder with quality: ${videoQuality.value}, '
@@ -1121,7 +1121,12 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
   }
 
-  /// Set the recorder mode (capture / classic).
+  /// Set the recorder mode (capture / classic / upload).
+  ///
+  /// Capture↔classic transitions clear recorded clips and reset the
+  /// editor. Transitions involving [VideoRecorderMode.upload] preserve
+  /// both, since upload is an explainer-only surface that does not own
+  /// recording state — clearing on a curious tab tap would be hostile.
   ///
   /// When [keepAutosavedDraft] is true the autosaved draft in the database
   /// is preserved. This is used during initialisation where the saved mode
@@ -1130,6 +1135,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     VideoRecorderMode mode, {
     bool keepAutosavedDraft = false,
   }) {
+    final previousMode = state.recorderMode;
     state = state.copyWith(
       recorderMode: mode,
       aspectRatio: mode.defaultAspectRatio,
@@ -1138,12 +1144,19 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final prefs = ref.read(sharedPreferencesProvider);
     prefs.setString(kLastUsedRecorderModeKey, mode.name);
 
-    ref
-        .read(clipManagerProvider.notifier)
-        .clearAll(keepAutosavedDraft: keepAutosavedDraft);
-    ref
-        .read(videoEditorProvider.notifier)
-        .reset(keepAutosavedDraft: keepAutosavedDraft);
+    // Skip clear/reset on upload transitions — see method doc.
+    final touchesRecordingState =
+        mode != VideoRecorderMode.upload &&
+        previousMode != VideoRecorderMode.upload;
+    if (touchesRecordingState) {
+      ref
+          .read(clipManagerProvider.notifier)
+          .clearAll(keepAutosavedDraft: keepAutosavedDraft);
+      ref
+          .read(videoEditorProvider.notifier)
+          .reset(keepAutosavedDraft: keepAutosavedDraft);
+    }
+
     Log.debug(
       '🎬 Recorder mode changed to: ${mode.name}',
       name: 'VideoRecorderNotifier',

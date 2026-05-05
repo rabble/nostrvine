@@ -29,12 +29,19 @@ class VideoEditorScope extends InheritedWidget {
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
     required this.fromLibrary,
+    this.editorOverride,
     super.child = const SizedBox.shrink(),
     super.key,
   });
 
   /// Global key to access the [ProImageEditorState].
   final GlobalKey<ProImageEditorState> editorKey;
+
+  /// Direct editor reference, used in tests to inject a mock.
+  ///
+  /// When non-null this takes precedence over [editorKey.currentState].
+  @visibleForTesting
+  final ProImageEditorState? editorOverride;
 
   /// Global key to access the remove area widget.
   final GlobalKey removeAreaKey;
@@ -82,7 +89,7 @@ class VideoEditorScope extends InheritedWidget {
   }
 
   /// Returns the [ProImageEditorState] if available.
-  ProImageEditorState? get editor => editorKey.currentState;
+  ProImageEditorState? get editor => editorOverride ?? editorKey.currentState;
 
   /// Returns the [ProImageEditorState], throwing a descriptive error if null.
   ///

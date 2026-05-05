@@ -1331,6 +1331,9 @@
   "authImportNostrKey": "Import Nostr key",
   "authConnectSignerApp": "Connect with a signer app",
   "authSignInWithAmber": "Sign in with Amber",
+  "authSignInWithBrowserExtension": "Sign in with browser extension",
+  "authNip07ConnectionFailed": "Couldn't connect to your browser extension.",
+  "authNip07ExtensionNotFound": "No browser extension found. Install Alby, nos2x, or another NIP-07 compatible extension.",
   "authSignInOptionsTitle": "Sign-in options",
   "authInfoEmailPasswordTitle": "Email & Password",
   "authInfoEmailPasswordDescription": "Sign in with your Divine account. If you registered with an email and password, use them here.",
@@ -1339,6 +1342,8 @@
   "authInfoSignerAppDescription": "Connect using a NIP-46 compatible remote signer like nsecBunker for enhanced key security.",
   "authInfoAmberTitle": "Amber",
   "authInfoAmberDescription": "Use the Amber signer app on Android to manage your Nostr keys securely.",
+  "authInfoBrowserExtensionTitle": "Browser Extension",
+  "authInfoBrowserExtensionDescription": "Sign in with a NIP-07 browser extension like Alby or nos2x. Your keys stay in the extension — Divine never sees them.",
   "authCreateAccountTitle": "Create account",
   "authBackToInviteCode": "Back to invite code",
   "authUseDivineNoBackup": "Use Divine with no backup",
@@ -2312,6 +2317,22 @@
       }
     }
   },
+  "keyManagementYourPublicKeyLabel": "Your public key (npub)",
+  "@keyManagementYourPublicKeyLabel": {
+    "description": "Label above the truncated npub display on the key management screen."
+  },
+  "keyManagementCopyPublicKeyTooltip": "Copy public key",
+  "@keyManagementCopyPublicKeyTooltip": {
+    "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+  },
+  "keyManagementPublicKeyCopied": "Public key copied",
+  "@keyManagementPublicKeyCopied": {
+    "description": "SnackBar shown after the user taps the copy icon next to their npub."
+  },
+  "profileEditPublicKeyLink": "View your public key",
+  "@profileEditPublicKeyLink": {
+    "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+  },
   "saveOriginalSavedToCameraRoll": "Saved to Camera Roll",
   "saveOriginalShare": "Share",
   "saveOriginalDone": "Done",
@@ -2611,6 +2632,31 @@
   "inboxConversationCollabInvitePreview": "Collaborator invite",
   "@inboxConversationCollabInvitePreview": {
     "description": "Substituted for the legacy NIP-04 plaintext invite copy when shown as the most-recent-message preview in the DM conversation list. The plaintext copy ('Open diVine to review and accept') is misleading inside diVine."
+  },
+
+  "collaboratorInviteDmBody": "You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.",
+  "@collaboratorInviteDmBody": {
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "placeholders": {
+      "title": {
+        "type": "String",
+        "example": "Skate loop"
+      },
+      "url": {
+        "type": "String",
+        "example": "https://divine.video/video/abc123"
+      }
+    }
+  },
+  "collaboratorInviteDmBodyUntitled": "You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.",
+  "@collaboratorInviteDmBodyUntitled": {
+    "description": "Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "example": "https://divine.video/video/abc123"
+      }
+    }
   },
 
   "reportDialogCancel": "Cancel",
@@ -3165,6 +3211,13 @@
       "actorName": { "type": "String" }
     }
   },
+  "notificationLikedYourComment": "{actorName} liked your comment",
+  "@notificationLikedYourComment": {
+    "description": "Notification text when someone reacts to a comment the user posted (typically under another user's video).",
+    "placeholders": {
+      "actorName": { "type": "String" }
+    }
+  },
   "notificationCommentedOnYourVideo": "{actorName} commented on your video",
   "@notificationCommentedOnYourVideo": {
     "placeholders": {
@@ -3204,6 +3257,14 @@
       "count": { "type": "int" }
     }
   },
+  "notificationSystemUpdate": "You have a new update",
+  "@notificationSystemUpdate": {
+    "description": "Default body text for a system notification row when no actor is associated with it (e.g. an app-level update or announcement)."
+  },
+  "notificationSomeoneLikedYourVideo": "Someone liked your video",
+  "@notificationSomeoneLikedYourVideo": {
+    "description": "Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice."
+  },
 
   "commentReplyToPrefix": "Re:",
   "@commentReplyToPrefix": {
@@ -3238,6 +3299,26 @@
   "videoRecorderWhySixSecondsTitle": "Why six seconds?",
   "videoRecorderWhySixSecondsSubtitle": "Quick clips make space for spontaneity. The 6-second format helps you capture authentic moments as they happen.",
   "videoRecorderWhySixSecondsButton": "Got it!",
+  "videoRecorderUploadTitle": "Why no upload?",
+  "videoRecorderUploadBody": "What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.",
+  "videoRecorderUploadBodyDetail": "By keeping creation inside the app, we can better guarantee that content is real and unedited. We aren't opening up external gallery uploads at this time to protect that realness and keep our community free of synthetic content as much as we can.",
+  "videoRecorderUploadBodyCta": "Switch to Capture or Classic to roll something real.",
+  "videoRecorderUploadLearnMore": "Learn how verification works",
+  "@videoRecorderUploadTitle": {
+    "description": "Headline on the camera Upload mode explainer panel. Phrased as the question the user is implicitly asking by tapping the Upload tab."
+  },
+  "@videoRecorderUploadBody": {
+    "description": "First body paragraph on the Upload explainer. States the camera-direct mission and contrasts with platforms that allow produced or AI-generated uploads."
+  },
+  "@videoRecorderUploadBodyDetail": {
+    "description": "Second body paragraph on the Upload explainer. Explains why keeping creation in-app supports the realness goal. Note the deliberate hedges 'better guarantee' and 'as much as we can' — do not strengthen these claims."
+  },
+  "@videoRecorderUploadBodyCta": {
+    "description": "Closing line on the Upload explainer pointing the user back to the Capture and Classic recording modes."
+  },
+  "@videoRecorderUploadLearnMore": {
+    "description": "Outbound link label that opens divine.video/proofmode in the browser."
+  },
   "videoRecorderAutosaveFoundTitle": "We found work in progress",
   "videoRecorderAutosaveFoundSubtitle": "Would you like to continue where you left off?",
   "videoRecorderAutosaveContinueButton": "Yes, continue",

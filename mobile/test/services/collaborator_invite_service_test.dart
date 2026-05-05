@@ -1,11 +1,14 @@
 // ABOUTME: Tests encrypted collaborator invite payload construction.
 // ABOUTME: Verifies collab invites are NIP-17 DMs with structured tags.
 
+import 'dart:ui' show Locale;
+
 import 'package:collection/collection.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -75,6 +78,14 @@ void main() {
 
     expect(content, contains('Skate loop'));
     expect(content, contains('collaborate'));
+    expect(
+      content,
+      contains('https://divine.video/video/video-id'),
+      reason:
+          'Plaintext fallback must include a divine.video URL so non-Divine '
+          'Nostr clients can preview the video and verify the invite '
+          'matches a real video before accepting (#3942).',
+    );
     expect(_containsTag(tags, const ['divine', 'collab-invite']), isTrue);
     expect(
       _containsTag(tags, const [
@@ -145,6 +156,256 @@ void main() {
             '_buildContent must end with invitePlaintextSuffix so the '
             'conversation view can suppress legacy NIP-04 duplicates (#3559)',
       );
+    },
+  );
+
+  test('includes divine.video URL when title is missing', () async {
+    when(
+      () => dmRepository.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+        additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: collaboratorPubkey,
+      ),
+    );
+
+    await service.sendInvite(
+      collaboratorPubkey: collaboratorPubkey,
+      creatorPubkey: creatorPubkey,
+      videoAddress: videoAddress,
+    );
+
+    final captured =
+        verify(
+              () => dmRepository.sendMessage(
+                recipientPubkey: collaboratorPubkey,
+                content: captureAny(named: 'content'),
+                replyToId: any(named: 'replyToId'),
+                additionalTags: any(named: 'additionalTags'),
+                skipNip04Fallback: any(named: 'skipNip04Fallback'),
+              ),
+            ).captured.single
+            as String;
+
+    expect(captured, contains('https://divine.video/video/video-id'));
+    expect(
+      captured.endsWith(CollaboratorInviteService.invitePlaintextSuffix),
+      isTrue,
+    );
+  });
+
+  test('URL stableId matches the d-tag of the videoAddress', () async {
+    when(
+      () => dmRepository.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+        additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: collaboratorPubkey,
+      ),
+    );
+
+    const otherVideoAddress =
+        '34236:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:custom-d-tag';
+
+    await service.sendInvite(
+      collaboratorPubkey: collaboratorPubkey,
+      creatorPubkey: creatorPubkey,
+      videoAddress: otherVideoAddress,
+      title: 'Highlight reel',
+    );
+
+    final captured =
+        verify(
+              () => dmRepository.sendMessage(
+                recipientPubkey: collaboratorPubkey,
+                content: captureAny(named: 'content'),
+                replyToId: any(named: 'replyToId'),
+                additionalTags: any(named: 'additionalTags'),
+                skipNip04Fallback: any(named: 'skipNip04Fallback'),
+              ),
+            ).captured.single
+            as String;
+
+    expect(
+      captured,
+      contains('https://divine.video/video/custom-d-tag'),
+      reason:
+          'URL must use the d-tag (third segment of the parameterized '
+          'addressable) so it deep-links via the existing /video/:id route.',
+    );
+    expect(
+      captured,
+      isNot(contains('https://divine.video/video/video-id')),
+      reason: 'URL must reflect the videoAddress passed in, not a default.',
+    );
+  });
+
+  test('preserves colons inside d-tag stableId in URL', () async {
+    when(
+      () => dmRepository.sendMessage(
+        recipientPubkey: any(named: 'recipientPubkey'),
+        content: any(named: 'content'),
+        replyToId: any(named: 'replyToId'),
+        additionalTags: any(named: 'additionalTags'),
+        skipNip04Fallback: any(named: 'skipNip04Fallback'),
+      ),
+    ).thenAnswer(
+      (_) async => NIP17SendResult.success(
+        rumorEventId: 'rumor-id',
+        messageEventId: 'message-id',
+        recipientPubkey: collaboratorPubkey,
+      ),
+    );
+
+    // NIP-01 doesn't reserve `:` in d-tags. A naive split-on-colon parser
+    // truncates everything past the third segment, producing
+    // `https://divine.video/video/foo` for a stableId of `foo:bar`.
+    const colonyVideoAddress =
+        '34236:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:foo:bar';
+
+    await service.sendInvite(
+      collaboratorPubkey: collaboratorPubkey,
+      creatorPubkey: creatorPubkey,
+      videoAddress: colonyVideoAddress,
+      title: 'Edge case',
+    );
+
+    final captured =
+        verify(
+              () => dmRepository.sendMessage(
+                recipientPubkey: collaboratorPubkey,
+                content: captureAny(named: 'content'),
+                replyToId: any(named: 'replyToId'),
+                additionalTags: any(named: 'additionalTags'),
+                skipNip04Fallback: any(named: 'skipNip04Fallback'),
+              ),
+            ).captured.single
+            as String;
+
+    expect(
+      captured,
+      contains('https://divine.video/video/foo:bar'),
+      reason:
+          'd-tag is everything after kind:pubkey: — colons within it must '
+          'survive into the URL so divine.video can resolve the stableId.',
+    );
+  });
+
+  test(
+    'localized DM body for non-English locale still contains the video URL',
+    () async {
+      // Translators must preserve the {url} placeholder. Without an
+      // assertion on the resolved body, a translator could silently drop
+      // the URL and the only signal would be a missing tappable preview
+      // in non-English clients (the bug this PR fixes).
+      final esService = CollaboratorInviteService(
+        dmRepository: dmRepository,
+        l10n: lookupAppLocalizations(const Locale('es')),
+      );
+      when(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          additionalTags: any(named: 'additionalTags'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'rumor-id',
+          messageEventId: 'message-id',
+          recipientPubkey: collaboratorPubkey,
+        ),
+      );
+
+      await esService.sendInvite(
+        collaboratorPubkey: collaboratorPubkey,
+        creatorPubkey: creatorPubkey,
+        videoAddress: videoAddress,
+        title: 'Skate loop',
+      );
+
+      final captured =
+          verify(
+                () => dmRepository.sendMessage(
+                  recipientPubkey: collaboratorPubkey,
+                  content: captureAny(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  additionalTags: any(named: 'additionalTags'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                ),
+              ).captured.single
+              as String;
+
+      expect(captured, contains('https://divine.video/video/video-id'));
+      expect(captured, contains('Skate loop'));
+      // Sanity-check that we actually produced the Spanish body — not
+      // the English fallback that lookupAppLocalizations could silently
+      // return if the locale failed to resolve.
+      expect(
+        captured,
+        contains('colaborar'),
+        reason: 'Spanish body should contain the translated verb.',
+      );
+    },
+  );
+
+  test(
+    'localized untitled DM body for non-English locale still contains URL',
+    () async {
+      final esService = CollaboratorInviteService(
+        dmRepository: dmRepository,
+        l10n: lookupAppLocalizations(const Locale('es')),
+      );
+      when(
+        () => dmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+          additionalTags: any(named: 'additionalTags'),
+          skipNip04Fallback: any(named: 'skipNip04Fallback'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          rumorEventId: 'rumor-id',
+          messageEventId: 'message-id',
+          recipientPubkey: collaboratorPubkey,
+        ),
+      );
+
+      await esService.sendInvite(
+        collaboratorPubkey: collaboratorPubkey,
+        creatorPubkey: creatorPubkey,
+        videoAddress: videoAddress,
+      );
+
+      final captured =
+          verify(
+                () => dmRepository.sendMessage(
+                  recipientPubkey: collaboratorPubkey,
+                  content: captureAny(named: 'content'),
+                  replyToId: any(named: 'replyToId'),
+                  additionalTags: any(named: 'additionalTags'),
+                  skipNip04Fallback: any(named: 'skipNip04Fallback'),
+                ),
+              ).captured.single
+              as String;
+
+      expect(captured, contains('https://divine.video/video/video-id'));
     },
   );
 

@@ -47,6 +47,99 @@ void main() {
 
         expect(notification.referencedEventId, isNull);
         expect(notification.content, isNull);
+        expect(notification.isReferencedVideo, isFalse);
+        expect(notification.referencedVideoTitle, isNull);
+      });
+
+      test(
+        'flags video target when referenced_video is populated',
+        () {
+          final json = {
+            'id': 'notif_123',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 7,
+            'referenced_event_id': '55667788' * 8,
+            'referenced_video': {
+              'title': 'My funny vine',
+              'thumbnail': 'https://example.com/thumb.jpg',
+            },
+            'notification_type': 'reaction',
+            'created_at': 1712345678,
+            'read': false,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(notification.isReferencedVideo, isTrue);
+          expect(notification.referencedVideoTitle, equals('My funny vine'));
+        },
+      );
+
+      test(
+        'reports non-video target when referenced_video is absent (like '
+        'on a comment)',
+        () {
+          final json = {
+            'id': 'notif_123',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 7,
+            'referenced_event_id': '55667788' * 8,
+            'notification_type': 'reaction',
+            'created_at': 1712345678,
+            'read': false,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(notification.isReferencedVideo, isFalse);
+          expect(notification.referencedVideoTitle, isNull);
+        },
+      );
+
+      test(
+        'falls back to referenced_event_title when referenced_video is null',
+        () {
+          final json = {
+            'id': 'notif_123',
+            'source_pubkey': 'aabbccdd' * 8,
+            'source_event_id': '11223344' * 8,
+            'source_kind': 7,
+            'referenced_event_id': '55667788' * 8,
+            'referenced_event_title': 'Top-level title',
+            'notification_type': 'reaction',
+            'created_at': 1712345678,
+            'read': false,
+          };
+
+          final notification = RelayNotification.fromJson(json);
+
+          expect(notification.isReferencedVideo, isFalse);
+          expect(
+            notification.referencedVideoTitle,
+            equals('Top-level title'),
+          );
+        },
+      );
+
+      test('treats empty referenced_video.title as null title', () {
+        final json = {
+          'id': 'notif_123',
+          'source_pubkey': 'aabbccdd' * 8,
+          'source_event_id': '11223344' * 8,
+          'source_kind': 7,
+          'referenced_event_id': '55667788' * 8,
+          'referenced_video': {'title': ''},
+          'notification_type': 'reaction',
+          'created_at': 1712345678,
+          'read': false,
+        };
+
+        final notification = RelayNotification.fromJson(json);
+
+        expect(notification.isReferencedVideo, isTrue);
+        expect(notification.referencedVideoTitle, isNull);
       });
 
       test('handles missing fields with defaults', () {

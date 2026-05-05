@@ -5,6 +5,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -419,7 +420,8 @@ void main() {
               routerConfig: router,
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
           expect(find.text('empty-state-body'), findsOneWidget);
 
           await tester.tap(find.byType(BackButton));
@@ -473,6 +475,59 @@ void main() {
         // Note: Individual video items may still show their own loading states
         expect(find.byType(PooledVideoFeed), findsOneWidget);
       });
+
+      testWidgets(
+        'ready-state back button falls back to root when route cannot pop',
+        (tester) async {
+          final videos = createTestVideos(count: 1);
+          var sentinelBuilt = false;
+          late final GoRouter router;
+
+          router = GoRouter(
+            initialLocation: '/shared-video',
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, _) {
+                  sentinelBuilt = true;
+                  return const Scaffold(body: Text('home-sentinel'));
+                },
+              ),
+              GoRoute(
+                path: '/shared-video',
+                builder: (_, _) => buildSubject(
+                  state: FullscreenFeedState(
+                    status: FullscreenFeedStatus.ready,
+                    videos: videos,
+                  ),
+                  contextTitle: 'Shared Video',
+                ),
+              ),
+            ],
+          );
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.byType(PooledVideoFeed), findsOneWidget);
+          expect(sentinelBuilt, isFalse);
+
+          await tester.tap(find.byType(DiVineAppBarIconButton).first);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(sentinelBuilt, isTrue);
+          expect(find.text('home-sentinel'), findsOneWidget);
+        },
+      );
 
       testWidgets('resumes playback when app resumes on current route', (
         tester,

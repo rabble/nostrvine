@@ -9,6 +9,7 @@ import 'dart:developer' as developer;
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/in_memory_feed_cache.dart';
@@ -921,14 +922,23 @@ class VideosRepository {
   /// - The video has no playable URL
   /// - The video is expired (NIP-40)
   /// - The video fails content filtering
-  VideoEvent? _tryParseAndFilter(Event event) {
+  VideoEvent? _tryParseAndFilter(
+    Event event, {
+    bool permissive = false,
+    bool ignoreBlockFilter = false,
+  }) {
     // Skip events that aren't valid video kinds
-    if (!NIP71VideoKinds.isVideoKind(event.kind)) return null;
+    final isSupported = permissive
+        ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
+        : NIP71VideoKinds.isVideoKind(event.kind);
+    if (!isSupported) return null;
 
     // Block filter - check pubkey before parsing for efficiency
-    if (_blockFilter?.call(event.pubkey) ?? false) return null;
+    if (!ignoreBlockFilter && (_blockFilter?.call(event.pubkey) ?? false)) {
+      return null;
+    }
 
-    final video = VideoEvent.fromNostrEvent(event);
+    final video = VideoEvent.fromNostrEvent(event, permissive: permissive);
 
     // Skip videos without a playable URL
     if (!video.hasVideo) return null;
@@ -1412,6 +1422,46 @@ class VideosRepository {
     return hydrated.firstOrNull;
   }
 
+  /// Resolves a video route identifier and returns the hydrated video.
+  ///
+  /// Supports raw event IDs, plain stable IDs / d-tags, and NIP-19
+  /// `note1...`, `nevent1...`, and `naddr1...` references.
+  Future<VideoEvent?> fetchVideoWithStatsForRouteId(String routeId) async {
+    final candidate = _VideoRouteCandidate.parse(routeId);
+    if (candidate == null) return null;
+
+    if (candidate.eventId != null) {
+      final byEventId = await _fetchRouteVideoByEventId(candidate.eventId!);
+      if (byEventId != null) return byEventId;
+    }
+
+    if (candidate.addressableId != null) {
+      final videos = await getVideosByAddressableIds([
+        candidate.addressableId!,
+      ]);
+      if (videos.isNotEmpty) {
+        final hydrated = await _hydrateVideosWithBulkStats(videos);
+        if (hydrated.isNotEmpty) return hydrated.first;
+      }
+    }
+
+    if (candidate.stableId != null) {
+      final byStableId = await _fetchVideoByStableId(candidate.stableId!);
+      if (byStableId != null) return byStableId;
+    }
+
+    final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
+    if (funnelcakeRouteId != null) {
+      final byFunnelcake = await _fetchVideoFromRouteApi(
+        funnelcakeRouteId,
+        permissive: true,
+      );
+      if (byFunnelcake != null) return byFunnelcake;
+    }
+
+    return null;
+  }
+
   /// Fetches stats for a single video.
   ///
   /// Returns null if Funnelcake API is unavailable.
@@ -1470,5 +1520,155 @@ class VideosRepository {
       fallback: fallback,
       category: category,
     );
+  }
+
+  Future<VideoEvent?> _fetchRouteVideoByEventId(String eventId) async {
+    if (eventId.isEmpty) return null;
+
+    final candidates = <Event>[];
+
+    if (_localStorage != null) {
+      // Shared links should be able to reopen a video from local cache on a
+      // cold start before the relay layer has finished connecting.
+      candidates.addAll(await _localStorage.getEventsByIds([eventId]));
+    }
+
+    if (candidates.isEmpty) {
+      candidates.addAll(
+        await _nostrClient.queryEvents([
+          Filter(
+            ids: [eventId],
+            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+          ),
+        ]),
+      );
+    }
+
+    if (candidates.isEmpty) return null;
+
+    final videos = <VideoEvent>[];
+    for (final event in candidates) {
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+    if (videos.isEmpty) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return hydrated.firstOrNull;
+  }
+
+  Future<VideoEvent?> _fetchVideoByStableId(String stableId) async {
+    final candidates = <Event>[];
+
+    if (_localStorage != null) {
+      candidates.addAll(await _localStorage.getEventsByDTag(stableId));
+    }
+
+    if (candidates.isEmpty) {
+      candidates.addAll(
+        await _nostrClient.queryEvents([
+          Filter(
+            // Route-specific lookups accept all supported NIP-71 video kinds so
+            // older shared links still resolve instead of failing as not found.
+            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+            d: [stableId],
+            limit: 10,
+          ),
+        ]),
+      );
+    }
+
+    if (candidates.isEmpty) return null;
+
+    candidates.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final videos = <VideoEvent>[];
+    for (final event in candidates) {
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+    if (videos.isEmpty) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return hydrated.isEmpty ? null : hydrated.first;
+  }
+
+  Future<VideoEvent?> _fetchVideoFromRouteApi(
+    String routeId, {
+    bool permissive = false,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+
+    final event = await _funnelcakeApiClient.getVideoEvent(routeId);
+    if (event == null) return null;
+
+    final video = _tryParseAndFilter(
+      event,
+      permissive: permissive,
+      ignoreBlockFilter: true,
+    );
+    if (video == null) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats([video]);
+    return hydrated.firstOrNull;
+  }
+}
+
+class _VideoRouteCandidate {
+  const _VideoRouteCandidate({this.eventId, this.addressableId, this.stableId});
+
+  final String? eventId;
+  final String? addressableId;
+  final String? stableId;
+
+  static _VideoRouteCandidate? parse(String routeId) {
+    final trimmed = routeId.trim();
+    if (trimmed.isEmpty) return null;
+
+    if (trimmed.length == 64 &&
+        RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(trimmed)) {
+      return _VideoRouteCandidate(
+        eventId: trimmed.toLowerCase(),
+        stableId: trimmed,
+      );
+    }
+
+    if (Nip19.isNoteId(trimmed)) {
+      final eventId = Nip19.decode(trimmed);
+      return eventId.isEmpty ? null : _VideoRouteCandidate(eventId: eventId);
+    }
+
+    if (NIP19Tlv.isNevent(trimmed)) {
+      final decoded = NIP19Tlv.decodeNevent(trimmed);
+      return decoded == null ? null : _VideoRouteCandidate(eventId: decoded.id);
+    }
+
+    if (NIP19Tlv.isNaddr(trimmed)) {
+      final decoded = NIP19Tlv.decodeNaddr(trimmed);
+      if (decoded == null) return null;
+      return _VideoRouteCandidate(
+        addressableId: AId(
+          kind: decoded.kind,
+          pubkey: decoded.author,
+          dTag: decoded.id,
+        ).toAString(),
+        stableId: decoded.id,
+      );
+    }
+
+    return _VideoRouteCandidate(stableId: trimmed);
   }
 }

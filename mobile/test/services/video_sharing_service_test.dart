@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -25,6 +26,9 @@ const _testPubkey =
 
 const _recipientPubkey =
     'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3';
+
+const _testVideoId =
+    'a695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
 
 void main() {
   late VideoSharingService service;
@@ -86,7 +90,7 @@ void main() {
 
       final now = DateTime.now();
       final testVideo = VideoEvent(
-        id: 'video1',
+        id: _testVideoId,
         pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -131,7 +135,7 @@ void main() {
 
       final now = DateTime.now();
       final testVideo = VideoEvent(
-        id: 'video1',
+        id: _testVideoId,
         pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -229,7 +233,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -255,7 +259,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -292,7 +296,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -323,7 +327,7 @@ void main() {
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -376,7 +380,7 @@ void main() {
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -417,7 +421,7 @@ void main() {
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -453,7 +457,7 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -496,12 +500,14 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
           content: 'Test',
           title: 'Indigenous cultures',
+          vineId: 'indigenous-cultures',
+          rawTags: const {'d': 'indigenous-cultures'},
         ),
         recipientPubkey: _recipientPubkey,
       );
@@ -541,11 +547,13 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
           content: 'Test',
+          vineId: 'shareable-video',
+          rawTags: const {'d': 'shareable-video'},
         ),
         recipientPubkey: _recipientPubkey,
       );
@@ -585,7 +593,7 @@ void main() {
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -623,7 +631,7 @@ void main() {
       final now = DateTime.now();
       await nip17Service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -637,21 +645,40 @@ void main() {
   });
 
   group('sharing utilities', () {
-    test('generateShareUrl uses stableId', () {
+    test('generateShareUrl uses stableId when video has a d tag', () {
       final now = DateTime.now();
       final video = VideoEvent(
-        id: 'video1',
+        id: _testVideoId,
         pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         content: 'Test',
         vineId: 'my-vine-id',
+        rawTags: const {'d': 'my-vine-id'},
       );
 
       final url = service.generateShareUrl(video);
 
-      // stableId returns vineId when set, otherwise falls back to id
       expect(url, equals('https://divine.video/video/my-vine-id'));
+    });
+
+    test('generateShareUrl falls back to nostr nevent without a d tag', () {
+      final now = DateTime.now();
+      const eventId =
+          'a695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+      final video = VideoEvent(
+        id: eventId,
+        pubkey: _testPubkey,
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        timestamp: now,
+        content: 'Test',
+        vineId: eventId,
+      );
+
+      final url = service.generateShareUrl(video);
+
+      expect(url, startsWith('nostr:nevent1'));
+      expect(NIP19Tlv.isNevent(url.replaceFirst('nostr:', '')), isTrue);
     });
 
     test('hasSharedWithRecently returns false for unknown user', () {
@@ -682,7 +709,7 @@ void main() {
       final now = DateTime.now();
       await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
@@ -718,7 +745,7 @@ void main() {
       final now = DateTime.now();
       await service.shareVideoWithUser(
         video: VideoEvent(
-          id: 'video1',
+          id: _testVideoId,
           pubkey: _testPubkey,
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,

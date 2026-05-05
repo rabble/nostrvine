@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
@@ -21,6 +22,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -29,43 +31,24 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Maps a [BlossomUploadFailureReason] from the upload service to the
+/// localized message shown to the user when an avatar upload fails.
+///
+/// `null` (no reason supplied — defensive for older paths or unmapped
+/// failures) falls through to the generic "upload failed" copy.
 String profileSetupUploadErrorMessage(
   AppLocalizations l10n,
-  Object error,
+  BlossomUploadFailureReason? reason,
 ) {
-  final errorMessage = error.toString().toLowerCase();
-
-  if (errorMessage.contains('network') ||
-      errorMessage.contains('connection') ||
-      errorMessage.contains('cannot connect') ||
-      errorMessage.contains('timeout')) {
-    return l10n.profileSetupUploadNetworkError;
-  }
-
-  if (errorMessage.contains('auth') ||
-      errorMessage.contains('401') ||
-      errorMessage.contains('403')) {
-    return l10n.profileSetupUploadAuthError;
-  }
-
-  if (errorMessage.contains('file too large') ||
-      errorMessage.contains('payload too large') ||
-      errorMessage.contains('413') ||
-      errorMessage.contains('size')) {
-    return l10n.profileSetupUploadFileTooLarge;
-  }
-
-  if (errorMessage.contains('server error') ||
-      errorMessage.contains('server') ||
-      errorMessage.contains('unavailable') ||
-      errorMessage.contains('500') ||
-      errorMessage.contains('502') ||
-      errorMessage.contains('503') ||
-      errorMessage.contains('504')) {
-    return l10n.profileSetupUploadServerError;
-  }
-
-  return l10n.profileSetupUploadFailedGeneric;
+  return switch (reason) {
+    BlossomUploadFailureReason.network => l10n.profileSetupUploadNetworkError,
+    BlossomUploadFailureReason.auth => l10n.profileSetupUploadAuthError,
+    BlossomUploadFailureReason.fileTooLarge =>
+      l10n.profileSetupUploadFileTooLarge,
+    BlossomUploadFailureReason.server => l10n.profileSetupUploadServerError,
+    BlossomUploadFailureReason.unknown ||
+    null => l10n.profileSetupUploadFailedGeneric,
+  };
 }
 
 class ProfileSetupScreen extends ConsumerWidget {
@@ -780,50 +763,7 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 16),
 
-                              // Public key (npub) - read-only
-                              Padding(
-                                padding: const EdgeInsetsDirectional.only(
-                                  start: 16,
-                                ),
-                                child: Text(
-                                  context.l10n.profileSetupPublicKeyLabel,
-                                  style: VineTheme.labelMediumFont(
-                                    color: VineTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ),
-                              TextFormField(
-                                initialValue: ref
-                                    .watch(authServiceProvider)
-                                    .currentNpub,
-                                readOnly: true,
-                                maxLines: null,
-                                style: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurfaceMuted,
-                                ),
-                                decoration: const InputDecoration(
-                                  isCollapsed: true,
-                                  border: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  enabledBorder: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedBorder: UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  contentPadding: EdgeInsets.all(16),
-                                ),
-                              ),
+                              const _PublicKeyLink(),
                               const SizedBox(height: 16),
 
                               // NIP-05 Username (optional)
@@ -1356,7 +1296,10 @@ class _ProfileSetupScreenViewState
       final uploadService = ref.read(blossomUploadServiceProvider);
 
       if (authService.currentPublicKeyHex == null) {
-        throw Exception('No public key available');
+        // No signed-in identity: classify as auth so the user sees the
+        // sign-in-again copy rather than a generic "upload failed".
+        _showUploadFailureSnackBar(l10n, BlossomUploadFailureReason.auth);
+        return;
       }
 
       final result = await uploadService.uploadImage(
@@ -1394,11 +1337,20 @@ class _ProfileSetupScreenViewState
           );
         }
       } else {
-        throw Exception(result.errorMessage ?? 'Upload failed');
+        Log.error(
+          'Image upload failed: ${result.errorMessage} '
+          '(reason: ${result.failureReason}, status: ${result.statusCode})',
+          name: 'ProfileSetupScreen',
+          category: LogCategory.ui,
+        );
+        _showUploadFailureSnackBar(l10n, result.failureReason);
       }
     } catch (e) {
+      // Defensive: uploadImage normally returns a result rather than
+      // throwing, so anything reaching here is unexpected (file IO,
+      // provider lookup). Surface the generic copy.
       Log.error(
-        'Error uploading image: $e',
+        'Unexpected error uploading image: $e',
         name: 'ProfileSetupScreen',
         category: LogCategory.ui,
       );
@@ -1407,23 +1359,7 @@ class _ProfileSetupScreenViewState
         name: 'ProfileSetupScreen',
         category: LogCategory.ui,
       );
-
-      final userMessage = profileSetupUploadErrorMessage(l10n, e);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(userMessage),
-            backgroundColor: VineTheme.error,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: l10n.profileSetupGotItButton,
-              textColor: VineTheme.whiteText,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
+      _showUploadFailureSnackBar(l10n, null);
     } finally {
       if (mounted) {
         setState(() {
@@ -1431,6 +1367,25 @@ class _ProfileSetupScreenViewState
         });
       }
     }
+  }
+
+  void _showUploadFailureSnackBar(
+    AppLocalizations l10n,
+    BlossomUploadFailureReason? reason,
+  ) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(profileSetupUploadErrorMessage(l10n, reason)),
+        backgroundColor: VineTheme.error,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: l10n.profileSetupGotItButton,
+          textColor: VineTheme.whiteText,
+          onPressed: () {},
+        ),
+      ),
+    );
   }
 
   void _showNostrInfoSheet(BuildContext context) {
@@ -2263,6 +2218,25 @@ class _ExternalNip05Section extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _PublicKeyLink extends StatelessWidget {
+  const _PublicKeyLink();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton(
+        onPressed: () => context.goNamed(KeyManagementScreen.routeName),
+        child: Text(
+          l10n.profileEditPublicKeyLink,
+          style: VineTheme.labelMediumFont(color: VineTheme.primary),
+        ),
+      ),
     );
   }
 }

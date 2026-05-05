@@ -4464,6 +4464,24 @@ abstract class AppLocalizations {
   /// **'Sign in with Amber'**
   String get authSignInWithAmber;
 
+  /// No description provided for @authSignInWithBrowserExtension.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with browser extension'**
+  String get authSignInWithBrowserExtension;
+
+  /// No description provided for @authNip07ConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t connect to your browser extension.'**
+  String get authNip07ConnectionFailed;
+
+  /// No description provided for @authNip07ExtensionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No browser extension found. Install Alby, nos2x, or another NIP-07 compatible extension.'**
+  String get authNip07ExtensionNotFound;
+
   /// No description provided for @authSignInOptionsTitle.
   ///
   /// In en, this message translates to:
@@ -4511,6 +4529,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use the Amber signer app on Android to manage your Nostr keys securely.'**
   String get authInfoAmberDescription;
+
+  /// No description provided for @authInfoBrowserExtensionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser Extension'**
+  String get authInfoBrowserExtensionTitle;
+
+  /// No description provided for @authInfoBrowserExtensionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with a NIP-07 browser extension like Alby or nos2x. Your keys stay in the extension — Divine never sees them.'**
+  String get authInfoBrowserExtensionDescription;
 
   /// No description provided for @authCreateAccountTitle.
   ///
@@ -7884,6 +7914,30 @@ abstract class AppLocalizations {
   /// **'Failed to export key: {error}'**
   String keyManagementExportFailed(Object error);
 
+  /// Label above the truncated npub display on the key management screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Your public key (npub)'**
+  String get keyManagementYourPublicKeyLabel;
+
+  /// Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy public key'**
+  String get keyManagementCopyPublicKeyTooltip;
+
+  /// SnackBar shown after the user taps the copy icon next to their npub.
+  ///
+  /// In en, this message translates to:
+  /// **'Public key copied'**
+  String get keyManagementPublicKeyCopied;
+
+  /// Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives.
+  ///
+  /// In en, this message translates to:
+  /// **'View your public key'**
+  String get profileEditPublicKeyLink;
+
   /// No description provided for @saveOriginalSavedToCameraRoll.
   ///
   /// In en, this message translates to:
@@ -8963,6 +9017,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Collaborator invite'**
   String get inboxConversationCollabInvitePreview;
+
+  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.
+  ///
+  /// In en, this message translates to:
+  /// **'You were invited to collaborate on {title}: {url}\n\nOpen diVine to review and accept.'**
+  String collaboratorInviteDmBody(String title, String url);
+
+  /// Plaintext body of the encrypted DM that invites someone to collaborate on a video where the video has no title. Includes a clickable web link so non-Divine Nostr clients can preview the video. The trailing 'Open diVine to review and accept.' sentence MUST stay verbatim — diVine uses it as a marker to suppress legacy plaintext invites in conversation views.
+  ///
+  /// In en, this message translates to:
+  /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
+  String collaboratorInviteDmBodyUntitled(String url);
 
   /// No description provided for @reportDialogCancel.
   ///
@@ -10428,6 +10494,12 @@ abstract class AppLocalizations {
   /// **'{actorName} liked your video'**
   String notificationLikedYourVideo(String actorName);
 
+  /// Notification text when someone reacts to a comment the user posted (typically under another user's video).
+  ///
+  /// In en, this message translates to:
+  /// **'{actorName} liked your comment'**
+  String notificationLikedYourComment(String actorName);
+
   /// No description provided for @notificationCommentedOnYourVideo.
   ///
   /// In en, this message translates to:
@@ -10469,6 +10541,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 other} other{{count} others}}'**
   String notificationOthersCount(int count);
+
+  /// Default body text for a system notification row when no actor is associated with it (e.g. an app-level update or announcement).
+  ///
+  /// In en, this message translates to:
+  /// **'You have a new update'**
+  String get notificationSystemUpdate;
+
+  /// Defensive fallback shown on a grouped like notification when the actor list is empty (e.g. the backend returned a count without resolved actors). Should be rare in practice.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone liked your video'**
+  String get notificationSomeoneLikedYourVideo;
 
   /// Short prefix shown before a replied-to username (e.g. 'Re: alice'). Used in the orphaned-reply chip on a comment item and above the comment input when actively replying.
   ///
@@ -10613,6 +10697,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Got it!'**
   String get videoRecorderWhySixSecondsButton;
+
+  /// Headline on the camera Upload mode explainer panel. Phrased as the question the user is implicitly asking by tapping the Upload tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Why no upload?'**
+  String get videoRecorderUploadTitle;
+
+  /// First body paragraph on the Upload explainer. States the camera-direct mission and contrasts with platforms that allow produced or AI-generated uploads.
+  ///
+  /// In en, this message translates to:
+  /// **'What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.'**
+  String get videoRecorderUploadBody;
+
+  /// Second body paragraph on the Upload explainer. Explains why keeping creation in-app supports the realness goal. Note the deliberate hedges 'better guarantee' and 'as much as we can' — do not strengthen these claims.
+  ///
+  /// In en, this message translates to:
+  /// **'By keeping creation inside the app, we can better guarantee that content is real and unedited. We aren\'t opening up external gallery uploads at this time to protect that realness and keep our community free of synthetic content as much as we can.'**
+  String get videoRecorderUploadBodyDetail;
+
+  /// Closing line on the Upload explainer pointing the user back to the Capture and Classic recording modes.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to Capture or Classic to roll something real.'**
+  String get videoRecorderUploadBodyCta;
+
+  /// Outbound link label that opens divine.video/proofmode in the browser.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn how verification works'**
+  String get videoRecorderUploadLearnMore;
 
   /// No description provided for @videoRecorderAutosaveFoundTitle.
   ///

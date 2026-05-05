@@ -57,6 +57,10 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         child: switch (recorderMode) {
           .capture => const VideoMetadataCaptureStack(),
           .classic => const VideoMetadataClassicStack(),
+          // Deliberately unreachable: upload mode has no record button, so no
+          // clips can be created and the user cannot navigate to the metadata
+          // screen while in this mode. Required only for switch exhaustiveness.
+          .upload => const SizedBox.shrink(),
         },
       ),
     );

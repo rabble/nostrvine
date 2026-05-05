@@ -13,6 +13,15 @@ void main() {
       );
     });
 
+    test('preserves note1 video references for in-app resolution', () {
+      const noteId =
+          'note1w3jhxaq69g8m70m7g6g8j2rf7x0s5h7k0d0l0m9d3c4s5u6v7w8q9xyz0p';
+      expect(
+        divineUrlToPushRoute(Uri.parse('https://divine.video/video/$noteId')),
+        equals('/video/$noteId'),
+      );
+    });
+
     test('accepts www.divine.video host alias', () {
       expect(
         divineUrlToPushRoute(

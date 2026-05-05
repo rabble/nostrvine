@@ -16,6 +16,7 @@ import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart'
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
+import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -29,7 +30,6 @@ import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_fab.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -86,11 +86,12 @@ class _InboxViewState extends ConsumerState<InboxView> {
                           key: ValueKey('messages-$currentPubkey'),
                           child: const _MessagesContent(),
                         )
-                      // Keep Inbox on the proven relay-provider notifications
-                      // path until the BLoC migration matches production.
+                      // BLoC-driven view (video-anchored grouping +
+                      // 56x56 thumbnails + l10n messages); see
+                      // lib/notifications/view/inbox_notifications_page.dart.
                       : KeyedSubtree(
                           key: ValueKey('notifications-$currentPubkey'),
-                          child: const NotificationsScreen(),
+                          child: const InboxNotificationsPage(),
                         ),
                 ),
               ),

@@ -57,6 +57,9 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               16 + MediaQuery.viewPaddingOf(context).bottom,
             ),
             children: [
+              const _NpubDisplayBlock(),
+              const SizedBox(height: 24),
+
               // What are Nostr keys explanation
               _buildExplanationCard(),
               const SizedBox(height: 24),
@@ -492,5 +495,60 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         );
       }
     }
+  }
+}
+
+class _NpubDisplayBlock extends ConsumerWidget {
+  const _NpubDisplayBlock();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final npub = ref.watch(authServiceProvider).currentNpub ?? '';
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.keyManagementYourPublicKeyLabel,
+                  style: VineTheme.labelMediumFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  npub,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.bodyMediumFont(),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.keyManagementCopyPublicKeyTooltip,
+            icon: const DivineIcon(
+              icon: DivineIconName.copy,
+              color: VineTheme.onSurface,
+            ),
+            onPressed: () => _copyNpub(context, npub),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _copyNpub(BuildContext context, String npub) async {
+    final l10n = context.l10n;
+    await Clipboard.setData(ClipboardData(text: npub));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.keyManagementPublicKeyCopied)),
+    );
   }
 }

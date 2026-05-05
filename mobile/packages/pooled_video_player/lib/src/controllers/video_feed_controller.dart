@@ -24,17 +24,27 @@ enum LoadState {
   error,
 }
 
-/// Temporary diagnostic switch for the iOS playback investigation.
+/// Compile-time gate for the verbose playback diagnostics added during the
+/// iOS pause investigation.
 ///
-/// When `true`, [VideoFeedController] emits extra source-selection and
-/// session-summary logs alongside the existing stutter/stall diagnostics.
-/// The goal is to answer: which media source (progressive /720p.mp4, raw
-/// blob, HLS, or original) is chosen on each platform, and which one is
-/// actually streaming when a pause or stall is observed.
+/// When `true`, [VideoFeedController] emits source-selection, session
+/// summary, `player_state_snapshot`, and `slow_playback_detected` logs, and
+/// performs the per-heartbeat rate/state-snapshot work that backs them.
+/// When `false`, those branches are dead code and tree-shaken out — the
+/// 100ms heartbeat keeps running but only does the work that is actually
+/// load-bearing for playback (stale-position recovery, loop enforcement,
+/// position callbacks). Stall recovery is intentionally not gated by this
+/// flag.
 ///
-/// Leave enabled while we still need the data; flip to `false` (or delete
-/// along with the log call sites) once the iOS pause cause is known.
-const bool kPlaybackDiagnosticsEnabled = true;
+/// Defaults to [kDebugMode] so debug builds and `flutter test` keep the
+/// full diagnostic stream while release and profile builds do not pay the
+/// cost. Override with `--dart-define=PLAYBACK_DIAGNOSTICS=true` (or
+/// `=false`) to force a specific mode for a build — useful when capturing
+/// production traces against a specific user report.
+const bool kPlaybackDiagnosticsEnabled = bool.fromEnvironment(
+  'PLAYBACK_DIAGNOSTICS',
+  defaultValue: kDebugMode,
+);
 
 /// Classification of a playback URL used by diagnostic logs.
 ///

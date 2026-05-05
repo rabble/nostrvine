@@ -14,7 +14,7 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
         expect(result.npub, isNull);
       });
 
@@ -26,7 +26,29 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
+      });
+
+      test('parses video URL with note1 event reference', () {
+        const videoId =
+            'note1w3jhxaq69g8m70m7g6g8j2rf7x0s5h7k0d0l0m9d3c4s5u6v7w8q9xyz0p';
+        const url = 'https://divine.video/video/$videoId';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.video));
+        expect(result.videoRef, equals(videoId));
+      });
+
+      test('parses video URL with nevent reference', () {
+        const videoId =
+            'nevent1qqsqzg69v7y6hn00qy352euf40x77qfrg4ncn27dauqjx3t83x4ummspz4mhxue69uhhyetvv9ujuetcv9khqmr99e3k7mgprpmhxue69uhhyetvv9ujumn0wd68ytnhd9hxgqgawaehxw309aex2mrp0yhxgetnwss82un9wfjkccte9ehx7um5wghx7un8qgswaehxw309aex2mrp0yh8xarj9e3k7mgzyq8';
+        const url = 'https://divine.video/video/$videoId';
+
+        final result = DeepLinkService.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.video));
+        expect(result.videoRef, equals(videoId));
       });
 
       test('handles video URL with trailing slash', () {
@@ -45,7 +67,7 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.unknown));
-        expect(result.videoId, isNull);
+        expect(result.videoRef, isNull);
       });
 
       test('rejects video URL with extra path segments', () {
@@ -66,7 +88,7 @@ void main() {
 
         expect(result.type, equals(DeepLinkType.profile));
         expect(result.npub, equals(npub));
-        expect(result.videoId, isNull);
+        expect(result.videoRef, isNull);
       });
 
       test('parses profile URL with real npub format', () {
@@ -250,7 +272,7 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
       });
 
       test('accepts https scheme', () {
@@ -260,7 +282,7 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
       });
 
       test('accepts www.divine.video host alias', () {
@@ -270,7 +292,7 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
       });
 
       // Regression: an email verification link
@@ -292,7 +314,7 @@ void main() {
               'hosts. login.divine.video is the OAuth host used by '
               'verification deep links.',
         );
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
       });
 
       test('accepts arbitrary subdomain of divine.video', () {
@@ -302,7 +324,7 @@ void main() {
         final result = DeepLinkService.parseDeepLink(url);
 
         expect(result.type, equals(DeepLinkType.video));
-        expect(result.videoId, equals(videoId));
+        expect(result.videoRef, equals(videoId));
       });
 
       test('rejects lookalike domain (divine.video.evil.com)', () {
@@ -319,31 +341,31 @@ void main() {
         );
       });
 
-      test(
-        'rejects domain that ends with divine.video without separator '
-        '(notdivine.video)',
-        () {
-          const url = 'https://notdivine.video/video/abc123';
+      test('rejects domain that ends with divine.video without separator '
+          '(notdivine.video)', () {
+        const url = 'https://notdivine.video/video/abc123';
 
-          final result = DeepLinkService.parseDeepLink(url);
+        final result = DeepLinkService.parseDeepLink(url);
 
-          expect(
-            result.type,
-            equals(DeepLinkType.unknown),
-            reason:
-                'Only divine.video and *.divine.video should be '
-                'accepted; sibling domains must not match.',
-          );
-        },
-      );
+        expect(
+          result.type,
+          equals(DeepLinkType.unknown),
+          reason:
+              'Only divine.video and *.divine.video should be '
+              'accepted; sibling domains must not match.',
+        );
+      });
     });
 
     group('DeepLink Data Class', () {
       test('creates video deep link with correct data', () {
-        const deepLink = DeepLink(type: DeepLinkType.video, videoId: 'test123');
+        const deepLink = DeepLink(
+          type: DeepLinkType.video,
+          videoRef: 'test123',
+        );
 
         expect(deepLink.type, equals(DeepLinkType.video));
-        expect(deepLink.videoId, equals('test123'));
+        expect(deepLink.videoRef, equals('test123'));
         expect(deepLink.npub, isNull);
       });
 
@@ -352,14 +374,14 @@ void main() {
 
         expect(deepLink.type, equals(DeepLinkType.profile));
         expect(deepLink.npub, equals('npub123'));
-        expect(deepLink.videoId, isNull);
+        expect(deepLink.videoRef, isNull);
       });
 
       test('creates unknown deep link with no data', () {
         const deepLink = DeepLink(type: DeepLinkType.unknown);
 
         expect(deepLink.type, equals(DeepLinkType.unknown));
-        expect(deepLink.videoId, isNull);
+        expect(deepLink.videoRef, isNull);
         expect(deepLink.npub, isNull);
       });
 
@@ -398,8 +420,11 @@ void main() {
 
     group('$DeepLink toString', () {
       test('formats video deep link', () {
-        const link = DeepLink(type: DeepLinkType.video, videoId: 'abc');
-        expect(link.toString(), equals('DeepLink(type: video, videoId: abc)'));
+        const link = DeepLink(type: DeepLinkType.video, videoRef: 'abc');
+        expect(
+          link.toString(),
+          equals('DeepLink(type: video, videoRef: abc)'),
+        );
       });
 
       test('formats profile deep link with index', () {

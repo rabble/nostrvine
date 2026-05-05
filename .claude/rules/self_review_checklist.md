@@ -10,6 +10,18 @@ before continuing.
 
 ---
 
+## Before starting any task
+
+Branch hygiene (see [`agent_workflow.md`](agent_workflow.md)):
+
+- [ ] Working in a **new worktree branched from `origin/main`** — not on
+  `main`, not in a stale worktree, not on a branch from local `main`.
+  Did you `git fetch origin` first?
+- [ ] One task per worktree. If the current worktree has unrelated WIP,
+  it's not the right place to start new work.
+
+---
+
 ## Before planning a feature
 
 Architecture and ownership:
@@ -136,7 +148,10 @@ Then:
   emoji TODOs left behind.
 - [ ] No unused imports, unused locals, dead code from a removed
   approach.
-- [ ] Format, analyze, and scoped tests all pass locally.
+- [ ] Format, analyze, and scoped tests all pass locally. **Never push
+  red** — `origin/main` always passes, so any failing test on your
+  branch is caused by your diff. See
+  [`agent_workflow.md`](agent_workflow.md#5-failing-tests-are-never-acceptable-and-always-your-fault).
 - [ ] Generated files (Riverpod, Freezed, JSON, Mockito, Drift) are
   regenerated and staged if you touched inputs.
 - [ ] `pubspec.lock` churn from a different SDK/pub-resolver run is
@@ -149,10 +164,19 @@ Then:
 
 ## Before opening or updating a PR
 
+- [ ] **Rebased onto fresh `origin/main`** before pushing
+  (`git fetch origin && git rebase origin/main`), and pushed with
+  `--force-with-lease`. See
+  [`agent_workflow.md`](agent_workflow.md#2-always-rebase-onto-originmain-before-pushing).
+- [ ] PR targets `main`. **Never `--base <other-branch>`** — if this
+  work depends on another in-flight branch, combine them into one PR.
+  See [`agent_workflow.md`](agent_workflow.md#3-never-stack-prs--combine-dependent-features-into-one-bigger-pr).
 - [ ] PR description follows `pull_request_template.md` (use
   `/pr-summary` to regenerate from commits).
-- [ ] Deferred work is tracked in linked follow-up issues — not left
-  implicit in the PR body.
+- [ ] No deferred work in the diff. No `// TODO` (except
+  transitional-code TODOs with tracking issues), no `@Skip`, no
+  commented-out code, no half-finished refactors. See
+  [`agent_workflow.md`](agent_workflow.md#4-do-not-accumulate-technical-debt).
 - [ ] Screenshots or screen recordings attached for UI changes.
 - [ ] Manual test plan covers both own-profile and other-profile paths
   (or equivalent primary vs secondary code paths) where relevant.

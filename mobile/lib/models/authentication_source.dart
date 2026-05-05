@@ -5,7 +5,8 @@ enum AuthenticationSource {
   importedKeys('imported_keys'),
   automatic('automatic'),
   bunker('bunker'),
-  amber('amber')
+  amber('amber'),
+  nip07('nip07'),
   ;
 
   const AuthenticationSource(this.code);

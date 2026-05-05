@@ -5904,12 +5904,14 @@ void main() {
   });
 
   group('kPlaybackDiagnosticsEnabled', () {
-    test('flag is currently enabled (set to false to remove diagnostics)', () {
-      // This test exists to make removal of the diagnostics gate
-      // visible: when iOS playback investigation wraps up, set the
-      // const to false (or delete the call sites) and update this
-      // expectation in the same commit.
-      expect(kPlaybackDiagnosticsEnabled, isTrue);
+    test('defaults to kDebugMode so debug + tests capture diagnostics', () {
+      // The diagnostic gate defaults to [kDebugMode] (overridable with
+      // `--dart-define=PLAYBACK_DIAGNOSTICS=...`). This assertion pins
+      // that contract so a future edit cannot silently flip the gate
+      // off under tests — if it did, the diagnostic-emission tests
+      // above would stop producing logs and start passing for the
+      // wrong reason.
+      expect(kPlaybackDiagnosticsEnabled, equals(kDebugMode));
     });
   });
 }

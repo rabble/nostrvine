@@ -344,23 +344,28 @@ void main() {
         },
       );
 
+      late Completer<void> commentsCountStarted;
+      late Completer<int> commentsCountCompleter;
+
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'preserves optimistic toggle when tap lands mid-fetch',
         setUp: () {
+          commentsCountStarted = Completer<void>();
+          commentsCountCompleter = Completer<int>();
           // Pre-fetch repository state: not liked, count from initial seed.
           when(
             () => mockLikesRepository.isLiked(testEventId),
           ).thenAnswer((_) async => false);
-          // Hold the fetch open via a slow comment count so the tap can
-          // land between the loading emit and the success emit. Without
-          // the pre-fetch snapshot guard in [_onFetchRequested], the
-          // success emit overwrites isLiked + likeCount with stale relay
-          // values and the heart bounces back off.
+          // Hold the fetch open until the test explicitly releases it so
+          // the tap deterministically lands between the loading emit and
+          // the success emit. Fixed delays were flaky on CI.
           when(
             () => mockCommentsRepository.getCommentsCount(testEventId),
           ).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(milliseconds: 30));
-            return 0;
+            if (!commentsCountStarted.isCompleted) {
+              commentsCountStarted.complete();
+            }
+            return commentsCountCompleter.future;
           });
           when(
             () => mockRepostsRepository.getRepostCountByEventId(testEventId),
@@ -375,12 +380,10 @@ void main() {
         build: () => createBloc(initialLikeCount: 10),
         act: (bloc) async {
           bloc.add(const VideoInteractionsFetchRequested());
-          // Let the fetch handler reach its first await on isLiked +
-          // schedule the slow comments query, but not finish.
-          await Future<void>.delayed(const Duration(milliseconds: 5));
+          await commentsCountStarted.future;
           bloc.add(const VideoInteractionsLikeToggled());
+          commentsCountCompleter.complete(0);
         },
-        wait: const Duration(milliseconds: 100),
         expect: () => [
           // Fetch enters loading. Seeded likeCount=10 carries through.
           const VideoInteractionsState(

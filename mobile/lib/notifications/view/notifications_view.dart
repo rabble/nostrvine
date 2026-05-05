@@ -7,8 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
-import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,6 +15,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:time_formatter/time_formatter.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// The notification list UI.
@@ -26,7 +25,15 @@ import 'package:unified_logger/unified_logger.dart';
 @visibleForTesting
 class NotificationsView extends ConsumerStatefulWidget {
   /// Creates a [NotificationsView].
-  const NotificationsView({super.key});
+  const NotificationsView({this.kindFilter, super.key});
+
+  /// When non-null, only notifications whose [NotificationItem.type] matches
+  /// the filter are rendered. Used by the inbox tabs scaffold.
+  ///
+  /// `like` matches both [VideoNotification]s of kind `like` and
+  /// [ActorNotification]s of kind `likeComment` so the Likes tab surfaces
+  /// reactions on both videos and comments.
+  final NotificationKind? kindFilter;
 
   @override
   ConsumerState<NotificationsView> createState() => _NotificationsViewState();
@@ -72,12 +79,30 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
+  /// Returns [items] filtered by [NotificationsView.kindFilter].
+  ///
+  /// `like` matches both video likes and comment likes so the Likes tab
+  /// surfaces reactions on either target.
+  List<NotificationItem> _applyFilter(List<NotificationItem> items) {
+    final filter = widget.kindFilter;
+    if (filter == null) return items;
+    return items.where((n) {
+      if (n.type == filter) return true;
+      if (filter == NotificationKind.like &&
+          n.type == NotificationKind.likeComment) {
+        return true;
+      }
+      return false;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: VineTheme.surfaceContainerHigh,
+      color: VineTheme.backgroundColor,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
+          final visible = _applyFilter(state.notifications);
           return switch (state.status) {
             NotificationFeedStatus.initial ||
             NotificationFeedStatus.loading => const Center(
@@ -89,7 +114,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
               ),
             ),
             NotificationFeedStatus.loaded =>
-              state.notifications.isEmpty
+              visible.isEmpty
                   ? RefreshIndicator(
                       color: VineTheme.onPrimary,
                       backgroundColor: VineTheme.vineGreen,
@@ -109,7 +134,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                         );
                       },
                       child: _NotificationList(
-                        notifications: state.notifications,
+                        notifications: visible,
                         isLoadingMore: state.isLoadingMore,
                         hasMore: state.hasMore,
                         scrollController: _scrollController,
@@ -117,9 +142,10 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                             _onItemTap(context, notification),
                         onProfileTap: (pubkey) =>
                             _navigateToProfile(context, pubkey),
-                        onFollowBack: (pubkey) => context
-                            .read<NotificationFeedBloc>()
-                            .add(NotificationFeedFollowBack(pubkey)),
+                        onFollowBack: (pubkey) =>
+                            context.read<NotificationFeedBloc>().add(
+                              NotificationFeedFollowBack(pubkey),
+                            ),
                       ),
                     ),
           };
@@ -137,50 +163,29 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       NotificationFeedItemTapped(notification.id),
     );
 
-    // Navigate based on notification type.
     switch (notification) {
-      case SingleNotification():
-        await _navigateForSingle(context, notification);
-      case GroupedNotification():
-        await _navigateForGrouped(context, notification);
-    }
-  }
-
-  Future<void> _navigateForSingle(
-    BuildContext context,
-    SingleNotification notification,
-  ) async {
-    switch (notification.type) {
-      case NotificationKind.follow:
-        _navigateToProfile(context, notification.actor.pubkey);
-      case NotificationKind.like:
-      case NotificationKind.comment:
-      case NotificationKind.reply:
-      case NotificationKind.repost:
-      case NotificationKind.mention:
-        if (notification.targetEventId != null) {
-          await _navigateToVideo(
-            context,
-            notification.targetEventId!,
-            notificationKind: notification.type,
-          );
+      case VideoNotification(:final videoEventId, :final type):
+        await _navigateToVideo(
+          context,
+          videoEventId,
+          notificationKind: type,
+        );
+      case ActorNotification(:final actor, :final type):
+        switch (type) {
+          case NotificationKind.follow:
+          case NotificationKind.mention:
+            _navigateToProfile(context, actor.pubkey);
+          case NotificationKind.system:
+            break;
+          case NotificationKind.like:
+          case NotificationKind.likeComment:
+          case NotificationKind.comment:
+          case NotificationKind.reply:
+          case NotificationKind.repost:
+            // Not represented as ActorNotification, but pattern-match
+            // exhaustivity requires these.
+            break;
         }
-      case NotificationKind.system:
-        // System notifications don't navigate.
-        break;
-    }
-  }
-
-  Future<void> _navigateForGrouped(
-    BuildContext context,
-    GroupedNotification notification,
-  ) async {
-    if (notification.targetEventId != null) {
-      await _navigateToVideo(
-        context,
-        notification.targetEventId!,
-        notificationKind: notification.type,
-      );
     }
   }
 
@@ -210,33 +215,37 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (resolvedVideoEventId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.notificationsVideoNotFound)),
+        const SnackBar(content: Text('Video not found')),
       );
       return;
     }
 
-    // fetchVideoWithStats handles cache→relay lookup and bulk-stats
-    // hydration in one call, matching what feed providers do.
-    VideoEvent? video;
-    try {
-      video = await ref
-          .read(videosRepositoryProvider)
-          .fetchVideoWithStats(resolvedVideoEventId);
-    } catch (e) {
-      Log.error(
-        'Failed to fetch video: $e',
-        name: 'NotificationsView',
-        category: LogCategory.ui,
-      );
+    // Get video from video event service.
+    var video = videoEventService.getVideoById(resolvedVideoEventId);
+
+    // If not found in cache, try fetching from Nostr.
+    if (video == null) {
+      try {
+        final event = await nostrService.fetchEventById(resolvedVideoEventId);
+        if (event != null) {
+          video = VideoEvent.fromNostrEvent(event);
+        }
+      } catch (e) {
+        Log.error(
+          'Failed to fetch video from Nostr: $e',
+          name: 'NotificationsView',
+          category: LogCategory.ui,
+        );
+      }
     }
 
     if (!context.mounted) return;
 
     if (video == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.notificationsVideoNotFound),
-          duration: const Duration(seconds: 2),
+        const SnackBar(
+          content: Text('Video not found'),
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -244,9 +253,9 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     if (videoEventService.shouldHideVideo(video)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.notificationsVideoUnavailable),
-          duration: const Duration(seconds: 2),
+        const SnackBar(
+          content: Text('Video unavailable'),
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -254,16 +263,16 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
     final shouldAutoOpenComments =
         notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply ||
-        notificationKind == NotificationKind.mention;
+        notificationKind == NotificationKind.reply;
+    final videoForNav = video;
 
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([video]),
+        videosStream: Stream.value([videoForNav]),
         initialIndex: 0,
-        removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
-        contextTitle: context.l10n.notificationsFromNotification,
+        contextTitle: 'From Notification',
+
         autoOpenComments: shouldAutoOpenComments,
       ),
     );
@@ -313,21 +322,22 @@ class _FailureBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
+          const Icon(
+            Icons.error_outline,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(height: 16),
-          Text(
-            context.l10n.notificationsFailedToLoad,
-            style: const TextStyle(
-              fontSize: 18,
-              color: VineTheme.secondaryText,
-            ),
+          const Text(
+            'Failed to load notifications',
+            style: TextStyle(fontSize: 18, color: VineTheme.secondaryText),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
-            child: Text(
-              context.l10n.notificationsRetry,
-              style: const TextStyle(color: VineTheme.vineGreen),
+            child: const Text(
+              'Retry',
+              style: TextStyle(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -369,7 +379,9 @@ class _NotificationList extends StatelessWidget {
           return const Padding(
             padding: EdgeInsets.all(16),
             child: Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+              child: CircularProgressIndicator(
+                color: VineTheme.vineGreen,
+              ),
             ),
           );
         }
@@ -384,13 +396,13 @@ class _NotificationList extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Text(
-                  LocalizedTimeFormatter.formatDateLabel(
-                    context.l10n,
+                  TimeFormatter.formatDateLabel(
                     notification.timestamp.millisecondsSinceEpoch ~/ 1000,
-                    locale: Localizations.localeOf(context).toLanguageTag(),
                   ),
-                  style: VineTheme.labelLargeFont(
-                    color: VineTheme.onSurfaceMuted,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: VineTheme.secondaryText,
                   ),
                 ),
               ),
@@ -406,6 +418,13 @@ class _NotificationList extends StatelessWidget {
                 if (pubkey != null) onFollowBack(pubkey);
               },
             ),
+            if (index < notifications.length - 1)
+              const Divider(
+                height: 1,
+                thickness: 0.5,
+                color: VineTheme.onSurfaceMuted,
+                indent: 72,
+              ),
           ],
         );
       },
@@ -438,9 +457,9 @@ class _NotificationList extends StatelessWidget {
   /// Extracts the primary actor pubkey from a notification.
   String? _profilePubkey(NotificationItem notification) {
     return switch (notification) {
-      SingleNotification(:final actor) => actor.pubkey,
-      GroupedNotification(:final actors) =>
+      VideoNotification(:final actors) =>
         actors.isNotEmpty ? actors.first.pubkey : null,
+      ActorNotification(:final actor) => actor.pubkey,
     };
   }
 }

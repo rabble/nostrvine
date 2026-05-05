@@ -30,11 +30,7 @@ void main() {
     const videoKind = 34236;
 
     /// Create a test video event
-    Event createTestEvent({
-      String? id,
-      String? pubkey,
-      int? createdAt,
-    }) {
+    Event createTestEvent({String? id, String? pubkey, int? createdAt}) {
       final event =
           Event(
               pubkey ?? testPubkey1,
@@ -152,6 +148,37 @@ void main() {
       });
     });
 
+    group('getEventsByDTag', () {
+      test('returns events matching the d-tag', () async {
+        final events = [
+          createTestEvent(id: testEventId1),
+          createTestEvent(id: testEventId2),
+        ];
+
+        when(
+          () => mockDao.getEventsByFilter(any()),
+        ).thenAnswer((_) async => events);
+
+        final result = await storage.getEventsByDTag('test-vine-id');
+
+        expect(result, hasLength(2));
+        final captured =
+            verify(
+                  () => mockDao.getEventsByFilter(captureAny()),
+                ).captured.single
+                as Filter;
+        expect(captured.kinds, equals([videoKind]));
+        expect(captured.d, equals(['test-vine-id']));
+      });
+
+      test('returns empty list for empty d-tag', () async {
+        final result = await storage.getEventsByDTag('');
+
+        expect(result, isEmpty);
+        verifyNever(() => mockDao.getEventsByFilter(any()));
+      });
+    });
+
     group('getEventsByAuthors', () {
       test('returns events from specified authors', () async {
         final events = [
@@ -242,10 +269,7 @@ void main() {
           () => mockDao.getEventsByFilter(any(), sortBy: any(named: 'sortBy')),
         ).thenAnswer((_) async => []);
 
-        await storage.getAllEvents(
-          limit: 100,
-          until: 1700000000,
-        );
+        await storage.getAllEvents(limit: 100, until: 1700000000);
 
         final captured = verify(
           () => mockDao.getEventsByFilter(

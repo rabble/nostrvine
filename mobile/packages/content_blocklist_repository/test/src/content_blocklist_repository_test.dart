@@ -498,6 +498,61 @@ void main() {
       },
     );
 
+    test(
+      'ignores stale older mute event after newer unmute event',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const muterPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+
+        final newerUnmuteEvent =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', 'some_other_pubkey'],
+                ],
+                '',
+                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+              )
+              ..id = 'newer-unmute-event-id'
+              ..sig = 'signature';
+
+        final olderMuteEvent =
+            Event(
+                muterPubkey,
+                10000,
+                [
+                  ['p', ourPubkey],
+                ],
+                '',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'older-mute-event-id'
+              ..sig = 'signature';
+
+        final controller = StreamController<Event>();
+
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => controller.stream);
+
+        await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+
+        controller.add(newerUnmuteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasMutedUs(muterPubkey), isFalse);
+
+        controller.add(olderMuteEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasMutedUs(muterPubkey), isFalse);
+        expect(service.shouldFilterFromFeeds(muterPubkey), isFalse);
+
+        await controller.close();
+      },
+    );
+
     test('shouldFilterFromFeeds checks mutual mute blocklist', () async {
       const ourPubkey =
           '0000000000000000000000000000000000000000000000000000000000000001';
@@ -745,6 +800,71 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
         expect(service.hasBlockedUs(blockerPubkey), isFalse);
         expect(changeCount, equals(2));
+
+        await controller.close();
+      },
+    );
+
+    test(
+      'ignores stale older block event after newer unblock event',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const blockerPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+
+        service = ContentBlocklistRepository();
+
+        final newerUnblockEvent =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', 'some_other_pubkey'],
+                ],
+                'Block list',
+                createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+              )
+              ..id = 'newer-unblock-event-id'
+              ..sig = 'signature';
+
+        final olderBlockEvent =
+            Event(
+                blockerPubkey,
+                30000,
+                [
+                  ['d', 'block'],
+                  ['p', ourPubkey],
+                ],
+                'Block list',
+                createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              )
+              ..id = 'older-block-event-id'
+              ..sig = 'signature';
+
+        final controller = StreamController<Event>();
+
+        when(
+          () => mockNostrService.subscribe(
+            any(),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockSigner,
+          ourPubkey,
+        );
+
+        controller.add(newerUnblockEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+
+        controller.add(olderBlockEvent);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+        expect(service.shouldFilterFromFeeds(blockerPubkey), isFalse);
 
         await controller.close();
       },

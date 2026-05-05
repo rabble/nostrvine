@@ -378,6 +378,121 @@ void main() {
     });
   });
 
+  group(Nip07NostrIdentity, () {
+    late _MockNostrSigner mockNip07Signer;
+
+    setUp(() {
+      mockNip07Signer = _MockNostrSigner();
+    });
+
+    test('pubkey is set at construction', () {
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      expect(identity.pubkey, equals(testPublicKey));
+    });
+
+    test('signEvent delegates to nip07 signer', () async {
+      final event = Event(testPublicKey, EventKind.textNote, [], 'test');
+      when(
+        () => mockNip07Signer.signEvent(any()),
+      ).thenAnswer((_) async => event);
+
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      final signed = await identity.signEvent(event);
+
+      expect(signed, equals(event));
+      verify(() => mockNip07Signer.signEvent(any())).called(1);
+    });
+
+    test('signCanonicalPayload returns null', () async {
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      final result = await identity.signCanonicalPayload(
+        Uint8List.fromList([1, 2, 3]),
+      );
+
+      expect(result, isNull);
+    });
+
+    test('encrypt delegates to nip07 signer', () async {
+      when(
+        () => mockNip07Signer.encrypt(any(), any()),
+      ).thenAnswer((_) async => 'cipher');
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      final result = await identity.encrypt(testPublicKey, 'plaintext');
+
+      expect(result, equals('cipher'));
+      verify(
+        () => mockNip07Signer.encrypt(testPublicKey, 'plaintext'),
+      ).called(1);
+    });
+
+    test('decrypt delegates to nip07 signer', () async {
+      when(
+        () => mockNip07Signer.decrypt(any(), any()),
+      ).thenAnswer((_) async => 'plaintext');
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      final result = await identity.decrypt(testPublicKey, 'cipher');
+
+      expect(result, equals('plaintext'));
+    });
+
+    test('nip44Encrypt delegates to nip07 signer', () async {
+      when(
+        () => mockNip07Signer.nip44Encrypt(any(), any()),
+      ).thenAnswer((_) async => 'nip44-cipher');
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      final result = await identity.nip44Encrypt(testPublicKey, 'plaintext');
+
+      expect(result, equals('nip44-cipher'));
+    });
+
+    test('nip44Decrypt delegates to nip07 signer', () async {
+      when(
+        () => mockNip07Signer.nip44Decrypt(any(), any()),
+      ).thenAnswer((_) async => 'plaintext');
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      final result = await identity.nip44Decrypt(testPublicKey, 'cipher');
+
+      expect(result, equals('plaintext'));
+    });
+
+    test('npub encodes pubkey to bech32', () {
+      final identity = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockNip07Signer,
+      );
+
+      expect(identity.npub, equals(NostrKeyUtils.encodePubKey(testPublicKey)));
+    });
+  });
+
   group('structural desync prevention', () {
     test('pubkey used in event always matches signing key '
         'because both come from the same identity instance', () async {
@@ -436,10 +551,20 @@ void main() {
         pubkey: testPublicKey,
         amberSigner: mockSigner,
       );
+      final nip07 = Nip07NostrIdentity(
+        pubkey: testPublicKey,
+        nip07Signer: mockSigner,
+      );
 
-      // All four variants expose the same pubkey — it's a final field,
+      // All five variants expose the same pubkey — it's a final field,
       // not a getter that reads from a mutable slot.
-      for (final identity in <NostrIdentity>[local, keycast, bunker, amber]) {
+      for (final identity in <NostrIdentity>[
+        local,
+        keycast,
+        bunker,
+        amber,
+        nip07,
+      ]) {
         expect(identity.pubkey, equals(testPublicKey));
       }
     });
