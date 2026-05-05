@@ -23,8 +23,9 @@ class _MockNotificationFeedBloc
 /// Pumps [NotificationsView] inside the required providers.
 Future<void> _pumpView(
   WidgetTester tester,
-  NotificationFeedBloc bloc,
-) async {
+  NotificationFeedBloc bloc, {
+  NotificationKind? kindFilter,
+}) async {
   await tester.pumpWidget(
     ProviderScope(
       child: MaterialApp(
@@ -33,7 +34,7 @@ Future<void> _pumpView(
         theme: ThemeData.dark(),
         home: BlocProvider<NotificationFeedBloc>.value(
           value: bloc,
-          child: const Scaffold(body: NotificationsView()),
+          child: Scaffold(body: NotificationsView(kindFilter: kindFilter)),
         ),
       ),
     ),
@@ -193,6 +194,99 @@ void main() {
           () => mockBloc.add(NotificationFeedItemTapped('n1')),
         ).called(1);
       });
+    });
+
+    group('kindFilter', () {
+      final mixed = <NotificationItem>[
+        ActorNotification(
+          id: 'a1',
+          type: NotificationKind.follow,
+          actor: ActorInfo(pubkey: 'a', displayName: 'Alice'),
+          timestamp: DateTime(2026),
+        ),
+        ActorNotification(
+          id: 'a2',
+          type: NotificationKind.mention,
+          actor: ActorInfo(pubkey: 'b', displayName: 'Bob'),
+          timestamp: DateTime(2026),
+        ),
+        ActorNotification(
+          id: 'a3',
+          type: NotificationKind.likeComment,
+          actor: ActorInfo(pubkey: 'c', displayName: 'Carol'),
+          timestamp: DateTime(2026),
+        ),
+        VideoNotification(
+          id: 'v1',
+          type: NotificationKind.like,
+          videoEventId: 'video1',
+          actors: const [ActorInfo(pubkey: 'd', displayName: 'Dan')],
+          totalCount: 1,
+          timestamp: DateTime(2026),
+        ),
+        VideoNotification(
+          id: 'v2',
+          type: NotificationKind.comment,
+          videoEventId: 'video2',
+          actors: const [ActorInfo(pubkey: 'e', displayName: 'Eve')],
+          totalCount: 1,
+          timestamp: DateTime(2026),
+        ),
+      ];
+
+      testWidgets('null filter renders every notification', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: mixed,
+          ),
+        );
+
+        await _pumpView(tester, mockBloc);
+
+        expect(find.byType(NotificationListItem), findsNWidgets(5));
+      });
+
+      testWidgets(
+        'follow filter renders only follow notifications',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: mixed,
+            ),
+          );
+
+          await _pumpView(
+            tester,
+            mockBloc,
+            kindFilter: NotificationKind.follow,
+          );
+
+          expect(find.byType(NotificationListItem), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'like filter also matches likeComment so likes-on-comments appear',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: mixed,
+            ),
+          );
+
+          await _pumpView(
+            tester,
+            mockBloc,
+            kindFilter: NotificationKind.like,
+          );
+
+          // VideoNotification(like) + ActorNotification(likeComment) = 2.
+          expect(find.byType(NotificationListItem), findsNWidgets(2));
+        },
+      );
     });
 
     group('date headers', () {

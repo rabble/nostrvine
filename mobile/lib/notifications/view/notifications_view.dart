@@ -25,7 +25,15 @@ import 'package:unified_logger/unified_logger.dart';
 @visibleForTesting
 class NotificationsView extends ConsumerStatefulWidget {
   /// Creates a [NotificationsView].
-  const NotificationsView({super.key});
+  const NotificationsView({this.kindFilter, super.key});
+
+  /// When non-null, only notifications whose [NotificationItem.type] matches
+  /// the filter are rendered. Used by the inbox tabs scaffold.
+  ///
+  /// `like` matches both [VideoNotification]s of kind `like` and
+  /// [ActorNotification]s of kind `likeComment` so the Likes tab surfaces
+  /// reactions on both videos and comments.
+  final NotificationKind? kindFilter;
 
   @override
   ConsumerState<NotificationsView> createState() => _NotificationsViewState();
@@ -71,12 +79,30 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     }
   }
 
+  /// Returns [items] filtered by [NotificationsView.kindFilter].
+  ///
+  /// `like` matches both video likes and comment likes so the Likes tab
+  /// surfaces reactions on either target.
+  List<NotificationItem> _applyFilter(List<NotificationItem> items) {
+    final filter = widget.kindFilter;
+    if (filter == null) return items;
+    return items.where((n) {
+      if (n.type == filter) return true;
+      if (filter == NotificationKind.like &&
+          n.type == NotificationKind.likeComment) {
+        return true;
+      }
+      return false;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
       color: VineTheme.backgroundColor,
       child: BlocBuilder<NotificationFeedBloc, NotificationFeedState>(
         builder: (context, state) {
+          final visible = _applyFilter(state.notifications);
           return switch (state.status) {
             NotificationFeedStatus.initial ||
             NotificationFeedStatus.loading => const Center(
@@ -88,7 +114,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
               ),
             ),
             NotificationFeedStatus.loaded =>
-              state.notifications.isEmpty
+              visible.isEmpty
                   ? RefreshIndicator(
                       color: VineTheme.onPrimary,
                       backgroundColor: VineTheme.vineGreen,
@@ -108,7 +134,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
                         );
                       },
                       child: _NotificationList(
-                        notifications: state.notifications,
+                        notifications: visible,
                         isLoadingMore: state.isLoadingMore,
                         hasMore: state.hasMore,
                         scrollController: _scrollController,
