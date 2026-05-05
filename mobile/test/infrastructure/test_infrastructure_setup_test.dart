@@ -129,11 +129,9 @@ void main() {
         reason:
             'Hook installer should verify generated files with build_runner',
       );
-      expect(
-        content,
-        contains('Generated files changed during verification'),
-        reason: 'Pre-commit hook should fail when generated files drift',
-      );
+      // Codegen verification now lives in pre-push only (pre-commit is
+      // format-only for speed). The pre-push failure message below is
+      // the single source of truth for the codegen-drift gate.
       expect(
         content,
         contains('Generated files are out of date.'),
