@@ -61,8 +61,7 @@ class RelayNotification {
           (rawThumbnail != null && rawThumbnail.isNotEmpty)
           ? rawThumbnail
           : null,
-      referencedDTag:
-          (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
+      referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
     );
   }
 

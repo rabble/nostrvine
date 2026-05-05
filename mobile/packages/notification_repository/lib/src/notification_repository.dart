@@ -410,7 +410,8 @@ class NotificationRepository {
         type: kind,
         videoEventId: referenced,
         videoAddressableId: addressableId,
-        videoThumbnailUrl: _nonEmpty(raw.referencedVideoThumbnail) ??
+        videoThumbnailUrl:
+            _nonEmpty(raw.referencedVideoThumbnail) ??
             _nonEmpty(video?.thumbnail),
         videoTitle:
             _nonEmpty(raw.referencedVideoTitle) ?? _nonEmpty(video?.title),
