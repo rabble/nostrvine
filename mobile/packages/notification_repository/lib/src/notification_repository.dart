@@ -7,6 +7,7 @@ import 'dart:developer' as developer;
 
 import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:notification_repository/src/blocked_notification_filter.dart';
@@ -490,6 +491,7 @@ class NotificationRepository {
   }
 }
 
+@immutable
 class _VideoGroupKey {
   const _VideoGroupKey(this.eventId, this.kind);
   final String eventId;
