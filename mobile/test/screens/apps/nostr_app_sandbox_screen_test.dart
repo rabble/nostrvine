@@ -442,9 +442,6 @@ void main() {
             'nonce': 'test-nonce',
           }),
           'isMainFrame': false,
-          'host': 'evil.example',
-          'port': 443,
-          'scheme': 'https',
         });
         await tester.pump();
 
@@ -469,9 +466,6 @@ void main() {
               'nonce': 'test-nonce',
             }),
             'isMainFrame': false,
-            'host': 'primal.net',
-            'port': 443,
-            'scheme': 'https',
           });
           await tester.pump();
 
@@ -526,9 +520,6 @@ void main() {
               'nonce': 'test-nonce',
             }),
             'isMainFrame': true,
-            'host': 'primal.net',
-            'port': 443,
-            'scheme': 'https',
           });
           await tester.pump();
 
@@ -553,9 +544,6 @@ void main() {
               'nonce': 'attacker-guessed-nonce',
             }),
             'isMainFrame': true,
-            'host': 'primal.net',
-            'port': 443,
-            'scheme': 'https',
           });
           await tester.pump();
 
@@ -572,9 +560,6 @@ void main() {
           attestedEventHandler!({
             'message': 'not-valid-json',
             'isMainFrame': false,
-            'host': 'evil.example',
-            'port': 443,
-            'scheme': 'https',
           });
           await tester.pump();
 

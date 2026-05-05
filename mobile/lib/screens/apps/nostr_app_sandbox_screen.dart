@@ -15,8 +15,8 @@ import 'package:http/http.dart' as http;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/apps/nostr_app_permission_prompt_sheet.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:webview_flutter_wkwebview/src/common/web_kit.g.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 typedef SandboxViewBuilder =
@@ -240,14 +240,14 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
       },
     );
 
-    // On iOS, replace the pigeon handler with the frame-attesting one.
+    // On iOS, replace the pigeon handler with the frame-attesting one and
+    // hand off the document-start bootstrap script to the native plugin.
     // Must run before the page loads so the native handler is in place when
     // the bootstrap script fires its first postMessage.
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       await _activateNativeAttestation(controller);
     }
 
-    await _installDocumentStartBridgeIfSupported(controller);
     await _loadSandboxPage(launchUri);
   }
 
@@ -262,23 +262,43 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   /// WKScriptMessage.frameInfo. Messages arrive via EventChannel instead of
   /// the addJavaScriptChannel callback.
   ///
-  /// Falls back silently when the native plugin is unavailable (e.g. in tests
-  /// that do not configure the channel); the nonce gate remains active.
+  /// Also hands the document-start bridge bootstrap script to the native
+  /// plugin so it can be installed as a `WKUserScript` without the Dart
+  /// layer needing to import private webview_flutter_wkwebview src types.
+  ///
+  /// Falls back to nonce-only enforcement when the native plugin is
+  /// unavailable (e.g. in tests that do not configure the channel, or if a
+  /// previous sandbox is still attached). Logs a warning so the degraded
+  /// security posture is visible in unified logs.
   Future<void> _activateNativeAttestation(WebViewController controller) async {
     final platformController = controller.platform;
     if (platformController is! WebKitWebViewController) return;
 
+    final bootstrapScript = buildBridgeBootstrapScript(
+      nonce: _bridgeNonce,
+      pubkey: _currentUserPubkey,
+      autoLoginScript: widget.app.autoLoginScript,
+    );
+
     try {
-      await _attestationMethodChannel.invokeMethod<void>(
-        'attach',
-        {'webViewId': platformController.webViewIdentifier},
-      );
+      await _attestationMethodChannel.invokeMethod<void>('attach', {
+        'webViewId': platformController.webViewIdentifier,
+        'bootstrapScript': bootstrapScript,
+      });
       _isNativeAttestationActive = true;
       _attestedMessageSubscription = _attestationEventChannel
           .receiveBroadcastStream()
           .listen(_handleAttestedEvent);
-    } catch (_) {
-      // Plugin channel not available — nonce gate is the only defence on iOS.
+    } on PlatformException catch (error) {
+      Log.warning(
+        'Native frame attestation unavailable (${error.code}); '
+        'falling back to nonce-only enforcement.',
+        name: 'NostrAppSandboxScreen',
+        category: LogCategory.auth,
+      );
+    } on MissingPluginException catch (_) {
+      // Channel is not registered (tests, simulator without the plugin set
+      // up). Nonce gate remains the only defence on iOS in this case.
     }
   }
 
@@ -336,47 +356,6 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
 
     _currentPageUri = uri;
     await controller.loadRequest(uri);
-  }
-
-  Future<void> _installDocumentStartBridgeIfSupported(
-    WebViewController controller,
-  ) async {
-    final platformController = controller.platform;
-    if (platformController is! WebKitWebViewController) {
-      return;
-    }
-
-    final nativeWebView = PigeonInstanceManager.instance
-        .getInstanceWithWeakReference<WKWebView>(
-          platformController.webViewIdentifier,
-        );
-    if (nativeWebView == null) {
-      return;
-    }
-
-    final WKWebViewConfiguration configuration;
-    switch (nativeWebView) {
-      case UIViewWKWebView():
-        configuration = nativeWebView.configuration;
-      case NSViewWKWebView():
-        configuration = nativeWebView.configuration;
-      default:
-        return;
-    }
-
-    final contentController = await configuration.getUserContentController();
-    final fullScript = buildBridgeBootstrapScript(
-      nonce: _bridgeNonce,
-      pubkey: _currentUserPubkey,
-      autoLoginScript: widget.app.autoLoginScript,
-    );
-    final userScript = WKUserScript(
-      source: fullScript,
-      injectionTime: UserScriptInjectionTime.atDocumentStart,
-      isForMainFrameOnly: true,
-    );
-
-    await contentController.addUserScript(userScript);
   }
 
   Future<_BootstrappedSandboxPage?> _prepareBootstrapHtml(Uri uri) async {

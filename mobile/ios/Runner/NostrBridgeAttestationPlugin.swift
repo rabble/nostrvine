@@ -4,29 +4,39 @@ import webview_flutter_wkwebview
 
 /// Thin native plugin that replaces the pigeon-managed WKScriptMessageHandler
 /// for `divineSandboxBridge` with one that includes WKScriptMessage.frameInfo,
-/// and streams attested messages (with isMainFrame + securityOrigin) back to
-/// Dart via an EventChannel.
+/// and streams attested messages (with isMainFrame) back to Dart via an
+/// EventChannel. Optionally installs a document-start WKUserScript so the
+/// Dart layer does not need to import private webview_flutter_wkwebview src
+/// types to do that itself.
 ///
 /// The pigeon layer exposes WKScriptMessage.name and .body only; .frameInfo is
 /// absent from the pigeon definition, so this plugin is required to surface it.
 ///
+/// Lifecycle is single-instance: only one sandbox WebView may be attached at
+/// a time. Attempting to attach a second WebView while another is still
+/// attached returns ALREADY_ATTACHED so the Dart layer can log the degraded
+/// security posture and fall back to nonce-only enforcement instead of
+/// silently overwriting the previous sink.
+///
 /// Dart drives lifecycle via two calls:
-///   attach(webViewId)  — replaces the handler for the given WebView
-///   detach(webViewId)  — removes the handler
+///   attach(webViewId, bootstrapScript?) — replaces the handler, optionally
+///                                         installs a document-start script
+///   detach(webViewId)                   — removes the handler
 ///
 /// The EventChannel delivers maps:
-///   { "message": String, "isMainFrame": Bool, "host": String,
-///     "port": Int, "scheme": String }
+///   { "message": String, "isMainFrame": Bool }
 final class NostrBridgeAttestationPlugin: NSObject, FlutterStreamHandler {
   static let methodChannelName = "co.openvine/nostr_bridge_attestation"
   static let eventChannelName = "co.openvine/nostr_bridge_attestation/events"
-  private static let bridgeChannelName = "divineSandboxBridge"
+  static let bridgeChannelName = "divineSandboxBridge"
+  private static let logTag = "[NostrBridgeAttestation]"
 
   // Retained for the lifetime of the engine.
   private static var shared: NostrBridgeAttestationPlugin?
 
   private let pluginRegistry: FlutterPluginRegistry
-  private var handlers: [Int64: FrameAttestingScriptMessageHandler] = [:]
+  private let policy = NostrBridgeAttestationPolicy()
+  private var handler: FrameAttestingScriptMessageHandler?
   private var eventSink: FlutterEventSink?
 
   private init(pluginRegistry: FlutterPluginRegistry) {
@@ -64,6 +74,7 @@ final class NostrBridgeAttestationPlugin: NSObject, FlutterStreamHandler {
       let args = call.arguments as? [String: Any],
       let webViewId = args["webViewId"] as? Int64
     else {
+      NSLog("\(Self.logTag) attach/detach called without Int64 webViewId")
       result(FlutterError(
         code: "INVALID_ARGUMENT",
         message: "webViewId (Int64) required",
@@ -74,7 +85,12 @@ final class NostrBridgeAttestationPlugin: NSObject, FlutterStreamHandler {
 
     switch call.method {
     case "attach":
-      attachHandler(webViewId: webViewId, result: result)
+      let bootstrapScript = args["bootstrapScript"] as? String
+      attachHandler(
+        webViewId: webViewId,
+        bootstrapScript: bootstrapScript,
+        result: result
+      )
     case "detach":
       detachHandler(webViewId: webViewId)
       result(nil)
@@ -100,11 +116,38 @@ final class NostrBridgeAttestationPlugin: NSObject, FlutterStreamHandler {
 
   // MARK: - Private
 
-  private func attachHandler(webViewId: Int64, result: FlutterResult) {
+  private func attachHandler(
+    webViewId: Int64,
+    bootstrapScript: String?,
+    result: FlutterResult
+  ) {
+    switch policy.attach(webViewId: webViewId) {
+    case .noOp:
+      result(nil)
+      return
+    case .alreadyAttached(let existing):
+      NSLog(
+        "\(Self.logTag) attach refused: already attached to \(existing); requested \(webViewId). Dart will fall back to nonce-only enforcement."
+      )
+      result(FlutterError(
+        code: "ALREADY_ATTACHED",
+        message: "Sandbox attestation already attached to webView \(existing)",
+        details: nil
+      ))
+      return
+    case .ok:
+      break
+    }
+
     guard let webView = FWFWebViewFlutterWKWebViewExternalAPI.webView(
       forIdentifier: webViewId,
       withPluginRegistry: pluginRegistry
     ) else {
+      // Roll back the policy state since the actual attach failed.
+      _ = policy.detach(webViewId: webViewId)
+      NSLog(
+        "\(Self.logTag) attach failed: no WKWebView found for identifier \(webViewId). Dart will fall back to nonce-only enforcement."
+      )
       result(FlutterError(
         code: "WEBVIEW_NOT_FOUND",
         message: "No WKWebView found for identifier \(webViewId)",
@@ -124,27 +167,75 @@ final class NostrBridgeAttestationPlugin: NSObject, FlutterStreamHandler {
       forName: NostrBridgeAttestationPlugin.bridgeChannelName
     )
 
-    let handler = FrameAttestingScriptMessageHandler { [weak self] event in
+    let attestingHandler = FrameAttestingScriptMessageHandler { [weak self] event in
       self?.eventSink?(event)
     }
     contentController.add(
-      handler,
+      attestingHandler,
       name: NostrBridgeAttestationPlugin.bridgeChannelName
     )
-    handlers[webViewId] = handler
+    handler = attestingHandler
+
+    if let bootstrapScript, !bootstrapScript.isEmpty {
+      let userScript = WKUserScript(
+        source: bootstrapScript,
+        injectionTime: .atDocumentStart,
+        forMainFrameOnly: true
+      )
+      contentController.addUserScript(userScript)
+    }
 
     result(nil)
   }
 
   private func detachHandler(webViewId: Int64) {
-    guard let webView = FWFWebViewFlutterWKWebViewExternalAPI.webView(
+    guard policy.detach(webViewId: webViewId) else { return }
+
+    // The WKWebView may already be deallocated by the time Dart tears down,
+    // so a missing lookup here is expected and not an error worth logging.
+    if let webView = FWFWebViewFlutterWKWebViewExternalAPI.webView(
       forIdentifier: webViewId,
       withPluginRegistry: pluginRegistry
-    ) else { return }
+    ) {
+      webView.configuration.userContentController
+        .removeScriptMessageHandler(forName: NostrBridgeAttestationPlugin.bridgeChannelName)
+    }
+    handler = nil
+  }
+}
 
-    webView.configuration.userContentController
-      .removeScriptMessageHandler(forName: NostrBridgeAttestationPlugin.bridgeChannelName)
-    handlers.removeValue(forKey: webViewId)
+// MARK: - NostrBridgeAttestationPolicy
+
+/// Pure state machine for single-instance attestation lifecycle. Extracted so
+/// the attach/detach decisions can be unit tested without a real WKWebView or
+/// plugin registry.
+final class NostrBridgeAttestationPolicy {
+  enum AttachResult: Equatable {
+    /// Newly attached the given webViewId.
+    case ok
+    /// Idempotent re-attach to the same webViewId; nothing to do.
+    case noOp
+    /// A different webViewId is already attached; the request must be refused.
+    case alreadyAttached(existing: Int64)
+  }
+
+  private(set) var attachedWebViewId: Int64?
+
+  func attach(webViewId: Int64) -> AttachResult {
+    if let existing = attachedWebViewId {
+      if existing == webViewId { return .noOp }
+      return .alreadyAttached(existing: existing)
+    }
+    attachedWebViewId = webViewId
+    return .ok
+  }
+
+  /// Returns true when the call cleared a matching attachment, false when the
+  /// id was not attached (so the caller can skip teardown work).
+  func detach(webViewId: Int64) -> Bool {
+    guard attachedWebViewId == webViewId else { return false }
+    attachedWebViewId = nil
+    return true
   }
 }
 
@@ -158,17 +249,22 @@ final class FrameAttestingScriptMessageHandler: NSObject, WKScriptMessageHandler
   }
 
   func userContentController(
-    _ userContentController: WKUserContentController,
+    _: WKUserContentController,
     didReceive message: WKScriptMessage
   ) {
-    let frame = message.frameInfo
-    let origin = frame.securityOrigin
-    deliver([
-      "message": message.body as? String ?? "",
-      "isMainFrame": frame.isMainFrame,
-      "host": origin.host,
-      "port": origin.port,
-      "scheme": origin.protocol,
-    ])
+    deliver(Self.eventPayload(
+      messageBody: message.body as? String ?? "",
+      isMainFrame: message.frameInfo.isMainFrame
+    ))
+  }
+
+  /// Pure translation from the security-relevant fields of WKScriptMessage to
+  /// the Dart event payload. Extracted so the dictionary shape is testable
+  /// without constructing a real WKScriptMessage.
+  static func eventPayload(messageBody: String, isMainFrame: Bool) -> [String: Any] {
+    return [
+      "message": messageBody,
+      "isMainFrame": isMainFrame,
+    ]
   }
 }
