@@ -6286,37 +6286,40 @@ void main() {
         expect(result!.id, equals(lowerEventId));
       });
 
-      test('resolves acceptable legacy video kinds by raw 64-char route ID', () async {
-        const eventId =
-            'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
-        final legacyEvent = Event.fromJson({
-          'id': eventId,
-          'pubkey':
-              '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
-          'created_at': 1739350000,
-          'kind': 22,
-          'tags': [
-            ['url', 'https://example.com/video.mp4'],
-            ['title', 'Legacy Video'],
-          ],
-          'content': '',
-          'sig': 'sig',
-        });
+      test(
+        'resolves acceptable legacy video kinds by raw 64-char route ID',
+        () async {
+          const eventId =
+              'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+          final legacyEvent = Event.fromJson({
+            'id': eventId,
+            'pubkey':
+                '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+            'created_at': 1739350000,
+            'kind': 22,
+            'tags': [
+              ['url', 'https://example.com/video.mp4'],
+              ['title', 'Legacy Video'],
+            ],
+            'content': '',
+            'sig': 'sig',
+          });
 
-        when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => [legacyEvent]);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [legacyEvent]);
 
-        final repo = VideosRepository(
-          nostrClient: mockNostrClient,
-          funnelcakeApiClient: mockFunnelcakeClient,
-        );
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
 
-        final result = await repo.fetchVideoWithStatsForRouteId(eventId);
+          final result = await repo.fetchVideoWithStatsForRouteId(eventId);
 
-        expect(result, isNotNull);
-        expect(result!.id, equals(eventId));
-      });
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+        },
+      );
 
       test(
         'falls back to stable-id lookup when a 64-char hex route is not an '
