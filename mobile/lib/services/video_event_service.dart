@@ -1740,11 +1740,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
             'event_count',
             eventTotal ?? eventCount,
           );
-          _performanceMonitor.putAttribute(
-            traceName,
-            'completion',
-            completion,
-          );
+          _performanceMonitor.putAttribute(traceName, 'completion', completion);
           unawaited(_performanceMonitor.stopTrace(traceName));
         }
 
@@ -5634,6 +5630,12 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   @visibleForTesting
   void handleEventForTesting(Event event, SubscriptionType type) {
     _handleNewVideoEvent(event, type);
+  }
+
+  /// Flush the pending like-count batch without waiting for the debounce timer.
+  @visibleForTesting
+  Future<void> flushPendingLikeCountBatchForTesting() {
+    return _executeLikeCountBatchFetch();
   }
 
   /// Run automatic diagnostics when feed fails to load events

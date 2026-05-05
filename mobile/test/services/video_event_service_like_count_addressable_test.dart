@@ -53,47 +53,30 @@ void main() {
       service.dispose();
     });
 
-    // Fill the batch to the maximum (50) so the flush fires immediately,
-    // avoiding any dependence on the 150 ms debounce timer.
-    sdk.Event makeEvent(String dTag, {int createdAt = 1000}) => sdk.Event(
+    sdk.Event makeEvent(
+      String dTag, {
+      int createdAt = 1000,
+      int kind = NIP71VideoKinds.addressableShortVideo,
+      bool includeDTag = true,
+    }) => sdk.Event(
       pubkey,
-      NIP71VideoKinds.addressableShortVideo,
+      kind,
       [
-        ['d', dTag],
+        if (includeDTag) ['d', dTag],
         ['url', videoUrl],
         ['title', 'Test'],
       ],
       '',
       createdAt: createdAt,
-    );
+    )..id = '$kind-$dTag-$createdAt';
 
     test(
       '_fetchAndUpdateLikeCount populates addressable IDs and passes them to getLikeCounts',
       () async {
-        // Build a batch of 49 non-addressable-interest events to prime the
-        // queue, then add the video under test as the 50th entry.  The 50th
-        // push hits the batch-max threshold and triggers an immediate flush
-        // (no timer).
-        final padEvents = List.generate(
-          49,
-          (i) => makeEvent('pad-vine-$i'),
-        );
-        for (final e in padEvents) {
-          service.handleEventForTesting(e, SubscriptionType.discovery);
-        }
-
-        // The 50th video — kind 34236 with a d-tag — has a non-null
-        // addressableId and is the one we want to verify passes through.
         final targetEvent = makeEvent('target-vine');
-        service.handleEventForTesting(
-          targetEvent,
-          SubscriptionType.discovery,
-        );
+        service.handleEventForTesting(targetEvent, SubscriptionType.discovery);
 
-        // The flush is synchronous up to the await inside
-        // _executeLikeCountBatchFetch.  Pump the event loop so the async
-        // getLikeCounts call completes.
-        await Future<void>.delayed(Duration.zero);
+        await service.flushPendingLikeCountBatchForTesting();
 
         final captured = verify(
           () => mockLikesRepository.getLikeCounts(
@@ -132,22 +115,10 @@ void main() {
       () async {
         const dTag = 'my-special-vine';
 
-        // Fill 49 padding events first, then the target as the 50th to trigger
-        // an immediate flush.
-        for (var i = 0; i < 49; i++) {
-          service.handleEventForTesting(
-            makeEvent('pad-vine-$i'),
-            SubscriptionType.discovery,
-          );
-        }
-
         final targetEvent = makeEvent(dTag);
-        service.handleEventForTesting(
-          targetEvent,
-          SubscriptionType.discovery,
-        );
+        service.handleEventForTesting(targetEvent, SubscriptionType.discovery);
 
-        await Future<void>.delayed(Duration.zero);
+        await service.flushPendingLikeCountBatchForTesting();
 
         final captured = verify(
           () => mockLikesRepository.getLikeCounts(
@@ -166,6 +137,43 @@ void main() {
           equals('${NIP71VideoKinds.addressableShortVideo}:$pubkey:$dTag'),
           reason: 'Addressable ID should be kind:pubkey:d-tag',
         );
+      },
+    );
+
+    test(
+      'non-addressable videos are omitted from the addressableIds batch map',
+      () async {
+        final addressableEvent = makeEvent('addressable-vine');
+        final nonAddressableEvent = makeEvent(
+          'legacy-vine',
+          kind: NIP71VideoKinds.shortVideo,
+          includeDTag: false,
+        );
+
+        service.handleEventForTesting(
+          addressableEvent,
+          SubscriptionType.discovery,
+        );
+        service.handleEventForTesting(
+          nonAddressableEvent,
+          SubscriptionType.discovery,
+        );
+
+        await service.flushPendingLikeCountBatchForTesting();
+
+        final captured = verify(
+          () => mockLikesRepository.getLikeCounts(
+            any(),
+            addressableIds: captureAny(named: 'addressableIds'),
+          ),
+        ).captured;
+
+        final addressableIds = captured.first as Map<String, String>?;
+        final addressableVideo = VideoEvent.fromNostrEvent(addressableEvent);
+
+        expect(addressableIds, isNotNull);
+        expect(addressableIds!.containsKey(addressableVideo.id), isTrue);
+        expect(addressableIds.containsKey(nonAddressableEvent.id), isFalse);
       },
     );
   });
