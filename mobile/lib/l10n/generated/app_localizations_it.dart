@@ -6727,17 +6727,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Rimuovi';
 
   @override
-  String get metadataCaptionsLabel => 'Sottotitoli';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Sottotitoli abilitati per tutti i video';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Sottotitoli disabilitati per tutti i video';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video rimosso';
 
   @override

@@ -6415,15 +6415,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => '削除';
 
   @override
-  String get metadataCaptionsLabel => '字幕';
-
-  @override
-  String get metadataCaptionsEnabledSemantics => 'すべての動画で字幕が有効になっています';
-
-  @override
-  String get metadataCaptionsDisabledSemantics => 'すべての動画で字幕が無効になっています';
-
-  @override
   String get fullscreenFeedRemovedMessage => '動画を削除しました';
 
   @override

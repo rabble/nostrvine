@@ -6644,17 +6644,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Kaldır';
 
   @override
-  String get metadataCaptionsLabel => 'Altyazılar';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Tüm videolar için altyazılar etkin';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Tüm videolar için altyazılar devre dışı';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video kaldırıldı';
 
   @override

@@ -6744,17 +6744,6 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Премахни';
 
   @override
-  String get metadataCaptionsLabel => 'Надписи';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Субтитрите са включени за всички видеа';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Субтитрите са изключени за всички видеа';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Видеото е премахнато';
 
   @override

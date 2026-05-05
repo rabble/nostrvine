@@ -6639,17 +6639,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Hapus';
 
   @override
-  String get metadataCaptionsLabel => 'Teks';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Teks diaktifkan untuk semua video';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Teks dinonaktifkan untuk semua video';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video dihapus';
 
   @override

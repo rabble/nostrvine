@@ -6605,17 +6605,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'إزالة';
 
   @override
-  String get metadataCaptionsLabel => 'التسميات التوضيحية';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'التسميات التوضيحية معطّلة لجميع مقاطع الفيديو';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
 
   @override

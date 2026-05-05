@@ -6704,17 +6704,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Remover';
 
   @override
-  String get metadataCaptionsLabel => 'Legendas';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Legendas ativadas para todos os vídeos';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Legendas desativadas para todos os vídeos';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Vídeo removido';
 
   @override

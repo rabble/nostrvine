@@ -6810,17 +6810,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Usuń';
 
   @override
-  String get metadataCaptionsLabel => 'Napisy';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Napisy włączone dla wszystkich filmów';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Napisy wyłączone dla wszystkich filmów';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Film usunięty';
 
   @override

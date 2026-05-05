@@ -6820,17 +6820,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Elimină';
 
   @override
-  String get metadataCaptionsLabel => 'Subtitrări';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Subtitrări activate pentru toate videoclipurile';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Subtitrări dezactivate pentru toate videoclipurile';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Videoclip eliminat';
 
   @override

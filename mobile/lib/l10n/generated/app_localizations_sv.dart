@@ -6663,17 +6663,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Ta bort';
 
   @override
-  String get metadataCaptionsLabel => 'Undertexter';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Undertexter aktiverade för alla videor';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Undertexter inaktiverade för alla videor';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video borttagen';
 
   @override

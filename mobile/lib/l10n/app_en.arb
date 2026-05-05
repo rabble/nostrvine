@@ -3539,18 +3539,6 @@
   "videoMetadataPausePreviewSemanticLabel": "Pause preview",
   "videoMetadataClosePreviewSemanticLabel": "Close video preview",
   "videoMetadataRemoveSemanticLabel": "Remove",
-  "metadataCaptionsLabel": "Captions",
-  "@metadataCaptionsLabel": {
-    "description": "Label for the global captions toggle in the video metadata sheet"
-  },
-  "metadataCaptionsEnabledSemantics": "Captions enabled for all videos",
-  "@metadataCaptionsEnabledSemantics": {
-    "description": "Screen reader label when the global captions toggle is on"
-  },
-  "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
-  "@metadataCaptionsDisabledSemantics": {
-    "description": "Screen reader label when the global captions toggle is off"
-  },
   "fullscreenFeedRemovedMessage": "Video removed",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."

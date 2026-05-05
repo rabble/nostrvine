@@ -15,7 +15,6 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_badges_row.dart';
@@ -27,7 +26,6 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.da
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -327,110 +325,6 @@ void main() {
         ),
         findsOneWidget,
       );
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // Captions setting
-  // ---------------------------------------------------------------------------
-  group('Captions setting', () {
-    testWidgets('renders captions row even when video has no subtitles', (
-      tester,
-    ) async {
-      final video = _makeVideo();
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Captions'), findsOneWidget);
-      expect(find.byType(Switch), findsOneWidget);
-    });
-
-    testWidgets('defaults captions switch to on from global preference', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
-      );
-      await tester.pumpAndSettle();
-
-      final switchWidget = tester.widget<Switch>(find.byType(Switch));
-      expect(switchWidget.value, isTrue);
-      expect(switchWidget.activeThumbColor, VineTheme.whiteText);
-      expect(switchWidget.activeTrackColor, VineTheme.vineGreen);
-      expect(switchWidget.inactiveThumbColor, VineTheme.whiteText);
-      expect(switchWidget.inactiveTrackColor, VineTheme.surfaceContainer);
-    });
-
-    testWidgets('renders captions after the primary metadata content', (
-      tester,
-    ) async {
-      final video = _makeVideo(title: 'Why', content: 'Because');
-
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: video)),
-      );
-      await tester.pumpAndSettle();
-
-      final titleY = tester.getTopLeft(find.text('Why')).dy;
-      final captionsY = tester.getTopLeft(find.text('Captions')).dy;
-
-      expect(captionsY, greaterThan(titleY));
-    });
-
-    testWidgets('keeps captions label adjacent to the toggle', (tester) async {
-      await tester.pumpWidget(
-        buildSubject(child: MetadataExpandedSheet(video: _makeVideo())),
-      );
-      await tester.pumpAndSettle();
-
-      final labelRight = tester.getTopRight(find.text('Captions')).dx;
-      final switchLeft = tester.getTopLeft(find.byType(Switch)).dx;
-
-      expect(switchLeft - labelRight, lessThanOrEqualTo(24));
-    });
-
-    testWidgets('toggling captions switch updates global provider state', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final container = ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-      );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: MultiBlocProvider(
-                providers: [
-                  BlocProvider<VideoInteractionsBloc>.value(
-                    value: mockInteractionsBloc,
-                  ),
-                  BlocProvider<VideoRepostersCubit>.value(
-                    value: mockRepostersCubit,
-                  ),
-                ],
-                child: MetadataExpandedSheet(video: _makeVideo()),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byType(Switch));
-      await tester.pumpAndSettle();
-
-      expect(container.read(subtitleVisibilityProvider), isFalse);
-      expect(prefs.getBool('subtitle_visibility_enabled'), isFalse);
     });
   });
 

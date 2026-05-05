@@ -6525,16 +6525,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'አስወግድ';
 
   @override
-  String get metadataCaptionsLabel => 'መግለጫ ጽሑፎች';
-
-  @override
-  String get metadataCaptionsEnabledSemantics => 'መግለጫ ጽሑፎች ለሁሉም ቪዲዮዎች ነቅተዋል።';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'መግለጫ ጽሑፎች ለሁሉም ቪዲዮዎች ተሰናክለዋል።';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'ቪዲዮ ተወግዷል';
 
   @override

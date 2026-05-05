@@ -11758,24 +11758,6 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get videoMetadataRemoveSemanticLabel;
 
-  /// Label for the global captions toggle in the video metadata sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Captions'**
-  String get metadataCaptionsLabel;
-
-  /// Screen reader label when the global captions toggle is on
-  ///
-  /// In en, this message translates to:
-  /// **'Captions enabled for all videos'**
-  String get metadataCaptionsEnabledSemantics;
-
-  /// Screen reader label when the global captions toggle is off
-  ///
-  /// In en, this message translates to:
-  /// **'Captions disabled for all videos'**
-  String get metadataCaptionsDisabledSemantics;
-
   /// Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link).
   ///
   /// In en, this message translates to:

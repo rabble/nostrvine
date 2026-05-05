@@ -6439,15 +6439,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => '삭제';
 
   @override
-  String get metadataCaptionsLabel => '자막';
-
-  @override
-  String get metadataCaptionsEnabledSemantics => '모든 동영상에서 자막이 활성화되었습니다';
-
-  @override
-  String get metadataCaptionsDisabledSemantics => '모든 동영상에서 자막이 비활성화되었습니다';
-
-  @override
   String get fullscreenFeedRemovedMessage => '동영상이 삭제됐어요';
 
   @override

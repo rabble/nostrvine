@@ -6660,17 +6660,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Remove';
 
   @override
-  String get metadataCaptionsLabel => 'Captions';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Captions enabled for all videos';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Captions disabled for all videos';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video removed';
 
   @override

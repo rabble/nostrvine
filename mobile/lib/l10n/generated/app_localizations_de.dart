@@ -6742,17 +6742,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoMetadataRemoveSemanticLabel => 'Entfernen';
 
   @override
-  String get metadataCaptionsLabel => 'Untertitel';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Untertitel für alle Videos aktiviert';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Untertitel für alle Videos deaktiviert';
-
-  @override
   String get fullscreenFeedRemovedMessage => 'Video entfernt';
 
   @override
