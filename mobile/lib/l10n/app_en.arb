@@ -406,10 +406,6 @@
   "@profileSetupExternalIdentityHint": {
     "description": "Placeholder for the identity input on an external account row."
   },
-  "profileSetupExternalProofHint": "Proof URL (optional)",
-  "@profileSetupExternalProofHint": {
-    "description": "Placeholder for the proof URL input on an external account row."
-  },
   "profileSetupAddExternalAccount": "Add account",
   "@profileSetupAddExternalAccount": {
     "description": "Button to add a new blank external account row."

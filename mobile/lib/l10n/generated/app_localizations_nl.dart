@@ -760,9 +760,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupExternalIdentityHint => 'Username on the platform';
 
   @override
-  String get profileSetupExternalProofHint => 'Proof URL (optional)';
-
-  @override
   String get profileSetupAddExternalAccount => 'Add account';
 
   @override

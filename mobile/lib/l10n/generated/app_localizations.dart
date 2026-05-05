@@ -1406,12 +1406,6 @@ abstract class AppLocalizations {
   /// **'Username on the platform'**
   String get profileSetupExternalIdentityHint;
 
-  /// Placeholder for the proof URL input on an external account row.
-  ///
-  /// In en, this message translates to:
-  /// **'Proof URL (optional)'**
-  String get profileSetupExternalProofHint;
-
   /// Button to add a new blank external account row.
   ///
   /// In en, this message translates to:

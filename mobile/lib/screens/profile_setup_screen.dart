@@ -1695,35 +1695,24 @@ class _ClaimDraftRow extends StatelessWidget {
             contentPadding: const EdgeInsets.all(12),
           ),
         ),
-        const SizedBox(height: 4),
-        TextField(
-          controller: draft.proofController,
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-          keyboardType: TextInputType.url,
-          autocorrect: false,
-          enableSuggestions: false,
-          decoration: InputDecoration(
-            isCollapsed: true,
-            hintText: l10n.profileSetupExternalProofHint,
-            hintStyle: const TextStyle(color: VineTheme.lightText),
-            contentPadding: const EdgeInsets.all(12),
-          ),
-        ),
       ],
     );
   }
 }
 
 /// In-memory editor row for one external-identity claim. Owns its own
-/// controllers so each row can be added/removed independently.
+/// controllers so each row can be added/removed independently. The [proof]
+/// slot is preserved when seeded from an existing Kind-0 claim so that round-
+/// tripping through the editor does not strip a proof that was set elsewhere
+/// (e.g. by an automated verification flow), but it is never typed by the
+/// user — proof discovery/generation is programmatic.
 class _ClaimDraft {
-  _ClaimDraft({required this.platform, String identity = '', String proof = ''})
-    : identityController = TextEditingController(text: identity),
-      proofController = TextEditingController(text: proof);
+  _ClaimDraft({required this.platform, String identity = '', this.proof = ''})
+    : identityController = TextEditingController(text: identity);
 
   IdentityPlatform platform;
+  String proof;
   final TextEditingController identityController;
-  final TextEditingController proofController;
 
   /// Builds a [NostrIdentityClaim] from the current field values, returning
   /// null when the identity is empty (skip incomplete drafts on save).
@@ -1733,13 +1722,12 @@ class _ClaimDraft {
     return NostrIdentityClaim(
       platform: platform,
       identity: identity,
-      proof: proofController.text.trim(),
+      proof: proof,
     );
   }
 
   void dispose() {
     identityController.dispose();
-    proofController.dispose();
   }
 }
 
