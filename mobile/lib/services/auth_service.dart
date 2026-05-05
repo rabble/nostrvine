@@ -342,6 +342,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       KeycastNostrIdentity() => true,
       AmberNostrIdentity() => true,
       BunkerNostrIdentity() => true,
+      Nip07NostrIdentity() => true,
     };
   }
 
