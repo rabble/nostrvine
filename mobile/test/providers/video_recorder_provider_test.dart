@@ -26,10 +26,41 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:wakelock_plus_platform_interface/wakelock_plus_platform_interface.dart';
 
 import '../mocks/mock_camera_service.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+/// Fake [WakelockPlusPlatformInterface] that records all [toggle] calls.
+class _FakeWakelockPlatform extends WakelockPlusPlatformInterface {
+  final List<bool> toggleCalls = [];
+
+  @override
+  Future<void> toggle({required bool enable}) async {
+    toggleCalls.add(enable);
+  }
+
+  @override
+  Future<bool> get enabled async =>
+      toggleCalls.isNotEmpty && toggleCalls.last;
+}
+
+/// [MockCameraService] variant whose [startRecording] always returns false.
+class _FailingStartCameraService extends MockCameraService {
+  _FailingStartCameraService.create({
+    required super.onUpdateState,
+    required super.onAutoStopped,
+  }) : super.create();
+
+  @override
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    String? outputDirectory,
+  }) async =>
+      false;
+}
 
 /// Helper to set up haptic feedback mock and track calls.
 class HapticFeedbackTracker {
@@ -162,6 +193,15 @@ class NotifierTestSetup {
 }
 
 void main() {
+  // Production code calls WakelockPlus.enable/disable around every recording
+  // session. Install a no-op platform fake for the entire suite so tests that
+  // exercise startRecording / stopRecording don't hit a missing platform
+  // channel. The dedicated 'Wake Lock' group swaps in its own recording fake
+  // on top of this and restores it in tearDown.
+  setUpAll(() {
+    wakelockPlusPlatformInstance = _FakeWakelockPlatform();
+  });
+
   group('VideoRecorderUIState AspectRatio', () {
     test('includes aspectRatio in state', () {
       const state = VideoRecorderProviderState();
@@ -1059,6 +1099,80 @@ void main() {
             const MethodChannel('divine_video_player'),
             null,
           );
+    });
+  });
+
+  group('VideoRecorderNotifier - Wake Lock', () {
+    late _FakeWakelockPlatform fakeWakelock;
+    late WakelockPlusPlatformInterface originalInstance;
+
+    final setup = NotifierTestSetup();
+
+    setUp(() async {
+      originalInstance = wakelockPlusPlatformInstance;
+      fakeWakelock = _FakeWakelockPlatform();
+      wakelockPlusPlatformInstance = fakeWakelock;
+      await setup.setUp();
+    });
+
+    tearDown(() {
+      setup.tearDown();
+      wakelockPlusPlatformInstance = originalInstance;
+    });
+
+    test('enables wake lock when recording starts successfully', () async {
+      await setup.container
+          .read(videoRecorderProvider.notifier)
+          .startRecording();
+
+      expect(fakeWakelock.toggleCalls, equals([true]));
+    });
+
+    test('disables wake lock when recording stops', () async {
+      final notifier =
+          setup.container.read(videoRecorderProvider.notifier);
+      await notifier.startRecording();
+      fakeWakelock.toggleCalls.clear();
+
+      await notifier.stopRecording();
+
+      expect(fakeWakelock.toggleCalls, equals([false]));
+    });
+
+    test('does not enable wake lock when recording fails to start', () async {
+      final failingCamera = _FailingStartCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await failingCamera.initialize();
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(failingCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      await container.read(videoRecorderProvider.notifier).startRecording();
+
+      expect(fakeWakelock.toggleCalls, isEmpty);
+    });
+
+    test('disables wake lock on destroy', () async {
+      final notifier =
+          setup.container.read(videoRecorderProvider.notifier);
+      await notifier.startRecording();
+      fakeWakelock.toggleCalls.clear();
+
+      await notifier.destroy();
+
+      expect(fakeWakelock.toggleCalls, contains(false));
     });
   });
 

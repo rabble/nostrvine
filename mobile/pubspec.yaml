@@ -126,6 +126,7 @@ dependencies:
   dm_repository:
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
+  wakelock_plus: ^1.5.2 # Prevent screen timeout during active video recording
   image: ^4.1.7 # Image processing for GIF generation
   image_picker: ^1.2.0 # For selecting images from gallery or camera
   image_metadata_stripper:

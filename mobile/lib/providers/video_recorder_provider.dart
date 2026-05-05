@@ -30,6 +30,7 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 /// SharedPreferences key for storing the last used camera lens.
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
@@ -239,6 +240,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     await _countdownSoundService?.dispose();
     _countdownSoundService = null;
     await _disableRemoteRecordControl();
+    await WakelockPlus.disable();
     await _cameraService.dispose();
   }
 
@@ -691,6 +693,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         name: 'VideoRecorderNotifier',
         category: .video,
       );
+      await WakelockPlus.enable();
       clipProvider.startRecording();
     } else {
       Log.warning(
@@ -743,6 +746,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     final videoResult = result ?? await _cameraService.stopRecording();
 
+    await WakelockPlus.disable();
     final clipProvider = ref.read(clipManagerProvider.notifier)
       ..stopRecording();
     final remainingDuration = clipProvider.remainingDuration;
