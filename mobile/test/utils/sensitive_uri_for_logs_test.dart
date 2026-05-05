@@ -94,5 +94,13 @@ void main() {
       expect(out, startsWith('divine://'));
       expect(out, isNot(contains('supersecret')));
     });
+
+    test('redacts invite gate router path with code query (relative URI)', () {
+      const raw = '/welcome/invite?code=SECRETINVITE&error=';
+      final out = redactUriStringForLogs(raw);
+      expect(out, startsWith('/welcome/invite?'));
+      expect(out, isNot(contains('SECRETINVITE')));
+      expect(out, contains('code=$redactedUriComponentForLogs'));
+    });
   });
 }

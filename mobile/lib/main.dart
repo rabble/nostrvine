@@ -82,6 +82,7 @@ import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -1316,7 +1317,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   deepLink.inviteCode!,
                 );
                 Log.info(
-                  '📱 Navigating to invite gate: $targetPath',
+                  '📱 Navigating to invite gate: ${redactUriStringForLogs(targetPath)}',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );

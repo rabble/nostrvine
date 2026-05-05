@@ -50,5 +50,11 @@ String redactUriStringForLogs(String uriString) {
   if (uri.fragment.isNotEmpty) {
     redactedUri = redactedUri.replace(fragment: redactedUriComponentForLogs);
   }
-  return redactedUri.toString();
+  var out = redactedUri.toString();
+  // `Uri.replace(pathSegments: ...)` drops the leading "/" on scheme-less
+  // absolute paths used as GoRouter locations. Restore it for readable logs.
+  if (!uri.hasScheme && uri.hasAbsolutePath && !out.startsWith('/')) {
+    out = '/$out';
+  }
+  return out;
 }
