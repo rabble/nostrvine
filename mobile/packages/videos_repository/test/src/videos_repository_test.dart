@@ -6290,11 +6290,13 @@ void main() {
         'resolves acceptable legacy video kinds by raw 64-char route ID',
         () async {
           const eventId =
-              'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+              'e96357668c72c8923340b0ecf4bfacea'
+              '505172c4190e9953e603124c67175f3b';
           final legacyEvent = Event.fromJson({
             'id': eventId,
             'pubkey':
-                '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+                '5bf0c63fcb93463407af97a5e5ee64fa'
+                '883d107ef9e558472c4eb9aaaefa459d',
             'created_at': 1739350000,
             'kind': 22,
             'tags': [
@@ -6364,7 +6366,9 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result = await repo.fetchVideoWithStatsForRouteId(hexStableId);
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            hexStableId,
+          );
 
           expect(result, isNotNull);
           expect(result!.id, equals(eventId));
@@ -6376,13 +6380,16 @@ void main() {
         'falls back to stable-id lookup for acceptable legacy video kinds',
         () async {
           const hexStableId =
-              'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+              'e96357668c72c8923340b0ecf4bfacea'
+              '505172c4190e9953e603124c67175f3b';
           const eventId =
-              'd695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+              'd695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
           final legacyEvent = Event.fromJson({
             'id': eventId,
             'pubkey':
-                '5bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d',
+                '5bf0c63fcb93463407af97a5e5ee64fa'
+                '883d107ef9e558472c4eb9aaaefa459d',
             'created_at': 1739350000,
             'kind': 22,
             'tags': [
@@ -6414,7 +6421,9 @@ void main() {
             funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          final result = await repo.fetchVideoWithStatsForRouteId(hexStableId);
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            hexStableId,
+          );
 
           expect(result, isNotNull);
           expect(result!.id, equals(eventId));
@@ -6423,16 +6432,20 @@ void main() {
       );
 
       test(
-        'falls back to Funnelcake route lookup when relay misses shared stable ID',
+        'falls back to Funnelcake route lookup when relay misses shared '
+        'stable ID',
         () async {
           const stableId =
-              'e96357668c72c8923340b0ecf4bfacea505172c4190e9953e603124c67175f3b';
+              'e96357668c72c8923340b0ecf4bfacea'
+              '505172c4190e9953e603124c67175f3b';
           const eventId =
-              'e46ff7d0d71d6c8114b58728afa43f08d6286fd9a704683af799fd8f855586c2';
+              'e46ff7d0d71d6c8114b58728afa43f08'
+              'd6286fd9a704683af799fd8f855586c2';
           final relayMissThenApiHit = Event.fromJson({
             'id': eventId,
             'pubkey':
-                '076c979382b90f5d3a2b21f95e1ee86b6033f14c92e79b7fad3fe1f1073f4886',
+                '076c979382b90f5d3a2b21f95e1ee86b'
+                '6033f14c92e79b7fad3fe1f1073f4886',
             'created_at': 1777868006,
             'kind': 34236,
             'tags': [
