@@ -23,8 +23,11 @@ echo "Installing git hooks..."
 cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 #!/bin/bash
 # Pre-commit hook for divine-mobile
-# Fast format-only check. Analyze + codegen verification run in pre-push so
-# they only execute once per push instead of once per commit.
+# Fast checks only:
+#   * dart format on staged files
+#   * codegen verification — only when staged files contain codegen inputs
+# `flutter analyze` is intentionally NOT run here; pre-push runs it once on
+# the full diff, which is the right place to pay that cost.
 
 set -e
 
@@ -33,6 +36,31 @@ cd "$REPO_ROOT/mobile"
 
 # Unset git env vars that break Flutter/Dart in hooks (especially in worktrees)
 unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE
+
+list_codegen_inputs() {
+    while IFS= read -r file; do
+        [ -z "$file" ] && continue
+
+        local abs_path="$REPO_ROOT/$file"
+        [ -f "$abs_path" ] || continue
+
+        local base_path="${abs_path%.dart}"
+        if grep -Eq '@Riverpod|@riverpod|@freezed|@Freezed|@JsonSerializable|@GenerateMocks|@DriftDatabase|@UseRowClass|@DataClassName|@UseMoor|@HiveType' "$abs_path" \
+            || grep -Eq "part '.*\\.(g|freezed)\\.dart';" "$abs_path" \
+            || [ -f "${base_path}.g.dart" ] \
+            || [ -f "${base_path}.freezed.dart" ] \
+            || [ -f "${base_path}.mocks.dart" ]; then
+            echo "$file"
+        fi
+    done
+}
+
+capture_generated_status() {
+    git status --porcelain -- "$REPO_ROOT/mobile" \
+        | awk '{print $2}' \
+        | grep -E '^mobile/.*(\.g\.dart|\.freezed\.dart|\.mocks\.dart|\.types\.temp\.dart)$' \
+        | sort -u || true
+}
 
 # Check if any Dart files are staged
 STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM \
@@ -52,6 +80,36 @@ if ! echo "$STAGED_FORMAT_PATHS" | xargs mise exec -- dart format --output=none 
     echo "Format check failed!"
     echo "Run: cd mobile && mise exec -- dart format lib test integration_test"
     exit 1
+fi
+
+# Verify generated files when codegen inputs were staged.
+# Most commits don't touch codegen inputs, so this is a no-op for them.
+CODEGEN_INPUTS=$(printf '%s\n' "$STAGED_DART_FILES" | list_codegen_inputs)
+if [ -n "$CODEGEN_INPUTS" ]; then
+    BEFORE_STATUS_FILE=$(mktemp)
+    AFTER_STATUS_FILE=$(mktemp)
+    trap 'rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"' EXIT
+
+    capture_generated_status > "$BEFORE_STATUS_FILE"
+
+    echo "Verifying generated files..."
+    mise exec -- dart run build_runner build --delete-conflicting-outputs >/dev/null
+
+    capture_generated_status > "$AFTER_STATUS_FILE"
+    NEW_GENERATED_CHANGES=$(comm -13 "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE" || true)
+
+    rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"
+    trap - EXIT
+
+    if [ -n "$NEW_GENERATED_CHANGES" ]; then
+        echo ""
+        echo "Generated files changed during verification:"
+        echo "$NEW_GENERATED_CHANGES"
+        echo ""
+        echo "Run: cd mobile && mise exec -- dart run build_runner build --delete-conflicting-outputs"
+        echo "Then stage the generated files and commit again."
+        exit 1
+    fi
 fi
 EOF
 
