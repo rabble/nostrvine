@@ -41,8 +41,8 @@ class ProfileFeed extends _$ProfileFeed {
 
   /// REST API pagination offset. Non-null implies REST is the active source
   /// for pagination; null means we are in Nostr-fallback mode. Reset on every
-  /// build so a transient REST failure doesn't disable REST for subsequent
-  /// calls — see issue #3849.
+  /// build so a transient REST failure does not permanently skip later REST
+  /// attempts while this keepAlive provider lives.
   int? _nextOffset;
   int? _totalVideoCount; // Total count from X-Total-Count header
   // Cache of video metadata from REST API (preserves loops, likes, etc.)
@@ -400,9 +400,8 @@ class ProfileFeed extends _$ProfileFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      // Per-call availability check — never trust a sticky flag (#3849).
-      // Paginate REST only when we have an offset (i.e. the active source is
-      // REST) AND funnelcake is currently reachable.
+      // Re-read funnelcake availability here: a prior error must not permanently
+      // gate REST pagination while the provider is keepAlive.
       final funnelcakeAvailable =
           ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
       if (funnelcakeAvailable && _nextOffset != null) {

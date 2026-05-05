@@ -35,8 +35,8 @@ class PopularNowFeed extends _$PopularNowFeed {
 
   /// REST API pagination cursor (oldest video timestamp). Non-null implies
   /// REST is the active source; null means we are in Nostr-fallback mode.
-  /// Reset on every build/refresh so a transient REST failure doesn't
-  /// disable REST for subsequent calls — see issue #3849.
+  /// Reset on every build/refresh so a transient REST failure does not
+  /// permanently skip later REST attempts while this keepAlive provider lives.
   int? _nextCursor;
 
   @override
@@ -226,9 +226,8 @@ class PopularNowFeed extends _$PopularNowFeed {
     try {
       final videoEventService = ref.read(videoEventServiceProvider);
 
-      // Per-call availability check — never trust a sticky flag (#3849).
-      // We paginate REST only when we have a cursor (i.e. the active source
-      // is REST) AND funnelcake is currently reachable.
+      // Re-read funnelcake availability here: a prior error must not permanently
+      // gate REST pagination while the provider is keepAlive.
       final funnelcakeAvailable =
           ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
       if (funnelcakeAvailable && _nextCursor != null) {
@@ -406,8 +405,8 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
     }
 
-    // Per-call availability check — never trust a sticky flag (#3849).
-    // A previous REST failure must not disable REST for this refresh.
+    // Re-read funnelcake availability per refresh: a prior REST error must not
+    // skip this attempt while the provider is keepAlive.
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
     if (funnelcakeAvailable) {

@@ -44,10 +44,6 @@ class _ControlledFunnelcake extends FunnelcakeAvailable {
 }
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(SubscriptionType.profile);
-  });
-
   const userId =
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
@@ -135,6 +131,10 @@ void main() {
   });
 
   group('ProfileFeed REST pagination contract', () {
+    setUpAll(() {
+      registerFallbackValue(SubscriptionType.profile);
+    });
+
     late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late _MockVideoEventService mockVideoEventService;
     late _MockNostrClient mockNostrClient;
@@ -722,11 +722,9 @@ void main() {
       },
     );
 
-    // Pins the per-call funnelcake-availability contract from #3849: a
-    // transient REST failure during build must NOT prevent a subsequent
-    // refresh() from re-attempting REST. Will fail loudly if a future
-    // change ever reintroduces a sticky-disable shape that gates
-    // _refreshFromRestApi on previous-call success.
+    // Pins per-call funnelcake availability: a transient REST failure during
+    // build must NOT prevent a subsequent refresh() from re-attempting REST.
+    // Fails if a future change reintroduces a sticky gate on _refreshFromRestApi.
     test(
       'refresh after a build-time REST failure re-attempts REST and recovers',
       () async {
@@ -786,10 +784,8 @@ void main() {
       },
     );
 
-    // Pins the per-call funnelcake-availability contract from #3849: a REST
-    // failure on loadMore must not poison the pagination state. The next
-    // loadMore should still attempt REST when funnelcake remains available
-    // and the REST cursor (_nextOffset) is set.
+    // Pins per-call funnelcake for loadMore: a REST pagination failure must not
+    // poison state so the next loadMore skips REST when the cursor is still valid.
     test(
       'loadMore retries REST after a transient pagination failure',
       () async {

@@ -433,11 +433,9 @@ void main() {
       },
     );
 
-    // Regression for #3849. Pre-fix, popular_now's refresh() flipped a sticky
-    // _usingRestApi=false in the catch fall-through, so the *next* refresh
-    // skipped REST entirely and stayed on Nostr until app restart. The fix
-    // re-checks funnelcakeAvailable per call, so a transient REST failure
-    // must not disable REST for subsequent refreshes.
+    // Regression guard: refresh must re-attempt Funnelcake REST after a
+    // transient failure. A sticky "REST disabled" flag would skip REST until
+    // process restart; we re-check availability and the REST branch each call.
     test(
       'popular now re-attempts REST after a transient refresh failure',
       () async {
