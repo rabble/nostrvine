@@ -1104,6 +1104,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Video bearbeiten';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Inhaltswarnung';
 
   @override

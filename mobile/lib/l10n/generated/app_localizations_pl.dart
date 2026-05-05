@@ -1111,6 +1111,18 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Edytuj film';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Ostrzeżenie o treści';
 
   @override

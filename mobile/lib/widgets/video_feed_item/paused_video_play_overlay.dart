@@ -15,7 +15,7 @@ import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 class PausedVideoPlayOverlay extends StatefulWidget {
   const PausedVideoPlayOverlay({
     required this.player,
-    required this.onToggleMuteState,
+    this.onToggleMuteState,
     this.firstFrameFuture,
     this.isVisible = true,
     super.key,
@@ -24,7 +24,13 @@ class PausedVideoPlayOverlay extends StatefulWidget {
   final Player player;
   final Future<void>? firstFrameFuture;
   final bool isVisible;
-  final VoidCallback onToggleMuteState;
+
+  /// Callback invoked when the user taps the in-pause mute toggle.
+  ///
+  /// When `null`, the in-pause mute toggle is hidden — the host surface is
+  /// expected to provide its own mute control elsewhere (e.g. the home feed
+  /// uses the playback-settings popover in the top app bar).
+  final VoidCallback? onToggleMuteState;
 
   @override
   State<PausedVideoPlayOverlay> createState() => _PausedVideoPlayOverlayState();
@@ -257,7 +263,7 @@ class _PlaybackChrome extends StatelessWidget {
   final bool showUnpauseFeedback;
   final double unpauseFeedbackOpacity;
   final Duration unpauseFadeDuration;
-  final VoidCallback onToggleMuteState;
+  final VoidCallback? onToggleMuteState;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +313,10 @@ class _PlaybackChrome extends StatelessWidget {
   }
 }
 
-/// The paused-state stack: mute toggle (non-web) above the large play icon.
+/// The paused-state stack: optional mute toggle (non-web) above the large
+/// play icon. The mute toggle is omitted entirely when [onToggleMuteState]
+/// is `null` — host surfaces that provide their own mute UI elsewhere
+/// (e.g. the home feed's playback-settings popover) should pass `null`.
 class _PausedAffordance extends StatelessWidget {
   const _PausedAffordance({
     required this.isMuted,
@@ -316,16 +325,17 @@ class _PausedAffordance extends StatelessWidget {
   });
 
   final bool isMuted;
-  final VoidCallback onToggleMuteState;
+  final VoidCallback? onToggleMuteState;
 
   @override
   Widget build(BuildContext context) {
+    final muteToggle = onToggleMuteState;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: 16,
         children: [
-          if (!kIsWeb)
+          if (!kIsWeb && muteToggle != null)
             DivineIconButton(
               icon: isMuted
                   ? DivineIconName.speakerSimpleX
@@ -336,7 +346,7 @@ class _PausedAffordance extends StatelessWidget {
                   ? context.l10n.videoPlayerUnmute
                   : context.l10n.videoPlayerMute,
               onPressed: () {
-                onToggleMuteState();
+                muteToggle();
                 SemanticsService.sendAnnouncement(
                   View.of(context),
                   isMuted

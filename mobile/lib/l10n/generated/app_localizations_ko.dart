@@ -1027,6 +1027,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '영상 편집';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => '콘텐츠 경고';
 
   @override

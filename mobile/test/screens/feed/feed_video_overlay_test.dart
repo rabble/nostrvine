@@ -143,9 +143,6 @@ void main() {
       bool includePlayer = true,
       ValueNotifier<double>? pagePositionOverride,
       int index = 0,
-      bool showAutoButton = false,
-      bool isAutoEnabled = false,
-      VoidCallback? onAutoPressed,
       VideoFeedController? feedController,
       List<dynamic>? additionalOverrides,
     }) {
@@ -157,10 +154,6 @@ void main() {
         player: includePlayer ? (player ?? mockPlayer) : null,
         firstFrameFuture: firstFrameFuture,
         listSources: listSources,
-        feedController: feedController,
-        showAutoButton: showAutoButton,
-        isAutoEnabled: isAutoEnabled,
-        onAutoPressed: onAutoPressed,
       );
 
       return testMaterialApp(
@@ -369,22 +362,6 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Likes'), findsOneWidget);
-      });
-
-      testWidgets('renders Auto action when enabled for the current feed', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            showAutoButton: true,
-            isAutoEnabled: true,
-            onAutoPressed: () {},
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text('Compilation'), findsOneWidget);
-        expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
       });
     });
 

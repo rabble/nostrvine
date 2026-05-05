@@ -1970,6 +1970,30 @@ abstract class AppLocalizations {
   /// **'Edit video'**
   String get videoPlayerEditVideoTooltip;
 
+  /// Semantic label for the More button in the home feed top bar that opens the playback-settings popover.
+  ///
+  /// In en, this message translates to:
+  /// **'Open playback settings'**
+  String get videoSettingsMenuOpen;
+
+  /// Semantic label for the More button in the home feed top bar when the playback-settings popover is open.
+  ///
+  /// In en, this message translates to:
+  /// **'Close playback settings'**
+  String get videoSettingsMenuClose;
+
+  /// Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable captions'**
+  String get videoSettingsCaptionsEnable;
+
+  /// Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable captions'**
+  String get videoSettingsCaptionsDisable;
+
   /// No description provided for @contentWarningLabel.
   ///
   /// In en, this message translates to:

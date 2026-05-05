@@ -44,14 +44,10 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     required this.isActive,
     required this.pagePosition,
     required this.index,
-    required this.feedController,
     this.player,
     this.firstFrameFuture,
     this.listSources,
     this.onContentWarningRevealed,
-    this.showAutoButton = false,
-    this.isAutoEnabled = false,
-    this.onAutoPressed,
     this.onInteracted,
     super.key,
   });
@@ -62,7 +58,6 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   /// Fractional page position from [PooledVideoFeed.onScrollOffsetChanged].
   /// Used to compute scroll-driven overlay opacity matching the fullscreen feed.
   final ValueNotifier<double> pagePosition;
-  final VideoFeedController? feedController;
 
   /// The index of this item in the feed, used with [pagePosition] to compute
   /// the scroll distance for opacity.
@@ -73,9 +68,6 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   /// Called when the user reveals a content-warning overlay.
   final VoidCallback? onContentWarningRevealed;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -199,7 +191,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
         ),
         if (widget.player != null)
           PausedVideoPlayOverlay(
-            onToggleMuteState: () => widget.feedController?.toggleMuteState(),
             player: widget.player!,
             firstFrameFuture: widget.firstFrameFuture,
             isVisible: widget.isActive,
@@ -241,9 +232,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 end: 16,
                 child: _ActionButtons(
                   video: video,
-                  showAutoButton: widget.showAutoButton,
-                  isAutoEnabled: widget.isAutoEnabled,
-                  onAutoPressed: widget.onAutoPressed,
                   onInteracted: widget.onInteracted,
                 ),
               ),
@@ -442,26 +430,15 @@ class _AuthorAvatar extends StatelessWidget {
 class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.video,
-    this.showAutoButton = false,
-    this.isAutoEnabled = false,
-    this.onAutoPressed,
     this.onInteracted,
   });
 
   final VideoEvent video;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
-  Widget build(BuildContext context) => VideoOverlayActionColumn(
-    video: video,
-    showAutoButton: showAutoButton,
-    isAutoEnabled: isAutoEnabled,
-    onAutoPressed: onAutoPressed,
-    onInteracted: onInteracted,
-  );
+  Widget build(BuildContext context) =>
+      VideoOverlayActionColumn(video: video, onInteracted: onInteracted);
 }
 
 /// Streams the player position and renders subtitle text.

@@ -525,6 +525,22 @@
   "videoPlayerUnmute": "Unmute video",
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
+  "videoSettingsMenuOpen": "Open playback settings",
+  "@videoSettingsMenuOpen": {
+    "description": "Semantic label for the More button in the home feed top bar that opens the playback-settings popover."
+  },
+  "videoSettingsMenuClose": "Close playback settings",
+  "@videoSettingsMenuClose": {
+    "description": "Semantic label for the More button in the home feed top bar when the playback-settings popover is open."
+  },
+  "videoSettingsCaptionsEnable": "Enable captions",
+  "@videoSettingsCaptionsEnable": {
+    "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
+  },
+  "videoSettingsCaptionsDisable": "Disable captions",
+  "@videoSettingsCaptionsDisable": {
+    "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
+  },
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",
