@@ -29,6 +29,7 @@
 | `mobile/test/services/nip07_service_test.dart` | Cover the existing service logic against a fake interop | create |
 | `mobile/test/services/nostr_identity_test.dart` | Add `Nip07NostrIdentity` group | modify |
 | `mobile/test/services/auth_service_nip07_test.dart` | `connectWithNip07` happy path, extension-not-found, switch cleanup, restore-on-startup | create |
+| `mobile/test/helpers/test_provider_overrides.dart` | Add default `isNip07Available` stub on `createMockAuthService` so existing widget tests survive | modify |
 | `mobile/test/screens/auth/login_options_screen_test.dart` | Button visibility on web, button hidden on non-web, tap routes through `connectWithNip07` | modify |
 
 ---
@@ -589,23 +590,21 @@ class Nip07SignerAdapter implements NostrSigner {
               (tag as List<dynamic>).map((item) => item.toString()).toList(),
         )
         .toList();
-    final created = map['created_at'] as int?;
-    final event = Event.fromTrustedJson({
+    return Event.fromJson({
       'id': map['id'] as String? ?? '',
       'pubkey': map['pubkey'] as String? ?? '',
-      'created_at':
-          created ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000),
+      'created_at': map['created_at'] as int? ??
+          (DateTime.now().millisecondsSinceEpoch ~/ 1000),
       'kind': map['kind'] as int? ?? 1,
       'tags': tags,
       'content': map['content'] as String? ?? '',
       'sig': map['sig'] as String? ?? '',
     });
-    return event;
   }
 }
 ```
 
-> Note: `Event.fromTrustedJson` is the factory used by `nostr_sdk`; if the actual constructor name in the imported SDK differs, swap accordingly. Confirm by grepping for the SDK's deserialization helper before committing.
+> Verified: `Event.fromJson(Map<String, dynamic>)` is the public factory in `mobile/packages/nostr_sdk/lib/event.dart:46`. It expects `id`, `pubkey`, `created_at`, `kind`, `tags`, `content` (and tolerates a null `sig`). The map returned by `window.nostr.signEvent` always populates these fields, so this is a clean fit.
 
 - [ ] **Step 5: Run tests**
 
@@ -920,54 +919,76 @@ Run: `cd mobile && grep -n "switch (.*authSource\|switch (.*source\|case Authent
 
 The semantics for each location:
 
-- **`initialize()` switch around line 781** — picks the restore strategy. Add:
+- **Switch at line 781 (`initialize`)** — picks the restore strategy and returns early. Verified shape: each arm logs, calls a `_reconnect*` helper, and returns; if storage is empty, sets unauthenticated and returns. Add an arm that mirrors the `bunker` case, gated on web:
   ```dart
   case AuthenticationSource.nip07:
+    Log.info(
+      'initialize: restoring NIP-07 session...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
     if (kIsWeb) {
       await _reconnectNip07();
-    } else {
-      Log.warning(
-        'Stored nip07 source on non-web platform — clearing',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      await _clearAuthSource();
+      return;
     }
+    Log.warning(
+      'initialize: persisted nip07 source on non-web platform — '
+      'falling back to unauthenticated',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    _setAuthState(AuthState.unauthenticated);
+    return;
   ```
-  `_reconnectNip07` is implemented in Task 7. For now, add a stub that
-  matches the rest of the file's style:
+  `_reconnectNip07` is implemented in Task 7. For now add a stub that
+  preserves the contract (must call `_setAuthState(AuthState.unauthenticated)` on failure):
   ```dart
   Future<void> _reconnectNip07() async {
-    // Filled in by Task 7; for now keep the build green.
+    // Filled in by Task 7. Until then, fall back to unauthenticated so
+    // initialize doesn't leave the app in `authenticating` forever.
+    _setAuthState(AuthState.unauthenticated);
   }
   ```
 
-- **Switch around line 1139** (account-cleanup-on-sign-out fanout, see the actual semantics in the surrounding code). Add:
+- **Switch at line 1139 (legacy migration `pubkeyHex` populator)** — verified: each arm reads a per-source persistent hint to recover the previously-active pubkey for migration. NIP-07 was introduced after this migration, so there is no legacy archive to recover from:
   ```dart
   case AuthenticationSource.nip07:
-    // No persistent storage to clear — the extension owns the keys.
-    break;
-  ```
-  (Adjust the body to match what amber/bunker do: if amber clears stored amber info, the nip07 case clears any persisted "active extension hint" — but in this design we don't persist extension state beyond the auth source code, so it's a no-op with a `break;`.)
-
-- **Switch around line 1469** (signer-construction fanout). Add:
-  ```dart
-  case AuthenticationSource.nip07:
-    // Signer is reconstructed from Nip07Service in _setupUserSession.
+    // NIP-07 was introduced after the legacy migration; no archived
+    // hint to recover. Leave pubkeyHex null so this path is skipped.
     break;
   ```
 
-- **Switch around line 1653** (`_buildIdentity()`-adjacent fanout, used by debug/state introspection). Add:
+- **Switch at line 1469 (`_restoreSignerInfo`)** — verified: amber/bunker/divineOAuth arms each restore a per-account archived signer info to active slots; the default group `automatic | importedKeys | none` (line 1570) clears stale signers because those sources have no archive. NIP-07 has no archived state (the extension owns it); fold it into the existing default group rather than adding a new arm:
+  ```dart
+  case AuthenticationSource.automatic:
+  case AuthenticationSource.importedKeys:
+  case AuthenticationSource.none:
+  case AuthenticationSource.nip07:
+    // ... existing body that calls _clearBunkerInfo(), _clearAmberInfo(),
+    // KeycastSession.clear(), etc.
+  ```
+
+- **Switch at line 1653 (`signInForAccount`)** — verified: each arm restores the per-source signer for a known account. Mirror the bunker arm but skip the per-pubkey lookup since NIP-07 has no archive:
   ```dart
   case AuthenticationSource.nip07:
-    // Treated like other external signers: pub-key-only, remote signing.
-    return AuthState.authenticated;
+    Log.info(
+      'signInForAccount: restoring NIP-07 session...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+    if (kIsWeb) {
+      await _reconnectNip07();
+    } else {
+      Log.error(
+        'signInForAccount: persisted nip07 source on non-web platform',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      throw Exception('NIP-07 sign-in is only available on the web.');
+    }
   ```
-  (Match the return contract used by the `bunker`/`amber` arms in that switch — copy the same shape.)
 
-> Important: read each switch's neighbouring arms before deciding the
-> body. The four switches are not all the same shape; pick the body that
-> matches `AuthenticationSource.bunker` or `.amber` at that site.
+> Each switch's body has been read against the worktree code and is correct as written above; do not paraphrase.
 
 - [ ] **Step 3: Run analyze**
 
@@ -1234,7 +1255,7 @@ Modify `mobile/lib/services/auth_service.dart`:
    ```dart
    Future<void> _reconnectNip07() async {
      if (!kIsWeb) {
-       await _clearAuthSource();
+       _setAuthState(AuthState.unauthenticated);
        return;
      }
      final service = _injectedNip07ServiceForTest ?? Nip07Service();
@@ -1245,31 +1266,39 @@ Modify `mobile/lib/services/auth_service.dart`:
          name: 'AuthService',
          category: LogCategory.auth,
        );
-       await _clearAuthSource();
+       _setAuthState(AuthState.unauthenticated);
        return;
      }
-     final result = await service.connect();
-     if (!result.success || result.publicKey == null) {
-       Log.info(
-         'NIP-07 silent reconnect failed — falling back to '
-         'unauthenticated: ${result.errorMessage}',
+     try {
+       final result = await service.connect();
+       if (!result.success || result.publicKey == null) {
+         Log.info(
+           'NIP-07 silent reconnect failed — falling back to '
+           'unauthenticated: ${result.errorMessage}',
+           name: 'AuthService',
+           category: LogCategory.auth,
+         );
+         _setAuthState(AuthState.unauthenticated);
+         return;
+       }
+       _nip07Service = service;
+       await _setupUserSession(
+         SecureKeyContainer.fromPublicKey(result.publicKey!),
+         AuthenticationSource.nip07,
+       );
+     } catch (e) {
+       Log.error(
+         'NIP-07 reconnect failed: $e',
          name: 'AuthService',
          category: LogCategory.auth,
        );
-       await _clearAuthSource();
-       return;
+       _nip07Service = null;
+       _setAuthState(AuthState.unauthenticated);
      }
-     _nip07Service = service;
-     await _setupUserSession(
-       SecureKeyContainer.fromPublicKey(result.publicKey!),
-       AuthenticationSource.nip07,
-     );
    }
    ```
 
-   `_clearAuthSource()` already exists in `AuthService` (used by Amber's
-   `_reconnectAmber` failure paths). Reuse it; if the actual name is
-   slightly different, follow the existing precedent.
+   This mirrors the `_reconnectBunker` failure pattern (auth_service.dart:1977–1985): on any failure, null out the signer field and call `_setAuthState(AuthState.unauthenticated)`. There is no `_clearAuthSource()` method — the unauthenticated state itself is what clears the active session.
 
 - [ ] **Step 4: Run tests**
 
@@ -1325,9 +1354,20 @@ Expected: `lib/l10n/generated/app_localizations*.dart` updated.
 Run: `cd mobile && mise exec -- flutter test test/l10n/arb_consistency_test.dart -j 1`
 
 If the test fails because translations are missing for the new keys
-in non-English ARBs, **add the new keys to the allowlist** in
-`mobile/test/l10n/arb_consistency_test.dart` (the project memory notes
-this gate). Pattern: `untranslatedAllowlist.addAll(['authSignInWithBrowserExtension', ...])`.
+in non-English ARBs, **add the new keys to the `_knownUntranslatedDebt` set** at the top of `mobile/test/l10n/arb_consistency_test.dart`. The actual structure is a top-level `const Set<String>` literal:
+
+```dart
+const _knownUntranslatedDebt = {
+  // ... existing entries ...
+  // Added by web NIP-07 sign-in (#NNNN). English fallback ships until
+  // translators pick this up.
+  'authSignInWithBrowserExtension',
+  'authInfoBrowserExtensionTitle',
+  'authInfoBrowserExtensionDescription',
+  'authNip07ConnectionFailed',
+  'authNip07ExtensionNotFound',
+};
+```
 
 - [ ] **Step 4: Commit**
 
@@ -1410,8 +1450,7 @@ Expected: tests fail because `isNip07Available` doesn't exist on
 
 - [ ] **Step 3: Add `isNip07Available` getter on `AuthService`**
 
-In `mobile/lib/services/auth_service.dart`, near the top of the public
-API (search for similar `bool get` declarations like `isRegistered`):
+In `mobile/lib/services/auth_service.dart`, immediately after the existing `isRegistered` getter (line 321):
 
 ```dart
 /// True only on web targets where `window.nostr` is present.
@@ -1420,6 +1459,19 @@ bool get isNip07Available {
   return (_injectedNip07ServiceForTest ?? Nip07Service()).isAvailable;
 }
 ```
+
+Then add a default stub to `createMockAuthService()` in
+`mobile/test/helpers/test_provider_overrides.dart` (right after the
+existing `currentPublicKeyHex` stub at line 93) so existing widget
+tests that already use `getStandardTestOverrides()` don't crash on
+`MissingStubError` for the new getter:
+
+```dart
+when(() => mockAuth.isNip07Available).thenReturn(false);
+```
+
+The new browser-extension visibility tests override this stub locally
+with `thenReturn(true)`.
 
 - [ ] **Step 4: Add the button to the screen**
 
@@ -1526,6 +1578,7 @@ Expected: no issues.
 ```bash
 git add mobile/lib/screens/auth/login_options_screen.dart \
         mobile/lib/services/auth_service.dart \
+        mobile/test/helpers/test_provider_overrides.dart \
         mobile/test/screens/auth/login_options_screen_test.dart
 git commit -m "feat(auth): wire NIP-07 sign-in button into LoginOptionsScreen"
 ```
@@ -1607,6 +1660,6 @@ Body should include:
 - **Don't pull in `WebAuthScreen`.** It's dead code; touching it is out of scope.
 - **`Nip07Service` is a singleton.** The seam in `AuthService` (`nip07ServiceForTest`) is the only test injection point; do not refactor `Nip07Service` itself to take a constructor arg unless you're willing to update every call site.
 - **Conditional import gotcha:** `dart.library.js_interop` is the modern key. If the build complains, fall back to the older `dart.library.html` — both work, but `js_interop` is what the rest of the codebase tends to gate on.
-- **`Event.fromTrustedJson`:** verify the actual constructor name in `nostr_sdk` before relying on it. If it's `Event.fromJson` instead, swap. The signed map has all required fields, so trusted/untrusted is the only question.
+- **`Event.fromJson` is the real factory** in `mobile/packages/nostr_sdk/lib/event.dart:46` — accepts `Map<String, dynamic>`, requires `id`, `pubkey`, `created_at`, `kind`, `tags`, `content`; tolerates a null `sig`. Already wired into the adapter snippet.
 - **`kIsWeb` in tests:** never try to override it. Push platform checks behind a service getter, then mock the service.
 - **Pre-commit hook:** if format/analyze fails on a TDD red step, do not bypass — fold the green step into the same commit. The plan above is structured so each commit is hook-clean.
