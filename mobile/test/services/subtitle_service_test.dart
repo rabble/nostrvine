@@ -89,6 +89,50 @@ void main() {
         expect(cues, hasLength(1));
         expect(cues[0].text, equals('Valid cue'));
       });
+
+      test('strips leaked LLM prompt directives from cue text (#3737)', () {
+        const vtt =
+            'WEBVTT\n'
+            '\n'
+            '1\n'
+            '00:00:00.000 --> 00:00:01.000\n'
+            'And I promise you, if I get elected, freedom is the only '
+            "option. Well, that's not really freedom now, is it, you "
+            'freaking idiot? a single JSON array. Do not include any '
+            'extra text outside of the JSON string. When producing '
+            'JSON you must follow the schema provided in the context.\n';
+
+        final cues = SubtitleService.parseVtt(vtt);
+
+        expect(cues, hasLength(1));
+        expect(
+          cues[0].text,
+          equals(
+            'And I promise you, if I get elected, freedom is the only '
+            "option. Well, that's not really freedom now, is it, you "
+            'freaking idiot?',
+          ),
+        );
+      });
+
+      test('drops cue whose text is entirely prompt content', () {
+        const vtt =
+            'WEBVTT\n'
+            '\n'
+            '1\n'
+            '00:00:00.000 --> 00:00:01.000\n'
+            'a single JSON array do not include any extra text\n'
+            '\n'
+            '2\n'
+            '00:00:01.000 --> 00:00:02.000\n'
+            'Real caption.\n';
+
+        final cues = SubtitleService.parseVtt(vtt);
+
+        expect(cues, hasLength(1));
+        expect(cues[0].text, equals('Real caption.'));
+        expect(cues[0].start, equals(1000));
+      });
     });
 
     group('generateVtt', () {

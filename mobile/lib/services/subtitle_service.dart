@@ -1,6 +1,8 @@
 // ABOUTME: Service for parsing WebVTT subtitle content into cue objects.
 // ABOUTME: Handles VTT parsing and generation for the subtitle pipeline.
 
+import 'package:openvine/services/transcript_sanitizer.dart';
+
 /// A single subtitle cue with timing and text.
 class SubtitleCue {
   const SubtitleCue({
@@ -52,13 +54,18 @@ class SubtitleService {
             i++;
           }
           if (textLines.isNotEmpty) {
-            cues.add(
-              SubtitleCue(
-                start: timing.$1,
-                end: timing.$2,
-                text: textLines.join('\n'),
-              ),
+            final sanitized = TranscriptSanitizer.sanitize(
+              textLines.join('\n'),
             );
+            if (sanitized != null && sanitized.isNotEmpty) {
+              cues.add(
+                SubtitleCue(
+                  start: timing.$1,
+                  end: timing.$2,
+                  text: sanitized,
+                ),
+              );
+            }
           }
         } else {
           i++;
