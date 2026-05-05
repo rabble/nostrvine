@@ -1,22 +1,4 @@
-// ABOUTME: Redacts Authorization / Nostr auth payloads from maps before logging.
+// ABOUTME: App-level entry point for HTTP header redaction in logs.
+// ABOUTME: Implementation lives in `nostr_sdk` so upload code can share it.
 
-import 'package:openvine/utils/sensitive_uri_for_logs.dart';
-
-/// Returns a shallow copy of [headers] suitable for logs: values of
-/// `Authorization` become `[REDACTED]` or `Nostr [REDACTED]` when the value
-/// used the Blossom/NIP-98 `Nostr` prefix (case-insensitive).
-Map<String, String> redactHttpHeadersForLogs(Map<String, String> headers) {
-  final out = Map<String, String>.from(headers);
-  for (final key in out.keys.toList(growable: false)) {
-    if (key.toLowerCase() != 'authorization') {
-      continue;
-    }
-    final value = out[key]!;
-    if (value.trimLeft().toLowerCase().startsWith('nostr')) {
-      out[key] = 'Nostr $redactedSensitiveLogPlaceholder';
-    } else {
-      out[key] = redactedSensitiveLogPlaceholder;
-    }
-  }
-  return out;
-}
+export 'package:nostr_sdk/utils/redact_http_headers_for_logs.dart';

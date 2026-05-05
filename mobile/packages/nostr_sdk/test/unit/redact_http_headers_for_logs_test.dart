@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/sensitive_http_headers_for_logs.dart';
+import 'package:nostr_sdk/utils/redact_http_headers_for_logs.dart';
 
 void main() {
   group('redactHttpHeadersForLogs', () {
