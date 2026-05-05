@@ -604,11 +604,11 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileShowLess => 'Pokaż mniej';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => 'Nie można otworzyć linku';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Website: $url';
+    return 'Strona internetowa: $url';
   }
 
   @override
@@ -752,27 +752,28 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileSetupBioHint => 'Powiedz coś o sobie...';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Strona internetowa (opcjonalnie)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
   String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+      'Konta zewnętrzne (opcjonalnie)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      'Połącz z innymi platformami. Adres URL dowodu jest wymagany, aby plakietka weryfikacji pojawiła się w Twoim profilu.';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint =>
+      'Nazwa użytkownika na platformie';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => 'Dodaj konto';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => 'Usuń konto';
 
   @override
   String get profileSetupPublicKeyLabel => 'Klucz publiczny (npub)';

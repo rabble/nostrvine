@@ -3569,5 +3569,14 @@
     "badgesIssuedEmptySubtitle": "የምትሰጣቸው ባጆች የመቀበል ሁኔታቸውን እዚህ ያሳያሉ።",
     "badgesIssuedNoRecipients": "ለዚህ ሽልማት ምንም ተቀባዮች አልተገኙም።",
     "badgesRecipientAcceptedStatus": "ተቀባዩ ተቀብሎታል",
-    "badgesRecipientWaitingStatus": "ተቀባይን በመጠባበቅ ላይ"
+    "badgesRecipientWaitingStatus": "ተቀባይን በመጠባበቅ ላይ",
+    "profileLinkOpenFailed": "ሊንክ መክፈት አልተቻለም",
+    "profileWebsiteSemanticLabel": "ድረ-ገጽ: {url}",
+    "profileSetupWebsiteLabel": "ድረ-ገጽ (አማራጭ)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "ውጫዊ መለያዎች (አማራጭ)",
+    "profileSetupExternalAccountsHelper": "ከሌሎች መድረኮች ጋር ይገናኙ። የተረጋገጠ ባጅ በመገለጫዎ ላይ እንዲታይ የማረጋገጫ URL ያስፈልጋል።",
+    "profileSetupExternalIdentityHint": "በመድረኩ ላይ ያለው የተጠቃሚ ስም",
+    "profileSetupAddExternalAccount": "መለያ ጨምር",
+    "profileSetupRemoveExternalAccount": "መለያ አስወግድ"
 }

@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Odznaki, które wydasz, pokażą tutaj status akceptacji.",
     "badgesIssuedNoRecipients": "Nie znaleziono odbiorców tej nagrody.",
     "badgesRecipientAcceptedStatus": "Zaakceptowane przez odbiorcę",
-    "badgesRecipientWaitingStatus": "Oczekiwanie na odbiorcę"
+    "badgesRecipientWaitingStatus": "Oczekiwanie na odbiorcę",
+    "profileLinkOpenFailed": "Nie można otworzyć linku",
+    "profileWebsiteSemanticLabel": "Strona internetowa: {url}",
+    "profileSetupWebsiteLabel": "Strona internetowa (opcjonalnie)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Konta zewnętrzne (opcjonalnie)",
+    "profileSetupExternalAccountsHelper": "Połącz z innymi platformami. Adres URL dowodu jest wymagany, aby plakietka weryfikacji pojawiła się w Twoim profilu.",
+    "profileSetupExternalIdentityHint": "Nazwa użytkownika na platformie",
+    "profileSetupAddExternalAccount": "Dodaj konto",
+    "profileSetupRemoveExternalAccount": "Usuń konto"
 }

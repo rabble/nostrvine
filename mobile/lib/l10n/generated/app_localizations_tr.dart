@@ -576,11 +576,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileShowLess => 'Daha az göster';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => 'Bağlantı açılamadı';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Website: $url';
+    return 'Web sitesi: $url';
   }
 
   @override
@@ -724,27 +724,27 @@ class AppLocalizationsTr extends AppLocalizations {
   String get profileSetupBioHint => 'İnsanlara kendinden bahset...';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Web sitesi (isteğe bağlı)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
   String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+      'Harici hesaplar (isteğe bağlı)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      'Diğer platformlara bağlantı verin. Profilinizde doğrulama rozetinin görünmesi için bir kanıt URL\'si gereklidir.';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint => 'Platformdaki kullanıcı adı';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => 'Hesap ekle';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => 'Hesap kaldır';
 
   @override
   String get profileSetupPublicKeyLabel => 'Açık anahtar (npub)';

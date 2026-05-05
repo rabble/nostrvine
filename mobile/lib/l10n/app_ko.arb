@@ -2727,5 +2727,14 @@
     "badgesIssuedEmptySubtitle": "발급한 배지는 여기에서 수락 상태를 보여줘요.",
     "badgesIssuedNoRecipients": "이 배지에 대한 수령자를 찾지 못했어요.",
     "badgesRecipientAcceptedStatus": "수령자가 수락했어요",
-    "badgesRecipientWaitingStatus": "수령자를 기다리는 중"
+    "badgesRecipientWaitingStatus": "수령자를 기다리는 중",
+    "profileLinkOpenFailed": "링크를 열 수 없습니다",
+    "profileWebsiteSemanticLabel": "웹사이트: {url}",
+    "profileSetupWebsiteLabel": "웹사이트(선택 사항)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "외부 계정(선택 사항)",
+    "profileSetupExternalAccountsHelper": "다른 플랫폼에 연결하세요. 프로필에 인증 배지를 표시하려면 증명 URL이 필요합니다.",
+    "profileSetupExternalIdentityHint": "플랫폼 사용자 이름",
+    "profileSetupAddExternalAccount": "계정 추가",
+    "profileSetupRemoveExternalAccount": "계정 제거"
 }

@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "I badge che rilasci mostreranno qui lo stato di accettazione.",
     "badgesIssuedNoRecipients": "Nessun destinatario trovato per questo premio.",
     "badgesRecipientAcceptedStatus": "Accettato dal destinatario",
-    "badgesRecipientWaitingStatus": "In attesa del destinatario"
+    "badgesRecipientWaitingStatus": "In attesa del destinatario",
+    "profileLinkOpenFailed": "Impossibile aprire il link",
+    "profileWebsiteSemanticLabel": "Sito web: {url}",
+    "profileSetupWebsiteLabel": "Sito web (opzionale)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Account esterni (opzionale)",
+    "profileSetupExternalAccountsHelper": "Collega altre piattaforme. È necessario un URL di prova affinché il badge verificato appaia sul tuo profilo.",
+    "profileSetupExternalIdentityHint": "Nome utente sulla piattaforma",
+    "profileSetupAddExternalAccount": "Aggiungi account",
+    "profileSetupRemoveExternalAccount": "Rimuovi account"
 }

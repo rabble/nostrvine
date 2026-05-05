@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Badge yang kamu berikan akan menampilkan status penerimaan di sini.",
     "badgesIssuedNoRecipients": "Tidak ada penerima untuk penghargaan ini.",
     "badgesRecipientAcceptedStatus": "Diterima oleh penerima",
-    "badgesRecipientWaitingStatus": "Menunggu penerima"
+    "badgesRecipientWaitingStatus": "Menunggu penerima",
+    "profileLinkOpenFailed": "Tidak dapat membuka tautan",
+    "profileWebsiteSemanticLabel": "Situs web: {url}",
+    "profileSetupWebsiteLabel": "Situs web (opsional)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Akun eksternal (opsional)",
+    "profileSetupExternalAccountsHelper": "Tautkan ke platform lain. URL bukti diperlukan agar lencana terverifikasi muncul di profil Anda.",
+    "profileSetupExternalIdentityHint": "Nama pengguna di platform",
+    "profileSetupAddExternalAccount": "Tambah akun",
+    "profileSetupRemoveExternalAccount": "Hapus akun"
 }

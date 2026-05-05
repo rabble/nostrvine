@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "あなたが発行したバッジの承認状況がここに出るよ。",
     "badgesIssuedNoRecipients": "この受賞には受信者が見つからないよ。",
     "badgesRecipientAcceptedStatus": "受信者が承認",
-    "badgesRecipientWaitingStatus": "受信者の承認待ち"
+    "badgesRecipientWaitingStatus": "受信者の承認待ち",
+    "profileLinkOpenFailed": "リンクを開けませんでした",
+    "profileWebsiteSemanticLabel": "ウェブサイト: {url}",
+    "profileSetupWebsiteLabel": "ウェブサイト（任意）",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "外部アカウント（任意）",
+    "profileSetupExternalAccountsHelper": "他のプラットフォームにリンクします。プロフィールに認証バッジを表示するには、証明URLが必要です。",
+    "profileSetupExternalIdentityHint": "プラットフォームでのユーザー名",
+    "profileSetupAddExternalAccount": "アカウントを追加",
+    "profileSetupRemoveExternalAccount": "アカウントを削除"
 }

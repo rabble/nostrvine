@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "ستظهر هنا حالة قبول الشارات التي تمنحها.",
     "badgesIssuedNoRecipients": "لم يُعثر على مستلمين لهذه الجائزة.",
     "badgesRecipientAcceptedStatus": "قبِلها المستلم",
-    "badgesRecipientWaitingStatus": "بانتظار المستلم"
+    "badgesRecipientWaitingStatus": "بانتظار المستلم",
+    "profileLinkOpenFailed": "تعذّر فتح الرابط",
+    "profileWebsiteSemanticLabel": "الموقع الإلكتروني: {url}",
+    "profileSetupWebsiteLabel": "الموقع الإلكتروني (اختياري)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "الحسابات الخارجية (اختياري)",
+    "profileSetupExternalAccountsHelper": "اربط منصات أخرى. يلزم رابط إثبات لظهور شارة التحقق على ملفك الشخصي.",
+    "profileSetupExternalIdentityHint": "اسم المستخدم في المنصة",
+    "profileSetupAddExternalAccount": "إضافة حساب",
+    "profileSetupRemoveExternalAccount": "إزالة الحساب"
 }

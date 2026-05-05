@@ -621,11 +621,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileShowLess => 'Arată mai puțin';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => 'Linkul nu a putut fi deschis';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Website: $url';
+    return 'Site web: $url';
   }
 
   @override
@@ -770,27 +770,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSetupBioHint => 'Spune-le oamenilor despre tine...';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Site web (opțional)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
-  String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+  String get profileSetupExternalAccountsLabel => 'Conturi externe (opțional)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      'Conectează-te cu alte platforme. Este necesar un URL de dovadă pentru ca insigna verificată să apară pe profilul tău.';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint =>
+      'Numele de utilizator pe platformă';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => 'Adaugă cont';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => 'Elimină cont';
 
   @override
   String get profileSetupPublicKeyLabel => 'Cheie publică (npub)';

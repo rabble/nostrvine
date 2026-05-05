@@ -602,11 +602,11 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileShowLess => 'Покажи по-малко';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => 'Връзката не може да бъде отворена';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Website: $url';
+    return 'Уебсайт: $url';
   }
 
   @override
@@ -750,27 +750,27 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileSetupBioHint => 'Разкажи на хората за себе си...';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Уебсайт (по избор)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
-  String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+  String get profileSetupExternalAccountsLabel => 'Външни акаунти (по избор)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      'Свържете се с други платформи. URL за потвърждение е необходим, за да се покаже значка за потвърждение в профила ви.';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint =>
+      'Потребителско име в платформата';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => 'Добавяне на акаунт';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => 'Премахване на акаунт';
 
   @override
   String get profileSetupPublicKeyLabel => 'Публичен ключ (npub)';

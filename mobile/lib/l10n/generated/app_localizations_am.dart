@@ -572,11 +572,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileShowLess => 'ያነሰ አሳይ';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => 'ሊንክ መክፈት አልተቻለም';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Website: $url';
+    return 'ድረ-ገጽ: $url';
   }
 
   @override
@@ -716,27 +716,26 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileSetupBioHint => 'ስለራስዎ ለሰዎች ይንገሩ…';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'ድረ-ገጽ (አማራጭ)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
-  String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+  String get profileSetupExternalAccountsLabel => 'ውጫዊ መለያዎች (አማራጭ)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      'ከሌሎች መድረኮች ጋር ይገናኙ። የተረጋገጠ ባጅ በመገለጫዎ ላይ እንዲታይ የማረጋገጫ URL ያስፈልጋል።';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint => 'በመድረኩ ላይ ያለው የተጠቃሚ ስም';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => 'መለያ ጨምር';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => 'መለያ አስወግድ';
 
   @override
   String get profileSetupPublicKeyLabel => 'የህዝብ ቁልፍ (npub)';

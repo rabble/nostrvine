@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Insignele pe care le emiți vor afișa aici starea de acceptare.",
     "badgesIssuedNoRecipients": "Niciun destinatar găsit pentru acest premiu.",
     "badgesRecipientAcceptedStatus": "Acceptată de destinatar",
-    "badgesRecipientWaitingStatus": "Se așteaptă destinatarul"
+    "badgesRecipientWaitingStatus": "Se așteaptă destinatarul",
+    "profileLinkOpenFailed": "Linkul nu a putut fi deschis",
+    "profileWebsiteSemanticLabel": "Site web: {url}",
+    "profileSetupWebsiteLabel": "Site web (opțional)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Conturi externe (opțional)",
+    "profileSetupExternalAccountsHelper": "Conectează-te cu alte platforme. Este necesar un URL de dovadă pentru ca insigna verificată să apară pe profilul tău.",
+    "profileSetupExternalIdentityHint": "Numele de utilizator pe platformă",
+    "profileSetupAddExternalAccount": "Adaugă cont",
+    "profileSetupRemoveExternalAccount": "Elimină cont"
 }

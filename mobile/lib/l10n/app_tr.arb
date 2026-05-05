@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Verdiğin rozetlerin kabul durumu burada görünecek.",
     "badgesIssuedNoRecipients": "Bu ödül için alıcı bulunamadı.",
     "badgesRecipientAcceptedStatus": "Alıcı tarafından kabul edildi",
-    "badgesRecipientWaitingStatus": "Alıcı bekleniyor"
+    "badgesRecipientWaitingStatus": "Alıcı bekleniyor",
+    "profileLinkOpenFailed": "Bağlantı açılamadı",
+    "profileWebsiteSemanticLabel": "Web sitesi: {url}",
+    "profileSetupWebsiteLabel": "Web sitesi (isteğe bağlı)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Harici hesaplar (isteğe bağlı)",
+    "profileSetupExternalAccountsHelper": "Diğer platformlara bağlantı verin. Profilinizde doğrulama rozetinin görünmesi için bir kanıt URL'si gereklidir.",
+    "profileSetupExternalIdentityHint": "Platformdaki kullanıcı adı",
+    "profileSetupAddExternalAccount": "Hesap ekle",
+    "profileSetupRemoveExternalAccount": "Hesap kaldır"
 }

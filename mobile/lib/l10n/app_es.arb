@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Las insignias que emitas van a mostrar el estado de aceptación acá.",
     "badgesIssuedNoRecipients": "No se encontraron destinatarios para este premio.",
     "badgesRecipientAcceptedStatus": "Aceptada por el destinatario",
-    "badgesRecipientWaitingStatus": "Esperando al destinatario"
+    "badgesRecipientWaitingStatus": "Esperando al destinatario",
+    "profileLinkOpenFailed": "No se pudo abrir el enlace",
+    "profileWebsiteSemanticLabel": "Sitio web: {url}",
+    "profileSetupWebsiteLabel": "Sitio web (opcional)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Cuentas externas (opcional)",
+    "profileSetupExternalAccountsHelper": "Enlazá con otras plataformas. Se necesita una URL de prueba para que la insignia de verificación aparezca en tu perfil.",
+    "profileSetupExternalIdentityHint": "Nombre de usuario en la plataforma",
+    "profileSetupAddExternalAccount": "Añadir cuenta",
+    "profileSetupRemoveExternalAccount": "Eliminar cuenta"
 }

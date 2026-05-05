@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Märken du utfärdar visar acceptansstatus här.",
     "badgesIssuedNoRecipients": "Inga mottagare hittades för den här utmärkelsen.",
     "badgesRecipientAcceptedStatus": "Accepterat av mottagare",
-    "badgesRecipientWaitingStatus": "Väntar på mottagare"
+    "badgesRecipientWaitingStatus": "Väntar på mottagare",
+    "profileLinkOpenFailed": "Kunde inte öppna länken",
+    "profileWebsiteSemanticLabel": "Webbplats: {url}",
+    "profileSetupWebsiteLabel": "Webbplats (valfritt)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Externa konton (valfritt)",
+    "profileSetupExternalAccountsHelper": "Länka till andra plattformar. En bevis-URL krävs för att verifieringsmärket ska visas på din profil.",
+    "profileSetupExternalIdentityHint": "Användarnamn på plattformen",
+    "profileSetupAddExternalAccount": "Lägg till konto",
+    "profileSetupRemoveExternalAccount": "Ta bort konto"
 }

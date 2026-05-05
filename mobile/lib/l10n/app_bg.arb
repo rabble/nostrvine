@@ -3575,5 +3575,14 @@
     "badgesIssuedEmptySubtitle": "Значките, които издаваш, ще показват състоянието на приемане тук.",
     "badgesIssuedNoRecipients": "Не са намерени получатели за тази награда.",
     "badgesRecipientAcceptedStatus": "Приета от получателя",
-    "badgesRecipientWaitingStatus": "Очаква получателя"
+    "badgesRecipientWaitingStatus": "Очаква получателя",
+    "profileLinkOpenFailed": "Връзката не може да бъде отворена",
+    "profileWebsiteSemanticLabel": "Уебсайт: {url}",
+    "profileSetupWebsiteLabel": "Уебсайт (по избор)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Външни акаунти (по избор)",
+    "profileSetupExternalAccountsHelper": "Свържете се с други платформи. URL за потвърждение е необходим, за да се покаже значка за потвърждение в профила ви.",
+    "profileSetupExternalIdentityHint": "Потребителско име в платформата",
+    "profileSetupAddExternalAccount": "Добавяне на акаунт",
+    "profileSetupRemoveExternalAccount": "Премахване на акаунт"
 }

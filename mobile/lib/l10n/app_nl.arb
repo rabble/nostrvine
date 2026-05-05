@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Badges die je uitreikt tonen hier hun acceptatiestatus.",
     "badgesIssuedNoRecipients": "Geen ontvangers gevonden voor deze toekenning.",
     "badgesRecipientAcceptedStatus": "Geaccepteerd door ontvanger",
-    "badgesRecipientWaitingStatus": "Wacht op ontvanger"
+    "badgesRecipientWaitingStatus": "Wacht op ontvanger",
+    "profileLinkOpenFailed": "Kan link niet openen",
+    "profileWebsiteSemanticLabel": "Website: {url}",
+    "profileSetupWebsiteLabel": "Website (optioneel)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Externe accounts (optioneel)",
+    "profileSetupExternalAccountsHelper": "Link naar andere platforms. Een bewijs-URL is vereist om de geverifieerde badge op je profiel te tonen.",
+    "profileSetupExternalIdentityHint": "Gebruikersnaam op het platform",
+    "profileSetupAddExternalAccount": "Account toevoegen",
+    "profileSetupRemoveExternalAccount": "Account verwijderen"
 }

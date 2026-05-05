@@ -3431,5 +3431,14 @@
     "badgesIssuedEmptySubtitle": "Badges, die du vergibst, zeigen hier ihren Annahmestatus.",
     "badgesIssuedNoRecipients": "Keine Empfänger für diese Auszeichnung gefunden.",
     "badgesRecipientAcceptedStatus": "Vom Empfänger angenommen",
-    "badgesRecipientWaitingStatus": "Wartet auf Empfänger"
+    "badgesRecipientWaitingStatus": "Wartet auf Empfänger",
+    "profileLinkOpenFailed": "Link konnte nicht geöffnet werden",
+    "profileWebsiteSemanticLabel": "Webseite: {url}",
+    "profileSetupWebsiteLabel": "Webseite (optional)",
+    "profileSetupWebsiteHint": "https://your.site",
+    "profileSetupExternalAccountsLabel": "Externe Konten (optional)",
+    "profileSetupExternalAccountsHelper": "Verlinke andere Plattformen. Eine Beleg-URL ist erforderlich, damit das Verifizierungsabzeichen in deinem Profil angezeigt wird.",
+    "profileSetupExternalIdentityHint": "Benutzername auf der Plattform",
+    "profileSetupAddExternalAccount": "Konto hinzufügen",
+    "profileSetupRemoveExternalAccount": "Konto entfernen"
 }

@@ -545,11 +545,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileShowLess => '접기';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => '링크를 열 수 없습니다';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
-    return 'Website: $url';
+    return '웹사이트: $url';
   }
 
   @override
@@ -686,27 +686,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupBioHint => '자신을 소개해보세요...';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => '웹사이트(선택 사항)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
-  String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+  String get profileSetupExternalAccountsLabel => '외부 계정(선택 사항)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      '다른 플랫폼에 연결하세요. 프로필에 인증 배지를 표시하려면 증명 URL이 필요합니다.';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint => '플랫폼 사용자 이름';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => '계정 추가';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => '계정 제거';
 
   @override
   String get profileSetupPublicKeyLabel => '공개 키 (npub)';

@@ -595,7 +595,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileShowLess => 'Minder weergeven';
 
   @override
-  String get profileLinkOpenFailed => 'Couldn\'t open link';
+  String get profileLinkOpenFailed => 'Kan link niet openen';
 
   @override
   String profileWebsiteSemanticLabel(String url) {
@@ -743,27 +743,28 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileSetupBioHint => 'Vertel iets over jezelf...';
 
   @override
-  String get profileSetupWebsiteLabel => 'Website (Optional)';
+  String get profileSetupWebsiteLabel => 'Website (optioneel)';
 
   @override
   String get profileSetupWebsiteHint => 'https://your.site';
 
   @override
   String get profileSetupExternalAccountsLabel =>
-      'External accounts (Optional)';
+      'Externe accounts (optioneel)';
 
   @override
   String get profileSetupExternalAccountsHelper =>
-      'Link to other platforms. A proof URL is required for the verified badge to show on your profile.';
+      'Link naar andere platforms. Een bewijs-URL is vereist om de geverifieerde badge op je profiel te tonen.';
 
   @override
-  String get profileSetupExternalIdentityHint => 'Username on the platform';
+  String get profileSetupExternalIdentityHint =>
+      'Gebruikersnaam op het platform';
 
   @override
-  String get profileSetupAddExternalAccount => 'Add account';
+  String get profileSetupAddExternalAccount => 'Account toevoegen';
 
   @override
-  String get profileSetupRemoveExternalAccount => 'Remove account';
+  String get profileSetupRemoveExternalAccount => 'Account verwijderen';
 
   @override
   String get profileSetupPublicKeyLabel => 'Publieke sleutel (npub)';
