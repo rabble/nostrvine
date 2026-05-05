@@ -18,7 +18,7 @@ void main() {
       test(
         'redacts values for token, code, deviceCode, verifier, secret (and any other query)',
         () {
-          final raw =
+          const raw =
               'https://divine.video/invite?token=abc&code=CDEF&deviceCode=dd&'
               'verifier=vv&secret=ss&other=xx';
           final out = redactUriStringForLogs(raw);
@@ -37,7 +37,7 @@ void main() {
       );
 
       test('each AC-listed value is absent from output (single URL)', () {
-        final uri =
+        const uri =
             'https://divine.video/x?token=w1&code=w2&deviceCode=w3&verifier=w4&secret=w5';
         final out = redactUriStringForLogs(uri);
         for (final leaked in ['w1', 'w2', 'w3', 'w4', 'w5']) {
@@ -46,7 +46,7 @@ void main() {
       });
 
       test('mixed-case query parameter names still redact values', () {
-        final raw = 'https://divine.video/path?Code=up&TOKEN=t&VERIFIER=v';
+        const raw = 'https://divine.video/path?Code=up&TOKEN=t&VERIFIER=v';
         final out = redactUriStringForLogs(raw);
         expect(out, isNot(contains('Code=up')));
         expect(out, isNot(contains('TOKEN=t')));
@@ -59,7 +59,7 @@ void main() {
     });
 
     test('redacts duplicate query parameter values', () {
-      final raw = 'https://divine.video/x?state=1&state=2';
+      const raw = 'https://divine.video/x?state=1&state=2';
       final out = redactUriStringForLogs(raw);
       expect(out, isNot(contains('state=1')));
       expect(
@@ -69,22 +69,22 @@ void main() {
     });
 
     test('preserves video and profile refs (full path segments)', () {
-      final note =
+      const note =
           'note1qqqqqqqzghd5m8qyv7qkz9q7qkqkqkqkqkqkqkqkqkqkqkqkqkqkqkqkqkqkqkqkq';
-      final raw = 'https://divine.video/video/$note';
+      const raw = 'https://divine.video/video/$note';
       final out = redactUriStringForLogs(raw);
       expect(out, contains(note));
 
-      final npub =
+      const npub =
           'npub180cvv07tjdrrgpa9jzd0cdkej42kwsaxq9rz7gvdpjx6nz004f9uulstw6';
-      final rawProfile = 'https://divine.video/profile/$npub/3';
+      const rawProfile = 'https://divine.video/profile/$npub/3';
       final outProfile = redactUriStringForLogs(rawProfile);
       expect(outProfile, contains(npub));
       expect(outProfile, contains('/3'));
     });
 
     test('redacts invite code path segment after /invite/', () {
-      final raw =
+      const raw =
           'https://divine.video/invite/ABCD-EFGH-INVITE?utm_source=test';
       final out = redactUriStringForLogs(raw);
       expect(out, isNot(contains('ABCD')));
@@ -93,7 +93,7 @@ void main() {
     });
 
     test('clears userInfo credentials', () {
-      final raw = 'https://user:sekret@divine.video/video/foo';
+      const raw = 'https://user:sekret@divine.video/video/foo';
       final out = redactUriStringForLogs(raw);
       expect(out, isNot(contains('sekret')));
       expect(out, startsWith('https://divine.video/'));
@@ -101,14 +101,14 @@ void main() {
     });
 
     test('redacts fragment contents', () {
-      final raw = 'https://divine.video/page#oops=sensitive-bit';
+      const raw = 'https://divine.video/page#oops=sensitive-bit';
       final out = redactUriStringForLogs(raw);
       expect(out, isNot(contains('sensitive-bit')));
       expect(out, endsWith('#$redactedUriComponentForLogs'));
     });
 
     test('divine:// callback query does not leak token values', () {
-      final raw = 'divine://signer-return?token=supersecret&refresh=1';
+      const raw = 'divine://signer-return?token=supersecret&refresh=1';
       final out = redactUriStringForLogs(raw);
       expect(out, startsWith('divine://'));
       expect(out, isNot(contains('supersecret')));
