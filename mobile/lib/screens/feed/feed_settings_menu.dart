@@ -16,11 +16,11 @@ import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 
 /// More icon button + playback-controls popover for the home feed top bar.
 ///
-/// Renders a right-aligned 40 px scrim-15 [DivineIconButton] (48 px tap
-/// target) inside the feed's existing top-bar safe area. Tapping opens a
-/// popover anchored 16 px below the button's bottom-right corner with three
-/// scrim-toggled controls: playback mode (auto-advance), audio mute, and
-/// closed captions.
+/// Renders a 40 px scrim-15 [DivineIconButton] (48 px tap target) intended
+/// to be placed as the trailing sibling of the feed-mode selector inside the
+/// home feed's top-bar [Row]. Tapping opens a popover anchored 16 px below
+/// the button's bottom-right corner with three scrim-toggled controls:
+/// playback mode (auto-advance), audio mute, and closed captions.
 ///
 /// All three toggles read and write app-wide state (`FeedAutoAdvanceCubit`,
 /// `VideoVolumeCubit`, and the Riverpod `subtitleVisibilityProvider`) so the
@@ -54,31 +54,21 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      right: 0,
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 16, right: 20),
-          child: CompositedTransformTarget(
-            link: _link,
-            child: OverlayPortal(
-              controller: _controller,
-              overlayChildBuilder: _buildOverlay,
-              child: DivineIconButton(
-                icon: _controller.isShowing
-                    ? DivineIconName.x
-                    : DivineIconName.dotsThree,
-                size: DivineIconButtonSize.small,
-                type: DivineIconButtonType.ghostSecondary,
-                semanticLabel: _controller.isShowing
-                    ? context.l10n.videoSettingsMenuClose
-                    : context.l10n.videoSettingsMenuOpen,
-                onPressed: _toggle,
-              ),
-            ),
-          ),
+    return CompositedTransformTarget(
+      link: _link,
+      child: OverlayPortal(
+        controller: _controller,
+        overlayChildBuilder: _buildOverlay,
+        child: DivineIconButton(
+          icon: _controller.isShowing
+              ? DivineIconName.x
+              : DivineIconName.dotsThree,
+          size: DivineIconButtonSize.small,
+          type: DivineIconButtonType.ghostSecondary,
+          semanticLabel: _controller.isShowing
+              ? context.l10n.videoSettingsMenuClose
+              : context.l10n.videoSettingsMenuOpen,
+          onPressed: _toggle,
         ),
       ),
     );

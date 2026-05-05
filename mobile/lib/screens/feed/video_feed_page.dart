@@ -27,7 +27,6 @@ import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
-import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
@@ -556,7 +555,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   children: [
                     FeedEmptyWidget(state: state),
                     const FeedModeSwitch(),
-                    const FeedSettingsMenu(),
                   ],
                 );
               }
@@ -730,7 +728,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       ),
                     ),
                   const FeedModeSwitch(),
-                  const FeedSettingsMenu(),
                 ],
               );
             },
