@@ -5860,22 +5860,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoRecorderWhySixSecondsButton => '알겠어요!';
 
   @override
-  String get videoRecorderUploadTitle => 'Why no upload?';
+  String get videoRecorderUploadTitle => '왜 업로드가 없나요?';
 
   @override
   String get videoRecorderUploadBody =>
-      'What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.';
+      'Divine에서 보는 콘텐츠는 사람이 만든 것입니다. 가공되지 않고 그 순간에 촬영된 것이죠. 고도로 제작되거나 AI로 생성된 업로드를 허용하는 플랫폼과는 달리, 우리는 카메라 직촬 경험의 진정성을 우선시합니다.';
 
   @override
   String get videoRecorderUploadBodyDetail =>
-      'By keeping creation inside the app, we can better guarantee content is real and unedited — and keep the community free of synthetic content as much as we can.';
+      '제작을 앱 안에서 유지함으로써, 콘텐츠가 실제이며 편집되지 않았음을 더 잘 보장할 수 있고 — 커뮤니티를 합성 콘텐츠로부터 최대한 자유롭게 유지할 수 있습니다.';
 
   @override
-  String get videoRecorderUploadBodyCta =>
-      'Switch to Capture or Classic to roll something real.';
+  String get videoRecorderUploadBodyCta => '진짜를 찍으려면 Capture나 Classic으로 전환하세요.';
 
   @override
-  String get videoRecorderUploadLearnMore => 'Learn how verification works';
+  String get videoRecorderUploadLearnMore => '검증이 어떻게 작동하는지 알아보기';
 
   @override
   String get videoRecorderAutosaveFoundTitle => '작업 중인 항목을 찾았습니다';
