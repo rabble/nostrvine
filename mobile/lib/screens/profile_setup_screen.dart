@@ -16,15 +16,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
@@ -375,10 +379,12 @@ class _ProfileSetupScreenViewState
           listener: (context, state) async {
             final editorBloc = context.read<ProfileEditorBloc>();
             final myProfileBloc = context.read<MyProfileBloc>();
-            final env = ref.read(currentEnvironmentProvider);
-            await launchUrl(
-              Uri.parse(env.verifierBaseUrl),
-              mode: LaunchMode.externalApplication,
+            final verifyer = preloadedNostrApps.firstWhere(
+              (app) => app.slug == 'verifyer',
+            );
+            await context.push(
+              NostrAppSandboxScreen.pathForAppId(verifyer.id),
+              extra: verifyer,
             );
             editorBloc.add(const VerifierWebViewDismissed());
             myProfileBloc.add(const MyProfileFetchRequested());
@@ -2266,11 +2272,11 @@ class _PublicKeyLink extends StatelessWidget {
   }
 }
 
-class _VerifiedAccountsSection extends StatelessWidget {
+class _VerifiedAccountsSection extends ConsumerWidget {
   const _VerifiedAccountsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final claims = context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
       final state = bloc.state;
@@ -2278,6 +2284,12 @@ class _VerifiedAccountsSection extends StatelessWidget {
       if (state is MyProfileUpdated) return state.verifiedClaims;
       return const [];
     });
+    final canVerify =
+        nostrAppsSandboxSupported &&
+        ref.watch(isFeatureEnabledProvider(FeatureFlag.integratedApps));
+    if (claims.isEmpty && !canVerify) {
+      return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -2297,7 +2309,7 @@ class _VerifiedAccountsSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
           ],
-          const _GetVerifiedTile(),
+          if (canVerify) const _GetVerifiedTile(),
         ],
       ),
     );

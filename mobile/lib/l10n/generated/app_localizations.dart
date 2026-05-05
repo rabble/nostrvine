@@ -12106,7 +12106,7 @@ abstract class AppLocalizations {
   /// **'Verified accounts'**
   String get profileEditVerifiedAccountsTitle;
 
-  /// Primary CTA tile on edit profile that opens the in-app verifier WebView.
+  /// Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox.
   ///
   /// In en, this message translates to:
   /// **'Get verified'**

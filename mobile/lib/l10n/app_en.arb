@@ -3671,7 +3671,7 @@
   },
   "profileEditGetVerifiedCta": "Get verified",
   "@profileEditGetVerifiedCta": {
-    "description": "Primary CTA tile on edit profile that opens the in-app verifier WebView."
+    "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
   },
   "profileEditGetVerifiedSubtitle": "Link your social media accounts so people know it's really you.",
   "@profileEditGetVerifiedSubtitle": {
