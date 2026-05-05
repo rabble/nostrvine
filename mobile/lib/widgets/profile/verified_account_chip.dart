@@ -1,5 +1,5 @@
 // ABOUTME: VerifiedAccountChip — single chip for one verified identity claim.
-// ABOUTME: Tapping opens the platform profile in the system browser.
+// ABOUTME: Tapping opens the linked platform profile in the system browser.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
