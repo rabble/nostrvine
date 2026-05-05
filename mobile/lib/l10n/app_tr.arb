@@ -2436,14 +2436,14 @@
     "searchDiscoverSomethingInteresting": "İlginç bir şey keşfet",
     "searchEnterQuery": "Bir arama terimi girin",
     "searchFindCuratedVideoLists": "Küratörlü video listelerini bul",
-  "searchPeopleSectionHeader": "People",
-  "searchPeopleLoadingLabel": "Loading people results",
-  "searchTagsSectionHeader": "Tags",
-  "searchTagsLoadingLabel": "Loading tag results",
-  "searchVideosSectionHeader": "Videos",
-  "searchVideosLoadingLabel": "Loading video results",
+    "searchPeopleSectionHeader": "People",
+    "searchPeopleLoadingLabel": "Loading people results",
+    "searchTagsSectionHeader": "Tags",
+    "searchTagsLoadingLabel": "Loading tag results",
+    "searchVideosSectionHeader": "Videos",
+    "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Listeler",
-  "searchListsLoadingLabel": "Liste sonuçları yükleniyor",
+    "searchListsLoadingLabel": "Liste sonuçları yükleniyor",
     "searchForLists": "Liste ara",
     "commentReplyToPrefix": "Yan:",
     "commentHideKeyboard": "Hide keyboard",
@@ -2946,11 +2946,11 @@
     "videoRecorderToggleGhostFrameLabel": "Hayalet kareyi değiştir",
     "videoRecorderToggleGridLabel": "Izgarayı değiştir",
     "videoRecorderWhySixSecondsButton": "Anladım!",
-  "videoRecorderUploadTitle": "Neden yükleme yok?",
-  "videoRecorderUploadBody": "Divine'da gördüğün şey insan yapımı: ham ve o an yakalanmış. Çok yapımcı veya yapay zekâ tarafından üretilmiş yüklemelere izin veren platformların aksine, doğrudan kamera deneyiminin özgünlüğüne öncelik veriyoruz.",
-  "videoRecorderUploadBodyDetail": "Yaratımı uygulama içinde tutarak, içeriğin gerçek ve düzenlenmemiş olduğunu daha iyi garanti edebiliyoruz. Şu anda harici galeriden yüklemelere açmıyoruz; bu özgünlüğü korumak ve topluluğumuzu sentetik içerikten mümkün olduğunca uzak tutmak için.",
-  "videoRecorderUploadBodyCta": "Gerçek bir şey çekmek için Capture veya Classic'e geç.",
-  "videoRecorderUploadLearnMore": "Doğrulamanın nasıl çalıştığını öğren",
+    "videoRecorderUploadTitle": "Neden yükleme yok?",
+    "videoRecorderUploadBody": "Divine'da gördüğün şey insan yapımı: ham ve o an yakalanmış. Çok yapımcı veya yapay zekâ tarafından üretilmiş yüklemelere izin veren platformların aksine, doğrudan kamera deneyiminin özgünlüğüne öncelik veriyoruz.",
+    "videoRecorderUploadBodyDetail": "Yaratımı uygulama içinde tutarak, içeriğin gerçek ve düzenlenmemiş olduğunu daha iyi garanti edebiliyoruz. Şu anda harici galeriden yüklemelere açmıyoruz; bu özgünlüğü korumak ve topluluğumuzu sentetik içerikten mümkün olduğunca uzak tutmak için.",
+    "videoRecorderUploadBodyCta": "Gerçek bir şey çekmek için Capture veya Classic'e geç.",
+    "videoRecorderUploadLearnMore": "Doğrulamanın nasıl çalıştığını öğren",
     "videoRecorderWhySixSecondsSubtitle": "Kısa klipler kendiliğindenlik için alan yaratır. 6 saniyelik format, anların gerçekleştiği anda otantik anları yakalamanıza yardımcı olur.",
     "videoRecorderWhySixSecondsTitle": "Neden altı saniye?",
     "videoActionAutoLabel": "Otomatik",
@@ -2983,12 +2983,12 @@
     "shareMenuDeleteFailedNotOwner": "Yalnızca kendi videolarını silebilirsin.",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{döngü} other{döngüler}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-  "videoEditorAudioSegmentInstruction": "Videon için ses bölümünü seç",
-  "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.",
-  "fullscreenFeedRemovedMessage": "Video kaldırıldı",
-  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
-  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite",
+    "videoEditorAudioSegmentInstruction": "Videon için ses bölümünü seç",
+    "videoEditorClipGalleryInstruction": "Düzenlemek için dokun. Yeniden sıralamak için basılı tutup sürükle.",
+    "fullscreenFeedRemovedMessage": "Video kaldırıldı",
+    "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+    "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+    "invitesGenerateButtonLabel": "Generate invite",
     "profileAvatarLightboxBarrierLabel": "Avatarı kapat",
     "profileAvatarLightboxCloseSemanticLabel": "Avatar önizlemesini kapat",
     "notificationsUnreadPrefix": "Okunmamış bildirim",
@@ -3053,5 +3053,383 @@
     "peopleListsRemovedFromList": "{name} listeden kaldırıldı",
     "peopleListsUndo": "Geri al",
     "peopleListsProfileLongPressHint": "{name} profili. Kaldırmak için uzun bas.",
-    "peopleListsViewProfileHint": "{name} profilini görüntüle"
+    "peopleListsViewProfileHint": "{name} profilini görüntüle",
+    "settingsGeneralTitle": "Genel Ayarlar",
+    "settingsContentSafetyTitle": "İçerik ve Güvenlik",
+    "generalSettingsSectionIntegrations": "ENTEGRASYONLAR",
+    "generalSettingsSectionViewing": "İZLEME",
+    "generalSettingsSectionCreating": "OLUŞTURMA",
+    "generalSettingsSectionApp": "UYGULAMA",
+    "generalSettingsClosedCaptions": "Altyazılar",
+    "generalSettingsClosedCaptionsSubtitle": "Videolarda altyazı varsa göster",
+    "generalSettingsVideoShape": "Video Şekli",
+    "generalSettingsVideoShapeSquareOnly": "Sadece kare videolar",
+    "generalSettingsVideoShapeSquareAndPortrait": "Kare ve dikey",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Divine videolarının tam karışımını göster",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "Akışları klasik kare formatta tut",
+    "contentFiltersAdultContent": "YETİŞKİN İÇERİĞİ",
+    "contentFiltersViolenceGore": "ŞİDDET VE KAN",
+    "contentFiltersSubstances": "MADDELER",
+    "contentFiltersOther": "DİĞER",
+    "contentFiltersAgeGateMessage": "Yetişkin içerik filtrelerini açmak için yaşını Güvenlik ve Gizlilik ayarlarında doğrula",
+    "contentFiltersShow": "Göster",
+    "contentFiltersWarn": "Uyar",
+    "contentFiltersFilterOut": "Filtrele",
+    "profileNoSavedVideosTitle": "Henüz kaydedilmiş bir şey yok",
+    "profileSavedOwnEmpty": "Paylaşım menüsünden videoları yer imlerine ekle, burada görünsünler.",
+    "profileErrorLoadingSaved": "Kaydedilen videolar yüklenirken hata",
+    "profileMaybeLaterLabel": "Belki Sonra",
+    "profileSecurePrimaryButton": "E-posta ve Şifre Ekle",
+    "profileCompletePrimaryButton": "Profilini Güncelle",
+    "profileLoopsLabel": "Loop'lar",
+    "profileLikesLabel": "Beğeniler",
+    "profileMyLibraryLabel": "Kütüphanem",
+    "profileMessageLabel": "Mesaj",
+    "profileUserFallback": "kullanıcı",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "görseller",
+    "profileSetupExternalNip05InvalidFormat": "Geçersiz NIP-05 formatı (örn. ad@alanadi.com)",
+    "profileSetupExternalNip05DivineDomain": "divine.video için yukarıdaki kullanıcı adı alanını kullan",
+    "contentWarningReportContentTooltip": "İçeriği Bildir",
+    "contentWarningBlockUserTooltip": "Kullanıcıyı Engelle",
+    "contentWarningBlockedTitle": "İçerik Engellendi",
+    "contentWarningBlockedPolicy": "Bu içerik politika ihlalleri nedeniyle engellendi.",
+    "contentWarningNoticeTitle": "İçerik Bildirimi",
+    "contentWarningPotentiallyHarmfulTitle": "Potansiyel Olarak Zararlı İçerik",
+    "contentWarningView": "Görüntüle",
+    "contentWarningReportAction": "Bildir",
+    "videoActionLikeLabel": "Beğen",
+    "videoActionReplyLabel": "Yanıtla",
+    "videoActionRepostLabel": "Yeniden Paylaş",
+    "videoActionShareLabel": "Paylaş",
+    "videoActionAboutLabel": "Hakkında",
+    "videoOverlayOpenMetadataFromTitle": "Video detaylarını aç",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "Video detaylarını aç",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "Röle URL'si wss:// kullanmalı (ws:// sadece localhost için izinli)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "Harici röle",
+    "relaySettingsNotConnected": "Bağlı değil",
+    "relaySettingsDisconnectedAgo": "{duration} önce bağlantı kesildi",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "{count} abonelik",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "{count} olay",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "{duration} önce",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "Divine, merkeziyetsiz yayıncılık için Nostr protokolünü kullanır. İçeriğin seçtiğin rölelerde yaşar ve anahtarların senin kimliğindir.",
+    "nostrSettingsSectionNetwork": "Ağ",
+    "nostrSettingsSectionAccount": "Hesap",
+    "nostrSettingsSectionDangerZone": "Tehlikeli Bölge",
+    "nostrSettingsRelays": "Röleler",
+    "nostrSettingsRelaysSubtitle": "Nostr röle bağlantılarını yönet",
+    "nostrSettingsRelayDiagnostics": "Röle Tanılaması",
+    "nostrSettingsRelayDiagnosticsSubtitle": "Röle bağlantısı ve ağ sorunlarını ayıkla",
+    "nostrSettingsMediaServers": "Medya Sunucuları",
+    "nostrSettingsMediaServersSubtitle": "Blossom yükleme sunucularını yapılandır",
+    "nostrSettingsDeveloperOptions": "Geliştirici Seçenekleri",
+    "nostrSettingsDeveloperOptionsSubtitle": "Ortam değiştirici ve hata ayıklama ayarları",
+    "nostrSettingsExperimentalFeaturesSubtitle": "Aksaklık çıkarabilecek özellik bayraklarını aç/kapat.",
+    "nostrSettingsKeyManagement": "Anahtar Yönetimi",
+    "nostrSettingsKeyManagementSubtitle": "Nostr anahtarlarını dışa aktar, yedekle ve geri yükle",
+    "nostrSettingsRemoveKeys": "Anahtarları Cihazdan Kaldır",
+    "nostrSettingsRemoveKeysSubtitle": "Özel anahtarını yalnızca bu cihazdan sil. İçeriğin rölelerde kalır, ancak hesabına tekrar erişmek için nsec yedeğine ihtiyacın olur.",
+    "nostrSettingsCouldNotRemoveKeys": "Anahtarlar bu cihazdan kaldırılamadı. Lütfen tekrar dene.",
+    "nostrSettingsFailedToRemoveKeys": "Anahtarlar kaldırılamadı: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "Hesabı ve Verileri Sil",
+    "nostrSettingsDeleteAccountSubtitle": "Hesabını ve TÜM içeriğini Nostr rölelerinden KALICI olarak sil. Bu işlem geri alınamaz.",
+    "safetySettingsWhatYouSee": "GÖRDÜKLERİN",
+    "safetySettingsWhatYouPublish": "PAYLAŞTIKLARIN",
+    "listPersonCount": "{count, plural, =1{1 kişi} other{{count} kişi}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "Yazan ",
+    "keyManagementYourPublicKeyLabel": "Açık anahtarın (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "Açık anahtarı kopyala",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "Açık anahtar kopyalandı",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "Açık anahtarını görüntüle",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "Adsız ses",
+    "soundStopPreview": "Ön izlemeyi durdur",
+    "soundPreviewSemanticLabel": "{title} ön izle",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "{title} detaylarını görüntüle",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "Ara...",
+    "categoryVideoCount": "{count} video",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "Listeleri Keşfet",
+    "discoverListsFailedToLoad": "Listeler yüklenemedi",
+    "discoverListsFailedToLoadWithError": "Listeler yüklenemedi: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "Herkese açık listeler keşfediliyor...",
+    "discoverListsEmptyTitle": "Herkese açık liste bulunamadı",
+    "discoverListsEmptySubtitle": "Yeni listeler için sonra tekrar bak",
+    "discoverListsByAuthorPrefix": "yazan",
+    "curatedListEmptyTitle": "Bu listede video yok",
+    "curatedListEmptySubtitle": "Başlamak için birkaç video ekle",
+    "curatedListLoadingVideos": "Videolar yükleniyor...",
+    "curatedListFailedToLoad": "Liste yüklenemedi",
+    "curatedListNoVideosAvailable": "Mevcut video yok",
+    "curatedListVideoNotAvailable": "Video mevcut değil",
+    "commonBack": "Geri",
+    "commonClose": "Kapat",
+    "categoryGalleryNoVideosInCategory": "Bu kategoride video yok",
+    "categoryGallerySortOptionsLabel": "Kategori sıralama seçenekleri",
+    "categoryGallerySortHot": "Popüler",
+    "categoryGallerySortNew": "Yeni",
+    "categoryGallerySortClassic": "Klasik",
+    "categoryGallerySortForYou": "Sana Özel",
+    "categoriesNoCategoriesAvailable": "Kategori yok",
+    "notificationsEmptyTitle": "Henüz hareket yok",
+    "notificationsEmptySubtitle": "İnsanlar içeriğinle etkileşime geçtiğinde burada göreceksin",
+    "appsPermissionsTitle": "Entegrasyon İzinleri",
+    "appsPermissionsRevoke": "İptal Et",
+    "appsPermissionsEmptyTitle": "Kayıtlı entegrasyon izni yok",
+    "appsPermissionsEmptySubtitle": "Onaylanmış entegrasyonlar bir erişim onayını hatırladıktan sonra burada görünecek.",
+    "nostrAppPermissionTitle": "{appName} onayını istiyor",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "Bu uygulama Divine'in onaylı sandbox'ı üzerinden erişim talep ediyor.",
+    "nostrAppPermissionOrigin": "Kaynak",
+    "nostrAppPermissionMethod": "Yöntem",
+    "nostrAppPermissionCapability": "Yetenek",
+    "nostrAppPermissionEventKind": "Olay türü",
+    "nostrAppPermissionAllow": "İzin Ver",
+    "bugReportSendReport": "Raporu Gönder",
+    "supportSubjectRequiredLabel": "Konu *",
+    "supportRequiredHelper": "Zorunlu",
+    "bugReportSubjectHint": "Sorunun kısa özeti",
+    "bugReportDescriptionRequiredLabel": "Ne oldu? *",
+    "bugReportDescriptionHint": "Karşılaştığın sorunu anlat",
+    "bugReportStepsLabel": "Yeniden Üretme Adımları",
+    "bugReportStepsHint": "1. Şuraya git...\n2. Şuna dokun...\n3. Hatayı gör",
+    "bugReportExpectedBehaviorLabel": "Beklenen Davranış",
+    "bugReportExpectedBehaviorHint": "Bunun yerine ne olmalıydı?",
+    "bugReportDiagnosticsNotice": "Cihaz bilgileri ve günlükler otomatik olarak eklenecek.",
+    "bugReportSuccessMessage": "Teşekkürler! Raporunu aldık ve Divine'i daha iyi yapmak için kullanacağız.",
+    "bugReportSendFailed": "Hata raporu gönderilemedi. Lütfen daha sonra tekrar dene.",
+    "bugReportFailedWithError": "Hata raporu gönderilemedi: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "İsteği Gönder",
+    "featureRequestSubjectHint": "Fikrinin kısa özeti",
+    "featureRequestDescriptionRequiredLabel": "Ne istersin? *",
+    "featureRequestDescriptionHint": "İstediğin özelliği anlat",
+    "featureRequestUsefulnessLabel": "Bu nasıl faydalı olur?",
+    "featureRequestUsefulnessHint": "Bu özelliğin sağlayacağı faydayı açıkla",
+    "featureRequestWhenLabel": "Bunu ne zaman kullanırsın?",
+    "featureRequestWhenHint": "Bunun işe yarayacağı durumları anlat",
+    "featureRequestSuccessMessage": "Teşekkürler! Özellik isteğini aldık ve gözden geçireceğiz.",
+    "featureRequestSendFailed": "Özellik isteği gönderilemedi. Lütfen daha sonra tekrar dene.",
+    "featureRequestFailedWithError": "Özellik isteği gönderilemedi: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "Takip Edilen",
+    "followingTitleForName": "{displayName} kullanıcısının takipleri",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "Henüz kimseyi takip etmiyorsun",
+    "followersTitle": "Takipçiler",
+    "followersTitleForName": "{displayName} kullanıcısının takipçileri",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "Henüz takipçi yok",
+    "followersUpdateFollowFailed": "Takip durumu güncellenemedi. Lütfen tekrar dene.",
+    "reportMessageTitle": "Mesajı Bildir",
+    "reportMessageWhyReporting": "Bu mesajı neden bildiriyorsun?",
+    "reportMessageSelectReason": "Lütfen bu mesajı bildirmek için bir neden seç",
+    "newMessageTitle": "Yeni mesaj",
+    "newMessageFindPeople": "İnsan bul",
+    "newMessageNoContacts": "Kişi bulunamadı.\nBurada görmek için insanları takip et.",
+    "newMessageNoUsersFound": "Kullanıcı bulunamadı",
+    "hashtagSearchTitle": "Etiket ara",
+    "hashtagSearchSubtitle": "Trend olan konuları ve içerikleri keşfet",
+    "hashtagSearchNoResults": "\"{query}\" için etiket bulunamadı",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "Arama başarısız",
+    "userNotAvailableTitle": "Hesap kullanılamıyor",
+    "userNotAvailableBody": "Bu hesap şu anda kullanılamıyor.",
+    "blossomValidServerUrl": "Lütfen geçerli bir sunucu URL'si gir (örn. https://blossom.band)",
+    "blossomSettingsSaved": "Blossom ayarları kaydedildi",
+    "blossomSaveTooltip": "Kaydet",
+    "blossomAboutTitle": "Blossom Hakkında",
+    "blossomAboutDescription": "Blossom, videoları herhangi bir uyumlu sunucuya yüklemene olanak tanıyan merkeziyetsiz bir medya depolama protokolüdür. Varsayılan olarak videolar Divine'in Blossom sunucusuna yüklenir. Onun yerine özel bir sunucu kullanmak için aşağıdaki seçeneği etkinleştir.",
+    "blossomUseCustomServer": "Özel Blossom Sunucusu Kullan",
+    "blossomCustomServerEnabledSubtitle": "Videoların özel Blossom sunucuna yüklenecek",
+    "blossomCustomServerDisabledSubtitle": "Videoların şu anda Divine'in Blossom sunucusuna yükleniyor",
+    "blossomCustomServerUrl": "Özel Blossom Sunucu URL'si",
+    "blossomCustomServerHelper": "Özel Blossom sunucunun URL'sini gir",
+    "blossomPopularServers": "Popüler Blossom Sunucuları",
+    "blossomServerUrlMustUseHttps": "Blossom sunucu URL'si https:// kullanmalı",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "Bluesky ayarlarını yönetmek için giriş yap",
+    "blueskyPublishVideos": "Videoları Bluesky'a yayınla",
+    "blueskyEnabledSubtitle": "Videoların Bluesky'a yayınlanacak",
+    "blueskyDisabledSubtitle": "Videoların Bluesky'a yayınlanmayacak",
+    "blueskyHandle": "Bluesky Kullanıcı Adı",
+    "blueskyStatus": "Durum",
+    "blueskyStatusReady": "Hesap hazırlandı ve kullanıma hazır",
+    "blueskyStatusPending": "Hesap hazırlanıyor...",
+    "blueskyStatusFailed": "Hesap hazırlama başarısız",
+    "blueskyStatusDisabled": "Hesap devre dışı",
+    "blueskyStatusNotLinked": "Bağlı Bluesky hesabı yok",
+    "invitesNoneAvailable": "Şu anda kullanılabilir davet yok",
+    "invitesShareWithPeople": "diVine'i tanıdığın insanlarla paylaş",
+    "invitesUsedInvites": "Kullanılmış davetler",
+    "invitesShareMessage": "diVine'de bana katıl! Başlamak için {code} davet kodunu kullan:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "Daveti kopyala",
+    "invitesCopied": "Davet kopyalandı!",
+    "invitesShareInvite": "Daveti paylaş",
+    "invitesShareSubject": "diVine'de bana katıl",
+    "invitesClaimed": "Kullanıldı",
+    "invitesCouldNotLoad": "Davetler yüklenemedi",
+    "invitesRetry": "Tekrar dene",
+    "keyImportInsecureBunkerRelay": "Bunker rölesi wss:// kullanmalı (ws:// sadece localhost için izinli)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "Rozetler",
+    "settingsBadgesSubtitle": "Ödülleri kabul et ve verilen rozet durumunu kontrol et.",
+    "badgesTitle": "Rozetler",
+    "badgesIntroTitle": "Rozet izini anla",
+    "badgesIntroBody": "Sana gönderilen rozet ödüllerini gör, Nostr profiline ne sabitleyeceğini seç ve verdiğin rozetlerin kabul edilip edilmediğini kontrol et.",
+    "badgesOpenApp": "Rozetler uygulamasını aç",
+    "badgesLoadError": "Rozetler yüklenemedi",
+    "badgesUpdateError": "Rozet güncellenemedi",
+    "badgesAwardedSectionTitle": "Sana verilenler",
+    "badgesAwardedEmptyTitle": "Henüz rozet ödülü yok",
+    "badgesAwardedEmptySubtitle": "Biri sana bir Nostr rozeti verdiğinde burada görünecek.",
+    "badgesStatusAccepted": "Kabul edildi",
+    "badgesStatusNotAccepted": "Kabul edilmedi",
+    "badgesActionRemove": "Kaldır",
+    "badgesActionAccept": "Kabul Et",
+    "badgesActionReject": "Reddet",
+    "badgesIssuedSectionTitle": "Senin verdiklerin",
+    "badgesIssuedEmptyTitle": "Henüz verilmiş rozet yok",
+    "badgesIssuedEmptySubtitle": "Verdiğin rozetlerin kabul durumu burada görünecek.",
+    "badgesIssuedNoRecipients": "Bu ödül için alıcı bulunamadı.",
+    "badgesRecipientAcceptedStatus": "Alıcı tarafından kabul edildi",
+    "badgesRecipientWaitingStatus": "Alıcı bekleniyor"
 }

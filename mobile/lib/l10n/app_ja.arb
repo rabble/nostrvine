@@ -2429,14 +2429,14 @@
     "searchDiscoverSomethingInteresting": "面白いものを見つけよう",
     "searchEnterQuery": "検索キーワードを入力",
     "searchFindCuratedVideoLists": "キュレーションされた動画リストを探そう",
-  "searchPeopleSectionHeader": "People",
-  "searchPeopleLoadingLabel": "Loading people results",
-  "searchTagsSectionHeader": "Tags",
-  "searchTagsLoadingLabel": "Loading tag results",
-  "searchVideosSectionHeader": "Videos",
-  "searchVideosLoadingLabel": "Loading video results",
+    "searchPeopleSectionHeader": "People",
+    "searchPeopleLoadingLabel": "Loading people results",
+    "searchTagsSectionHeader": "Tags",
+    "searchTagsLoadingLabel": "Loading tag results",
+    "searchVideosSectionHeader": "Videos",
+    "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "リスト",
-  "searchListsLoadingLabel": "リスト結果を読み込み中",
+    "searchListsLoadingLabel": "リスト結果を読み込み中",
     "searchForLists": "リストを検索",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",
@@ -2939,11 +2939,11 @@
     "videoRecorderToggleGhostFrameLabel": "ゴーストフレームを切り替え",
     "videoRecorderToggleGridLabel": "グリッドを切り替え",
     "videoRecorderWhySixSecondsButton": "わかりました！",
-  "videoRecorderUploadTitle": "なぜアップロードできないの?",
-  "videoRecorderUploadBody": "Divineで見るものは人間が作ったもの。生のまま、その瞬間に撮影されたものです。高度に加工された動画やAI生成のアップロードを許可するプラットフォームとは違い、私たちはカメラ直撮りの体験の本物らしさを優先します。",
-  "videoRecorderUploadBodyDetail": "作成をアプリ内に留めることで、コンテンツが本物で未編集であることをより確実に保証できます。今のところ外部ギャラリーからのアップロードは開放していません。その本物らしさを守り、コミュニティを合成コンテンツからできる限り守るためです。",
-  "videoRecorderUploadBodyCta": "本物を撮るならCaptureかClassicに切り替えてね。",
-  "videoRecorderUploadLearnMore": "認証の仕組みを見る",
+    "videoRecorderUploadTitle": "なぜアップロードできないの?",
+    "videoRecorderUploadBody": "Divineで見るものは人間が作ったもの。生のまま、その瞬間に撮影されたものです。高度に加工された動画やAI生成のアップロードを許可するプラットフォームとは違い、私たちはカメラ直撮りの体験の本物らしさを優先します。",
+    "videoRecorderUploadBodyDetail": "作成をアプリ内に留めることで、コンテンツが本物で未編集であることをより確実に保証できます。今のところ外部ギャラリーからのアップロードは開放していません。その本物らしさを守り、コミュニティを合成コンテンツからできる限り守るためです。",
+    "videoRecorderUploadBodyCta": "本物を撮るならCaptureかClassicに切り替えてね。",
+    "videoRecorderUploadLearnMore": "認証の仕組みを見る",
     "videoRecorderWhySixSecondsSubtitle": "短いクリップは自発性のための空間を作ります。6秒フォーマットは起きた瞬間の本物の瞬間を捉えるのに役立ちます。",
     "videoRecorderWhySixSecondsTitle": "なぜ6秒なの？",
     "videoActionAutoLabel": "自動",
@@ -2976,12 +2976,12 @@
     "shareMenuDeleteFailedNotOwner": "自分の動画だけ削除できるよ。",
     "videoFeedLoopCountLine": "{compactCount}{count, plural, other{ループ}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-  "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
-  "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
-  "fullscreenFeedRemovedMessage": "動画を削除しました",
-  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
-  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite",
+    "videoEditorAudioSegmentInstruction": "動画に使うオーディオ範囲を選択",
+    "videoEditorClipGalleryInstruction": "タップして編集。長押ししてドラッグで並べ替え。",
+    "fullscreenFeedRemovedMessage": "動画を削除しました",
+    "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+    "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+    "invitesGenerateButtonLabel": "Generate invite",
     "profileAvatarLightboxBarrierLabel": "アバターを閉じる",
     "profileAvatarLightboxCloseSemanticLabel": "アバタープレビューを閉じる",
     "notificationsUnreadPrefix": "未読の通知",
@@ -3046,5 +3046,390 @@
     "peopleListsRemovedFromList": "{name}をリストから削除しました",
     "peopleListsUndo": "元に戻す",
     "peopleListsProfileLongPressHint": "{name}のプロフィール。長押しで削除。",
-    "peopleListsViewProfileHint": "{name}のプロフィールを表示"
+    "peopleListsViewProfileHint": "{name}のプロフィールを表示",
+    "settingsGeneralTitle": "一般設定",
+    "settingsContentSafetyTitle": "コンテンツと安全",
+    "generalSettingsSectionIntegrations": "連携",
+    "generalSettingsSectionViewing": "視聴",
+    "generalSettingsSectionCreating": "作成",
+    "generalSettingsSectionApp": "アプリ",
+    "generalSettingsClosedCaptions": "字幕",
+    "generalSettingsClosedCaptionsSubtitle": "動画に字幕がある場合に表示するよ",
+    "generalSettingsVideoShape": "動画の形",
+    "generalSettingsVideoShapeSquareOnly": "正方形の動画のみ",
+    "generalSettingsVideoShapeSquareAndPortrait": "正方形と縦型",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Divine の動画をフルミックスで表示",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "クラシックな正方形フォーマットでフィードを保つ",
+    "contentFiltersAdultContent": "アダルトコンテンツ",
+    "contentFiltersViolenceGore": "暴力とグロテスク",
+    "contentFiltersSubstances": "薬物",
+    "contentFiltersOther": "その他",
+    "contentFiltersAgeGateMessage": "アダルトコンテンツのフィルターを使うには、[安全とプライバシー] 設定で年齢を確認してね",
+    "contentFiltersShow": "表示",
+    "contentFiltersWarn": "警告",
+    "contentFiltersFilterOut": "フィルターで除外",
+    "profileNoSavedVideosTitle": "保存した動画はまだないよ",
+    "profileSavedOwnEmpty": "シェアシートから動画をブックマークすると、ここに出るよ。",
+    "profileErrorLoadingSaved": "保存した動画の読み込みに失敗",
+    "profileMaybeLaterLabel": "あとで",
+    "profileSecurePrimaryButton": "メールとパスワードを追加",
+    "profileCompletePrimaryButton": "プロフィールを更新",
+    "profileLoopsLabel": "ループ",
+    "profileLikesLabel": "いいね",
+    "profileMyLibraryLabel": "マイライブラリ",
+    "profileMessageLabel": "メッセージ",
+    "profileUserFallback": "ユーザー",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "画像",
+    "profileSetupExternalNip05InvalidFormat": "NIP-05 の形式が正しくないよ (例: name@domain.com)",
+    "profileSetupExternalNip05DivineDomain": "divine.video の場合は上のユーザー名欄を使ってね",
+    "contentWarningReportContentTooltip": "コンテンツを報告",
+    "contentWarningBlockUserTooltip": "ユーザーをブロック",
+    "contentWarningBlockedTitle": "ブロック済みのコンテンツ",
+    "contentWarningBlockedPolicy": "このコンテンツはポリシー違反でブロックされたよ。",
+    "contentWarningNoticeTitle": "コンテンツに関するお知らせ",
+    "contentWarningPotentiallyHarmfulTitle": "有害な可能性があるコンテンツ",
+    "contentWarningView": "表示",
+    "contentWarningReportAction": "報告",
+    "videoActionLikeLabel": "いいね",
+    "videoActionReplyLabel": "返信",
+    "videoActionRepostLabel": "リポスト",
+    "videoActionShareLabel": "シェア",
+    "videoActionAboutLabel": "詳細",
+    "videoOverlayOpenMetadataFromTitle": "動画の詳細を開く",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "動画の詳細を開く",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "リレー URL は wss:// を使ってね (ws:// は localhost のみ可)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "外部リレー",
+    "relaySettingsNotConnected": "未接続",
+    "relaySettingsDisconnectedAgo": "{duration}前に切断",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "{count}件のサブスク",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "{count}件のイベント",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "{duration}前",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "Divine は分散型パブリッシングに Nostr プロトコルを使ってるよ。コンテンツは選んだリレーに置かれて、鍵があなたの ID になる。",
+    "nostrSettingsSectionNetwork": "ネットワーク",
+    "nostrSettingsSectionAccount": "アカウント",
+    "nostrSettingsSectionDangerZone": "危険ゾーン",
+    "nostrSettingsRelays": "リレー",
+    "nostrSettingsRelaysSubtitle": "Nostr リレー接続を管理",
+    "nostrSettingsRelayDiagnostics": "リレー診断",
+    "nostrSettingsRelayDiagnosticsSubtitle": "リレー接続とネットワークの問題をデバッグ",
+    "nostrSettingsMediaServers": "メディアサーバー",
+    "nostrSettingsMediaServersSubtitle": "Blossom アップロードサーバーを設定",
+    "nostrSettingsDeveloperOptions": "開発者オプション",
+    "nostrSettingsDeveloperOptionsSubtitle": "環境スイッチャーとデバッグ設定",
+    "nostrSettingsExperimentalFeaturesSubtitle": "バグるかもしれない機能フラグを切り替える。",
+    "nostrSettingsKeyManagement": "鍵の管理",
+    "nostrSettingsKeyManagementSubtitle": "Nostr 鍵をエクスポート、バックアップ、復元",
+    "nostrSettingsRemoveKeys": "このデバイスから鍵を削除",
+    "nostrSettingsRemoveKeysSubtitle": "このデバイスから秘密鍵だけを消すよ。コンテンツはリレーに残るけど、もう一回アカウントを使うには nsec のバックアップが必要になるよ。",
+    "nostrSettingsCouldNotRemoveKeys": "このデバイスから鍵を削除できなかった。もう一回試してみて。",
+    "nostrSettingsFailedToRemoveKeys": "鍵の削除に失敗: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "アカウントとデータを削除",
+    "nostrSettingsDeleteAccountSubtitle": "アカウントとすべてのコンテンツを Nostr リレーから完全に削除するよ。元には戻せないよ。",
+    "safetySettingsWhatYouSee": "あなたが見るもの",
+    "safetySettingsWhatYouPublish": "あなたが公開するもの",
+    "authConfirmPasswordLabel": "パスワードの確認",
+    "authEmailRequired": "メールは必須だよ",
+    "authEmailInvalid": "有効なメールアドレスを入力してね",
+    "authPasswordRequired": "パスワードは必須だよ",
+    "authConfirmPasswordRequired": "パスワードを確認してね",
+    "authPasswordsDoNotMatch": "パスワードが一致しないよ",
+    "authConfirmNewPasswordLabel": "新しいパスワードの確認",
+    "listPersonCount": "{count, plural, =1{1人} other{{count}人}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "作成者: ",
+    "keyManagementYourPublicKeyLabel": "あなたの公開鍵 (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "公開鍵をコピー",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "公開鍵をコピーしたよ",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "公開鍵を表示",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "無題のサウンド",
+    "soundStopPreview": "プレビューを停止",
+    "soundPreviewSemanticLabel": "{title}をプレビュー",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "{title}の詳細を表示",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "検索...",
+    "categoryVideoCount": "{count}本の動画",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "リストを見つける",
+    "discoverListsFailedToLoad": "リストの読み込みに失敗",
+    "discoverListsFailedToLoadWithError": "リストの読み込みに失敗: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "公開リストを探してるよ...",
+    "discoverListsEmptyTitle": "公開リストが見つからなかった",
+    "discoverListsEmptySubtitle": "あとでまたチェックしてみてね",
+    "discoverListsByAuthorPrefix": "作成者:",
+    "curatedListEmptyTitle": "このリストには動画がないよ",
+    "curatedListEmptySubtitle": "動画を追加してみよう",
+    "curatedListLoadingVideos": "動画を読み込み中...",
+    "curatedListFailedToLoad": "リストの読み込みに失敗",
+    "curatedListNoVideosAvailable": "動画がないよ",
+    "curatedListVideoNotAvailable": "動画は利用できないよ",
+    "commonBack": "戻る",
+    "commonClose": "閉じる",
+    "categoryGalleryNoVideosInCategory": "このカテゴリーには動画がないよ",
+    "categoryGallerySortOptionsLabel": "カテゴリーの並び替えオプション",
+    "categoryGallerySortHot": "人気",
+    "categoryGallerySortNew": "新着",
+    "categoryGallerySortClassic": "クラシック",
+    "categoryGallerySortForYou": "おすすめ",
+    "categoriesNoCategoriesAvailable": "カテゴリーがないよ",
+    "notificationsEmptyTitle": "アクティビティはまだないよ",
+    "notificationsEmptySubtitle": "あなたのコンテンツに反応があると、ここに出るよ",
+    "appsPermissionsTitle": "連携の権限",
+    "appsPermissionsRevoke": "取り消す",
+    "appsPermissionsEmptyTitle": "保存された連携の権限はないよ",
+    "appsPermissionsEmptySubtitle": "アクセス承認を記憶した連携アプリは、ここに表示されるよ。",
+    "nostrAppPermissionTitle": "{appName}が承認をリクエストしてるよ",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "このアプリは Divine の審査済みサンドボックス経由でアクセスをリクエストしてるよ。",
+    "nostrAppPermissionOrigin": "オリジン",
+    "nostrAppPermissionMethod": "メソッド",
+    "nostrAppPermissionCapability": "機能",
+    "nostrAppPermissionEventKind": "イベントの種類",
+    "nostrAppPermissionAllow": "許可",
+    "bugReportSendReport": "レポートを送信",
+    "supportSubjectRequiredLabel": "件名 *",
+    "supportRequiredHelper": "必須",
+    "bugReportSubjectHint": "問題の概要",
+    "bugReportDescriptionRequiredLabel": "何が起きた? *",
+    "bugReportDescriptionHint": "起きた問題を教えてね",
+    "bugReportStepsLabel": "再現手順",
+    "bugReportStepsHint": "1. ...に移動\n2. ...をタップ\n3. エラーが出る",
+    "bugReportExpectedBehaviorLabel": "期待していた動作",
+    "bugReportExpectedBehaviorHint": "本来どうなるはずだった?",
+    "bugReportDiagnosticsNotice": "デバイス情報とログは自動で添付されるよ。",
+    "bugReportSuccessMessage": "ありがとう！レポートを受け取ったよ。Divine をよくするのに使うね。",
+    "bugReportSendFailed": "バグレポートの送信に失敗。あとでもう一回試してみて。",
+    "bugReportFailedWithError": "バグレポートの送信に失敗: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "リクエストを送信",
+    "featureRequestSubjectHint": "アイデアの概要",
+    "featureRequestDescriptionRequiredLabel": "どんな機能がほしい? *",
+    "featureRequestDescriptionHint": "ほしい機能を教えてね",
+    "featureRequestUsefulnessLabel": "どう役に立つ?",
+    "featureRequestUsefulnessHint": "この機能のメリットを教えてね",
+    "featureRequestWhenLabel": "どんなときに使う?",
+    "featureRequestWhenHint": "この機能が役立つシーンを教えてね",
+    "featureRequestSuccessMessage": "ありがとう！機能リクエストを受け取ったよ。チェックするね。",
+    "featureRequestSendFailed": "機能リクエストの送信に失敗。あとでもう一回試してみて。",
+    "featureRequestFailedWithError": "機能リクエストの送信に失敗: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "フォロー中",
+    "followingTitleForName": "{displayName}のフォロー中",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "まだ誰もフォローしてないよ",
+    "followersTitle": "フォロワー",
+    "followersTitleForName": "{displayName}のフォロワー",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "フォロワーはまだいないよ",
+    "followersUpdateFollowFailed": "フォロー状態の更新に失敗。もう一回試してみて。",
+    "reportMessageTitle": "メッセージを報告",
+    "reportMessageWhyReporting": "このメッセージを報告する理由は?",
+    "reportMessageSelectReason": "このメッセージを報告する理由を選んでね",
+    "newMessageTitle": "新しいメッセージ",
+    "newMessageFindPeople": "人を探す",
+    "newMessageNoContacts": "連絡先が見つからなかった。\n人をフォローするとここに出るよ。",
+    "newMessageNoUsersFound": "ユーザーが見つからなかった",
+    "hashtagSearchTitle": "ハッシュタグを検索",
+    "hashtagSearchSubtitle": "トレンドのトピックとコンテンツを見つけよう",
+    "hashtagSearchNoResults": "「{query}」のハッシュタグは見つからなかった",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "検索に失敗",
+    "userNotAvailableTitle": "アカウントは利用できないよ",
+    "userNotAvailableBody": "このアカウントは今は利用できないよ。",
+    "blossomValidServerUrl": "有効なサーバー URL を入力してね (例: https://blossom.band)",
+    "blossomSettingsSaved": "Blossom の設定を保存したよ",
+    "blossomSaveTooltip": "保存",
+    "blossomAboutTitle": "Blossom について",
+    "blossomAboutDescription": "Blossom は分散型のメディアストレージプロトコルで、対応する任意のサーバーに動画をアップロードできるよ。デフォルトでは Divine の Blossom サーバーにアップロードされる。下のオプションを有効にすると、カスタムサーバーが使えるよ。",
+    "blossomUseCustomServer": "カスタム Blossom サーバーを使う",
+    "blossomCustomServerEnabledSubtitle": "動画はカスタム Blossom サーバーにアップロードされるよ",
+    "blossomCustomServerDisabledSubtitle": "現在、動画は Divine の Blossom サーバーにアップロードされてるよ",
+    "blossomCustomServerUrl": "カスタム Blossom サーバー URL",
+    "blossomCustomServerHelper": "カスタム Blossom サーバーの URL を入力してね",
+    "blossomPopularServers": "人気の Blossom サーバー",
+    "blossomServerUrlMustUseHttps": "Blossom サーバー URL は https:// を使ってね",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "Bluesky 設定を管理するにはサインインしてね",
+    "blueskyPublishVideos": "動画を Bluesky に公開",
+    "blueskyEnabledSubtitle": "動画は Bluesky に公開されるよ",
+    "blueskyDisabledSubtitle": "動画は Bluesky には公開されないよ",
+    "blueskyHandle": "Bluesky ハンドル",
+    "blueskyStatus": "ステータス",
+    "blueskyStatusReady": "アカウント準備完了",
+    "blueskyStatusPending": "アカウントを準備中...",
+    "blueskyStatusFailed": "アカウントの準備に失敗",
+    "blueskyStatusDisabled": "アカウントは無効",
+    "blueskyStatusNotLinked": "Bluesky アカウントが連携されてないよ",
+    "invitesNoneAvailable": "今は使える招待がないよ",
+    "invitesShareWithPeople": "diVine を周りの人にシェアしよう",
+    "invitesUsedInvites": "使用済みの招待",
+    "invitesShareMessage": "diVine に参加しよう！招待コード {code} で始められるよ:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "招待をコピー",
+    "invitesCopied": "招待をコピーしたよ！",
+    "invitesShareInvite": "招待をシェア",
+    "invitesShareSubject": "diVine に参加しよう",
+    "invitesClaimed": "受け取り済み",
+    "invitesCouldNotLoad": "招待の読み込みに失敗",
+    "invitesRetry": "もう一回",
+    "keyImportInsecureBunkerRelay": "Bunker リレーは wss:// を使ってね (ws:// は localhost のみ可)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "バッジ",
+    "settingsBadgesSubtitle": "受賞を承認したり、発行したバッジの状態を確認できるよ。",
+    "badgesTitle": "バッジ",
+    "badgesIntroTitle": "あなたのバッジ履歴をチェック",
+    "badgesIntroBody": "あなたに送られたバッジを見て、Nostr プロフィールにピンするものを選んだり、自分が発行したバッジが受け取られたか確認できるよ。",
+    "badgesOpenApp": "バッジアプリを開く",
+    "badgesLoadError": "バッジの読み込みに失敗",
+    "badgesUpdateError": "バッジの更新に失敗",
+    "badgesAwardedSectionTitle": "あなたへの受賞",
+    "badgesAwardedEmptyTitle": "バッジの受賞はまだないよ",
+    "badgesAwardedEmptySubtitle": "誰かが Nostr バッジを贈ってくれたら、ここに届くよ。",
+    "badgesStatusAccepted": "承認済み",
+    "badgesStatusNotAccepted": "未承認",
+    "badgesActionRemove": "削除",
+    "badgesActionAccept": "承認",
+    "badgesActionReject": "拒否",
+    "badgesIssuedSectionTitle": "あなたが発行したバッジ",
+    "badgesIssuedEmptyTitle": "発行したバッジはまだないよ",
+    "badgesIssuedEmptySubtitle": "あなたが発行したバッジの承認状況がここに出るよ。",
+    "badgesIssuedNoRecipients": "この受賞には受信者が見つからないよ。",
+    "badgesRecipientAcceptedStatus": "受信者が承認",
+    "badgesRecipientWaitingStatus": "受信者の承認待ち"
 }

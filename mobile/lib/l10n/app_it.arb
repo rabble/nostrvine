@@ -2437,14 +2437,14 @@
     "searchDiscoverSomethingInteresting": "Scopri qualcosa di interessante",
     "searchEnterQuery": "Inserisci una ricerca",
     "searchFindCuratedVideoLists": "Trova liste di video curate",
-  "searchPeopleSectionHeader": "People",
-  "searchPeopleLoadingLabel": "Loading people results",
-  "searchTagsSectionHeader": "Tags",
-  "searchTagsLoadingLabel": "Loading tag results",
-  "searchVideosSectionHeader": "Videos",
-  "searchVideosLoadingLabel": "Loading video results",
+    "searchPeopleSectionHeader": "People",
+    "searchPeopleLoadingLabel": "Loading people results",
+    "searchTagsSectionHeader": "Tags",
+    "searchTagsLoadingLabel": "Loading tag results",
+    "searchVideosSectionHeader": "Videos",
+    "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "Liste",
-  "searchListsLoadingLabel": "Caricamento risultati liste",
+    "searchListsLoadingLabel": "Caricamento risultati liste",
     "searchForLists": "Cerca liste",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",
@@ -2666,11 +2666,11 @@
     "videoRecorderWhySixSecondsTitle": "Perché sei secondi?",
     "videoRecorderWhySixSecondsSubtitle": "I clip brevi lasciano spazio alla spontaneità. Il formato da 6 secondi ti aiuta a catturare momenti autentici mentre accadono.",
     "videoRecorderWhySixSecondsButton": "Capito!",
-  "videoRecorderUploadTitle": "Perché niente upload?",
-  "videoRecorderUploadBody": "Quello che vedi su Divine è fatto dagli umani: grezzo e catturato nel momento. A differenza delle piattaforme che permettono upload molto prodotti o generati dall'IA, diamo la priorità all'autenticità dell'esperienza fotocamera-diretta.",
-  "videoRecorderUploadBodyDetail": "Mantenendo la creazione all'interno dell'app, possiamo garantire meglio che i contenuti siano reali e non modificati. Per ora non stiamo aprendo gli upload dalla galleria esterna, per proteggere quella autenticità e mantenere la nostra community libera da contenuti sintetici per quanto possibile.",
-  "videoRecorderUploadBodyCta": "Passa a Capture o Classic per girare qualcosa di reale.",
-  "videoRecorderUploadLearnMore": "Scopri come funziona la verifica",
+    "videoRecorderUploadTitle": "Perché niente upload?",
+    "videoRecorderUploadBody": "Quello che vedi su Divine è fatto dagli umani: grezzo e catturato nel momento. A differenza delle piattaforme che permettono upload molto prodotti o generati dall'IA, diamo la priorità all'autenticità dell'esperienza fotocamera-diretta.",
+    "videoRecorderUploadBodyDetail": "Mantenendo la creazione all'interno dell'app, possiamo garantire meglio che i contenuti siano reali e non modificati. Per ora non stiamo aprendo gli upload dalla galleria esterna, per proteggere quella autenticità e mantenere la nostra community libera da contenuti sintetici per quanto possibile.",
+    "videoRecorderUploadBodyCta": "Passa a Capture o Classic per girare qualcosa di reale.",
+    "videoRecorderUploadLearnMore": "Scopri come funziona la verifica",
     "videoRecorderAutosaveFoundTitle": "Abbiamo trovato un lavoro in corso",
     "videoRecorderAutosaveFoundSubtitle": "Vuoi continuare da dove avevi interrotto?",
     "videoRecorderAutosaveContinueButton": "Sì, continua",
@@ -2981,14 +2981,14 @@
     "shareMenuDeleteFailedNotOwner": "Puoi eliminare solo i tuoi video.",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loop}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-  "videoEditorAudioSegmentInstruction": "Seleziona il segmento audio per il tuo video",
-  "videoEditorClipGalleryInstruction": "Tocca per modificare. Tieni premuto e trascina per riordinare.",
-  "navSearch": "Cerca",
-  "navSearchTooltip": "Cerca",
-  "fullscreenFeedRemovedMessage": "Video rimosso",
-  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
-  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite",
+    "videoEditorAudioSegmentInstruction": "Seleziona il segmento audio per il tuo video",
+    "videoEditorClipGalleryInstruction": "Tocca per modificare. Tieni premuto e trascina per riordinare.",
+    "navSearch": "Cerca",
+    "navSearchTooltip": "Cerca",
+    "fullscreenFeedRemovedMessage": "Video rimosso",
+    "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+    "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+    "invitesGenerateButtonLabel": "Generate invite",
     "profileAvatarLightboxBarrierLabel": "Chiudi avatar",
     "profileAvatarLightboxCloseSemanticLabel": "Chiudi anteprima avatar",
     "notificationsUnreadPrefix": "Notifica non letta",
@@ -3053,5 +3053,383 @@
     "peopleListsRemovedFromList": "{name} rimosso/a dalla lista",
     "peopleListsUndo": "Annulla",
     "peopleListsProfileLongPressHint": "Profilo di {name}. Tieni premuto per rimuovere.",
-    "peopleListsViewProfileHint": "Visualizza profilo di {name}"
+    "peopleListsViewProfileHint": "Visualizza profilo di {name}",
+    "settingsGeneralTitle": "Impostazioni generali",
+    "settingsContentSafetyTitle": "Contenuti e sicurezza",
+    "generalSettingsSectionIntegrations": "INTEGRAZIONI",
+    "generalSettingsSectionViewing": "VISUALIZZAZIONE",
+    "generalSettingsSectionCreating": "CREAZIONE",
+    "generalSettingsSectionApp": "APP",
+    "generalSettingsClosedCaptions": "Sottotitoli",
+    "generalSettingsClosedCaptionsSubtitle": "Mostra i sottotitoli quando i video li includono",
+    "generalSettingsVideoShape": "Formato video",
+    "generalSettingsVideoShapeSquareOnly": "Solo video quadrati",
+    "generalSettingsVideoShapeSquareAndPortrait": "Quadrati e verticali",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Mostra tutto il mix di video Divine",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "Mantieni i feed nel classico formato quadrato",
+    "contentFiltersAdultContent": "CONTENUTI PER ADULTI",
+    "contentFiltersViolenceGore": "VIOLENZA E SCENE CRUENTE",
+    "contentFiltersSubstances": "SOSTANZE",
+    "contentFiltersOther": "ALTRO",
+    "contentFiltersAgeGateMessage": "Verifica la tua età in Sicurezza e privacy per sbloccare i filtri sui contenuti per adulti",
+    "contentFiltersShow": "Mostra",
+    "contentFiltersWarn": "Avvisa",
+    "contentFiltersFilterOut": "Filtra",
+    "profileNoSavedVideosTitle": "Ancora niente di salvato",
+    "profileSavedOwnEmpty": "Aggiungi i video ai segnalibri dal menu di condivisione e li troverai qui.",
+    "profileErrorLoadingSaved": "Errore nel caricamento dei video salvati",
+    "profileMaybeLaterLabel": "Forse più tardi",
+    "profileSecurePrimaryButton": "Aggiungi email e password",
+    "profileCompletePrimaryButton": "Aggiorna il tuo profilo",
+    "profileLoopsLabel": "Loops",
+    "profileLikesLabel": "Mi piace",
+    "profileMyLibraryLabel": "La mia libreria",
+    "profileMessageLabel": "Messaggio",
+    "profileUserFallback": "utente",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "immagini",
+    "profileSetupExternalNip05InvalidFormat": "Formato NIP-05 non valido (es. nome@dominio.com)",
+    "profileSetupExternalNip05DivineDomain": "Usa il campo nome utente qui sopra per divine.video",
+    "contentWarningReportContentTooltip": "Segnala contenuto",
+    "contentWarningBlockUserTooltip": "Blocca utente",
+    "contentWarningBlockedTitle": "Contenuto bloccato",
+    "contentWarningBlockedPolicy": "Questo contenuto è stato bloccato per violazione delle policy.",
+    "contentWarningNoticeTitle": "Avviso sul contenuto",
+    "contentWarningPotentiallyHarmfulTitle": "Contenuto potenzialmente dannoso",
+    "contentWarningView": "Guarda",
+    "contentWarningReportAction": "Segnala",
+    "videoActionLikeLabel": "Mi piace",
+    "videoActionReplyLabel": "Rispondi",
+    "videoActionRepostLabel": "Repost",
+    "videoActionShareLabel": "Condividi",
+    "videoActionAboutLabel": "Info",
+    "videoOverlayOpenMetadataFromTitle": "Apri dettagli video",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "Apri dettagli video",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "L'URL del relay deve usare wss:// (ws:// è ammesso solo per localhost)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "Relay esterno",
+    "relaySettingsNotConnected": "Non connesso",
+    "relaySettingsDisconnectedAgo": "Disconnesso {duration} fa",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "{count} sub",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "{count} eventi",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "{duration} fa",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "Divine usa il protocollo Nostr per la pubblicazione decentralizzata. I tuoi contenuti vivono sui relay che scegli e le tue chiavi sono la tua identità.",
+    "nostrSettingsSectionNetwork": "Rete",
+    "nostrSettingsSectionAccount": "Account",
+    "nostrSettingsSectionDangerZone": "Zona pericolosa",
+    "nostrSettingsRelays": "Relay",
+    "nostrSettingsRelaysSubtitle": "Gestisci le connessioni ai relay Nostr",
+    "nostrSettingsRelayDiagnostics": "Diagnostica relay",
+    "nostrSettingsRelayDiagnosticsSubtitle": "Controlla la connettività dei relay e i problemi di rete",
+    "nostrSettingsMediaServers": "Server multimediali",
+    "nostrSettingsMediaServersSubtitle": "Configura i server di upload Blossom",
+    "nostrSettingsDeveloperOptions": "Opzioni sviluppatore",
+    "nostrSettingsDeveloperOptionsSubtitle": "Selettore ambiente e impostazioni di debug",
+    "nostrSettingsExperimentalFeaturesSubtitle": "Attiva feature flag che potrebbero fare i capricci.",
+    "nostrSettingsKeyManagement": "Gestione chiavi",
+    "nostrSettingsKeyManagementSubtitle": "Esporta, fai il backup e ripristina le tue chiavi Nostr",
+    "nostrSettingsRemoveKeys": "Rimuovi le chiavi dal dispositivo",
+    "nostrSettingsRemoveKeysSubtitle": "Elimina la tua chiave privata solo da questo dispositivo. I tuoi contenuti restano sui relay, ma ti servirà il backup della nsec per accedere di nuovo al tuo account.",
+    "nostrSettingsCouldNotRemoveKeys": "Impossibile rimuovere le chiavi da questo dispositivo. Riprova.",
+    "nostrSettingsFailedToRemoveKeys": "Rimozione delle chiavi non riuscita: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "Elimina account e dati",
+    "nostrSettingsDeleteAccountSubtitle": "Elimina DEFINITIVAMENTE il tuo account e TUTTI i contenuti dai relay Nostr. Non si può tornare indietro.",
+    "safetySettingsWhatYouSee": "COSA VEDI",
+    "safetySettingsWhatYouPublish": "COSA PUBBLICHI",
+    "listPersonCount": "{count, plural, =1{1 persona} other{{count} persone}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "Di ",
+    "keyManagementYourPublicKeyLabel": "La tua chiave pubblica (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "Copia chiave pubblica",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "Chiave pubblica copiata",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "Vedi la tua chiave pubblica",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "Audio senza titolo",
+    "soundStopPreview": "Ferma anteprima",
+    "soundPreviewSemanticLabel": "Anteprima di {title}",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "Vedi dettagli di {title}",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "Cerca...",
+    "categoryVideoCount": "{count} video",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "Scopri liste",
+    "discoverListsFailedToLoad": "Impossibile caricare le liste",
+    "discoverListsFailedToLoadWithError": "Impossibile caricare le liste: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "Cercando liste pubbliche...",
+    "discoverListsEmptyTitle": "Nessuna lista pubblica trovata",
+    "discoverListsEmptySubtitle": "Torna più tardi per nuove liste",
+    "discoverListsByAuthorPrefix": "di",
+    "curatedListEmptyTitle": "Nessun video in questa lista",
+    "curatedListEmptySubtitle": "Aggiungi qualche video per iniziare",
+    "curatedListLoadingVideos": "Caricamento video...",
+    "curatedListFailedToLoad": "Impossibile caricare la lista",
+    "curatedListNoVideosAvailable": "Nessun video disponibile",
+    "curatedListVideoNotAvailable": "Video non disponibile",
+    "commonBack": "Indietro",
+    "commonClose": "Chiudi",
+    "categoryGalleryNoVideosInCategory": "Nessun video in questa categoria",
+    "categoryGallerySortOptionsLabel": "Opzioni di ordinamento categoria",
+    "categoryGallerySortHot": "Hot",
+    "categoryGallerySortNew": "Nuovi",
+    "categoryGallerySortClassic": "Classici",
+    "categoryGallerySortForYou": "Per te",
+    "categoriesNoCategoriesAvailable": "Nessuna categoria disponibile",
+    "notificationsEmptyTitle": "Ancora nessuna attività",
+    "notificationsEmptySubtitle": "Quando le persone interagiranno con i tuoi contenuti, lo vedrai qui",
+    "appsPermissionsTitle": "Permessi delle integrazioni",
+    "appsPermissionsRevoke": "Revoca",
+    "appsPermissionsEmptyTitle": "Nessun permesso di integrazione salvato",
+    "appsPermissionsEmptySubtitle": "Le integrazioni approvate appariranno qui dopo che ricorderai un'autorizzazione di accesso.",
+    "nostrAppPermissionTitle": "{appName} chiede la tua approvazione",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "Questa app sta chiedendo accesso tramite la sandbox verificata di Divine.",
+    "nostrAppPermissionOrigin": "Origine",
+    "nostrAppPermissionMethod": "Metodo",
+    "nostrAppPermissionCapability": "Capacità",
+    "nostrAppPermissionEventKind": "Tipo di evento",
+    "nostrAppPermissionAllow": "Consenti",
+    "bugReportSendReport": "Invia segnalazione",
+    "supportSubjectRequiredLabel": "Oggetto *",
+    "supportRequiredHelper": "Obbligatorio",
+    "bugReportSubjectHint": "Breve riassunto del problema",
+    "bugReportDescriptionRequiredLabel": "Cos'è successo? *",
+    "bugReportDescriptionHint": "Descrivi il problema che hai riscontrato",
+    "bugReportStepsLabel": "Passi per riprodurlo",
+    "bugReportStepsHint": "1. Vai a...\n2. Tocca su...\n3. Vedi l'errore",
+    "bugReportExpectedBehaviorLabel": "Comportamento atteso",
+    "bugReportExpectedBehaviorHint": "Cosa sarebbe dovuto succedere?",
+    "bugReportDiagnosticsNotice": "Le info sul dispositivo e i log saranno inclusi automaticamente.",
+    "bugReportSuccessMessage": "Grazie! Abbiamo ricevuto la tua segnalazione e la useremo per migliorare Divine.",
+    "bugReportSendFailed": "Impossibile inviare la segnalazione. Riprova più tardi.",
+    "bugReportFailedWithError": "Invio della segnalazione non riuscito: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "Invia richiesta",
+    "featureRequestSubjectHint": "Breve riassunto della tua idea",
+    "featureRequestDescriptionRequiredLabel": "Cosa vorresti? *",
+    "featureRequestDescriptionHint": "Descrivi la funzionalità che desideri",
+    "featureRequestUsefulnessLabel": "In che modo sarebbe utile?",
+    "featureRequestUsefulnessHint": "Spiega il vantaggio che porterebbe questa funzionalità",
+    "featureRequestWhenLabel": "Quando la useresti?",
+    "featureRequestWhenHint": "Descrivi le situazioni in cui ti aiuterebbe",
+    "featureRequestSuccessMessage": "Grazie! Abbiamo ricevuto la tua richiesta e la valuteremo.",
+    "featureRequestSendFailed": "Impossibile inviare la richiesta. Riprova più tardi.",
+    "featureRequestFailedWithError": "Invio della richiesta non riuscito: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "Seguiti",
+    "followingTitleForName": "Seguiti da {displayName}",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "Non segui ancora nessuno",
+    "followersTitle": "Follower",
+    "followersTitleForName": "Follower di {displayName}",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "Ancora nessun follower",
+    "followersUpdateFollowFailed": "Impossibile aggiornare lo stato del follow. Riprova.",
+    "reportMessageTitle": "Segnala messaggio",
+    "reportMessageWhyReporting": "Perché stai segnalando questo messaggio?",
+    "reportMessageSelectReason": "Seleziona un motivo per segnalare questo messaggio",
+    "newMessageTitle": "Nuovo messaggio",
+    "newMessageFindPeople": "Trova persone",
+    "newMessageNoContacts": "Nessun contatto trovato.\nSegui delle persone per vederle qui.",
+    "newMessageNoUsersFound": "Nessun utente trovato",
+    "hashtagSearchTitle": "Cerca hashtag",
+    "hashtagSearchSubtitle": "Scopri argomenti e contenuti di tendenza",
+    "hashtagSearchNoResults": "Nessun hashtag trovato per \"{query}\"",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "Ricerca non riuscita",
+    "userNotAvailableTitle": "Account non disponibile",
+    "userNotAvailableBody": "Questo account non è disponibile al momento.",
+    "blossomValidServerUrl": "Inserisci un URL server valido (es. https://blossom.band)",
+    "blossomSettingsSaved": "Impostazioni Blossom salvate",
+    "blossomSaveTooltip": "Salva",
+    "blossomAboutTitle": "Info su Blossom",
+    "blossomAboutDescription": "Blossom è un protocollo decentralizzato di archiviazione multimediale che ti permette di caricare video su qualsiasi server compatibile. Di default, i video vengono caricati sul server Blossom di Divine. Attiva l'opzione qui sotto per usare un server personalizzato.",
+    "blossomUseCustomServer": "Usa un server Blossom personalizzato",
+    "blossomCustomServerEnabledSubtitle": "I tuoi video saranno caricati sul tuo server Blossom personalizzato",
+    "blossomCustomServerDisabledSubtitle": "I tuoi video vengono attualmente caricati sul server Blossom di Divine",
+    "blossomCustomServerUrl": "URL server Blossom personalizzato",
+    "blossomCustomServerHelper": "Inserisci l'URL del tuo server Blossom personalizzato",
+    "blossomPopularServers": "Server Blossom popolari",
+    "blossomServerUrlMustUseHttps": "L'URL del server Blossom deve usare https://",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "Accedi per gestire le impostazioni di Bluesky",
+    "blueskyPublishVideos": "Pubblica i video su Bluesky",
+    "blueskyEnabledSubtitle": "I tuoi video saranno pubblicati su Bluesky",
+    "blueskyDisabledSubtitle": "I tuoi video non saranno pubblicati su Bluesky",
+    "blueskyHandle": "Handle Bluesky",
+    "blueskyStatus": "Stato",
+    "blueskyStatusReady": "Account creato e pronto",
+    "blueskyStatusPending": "Creazione account in corso...",
+    "blueskyStatusFailed": "Creazione account non riuscita",
+    "blueskyStatusDisabled": "Account disattivato",
+    "blueskyStatusNotLinked": "Nessun account Bluesky collegato",
+    "invitesNoneAvailable": "Nessun invito disponibile al momento",
+    "invitesShareWithPeople": "Condividi diVine con le persone che conosci",
+    "invitesUsedInvites": "Inviti usati",
+    "invitesShareMessage": "Unisciti a me su diVine! Usa il codice invito {code} per iniziare:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "Copia invito",
+    "invitesCopied": "Invito copiato!",
+    "invitesShareInvite": "Condividi invito",
+    "invitesShareSubject": "Unisciti a me su diVine",
+    "invitesClaimed": "Riscattato",
+    "invitesCouldNotLoad": "Impossibile caricare gli inviti",
+    "invitesRetry": "Riprova",
+    "keyImportInsecureBunkerRelay": "Il relay bunker deve usare wss:// (ws:// è ammesso solo per localhost)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "Badge",
+    "settingsBadgesSubtitle": "Accetta i premi e controlla lo stato dei badge che hai assegnato.",
+    "badgesTitle": "Badge",
+    "badgesIntroTitle": "Capisci la tua scia di badge",
+    "badgesIntroBody": "Vedi i badge che ti sono stati assegnati, scegli quali fissare sul tuo profilo Nostr e controlla se le persone hanno accettato i badge che hai rilasciato.",
+    "badgesOpenApp": "Apri l'app dei badge",
+    "badgesLoadError": "Impossibile caricare i badge",
+    "badgesUpdateError": "Impossibile aggiornare il badge",
+    "badgesAwardedSectionTitle": "Assegnati a te",
+    "badgesAwardedEmptyTitle": "Ancora nessun badge ricevuto",
+    "badgesAwardedEmptySubtitle": "Quando qualcuno ti assegnerà un badge Nostr, atterrerà qui.",
+    "badgesStatusAccepted": "Accettato",
+    "badgesStatusNotAccepted": "Non accettato",
+    "badgesActionRemove": "Rimuovi",
+    "badgesActionAccept": "Accetta",
+    "badgesActionReject": "Rifiuta",
+    "badgesIssuedSectionTitle": "Rilasciati da te",
+    "badgesIssuedEmptyTitle": "Ancora nessun badge rilasciato",
+    "badgesIssuedEmptySubtitle": "I badge che rilasci mostreranno qui lo stato di accettazione.",
+    "badgesIssuedNoRecipients": "Nessun destinatario trovato per questo premio.",
+    "badgesRecipientAcceptedStatus": "Accettato dal destinatario",
+    "badgesRecipientWaitingStatus": "In attesa del destinatario"
 }

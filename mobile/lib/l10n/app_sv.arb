@@ -2666,11 +2666,11 @@
     "videoRecorderWhySixSecondsTitle": "Varför sex sekunder?",
     "videoRecorderWhySixSecondsSubtitle": "Snabba klipp skapar utrymme för spontanitet. Formatet på 6 sekunder hjälper dig att fånga äkta ögonblick när de händer.",
     "videoRecorderWhySixSecondsButton": "Jag fattar!",
-  "videoRecorderUploadTitle": "Varför ingen uppladdning?",
-  "videoRecorderUploadBody": "Det du ser på Divine är gjort av människor: rått och fångat i stunden. Till skillnad från plattformar som tillåter starkt producerade eller AI-genererade uppladdningar prioriterar vi äktheten i kamera-direkt-upplevelsen.",
-  "videoRecorderUploadBodyDetail": "Genom att behålla skapandet i appen kan vi bättre garantera att innehållet är äkta och oredigerat. Vi öppnar inte upp för uppladdningar från externt galleri just nu, för att skydda den äktheten och hålla vår community fri från syntetiskt innehåll i största möjliga mån.",
-  "videoRecorderUploadBodyCta": "Byt till Capture eller Classic för att filma något äkta.",
-  "videoRecorderUploadLearnMore": "Läs om hur verifieringen fungerar",
+    "videoRecorderUploadTitle": "Varför ingen uppladdning?",
+    "videoRecorderUploadBody": "Det du ser på Divine är gjort av människor: rått och fångat i stunden. Till skillnad från plattformar som tillåter starkt producerade eller AI-genererade uppladdningar prioriterar vi äktheten i kamera-direkt-upplevelsen.",
+    "videoRecorderUploadBodyDetail": "Genom att behålla skapandet i appen kan vi bättre garantera att innehållet är äkta och oredigerat. Vi öppnar inte upp för uppladdningar från externt galleri just nu, för att skydda den äktheten och hålla vår community fri från syntetiskt innehåll i största möjliga mån.",
+    "videoRecorderUploadBodyCta": "Byt till Capture eller Classic för att filma något äkta.",
+    "videoRecorderUploadLearnMore": "Läs om hur verifieringen fungerar",
     "videoRecorderAutosaveFoundTitle": "Vi hittade ett pågående arbete",
     "videoRecorderAutosaveFoundSubtitle": "Vill du fortsätta där du slutade?",
     "videoRecorderAutosaveContinueButton": "Ja, fortsätt",
@@ -3053,5 +3053,383 @@
     "peopleListsRemovedFromList": "{name} borttagen från listan",
     "peopleListsUndo": "Ångra",
     "peopleListsProfileLongPressHint": "Profil för {name}. Håll intryckt för att ta bort.",
-    "peopleListsViewProfileHint": "Visa profil för {name}"
+    "peopleListsViewProfileHint": "Visa profil för {name}",
+    "settingsGeneralTitle": "Allmänna inställningar",
+    "settingsContentSafetyTitle": "Innehåll och säkerhet",
+    "generalSettingsSectionIntegrations": "INTEGRATIONER",
+    "generalSettingsSectionViewing": "VISNING",
+    "generalSettingsSectionCreating": "SKAPANDE",
+    "generalSettingsSectionApp": "APP",
+    "generalSettingsClosedCaptions": "Undertexter",
+    "generalSettingsClosedCaptionsSubtitle": "Visa undertexter när videor har dem",
+    "generalSettingsVideoShape": "Videoform",
+    "generalSettingsVideoShapeSquareOnly": "Endast kvadratiska videor",
+    "generalSettingsVideoShapeSquareAndPortrait": "Kvadrat och stående",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Visa hela mixen av Divine-videor",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "Behåll flöden i klassiskt kvadratiskt format",
+    "contentFiltersAdultContent": "VUXENINNEHÅLL",
+    "contentFiltersViolenceGore": "VÅLD OCH BLOD",
+    "contentFiltersSubstances": "SUBSTANSER",
+    "contentFiltersOther": "ÖVRIGT",
+    "contentFiltersAgeGateMessage": "Verifiera din ålder under Säkerhet och integritet för att låsa upp filter för vuxeninnehåll",
+    "contentFiltersShow": "Visa",
+    "contentFiltersWarn": "Varna",
+    "contentFiltersFilterOut": "Filtrera bort",
+    "profileNoSavedVideosTitle": "Inget sparat än",
+    "profileSavedOwnEmpty": "Bokmärk videor från dela-menyn så dyker de upp här.",
+    "profileErrorLoadingSaved": "Kunde inte ladda sparade videor",
+    "profileMaybeLaterLabel": "Kanske senare",
+    "profileSecurePrimaryButton": "Lägg till e-post och lösenord",
+    "profileCompletePrimaryButton": "Uppdatera din profil",
+    "profileLoopsLabel": "Loopar",
+    "profileLikesLabel": "Gilla-markeringar",
+    "profileMyLibraryLabel": "Mitt bibliotek",
+    "profileMessageLabel": "Meddelande",
+    "profileUserFallback": "användare",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "bilder",
+    "profileSetupExternalNip05InvalidFormat": "Ogiltigt NIP-05-format (t.ex. namn@domän.com)",
+    "profileSetupExternalNip05DivineDomain": "Använd användarnamnsfältet ovan för divine.video",
+    "contentWarningReportContentTooltip": "Rapportera innehåll",
+    "contentWarningBlockUserTooltip": "Blockera användare",
+    "contentWarningBlockedTitle": "Innehåll blockerat",
+    "contentWarningBlockedPolicy": "Det här innehållet har blockerats på grund av riktlinjebrott.",
+    "contentWarningNoticeTitle": "Innehållsvarning",
+    "contentWarningPotentiallyHarmfulTitle": "Potentiellt skadligt innehåll",
+    "contentWarningView": "Visa",
+    "contentWarningReportAction": "Rapportera",
+    "videoActionLikeLabel": "Gilla",
+    "videoActionReplyLabel": "Svara",
+    "videoActionRepostLabel": "Dela vidare",
+    "videoActionShareLabel": "Dela",
+    "videoActionAboutLabel": "Om",
+    "videoOverlayOpenMetadataFromTitle": "Öppna videodetaljer",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "Öppna videodetaljer",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "Rel-URL måste använda wss:// (ws:// tillåts endast för localhost)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "Extern rel",
+    "relaySettingsNotConnected": "Inte ansluten",
+    "relaySettingsDisconnectedAgo": "Frånkopplad för {duration} sedan",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "{count} prenumerationer",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "{count} händelser",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "för {duration} sedan",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "Divine använder Nostr-protokollet för decentraliserad publicering. Ditt innehåll lever på reler du väljer, och dina nycklar är din identitet.",
+    "nostrSettingsSectionNetwork": "Nätverk",
+    "nostrSettingsSectionAccount": "Konto",
+    "nostrSettingsSectionDangerZone": "Riskzon",
+    "nostrSettingsRelays": "Reler",
+    "nostrSettingsRelaysSubtitle": "Hantera Nostr-relanslutningar",
+    "nostrSettingsRelayDiagnostics": "Reldiagnostik",
+    "nostrSettingsRelayDiagnosticsSubtitle": "Felsök relanslutningar och nätverksproblem",
+    "nostrSettingsMediaServers": "Mediaservrar",
+    "nostrSettingsMediaServersSubtitle": "Konfigurera Blossom-uppladdningsservrar",
+    "nostrSettingsDeveloperOptions": "Utvecklaralternativ",
+    "nostrSettingsDeveloperOptionsSubtitle": "Miljöväxlare och felsökningsinställningar",
+    "nostrSettingsExperimentalFeaturesSubtitle": "Slå på funktioner som kan hicka.",
+    "nostrSettingsKeyManagement": "Nyckelhantering",
+    "nostrSettingsKeyManagementSubtitle": "Exportera, säkerhetskopiera och återställ dina Nostr-nycklar",
+    "nostrSettingsRemoveKeys": "Ta bort nycklar från enheten",
+    "nostrSettingsRemoveKeysSubtitle": "Radera din privata nyckel från endast den här enheten. Ditt innehåll stannar på relerna, men du behöver din nsec-säkerhetskopia för att komma åt kontot igen.",
+    "nostrSettingsCouldNotRemoveKeys": "Kunde inte ta bort nycklar från enheten. Försök igen.",
+    "nostrSettingsFailedToRemoveKeys": "Kunde inte ta bort nycklar: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "Radera konto och data",
+    "nostrSettingsDeleteAccountSubtitle": "Radera PERMANENT ditt konto och ALLT innehåll från Nostr-reler. Detta kan inte ångras.",
+    "safetySettingsWhatYouSee": "VAD DU SER",
+    "safetySettingsWhatYouPublish": "VAD DU PUBLICERAR",
+    "listPersonCount": "{count, plural, =1{1 person} other{{count} personer}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "Av ",
+    "keyManagementYourPublicKeyLabel": "Din publika nyckel (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "Kopiera publik nyckel",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "Publik nyckel kopierad",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "Visa din publika nyckel",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "Namnlöst ljud",
+    "soundStopPreview": "Stoppa förhandsvisning",
+    "soundPreviewSemanticLabel": "Förhandsvisa {title}",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "Visa detaljer för {title}",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "Sök...",
+    "categoryVideoCount": "{count} videor",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "Upptäck listor",
+    "discoverListsFailedToLoad": "Kunde inte ladda listor",
+    "discoverListsFailedToLoadWithError": "Kunde inte ladda listor: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "Söker upp publika listor...",
+    "discoverListsEmptyTitle": "Inga publika listor hittades",
+    "discoverListsEmptySubtitle": "Kom tillbaka senare för nya listor",
+    "discoverListsByAuthorPrefix": "av",
+    "curatedListEmptyTitle": "Inga videor i den här listan",
+    "curatedListEmptySubtitle": "Lägg till några videor för att komma igång",
+    "curatedListLoadingVideos": "Laddar videor...",
+    "curatedListFailedToLoad": "Kunde inte ladda listan",
+    "curatedListNoVideosAvailable": "Inga videor tillgängliga",
+    "curatedListVideoNotAvailable": "Video inte tillgänglig",
+    "commonBack": "Tillbaka",
+    "commonClose": "Stäng",
+    "categoryGalleryNoVideosInCategory": "Inga videor i den här kategorin",
+    "categoryGallerySortOptionsLabel": "Sorteringsalternativ för kategori",
+    "categoryGallerySortHot": "Hett",
+    "categoryGallerySortNew": "Nytt",
+    "categoryGallerySortClassic": "Klassiskt",
+    "categoryGallerySortForYou": "För dig",
+    "categoriesNoCategoriesAvailable": "Inga kategorier tillgängliga",
+    "notificationsEmptyTitle": "Ingen aktivitet än",
+    "notificationsEmptySubtitle": "När folk interagerar med ditt innehåll dyker det upp här",
+    "appsPermissionsTitle": "Integrationsbehörigheter",
+    "appsPermissionsRevoke": "Återkalla",
+    "appsPermissionsEmptyTitle": "Inga sparade integrationsbehörigheter",
+    "appsPermissionsEmptySubtitle": "Godkända integrationer dyker upp här efter att du sparat ett åtkomstgodkännande.",
+    "nostrAppPermissionTitle": "{appName} vill ha ditt godkännande",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "Den här appen begär åtkomst genom Divines granskade sandlåda.",
+    "nostrAppPermissionOrigin": "Ursprung",
+    "nostrAppPermissionMethod": "Metod",
+    "nostrAppPermissionCapability": "Funktion",
+    "nostrAppPermissionEventKind": "Händelsetyp",
+    "nostrAppPermissionAllow": "Tillåt",
+    "bugReportSendReport": "Skicka rapport",
+    "supportSubjectRequiredLabel": "Ämne *",
+    "supportRequiredHelper": "Obligatoriskt",
+    "bugReportSubjectHint": "Kort sammanfattning av problemet",
+    "bugReportDescriptionRequiredLabel": "Vad hände? *",
+    "bugReportDescriptionHint": "Beskriv problemet du stötte på",
+    "bugReportStepsLabel": "Steg för att återskapa",
+    "bugReportStepsHint": "1. Gå till...\n2. Tryck på...\n3. Se felet",
+    "bugReportExpectedBehaviorLabel": "Förväntat beteende",
+    "bugReportExpectedBehaviorHint": "Vad borde ha hänt istället?",
+    "bugReportDiagnosticsNotice": "Enhetsinfo och loggar inkluderas automatiskt.",
+    "bugReportSuccessMessage": "Tack! Vi har fått din rapport och använder den för att göra Divine bättre.",
+    "bugReportSendFailed": "Kunde inte skicka buggrapporten. Försök igen senare.",
+    "bugReportFailedWithError": "Buggrapport kunde inte skickas: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "Skicka önskemål",
+    "featureRequestSubjectHint": "Kort sammanfattning av din idé",
+    "featureRequestDescriptionRequiredLabel": "Vad önskar du? *",
+    "featureRequestDescriptionHint": "Beskriv funktionen du vill ha",
+    "featureRequestUsefulnessLabel": "Hur skulle detta vara användbart?",
+    "featureRequestUsefulnessHint": "Förklara nyttan funktionen skulle ge",
+    "featureRequestWhenLabel": "När skulle du använda det?",
+    "featureRequestWhenHint": "Beskriv situationerna där detta skulle hjälpa",
+    "featureRequestSuccessMessage": "Tack! Vi har fått ditt önskemål och kommer att granska det.",
+    "featureRequestSendFailed": "Kunde inte skicka funktionsönskemålet. Försök igen senare.",
+    "featureRequestFailedWithError": "Funktionsönskemål kunde inte skickas: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "Följer",
+    "followingTitleForName": "{displayName}s följer",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "Följer ingen än",
+    "followersTitle": "Följare",
+    "followersTitleForName": "{displayName}s följare",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "Inga följare än",
+    "followersUpdateFollowFailed": "Kunde inte uppdatera följstatus. Försök igen.",
+    "reportMessageTitle": "Rapportera meddelande",
+    "reportMessageWhyReporting": "Varför rapporterar du det här meddelandet?",
+    "reportMessageSelectReason": "Välj en anledning för att rapportera meddelandet",
+    "newMessageTitle": "Nytt meddelande",
+    "newMessageFindPeople": "Hitta personer",
+    "newMessageNoContacts": "Inga kontakter hittades.\nFölj personer för att se dem här.",
+    "newMessageNoUsersFound": "Inga användare hittades",
+    "hashtagSearchTitle": "Sök efter hashtags",
+    "hashtagSearchSubtitle": "Upptäck trendande ämnen och innehåll",
+    "hashtagSearchNoResults": "Inga hashtags hittades för \"{query}\"",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "Sökning misslyckades",
+    "userNotAvailableTitle": "Konto ej tillgängligt",
+    "userNotAvailableBody": "Det här kontot är inte tillgängligt just nu.",
+    "blossomValidServerUrl": "Ange en giltig server-URL (t.ex. https://blossom.band)",
+    "blossomSettingsSaved": "Blossom-inställningar sparade",
+    "blossomSaveTooltip": "Spara",
+    "blossomAboutTitle": "Om Blossom",
+    "blossomAboutDescription": "Blossom är ett decentraliserat protokoll för medialagring som låter dig ladda upp videor till valfri kompatibel server. Som standard laddas videor upp till Divines Blossom-server. Aktivera alternativet nedan för att använda en egen server istället.",
+    "blossomUseCustomServer": "Använd egen Blossom-server",
+    "blossomCustomServerEnabledSubtitle": "Videor laddas upp till din egen Blossom-server",
+    "blossomCustomServerDisabledSubtitle": "Dina videor laddas just nu upp till Divines Blossom-server",
+    "blossomCustomServerUrl": "URL till egen Blossom-server",
+    "blossomCustomServerHelper": "Ange URL:en till din egen Blossom-server",
+    "blossomPopularServers": "Populära Blossom-servrar",
+    "blossomServerUrlMustUseHttps": "URL till Blossom-server måste använda https://",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "Logga in för att hantera Bluesky-inställningar",
+    "blueskyPublishVideos": "Publicera videor till Bluesky",
+    "blueskyEnabledSubtitle": "Dina videor publiceras till Bluesky",
+    "blueskyDisabledSubtitle": "Dina videor publiceras inte till Bluesky",
+    "blueskyHandle": "Bluesky-handtag",
+    "blueskyStatus": "Status",
+    "blueskyStatusReady": "Konto provisionerat och klart",
+    "blueskyStatusPending": "Konto provisioneras...",
+    "blueskyStatusFailed": "Kontoprovisionering misslyckades",
+    "blueskyStatusDisabled": "Konto inaktiverat",
+    "blueskyStatusNotLinked": "Inget Bluesky-konto kopplat",
+    "invitesNoneAvailable": "Inga inbjudningar tillgängliga just nu",
+    "invitesShareWithPeople": "Dela diVine med folk du känner",
+    "invitesUsedInvites": "Använda inbjudningar",
+    "invitesShareMessage": "Häng med mig på diVine! Använd inbjudningskoden {code} för att komma igång:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "Kopiera inbjudan",
+    "invitesCopied": "Inbjudan kopierad!",
+    "invitesShareInvite": "Dela inbjudan",
+    "invitesShareSubject": "Häng med mig på diVine",
+    "invitesClaimed": "Inlöst",
+    "invitesCouldNotLoad": "Kunde inte ladda inbjudningar",
+    "invitesRetry": "Försök igen",
+    "keyImportInsecureBunkerRelay": "Bunker-rel måste använda wss:// (ws:// tillåts endast för localhost)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "Märken",
+    "settingsBadgesSubtitle": "Acceptera utmärkelser och kolla status på utfärdade märken.",
+    "badgesTitle": "Märken",
+    "badgesIntroTitle": "Förstå ditt märkesspår",
+    "badgesIntroBody": "Se märkesutmärkelser som skickats till dig, välj vilka du vill fästa på din Nostr-profil, och kolla om folk accepterat märken du utfärdat.",
+    "badgesOpenApp": "Öppna märkesappen",
+    "badgesLoadError": "Kunde inte ladda märken",
+    "badgesUpdateError": "Kunde inte uppdatera märke",
+    "badgesAwardedSectionTitle": "Tilldelade dig",
+    "badgesAwardedEmptyTitle": "Inga märkesutmärkelser än",
+    "badgesAwardedEmptySubtitle": "När någon tilldelar dig ett Nostr-märke landar det här.",
+    "badgesStatusAccepted": "Accepterat",
+    "badgesStatusNotAccepted": "Inte accepterat",
+    "badgesActionRemove": "Ta bort",
+    "badgesActionAccept": "Acceptera",
+    "badgesActionReject": "Avvisa",
+    "badgesIssuedSectionTitle": "Utfärdade av dig",
+    "badgesIssuedEmptyTitle": "Inga utfärdade märken än",
+    "badgesIssuedEmptySubtitle": "Märken du utfärdar visar acceptansstatus här.",
+    "badgesIssuedNoRecipients": "Inga mottagare hittades för den här utmärkelsen.",
+    "badgesRecipientAcceptedStatus": "Accepterat av mottagare",
+    "badgesRecipientWaitingStatus": "Väntar på mottagare"
 }

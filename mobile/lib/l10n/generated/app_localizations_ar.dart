@@ -146,47 +146,46 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsAppLanguageUseDeviceLanguage => 'استخدام لغة الجهاز';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
+  String get settingsGeneralTitle => 'الإعدادات العامة';
 
   @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
+  String get settingsContentSafetyTitle => 'المحتوى والأمان';
 
   @override
-  String get generalSettingsSectionIntegrations => 'INTEGRATIONS';
+  String get generalSettingsSectionIntegrations => 'التكاملات';
 
   @override
-  String get generalSettingsSectionViewing => 'VIEWING';
+  String get generalSettingsSectionViewing => 'المشاهدة';
 
   @override
-  String get generalSettingsSectionCreating => 'CREATING';
+  String get generalSettingsSectionCreating => 'الإنشاء';
 
   @override
-  String get generalSettingsSectionApp => 'APP';
+  String get generalSettingsSectionApp => 'التطبيق';
 
   @override
-  String get generalSettingsClosedCaptions => 'Closed Captions';
+  String get generalSettingsClosedCaptions => 'الترجمة المصاحبة';
 
   @override
   String get generalSettingsClosedCaptionsSubtitle =>
-      'Show captions when videos include them';
+      'اعرض الترجمة عندما تتضمّنها الفيديوهات';
 
   @override
-  String get generalSettingsVideoShape => 'Video Shape';
+  String get generalSettingsVideoShape => 'شكل الفيديو';
 
   @override
-  String get generalSettingsVideoShapeSquareOnly => 'Square videos only';
+  String get generalSettingsVideoShapeSquareOnly => 'فيديوهات مربّعة فقط';
 
   @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Square and portrait';
+  String get generalSettingsVideoShapeSquareAndPortrait => 'مربّع وعمودي';
 
   @override
   String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Show the full mix of Divine videos';
+      'اعرض المزيج الكامل لفيديوهات Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
-      'Keep feeds in the classic square format';
+      'أبقِ التغذيات بالشكل المربّع الكلاسيكي';
 
   @override
   String get contentPreferencesTitle => 'تفضيلات المحتوى';
@@ -262,29 +261,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get contentPreferencesUnknownMicrophone => 'ميكروفون غير معروف';
 
   @override
-  String get contentFiltersAdultContent => 'ADULT CONTENT';
+  String get contentFiltersAdultContent => 'محتوى للبالغين';
 
   @override
-  String get contentFiltersViolenceGore => 'VIOLENCE & GORE';
+  String get contentFiltersViolenceGore => 'العنف والدماء';
 
   @override
-  String get contentFiltersSubstances => 'SUBSTANCES';
+  String get contentFiltersSubstances => 'المواد';
 
   @override
-  String get contentFiltersOther => 'OTHER';
+  String get contentFiltersOther => 'أخرى';
 
   @override
   String get contentFiltersAgeGateMessage =>
-      'Verify your age in Safety & Privacy settings to unlock adult content filters';
+      'تحقّق من عمرك في إعدادات الأمان والخصوصية لفتح مرشّحات محتوى البالغين';
 
   @override
-  String get contentFiltersShow => 'Show';
+  String get contentFiltersShow => 'عرض';
 
   @override
-  String get contentFiltersWarn => 'Warn';
+  String get contentFiltersWarn => 'تحذير';
 
   @override
-  String get contentFiltersFilterOut => 'Filter Out';
+  String get contentFiltersFilterOut => 'إخفاء';
 
   @override
   String get profileBlockedAccountNotAvailable => 'هذا الحساب غير متاح';
@@ -480,14 +479,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileErrorLoadingCollabs => 'خطأ في تحميل فيديوهات التعاون';
 
   @override
-  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+  String get profileNoSavedVideosTitle => 'لا شيء محفوظ بعد';
 
   @override
   String get profileSavedOwnEmpty =>
-      'Bookmark videos from the share sheet and they\'ll show up here.';
+      'احفظ الفيديوهات من قائمة المشاركة وستظهر هنا.';
 
   @override
-  String get profileErrorLoadingSaved => 'Error loading saved videos';
+  String get profileErrorLoadingSaved => 'خطأ في تحميل الفيديوهات المحفوظة';
 
   @override
   String get profileNoCommentsOwnTitle => 'لا توجد تعليقات بعد';
@@ -621,28 +620,28 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileSignInButton => 'تسجيل الدخول';
 
   @override
-  String get profileMaybeLaterLabel => 'Maybe Later';
+  String get profileMaybeLaterLabel => 'ربما لاحقًا';
 
   @override
-  String get profileSecurePrimaryButton => 'Add Email & Password';
+  String get profileSecurePrimaryButton => 'أضف بريدًا وكلمة مرور';
 
   @override
-  String get profileCompletePrimaryButton => 'Update Your Profile';
+  String get profileCompletePrimaryButton => 'حدّث ملفك الشخصي';
 
   @override
-  String get profileLoopsLabel => 'Loops';
+  String get profileLoopsLabel => 'التكرارات';
 
   @override
-  String get profileLikesLabel => 'Likes';
+  String get profileLikesLabel => 'الإعجابات';
 
   @override
-  String get profileMyLibraryLabel => 'My Library';
+  String get profileMyLibraryLabel => 'مكتبتي';
 
   @override
-  String get profileMessageLabel => 'Message';
+  String get profileMessageLabel => 'رسالة';
 
   @override
-  String get profileUserFallback => 'user';
+  String get profileUserFallback => 'مستخدم';
 
   @override
   String get profileDismissTooltip => 'تجاهل';
@@ -742,7 +741,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'فشل اختيار الصورة. يرجى لصق رابط الصورة أدناه بدلاً من ذلك.';
 
   @override
-  String get profileSetupImagesTypeGroup => 'images';
+  String get profileSetupImagesTypeGroup => 'صور';
 
   @override
   String profileSetupCameraAccessFailed(Object error) {
@@ -857,11 +856,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid NIP-05 format (e.g., name@domain.com)';
+      'صيغة NIP-05 غير صالحة (مثال: name@domain.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
-      'Use the username field above for divine.video';
+      'استخدم حقل اسم المستخدم أعلاه لـ divine.video';
 
   @override
   String get profileSetupProfilePicturePreview => 'معاينة صورة الملف الشخصي';
@@ -1187,30 +1186,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get contentWarningViewAnyway => 'العرض على أي حال';
 
   @override
-  String get contentWarningReportContentTooltip => 'Report Content';
+  String get contentWarningReportContentTooltip => 'الإبلاغ عن المحتوى';
 
   @override
-  String get contentWarningBlockUserTooltip => 'Block User';
+  String get contentWarningBlockUserTooltip => 'حظر المستخدم';
 
   @override
-  String get contentWarningBlockedTitle => 'Content Blocked';
+  String get contentWarningBlockedTitle => 'تم حظر المحتوى';
 
   @override
   String get contentWarningBlockedPolicy =>
-      'This content has been blocked due to policy violations.';
+      'تم حظر هذا المحتوى بسبب مخالفات السياسة.';
 
   @override
-  String get contentWarningNoticeTitle => 'Content Notice';
+  String get contentWarningNoticeTitle => 'تنبيه بشأن المحتوى';
 
   @override
-  String get contentWarningPotentiallyHarmfulTitle =>
-      'Potentially Harmful Content';
+  String get contentWarningPotentiallyHarmfulTitle => 'محتوى قد يكون ضارًّا';
 
   @override
-  String get contentWarningView => 'View';
+  String get contentWarningView => 'عرض';
 
   @override
-  String get contentWarningReportAction => 'Report';
+  String get contentWarningReportAction => 'إبلاغ';
 
   @override
   String get contentWarningHideAllLikeThis => 'إخفاء كل المحتوى المشابه';
@@ -1371,19 +1369,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionAutoLabel => 'تلقائي';
 
   @override
-  String get videoActionLikeLabel => 'Like';
+  String get videoActionLikeLabel => 'إعجاب';
 
   @override
-  String get videoActionReplyLabel => 'Reply';
+  String get videoActionReplyLabel => 'ردّ';
 
   @override
-  String get videoActionRepostLabel => 'Repost';
+  String get videoActionRepostLabel => 'إعادة نشر';
 
   @override
-  String get videoActionShareLabel => 'Share';
+  String get videoActionShareLabel => 'مشاركة';
 
   @override
-  String get videoActionAboutLabel => 'About';
+  String get videoActionAboutLabel => 'حول';
 
   @override
   String get videoActionEnableAutoAdvance => 'تفعيل التشغيل التلقائي';
@@ -1410,10 +1408,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionShowSubtitles => 'عرض الترجمات';
 
   @override
-  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+  String get videoOverlayOpenMetadataFromTitle => 'فتح تفاصيل الفيديو';
 
   @override
-  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+  String get videoOverlayOpenMetadataFromDescription => 'فتح تفاصيل الفيديو';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -1755,7 +1753,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get relaySettingsInsecureUrl =>
-      'Relay URL must use wss:// (ws:// is allowed only for localhost)';
+      'يجب أن يستخدم رابط المحول wss:// (يُسمح بـ ws:// لـ localhost فقط)';
 
   @override
   String relaySettingsRestoredDefault(String defaultRelay) {
@@ -1773,104 +1771,102 @@ class AppLocalizationsAr extends AppLocalizations {
   String get relaySettingsFailedToOpenLink => 'تعذّر فتح الرابط';
 
   @override
-  String get relaySettingsExternalRelay => 'External relay';
+  String get relaySettingsExternalRelay => 'محول خارجي';
 
   @override
-  String get relaySettingsNotConnected => 'Not connected';
+  String get relaySettingsNotConnected => 'غير متصل';
 
   @override
   String relaySettingsDisconnectedAgo(String duration) {
-    return 'Disconnected $duration ago';
+    return 'انقطع منذ $duration';
   }
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    return '$count اشتراك';
   }
 
   @override
   String relaySettingsEventsSummary(String count) {
-    return '$count events';
+    return '$count حدث';
   }
 
   @override
   String relaySettingsTimeAgo(String duration) {
-    return '$duration ago';
+    return 'منذ $duration';
   }
 
   @override
   String get nostrSettingsIntro =>
-      'Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.';
+      'يستخدم Divine بروتوكول Nostr للنشر اللامركزي. يعيش محتواك على المحولات التي تختارها، ومفاتيحك هي هويتك.';
 
   @override
-  String get nostrSettingsSectionNetwork => 'Network';
+  String get nostrSettingsSectionNetwork => 'الشبكة';
 
   @override
-  String get nostrSettingsSectionAccount => 'Account';
+  String get nostrSettingsSectionAccount => 'الحساب';
 
   @override
-  String get nostrSettingsSectionDangerZone => 'Danger Zone';
+  String get nostrSettingsSectionDangerZone => 'منطقة الخطر';
 
   @override
-  String get nostrSettingsRelays => 'Relays';
+  String get nostrSettingsRelays => 'المحولات';
 
   @override
-  String get nostrSettingsRelaysSubtitle => 'Manage Nostr relay connections';
+  String get nostrSettingsRelaysSubtitle => 'أدر اتصالات محولات Nostr';
 
   @override
-  String get nostrSettingsRelayDiagnostics => 'Relay Diagnostics';
+  String get nostrSettingsRelayDiagnostics => 'تشخيص المحولات';
 
   @override
   String get nostrSettingsRelayDiagnosticsSubtitle =>
-      'Debug relay connectivity and network issues';
+      'تصحيح اتصال المحولات ومشكلات الشبكة';
 
   @override
-  String get nostrSettingsMediaServers => 'Media Servers';
+  String get nostrSettingsMediaServers => 'خوادم الوسائط';
 
   @override
-  String get nostrSettingsMediaServersSubtitle =>
-      'Configure Blossom upload servers';
+  String get nostrSettingsMediaServersSubtitle => 'إعداد خوادم الرفع Blossom';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Developer Options';
+  String get nostrSettingsDeveloperOptions => 'خيارات المطوّر';
 
   @override
   String get nostrSettingsDeveloperOptionsSubtitle =>
-      'Environment switcher and debug settings';
+      'مبدّل البيئة وإعدادات التصحيح';
 
   @override
-  String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Toggle feature flags that may hiccup.';
+  String get nostrSettingsExperimentalFeaturesSubtitle => 'تعديلات قد تتعثّر.';
 
   @override
-  String get nostrSettingsKeyManagement => 'Key Management';
+  String get nostrSettingsKeyManagement => 'إدارة المفاتيح';
 
   @override
   String get nostrSettingsKeyManagementSubtitle =>
-      'Export, backup, and restore your Nostr keys';
+      'تصدير مفاتيح Nostr ونسخها واستعادتها';
 
   @override
-  String get nostrSettingsRemoveKeys => 'Remove Keys from Device';
+  String get nostrSettingsRemoveKeys => 'إزالة المفاتيح من الجهاز';
 
   @override
   String get nostrSettingsRemoveKeysSubtitle =>
-      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.';
+      'احذف مفتاحك الخاص من هذا الجهاز فقط. سيبقى محتواك على المحولات، لكنّك ستحتاج إلى نسخة nsec الاحتياطية للوصول إلى حسابك مرّة أخرى.';
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Could not remove keys from this device. Please try again.';
+      'تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.';
 
   @override
   String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Failed to remove keys: $error';
+    return 'فشلت إزالة المفاتيح: $error';
   }
 
   @override
-  String get nostrSettingsDeleteAccount => 'Delete Account and Data';
+  String get nostrSettingsDeleteAccount => 'حذف الحساب والبيانات';
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.';
+      'احذف حسابك وكلّ محتواك من محولات Nostr بشكل دائم. لا يمكن التراجع عن هذا الإجراء.';
 
   @override
   String get relayDiagnosticTitle => 'تشخيص المحول';
@@ -2150,10 +2146,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get safetySettingsLabel => 'الإعدادات';
 
   @override
-  String get safetySettingsWhatYouSee => 'WHAT YOU SEE';
+  String get safetySettingsWhatYouSee => 'ما تراه';
 
   @override
-  String get safetySettingsWhatYouPublish => 'WHAT YOU PUBLISH';
+  String get safetySettingsWhatYouPublish => 'ما تنشره';
 
   @override
   String get safetySettingsShowDivineHostedOnly =>
@@ -2470,22 +2466,22 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authPasswordLabel => 'كلمة المرور';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => 'تأكيد كلمة المرور';
 
   @override
-  String get authEmailRequired => 'Email is required';
+  String get authEmailRequired => 'البريد الإلكتروني مطلوب';
 
   @override
-  String get authEmailInvalid => 'Please enter a valid email';
+  String get authEmailInvalid => 'أدخل بريدًا إلكترونيًا صالحًا';
 
   @override
-  String get authPasswordRequired => 'Password is required';
+  String get authPasswordRequired => 'كلمة المرور مطلوبة';
 
   @override
-  String get authConfirmPasswordRequired => 'Please confirm your password';
+  String get authConfirmPasswordRequired => 'أكّد كلمة المرور';
 
   @override
-  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+  String get authPasswordsDoNotMatch => 'كلمتا المرور غير متطابقتين';
 
   @override
   String get authForgotPassword => 'نسيت كلمة المرور؟';
@@ -2742,7 +2738,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get authNewPasswordLabel => 'كلمة المرور الجديدة';
 
   @override
-  String get authConfirmNewPasswordLabel => 'Confirm new password';
+  String get authConfirmNewPasswordLabel => 'تأكيد كلمة المرور الجديدة';
 
   @override
   String get authPasswordTooShort => 'يجب ألّا تقل كلمة المرور عن 8 أحرف';
@@ -4303,14 +4299,18 @@ class AppLocalizationsAr extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count people',
-      one: '1 person',
+      other: '$count شخص',
+      many: '$count شخصًا',
+      few: '$count أشخاص',
+      two: 'شخصان',
+      one: 'شخص واحد',
+      zero: 'لا أحد',
     );
     return '$_temp0';
   }
 
   @override
-  String get listByAuthorPrefix => 'By ';
+  String get listByAuthorPrefix => 'بقلم ';
 
   @override
   String get listNewList => 'قائمة جديدة';
@@ -4439,16 +4439,16 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';
+  String get keyManagementYourPublicKeyLabel => 'مفتاحك العام (npub)';
 
   @override
-  String get keyManagementCopyPublicKeyTooltip => 'Copy public key';
+  String get keyManagementCopyPublicKeyTooltip => 'نسخ المفتاح العام';
 
   @override
-  String get keyManagementPublicKeyCopied => 'Public key copied';
+  String get keyManagementPublicKeyCopied => 'تم نسخ المفتاح العام';
 
   @override
-  String get profileEditPublicKeyLink => 'View your public key';
+  String get profileEditPublicKeyLink => 'عرض مفتاحك العام';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'تم الحفظ في ألبوم الكاميرا';
@@ -4534,19 +4534,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get soundUseSound => 'استخدام الصوت';
 
   @override
-  String get soundUntitled => 'Untitled sound';
+  String get soundUntitled => 'صوت بلا عنوان';
 
   @override
-  String get soundStopPreview => 'Stop preview';
+  String get soundStopPreview => 'إيقاف المعاينة';
 
   @override
   String soundPreviewSemanticLabel(String title) {
-    return 'Preview $title';
+    return 'معاينة $title';
   }
 
   @override
   String soundViewDetailsSemanticLabel(String title) {
-    return 'View details for $title';
+    return 'عرض تفاصيل $title';
   }
 
   @override
@@ -5052,11 +5052,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get exploreSearchHint => 'Search...';
+  String get exploreSearchHint => 'بحث...';
 
   @override
   String categoryVideoCount(String count) {
-    return '$count videos';
+    return '$count فيديو';
   }
 
   @override
@@ -5065,45 +5065,46 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get discoverListsTitle => 'Discover Lists';
+  String get discoverListsTitle => 'اكتشف القوائم';
 
   @override
-  String get discoverListsFailedToLoad => 'Failed to load lists';
+  String get discoverListsFailedToLoad => 'فشل تحميل القوائم';
 
   @override
   String discoverListsFailedToLoadWithError(String error) {
-    return 'Failed to load lists: $error';
+    return 'فشل تحميل القوائم: $error';
   }
 
   @override
-  String get discoverListsLoading => 'Discovering public lists...';
+  String get discoverListsLoading => 'جاري اكتشاف القوائم العامة...';
 
   @override
-  String get discoverListsEmptyTitle => 'No public lists found';
+  String get discoverListsEmptyTitle => 'لم يتم العثور على قوائم عامة';
 
   @override
-  String get discoverListsEmptySubtitle => 'Check back later for new lists';
+  String get discoverListsEmptySubtitle =>
+      'عاود التحقق لاحقًا لرؤية قوائم جديدة';
 
   @override
-  String get discoverListsByAuthorPrefix => 'by';
+  String get discoverListsByAuthorPrefix => 'بقلم';
 
   @override
-  String get curatedListEmptyTitle => 'No videos in this list';
+  String get curatedListEmptyTitle => 'لا فيديوهات في هذه القائمة';
 
   @override
-  String get curatedListEmptySubtitle => 'Add some videos to get started';
+  String get curatedListEmptySubtitle => 'أضف بعض الفيديوهات للبدء';
 
   @override
-  String get curatedListLoadingVideos => 'Loading videos...';
+  String get curatedListLoadingVideos => 'جاري تحميل الفيديوهات...';
 
   @override
-  String get curatedListFailedToLoad => 'Failed to load list';
+  String get curatedListFailedToLoad => 'فشل تحميل القائمة';
 
   @override
-  String get curatedListNoVideosAvailable => 'No videos available';
+  String get curatedListNoVideosAvailable => 'لا توجد فيديوهات متاحة';
 
   @override
-  String get curatedListVideoNotAvailable => 'Video not available';
+  String get curatedListVideoNotAvailable => 'الفيديو غير متاح';
 
   @override
   String get commonRetry => 'إعادة المحاولة';
@@ -5118,10 +5119,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get commonCancel => 'إلغاء';
 
   @override
-  String get commonBack => 'Back';
+  String get commonBack => 'رجوع';
 
   @override
-  String get commonClose => 'Close';
+  String get commonClose => 'إغلاق';
 
   @override
   String get videoMetadataTags => 'الوسوم';
@@ -5315,237 +5316,235 @@ class AppLocalizationsAr extends AppLocalizations {
   String get categoryGalleryCouldNotLoadVideos => 'تعذّر تحميل الفيديوهات';
 
   @override
-  String get categoryGalleryNoVideosInCategory => 'No videos in this category';
+  String get categoryGalleryNoVideosInCategory => 'لا فيديوهات في هذه الفئة';
 
   @override
-  String get categoryGallerySortOptionsLabel => 'Category sort options';
+  String get categoryGallerySortOptionsLabel => 'خيارات ترتيب الفئة';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'الرائج';
 
   @override
-  String get categoryGallerySortNew => 'New';
+  String get categoryGallerySortNew => 'الجديد';
 
   @override
-  String get categoryGallerySortClassic => 'Classic';
+  String get categoryGallerySortClassic => 'الكلاسيكي';
 
   @override
-  String get categoryGallerySortForYou => 'For You';
+  String get categoryGallerySortForYou => 'لك';
 
   @override
   String get categoriesCouldNotLoadCategories => 'تعذّر تحميل الفئات';
 
   @override
-  String get categoriesNoCategoriesAvailable => 'No categories available';
+  String get categoriesNoCategoriesAvailable => 'لا توجد فئات متاحة';
 
   @override
-  String get notificationsEmptyTitle => 'No activity yet';
+  String get notificationsEmptyTitle => 'لا نشاط بعد';
 
   @override
   String get notificationsEmptySubtitle =>
-      'When people interact with your content, you\'ll see it here';
+      'عندما يتفاعل الناس مع محتواك، سترى ذلك هنا';
 
   @override
-  String get appsPermissionsTitle => 'Integration Permissions';
+  String get appsPermissionsTitle => 'صلاحيات التكاملات';
 
   @override
-  String get appsPermissionsRevoke => 'Revoke';
+  String get appsPermissionsRevoke => 'إلغاء';
 
   @override
-  String get appsPermissionsEmptyTitle => 'No saved integration permissions';
+  String get appsPermissionsEmptyTitle => 'لا توجد صلاحيات تكاملات محفوظة';
 
   @override
   String get appsPermissionsEmptySubtitle =>
-      'Approved integrations will appear here after you remember an access approval.';
+      'ستظهر التكاملات الموافَق عليها هنا بعد أن تحفظ موافقة الوصول.';
 
   @override
   String nostrAppPermissionTitle(String appName) {
-    return '$appName wants your approval';
+    return '$appName يطلب موافقتك';
   }
 
   @override
   String get nostrAppPermissionDescription =>
-      'This app is requesting access through Divine\'s vetted sandbox.';
+      'يطلب هذا التطبيق الوصول عبر بيئة Divine الموثوقة.';
 
   @override
-  String get nostrAppPermissionOrigin => 'Origin';
+  String get nostrAppPermissionOrigin => 'الأصل';
 
   @override
-  String get nostrAppPermissionMethod => 'Method';
+  String get nostrAppPermissionMethod => 'الطريقة';
 
   @override
-  String get nostrAppPermissionCapability => 'Capability';
+  String get nostrAppPermissionCapability => 'الإمكانية';
 
   @override
-  String get nostrAppPermissionEventKind => 'Event kind';
+  String get nostrAppPermissionEventKind => 'نوع الحدث';
 
   @override
-  String get nostrAppPermissionAllow => 'Allow';
+  String get nostrAppPermissionAllow => 'السماح';
 
   @override
-  String get bugReportSendReport => 'Send Report';
+  String get bugReportSendReport => 'إرسال التقرير';
 
   @override
-  String get supportSubjectRequiredLabel => 'Subject *';
+  String get supportSubjectRequiredLabel => 'الموضوع *';
 
   @override
-  String get supportRequiredHelper => 'Required';
+  String get supportRequiredHelper => 'مطلوب';
 
   @override
-  String get bugReportSubjectHint => 'Brief summary of the issue';
+  String get bugReportSubjectHint => 'ملخّص قصير للمشكلة';
 
   @override
-  String get bugReportDescriptionRequiredLabel => 'What happened? *';
+  String get bugReportDescriptionRequiredLabel => 'ماذا حدث؟ *';
 
   @override
-  String get bugReportDescriptionHint => 'Describe the issue you encountered';
+  String get bugReportDescriptionHint => 'صِف المشكلة التي واجهتها';
 
   @override
-  String get bugReportStepsLabel => 'Steps to Reproduce';
+  String get bugReportStepsLabel => 'خطوات إعادة الإنتاج';
 
   @override
-  String get bugReportStepsHint => '1. Go to...\n2. Tap on...\n3. See error';
+  String get bugReportStepsHint =>
+      '1. اذهب إلى...\n2. اضغط على...\n3. شاهد الخطأ';
 
   @override
-  String get bugReportExpectedBehaviorLabel => 'Expected Behavior';
+  String get bugReportExpectedBehaviorLabel => 'السلوك المتوقّع';
 
   @override
   String get bugReportExpectedBehaviorHint =>
-      'What should have happened instead?';
+      'ماذا كان يجب أن يحدث بدلًا من ذلك؟';
 
   @override
   String get bugReportDiagnosticsNotice =>
-      'Device info and logs will be included automatically.';
+      'ستُرفَق معلومات الجهاز والسجلات تلقائيًا.';
 
   @override
   String get bugReportSuccessMessage =>
-      'Thank you! We\'ve received your report and will use it to make Divine better.';
+      'شكرًا لك! استلمنا تقريرك وسنستخدمه لجعل Divine أفضل.';
 
   @override
   String get bugReportSendFailed =>
-      'Failed to send bug report. Please try again later.';
+      'فشل إرسال تقرير الخطأ. حاول مرّة أخرى لاحقًا.';
 
   @override
   String bugReportFailedWithError(String error) {
-    return 'Bug report failed to send: $error';
+    return 'فشل إرسال تقرير الخطأ: $error';
   }
 
   @override
-  String get featureRequestSendRequest => 'Send Request';
+  String get featureRequestSendRequest => 'إرسال الطلب';
 
   @override
-  String get featureRequestSubjectHint => 'Brief summary of your idea';
+  String get featureRequestSubjectHint => 'ملخّص قصير لفكرتك';
 
   @override
-  String get featureRequestDescriptionRequiredLabel => 'What would you like? *';
+  String get featureRequestDescriptionRequiredLabel => 'ماذا تودّ؟ *';
 
   @override
-  String get featureRequestDescriptionHint => 'Describe the feature you want';
+  String get featureRequestDescriptionHint => 'صِف الميزة التي تريدها';
 
   @override
-  String get featureRequestUsefulnessLabel => 'How would this be useful?';
+  String get featureRequestUsefulnessLabel => 'كيف ستكون مفيدة؟';
 
   @override
   String get featureRequestUsefulnessHint =>
-      'Explain the benefit this feature would provide';
+      'وضّح الفائدة التي ستقدّمها هذه الميزة';
 
   @override
-  String get featureRequestWhenLabel => 'When would you use this?';
+  String get featureRequestWhenLabel => 'متى ستستخدمها؟';
 
   @override
-  String get featureRequestWhenHint =>
-      'Describe the situations where this would help';
+  String get featureRequestWhenHint => 'صِف المواقف التي ستساعد فيها';
 
   @override
   String get featureRequestSuccessMessage =>
-      'Thank you! We\'ve received your feature request and will review it.';
+      'شكرًا لك! استلمنا طلب الميزة وسنراجعه.';
 
   @override
   String get featureRequestSendFailed =>
-      'Failed to send feature request. Please try again later.';
+      'فشل إرسال طلب الميزة. حاول مرّة أخرى لاحقًا.';
 
   @override
   String featureRequestFailedWithError(String error) {
-    return 'Feature request failed to send: $error';
+    return 'فشل إرسال طلب الميزة: $error';
   }
 
   @override
   String get notificationFollowBack => 'متابعة بالمقابل';
 
   @override
-  String get followingTitle => 'Following';
+  String get followingTitle => 'المتابَعون';
 
   @override
   String followingTitleForName(String displayName) {
-    return '$displayName\'s Following';
+    return 'متابَعو $displayName';
   }
 
   @override
   String get followingFailedToLoadList => 'فشل تحميل قائمة المتابَعين';
 
   @override
-  String get followingEmptyTitle => 'Not following anyone yet';
+  String get followingEmptyTitle => 'لا تتابع أحدًا بعد';
 
   @override
-  String get followersTitle => 'Followers';
+  String get followersTitle => 'المتابِعون';
 
   @override
   String followersTitleForName(String displayName) {
-    return '$displayName\'s Followers';
+    return 'متابِعو $displayName';
   }
 
   @override
   String get followersFailedToLoadList => 'فشل تحميل قائمة المتابعين';
 
   @override
-  String get followersEmptyTitle => 'No followers yet';
+  String get followersEmptyTitle => 'لا متابِعون بعد';
 
   @override
   String get followersUpdateFollowFailed =>
-      'Failed to update follow status. Please try again.';
+      'فشل تحديث حالة المتابعة. حاول مرّة أخرى.';
 
   @override
-  String get reportMessageTitle => 'Report Message';
+  String get reportMessageTitle => 'الإبلاغ عن الرسالة';
 
   @override
-  String get reportMessageWhyReporting => 'Why are you reporting this message?';
+  String get reportMessageWhyReporting => 'لماذا تبلّغ عن هذه الرسالة؟';
 
   @override
-  String get reportMessageSelectReason =>
-      'Please select a reason for reporting this message';
+  String get reportMessageSelectReason => 'اختر سببًا للإبلاغ عن هذه الرسالة';
 
   @override
-  String get newMessageTitle => 'New message';
+  String get newMessageTitle => 'رسالة جديدة';
 
   @override
-  String get newMessageFindPeople => 'Find people';
+  String get newMessageFindPeople => 'ابحث عن أشخاص';
 
   @override
-  String get newMessageNoContacts =>
-      'No contacts found.\nFollow people to see them here.';
+  String get newMessageNoContacts => 'لا جهات اتصال.\nتابع الناس لتراهم هنا.';
 
   @override
-  String get newMessageNoUsersFound => 'No users found';
+  String get newMessageNoUsersFound => 'لم يُعثر على مستخدمين';
 
   @override
-  String get hashtagSearchTitle => 'Search for hashtags';
+  String get hashtagSearchTitle => 'ابحث عن وسوم';
 
   @override
-  String get hashtagSearchSubtitle => 'Discover trending topics and content';
+  String get hashtagSearchSubtitle => 'اكتشف المواضيع والمحتوى الرائج';
 
   @override
   String hashtagSearchNoResults(String query) {
-    return 'No hashtags found for \"$query\"';
+    return 'لم يُعثر على وسوم لـ \"$query\"';
   }
 
   @override
-  String get hashtagSearchFailed => 'Search failed';
+  String get hashtagSearchFailed => 'فشل البحث';
 
   @override
-  String get userNotAvailableTitle => 'Account not available';
+  String get userNotAvailableTitle => 'الحساب غير متاح';
 
   @override
-  String get userNotAvailableBody => 'This account isn\'t available right now.';
+  String get userNotAvailableBody => 'هذا الحساب غير متاح في الوقت الحالي.';
 
   @override
   String get classicVinersTitle => 'OG Viners';
@@ -5557,83 +5556,80 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get blossomValidServerUrl =>
-      'Please enter a valid server URL (e.g., https://blossom.band)';
+      'أدخل رابط خادم صالحًا (مثال: https://blossom.band)';
 
   @override
-  String get blossomSettingsSaved => 'Blossom settings saved';
+  String get blossomSettingsSaved => 'تم حفظ إعدادات Blossom';
 
   @override
-  String get blossomSaveTooltip => 'Save';
+  String get blossomSaveTooltip => 'حفظ';
 
   @override
-  String get blossomAboutTitle => 'About Blossom';
+  String get blossomAboutTitle => 'عن Blossom';
 
   @override
   String get blossomAboutDescription =>
-      'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.';
+      'Blossom بروتوكول لتخزين الوسائط لامركزي يتيح لك رفع الفيديوهات إلى أي خادم متوافق. تُرفع الفيديوهات افتراضيًا إلى خادم Blossom الخاص بـ Divine. فعّل الخيار أدناه لاستخدام خادم مخصّص بدلًا من ذلك.';
 
   @override
-  String get blossomUseCustomServer => 'Use Custom Blossom Server';
+  String get blossomUseCustomServer => 'استخدم خادم Blossom مخصّصًا';
 
   @override
   String get blossomCustomServerEnabledSubtitle =>
-      'Videos will be uploaded to your custom Blossom server';
+      'ستُرفع الفيديوهات إلى خادم Blossom المخصّص';
 
   @override
   String get blossomCustomServerDisabledSubtitle =>
-      'Your videos are currently being uploaded to Divine\'s Blossom server';
+      'تُرفع فيديوهاتك حاليًا إلى خادم Blossom الخاص بـ Divine';
 
   @override
-  String get blossomCustomServerUrl => 'Custom Blossom Server URL';
+  String get blossomCustomServerUrl => 'رابط خادم Blossom المخصّص';
 
   @override
-  String get blossomCustomServerHelper =>
-      'Enter the URL of your custom Blossom server';
+  String get blossomCustomServerHelper => 'أدخل رابط خادم Blossom المخصّص';
 
   @override
-  String get blossomPopularServers => 'Popular Blossom Servers';
+  String get blossomPopularServers => 'خوادم Blossom الشائعة';
 
   @override
   String get blossomServerUrlMustUseHttps =>
-      'Blossom server URL must use https://';
+      'يجب أن يستخدم رابط خادم Blossom https://';
 
   @override
   String get blueskyFailedToUpdateCrosspost => 'فشل تحديث إعداد النشر المتقاطع';
 
   @override
-  String get blueskySignInRequired => 'Sign in to manage Bluesky settings';
+  String get blueskySignInRequired => 'سجّل الدخول لإدارة إعدادات Bluesky';
 
   @override
-  String get blueskyPublishVideos => 'Publish videos to Bluesky';
+  String get blueskyPublishVideos => 'نشر الفيديوهات على Bluesky';
 
   @override
-  String get blueskyEnabledSubtitle =>
-      'Your videos will be published to Bluesky';
+  String get blueskyEnabledSubtitle => 'ستُنشر فيديوهاتك على Bluesky';
 
   @override
-  String get blueskyDisabledSubtitle =>
-      'Your videos will not be published to Bluesky';
+  String get blueskyDisabledSubtitle => 'لن تُنشر فيديوهاتك على Bluesky';
 
   @override
-  String get blueskyHandle => 'Bluesky Handle';
+  String get blueskyHandle => 'معرّف Bluesky';
 
   @override
-  String get blueskyStatus => 'Status';
+  String get blueskyStatus => 'الحالة';
 
   @override
-  String get blueskyStatusReady => 'Account provisioned and ready';
+  String get blueskyStatusReady => 'تم تجهيز الحساب وهو جاهز';
 
   @override
-  String get blueskyStatusPending => 'Account provisioning in progress...';
+  String get blueskyStatusPending => 'جاري تجهيز الحساب...';
 
   @override
-  String get blueskyStatusFailed => 'Account provisioning failed';
+  String get blueskyStatusFailed => 'فشل تجهيز الحساب';
 
   @override
-  String get blueskyStatusDisabled => 'Account disabled';
+  String get blueskyStatusDisabled => 'الحساب معطّل';
 
   @override
-  String get blueskyStatusNotLinked => 'No Bluesky account linked';
+  String get blueskyStatusNotLinked => 'لا يوجد حساب Bluesky مرتبط';
 
   @override
   String get invitesTitle => 'دعوة الأصدقاء';
@@ -5657,39 +5653,39 @@ class AppLocalizationsAr extends AppLocalizations {
   String get invitesGenerateButtonLabel => 'Generate invite';
 
   @override
-  String get invitesNoneAvailable => 'No invites available right now';
+  String get invitesNoneAvailable => 'لا توجد دعوات متاحة الآن';
 
   @override
-  String get invitesShareWithPeople => 'Share diVine with people you know';
+  String get invitesShareWithPeople => 'شارك diVine مع من تعرفهم';
 
   @override
-  String get invitesUsedInvites => 'Used invites';
+  String get invitesUsedInvites => 'الدعوات المستخدمة';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Join me on diVine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
+    return 'انضمّ إليّ على diVine! استخدم رمز الدعوة $code للبدء:\nhttps://divine.video/invite/$code';
   }
 
   @override
-  String get invitesCopyInvite => 'Copy invite';
+  String get invitesCopyInvite => 'نسخ الدعوة';
 
   @override
-  String get invitesCopied => 'Invite copied!';
+  String get invitesCopied => 'تم نسخ الدعوة!';
 
   @override
-  String get invitesShareInvite => 'Share invite';
+  String get invitesShareInvite => 'مشاركة الدعوة';
 
   @override
-  String get invitesShareSubject => 'Join me on diVine';
+  String get invitesShareSubject => 'انضمّ إليّ على diVine';
 
   @override
-  String get invitesClaimed => 'Claimed';
+  String get invitesClaimed => 'تم استخدامها';
 
   @override
-  String get invitesCouldNotLoad => 'Could not load invites';
+  String get invitesCouldNotLoad => 'تعذّر تحميل الدعوات';
 
   @override
-  String get invitesRetry => 'Retry';
+  String get invitesRetry => 'إعادة المحاولة';
 
   @override
   String get searchSomethingWentWrong => 'حدث خطأ ما';
@@ -5748,7 +5744,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get keyImportInsecureBunkerRelay =>
-      'Bunker relay must use wss:// (ws:// is allowed only for localhost)';
+      'يجب أن يستخدم محول bunker بروتوكول wss:// (يُسمح بـ ws:// لـ localhost فقط)';
 
   @override
   String get timeNow => 'الآن';
@@ -6658,72 +6654,72 @@ class AppLocalizationsAr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';
 
   @override
-  String get settingsBadgesTitle => 'Badges';
+  String get settingsBadgesTitle => 'الشارات';
 
   @override
   String get settingsBadgesSubtitle =>
-      'Accept awards and check issued badge status.';
+      'اقبل الجوائز وتحقّق من حالة الشارات الممنوحة.';
 
   @override
-  String get badgesTitle => 'Badges';
+  String get badgesTitle => 'الشارات';
 
   @override
-  String get badgesIntroTitle => 'Understand your badge trail';
+  String get badgesIntroTitle => 'افهم سجلّ شاراتك';
 
   @override
   String get badgesIntroBody =>
-      'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.';
+      'اطّلع على جوائز الشارات المرسلة إليك، اختر ما تثبّته على ملفك الشخصي على Nostr، وتحقّق ممّا إذا كان الناس قد قبلوا الشارات التي منحتها.';
 
   @override
-  String get badgesOpenApp => 'Open badges app';
+  String get badgesOpenApp => 'فتح تطبيق الشارات';
 
   @override
-  String get badgesLoadError => 'Could not load badges';
+  String get badgesLoadError => 'تعذّر تحميل الشارات';
 
   @override
-  String get badgesUpdateError => 'Could not update badge';
+  String get badgesUpdateError => 'تعذّر تحديث الشارة';
 
   @override
-  String get badgesAwardedSectionTitle => 'Awarded to you';
+  String get badgesAwardedSectionTitle => 'ممنوحة لك';
 
   @override
-  String get badgesAwardedEmptyTitle => 'No badge awards yet';
+  String get badgesAwardedEmptyTitle => 'لا جوائز شارات بعد';
 
   @override
   String get badgesAwardedEmptySubtitle =>
-      'When someone awards you a Nostr badge, it will land here.';
+      'عندما يمنحك أحدهم شارة Nostr، ستصلك هنا.';
 
   @override
-  String get badgesStatusAccepted => 'Accepted';
+  String get badgesStatusAccepted => 'مقبولة';
 
   @override
-  String get badgesStatusNotAccepted => 'Not accepted';
+  String get badgesStatusNotAccepted => 'غير مقبولة';
 
   @override
-  String get badgesActionRemove => 'Remove';
+  String get badgesActionRemove => 'إزالة';
 
   @override
-  String get badgesActionAccept => 'Accept';
+  String get badgesActionAccept => 'قبول';
 
   @override
-  String get badgesActionReject => 'Reject';
+  String get badgesActionReject => 'رفض';
 
   @override
-  String get badgesIssuedSectionTitle => 'Issued by you';
+  String get badgesIssuedSectionTitle => 'ممنوحة منك';
 
   @override
-  String get badgesIssuedEmptyTitle => 'No issued badges yet';
+  String get badgesIssuedEmptyTitle => 'لا شارات ممنوحة بعد';
 
   @override
   String get badgesIssuedEmptySubtitle =>
-      'Badges you issue will show acceptance status here.';
+      'ستظهر هنا حالة قبول الشارات التي تمنحها.';
 
   @override
-  String get badgesIssuedNoRecipients => 'No recipients found for this award.';
+  String get badgesIssuedNoRecipients => 'لم يُعثر على مستلمين لهذه الجائزة.';
 
   @override
-  String get badgesRecipientAcceptedStatus => 'Accepted by recipient';
+  String get badgesRecipientAcceptedStatus => 'قبِلها المستلم';
 
   @override
-  String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+  String get badgesRecipientWaitingStatus => 'بانتظار المستلم';
 }

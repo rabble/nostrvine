@@ -2666,11 +2666,11 @@
     "videoRecorderWhySixSecondsTitle": "De ce șase secunde?",
     "videoRecorderWhySixSecondsSubtitle": "Clipurile scurte lasă loc pentru spontaneitate. Formatul de 6 secunde te ajută să surprinzi momente autentice exact când se întâmplă.",
     "videoRecorderWhySixSecondsButton": "Am înțeles!",
-  "videoRecorderUploadTitle": "De ce fără upload?",
-  "videoRecorderUploadBody": "Ceea ce vezi pe Divine este făcut de oameni: brut și capturat în moment. Spre deosebire de platformele care permit upload-uri puternic produse sau generate de IA, prioritizăm autenticitatea experienței directe din cameră.",
-  "videoRecorderUploadBodyDetail": "Păstrând crearea în aplicație, putem garanta mai bine că conținutul este real și needitat. Nu deschidem upload-uri din galeria externă în acest moment pentru a proteja acea autenticitate și a menține comunitatea noastră liberă de conținut sintetic pe cât posibil.",
-  "videoRecorderUploadBodyCta": "Treci la Capture sau Classic ca să filmezi ceva real.",
-  "videoRecorderUploadLearnMore": "Află cum funcționează verificarea",
+    "videoRecorderUploadTitle": "De ce fără upload?",
+    "videoRecorderUploadBody": "Ceea ce vezi pe Divine este făcut de oameni: brut și capturat în moment. Spre deosebire de platformele care permit upload-uri puternic produse sau generate de IA, prioritizăm autenticitatea experienței directe din cameră.",
+    "videoRecorderUploadBodyDetail": "Păstrând crearea în aplicație, putem garanta mai bine că conținutul este real și needitat. Nu deschidem upload-uri din galeria externă în acest moment pentru a proteja acea autenticitate și a menține comunitatea noastră liberă de conținut sintetic pe cât posibil.",
+    "videoRecorderUploadBodyCta": "Treci la Capture sau Classic ca să filmezi ceva real.",
+    "videoRecorderUploadLearnMore": "Află cum funcționează verificarea",
     "videoRecorderAutosaveFoundTitle": "Am găsit lucru în desfășurare",
     "videoRecorderAutosaveFoundSubtitle": "Vrei să continui de unde ai rămas?",
     "videoRecorderAutosaveContinueButton": "Da, continuă",
@@ -3053,5 +3053,383 @@
     "peopleListsRemovedFromList": "{name} eliminat/ă din listă",
     "peopleListsUndo": "Anulează",
     "peopleListsProfileLongPressHint": "Profilul lui {name}. Apasă lung pentru a elimina.",
-    "peopleListsViewProfileHint": "Vezi profilul lui {name}"
+    "peopleListsViewProfileHint": "Vezi profilul lui {name}",
+    "settingsGeneralTitle": "Setări generale",
+    "settingsContentSafetyTitle": "Conținut și siguranță",
+    "generalSettingsSectionIntegrations": "INTEGRĂRI",
+    "generalSettingsSectionViewing": "VIZIONARE",
+    "generalSettingsSectionCreating": "CREAȚIE",
+    "generalSettingsSectionApp": "APLICAȚIE",
+    "generalSettingsClosedCaptions": "Subtitrări",
+    "generalSettingsClosedCaptionsSubtitle": "Afișează subtitrările când videoclipurile le includ",
+    "generalSettingsVideoShape": "Forma videoclipurilor",
+    "generalSettingsVideoShapeSquareOnly": "Doar videoclipuri pătrate",
+    "generalSettingsVideoShapeSquareAndPortrait": "Pătrate și portret",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Arată tot amestecul de videoclipuri Divine",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "Păstrează feedurile în formatul clasic pătrat",
+    "contentFiltersAdultContent": "CONȚINUT PENTRU ADULȚI",
+    "contentFiltersViolenceGore": "VIOLENȚĂ ȘI SÂNGE",
+    "contentFiltersSubstances": "SUBSTANȚE",
+    "contentFiltersOther": "ALTELE",
+    "contentFiltersAgeGateMessage": "Verifică-ți vârsta în Setări de siguranță și confidențialitate ca să deblochezi filtrele pentru conținut adult",
+    "contentFiltersShow": "Arată",
+    "contentFiltersWarn": "Avertizează",
+    "contentFiltersFilterOut": "Filtrează",
+    "profileNoSavedVideosTitle": "Încă nimic salvat",
+    "profileSavedOwnEmpty": "Salvează videoclipuri din meniul de partajare și vor apărea aici.",
+    "profileErrorLoadingSaved": "Eroare la încărcarea videoclipurilor salvate",
+    "profileMaybeLaterLabel": "Poate mai târziu",
+    "profileSecurePrimaryButton": "Adaugă email și parolă",
+    "profileCompletePrimaryButton": "Actualizează-ți profilul",
+    "profileLoopsLabel": "Bucle",
+    "profileLikesLabel": "Aprecieri",
+    "profileMyLibraryLabel": "Biblioteca mea",
+    "profileMessageLabel": "Mesaj",
+    "profileUserFallback": "utilizator",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "imagini",
+    "profileSetupExternalNip05InvalidFormat": "Format NIP-05 invalid (ex.: nume@domeniu.com)",
+    "profileSetupExternalNip05DivineDomain": "Folosește câmpul de nume de utilizator de mai sus pentru divine.video",
+    "contentWarningReportContentTooltip": "Raportează conținutul",
+    "contentWarningBlockUserTooltip": "Blochează utilizatorul",
+    "contentWarningBlockedTitle": "Conținut blocat",
+    "contentWarningBlockedPolicy": "Acest conținut a fost blocat din cauza încălcărilor politicii.",
+    "contentWarningNoticeTitle": "Atenționare de conținut",
+    "contentWarningPotentiallyHarmfulTitle": "Conținut potențial dăunător",
+    "contentWarningView": "Vezi",
+    "contentWarningReportAction": "Raportează",
+    "videoActionLikeLabel": "Apreciază",
+    "videoActionReplyLabel": "Răspunde",
+    "videoActionRepostLabel": "Redistribuie",
+    "videoActionShareLabel": "Partajează",
+    "videoActionAboutLabel": "Despre",
+    "videoOverlayOpenMetadataFromTitle": "Deschide detaliile videoclipului",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "Deschide detaliile videoclipului",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "URL-ul relay-ului trebuie să folosească wss:// (ws:// e permis doar pentru localhost)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "Relay extern",
+    "relaySettingsNotConnected": "Neconectat",
+    "relaySettingsDisconnectedAgo": "Deconectat acum {duration}",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "{count, plural, one{1 abonare} few{{count} abonări} other{{count} de abonări}}",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "{count} evenimente",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "acum {duration}",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "Divine folosește protocolul Nostr pentru publicare descentralizată. Conținutul tău trăiește pe relay-urile pe care le alegi, iar cheile tale sunt identitatea ta.",
+    "nostrSettingsSectionNetwork": "Rețea",
+    "nostrSettingsSectionAccount": "Cont",
+    "nostrSettingsSectionDangerZone": "Zonă periculoasă",
+    "nostrSettingsRelays": "Relay-uri",
+    "nostrSettingsRelaysSubtitle": "Gestionează conexiunile cu relay-urile Nostr",
+    "nostrSettingsRelayDiagnostics": "Diagnostic relay",
+    "nostrSettingsRelayDiagnosticsSubtitle": "Depanează conectivitatea relay-ului și problemele de rețea",
+    "nostrSettingsMediaServers": "Servere media",
+    "nostrSettingsMediaServersSubtitle": "Configurează serverele de încărcare Blossom",
+    "nostrSettingsDeveloperOptions": "Opțiuni dezvoltator",
+    "nostrSettingsDeveloperOptionsSubtitle": "Comutator de mediu și setări de depanare",
+    "nostrSettingsExperimentalFeaturesSubtitle": "Activează indicatoare de funcții care s-ar putea să sughițe.",
+    "nostrSettingsKeyManagement": "Gestionare chei",
+    "nostrSettingsKeyManagementSubtitle": "Exportă, fă backup și restaurează cheile tale Nostr",
+    "nostrSettingsRemoveKeys": "Elimină cheile de pe dispozitiv",
+    "nostrSettingsRemoveKeysSubtitle": "Șterge cheia ta privată doar de pe acest dispozitiv. Conținutul tău rămâne pe relay-uri, dar vei avea nevoie de backup-ul nsec ca să-ți accesezi din nou contul.",
+    "nostrSettingsCouldNotRemoveKeys": "N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.",
+    "nostrSettingsFailedToRemoveKeys": "Eliminarea cheilor a eșuat: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "Șterge contul și datele",
+    "nostrSettingsDeleteAccountSubtitle": "Șterge PERMANENT contul tău și TOT conținutul de pe relay-urile Nostr. Asta nu poate fi anulat.",
+    "safetySettingsWhatYouSee": "CE VEZI",
+    "safetySettingsWhatYouPublish": "CE PUBLICI",
+    "listPersonCount": "{count, plural, =1{1 persoană} few{{count} persoane} other{{count} de persoane}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "De ",
+    "keyManagementYourPublicKeyLabel": "Cheia ta publică (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "Copiază cheia publică",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "Cheia publică a fost copiată",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "Vezi cheia ta publică",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "Sunet fără titlu",
+    "soundStopPreview": "Oprește previzualizarea",
+    "soundPreviewSemanticLabel": "Previzualizează {title}",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "Vezi detalii pentru {title}",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "Caută...",
+    "categoryVideoCount": "{count} videoclipuri",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "Descoperă liste",
+    "discoverListsFailedToLoad": "N-am putut încărca listele",
+    "discoverListsFailedToLoadWithError": "N-am putut încărca listele: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "Se descoperă liste publice...",
+    "discoverListsEmptyTitle": "Nicio listă publică găsită",
+    "discoverListsEmptySubtitle": "Revino mai târziu pentru liste noi",
+    "discoverListsByAuthorPrefix": "de",
+    "curatedListEmptyTitle": "Niciun videoclip în această listă",
+    "curatedListEmptySubtitle": "Adaugă câteva videoclipuri ca să începi",
+    "curatedListLoadingVideos": "Se încarcă videoclipurile...",
+    "curatedListFailedToLoad": "N-am putut încărca lista",
+    "curatedListNoVideosAvailable": "Niciun videoclip disponibil",
+    "curatedListVideoNotAvailable": "Videoclip indisponibil",
+    "commonBack": "Înapoi",
+    "commonClose": "Închide",
+    "categoryGalleryNoVideosInCategory": "Niciun videoclip în această categorie",
+    "categoryGallerySortOptionsLabel": "Opțiuni de sortare a categoriei",
+    "categoryGallerySortHot": "În tendințe",
+    "categoryGallerySortNew": "Noi",
+    "categoryGallerySortClassic": "Clasic",
+    "categoryGallerySortForYou": "Pentru tine",
+    "categoriesNoCategoriesAvailable": "Nicio categorie disponibilă",
+    "notificationsEmptyTitle": "Încă nicio activitate",
+    "notificationsEmptySubtitle": "Când oamenii interacționează cu conținutul tău, vei vedea asta aici",
+    "appsPermissionsTitle": "Permisiuni de integrare",
+    "appsPermissionsRevoke": "Revocă",
+    "appsPermissionsEmptyTitle": "Nicio permisiune de integrare salvată",
+    "appsPermissionsEmptySubtitle": "Integrările aprobate vor apărea aici după ce memorezi o aprobare de acces.",
+    "nostrAppPermissionTitle": "{appName} cere aprobarea ta",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "Această aplicație cere acces prin sandbox-ul verificat de Divine.",
+    "nostrAppPermissionOrigin": "Origine",
+    "nostrAppPermissionMethod": "Metodă",
+    "nostrAppPermissionCapability": "Capabilitate",
+    "nostrAppPermissionEventKind": "Tip de eveniment",
+    "nostrAppPermissionAllow": "Permite",
+    "bugReportSendReport": "Trimite raportul",
+    "supportSubjectRequiredLabel": "Subiect *",
+    "supportRequiredHelper": "Obligatoriu",
+    "bugReportSubjectHint": "Scurt rezumat al problemei",
+    "bugReportDescriptionRequiredLabel": "Ce s-a întâmplat? *",
+    "bugReportDescriptionHint": "Descrie problema pe care ai întâlnit-o",
+    "bugReportStepsLabel": "Pași pentru reproducere",
+    "bugReportStepsHint": "1. Mergi la...\n2. Apasă pe...\n3. Vezi eroarea",
+    "bugReportExpectedBehaviorLabel": "Comportament așteptat",
+    "bugReportExpectedBehaviorHint": "Ce ar fi trebuit să se întâmple în schimb?",
+    "bugReportDiagnosticsNotice": "Informațiile despre dispozitiv și jurnalele vor fi incluse automat.",
+    "bugReportSuccessMessage": "Mulțumim! Am primit raportul tău și îl vom folosi ca să facem Divine mai bun.",
+    "bugReportSendFailed": "Trimiterea raportului de bug a eșuat. Încearcă din nou mai târziu.",
+    "bugReportFailedWithError": "Trimiterea raportului de bug a eșuat: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "Trimite cererea",
+    "featureRequestSubjectHint": "Scurt rezumat al ideii tale",
+    "featureRequestDescriptionRequiredLabel": "Ce ți-ar plăcea? *",
+    "featureRequestDescriptionHint": "Descrie funcția pe care o vrei",
+    "featureRequestUsefulnessLabel": "Cum ar fi utilă?",
+    "featureRequestUsefulnessHint": "Explică beneficiul pe care l-ar aduce această funcție",
+    "featureRequestWhenLabel": "Când ai folosi-o?",
+    "featureRequestWhenHint": "Descrie situațiile în care te-ar ajuta",
+    "featureRequestSuccessMessage": "Mulțumim! Am primit cererea ta de funcție și o vom analiza.",
+    "featureRequestSendFailed": "Trimiterea cererii de funcție a eșuat. Încearcă din nou mai târziu.",
+    "featureRequestFailedWithError": "Trimiterea cererii de funcție a eșuat: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "Urmăriți",
+    "followingTitleForName": "Urmăriții lui {displayName}",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "Încă nu urmărești pe nimeni",
+    "followersTitle": "Urmăritori",
+    "followersTitleForName": "Urmăritorii lui {displayName}",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "Încă niciun urmăritor",
+    "followersUpdateFollowFailed": "Actualizarea stării de urmărire a eșuat. Încearcă din nou.",
+    "reportMessageTitle": "Raportează mesajul",
+    "reportMessageWhyReporting": "De ce raportezi acest mesaj?",
+    "reportMessageSelectReason": "Selectează un motiv pentru raportarea acestui mesaj",
+    "newMessageTitle": "Mesaj nou",
+    "newMessageFindPeople": "Găsește oameni",
+    "newMessageNoContacts": "Niciun contact găsit.\nUrmărește oameni ca să-i vezi aici.",
+    "newMessageNoUsersFound": "Niciun utilizator găsit",
+    "hashtagSearchTitle": "Caută hashtaguri",
+    "hashtagSearchSubtitle": "Descoperă subiecte și conținut în tendințe",
+    "hashtagSearchNoResults": "Niciun hashtag găsit pentru „{query}”",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "Căutarea a eșuat",
+    "userNotAvailableTitle": "Cont indisponibil",
+    "userNotAvailableBody": "Acest cont nu e disponibil acum.",
+    "blossomValidServerUrl": "Introdu un URL valid de server (ex.: https://blossom.band)",
+    "blossomSettingsSaved": "Setările Blossom au fost salvate",
+    "blossomSaveTooltip": "Salvează",
+    "blossomAboutTitle": "Despre Blossom",
+    "blossomAboutDescription": "Blossom e un protocol descentralizat de stocare media care îți permite să încarci videoclipuri pe orice server compatibil. Implicit, videoclipurile se încarcă pe serverul Blossom al Divine. Activează opțiunea de mai jos ca să folosești în schimb un server personalizat.",
+    "blossomUseCustomServer": "Folosește un server Blossom personalizat",
+    "blossomCustomServerEnabledSubtitle": "Videoclipurile vor fi încărcate pe serverul tău Blossom personalizat",
+    "blossomCustomServerDisabledSubtitle": "Videoclipurile tale se încarcă în prezent pe serverul Blossom al Divine",
+    "blossomCustomServerUrl": "URL server Blossom personalizat",
+    "blossomCustomServerHelper": "Introdu URL-ul serverului tău Blossom personalizat",
+    "blossomPopularServers": "Servere Blossom populare",
+    "blossomServerUrlMustUseHttps": "URL-ul serverului Blossom trebuie să folosească https://",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "Autentifică-te ca să gestionezi setările Bluesky",
+    "blueskyPublishVideos": "Publică videoclipuri pe Bluesky",
+    "blueskyEnabledSubtitle": "Videoclipurile tale vor fi publicate pe Bluesky",
+    "blueskyDisabledSubtitle": "Videoclipurile tale nu vor fi publicate pe Bluesky",
+    "blueskyHandle": "Handle Bluesky",
+    "blueskyStatus": "Stare",
+    "blueskyStatusReady": "Cont creat și gata",
+    "blueskyStatusPending": "Crearea contului e în curs...",
+    "blueskyStatusFailed": "Crearea contului a eșuat",
+    "blueskyStatusDisabled": "Cont dezactivat",
+    "blueskyStatusNotLinked": "Niciun cont Bluesky conectat",
+    "invitesNoneAvailable": "Nicio invitație disponibilă acum",
+    "invitesShareWithPeople": "Partajează diVine cu oameni pe care îi cunoști",
+    "invitesUsedInvites": "Invitații folosite",
+    "invitesShareMessage": "Vino cu mine pe diVine! Folosește codul de invitație {code} ca să începi:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "Copiază invitația",
+    "invitesCopied": "Invitație copiată!",
+    "invitesShareInvite": "Partajează invitația",
+    "invitesShareSubject": "Vino cu mine pe diVine",
+    "invitesClaimed": "Revendicată",
+    "invitesCouldNotLoad": "N-am putut încărca invitațiile",
+    "invitesRetry": "Reîncearcă",
+    "keyImportInsecureBunkerRelay": "Relay-ul bunker trebuie să folosească wss:// (ws:// e permis doar pentru localhost)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "Insigne",
+    "settingsBadgesSubtitle": "Acceptă premii și verifică starea insignelor emise.",
+    "badgesTitle": "Insigne",
+    "badgesIntroTitle": "Înțelege traseul insignelor tale",
+    "badgesIntroBody": "Vezi premiile cu insigne care ți-au fost trimise, alege ce să fixezi pe profilul tău Nostr și verifică dacă oamenii au acceptat insignele pe care le-ai emis.",
+    "badgesOpenApp": "Deschide aplicația de insigne",
+    "badgesLoadError": "N-am putut încărca insignele",
+    "badgesUpdateError": "N-am putut actualiza insigna",
+    "badgesAwardedSectionTitle": "Acordate ție",
+    "badgesAwardedEmptyTitle": "Încă niciun premiu cu insignă",
+    "badgesAwardedEmptySubtitle": "Când cineva îți acordă o insignă Nostr, va ajunge aici.",
+    "badgesStatusAccepted": "Acceptată",
+    "badgesStatusNotAccepted": "Neacceptată",
+    "badgesActionRemove": "Elimină",
+    "badgesActionAccept": "Acceptă",
+    "badgesActionReject": "Respinge",
+    "badgesIssuedSectionTitle": "Emise de tine",
+    "badgesIssuedEmptyTitle": "Încă nicio insignă emisă",
+    "badgesIssuedEmptySubtitle": "Insignele pe care le emiți vor afișa aici starea de acceptare.",
+    "badgesIssuedNoRecipients": "Niciun destinatar găsit pentru acest premiu.",
+    "badgesRecipientAcceptedStatus": "Acceptată de destinatar",
+    "badgesRecipientWaitingStatus": "Se așteaptă destinatarul"
 }

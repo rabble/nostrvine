@@ -2429,14 +2429,14 @@
     "searchDiscoverSomethingInteresting": "اكتشف شيئًا مثيرًا للاهتمام",
     "searchEnterQuery": "أدخل استعلام البحث",
     "searchFindCuratedVideoLists": "ابحث عن قوائم فيديو مختارة",
-  "searchPeopleSectionHeader": "People",
-  "searchPeopleLoadingLabel": "Loading people results",
-  "searchTagsSectionHeader": "Tags",
-  "searchTagsLoadingLabel": "Loading tag results",
-  "searchVideosSectionHeader": "Videos",
-  "searchVideosLoadingLabel": "Loading video results",
+    "searchPeopleSectionHeader": "People",
+    "searchPeopleLoadingLabel": "Loading people results",
+    "searchTagsSectionHeader": "Tags",
+    "searchTagsLoadingLabel": "Loading tag results",
+    "searchVideosSectionHeader": "Videos",
+    "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "القوائم",
-  "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
+    "searchListsLoadingLabel": "جارٍ تحميل نتائج القوائم",
     "searchForLists": "البحث عن قوائم",
     "commentReplyToPrefix": "رد:",
     "commentHideKeyboard": "Hide keyboard",
@@ -2939,11 +2939,11 @@
     "videoRecorderToggleGhostFrameLabel": "تبديل الإطار الشبحي",
     "videoRecorderToggleGridLabel": "تبديل الشبكة",
     "videoRecorderWhySixSecondsButton": "فهمت!",
-  "videoRecorderUploadTitle": "لماذا لا يوجد رفع؟",
-  "videoRecorderUploadBody": "ما تراه على Divine من صنع البشر: خام وملتقط في اللحظة. بعكس المنصات التي تسمح بمقاطع منتجة بشكل مكثف أو مولّدة بالذكاء الاصطناعي، نُعطي الأولوية لأصالة تجربة الكاميرا المباشرة.",
-  "videoRecorderUploadBodyDetail": "بإبقاء عملية الإنشاء داخل التطبيق، يمكننا ضمان أن المحتوى حقيقي وغير معدّل بشكل أفضل. لا نفتح حاليًا عمليات الرفع من المعرض الخارجي لحماية تلك الأصالة والحفاظ على مجتمعنا خاليًا من المحتوى الاصطناعي قدر الإمكان.",
-  "videoRecorderUploadBodyCta": "انتقل إلى Capture أو Classic لتصوير شيء حقيقي.",
-  "videoRecorderUploadLearnMore": "تعرّف على آلية التحقق",
+    "videoRecorderUploadTitle": "لماذا لا يوجد رفع؟",
+    "videoRecorderUploadBody": "ما تراه على Divine من صنع البشر: خام وملتقط في اللحظة. بعكس المنصات التي تسمح بمقاطع منتجة بشكل مكثف أو مولّدة بالذكاء الاصطناعي، نُعطي الأولوية لأصالة تجربة الكاميرا المباشرة.",
+    "videoRecorderUploadBodyDetail": "بإبقاء عملية الإنشاء داخل التطبيق، يمكننا ضمان أن المحتوى حقيقي وغير معدّل بشكل أفضل. لا نفتح حاليًا عمليات الرفع من المعرض الخارجي لحماية تلك الأصالة والحفاظ على مجتمعنا خاليًا من المحتوى الاصطناعي قدر الإمكان.",
+    "videoRecorderUploadBodyCta": "انتقل إلى Capture أو Classic لتصوير شيء حقيقي.",
+    "videoRecorderUploadLearnMore": "تعرّف على آلية التحقق",
     "videoRecorderWhySixSecondsSubtitle": "المقاطع القصيرة تفسح المجال للتلقائية. يساعدك التنسيق المدته 6 ثوانٍ على التقاط اللحظات الأصيلة فور حدوثها.",
     "videoRecorderWhySixSecondsTitle": "لماذا ست ثوانٍ؟",
     "videoActionAutoLabel": "تلقائي",
@@ -2976,12 +2976,12 @@
     "shareMenuDeleteFailedNotOwner": "يمكنك حذف مقاطع الفيديو الخاصة بك فقط.",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{تكرار} other{تكرارات}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-  "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
-  "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
-  "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
-  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
-  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite",
+    "videoEditorAudioSegmentInstruction": "حدّد مقطع الصوت لفيديوك",
+    "videoEditorClipGalleryInstruction": "اضغط للتعديل. اضغط مطولاً واسحب لإعادة الترتيب.",
+    "fullscreenFeedRemovedMessage": "تمت إزالة الفيديو",
+    "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+    "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+    "invitesGenerateButtonLabel": "Generate invite",
     "profileAvatarLightboxBarrierLabel": "إغلاق الصورة الرمزية",
     "profileAvatarLightboxCloseSemanticLabel": "إغلاق معاينة الصورة الرمزية",
     "notificationsUnreadPrefix": "إشعار غير مقروء",
@@ -3046,5 +3046,390 @@
     "peopleListsRemovedFromList": "تمت إزالة {name} من القائمة",
     "peopleListsUndo": "تراجع",
     "peopleListsProfileLongPressHint": "ملف {name} الشخصي. اضغط مطولًا للإزالة.",
-    "peopleListsViewProfileHint": "عرض ملف {name} الشخصي"
+    "peopleListsViewProfileHint": "عرض ملف {name} الشخصي",
+    "settingsGeneralTitle": "الإعدادات العامة",
+    "settingsContentSafetyTitle": "المحتوى والأمان",
+    "generalSettingsSectionIntegrations": "التكاملات",
+    "generalSettingsSectionViewing": "المشاهدة",
+    "generalSettingsSectionCreating": "الإنشاء",
+    "generalSettingsSectionApp": "التطبيق",
+    "generalSettingsClosedCaptions": "الترجمة المصاحبة",
+    "generalSettingsClosedCaptionsSubtitle": "اعرض الترجمة عندما تتضمّنها الفيديوهات",
+    "generalSettingsVideoShape": "شكل الفيديو",
+    "generalSettingsVideoShapeSquareOnly": "فيديوهات مربّعة فقط",
+    "generalSettingsVideoShapeSquareAndPortrait": "مربّع وعمودي",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "اعرض المزيج الكامل لفيديوهات Divine",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "أبقِ التغذيات بالشكل المربّع الكلاسيكي",
+    "contentFiltersAdultContent": "محتوى للبالغين",
+    "contentFiltersViolenceGore": "العنف والدماء",
+    "contentFiltersSubstances": "المواد",
+    "contentFiltersOther": "أخرى",
+    "contentFiltersAgeGateMessage": "تحقّق من عمرك في إعدادات الأمان والخصوصية لفتح مرشّحات محتوى البالغين",
+    "contentFiltersShow": "عرض",
+    "contentFiltersWarn": "تحذير",
+    "contentFiltersFilterOut": "إخفاء",
+    "profileNoSavedVideosTitle": "لا شيء محفوظ بعد",
+    "profileSavedOwnEmpty": "احفظ الفيديوهات من قائمة المشاركة وستظهر هنا.",
+    "profileErrorLoadingSaved": "خطأ في تحميل الفيديوهات المحفوظة",
+    "profileMaybeLaterLabel": "ربما لاحقًا",
+    "profileSecurePrimaryButton": "أضف بريدًا وكلمة مرور",
+    "profileCompletePrimaryButton": "حدّث ملفك الشخصي",
+    "profileLoopsLabel": "التكرارات",
+    "profileLikesLabel": "الإعجابات",
+    "profileMyLibraryLabel": "مكتبتي",
+    "profileMessageLabel": "رسالة",
+    "profileUserFallback": "مستخدم",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "صور",
+    "profileSetupExternalNip05InvalidFormat": "صيغة NIP-05 غير صالحة (مثال: name@domain.com)",
+    "profileSetupExternalNip05DivineDomain": "استخدم حقل اسم المستخدم أعلاه لـ divine.video",
+    "contentWarningReportContentTooltip": "الإبلاغ عن المحتوى",
+    "contentWarningBlockUserTooltip": "حظر المستخدم",
+    "contentWarningBlockedTitle": "تم حظر المحتوى",
+    "contentWarningBlockedPolicy": "تم حظر هذا المحتوى بسبب مخالفات السياسة.",
+    "contentWarningNoticeTitle": "تنبيه بشأن المحتوى",
+    "contentWarningPotentiallyHarmfulTitle": "محتوى قد يكون ضارًّا",
+    "contentWarningView": "عرض",
+    "contentWarningReportAction": "إبلاغ",
+    "videoActionLikeLabel": "إعجاب",
+    "videoActionReplyLabel": "ردّ",
+    "videoActionRepostLabel": "إعادة نشر",
+    "videoActionShareLabel": "مشاركة",
+    "videoActionAboutLabel": "حول",
+    "videoOverlayOpenMetadataFromTitle": "فتح تفاصيل الفيديو",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "فتح تفاصيل الفيديو",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "يجب أن يستخدم رابط المحول wss:// (يُسمح بـ ws:// لـ localhost فقط)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "محول خارجي",
+    "relaySettingsNotConnected": "غير متصل",
+    "relaySettingsDisconnectedAgo": "انقطع منذ {duration}",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "{count} اشتراك",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "{count} حدث",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "منذ {duration}",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "يستخدم Divine بروتوكول Nostr للنشر اللامركزي. يعيش محتواك على المحولات التي تختارها، ومفاتيحك هي هويتك.",
+    "nostrSettingsSectionNetwork": "الشبكة",
+    "nostrSettingsSectionAccount": "الحساب",
+    "nostrSettingsSectionDangerZone": "منطقة الخطر",
+    "nostrSettingsRelays": "المحولات",
+    "nostrSettingsRelaysSubtitle": "أدر اتصالات محولات Nostr",
+    "nostrSettingsRelayDiagnostics": "تشخيص المحولات",
+    "nostrSettingsRelayDiagnosticsSubtitle": "تصحيح اتصال المحولات ومشكلات الشبكة",
+    "nostrSettingsMediaServers": "خوادم الوسائط",
+    "nostrSettingsMediaServersSubtitle": "إعداد خوادم الرفع Blossom",
+    "nostrSettingsDeveloperOptions": "خيارات المطوّر",
+    "nostrSettingsDeveloperOptionsSubtitle": "مبدّل البيئة وإعدادات التصحيح",
+    "nostrSettingsExperimentalFeaturesSubtitle": "تعديلات قد تتعثّر.",
+    "nostrSettingsKeyManagement": "إدارة المفاتيح",
+    "nostrSettingsKeyManagementSubtitle": "تصدير مفاتيح Nostr ونسخها واستعادتها",
+    "nostrSettingsRemoveKeys": "إزالة المفاتيح من الجهاز",
+    "nostrSettingsRemoveKeysSubtitle": "احذف مفتاحك الخاص من هذا الجهاز فقط. سيبقى محتواك على المحولات، لكنّك ستحتاج إلى نسخة nsec الاحتياطية للوصول إلى حسابك مرّة أخرى.",
+    "nostrSettingsCouldNotRemoveKeys": "تعذّرت إزالة المفاتيح من هذا الجهاز. حاول مرّة أخرى.",
+    "nostrSettingsFailedToRemoveKeys": "فشلت إزالة المفاتيح: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "حذف الحساب والبيانات",
+    "nostrSettingsDeleteAccountSubtitle": "احذف حسابك وكلّ محتواك من محولات Nostr بشكل دائم. لا يمكن التراجع عن هذا الإجراء.",
+    "safetySettingsWhatYouSee": "ما تراه",
+    "safetySettingsWhatYouPublish": "ما تنشره",
+    "authConfirmPasswordLabel": "تأكيد كلمة المرور",
+    "authEmailRequired": "البريد الإلكتروني مطلوب",
+    "authEmailInvalid": "أدخل بريدًا إلكترونيًا صالحًا",
+    "authPasswordRequired": "كلمة المرور مطلوبة",
+    "authConfirmPasswordRequired": "أكّد كلمة المرور",
+    "authPasswordsDoNotMatch": "كلمتا المرور غير متطابقتين",
+    "authConfirmNewPasswordLabel": "تأكيد كلمة المرور الجديدة",
+    "listPersonCount": "{count, plural, zero{لا أحد} one{شخص واحد} two{شخصان} few{{count} أشخاص} many{{count} شخصًا} other{{count} شخص}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "بقلم ",
+    "keyManagementYourPublicKeyLabel": "مفتاحك العام (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "نسخ المفتاح العام",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "تم نسخ المفتاح العام",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "عرض مفتاحك العام",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "صوت بلا عنوان",
+    "soundStopPreview": "إيقاف المعاينة",
+    "soundPreviewSemanticLabel": "معاينة {title}",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "عرض تفاصيل {title}",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "بحث...",
+    "categoryVideoCount": "{count} فيديو",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "اكتشف القوائم",
+    "discoverListsFailedToLoad": "فشل تحميل القوائم",
+    "discoverListsFailedToLoadWithError": "فشل تحميل القوائم: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "جاري اكتشاف القوائم العامة...",
+    "discoverListsEmptyTitle": "لم يتم العثور على قوائم عامة",
+    "discoverListsEmptySubtitle": "عاود التحقق لاحقًا لرؤية قوائم جديدة",
+    "discoverListsByAuthorPrefix": "بقلم",
+    "curatedListEmptyTitle": "لا فيديوهات في هذه القائمة",
+    "curatedListEmptySubtitle": "أضف بعض الفيديوهات للبدء",
+    "curatedListLoadingVideos": "جاري تحميل الفيديوهات...",
+    "curatedListFailedToLoad": "فشل تحميل القائمة",
+    "curatedListNoVideosAvailable": "لا توجد فيديوهات متاحة",
+    "curatedListVideoNotAvailable": "الفيديو غير متاح",
+    "commonBack": "رجوع",
+    "commonClose": "إغلاق",
+    "categoryGalleryNoVideosInCategory": "لا فيديوهات في هذه الفئة",
+    "categoryGallerySortOptionsLabel": "خيارات ترتيب الفئة",
+    "categoryGallerySortHot": "الرائج",
+    "categoryGallerySortNew": "الجديد",
+    "categoryGallerySortClassic": "الكلاسيكي",
+    "categoryGallerySortForYou": "لك",
+    "categoriesNoCategoriesAvailable": "لا توجد فئات متاحة",
+    "notificationsEmptyTitle": "لا نشاط بعد",
+    "notificationsEmptySubtitle": "عندما يتفاعل الناس مع محتواك، سترى ذلك هنا",
+    "appsPermissionsTitle": "صلاحيات التكاملات",
+    "appsPermissionsRevoke": "إلغاء",
+    "appsPermissionsEmptyTitle": "لا توجد صلاحيات تكاملات محفوظة",
+    "appsPermissionsEmptySubtitle": "ستظهر التكاملات الموافَق عليها هنا بعد أن تحفظ موافقة الوصول.",
+    "nostrAppPermissionTitle": "{appName} يطلب موافقتك",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "يطلب هذا التطبيق الوصول عبر بيئة Divine الموثوقة.",
+    "nostrAppPermissionOrigin": "الأصل",
+    "nostrAppPermissionMethod": "الطريقة",
+    "nostrAppPermissionCapability": "الإمكانية",
+    "nostrAppPermissionEventKind": "نوع الحدث",
+    "nostrAppPermissionAllow": "السماح",
+    "bugReportSendReport": "إرسال التقرير",
+    "supportSubjectRequiredLabel": "الموضوع *",
+    "supportRequiredHelper": "مطلوب",
+    "bugReportSubjectHint": "ملخّص قصير للمشكلة",
+    "bugReportDescriptionRequiredLabel": "ماذا حدث؟ *",
+    "bugReportDescriptionHint": "صِف المشكلة التي واجهتها",
+    "bugReportStepsLabel": "خطوات إعادة الإنتاج",
+    "bugReportStepsHint": "1. اذهب إلى...\n2. اضغط على...\n3. شاهد الخطأ",
+    "bugReportExpectedBehaviorLabel": "السلوك المتوقّع",
+    "bugReportExpectedBehaviorHint": "ماذا كان يجب أن يحدث بدلًا من ذلك؟",
+    "bugReportDiagnosticsNotice": "ستُرفَق معلومات الجهاز والسجلات تلقائيًا.",
+    "bugReportSuccessMessage": "شكرًا لك! استلمنا تقريرك وسنستخدمه لجعل Divine أفضل.",
+    "bugReportSendFailed": "فشل إرسال تقرير الخطأ. حاول مرّة أخرى لاحقًا.",
+    "bugReportFailedWithError": "فشل إرسال تقرير الخطأ: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "إرسال الطلب",
+    "featureRequestSubjectHint": "ملخّص قصير لفكرتك",
+    "featureRequestDescriptionRequiredLabel": "ماذا تودّ؟ *",
+    "featureRequestDescriptionHint": "صِف الميزة التي تريدها",
+    "featureRequestUsefulnessLabel": "كيف ستكون مفيدة؟",
+    "featureRequestUsefulnessHint": "وضّح الفائدة التي ستقدّمها هذه الميزة",
+    "featureRequestWhenLabel": "متى ستستخدمها؟",
+    "featureRequestWhenHint": "صِف المواقف التي ستساعد فيها",
+    "featureRequestSuccessMessage": "شكرًا لك! استلمنا طلب الميزة وسنراجعه.",
+    "featureRequestSendFailed": "فشل إرسال طلب الميزة. حاول مرّة أخرى لاحقًا.",
+    "featureRequestFailedWithError": "فشل إرسال طلب الميزة: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "المتابَعون",
+    "followingTitleForName": "متابَعو {displayName}",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "لا تتابع أحدًا بعد",
+    "followersTitle": "المتابِعون",
+    "followersTitleForName": "متابِعو {displayName}",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "لا متابِعون بعد",
+    "followersUpdateFollowFailed": "فشل تحديث حالة المتابعة. حاول مرّة أخرى.",
+    "reportMessageTitle": "الإبلاغ عن الرسالة",
+    "reportMessageWhyReporting": "لماذا تبلّغ عن هذه الرسالة؟",
+    "reportMessageSelectReason": "اختر سببًا للإبلاغ عن هذه الرسالة",
+    "newMessageTitle": "رسالة جديدة",
+    "newMessageFindPeople": "ابحث عن أشخاص",
+    "newMessageNoContacts": "لا جهات اتصال.\nتابع الناس لتراهم هنا.",
+    "newMessageNoUsersFound": "لم يُعثر على مستخدمين",
+    "hashtagSearchTitle": "ابحث عن وسوم",
+    "hashtagSearchSubtitle": "اكتشف المواضيع والمحتوى الرائج",
+    "hashtagSearchNoResults": "لم يُعثر على وسوم لـ \"{query}\"",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "فشل البحث",
+    "userNotAvailableTitle": "الحساب غير متاح",
+    "userNotAvailableBody": "هذا الحساب غير متاح في الوقت الحالي.",
+    "blossomValidServerUrl": "أدخل رابط خادم صالحًا (مثال: https://blossom.band)",
+    "blossomSettingsSaved": "تم حفظ إعدادات Blossom",
+    "blossomSaveTooltip": "حفظ",
+    "blossomAboutTitle": "عن Blossom",
+    "blossomAboutDescription": "Blossom بروتوكول لتخزين الوسائط لامركزي يتيح لك رفع الفيديوهات إلى أي خادم متوافق. تُرفع الفيديوهات افتراضيًا إلى خادم Blossom الخاص بـ Divine. فعّل الخيار أدناه لاستخدام خادم مخصّص بدلًا من ذلك.",
+    "blossomUseCustomServer": "استخدم خادم Blossom مخصّصًا",
+    "blossomCustomServerEnabledSubtitle": "ستُرفع الفيديوهات إلى خادم Blossom المخصّص",
+    "blossomCustomServerDisabledSubtitle": "تُرفع فيديوهاتك حاليًا إلى خادم Blossom الخاص بـ Divine",
+    "blossomCustomServerUrl": "رابط خادم Blossom المخصّص",
+    "blossomCustomServerHelper": "أدخل رابط خادم Blossom المخصّص",
+    "blossomPopularServers": "خوادم Blossom الشائعة",
+    "blossomServerUrlMustUseHttps": "يجب أن يستخدم رابط خادم Blossom https://",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "سجّل الدخول لإدارة إعدادات Bluesky",
+    "blueskyPublishVideos": "نشر الفيديوهات على Bluesky",
+    "blueskyEnabledSubtitle": "ستُنشر فيديوهاتك على Bluesky",
+    "blueskyDisabledSubtitle": "لن تُنشر فيديوهاتك على Bluesky",
+    "blueskyHandle": "معرّف Bluesky",
+    "blueskyStatus": "الحالة",
+    "blueskyStatusReady": "تم تجهيز الحساب وهو جاهز",
+    "blueskyStatusPending": "جاري تجهيز الحساب...",
+    "blueskyStatusFailed": "فشل تجهيز الحساب",
+    "blueskyStatusDisabled": "الحساب معطّل",
+    "blueskyStatusNotLinked": "لا يوجد حساب Bluesky مرتبط",
+    "invitesNoneAvailable": "لا توجد دعوات متاحة الآن",
+    "invitesShareWithPeople": "شارك diVine مع من تعرفهم",
+    "invitesUsedInvites": "الدعوات المستخدمة",
+    "invitesShareMessage": "انضمّ إليّ على diVine! استخدم رمز الدعوة {code} للبدء:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "نسخ الدعوة",
+    "invitesCopied": "تم نسخ الدعوة!",
+    "invitesShareInvite": "مشاركة الدعوة",
+    "invitesShareSubject": "انضمّ إليّ على diVine",
+    "invitesClaimed": "تم استخدامها",
+    "invitesCouldNotLoad": "تعذّر تحميل الدعوات",
+    "invitesRetry": "إعادة المحاولة",
+    "keyImportInsecureBunkerRelay": "يجب أن يستخدم محول bunker بروتوكول wss:// (يُسمح بـ ws:// لـ localhost فقط)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "الشارات",
+    "settingsBadgesSubtitle": "اقبل الجوائز وتحقّق من حالة الشارات الممنوحة.",
+    "badgesTitle": "الشارات",
+    "badgesIntroTitle": "افهم سجلّ شاراتك",
+    "badgesIntroBody": "اطّلع على جوائز الشارات المرسلة إليك، اختر ما تثبّته على ملفك الشخصي على Nostr، وتحقّق ممّا إذا كان الناس قد قبلوا الشارات التي منحتها.",
+    "badgesOpenApp": "فتح تطبيق الشارات",
+    "badgesLoadError": "تعذّر تحميل الشارات",
+    "badgesUpdateError": "تعذّر تحديث الشارة",
+    "badgesAwardedSectionTitle": "ممنوحة لك",
+    "badgesAwardedEmptyTitle": "لا جوائز شارات بعد",
+    "badgesAwardedEmptySubtitle": "عندما يمنحك أحدهم شارة Nostr، ستصلك هنا.",
+    "badgesStatusAccepted": "مقبولة",
+    "badgesStatusNotAccepted": "غير مقبولة",
+    "badgesActionRemove": "إزالة",
+    "badgesActionAccept": "قبول",
+    "badgesActionReject": "رفض",
+    "badgesIssuedSectionTitle": "ممنوحة منك",
+    "badgesIssuedEmptyTitle": "لا شارات ممنوحة بعد",
+    "badgesIssuedEmptySubtitle": "ستظهر هنا حالة قبول الشارات التي تمنحها.",
+    "badgesIssuedNoRecipients": "لم يُعثر على مستلمين لهذه الجائزة.",
+    "badgesRecipientAcceptedStatus": "قبِلها المستلم",
+    "badgesRecipientWaitingStatus": "بانتظار المستلم"
 }

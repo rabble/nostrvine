@@ -1725,14 +1725,14 @@
     "searchDiscoverSomethingInteresting": "흥미로운 것을 발견해보세요",
     "searchEnterQuery": "검색어를 입력하세요",
     "searchFindCuratedVideoLists": "큐레이션된 동영상 목록 찾기",
-  "searchPeopleSectionHeader": "People",
-  "searchPeopleLoadingLabel": "Loading people results",
-  "searchTagsSectionHeader": "Tags",
-  "searchTagsLoadingLabel": "Loading tag results",
-  "searchVideosSectionHeader": "Videos",
-  "searchVideosLoadingLabel": "Loading video results",
+    "searchPeopleSectionHeader": "People",
+    "searchPeopleLoadingLabel": "Loading people results",
+    "searchTagsSectionHeader": "Tags",
+    "searchTagsLoadingLabel": "Loading tag results",
+    "searchVideosSectionHeader": "Videos",
+    "searchVideosLoadingLabel": "Loading video results",
     "searchListsSectionHeader": "목록",
-  "searchListsLoadingLabel": "목록 결과 불러오는 중",
+    "searchListsLoadingLabel": "목록 결과 불러오는 중",
     "searchForLists": "목록 검색",
     "commentReplyToPrefix": "Re:",
     "commentHideKeyboard": "Hide keyboard",
@@ -2235,11 +2235,11 @@
     "videoRecorderToggleGhostFrameLabel": "고스트 프레임 전환",
     "videoRecorderToggleGridLabel": "그리드 전환",
     "videoRecorderWhySixSecondsButton": "알겠어요!",
-  "videoRecorderUploadTitle": "왜 업로드가 없나요?",
-  "videoRecorderUploadBody": "Divine에서 보는 콘텐츠는 사람이 만든 것입니다. 가공되지 않고 그 순간에 촬영된 것이죠. 고도로 제작되거나 AI로 생성된 업로드를 허용하는 플랫폼과는 달리, 우리는 카메라 직촬 경험의 진정성을 우선시합니다.",
-  "videoRecorderUploadBodyDetail": "제작을 앱 안에서 유지함으로써, 콘텐츠가 실제이며 편집되지 않았음을 더 잘 보장할 수 있습니다. 그 진정성을 보호하고 커뮤니티를 합성 콘텐츠로부터 최대한 자유롭게 유지하기 위해, 현재로서는 외부 갤러리 업로드를 열어두지 않고 있습니다.",
-  "videoRecorderUploadBodyCta": "진짜를 찍으려면 Capture나 Classic으로 전환하세요.",
-  "videoRecorderUploadLearnMore": "검증이 어떻게 작동하는지 알아보기",
+    "videoRecorderUploadTitle": "왜 업로드가 없나요?",
+    "videoRecorderUploadBody": "Divine에서 보는 콘텐츠는 사람이 만든 것입니다. 가공되지 않고 그 순간에 촬영된 것이죠. 고도로 제작되거나 AI로 생성된 업로드를 허용하는 플랫폼과는 달리, 우리는 카메라 직촬 경험의 진정성을 우선시합니다.",
+    "videoRecorderUploadBodyDetail": "제작을 앱 안에서 유지함으로써, 콘텐츠가 실제이며 편집되지 않았음을 더 잘 보장할 수 있습니다. 그 진정성을 보호하고 커뮤니티를 합성 콘텐츠로부터 최대한 자유롭게 유지하기 위해, 현재로서는 외부 갤러리 업로드를 열어두지 않고 있습니다.",
+    "videoRecorderUploadBodyCta": "진짜를 찍으려면 Capture나 Classic으로 전환하세요.",
+    "videoRecorderUploadLearnMore": "검증이 어떻게 작동하는지 알아보기",
     "videoRecorderWhySixSecondsSubtitle": "짧은 클립은 자발성을 위한 공간을 만듭니다. 6초 형식은 순간이 일어나는 그대로 진정성 있는 순간을 포착하는 데 도움이 됩니다.",
     "videoRecorderWhySixSecondsTitle": "왜 6초인가요?",
     "videoActionAutoLabel": "자동",
@@ -2272,12 +2272,12 @@
     "shareMenuDeleteFailedNotOwner": "내가 올린 영상만 삭제할 수 있어요.",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, other{루프}}",
     "shareMenuDeleteFailedRelayRejected": "Couldn't reach the relay. Check your connection and try again.",
-  "videoEditorAudioSegmentInstruction": "동영상에 사용할 오디오 구간을 선택하세요",
-  "videoEditorClipGalleryInstruction": "탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.",
-  "fullscreenFeedRemovedMessage": "동영상이 삭제됐어요",
-  "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
-  "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
-  "invitesGenerateButtonLabel": "Generate invite",
+    "videoEditorAudioSegmentInstruction": "동영상에 사용할 오디오 구간을 선택하세요",
+    "videoEditorClipGalleryInstruction": "탭해서 편집하세요. 길게 누르고 드래그해 순서를 바꾸세요.",
+    "fullscreenFeedRemovedMessage": "동영상이 삭제됐어요",
+    "invitesGenerateCardTitle": "{count, plural, =1{1 invite ready to generate} other{{count} invites ready to generate}}",
+    "invitesGenerateCardSubtitle": "Generate a code when you are ready to share one.",
+    "invitesGenerateButtonLabel": "Generate invite",
     "profileAvatarLightboxBarrierLabel": "아바타 닫기",
     "profileAvatarLightboxCloseSemanticLabel": "아바타 미리보기 닫기",
     "notificationsUnreadPrefix": "읽지 않은 알림",
@@ -2342,5 +2342,390 @@
     "peopleListsRemovedFromList": "목록에서 {name} 삭제됨",
     "peopleListsUndo": "실행 취소",
     "peopleListsProfileLongPressHint": "{name}의 프로필. 길게 눌러 삭제하세요.",
-    "peopleListsViewProfileHint": "{name}의 프로필 보기"
+    "peopleListsViewProfileHint": "{name}의 프로필 보기",
+    "settingsGeneralTitle": "일반 설정",
+    "settingsContentSafetyTitle": "콘텐츠 및 안전",
+    "generalSettingsSectionIntegrations": "연동",
+    "generalSettingsSectionViewing": "시청",
+    "generalSettingsSectionCreating": "만들기",
+    "generalSettingsSectionApp": "앱",
+    "generalSettingsClosedCaptions": "자막",
+    "generalSettingsClosedCaptionsSubtitle": "영상에 자막이 있을 때 보여줘요",
+    "generalSettingsVideoShape": "영상 모양",
+    "generalSettingsVideoShapeSquareOnly": "정사각형 영상만",
+    "generalSettingsVideoShapeSquareAndPortrait": "정사각형 및 세로형",
+    "generalSettingsVideoShapeSquareAndPortraitSubtitle": "Divine 영상의 모든 종류를 보여줘요",
+    "generalSettingsVideoShapeSquareOnlySubtitle": "피드를 클래식한 정사각형으로 유지해요",
+    "contentFiltersAdultContent": "성인 콘텐츠",
+    "contentFiltersViolenceGore": "폭력 및 잔혹 묘사",
+    "contentFiltersSubstances": "약물",
+    "contentFiltersOther": "기타",
+    "contentFiltersAgeGateMessage": "성인 콘텐츠 필터를 사용하려면 안전 및 개인정보 설정에서 나이를 인증해주세요",
+    "contentFiltersShow": "보이기",
+    "contentFiltersWarn": "경고",
+    "contentFiltersFilterOut": "걸러내기",
+    "profileNoSavedVideosTitle": "아직 저장한 게 없어요",
+    "profileSavedOwnEmpty": "공유 시트에서 영상을 북마크하면 여기에 표시돼요.",
+    "profileErrorLoadingSaved": "저장한 영상을 불러오지 못했어요",
+    "profileMaybeLaterLabel": "나중에",
+    "profileSecurePrimaryButton": "이메일과 비밀번호 추가",
+    "profileCompletePrimaryButton": "프로필 업데이트",
+    "profileLoopsLabel": "루프",
+    "profileLikesLabel": "좋아요",
+    "profileMyLibraryLabel": "내 라이브러리",
+    "profileMessageLabel": "메시지",
+    "profileUserFallback": "사용자",
+    "@profileUserFallback": {
+        "description": "Generic fallback noun for a user whose display name is unknown. Used in sentences like 'Unfollow {user}?'."
+    },
+    "profileSetupImagesTypeGroup": "이미지",
+    "profileSetupExternalNip05InvalidFormat": "잘못된 NIP-05 형식이에요 (예: name@domain.com)",
+    "profileSetupExternalNip05DivineDomain": "divine.video는 위의 사용자명 필드를 사용해주세요",
+    "contentWarningReportContentTooltip": "콘텐츠 신고",
+    "contentWarningBlockUserTooltip": "사용자 차단",
+    "contentWarningBlockedTitle": "콘텐츠가 차단됐어요",
+    "contentWarningBlockedPolicy": "정책 위반으로 이 콘텐츠가 차단됐어요.",
+    "contentWarningNoticeTitle": "콘텐츠 안내",
+    "contentWarningPotentiallyHarmfulTitle": "유해할 수 있는 콘텐츠",
+    "contentWarningView": "보기",
+    "contentWarningReportAction": "신고",
+    "videoActionLikeLabel": "좋아요",
+    "videoActionReplyLabel": "답글",
+    "videoActionRepostLabel": "리포스트",
+    "videoActionShareLabel": "공유",
+    "videoActionAboutLabel": "정보",
+    "videoOverlayOpenMetadataFromTitle": "영상 세부 정보 열기",
+    "@videoOverlayOpenMetadataFromTitle": {
+        "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
+    },
+    "videoOverlayOpenMetadataFromDescription": "영상 세부 정보 열기",
+    "@videoOverlayOpenMetadataFromDescription": {
+        "description": "Screen-reader label for the tappable description row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the description text itself — that's already read aloud by the underlying Text widget."
+    },
+    "relaySettingsInsecureUrl": "릴레이 URL은 wss://를 써야 해요 (ws://는 localhost에서만 허용돼요)",
+    "@relaySettingsInsecureUrl": {
+        "description": "Shown when a user enters a relay URL that uses cleartext ws:// or http:// for a non-loopback host. Pairs with relaySettingsInvalidUrl which is for malformed URLs."
+    },
+    "relaySettingsExternalRelay": "외부 릴레이",
+    "relaySettingsNotConnected": "연결되지 않음",
+    "relaySettingsDisconnectedAgo": "{duration} 전에 연결 끊김",
+    "@relaySettingsDisconnectedAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsSubscriptionsSummary": "구독 {count}개",
+    "@relaySettingsSubscriptionsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "relaySettingsEventsSummary": "이벤트 {count}개",
+    "@relaySettingsEventsSummary": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "relaySettingsTimeAgo": "{duration} 전",
+    "@relaySettingsTimeAgo": {
+        "placeholders": {
+            "duration": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsIntro": "Divine은 분산형 게시를 위해 Nostr 프로토콜을 써요. 콘텐츠는 당신이 고른 릴레이에 저장되고, 키가 곧 당신의 신원이에요.",
+    "nostrSettingsSectionNetwork": "네트워크",
+    "nostrSettingsSectionAccount": "계정",
+    "nostrSettingsSectionDangerZone": "위험 구역",
+    "nostrSettingsRelays": "릴레이",
+    "nostrSettingsRelaysSubtitle": "Nostr 릴레이 연결을 관리해요",
+    "nostrSettingsRelayDiagnostics": "릴레이 진단",
+    "nostrSettingsRelayDiagnosticsSubtitle": "릴레이 연결과 네트워크 문제를 디버그해요",
+    "nostrSettingsMediaServers": "미디어 서버",
+    "nostrSettingsMediaServersSubtitle": "Blossom 업로드 서버를 설정해요",
+    "nostrSettingsDeveloperOptions": "개발자 옵션",
+    "nostrSettingsDeveloperOptionsSubtitle": "환경 전환과 디버그 설정",
+    "nostrSettingsExperimentalFeaturesSubtitle": "삐걱댈 수 있는 기능 플래그를 켜고 꺼봐요.",
+    "nostrSettingsKeyManagement": "키 관리",
+    "nostrSettingsKeyManagementSubtitle": "Nostr 키를 내보내고, 백업하고, 복원해요",
+    "nostrSettingsRemoveKeys": "기기에서 키 제거",
+    "nostrSettingsRemoveKeysSubtitle": "이 기기에서만 개인 키를 삭제해요. 콘텐츠는 릴레이에 그대로 남지만, 다시 계정에 접근하려면 nsec 백업이 필요해요.",
+    "nostrSettingsCouldNotRemoveKeys": "이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.",
+    "nostrSettingsFailedToRemoveKeys": "키 제거에 실패했어요: {error}",
+    "@nostrSettingsFailedToRemoveKeys": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrSettingsDeleteAccount": "계정 및 데이터 삭제",
+    "nostrSettingsDeleteAccountSubtitle": "Nostr 릴레이에서 계정과 모든 콘텐츠를 영구히 삭제해요. 되돌릴 수 없어요.",
+    "safetySettingsWhatYouSee": "보이는 것",
+    "safetySettingsWhatYouPublish": "게시하는 것",
+    "authConfirmPasswordLabel": "비밀번호 확인",
+    "authEmailRequired": "이메일을 입력해주세요",
+    "authEmailInvalid": "올바른 이메일을 입력해주세요",
+    "authPasswordRequired": "비밀번호를 입력해주세요",
+    "authConfirmPasswordRequired": "비밀번호를 다시 입력해주세요",
+    "authPasswordsDoNotMatch": "비밀번호가 일치하지 않아요",
+    "authConfirmNewPasswordLabel": "새 비밀번호 확인",
+    "listPersonCount": "{count, plural, =1{1명} other{{count}명}}",
+    "@listPersonCount": {
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "listByAuthorPrefix": "작성자: ",
+    "keyManagementYourPublicKeyLabel": "공개 키 (npub)",
+    "@keyManagementYourPublicKeyLabel": {
+        "description": "Label above the truncated npub display on the key management screen."
+    },
+    "keyManagementCopyPublicKeyTooltip": "공개 키 복사",
+    "@keyManagementCopyPublicKeyTooltip": {
+        "description": "Tooltip / accessibility label for the copy-to-clipboard icon button next to the user's npub."
+    },
+    "keyManagementPublicKeyCopied": "공개 키를 복사했어요",
+    "@keyManagementPublicKeyCopied": {
+        "description": "SnackBar shown after the user taps the copy icon next to their npub."
+    },
+    "profileEditPublicKeyLink": "공개 키 보기",
+    "@profileEditPublicKeyLink": {
+        "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "soundUntitled": "제목 없는 사운드",
+    "soundStopPreview": "미리 듣기 중지",
+    "soundPreviewSemanticLabel": "{title} 미리 듣기",
+    "@soundPreviewSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "soundViewDetailsSemanticLabel": "{title} 세부 정보 보기",
+    "@soundViewDetailsSemanticLabel": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "exploreSearchHint": "검색...",
+    "categoryVideoCount": "영상 {count}개",
+    "@categoryVideoCount": {
+        "placeholders": {
+            "count": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsTitle": "리스트 둘러보기",
+    "discoverListsFailedToLoad": "리스트를 불러오지 못했어요",
+    "discoverListsFailedToLoadWithError": "리스트를 불러오지 못했어요: {error}",
+    "@discoverListsFailedToLoadWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "discoverListsLoading": "공개 리스트를 찾는 중...",
+    "discoverListsEmptyTitle": "공개 리스트를 찾지 못했어요",
+    "discoverListsEmptySubtitle": "새 리스트가 올라오면 다시 와봐요",
+    "discoverListsByAuthorPrefix": "작성자",
+    "curatedListEmptyTitle": "이 리스트에 영상이 없어요",
+    "curatedListEmptySubtitle": "영상을 추가해서 시작해보세요",
+    "curatedListLoadingVideos": "영상 불러오는 중...",
+    "curatedListFailedToLoad": "리스트를 불러오지 못했어요",
+    "curatedListNoVideosAvailable": "사용할 수 있는 영상이 없어요",
+    "curatedListVideoNotAvailable": "영상을 사용할 수 없어요",
+    "commonBack": "뒤로",
+    "commonClose": "닫기",
+    "categoryGalleryNoVideosInCategory": "이 카테고리에 영상이 없어요",
+    "categoryGallerySortOptionsLabel": "카테고리 정렬 옵션",
+    "categoryGallerySortHot": "인기",
+    "categoryGallerySortNew": "최신",
+    "categoryGallerySortClassic": "클래식",
+    "categoryGallerySortForYou": "추천",
+    "categoriesNoCategoriesAvailable": "사용할 수 있는 카테고리가 없어요",
+    "notificationsEmptyTitle": "아직 활동이 없어요",
+    "notificationsEmptySubtitle": "다른 사람들이 내 콘텐츠에 반응하면 여기에 표시돼요",
+    "appsPermissionsTitle": "연동 권한",
+    "appsPermissionsRevoke": "취소",
+    "appsPermissionsEmptyTitle": "저장된 연동 권한이 없어요",
+    "appsPermissionsEmptySubtitle": "접근을 승인하고 기억해두면 승인된 연동이 여기에 표시돼요.",
+    "nostrAppPermissionTitle": "{appName}이(가) 승인을 요청해요",
+    "@nostrAppPermissionTitle": {
+        "placeholders": {
+            "appName": {
+                "type": "String"
+            }
+        }
+    },
+    "nostrAppPermissionDescription": "이 앱은 Divine의 검증된 샌드박스를 통해 접근을 요청하고 있어요.",
+    "nostrAppPermissionOrigin": "출처",
+    "nostrAppPermissionMethod": "메서드",
+    "nostrAppPermissionCapability": "권한",
+    "nostrAppPermissionEventKind": "이벤트 종류",
+    "nostrAppPermissionAllow": "허용",
+    "bugReportSendReport": "신고 보내기",
+    "supportSubjectRequiredLabel": "제목 *",
+    "supportRequiredHelper": "필수",
+    "bugReportSubjectHint": "문제를 짧게 요약해주세요",
+    "bugReportDescriptionRequiredLabel": "무슨 일이 있었나요? *",
+    "bugReportDescriptionHint": "겪은 문제를 설명해주세요",
+    "bugReportStepsLabel": "재현 단계",
+    "bugReportStepsHint": "1. ...로 이동\n2. ...을 탭\n3. 오류 발생",
+    "bugReportExpectedBehaviorLabel": "예상한 동작",
+    "bugReportExpectedBehaviorHint": "원래 어떻게 됐어야 했나요?",
+    "bugReportDiagnosticsNotice": "기기 정보와 로그가 자동으로 함께 보내져요.",
+    "bugReportSuccessMessage": "고마워요! 신고를 받았어요. Divine을 더 좋게 만드는 데 쓸게요.",
+    "bugReportSendFailed": "버그 신고를 보내지 못했어요. 잠시 후 다시 시도해주세요.",
+    "bugReportFailedWithError": "버그 신고를 보내지 못했어요: {error}",
+    "@bugReportFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "featureRequestSendRequest": "요청 보내기",
+    "featureRequestSubjectHint": "아이디어를 짧게 요약해주세요",
+    "featureRequestDescriptionRequiredLabel": "어떤 기능을 원하세요? *",
+    "featureRequestDescriptionHint": "원하는 기능을 설명해주세요",
+    "featureRequestUsefulnessLabel": "어떻게 도움이 될까요?",
+    "featureRequestUsefulnessHint": "이 기능이 어떤 도움을 주는지 설명해주세요",
+    "featureRequestWhenLabel": "언제 사용하실 건가요?",
+    "featureRequestWhenHint": "이 기능이 도움 될 만한 상황을 설명해주세요",
+    "featureRequestSuccessMessage": "고마워요! 기능 요청을 받았고 검토할게요.",
+    "featureRequestSendFailed": "기능 요청을 보내지 못했어요. 잠시 후 다시 시도해주세요.",
+    "featureRequestFailedWithError": "기능 요청을 보내지 못했어요: {error}",
+    "@featureRequestFailedWithError": {
+        "placeholders": {
+            "error": {
+                "type": "String"
+            }
+        }
+    },
+    "followingTitle": "팔로잉",
+    "followingTitleForName": "{displayName}님의 팔로잉",
+    "@followingTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followingEmptyTitle": "아직 아무도 팔로우하지 않아요",
+    "followersTitle": "팔로워",
+    "followersTitleForName": "{displayName}님의 팔로워",
+    "@followersTitleForName": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "followersEmptyTitle": "아직 팔로워가 없어요",
+    "followersUpdateFollowFailed": "팔로우 상태를 업데이트하지 못했어요. 다시 시도해주세요.",
+    "reportMessageTitle": "메시지 신고",
+    "reportMessageWhyReporting": "왜 이 메시지를 신고하시나요?",
+    "reportMessageSelectReason": "이 메시지를 신고하는 이유를 골라주세요",
+    "newMessageTitle": "새 메시지",
+    "newMessageFindPeople": "사람 찾기",
+    "newMessageNoContacts": "연락처가 없어요.\n사람들을 팔로우하면 여기서 볼 수 있어요.",
+    "newMessageNoUsersFound": "사용자를 찾지 못했어요",
+    "hashtagSearchTitle": "해시태그 검색",
+    "hashtagSearchSubtitle": "인기 토픽과 콘텐츠를 둘러봐요",
+    "hashtagSearchNoResults": "\"{query}\"에 대한 해시태그를 찾지 못했어요",
+    "@hashtagSearchNoResults": {
+        "placeholders": {
+            "query": {
+                "type": "String"
+            }
+        }
+    },
+    "hashtagSearchFailed": "검색에 실패했어요",
+    "userNotAvailableTitle": "계정을 사용할 수 없어요",
+    "userNotAvailableBody": "이 계정은 지금 사용할 수 없어요.",
+    "blossomValidServerUrl": "올바른 서버 URL을 입력해주세요 (예: https://blossom.band)",
+    "blossomSettingsSaved": "Blossom 설정을 저장했어요",
+    "blossomSaveTooltip": "저장",
+    "blossomAboutTitle": "Blossom 정보",
+    "blossomAboutDescription": "Blossom은 분산형 미디어 저장 프로토콜이에요. 호환되는 어떤 서버에든 영상을 올릴 수 있어요. 기본적으로 영상은 Divine의 Blossom 서버로 올라가요. 아래 옵션을 켜면 커스텀 서버를 쓸 수 있어요.",
+    "blossomUseCustomServer": "커스텀 Blossom 서버 사용",
+    "blossomCustomServerEnabledSubtitle": "커스텀 Blossom 서버로 영상이 올라가요",
+    "blossomCustomServerDisabledSubtitle": "지금은 Divine의 Blossom 서버로 영상이 올라가고 있어요",
+    "blossomCustomServerUrl": "커스텀 Blossom 서버 URL",
+    "blossomCustomServerHelper": "커스텀 Blossom 서버 URL을 입력해주세요",
+    "blossomPopularServers": "인기 Blossom 서버",
+    "blossomServerUrlMustUseHttps": "Blossom 서버 URL은 https://를 써야 해요",
+    "@blossomServerUrlMustUseHttps": {
+        "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."
+    },
+    "blueskySignInRequired": "Bluesky 설정을 관리하려면 로그인해주세요",
+    "blueskyPublishVideos": "Bluesky에 영상 게시",
+    "blueskyEnabledSubtitle": "영상이 Bluesky에 게시돼요",
+    "blueskyDisabledSubtitle": "영상이 Bluesky에 게시되지 않아요",
+    "blueskyHandle": "Bluesky 핸들",
+    "blueskyStatus": "상태",
+    "blueskyStatusReady": "계정이 준비됐어요",
+    "blueskyStatusPending": "계정을 준비하는 중...",
+    "blueskyStatusFailed": "계정 준비에 실패했어요",
+    "blueskyStatusDisabled": "계정이 비활성화됐어요",
+    "blueskyStatusNotLinked": "연결된 Bluesky 계정이 없어요",
+    "invitesNoneAvailable": "지금은 사용할 수 있는 초대장이 없어요",
+    "invitesShareWithPeople": "diVine을 아는 사람들과 나눠봐요",
+    "invitesUsedInvites": "사용된 초대장",
+    "invitesShareMessage": "diVine에 함께해요! 초대 코드 {code}로 시작해보세요:\nhttps://divine.video/invite/{code}",
+    "@invitesShareMessage": {
+        "placeholders": {
+            "code": {
+                "type": "String"
+            }
+        }
+    },
+    "invitesCopyInvite": "초대장 복사",
+    "invitesCopied": "초대장을 복사했어요!",
+    "invitesShareInvite": "초대장 공유",
+    "invitesShareSubject": "diVine에 함께해요",
+    "invitesClaimed": "사용됨",
+    "invitesCouldNotLoad": "초대장을 불러오지 못했어요",
+    "invitesRetry": "다시 시도",
+    "keyImportInsecureBunkerRelay": "Bunker 릴레이는 wss://를 써야 해요 (ws://는 localhost에서만 허용돼요)",
+    "@keyImportInsecureBunkerRelay": {
+        "description": "Shown when a pasted bunker:// or nostrconnect:// URL contains a relay parameter that uses cleartext ws:// for a non-loopback host."
+    },
+    "settingsBadgesTitle": "배지",
+    "settingsBadgesSubtitle": "받은 배지를 수락하고 발급한 배지 상태를 확인해요.",
+    "badgesTitle": "배지",
+    "badgesIntroTitle": "내 배지 흔적을 살펴보세요",
+    "badgesIntroBody": "받은 배지를 보고, Nostr 프로필에 어떤 걸 고정할지 고르고, 발급한 배지를 사람들이 수락했는지 확인해요.",
+    "badgesOpenApp": "배지 앱 열기",
+    "badgesLoadError": "배지를 불러오지 못했어요",
+    "badgesUpdateError": "배지를 업데이트하지 못했어요",
+    "badgesAwardedSectionTitle": "받은 배지",
+    "badgesAwardedEmptyTitle": "아직 받은 배지가 없어요",
+    "badgesAwardedEmptySubtitle": "누가 Nostr 배지를 보내면 여기에 표시돼요.",
+    "badgesStatusAccepted": "수락됨",
+    "badgesStatusNotAccepted": "수락 안 함",
+    "badgesActionRemove": "제거",
+    "badgesActionAccept": "수락",
+    "badgesActionReject": "거절",
+    "badgesIssuedSectionTitle": "발급한 배지",
+    "badgesIssuedEmptyTitle": "아직 발급한 배지가 없어요",
+    "badgesIssuedEmptySubtitle": "발급한 배지는 여기에서 수락 상태를 보여줘요.",
+    "badgesIssuedNoRecipients": "이 배지에 대한 수령자를 찾지 못했어요.",
+    "badgesRecipientAcceptedStatus": "수령자가 수락했어요",
+    "badgesRecipientWaitingStatus": "수령자를 기다리는 중"
 }

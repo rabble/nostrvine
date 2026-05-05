@@ -132,47 +132,45 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsAppLanguageUseDeviceLanguage => '기기 언어 사용';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
+  String get settingsGeneralTitle => '일반 설정';
 
   @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
+  String get settingsContentSafetyTitle => '콘텐츠 및 안전';
 
   @override
-  String get generalSettingsSectionIntegrations => 'INTEGRATIONS';
+  String get generalSettingsSectionIntegrations => '연동';
 
   @override
-  String get generalSettingsSectionViewing => 'VIEWING';
+  String get generalSettingsSectionViewing => '시청';
 
   @override
-  String get generalSettingsSectionCreating => 'CREATING';
+  String get generalSettingsSectionCreating => '만들기';
 
   @override
-  String get generalSettingsSectionApp => 'APP';
+  String get generalSettingsSectionApp => '앱';
 
   @override
-  String get generalSettingsClosedCaptions => 'Closed Captions';
+  String get generalSettingsClosedCaptions => '자막';
 
   @override
-  String get generalSettingsClosedCaptionsSubtitle =>
-      'Show captions when videos include them';
+  String get generalSettingsClosedCaptionsSubtitle => '영상에 자막이 있을 때 보여줘요';
 
   @override
-  String get generalSettingsVideoShape => 'Video Shape';
+  String get generalSettingsVideoShape => '영상 모양';
 
   @override
-  String get generalSettingsVideoShapeSquareOnly => 'Square videos only';
+  String get generalSettingsVideoShapeSquareOnly => '정사각형 영상만';
 
   @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Square and portrait';
+  String get generalSettingsVideoShapeSquareAndPortrait => '정사각형 및 세로형';
 
   @override
   String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Show the full mix of Divine videos';
+      'Divine 영상의 모든 종류를 보여줘요';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
-      'Keep feeds in the classic square format';
+      '피드를 클래식한 정사각형으로 유지해요';
 
   @override
   String get contentPreferencesTitle => '콘텐츠 환경설정';
@@ -244,29 +242,29 @@ class AppLocalizationsKo extends AppLocalizations {
   String get contentPreferencesUnknownMicrophone => '알 수 없는 마이크';
 
   @override
-  String get contentFiltersAdultContent => 'ADULT CONTENT';
+  String get contentFiltersAdultContent => '성인 콘텐츠';
 
   @override
-  String get contentFiltersViolenceGore => 'VIOLENCE & GORE';
+  String get contentFiltersViolenceGore => '폭력 및 잔혹 묘사';
 
   @override
-  String get contentFiltersSubstances => 'SUBSTANCES';
+  String get contentFiltersSubstances => '약물';
 
   @override
-  String get contentFiltersOther => 'OTHER';
+  String get contentFiltersOther => '기타';
 
   @override
   String get contentFiltersAgeGateMessage =>
-      'Verify your age in Safety & Privacy settings to unlock adult content filters';
+      '성인 콘텐츠 필터를 사용하려면 안전 및 개인정보 설정에서 나이를 인증해주세요';
 
   @override
-  String get contentFiltersShow => 'Show';
+  String get contentFiltersShow => '보이기';
 
   @override
-  String get contentFiltersWarn => 'Warn';
+  String get contentFiltersWarn => '경고';
 
   @override
-  String get contentFiltersFilterOut => 'Filter Out';
+  String get contentFiltersFilterOut => '걸러내기';
 
   @override
   String get profileBlockedAccountNotAvailable => '이 계정은 이용할 수 없어요';
@@ -458,14 +456,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileErrorLoadingCollabs => '콜라보 영상을 불러오지 못했어요';
 
   @override
-  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+  String get profileNoSavedVideosTitle => '아직 저장한 게 없어요';
 
   @override
-  String get profileSavedOwnEmpty =>
-      'Bookmark videos from the share sheet and they\'ll show up here.';
+  String get profileSavedOwnEmpty => '공유 시트에서 영상을 북마크하면 여기에 표시돼요.';
 
   @override
-  String get profileErrorLoadingSaved => 'Error loading saved videos';
+  String get profileErrorLoadingSaved => '저장한 영상을 불러오지 못했어요';
 
   @override
   String get profileNoCommentsOwnTitle => '아직 댓글 없음';
@@ -595,28 +592,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSignInButton => '로그인';
 
   @override
-  String get profileMaybeLaterLabel => 'Maybe Later';
+  String get profileMaybeLaterLabel => '나중에';
 
   @override
-  String get profileSecurePrimaryButton => 'Add Email & Password';
+  String get profileSecurePrimaryButton => '이메일과 비밀번호 추가';
 
   @override
-  String get profileCompletePrimaryButton => 'Update Your Profile';
+  String get profileCompletePrimaryButton => '프로필 업데이트';
 
   @override
-  String get profileLoopsLabel => 'Loops';
+  String get profileLoopsLabel => '루프';
 
   @override
-  String get profileLikesLabel => 'Likes';
+  String get profileLikesLabel => '좋아요';
 
   @override
-  String get profileMyLibraryLabel => 'My Library';
+  String get profileMyLibraryLabel => '내 라이브러리';
 
   @override
-  String get profileMessageLabel => 'Message';
+  String get profileMessageLabel => '메시지';
 
   @override
-  String get profileUserFallback => 'user';
+  String get profileUserFallback => '사용자';
 
   @override
   String get profileDismissTooltip => '닫기';
@@ -712,7 +709,7 @@ class AppLocalizationsKo extends AppLocalizations {
       '이미지 선택에 실패했어요. 아래에 이미지 URL을 붙여넣어보세요.';
 
   @override
-  String get profileSetupImagesTypeGroup => 'images';
+  String get profileSetupImagesTypeGroup => '이미지';
 
   @override
   String profileSetupCameraAccessFailed(Object error) {
@@ -821,11 +818,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid NIP-05 format (e.g., name@domain.com)';
+      '잘못된 NIP-05 형식이에요 (예: name@domain.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
-      'Use the username field above for divine.video';
+      'divine.video는 위의 사용자명 필드를 사용해주세요';
 
   @override
   String get profileSetupProfilePicturePreview => '프로필 사진 미리보기';
@@ -1135,30 +1132,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get contentWarningViewAnyway => '그래도 보기';
 
   @override
-  String get contentWarningReportContentTooltip => 'Report Content';
+  String get contentWarningReportContentTooltip => '콘텐츠 신고';
 
   @override
-  String get contentWarningBlockUserTooltip => 'Block User';
+  String get contentWarningBlockUserTooltip => '사용자 차단';
 
   @override
-  String get contentWarningBlockedTitle => 'Content Blocked';
+  String get contentWarningBlockedTitle => '콘텐츠가 차단됐어요';
 
   @override
-  String get contentWarningBlockedPolicy =>
-      'This content has been blocked due to policy violations.';
+  String get contentWarningBlockedPolicy => '정책 위반으로 이 콘텐츠가 차단됐어요.';
 
   @override
-  String get contentWarningNoticeTitle => 'Content Notice';
+  String get contentWarningNoticeTitle => '콘텐츠 안내';
 
   @override
-  String get contentWarningPotentiallyHarmfulTitle =>
-      'Potentially Harmful Content';
+  String get contentWarningPotentiallyHarmfulTitle => '유해할 수 있는 콘텐츠';
 
   @override
-  String get contentWarningView => 'View';
+  String get contentWarningView => '보기';
 
   @override
-  String get contentWarningReportAction => 'Report';
+  String get contentWarningReportAction => '신고';
 
   @override
   String get contentWarningHideAllLikeThis => '이런 종류의 콘텐츠 모두 숨기기';
@@ -1310,19 +1305,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionAutoLabel => '자동';
 
   @override
-  String get videoActionLikeLabel => 'Like';
+  String get videoActionLikeLabel => '좋아요';
 
   @override
-  String get videoActionReplyLabel => 'Reply';
+  String get videoActionReplyLabel => '답글';
 
   @override
-  String get videoActionRepostLabel => 'Repost';
+  String get videoActionRepostLabel => '리포스트';
 
   @override
-  String get videoActionShareLabel => 'Share';
+  String get videoActionShareLabel => '공유';
 
   @override
-  String get videoActionAboutLabel => 'About';
+  String get videoActionAboutLabel => '정보';
 
   @override
   String get videoActionEnableAutoAdvance => '자동 넘기기 활성화';
@@ -1349,10 +1344,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShowSubtitles => '자막 표시';
 
   @override
-  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+  String get videoOverlayOpenMetadataFromTitle => '영상 세부 정보 열기';
 
   @override
-  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+  String get videoOverlayOpenMetadataFromDescription => '영상 세부 정보 열기';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -1686,7 +1681,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get relaySettingsInsecureUrl =>
-      'Relay URL must use wss:// (ws:// is allowed only for localhost)';
+      '릴레이 URL은 wss://를 써야 해요 (ws://는 localhost에서만 허용돼요)';
 
   @override
   String relaySettingsRestoredDefault(String defaultRelay) {
@@ -1704,104 +1699,100 @@ class AppLocalizationsKo extends AppLocalizations {
   String get relaySettingsFailedToOpenLink => '링크를 열 수 없어요';
 
   @override
-  String get relaySettingsExternalRelay => 'External relay';
+  String get relaySettingsExternalRelay => '외부 릴레이';
 
   @override
-  String get relaySettingsNotConnected => 'Not connected';
+  String get relaySettingsNotConnected => '연결되지 않음';
 
   @override
   String relaySettingsDisconnectedAgo(String duration) {
-    return 'Disconnected $duration ago';
+    return '$duration 전에 연결 끊김';
   }
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    return '구독 $count개';
   }
 
   @override
   String relaySettingsEventsSummary(String count) {
-    return '$count events';
+    return '이벤트 $count개';
   }
 
   @override
   String relaySettingsTimeAgo(String duration) {
-    return '$duration ago';
+    return '$duration 전';
   }
 
   @override
   String get nostrSettingsIntro =>
-      'Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.';
+      'Divine은 분산형 게시를 위해 Nostr 프로토콜을 써요. 콘텐츠는 당신이 고른 릴레이에 저장되고, 키가 곧 당신의 신원이에요.';
 
   @override
-  String get nostrSettingsSectionNetwork => 'Network';
+  String get nostrSettingsSectionNetwork => '네트워크';
 
   @override
-  String get nostrSettingsSectionAccount => 'Account';
+  String get nostrSettingsSectionAccount => '계정';
 
   @override
-  String get nostrSettingsSectionDangerZone => 'Danger Zone';
+  String get nostrSettingsSectionDangerZone => '위험 구역';
 
   @override
-  String get nostrSettingsRelays => 'Relays';
+  String get nostrSettingsRelays => '릴레이';
 
   @override
-  String get nostrSettingsRelaysSubtitle => 'Manage Nostr relay connections';
+  String get nostrSettingsRelaysSubtitle => 'Nostr 릴레이 연결을 관리해요';
 
   @override
-  String get nostrSettingsRelayDiagnostics => 'Relay Diagnostics';
+  String get nostrSettingsRelayDiagnostics => '릴레이 진단';
 
   @override
-  String get nostrSettingsRelayDiagnosticsSubtitle =>
-      'Debug relay connectivity and network issues';
+  String get nostrSettingsRelayDiagnosticsSubtitle => '릴레이 연결과 네트워크 문제를 디버그해요';
 
   @override
-  String get nostrSettingsMediaServers => 'Media Servers';
+  String get nostrSettingsMediaServers => '미디어 서버';
 
   @override
-  String get nostrSettingsMediaServersSubtitle =>
-      'Configure Blossom upload servers';
+  String get nostrSettingsMediaServersSubtitle => 'Blossom 업로드 서버를 설정해요';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Developer Options';
+  String get nostrSettingsDeveloperOptions => '개발자 옵션';
 
   @override
-  String get nostrSettingsDeveloperOptionsSubtitle =>
-      'Environment switcher and debug settings';
+  String get nostrSettingsDeveloperOptionsSubtitle => '환경 전환과 디버그 설정';
 
   @override
   String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Toggle feature flags that may hiccup.';
+      '삐걱댈 수 있는 기능 플래그를 켜고 꺼봐요.';
 
   @override
-  String get nostrSettingsKeyManagement => 'Key Management';
+  String get nostrSettingsKeyManagement => '키 관리';
 
   @override
-  String get nostrSettingsKeyManagementSubtitle =>
-      'Export, backup, and restore your Nostr keys';
+  String get nostrSettingsKeyManagementSubtitle => 'Nostr 키를 내보내고, 백업하고, 복원해요';
 
   @override
-  String get nostrSettingsRemoveKeys => 'Remove Keys from Device';
+  String get nostrSettingsRemoveKeys => '기기에서 키 제거';
 
   @override
   String get nostrSettingsRemoveKeysSubtitle =>
-      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.';
+      '이 기기에서만 개인 키를 삭제해요. 콘텐츠는 릴레이에 그대로 남지만, 다시 계정에 접근하려면 nsec 백업이 필요해요.';
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Could not remove keys from this device. Please try again.';
+      '이 기기에서 키를 제거하지 못했어요. 다시 시도해주세요.';
 
   @override
   String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Failed to remove keys: $error';
+    return '키 제거에 실패했어요: $error';
   }
 
   @override
-  String get nostrSettingsDeleteAccount => 'Delete Account and Data';
+  String get nostrSettingsDeleteAccount => '계정 및 데이터 삭제';
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.';
+      'Nostr 릴레이에서 계정과 모든 콘텐츠를 영구히 삭제해요. 되돌릴 수 없어요.';
 
   @override
   String get relayDiagnosticTitle => '릴레이 진단';
@@ -2073,10 +2064,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get safetySettingsLabel => '설정';
 
   @override
-  String get safetySettingsWhatYouSee => 'WHAT YOU SEE';
+  String get safetySettingsWhatYouSee => '보이는 것';
 
   @override
-  String get safetySettingsWhatYouPublish => 'WHAT YOU PUBLISH';
+  String get safetySettingsWhatYouPublish => '게시하는 것';
 
   @override
   String get safetySettingsShowDivineHostedOnly => 'Divine이 호스팅하는 영상만 보이기';
@@ -2386,22 +2377,22 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authPasswordLabel => '비밀번호';
 
   @override
-  String get authConfirmPasswordLabel => 'Confirm password';
+  String get authConfirmPasswordLabel => '비밀번호 확인';
 
   @override
-  String get authEmailRequired => 'Email is required';
+  String get authEmailRequired => '이메일을 입력해주세요';
 
   @override
-  String get authEmailInvalid => 'Please enter a valid email';
+  String get authEmailInvalid => '올바른 이메일을 입력해주세요';
 
   @override
-  String get authPasswordRequired => 'Password is required';
+  String get authPasswordRequired => '비밀번호를 입력해주세요';
 
   @override
-  String get authConfirmPasswordRequired => 'Please confirm your password';
+  String get authConfirmPasswordRequired => '비밀번호를 다시 입력해주세요';
 
   @override
-  String get authPasswordsDoNotMatch => 'Passwords don\'t match';
+  String get authPasswordsDoNotMatch => '비밀번호가 일치하지 않아요';
 
   @override
   String get authForgotPassword => '비밀번호를 잊으셨나요?';
@@ -2650,7 +2641,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get authNewPasswordLabel => '새 비밀번호';
 
   @override
-  String get authConfirmNewPasswordLabel => 'Confirm new password';
+  String get authConfirmNewPasswordLabel => '새 비밀번호 확인';
 
   @override
   String get authPasswordTooShort => '비밀번호는 최소 8자 이상이어야 해요';
@@ -4164,14 +4155,14 @@ class AppLocalizationsKo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count people',
-      one: '1 person',
+      other: '$count명',
+      one: '1명',
     );
     return '$_temp0';
   }
 
   @override
-  String get listByAuthorPrefix => 'By ';
+  String get listByAuthorPrefix => '작성자: ';
 
   @override
   String get listNewList => '새 목록';
@@ -4298,16 +4289,16 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';
+  String get keyManagementYourPublicKeyLabel => '공개 키 (npub)';
 
   @override
-  String get keyManagementCopyPublicKeyTooltip => 'Copy public key';
+  String get keyManagementCopyPublicKeyTooltip => '공개 키 복사';
 
   @override
-  String get keyManagementPublicKeyCopied => 'Public key copied';
+  String get keyManagementPublicKeyCopied => '공개 키를 복사했어요';
 
   @override
-  String get profileEditPublicKeyLink => 'View your public key';
+  String get profileEditPublicKeyLink => '공개 키 보기';
 
   @override
   String get saveOriginalSavedToCameraRoll => '카메라 롤에 저장했어요';
@@ -4392,19 +4383,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundUseSound => '사운드 사용';
 
   @override
-  String get soundUntitled => 'Untitled sound';
+  String get soundUntitled => '제목 없는 사운드';
 
   @override
-  String get soundStopPreview => 'Stop preview';
+  String get soundStopPreview => '미리 듣기 중지';
 
   @override
   String soundPreviewSemanticLabel(String title) {
-    return 'Preview $title';
+    return '$title 미리 듣기';
   }
 
   @override
   String soundViewDetailsSemanticLabel(String title) {
-    return 'View details for $title';
+    return '$title 세부 정보 보기';
   }
 
   @override
@@ -4910,11 +4901,11 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get exploreSearchHint => 'Search...';
+  String get exploreSearchHint => '검색...';
 
   @override
   String categoryVideoCount(String count) {
-    return '$count videos';
+    return '영상 $count개';
   }
 
   @override
@@ -4923,45 +4914,45 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get discoverListsTitle => 'Discover Lists';
+  String get discoverListsTitle => '리스트 둘러보기';
 
   @override
-  String get discoverListsFailedToLoad => 'Failed to load lists';
+  String get discoverListsFailedToLoad => '리스트를 불러오지 못했어요';
 
   @override
   String discoverListsFailedToLoadWithError(String error) {
-    return 'Failed to load lists: $error';
+    return '리스트를 불러오지 못했어요: $error';
   }
 
   @override
-  String get discoverListsLoading => 'Discovering public lists...';
+  String get discoverListsLoading => '공개 리스트를 찾는 중...';
 
   @override
-  String get discoverListsEmptyTitle => 'No public lists found';
+  String get discoverListsEmptyTitle => '공개 리스트를 찾지 못했어요';
 
   @override
-  String get discoverListsEmptySubtitle => 'Check back later for new lists';
+  String get discoverListsEmptySubtitle => '새 리스트가 올라오면 다시 와봐요';
 
   @override
-  String get discoverListsByAuthorPrefix => 'by';
+  String get discoverListsByAuthorPrefix => '작성자';
 
   @override
-  String get curatedListEmptyTitle => 'No videos in this list';
+  String get curatedListEmptyTitle => '이 리스트에 영상이 없어요';
 
   @override
-  String get curatedListEmptySubtitle => 'Add some videos to get started';
+  String get curatedListEmptySubtitle => '영상을 추가해서 시작해보세요';
 
   @override
-  String get curatedListLoadingVideos => 'Loading videos...';
+  String get curatedListLoadingVideos => '영상 불러오는 중...';
 
   @override
-  String get curatedListFailedToLoad => 'Failed to load list';
+  String get curatedListFailedToLoad => '리스트를 불러오지 못했어요';
 
   @override
-  String get curatedListNoVideosAvailable => 'No videos available';
+  String get curatedListNoVideosAvailable => '사용할 수 있는 영상이 없어요';
 
   @override
-  String get curatedListVideoNotAvailable => 'Video not available';
+  String get curatedListVideoNotAvailable => '영상을 사용할 수 없어요';
 
   @override
   String get commonRetry => '다시 시도';
@@ -4976,10 +4967,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get commonCancel => '취소';
 
   @override
-  String get commonBack => 'Back';
+  String get commonBack => '뒤로';
 
   @override
-  String get commonClose => 'Close';
+  String get commonClose => '닫기';
 
   @override
   String get videoMetadataTags => '태그';
@@ -5168,237 +5159,225 @@ class AppLocalizationsKo extends AppLocalizations {
   String get categoryGalleryCouldNotLoadVideos => '동영상을 불러올 수 없었어요';
 
   @override
-  String get categoryGalleryNoVideosInCategory => 'No videos in this category';
+  String get categoryGalleryNoVideosInCategory => '이 카테고리에 영상이 없어요';
 
   @override
-  String get categoryGallerySortOptionsLabel => 'Category sort options';
+  String get categoryGallerySortOptionsLabel => '카테고리 정렬 옵션';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => '인기';
 
   @override
-  String get categoryGallerySortNew => 'New';
+  String get categoryGallerySortNew => '최신';
 
   @override
-  String get categoryGallerySortClassic => 'Classic';
+  String get categoryGallerySortClassic => '클래식';
 
   @override
-  String get categoryGallerySortForYou => 'For You';
+  String get categoryGallerySortForYou => '추천';
 
   @override
   String get categoriesCouldNotLoadCategories => '카테고리를 불러올 수 없었어요';
 
   @override
-  String get categoriesNoCategoriesAvailable => 'No categories available';
+  String get categoriesNoCategoriesAvailable => '사용할 수 있는 카테고리가 없어요';
 
   @override
-  String get notificationsEmptyTitle => 'No activity yet';
+  String get notificationsEmptyTitle => '아직 활동이 없어요';
 
   @override
-  String get notificationsEmptySubtitle =>
-      'When people interact with your content, you\'ll see it here';
+  String get notificationsEmptySubtitle => '다른 사람들이 내 콘텐츠에 반응하면 여기에 표시돼요';
 
   @override
-  String get appsPermissionsTitle => 'Integration Permissions';
+  String get appsPermissionsTitle => '연동 권한';
 
   @override
-  String get appsPermissionsRevoke => 'Revoke';
+  String get appsPermissionsRevoke => '취소';
 
   @override
-  String get appsPermissionsEmptyTitle => 'No saved integration permissions';
+  String get appsPermissionsEmptyTitle => '저장된 연동 권한이 없어요';
 
   @override
-  String get appsPermissionsEmptySubtitle =>
-      'Approved integrations will appear here after you remember an access approval.';
+  String get appsPermissionsEmptySubtitle => '접근을 승인하고 기억해두면 승인된 연동이 여기에 표시돼요.';
 
   @override
   String nostrAppPermissionTitle(String appName) {
-    return '$appName wants your approval';
+    return '$appName이(가) 승인을 요청해요';
   }
 
   @override
   String get nostrAppPermissionDescription =>
-      'This app is requesting access through Divine\'s vetted sandbox.';
+      '이 앱은 Divine의 검증된 샌드박스를 통해 접근을 요청하고 있어요.';
 
   @override
-  String get nostrAppPermissionOrigin => 'Origin';
+  String get nostrAppPermissionOrigin => '출처';
 
   @override
-  String get nostrAppPermissionMethod => 'Method';
+  String get nostrAppPermissionMethod => '메서드';
 
   @override
-  String get nostrAppPermissionCapability => 'Capability';
+  String get nostrAppPermissionCapability => '권한';
 
   @override
-  String get nostrAppPermissionEventKind => 'Event kind';
+  String get nostrAppPermissionEventKind => '이벤트 종류';
 
   @override
-  String get nostrAppPermissionAllow => 'Allow';
+  String get nostrAppPermissionAllow => '허용';
 
   @override
-  String get bugReportSendReport => 'Send Report';
+  String get bugReportSendReport => '신고 보내기';
 
   @override
-  String get supportSubjectRequiredLabel => 'Subject *';
+  String get supportSubjectRequiredLabel => '제목 *';
 
   @override
-  String get supportRequiredHelper => 'Required';
+  String get supportRequiredHelper => '필수';
 
   @override
-  String get bugReportSubjectHint => 'Brief summary of the issue';
+  String get bugReportSubjectHint => '문제를 짧게 요약해주세요';
 
   @override
-  String get bugReportDescriptionRequiredLabel => 'What happened? *';
+  String get bugReportDescriptionRequiredLabel => '무슨 일이 있었나요? *';
 
   @override
-  String get bugReportDescriptionHint => 'Describe the issue you encountered';
+  String get bugReportDescriptionHint => '겪은 문제를 설명해주세요';
 
   @override
-  String get bugReportStepsLabel => 'Steps to Reproduce';
+  String get bugReportStepsLabel => '재현 단계';
 
   @override
-  String get bugReportStepsHint => '1. Go to...\n2. Tap on...\n3. See error';
+  String get bugReportStepsHint => '1. ...로 이동\n2. ...을 탭\n3. 오류 발생';
 
   @override
-  String get bugReportExpectedBehaviorLabel => 'Expected Behavior';
+  String get bugReportExpectedBehaviorLabel => '예상한 동작';
 
   @override
-  String get bugReportExpectedBehaviorHint =>
-      'What should have happened instead?';
+  String get bugReportExpectedBehaviorHint => '원래 어떻게 됐어야 했나요?';
 
   @override
-  String get bugReportDiagnosticsNotice =>
-      'Device info and logs will be included automatically.';
+  String get bugReportDiagnosticsNotice => '기기 정보와 로그가 자동으로 함께 보내져요.';
 
   @override
   String get bugReportSuccessMessage =>
-      'Thank you! We\'ve received your report and will use it to make Divine better.';
+      '고마워요! 신고를 받았어요. Divine을 더 좋게 만드는 데 쓸게요.';
 
   @override
-  String get bugReportSendFailed =>
-      'Failed to send bug report. Please try again later.';
+  String get bugReportSendFailed => '버그 신고를 보내지 못했어요. 잠시 후 다시 시도해주세요.';
 
   @override
   String bugReportFailedWithError(String error) {
-    return 'Bug report failed to send: $error';
+    return '버그 신고를 보내지 못했어요: $error';
   }
 
   @override
-  String get featureRequestSendRequest => 'Send Request';
+  String get featureRequestSendRequest => '요청 보내기';
 
   @override
-  String get featureRequestSubjectHint => 'Brief summary of your idea';
+  String get featureRequestSubjectHint => '아이디어를 짧게 요약해주세요';
 
   @override
-  String get featureRequestDescriptionRequiredLabel => 'What would you like? *';
+  String get featureRequestDescriptionRequiredLabel => '어떤 기능을 원하세요? *';
 
   @override
-  String get featureRequestDescriptionHint => 'Describe the feature you want';
+  String get featureRequestDescriptionHint => '원하는 기능을 설명해주세요';
 
   @override
-  String get featureRequestUsefulnessLabel => 'How would this be useful?';
+  String get featureRequestUsefulnessLabel => '어떻게 도움이 될까요?';
 
   @override
-  String get featureRequestUsefulnessHint =>
-      'Explain the benefit this feature would provide';
+  String get featureRequestUsefulnessHint => '이 기능이 어떤 도움을 주는지 설명해주세요';
 
   @override
-  String get featureRequestWhenLabel => 'When would you use this?';
+  String get featureRequestWhenLabel => '언제 사용하실 건가요?';
 
   @override
-  String get featureRequestWhenHint =>
-      'Describe the situations where this would help';
+  String get featureRequestWhenHint => '이 기능이 도움 될 만한 상황을 설명해주세요';
 
   @override
-  String get featureRequestSuccessMessage =>
-      'Thank you! We\'ve received your feature request and will review it.';
+  String get featureRequestSuccessMessage => '고마워요! 기능 요청을 받았고 검토할게요.';
 
   @override
-  String get featureRequestSendFailed =>
-      'Failed to send feature request. Please try again later.';
+  String get featureRequestSendFailed => '기능 요청을 보내지 못했어요. 잠시 후 다시 시도해주세요.';
 
   @override
   String featureRequestFailedWithError(String error) {
-    return 'Feature request failed to send: $error';
+    return '기능 요청을 보내지 못했어요: $error';
   }
 
   @override
   String get notificationFollowBack => '맞팔로우';
 
   @override
-  String get followingTitle => 'Following';
+  String get followingTitle => '팔로잉';
 
   @override
   String followingTitleForName(String displayName) {
-    return '$displayName\'s Following';
+    return '$displayName님의 팔로잉';
   }
 
   @override
   String get followingFailedToLoadList => '팔로잉 목록을 불러오지 못했어요';
 
   @override
-  String get followingEmptyTitle => 'Not following anyone yet';
+  String get followingEmptyTitle => '아직 아무도 팔로우하지 않아요';
 
   @override
-  String get followersTitle => 'Followers';
+  String get followersTitle => '팔로워';
 
   @override
   String followersTitleForName(String displayName) {
-    return '$displayName\'s Followers';
+    return '$displayName님의 팔로워';
   }
 
   @override
   String get followersFailedToLoadList => '팔로워 목록을 불러오지 못했어요';
 
   @override
-  String get followersEmptyTitle => 'No followers yet';
+  String get followersEmptyTitle => '아직 팔로워가 없어요';
 
   @override
-  String get followersUpdateFollowFailed =>
-      'Failed to update follow status. Please try again.';
+  String get followersUpdateFollowFailed => '팔로우 상태를 업데이트하지 못했어요. 다시 시도해주세요.';
 
   @override
-  String get reportMessageTitle => 'Report Message';
+  String get reportMessageTitle => '메시지 신고';
 
   @override
-  String get reportMessageWhyReporting => 'Why are you reporting this message?';
+  String get reportMessageWhyReporting => '왜 이 메시지를 신고하시나요?';
 
   @override
-  String get reportMessageSelectReason =>
-      'Please select a reason for reporting this message';
+  String get reportMessageSelectReason => '이 메시지를 신고하는 이유를 골라주세요';
 
   @override
-  String get newMessageTitle => 'New message';
+  String get newMessageTitle => '새 메시지';
 
   @override
-  String get newMessageFindPeople => 'Find people';
+  String get newMessageFindPeople => '사람 찾기';
 
   @override
-  String get newMessageNoContacts =>
-      'No contacts found.\nFollow people to see them here.';
+  String get newMessageNoContacts => '연락처가 없어요.\n사람들을 팔로우하면 여기서 볼 수 있어요.';
 
   @override
-  String get newMessageNoUsersFound => 'No users found';
+  String get newMessageNoUsersFound => '사용자를 찾지 못했어요';
 
   @override
-  String get hashtagSearchTitle => 'Search for hashtags';
+  String get hashtagSearchTitle => '해시태그 검색';
 
   @override
-  String get hashtagSearchSubtitle => 'Discover trending topics and content';
+  String get hashtagSearchSubtitle => '인기 토픽과 콘텐츠를 둘러봐요';
 
   @override
   String hashtagSearchNoResults(String query) {
-    return 'No hashtags found for \"$query\"';
+    return '\"$query\"에 대한 해시태그를 찾지 못했어요';
   }
 
   @override
-  String get hashtagSearchFailed => 'Search failed';
+  String get hashtagSearchFailed => '검색에 실패했어요';
 
   @override
-  String get userNotAvailableTitle => 'Account not available';
+  String get userNotAvailableTitle => '계정을 사용할 수 없어요';
 
   @override
-  String get userNotAvailableBody => 'This account isn\'t available right now.';
+  String get userNotAvailableBody => '이 계정은 지금 사용할 수 없어요.';
 
   @override
   String get classicVinersTitle => 'OG Viners';
@@ -5410,83 +5389,78 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get blossomValidServerUrl =>
-      'Please enter a valid server URL (e.g., https://blossom.band)';
+      '올바른 서버 URL을 입력해주세요 (예: https://blossom.band)';
 
   @override
-  String get blossomSettingsSaved => 'Blossom settings saved';
+  String get blossomSettingsSaved => 'Blossom 설정을 저장했어요';
 
   @override
-  String get blossomSaveTooltip => 'Save';
+  String get blossomSaveTooltip => '저장';
 
   @override
-  String get blossomAboutTitle => 'About Blossom';
+  String get blossomAboutTitle => 'Blossom 정보';
 
   @override
   String get blossomAboutDescription =>
-      'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.';
+      'Blossom은 분산형 미디어 저장 프로토콜이에요. 호환되는 어떤 서버에든 영상을 올릴 수 있어요. 기본적으로 영상은 Divine의 Blossom 서버로 올라가요. 아래 옵션을 켜면 커스텀 서버를 쓸 수 있어요.';
 
   @override
-  String get blossomUseCustomServer => 'Use Custom Blossom Server';
+  String get blossomUseCustomServer => '커스텀 Blossom 서버 사용';
 
   @override
-  String get blossomCustomServerEnabledSubtitle =>
-      'Videos will be uploaded to your custom Blossom server';
+  String get blossomCustomServerEnabledSubtitle => '커스텀 Blossom 서버로 영상이 올라가요';
 
   @override
   String get blossomCustomServerDisabledSubtitle =>
-      'Your videos are currently being uploaded to Divine\'s Blossom server';
+      '지금은 Divine의 Blossom 서버로 영상이 올라가고 있어요';
 
   @override
-  String get blossomCustomServerUrl => 'Custom Blossom Server URL';
+  String get blossomCustomServerUrl => '커스텀 Blossom 서버 URL';
 
   @override
-  String get blossomCustomServerHelper =>
-      'Enter the URL of your custom Blossom server';
+  String get blossomCustomServerHelper => '커스텀 Blossom 서버 URL을 입력해주세요';
 
   @override
-  String get blossomPopularServers => 'Popular Blossom Servers';
+  String get blossomPopularServers => '인기 Blossom 서버';
 
   @override
-  String get blossomServerUrlMustUseHttps =>
-      'Blossom server URL must use https://';
+  String get blossomServerUrlMustUseHttps => 'Blossom 서버 URL은 https://를 써야 해요';
 
   @override
   String get blueskyFailedToUpdateCrosspost => '크로스포스트 설정 업데이트에 실패했어요';
 
   @override
-  String get blueskySignInRequired => 'Sign in to manage Bluesky settings';
+  String get blueskySignInRequired => 'Bluesky 설정을 관리하려면 로그인해주세요';
 
   @override
-  String get blueskyPublishVideos => 'Publish videos to Bluesky';
+  String get blueskyPublishVideos => 'Bluesky에 영상 게시';
 
   @override
-  String get blueskyEnabledSubtitle =>
-      'Your videos will be published to Bluesky';
+  String get blueskyEnabledSubtitle => '영상이 Bluesky에 게시돼요';
 
   @override
-  String get blueskyDisabledSubtitle =>
-      'Your videos will not be published to Bluesky';
+  String get blueskyDisabledSubtitle => '영상이 Bluesky에 게시되지 않아요';
 
   @override
-  String get blueskyHandle => 'Bluesky Handle';
+  String get blueskyHandle => 'Bluesky 핸들';
 
   @override
-  String get blueskyStatus => 'Status';
+  String get blueskyStatus => '상태';
 
   @override
-  String get blueskyStatusReady => 'Account provisioned and ready';
+  String get blueskyStatusReady => '계정이 준비됐어요';
 
   @override
-  String get blueskyStatusPending => 'Account provisioning in progress...';
+  String get blueskyStatusPending => '계정을 준비하는 중...';
 
   @override
-  String get blueskyStatusFailed => 'Account provisioning failed';
+  String get blueskyStatusFailed => '계정 준비에 실패했어요';
 
   @override
-  String get blueskyStatusDisabled => 'Account disabled';
+  String get blueskyStatusDisabled => '계정이 비활성화됐어요';
 
   @override
-  String get blueskyStatusNotLinked => 'No Bluesky account linked';
+  String get blueskyStatusNotLinked => '연결된 Bluesky 계정이 없어요';
 
   @override
   String get invitesTitle => '친구 초대';
@@ -5510,39 +5484,39 @@ class AppLocalizationsKo extends AppLocalizations {
   String get invitesGenerateButtonLabel => 'Generate invite';
 
   @override
-  String get invitesNoneAvailable => 'No invites available right now';
+  String get invitesNoneAvailable => '지금은 사용할 수 있는 초대장이 없어요';
 
   @override
-  String get invitesShareWithPeople => 'Share diVine with people you know';
+  String get invitesShareWithPeople => 'diVine을 아는 사람들과 나눠봐요';
 
   @override
-  String get invitesUsedInvites => 'Used invites';
+  String get invitesUsedInvites => '사용된 초대장';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Join me on diVine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
+    return 'diVine에 함께해요! 초대 코드 $code로 시작해보세요:\nhttps://divine.video/invite/$code';
   }
 
   @override
-  String get invitesCopyInvite => 'Copy invite';
+  String get invitesCopyInvite => '초대장 복사';
 
   @override
-  String get invitesCopied => 'Invite copied!';
+  String get invitesCopied => '초대장을 복사했어요!';
 
   @override
-  String get invitesShareInvite => 'Share invite';
+  String get invitesShareInvite => '초대장 공유';
 
   @override
-  String get invitesShareSubject => 'Join me on diVine';
+  String get invitesShareSubject => 'diVine에 함께해요';
 
   @override
-  String get invitesClaimed => 'Claimed';
+  String get invitesClaimed => '사용됨';
 
   @override
-  String get invitesCouldNotLoad => 'Could not load invites';
+  String get invitesCouldNotLoad => '초대장을 불러오지 못했어요';
 
   @override
-  String get invitesRetry => 'Retry';
+  String get invitesRetry => '다시 시도';
 
   @override
   String get searchSomethingWentWrong => '문제가 발생했어요';
@@ -5599,7 +5573,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get keyImportInsecureBunkerRelay =>
-      'Bunker relay must use wss:// (ws:// is allowed only for localhost)';
+      'Bunker 릴레이는 wss://를 써야 해요 (ws://는 localhost에서만 허용돼요)';
 
   @override
   String get timeNow => '지금';
@@ -6489,72 +6463,69 @@ class AppLocalizationsKo extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => '동영상이 삭제됐어요';
 
   @override
-  String get settingsBadgesTitle => 'Badges';
+  String get settingsBadgesTitle => '배지';
 
   @override
-  String get settingsBadgesSubtitle =>
-      'Accept awards and check issued badge status.';
+  String get settingsBadgesSubtitle => '받은 배지를 수락하고 발급한 배지 상태를 확인해요.';
 
   @override
-  String get badgesTitle => 'Badges';
+  String get badgesTitle => '배지';
 
   @override
-  String get badgesIntroTitle => 'Understand your badge trail';
+  String get badgesIntroTitle => '내 배지 흔적을 살펴보세요';
 
   @override
   String get badgesIntroBody =>
-      'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.';
+      '받은 배지를 보고, Nostr 프로필에 어떤 걸 고정할지 고르고, 발급한 배지를 사람들이 수락했는지 확인해요.';
 
   @override
-  String get badgesOpenApp => 'Open badges app';
+  String get badgesOpenApp => '배지 앱 열기';
 
   @override
-  String get badgesLoadError => 'Could not load badges';
+  String get badgesLoadError => '배지를 불러오지 못했어요';
 
   @override
-  String get badgesUpdateError => 'Could not update badge';
+  String get badgesUpdateError => '배지를 업데이트하지 못했어요';
 
   @override
-  String get badgesAwardedSectionTitle => 'Awarded to you';
+  String get badgesAwardedSectionTitle => '받은 배지';
 
   @override
-  String get badgesAwardedEmptyTitle => 'No badge awards yet';
+  String get badgesAwardedEmptyTitle => '아직 받은 배지가 없어요';
 
   @override
-  String get badgesAwardedEmptySubtitle =>
-      'When someone awards you a Nostr badge, it will land here.';
+  String get badgesAwardedEmptySubtitle => '누가 Nostr 배지를 보내면 여기에 표시돼요.';
 
   @override
-  String get badgesStatusAccepted => 'Accepted';
+  String get badgesStatusAccepted => '수락됨';
 
   @override
-  String get badgesStatusNotAccepted => 'Not accepted';
+  String get badgesStatusNotAccepted => '수락 안 함';
 
   @override
-  String get badgesActionRemove => 'Remove';
+  String get badgesActionRemove => '제거';
 
   @override
-  String get badgesActionAccept => 'Accept';
+  String get badgesActionAccept => '수락';
 
   @override
-  String get badgesActionReject => 'Reject';
+  String get badgesActionReject => '거절';
 
   @override
-  String get badgesIssuedSectionTitle => 'Issued by you';
+  String get badgesIssuedSectionTitle => '발급한 배지';
 
   @override
-  String get badgesIssuedEmptyTitle => 'No issued badges yet';
+  String get badgesIssuedEmptyTitle => '아직 발급한 배지가 없어요';
 
   @override
-  String get badgesIssuedEmptySubtitle =>
-      'Badges you issue will show acceptance status here.';
+  String get badgesIssuedEmptySubtitle => '발급한 배지는 여기에서 수락 상태를 보여줘요.';
 
   @override
-  String get badgesIssuedNoRecipients => 'No recipients found for this award.';
+  String get badgesIssuedNoRecipients => '이 배지에 대한 수령자를 찾지 못했어요.';
 
   @override
-  String get badgesRecipientAcceptedStatus => 'Accepted by recipient';
+  String get badgesRecipientAcceptedStatus => '수령자가 수락했어요';
 
   @override
-  String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+  String get badgesRecipientWaitingStatus => '수령자를 기다리는 중';
 }

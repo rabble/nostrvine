@@ -170,47 +170,46 @@ class AppLocalizationsRo extends AppLocalizations {
       'Folosește limba dispozitivului';
 
   @override
-  String get settingsGeneralTitle => 'General Settings';
+  String get settingsGeneralTitle => 'Setări generale';
 
   @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
+  String get settingsContentSafetyTitle => 'Conținut și siguranță';
 
   @override
-  String get generalSettingsSectionIntegrations => 'INTEGRATIONS';
+  String get generalSettingsSectionIntegrations => 'INTEGRĂRI';
 
   @override
-  String get generalSettingsSectionViewing => 'VIEWING';
+  String get generalSettingsSectionViewing => 'VIZIONARE';
 
   @override
-  String get generalSettingsSectionCreating => 'CREATING';
+  String get generalSettingsSectionCreating => 'CREAȚIE';
 
   @override
-  String get generalSettingsSectionApp => 'APP';
+  String get generalSettingsSectionApp => 'APLICAȚIE';
 
   @override
-  String get generalSettingsClosedCaptions => 'Closed Captions';
+  String get generalSettingsClosedCaptions => 'Subtitrări';
 
   @override
   String get generalSettingsClosedCaptionsSubtitle =>
-      'Show captions when videos include them';
+      'Afișează subtitrările când videoclipurile le includ';
 
   @override
-  String get generalSettingsVideoShape => 'Video Shape';
+  String get generalSettingsVideoShape => 'Forma videoclipurilor';
 
   @override
-  String get generalSettingsVideoShapeSquareOnly => 'Square videos only';
+  String get generalSettingsVideoShapeSquareOnly => 'Doar videoclipuri pătrate';
 
   @override
-  String get generalSettingsVideoShapeSquareAndPortrait =>
-      'Square and portrait';
+  String get generalSettingsVideoShapeSquareAndPortrait => 'Pătrate și portret';
 
   @override
   String get generalSettingsVideoShapeSquareAndPortraitSubtitle =>
-      'Show the full mix of Divine videos';
+      'Arată tot amestecul de videoclipuri Divine';
 
   @override
   String get generalSettingsVideoShapeSquareOnlySubtitle =>
-      'Keep feeds in the classic square format';
+      'Păstrează feedurile în formatul clasic pătrat';
 
   @override
   String get contentPreferencesTitle => 'Preferințe de conținut';
@@ -290,29 +289,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get contentPreferencesUnknownMicrophone => 'Microfon necunoscut';
 
   @override
-  String get contentFiltersAdultContent => 'ADULT CONTENT';
+  String get contentFiltersAdultContent => 'CONȚINUT PENTRU ADULȚI';
 
   @override
-  String get contentFiltersViolenceGore => 'VIOLENCE & GORE';
+  String get contentFiltersViolenceGore => 'VIOLENȚĂ ȘI SÂNGE';
 
   @override
-  String get contentFiltersSubstances => 'SUBSTANCES';
+  String get contentFiltersSubstances => 'SUBSTANȚE';
 
   @override
-  String get contentFiltersOther => 'OTHER';
+  String get contentFiltersOther => 'ALTELE';
 
   @override
   String get contentFiltersAgeGateMessage =>
-      'Verify your age in Safety & Privacy settings to unlock adult content filters';
+      'Verifică-ți vârsta în Setări de siguranță și confidențialitate ca să deblochezi filtrele pentru conținut adult';
 
   @override
-  String get contentFiltersShow => 'Show';
+  String get contentFiltersShow => 'Arată';
 
   @override
-  String get contentFiltersWarn => 'Warn';
+  String get contentFiltersWarn => 'Avertizează';
 
   @override
-  String get contentFiltersFilterOut => 'Filter Out';
+  String get contentFiltersFilterOut => 'Filtrează';
 
   @override
   String get profileBlockedAccountNotAvailable => 'Acest cont nu e disponibil';
@@ -520,14 +519,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileErrorLoadingCollabs => 'Eroare la încărcarea colaborărilor';
 
   @override
-  String get profileNoSavedVideosTitle => 'Nothing saved yet';
+  String get profileNoSavedVideosTitle => 'Încă nimic salvat';
 
   @override
   String get profileSavedOwnEmpty =>
-      'Bookmark videos from the share sheet and they\'ll show up here.';
+      'Salvează videoclipuri din meniul de partajare și vor apărea aici.';
 
   @override
-  String get profileErrorLoadingSaved => 'Error loading saved videos';
+  String get profileErrorLoadingSaved =>
+      'Eroare la încărcarea videoclipurilor salvate';
 
   @override
   String get profileNoCommentsOwnTitle => 'Încă niciun comentariu';
@@ -672,28 +672,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileSignInButton => 'Autentificare';
 
   @override
-  String get profileMaybeLaterLabel => 'Maybe Later';
+  String get profileMaybeLaterLabel => 'Poate mai târziu';
 
   @override
-  String get profileSecurePrimaryButton => 'Add Email & Password';
+  String get profileSecurePrimaryButton => 'Adaugă email și parolă';
 
   @override
-  String get profileCompletePrimaryButton => 'Update Your Profile';
+  String get profileCompletePrimaryButton => 'Actualizează-ți profilul';
 
   @override
-  String get profileLoopsLabel => 'Loops';
+  String get profileLoopsLabel => 'Bucle';
 
   @override
-  String get profileLikesLabel => 'Likes';
+  String get profileLikesLabel => 'Aprecieri';
 
   @override
-  String get profileMyLibraryLabel => 'My Library';
+  String get profileMyLibraryLabel => 'Biblioteca mea';
 
   @override
-  String get profileMessageLabel => 'Message';
+  String get profileMessageLabel => 'Mesaj';
 
   @override
-  String get profileUserFallback => 'user';
+  String get profileUserFallback => 'utilizator';
 
   @override
   String get profileDismissTooltip => 'Respinge';
@@ -794,7 +794,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectarea imaginii a eșuat. Lipește mai jos un URL de imagine.';
 
   @override
-  String get profileSetupImagesTypeGroup => 'images';
+  String get profileSetupImagesTypeGroup => 'imagini';
 
   @override
   String profileSetupCameraAccessFailed(Object error) {
@@ -910,11 +910,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid NIP-05 format (e.g., name@domain.com)';
+      'Format NIP-05 invalid (ex.: nume@domeniu.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
-      'Use the username field above for divine.video';
+      'Folosește câmpul de nume de utilizator de mai sus pentru divine.video';
 
   @override
   String get profileSetupProfilePicturePreview =>
@@ -1239,30 +1239,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get contentWarningViewAnyway => 'Vezi oricum';
 
   @override
-  String get contentWarningReportContentTooltip => 'Report Content';
+  String get contentWarningReportContentTooltip => 'Raportează conținutul';
 
   @override
-  String get contentWarningBlockUserTooltip => 'Block User';
+  String get contentWarningBlockUserTooltip => 'Blochează utilizatorul';
 
   @override
-  String get contentWarningBlockedTitle => 'Content Blocked';
+  String get contentWarningBlockedTitle => 'Conținut blocat';
 
   @override
   String get contentWarningBlockedPolicy =>
-      'This content has been blocked due to policy violations.';
+      'Acest conținut a fost blocat din cauza încălcărilor politicii.';
 
   @override
-  String get contentWarningNoticeTitle => 'Content Notice';
+  String get contentWarningNoticeTitle => 'Atenționare de conținut';
 
   @override
   String get contentWarningPotentiallyHarmfulTitle =>
-      'Potentially Harmful Content';
+      'Conținut potențial dăunător';
 
   @override
-  String get contentWarningView => 'View';
+  String get contentWarningView => 'Vezi';
 
   @override
-  String get contentWarningReportAction => 'Report';
+  String get contentWarningReportAction => 'Raportează';
 
   @override
   String get contentWarningHideAllLikeThis =>
@@ -1422,19 +1422,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionLikeLabel => 'Like';
+  String get videoActionLikeLabel => 'Apreciază';
 
   @override
-  String get videoActionReplyLabel => 'Reply';
+  String get videoActionReplyLabel => 'Răspunde';
 
   @override
-  String get videoActionRepostLabel => 'Repost';
+  String get videoActionRepostLabel => 'Redistribuie';
 
   @override
-  String get videoActionShareLabel => 'Share';
+  String get videoActionShareLabel => 'Partajează';
 
   @override
-  String get videoActionAboutLabel => 'About';
+  String get videoActionAboutLabel => 'Despre';
 
   @override
   String get videoActionEnableAutoAdvance => 'Activează avansarea automată';
@@ -1461,10 +1461,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionShowSubtitles => 'Arată subtitrările';
 
   @override
-  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+  String get videoOverlayOpenMetadataFromTitle =>
+      'Deschide detaliile videoclipului';
 
   @override
-  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+  String get videoOverlayOpenMetadataFromDescription =>
+      'Deschide detaliile videoclipului';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -1816,7 +1818,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get relaySettingsInsecureUrl =>
-      'Relay URL must use wss:// (ws:// is allowed only for localhost)';
+      'URL-ul relay-ului trebuie să folosească wss:// (ws:// e permis doar pentru localhost)';
 
   @override
   String relaySettingsRestoredDefault(String defaultRelay) {
@@ -1835,104 +1837,112 @@ class AppLocalizationsRo extends AppLocalizations {
   String get relaySettingsFailedToOpenLink => 'N-am putut deschide linkul';
 
   @override
-  String get relaySettingsExternalRelay => 'External relay';
+  String get relaySettingsExternalRelay => 'Relay extern';
 
   @override
-  String get relaySettingsNotConnected => 'Not connected';
+  String get relaySettingsNotConnected => 'Neconectat';
 
   @override
   String relaySettingsDisconnectedAgo(String duration) {
-    return 'Disconnected $duration ago';
+    return 'Deconectat acum $duration';
   }
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de abonări',
+      few: '$count abonări',
+      one: '1 abonare',
+    );
+    return '$_temp0';
   }
 
   @override
   String relaySettingsEventsSummary(String count) {
-    return '$count events';
+    return '$count evenimente';
   }
 
   @override
   String relaySettingsTimeAgo(String duration) {
-    return '$duration ago';
+    return 'acum $duration';
   }
 
   @override
   String get nostrSettingsIntro =>
-      'Divine uses the Nostr protocol for decentralized publishing. Your content lives on relays you choose, and your keys are your identity.';
+      'Divine folosește protocolul Nostr pentru publicare descentralizată. Conținutul tău trăiește pe relay-urile pe care le alegi, iar cheile tale sunt identitatea ta.';
 
   @override
-  String get nostrSettingsSectionNetwork => 'Network';
+  String get nostrSettingsSectionNetwork => 'Rețea';
 
   @override
-  String get nostrSettingsSectionAccount => 'Account';
+  String get nostrSettingsSectionAccount => 'Cont';
 
   @override
-  String get nostrSettingsSectionDangerZone => 'Danger Zone';
+  String get nostrSettingsSectionDangerZone => 'Zonă periculoasă';
 
   @override
-  String get nostrSettingsRelays => 'Relays';
+  String get nostrSettingsRelays => 'Relay-uri';
 
   @override
-  String get nostrSettingsRelaysSubtitle => 'Manage Nostr relay connections';
+  String get nostrSettingsRelaysSubtitle =>
+      'Gestionează conexiunile cu relay-urile Nostr';
 
   @override
-  String get nostrSettingsRelayDiagnostics => 'Relay Diagnostics';
+  String get nostrSettingsRelayDiagnostics => 'Diagnostic relay';
 
   @override
   String get nostrSettingsRelayDiagnosticsSubtitle =>
-      'Debug relay connectivity and network issues';
+      'Depanează conectivitatea relay-ului și problemele de rețea';
 
   @override
-  String get nostrSettingsMediaServers => 'Media Servers';
+  String get nostrSettingsMediaServers => 'Servere media';
 
   @override
   String get nostrSettingsMediaServersSubtitle =>
-      'Configure Blossom upload servers';
+      'Configurează serverele de încărcare Blossom';
 
   @override
-  String get nostrSettingsDeveloperOptions => 'Developer Options';
+  String get nostrSettingsDeveloperOptions => 'Opțiuni dezvoltator';
 
   @override
   String get nostrSettingsDeveloperOptionsSubtitle =>
-      'Environment switcher and debug settings';
+      'Comutator de mediu și setări de depanare';
 
   @override
   String get nostrSettingsExperimentalFeaturesSubtitle =>
-      'Toggle feature flags that may hiccup.';
+      'Activează indicatoare de funcții care s-ar putea să sughițe.';
 
   @override
-  String get nostrSettingsKeyManagement => 'Key Management';
+  String get nostrSettingsKeyManagement => 'Gestionare chei';
 
   @override
   String get nostrSettingsKeyManagementSubtitle =>
-      'Export, backup, and restore your Nostr keys';
+      'Exportă, fă backup și restaurează cheile tale Nostr';
 
   @override
-  String get nostrSettingsRemoveKeys => 'Remove Keys from Device';
+  String get nostrSettingsRemoveKeys => 'Elimină cheile de pe dispozitiv';
 
   @override
   String get nostrSettingsRemoveKeysSubtitle =>
-      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.';
+      'Șterge cheia ta privată doar de pe acest dispozitiv. Conținutul tău rămâne pe relay-uri, dar vei avea nevoie de backup-ul nsec ca să-ți accesezi din nou contul.';
 
   @override
   String get nostrSettingsCouldNotRemoveKeys =>
-      'Could not remove keys from this device. Please try again.';
+      'N-am putut elimina cheile de pe acest dispozitiv. Încearcă din nou.';
 
   @override
   String nostrSettingsFailedToRemoveKeys(String error) {
-    return 'Failed to remove keys: $error';
+    return 'Eliminarea cheilor a eșuat: $error';
   }
 
   @override
-  String get nostrSettingsDeleteAccount => 'Delete Account and Data';
+  String get nostrSettingsDeleteAccount => 'Șterge contul și datele';
 
   @override
   String get nostrSettingsDeleteAccountSubtitle =>
-      'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.';
+      'Șterge PERMANENT contul tău și TOT conținutul de pe relay-urile Nostr. Asta nu poate fi anulat.';
 
   @override
   String get relayDiagnosticTitle => 'Diagnostice relay';
@@ -2245,10 +2255,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get safetySettingsLabel => 'SETĂRI';
 
   @override
-  String get safetySettingsWhatYouSee => 'WHAT YOU SEE';
+  String get safetySettingsWhatYouSee => 'CE VEZI';
 
   @override
-  String get safetySettingsWhatYouPublish => 'WHAT YOU PUBLISH';
+  String get safetySettingsWhatYouPublish => 'CE PUBLICI';
 
   @override
   String get safetySettingsShowDivineHostedOnly =>
@@ -4468,14 +4478,15 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count people',
-      one: '1 person',
+      other: '$count de persoane',
+      few: '$count persoane',
+      one: '1 persoană',
     );
     return '$_temp0';
   }
 
   @override
-  String get listByAuthorPrefix => 'By ';
+  String get listByAuthorPrefix => 'De ';
 
   @override
   String get listNewList => 'Listă nouă';
@@ -4605,16 +4616,16 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';
+  String get keyManagementYourPublicKeyLabel => 'Cheia ta publică (npub)';
 
   @override
-  String get keyManagementCopyPublicKeyTooltip => 'Copy public key';
+  String get keyManagementCopyPublicKeyTooltip => 'Copiază cheia publică';
 
   @override
-  String get keyManagementPublicKeyCopied => 'Public key copied';
+  String get keyManagementPublicKeyCopied => 'Cheia publică a fost copiată';
 
   @override
-  String get profileEditPublicKeyLink => 'View your public key';
+  String get profileEditPublicKeyLink => 'Vezi cheia ta publică';
 
   @override
   String get saveOriginalSavedToCameraRoll => 'Salvat în galerie';
@@ -4702,19 +4713,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundUseSound => 'Folosește sunetul';
 
   @override
-  String get soundUntitled => 'Untitled sound';
+  String get soundUntitled => 'Sunet fără titlu';
 
   @override
-  String get soundStopPreview => 'Stop preview';
+  String get soundStopPreview => 'Oprește previzualizarea';
 
   @override
   String soundPreviewSemanticLabel(String title) {
-    return 'Preview $title';
+    return 'Previzualizează $title';
   }
 
   @override
   String soundViewDetailsSemanticLabel(String title) {
-    return 'View details for $title';
+    return 'Vezi detalii pentru $title';
   }
 
   @override
@@ -5232,11 +5243,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get exploreSearchHint => 'Search...';
+  String get exploreSearchHint => 'Caută...';
 
   @override
   String categoryVideoCount(String count) {
-    return '$count videos';
+    return '$count videoclipuri';
   }
 
   @override
@@ -5245,45 +5256,46 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get discoverListsTitle => 'Discover Lists';
+  String get discoverListsTitle => 'Descoperă liste';
 
   @override
-  String get discoverListsFailedToLoad => 'Failed to load lists';
+  String get discoverListsFailedToLoad => 'N-am putut încărca listele';
 
   @override
   String discoverListsFailedToLoadWithError(String error) {
-    return 'Failed to load lists: $error';
+    return 'N-am putut încărca listele: $error';
   }
 
   @override
-  String get discoverListsLoading => 'Discovering public lists...';
+  String get discoverListsLoading => 'Se descoperă liste publice...';
 
   @override
-  String get discoverListsEmptyTitle => 'No public lists found';
+  String get discoverListsEmptyTitle => 'Nicio listă publică găsită';
 
   @override
-  String get discoverListsEmptySubtitle => 'Check back later for new lists';
+  String get discoverListsEmptySubtitle => 'Revino mai târziu pentru liste noi';
 
   @override
-  String get discoverListsByAuthorPrefix => 'by';
+  String get discoverListsByAuthorPrefix => 'de';
 
   @override
-  String get curatedListEmptyTitle => 'No videos in this list';
+  String get curatedListEmptyTitle => 'Niciun videoclip în această listă';
 
   @override
-  String get curatedListEmptySubtitle => 'Add some videos to get started';
+  String get curatedListEmptySubtitle =>
+      'Adaugă câteva videoclipuri ca să începi';
 
   @override
-  String get curatedListLoadingVideos => 'Loading videos...';
+  String get curatedListLoadingVideos => 'Se încarcă videoclipurile...';
 
   @override
-  String get curatedListFailedToLoad => 'Failed to load list';
+  String get curatedListFailedToLoad => 'N-am putut încărca lista';
 
   @override
-  String get curatedListNoVideosAvailable => 'No videos available';
+  String get curatedListNoVideosAvailable => 'Niciun videoclip disponibil';
 
   @override
-  String get curatedListVideoNotAvailable => 'Video not available';
+  String get curatedListVideoNotAvailable => 'Videoclip indisponibil';
 
   @override
   String get commonRetry => 'Reîncearcă';
@@ -5298,10 +5310,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonCancel => 'Anulează';
 
   @override
-  String get commonBack => 'Back';
+  String get commonBack => 'Înapoi';
 
   @override
-  String get commonClose => 'Close';
+  String get commonClose => 'Închide';
 
   @override
   String get videoMetadataTags => 'Etichete';
@@ -5495,170 +5507,174 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-au putut încărca videoclipurile';
 
   @override
-  String get categoryGalleryNoVideosInCategory => 'No videos in this category';
+  String get categoryGalleryNoVideosInCategory =>
+      'Niciun videoclip în această categorie';
 
   @override
-  String get categoryGallerySortOptionsLabel => 'Category sort options';
+  String get categoryGallerySortOptionsLabel =>
+      'Opțiuni de sortare a categoriei';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'În tendințe';
 
   @override
-  String get categoryGallerySortNew => 'New';
+  String get categoryGallerySortNew => 'Noi';
 
   @override
-  String get categoryGallerySortClassic => 'Classic';
+  String get categoryGallerySortClassic => 'Clasic';
 
   @override
-  String get categoryGallerySortForYou => 'For You';
+  String get categoryGallerySortForYou => 'Pentru tine';
 
   @override
   String get categoriesCouldNotLoadCategories =>
       'Nu s-au putut încărca categoriile';
 
   @override
-  String get categoriesNoCategoriesAvailable => 'No categories available';
+  String get categoriesNoCategoriesAvailable => 'Nicio categorie disponibilă';
 
   @override
-  String get notificationsEmptyTitle => 'No activity yet';
+  String get notificationsEmptyTitle => 'Încă nicio activitate';
 
   @override
   String get notificationsEmptySubtitle =>
-      'When people interact with your content, you\'ll see it here';
+      'Când oamenii interacționează cu conținutul tău, vei vedea asta aici';
 
   @override
-  String get appsPermissionsTitle => 'Integration Permissions';
+  String get appsPermissionsTitle => 'Permisiuni de integrare';
 
   @override
-  String get appsPermissionsRevoke => 'Revoke';
+  String get appsPermissionsRevoke => 'Revocă';
 
   @override
-  String get appsPermissionsEmptyTitle => 'No saved integration permissions';
+  String get appsPermissionsEmptyTitle =>
+      'Nicio permisiune de integrare salvată';
 
   @override
   String get appsPermissionsEmptySubtitle =>
-      'Approved integrations will appear here after you remember an access approval.';
+      'Integrările aprobate vor apărea aici după ce memorezi o aprobare de acces.';
 
   @override
   String nostrAppPermissionTitle(String appName) {
-    return '$appName wants your approval';
+    return '$appName cere aprobarea ta';
   }
 
   @override
   String get nostrAppPermissionDescription =>
-      'This app is requesting access through Divine\'s vetted sandbox.';
+      'Această aplicație cere acces prin sandbox-ul verificat de Divine.';
 
   @override
-  String get nostrAppPermissionOrigin => 'Origin';
+  String get nostrAppPermissionOrigin => 'Origine';
 
   @override
-  String get nostrAppPermissionMethod => 'Method';
+  String get nostrAppPermissionMethod => 'Metodă';
 
   @override
-  String get nostrAppPermissionCapability => 'Capability';
+  String get nostrAppPermissionCapability => 'Capabilitate';
 
   @override
-  String get nostrAppPermissionEventKind => 'Event kind';
+  String get nostrAppPermissionEventKind => 'Tip de eveniment';
 
   @override
-  String get nostrAppPermissionAllow => 'Allow';
+  String get nostrAppPermissionAllow => 'Permite';
 
   @override
-  String get bugReportSendReport => 'Send Report';
+  String get bugReportSendReport => 'Trimite raportul';
 
   @override
-  String get supportSubjectRequiredLabel => 'Subject *';
+  String get supportSubjectRequiredLabel => 'Subiect *';
 
   @override
-  String get supportRequiredHelper => 'Required';
+  String get supportRequiredHelper => 'Obligatoriu';
 
   @override
-  String get bugReportSubjectHint => 'Brief summary of the issue';
+  String get bugReportSubjectHint => 'Scurt rezumat al problemei';
 
   @override
-  String get bugReportDescriptionRequiredLabel => 'What happened? *';
+  String get bugReportDescriptionRequiredLabel => 'Ce s-a întâmplat? *';
 
   @override
-  String get bugReportDescriptionHint => 'Describe the issue you encountered';
+  String get bugReportDescriptionHint =>
+      'Descrie problema pe care ai întâlnit-o';
 
   @override
-  String get bugReportStepsLabel => 'Steps to Reproduce';
+  String get bugReportStepsLabel => 'Pași pentru reproducere';
 
   @override
-  String get bugReportStepsHint => '1. Go to...\n2. Tap on...\n3. See error';
+  String get bugReportStepsHint =>
+      '1. Mergi la...\n2. Apasă pe...\n3. Vezi eroarea';
 
   @override
-  String get bugReportExpectedBehaviorLabel => 'Expected Behavior';
+  String get bugReportExpectedBehaviorLabel => 'Comportament așteptat';
 
   @override
   String get bugReportExpectedBehaviorHint =>
-      'What should have happened instead?';
+      'Ce ar fi trebuit să se întâmple în schimb?';
 
   @override
   String get bugReportDiagnosticsNotice =>
-      'Device info and logs will be included automatically.';
+      'Informațiile despre dispozitiv și jurnalele vor fi incluse automat.';
 
   @override
   String get bugReportSuccessMessage =>
-      'Thank you! We\'ve received your report and will use it to make Divine better.';
+      'Mulțumim! Am primit raportul tău și îl vom folosi ca să facem Divine mai bun.';
 
   @override
   String get bugReportSendFailed =>
-      'Failed to send bug report. Please try again later.';
+      'Trimiterea raportului de bug a eșuat. Încearcă din nou mai târziu.';
 
   @override
   String bugReportFailedWithError(String error) {
-    return 'Bug report failed to send: $error';
+    return 'Trimiterea raportului de bug a eșuat: $error';
   }
 
   @override
-  String get featureRequestSendRequest => 'Send Request';
+  String get featureRequestSendRequest => 'Trimite cererea';
 
   @override
-  String get featureRequestSubjectHint => 'Brief summary of your idea';
+  String get featureRequestSubjectHint => 'Scurt rezumat al ideii tale';
 
   @override
-  String get featureRequestDescriptionRequiredLabel => 'What would you like? *';
+  String get featureRequestDescriptionRequiredLabel => 'Ce ți-ar plăcea? *';
 
   @override
-  String get featureRequestDescriptionHint => 'Describe the feature you want';
+  String get featureRequestDescriptionHint => 'Descrie funcția pe care o vrei';
 
   @override
-  String get featureRequestUsefulnessLabel => 'How would this be useful?';
+  String get featureRequestUsefulnessLabel => 'Cum ar fi utilă?';
 
   @override
   String get featureRequestUsefulnessHint =>
-      'Explain the benefit this feature would provide';
+      'Explică beneficiul pe care l-ar aduce această funcție';
 
   @override
-  String get featureRequestWhenLabel => 'When would you use this?';
+  String get featureRequestWhenLabel => 'Când ai folosi-o?';
 
   @override
-  String get featureRequestWhenHint =>
-      'Describe the situations where this would help';
+  String get featureRequestWhenHint => 'Descrie situațiile în care te-ar ajuta';
 
   @override
   String get featureRequestSuccessMessage =>
-      'Thank you! We\'ve received your feature request and will review it.';
+      'Mulțumim! Am primit cererea ta de funcție și o vom analiza.';
 
   @override
   String get featureRequestSendFailed =>
-      'Failed to send feature request. Please try again later.';
+      'Trimiterea cererii de funcție a eșuat. Încearcă din nou mai târziu.';
 
   @override
   String featureRequestFailedWithError(String error) {
-    return 'Feature request failed to send: $error';
+    return 'Trimiterea cererii de funcție a eșuat: $error';
   }
 
   @override
   String get notificationFollowBack => 'Urmărește înapoi';
 
   @override
-  String get followingTitle => 'Following';
+  String get followingTitle => 'Urmăriți';
 
   @override
   String followingTitleForName(String displayName) {
-    return '$displayName\'s Following';
+    return 'Urmăriții lui $displayName';
   }
 
   @override
@@ -5666,14 +5682,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut încărca lista de urmăriți';
 
   @override
-  String get followingEmptyTitle => 'Not following anyone yet';
+  String get followingEmptyTitle => 'Încă nu urmărești pe nimeni';
 
   @override
-  String get followersTitle => 'Followers';
+  String get followersTitle => 'Urmăritori';
 
   @override
   String followersTitleForName(String displayName) {
-    return '$displayName\'s Followers';
+    return 'Urmăritorii lui $displayName';
   }
 
   @override
@@ -5681,54 +5697,55 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut încărca lista de urmăritori';
 
   @override
-  String get followersEmptyTitle => 'No followers yet';
+  String get followersEmptyTitle => 'Încă niciun urmăritor';
 
   @override
   String get followersUpdateFollowFailed =>
-      'Failed to update follow status. Please try again.';
+      'Actualizarea stării de urmărire a eșuat. Încearcă din nou.';
 
   @override
-  String get reportMessageTitle => 'Report Message';
+  String get reportMessageTitle => 'Raportează mesajul';
 
   @override
-  String get reportMessageWhyReporting => 'Why are you reporting this message?';
+  String get reportMessageWhyReporting => 'De ce raportezi acest mesaj?';
 
   @override
   String get reportMessageSelectReason =>
-      'Please select a reason for reporting this message';
+      'Selectează un motiv pentru raportarea acestui mesaj';
 
   @override
-  String get newMessageTitle => 'New message';
+  String get newMessageTitle => 'Mesaj nou';
 
   @override
-  String get newMessageFindPeople => 'Find people';
+  String get newMessageFindPeople => 'Găsește oameni';
 
   @override
   String get newMessageNoContacts =>
-      'No contacts found.\nFollow people to see them here.';
+      'Niciun contact găsit.\nUrmărește oameni ca să-i vezi aici.';
 
   @override
-  String get newMessageNoUsersFound => 'No users found';
+  String get newMessageNoUsersFound => 'Niciun utilizator găsit';
 
   @override
-  String get hashtagSearchTitle => 'Search for hashtags';
+  String get hashtagSearchTitle => 'Caută hashtaguri';
 
   @override
-  String get hashtagSearchSubtitle => 'Discover trending topics and content';
+  String get hashtagSearchSubtitle =>
+      'Descoperă subiecte și conținut în tendințe';
 
   @override
   String hashtagSearchNoResults(String query) {
-    return 'No hashtags found for \"$query\"';
+    return 'Niciun hashtag găsit pentru „$query”';
   }
 
   @override
-  String get hashtagSearchFailed => 'Search failed';
+  String get hashtagSearchFailed => 'Căutarea a eșuat';
 
   @override
-  String get userNotAvailableTitle => 'Account not available';
+  String get userNotAvailableTitle => 'Cont indisponibil';
 
   @override
-  String get userNotAvailableBody => 'This account isn\'t available right now.';
+  String get userNotAvailableBody => 'Acest cont nu e disponibil acum.';
 
   @override
   String get classicVinersTitle => 'OG Viners';
@@ -5740,84 +5757,86 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get blossomValidServerUrl =>
-      'Please enter a valid server URL (e.g., https://blossom.band)';
+      'Introdu un URL valid de server (ex.: https://blossom.band)';
 
   @override
-  String get blossomSettingsSaved => 'Blossom settings saved';
+  String get blossomSettingsSaved => 'Setările Blossom au fost salvate';
 
   @override
-  String get blossomSaveTooltip => 'Save';
+  String get blossomSaveTooltip => 'Salvează';
 
   @override
-  String get blossomAboutTitle => 'About Blossom';
+  String get blossomAboutTitle => 'Despre Blossom';
 
   @override
   String get blossomAboutDescription =>
-      'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.';
+      'Blossom e un protocol descentralizat de stocare media care îți permite să încarci videoclipuri pe orice server compatibil. Implicit, videoclipurile se încarcă pe serverul Blossom al Divine. Activează opțiunea de mai jos ca să folosești în schimb un server personalizat.';
 
   @override
-  String get blossomUseCustomServer => 'Use Custom Blossom Server';
+  String get blossomUseCustomServer =>
+      'Folosește un server Blossom personalizat';
 
   @override
   String get blossomCustomServerEnabledSubtitle =>
-      'Videos will be uploaded to your custom Blossom server';
+      'Videoclipurile vor fi încărcate pe serverul tău Blossom personalizat';
 
   @override
   String get blossomCustomServerDisabledSubtitle =>
-      'Your videos are currently being uploaded to Divine\'s Blossom server';
+      'Videoclipurile tale se încarcă în prezent pe serverul Blossom al Divine';
 
   @override
-  String get blossomCustomServerUrl => 'Custom Blossom Server URL';
+  String get blossomCustomServerUrl => 'URL server Blossom personalizat';
 
   @override
   String get blossomCustomServerHelper =>
-      'Enter the URL of your custom Blossom server';
+      'Introdu URL-ul serverului tău Blossom personalizat';
 
   @override
-  String get blossomPopularServers => 'Popular Blossom Servers';
+  String get blossomPopularServers => 'Servere Blossom populare';
 
   @override
   String get blossomServerUrlMustUseHttps =>
-      'Blossom server URL must use https://';
+      'URL-ul serverului Blossom trebuie să folosească https://';
 
   @override
   String get blueskyFailedToUpdateCrosspost =>
       'Nu s-a putut actualiza setarea de crosspost';
 
   @override
-  String get blueskySignInRequired => 'Sign in to manage Bluesky settings';
+  String get blueskySignInRequired =>
+      'Autentifică-te ca să gestionezi setările Bluesky';
 
   @override
-  String get blueskyPublishVideos => 'Publish videos to Bluesky';
+  String get blueskyPublishVideos => 'Publică videoclipuri pe Bluesky';
 
   @override
   String get blueskyEnabledSubtitle =>
-      'Your videos will be published to Bluesky';
+      'Videoclipurile tale vor fi publicate pe Bluesky';
 
   @override
   String get blueskyDisabledSubtitle =>
-      'Your videos will not be published to Bluesky';
+      'Videoclipurile tale nu vor fi publicate pe Bluesky';
 
   @override
-  String get blueskyHandle => 'Bluesky Handle';
+  String get blueskyHandle => 'Handle Bluesky';
 
   @override
-  String get blueskyStatus => 'Status';
+  String get blueskyStatus => 'Stare';
 
   @override
-  String get blueskyStatusReady => 'Account provisioned and ready';
+  String get blueskyStatusReady => 'Cont creat și gata';
 
   @override
-  String get blueskyStatusPending => 'Account provisioning in progress...';
+  String get blueskyStatusPending => 'Crearea contului e în curs...';
 
   @override
-  String get blueskyStatusFailed => 'Account provisioning failed';
+  String get blueskyStatusFailed => 'Crearea contului a eșuat';
 
   @override
-  String get blueskyStatusDisabled => 'Account disabled';
+  String get blueskyStatusDisabled => 'Cont dezactivat';
 
   @override
-  String get blueskyStatusNotLinked => 'No Bluesky account linked';
+  String get blueskyStatusNotLinked => 'Niciun cont Bluesky conectat';
 
   @override
   String get invitesTitle => 'Invită prieteni';
@@ -5841,39 +5860,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get invitesGenerateButtonLabel => 'Generate invite';
 
   @override
-  String get invitesNoneAvailable => 'No invites available right now';
+  String get invitesNoneAvailable => 'Nicio invitație disponibilă acum';
 
   @override
-  String get invitesShareWithPeople => 'Share diVine with people you know';
+  String get invitesShareWithPeople =>
+      'Partajează diVine cu oameni pe care îi cunoști';
 
   @override
-  String get invitesUsedInvites => 'Used invites';
+  String get invitesUsedInvites => 'Invitații folosite';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Join me on diVine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
+    return 'Vino cu mine pe diVine! Folosește codul de invitație $code ca să începi:\nhttps://divine.video/invite/$code';
   }
 
   @override
-  String get invitesCopyInvite => 'Copy invite';
+  String get invitesCopyInvite => 'Copiază invitația';
 
   @override
-  String get invitesCopied => 'Invite copied!';
+  String get invitesCopied => 'Invitație copiată!';
 
   @override
-  String get invitesShareInvite => 'Share invite';
+  String get invitesShareInvite => 'Partajează invitația';
 
   @override
-  String get invitesShareSubject => 'Join me on diVine';
+  String get invitesShareSubject => 'Vino cu mine pe diVine';
 
   @override
-  String get invitesClaimed => 'Claimed';
+  String get invitesClaimed => 'Revendicată';
 
   @override
-  String get invitesCouldNotLoad => 'Could not load invites';
+  String get invitesCouldNotLoad => 'N-am putut încărca invitațiile';
 
   @override
-  String get invitesRetry => 'Retry';
+  String get invitesRetry => 'Reîncearcă';
 
   @override
   String get searchSomethingWentWrong => 'Ceva nu a mers bine';
@@ -5932,7 +5952,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get keyImportInsecureBunkerRelay =>
-      'Bunker relay must use wss:// (ws:// is allowed only for localhost)';
+      'Relay-ul bunker trebuie să folosească wss:// (ws:// e permis doar pentru localhost)';
 
   @override
   String get timeNow => 'acum';
@@ -6875,72 +6895,73 @@ class AppLocalizationsRo extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Videoclip eliminat';
 
   @override
-  String get settingsBadgesTitle => 'Badges';
+  String get settingsBadgesTitle => 'Insigne';
 
   @override
   String get settingsBadgesSubtitle =>
-      'Accept awards and check issued badge status.';
+      'Acceptă premii și verifică starea insignelor emise.';
 
   @override
-  String get badgesTitle => 'Badges';
+  String get badgesTitle => 'Insigne';
 
   @override
-  String get badgesIntroTitle => 'Understand your badge trail';
+  String get badgesIntroTitle => 'Înțelege traseul insignelor tale';
 
   @override
   String get badgesIntroBody =>
-      'See badge awards sent to you, choose what to pin to your Nostr profile, and check whether people accepted badges you issued.';
+      'Vezi premiile cu insigne care ți-au fost trimise, alege ce să fixezi pe profilul tău Nostr și verifică dacă oamenii au acceptat insignele pe care le-ai emis.';
 
   @override
-  String get badgesOpenApp => 'Open badges app';
+  String get badgesOpenApp => 'Deschide aplicația de insigne';
 
   @override
-  String get badgesLoadError => 'Could not load badges';
+  String get badgesLoadError => 'N-am putut încărca insignele';
 
   @override
-  String get badgesUpdateError => 'Could not update badge';
+  String get badgesUpdateError => 'N-am putut actualiza insigna';
 
   @override
-  String get badgesAwardedSectionTitle => 'Awarded to you';
+  String get badgesAwardedSectionTitle => 'Acordate ție';
 
   @override
-  String get badgesAwardedEmptyTitle => 'No badge awards yet';
+  String get badgesAwardedEmptyTitle => 'Încă niciun premiu cu insignă';
 
   @override
   String get badgesAwardedEmptySubtitle =>
-      'When someone awards you a Nostr badge, it will land here.';
+      'Când cineva îți acordă o insignă Nostr, va ajunge aici.';
 
   @override
-  String get badgesStatusAccepted => 'Accepted';
+  String get badgesStatusAccepted => 'Acceptată';
 
   @override
-  String get badgesStatusNotAccepted => 'Not accepted';
+  String get badgesStatusNotAccepted => 'Neacceptată';
 
   @override
-  String get badgesActionRemove => 'Remove';
+  String get badgesActionRemove => 'Elimină';
 
   @override
-  String get badgesActionAccept => 'Accept';
+  String get badgesActionAccept => 'Acceptă';
 
   @override
-  String get badgesActionReject => 'Reject';
+  String get badgesActionReject => 'Respinge';
 
   @override
-  String get badgesIssuedSectionTitle => 'Issued by you';
+  String get badgesIssuedSectionTitle => 'Emise de tine';
 
   @override
-  String get badgesIssuedEmptyTitle => 'No issued badges yet';
+  String get badgesIssuedEmptyTitle => 'Încă nicio insignă emisă';
 
   @override
   String get badgesIssuedEmptySubtitle =>
-      'Badges you issue will show acceptance status here.';
+      'Insignele pe care le emiți vor afișa aici starea de acceptare.';
 
   @override
-  String get badgesIssuedNoRecipients => 'No recipients found for this award.';
+  String get badgesIssuedNoRecipients =>
+      'Niciun destinatar găsit pentru acest premiu.';
 
   @override
-  String get badgesRecipientAcceptedStatus => 'Accepted by recipient';
+  String get badgesRecipientAcceptedStatus => 'Acceptată de destinatar';
 
   @override
-  String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+  String get badgesRecipientWaitingStatus => 'Se așteaptă destinatarul';
 }
