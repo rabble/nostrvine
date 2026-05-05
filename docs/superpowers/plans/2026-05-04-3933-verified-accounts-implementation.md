@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Demote the npub on the edit-profile screen, render NIP-39 verified-account chips on profile screens (read path against the existing `https://verifier.divine.video` REST API), and add an in-app WebView entry point that hands off to the verifier service for the write path.
+**Goal:** Demote the npub on the edit-profile screen, render NIP-39 verified-account chips on profile screens (read path against the existing `https://verifyer.divine.video` REST API), and add an in-app WebView entry point that hands off to the verifier service for the write path.
 
 **Architecture:** Three PRs on a single feature branch (`feat/3933-verified-accounts`). Layered: UI → BLoC → Repository → Client. New `verifier_client` data-layer package wraps the verifier REST API; `profile_repository` gains an `IdentityClaimsRepository`; `MyProfileBloc` and `OtherProfileBloc` gain a `verifiedClaims` field on their `*Loaded` state; `ProfileEditorBloc` gains launch/dismiss events bridged to navigation by a UI-level `BlocListener`. No client-side caching, no retry, no rechecking — the verifier owns freshness via Cloudflare KV.
 
@@ -608,7 +608,7 @@ PRs 2 and 3 stack on this branch but should be reviewed independently.
 
 ## Chunk 2: PR 2 — Read path: verifier client + verified chips
 
-**Goal:** Add a new `verifier_client` package that calls `https://verifier.divine.video`'s REST API, extend `profile_repository` with an `IdentityClaimsRepository` that parses NIP-39 `i` tags off kind 0 and re-verifies them via the client, extend `MyProfileBloc` and `OtherProfileBloc` to expose `verifiedClaims`, and render a verified-chip row directly under the bio on both surfaces. Hide unverified claims entirely (see spec for rationale).
+**Goal:** Add a new `verifier_client` package that calls `https://verifyer.divine.video`'s REST API, extend `profile_repository` with an `IdentityClaimsRepository` that parses NIP-39 `i` tags off kind 0 and re-verifies them via the client, extend `MyProfileBloc` and `OtherProfileBloc` to expose `verifiedClaims`, and render a verified-chip row directly under the bio on both surfaces. Hide unverified claims entirely (see spec for rationale).
 
 **Files (new):**
 - Package: `mobile/packages/verifier_client/` (full package — `pubspec.yaml`, `analysis_options.yaml`, `lib/verifier_client.dart` barrel, `lib/src/verifier_client.dart`, `lib/src/exceptions.dart`, `lib/src/models/...`, `test/`).
@@ -645,7 +645,7 @@ Use `funnelcake_api_client` and `app_version_client` as references for `pubspec.
 
 ```yaml
 name: verifier_client
-description: HTTP client for the Divine identity verification service (verifier.divine.video).
+description: HTTP client for the Divine identity verification service (verifyer.divine.video).
 version: 0.1.0+1
 publish_to: none
 
@@ -675,7 +675,7 @@ Copy from `mobile/packages/funnelcake_api_client/analysis_options.yaml`.
 
 ```dart
 // ABOUTME: Public surface for the verifier_client package.
-// ABOUTME: HTTP client over https://verifier.divine.video.
+// ABOUTME: HTTP client over https://verifyer.divine.video.
 
 export 'src/exceptions.dart';
 export 'src/models/identity_claim.dart';
@@ -944,7 +944,7 @@ feat(verifier_client): scaffold package + models
 
 Adds the verifier_client package with IdentityClaim,
 VerificationResult, and the typed exception hierarchy. Wraps
-verifier.divine.video; the actual HTTP client lands in the next commit.
+verifyer.divine.video; the actual HTTP client lands in the next commit.
 Refs #3933.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
@@ -1141,7 +1141,7 @@ import 'package:verifier_client/src/exceptions.dart';
 import 'package:verifier_client/src/models/identity_claim.dart';
 import 'package:verifier_client/src/models/verification_result.dart';
 
-/// HTTP client for `https://verifier.divine.video`.
+/// HTTP client for `https://verifyer.divine.video`.
 ///
 /// Stateless: every call hits the network. The verifier owns
 /// freshness via Cloudflare KV; intentionally no client-side cache,
@@ -1263,7 +1263,7 @@ git commit -m "$(cat <<'EOF'
 feat(verifier_client): HTTP client with batch + single verify
 
 Implements VerifierClient.verifyBatch and verifySingle against
-verifier.divine.video. Stateless — server owns freshness via KV cache.
+verifyer.divine.video. Stateless — server owns freshness via KV cache.
 Maps timeouts and transport errors to typed exceptions; rejects
 oversized batches client-side to match MAX_BATCH_SIZE on the worker.
 Refs #3933.
@@ -1289,7 +1289,7 @@ ls mobile/test/models/environment_config_test.dart 2>/dev/null \
 ```dart
 test('verifierBaseUrl returns production URL by default', () {
   const config = EnvironmentConfig(environment: AppEnvironment.production);
-  expect(config.verifierBaseUrl, equals('https://verifier.divine.video'));
+  expect(config.verifierBaseUrl, equals('https://verifyer.divine.video'));
 });
 
 test('verifierBaseUrl is the same across environments (no local stub)', () {
@@ -1298,7 +1298,7 @@ test('verifierBaseUrl is the same across environments (no local stub)', () {
   // verification calls work consistently.
   for (final env in AppEnvironment.values) {
     final config = EnvironmentConfig(environment: env);
-    expect(config.verifierBaseUrl, equals('https://verifier.divine.video'));
+    expect(config.verifierBaseUrl, equals('https://verifyer.divine.video'));
   }
 });
 ```
@@ -1317,9 +1317,9 @@ In `mobile/lib/models/environment_config.dart`, add:
 
 ```dart
 /// Base URL for the Divine identity verification service
-/// (verifier.divine.video). Single host across all environments — the
+/// (verifyer.divine.video). Single host across all environments — the
 /// service is not part of local_stack.
-String get verifierBaseUrl => 'https://verifier.divine.video';
+String get verifierBaseUrl => 'https://verifyer.divine.video';
 ```
 
 - [ ] **Step 5: Run — confirm PASS**
@@ -1340,7 +1340,7 @@ cd ..
 git add mobile/lib/models/environment_config.dart \
         mobile/test/models/environment_config_test.dart
 git commit -m "$(cat <<'EOF'
-feat(env): expose verifierBaseUrl for verifier.divine.video
+feat(env): expose verifierBaseUrl for verifyer.divine.video
 
 Refs #3933.
 
@@ -2047,7 +2047,7 @@ String _platformUrl(IdentityClaim claim) {
       return 'https://twitter.com/${claim.identity}';
     case 'mastodon':
       // identity format is `instance/@user/<id>`; just hand off to verifier.
-      return 'https://verifier.divine.video/u?platform=${claim.platform}&identity=${Uri.encodeComponent(claim.identity)}';
+      return 'https://verifyer.divine.video/u?platform=${claim.platform}&identity=${Uri.encodeComponent(claim.identity)}';
     case 'bluesky':
       return 'https://bsky.app/profile/${claim.identity}';
     case 'youtube':
@@ -2059,7 +2059,7 @@ String _platformUrl(IdentityClaim claim) {
     default:
       // No clean cross-platform deep link; route through the verifier
       // lookup page.
-      return 'https://verifier.divine.video/u?platform=${claim.platform}&identity=${Uri.encodeComponent(claim.identity)}';
+      return 'https://verifyer.divine.video/u?platform=${claim.platform}&identity=${Uri.encodeComponent(claim.identity)}';
   }
 }
 ```
@@ -2185,7 +2185,7 @@ gh pr create --repo divinevideo/divine-mobile \
   --title "feat(profile): render verified accounts on profile (2/3)" \
   --body "$(cat <<'EOF'
 ## Summary
-- New `verifier_client` package wraps `https://verifier.divine.video`'s
+- New `verifier_client` package wraps `https://verifyer.divine.video`'s
   REST API (`POST /verify`, `POST /verify/single`).
 - `profile_repository` gains `IdentityClaimsRepository`, which parses
   NIP-39 `i` tags off kind 0 and re-verifies them via the client.
@@ -2217,7 +2217,7 @@ EOF
 
 ## Chunk 3: PR 3 — Write path: verifier WebView entry point
 
-**Goal:** Add an in-app WebView screen that hosts `https://verifier.divine.video`, surface a "Verified accounts" section with a "Get verified" CTA tile on edit profile, and refresh the user's kind 0 (and therefore verified chips) when the WebView is dismissed.
+**Goal:** Add an in-app WebView screen that hosts `https://verifyer.divine.video`, surface a "Verified accounts" section with a "Get verified" CTA tile on edit profile, and refresh the user's kind 0 (and therefore verified chips) when the WebView is dismissed.
 
 **Files (new):**
 - `mobile/lib/screens/profile/verifier_webview_screen.dart`
@@ -2245,11 +2245,11 @@ EOF
 },
 "profileEditGetVerifiedSubtitle": "Link your social media accounts so people know it's really you.",
 "@profileEditGetVerifiedSubtitle": {
-  "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
+  "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
 },
 "verifierWebViewTitle": "Get verified",
 "@verifierWebViewTitle": {
-  "description": "Title of the in-app WebView screen hosting verifier.divine.video."
+  "description": "Title of the in-app WebView screen hosting verifyer.divine.video."
 }
 ```
 
@@ -2565,7 +2565,7 @@ gh pr create --repo divinevideo/divine-mobile \
   --title "feat(profile): in-app verifier WebView entry (3/3)" \
   --body "$(cat <<'EOF'
 ## Summary
-- New `VerifierWebViewScreen` hosts `https://verifier.divine.video` in
+- New `VerifierWebViewScreen` hosts `https://verifyer.divine.video` in
   an in-app WebKit/WebView. No postMessage bridge — verifier publishes
   the kind-0 update via the user's signer (login.divine.video, browser
   signer, bunker, NIP-46) directly to relays the app already reads from.
@@ -2582,7 +2582,7 @@ the verifier and back without leaving the app.
 
 ## Test plan
 - [ ] Open Edit Profile → "Get verified" tile is present.
-- [ ] Tap tile → WebView opens at verifier.divine.video.
+- [ ] Tap tile → WebView opens at verifyer.divine.video.
 - [ ] Complete a verification (e.g. GitHub) → press back → newly
   verified chip appears under the bio.
 - [ ] Repeat on another device — verified chip is still visible

@@ -12112,7 +12112,7 @@ abstract class AppLocalizations {
   /// **'Get verified'**
   String get profileEditGetVerifiedCta;
 
-  /// Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy.
+  /// Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy.
   ///
   /// In en, this message translates to:
   /// **'Link your social media accounts so people know it\'s really you.'**

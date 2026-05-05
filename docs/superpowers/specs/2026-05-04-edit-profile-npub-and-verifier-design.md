@@ -14,7 +14,7 @@ Two related changes to the edit profile experience, tracked under issue #3933:
    reachable, but not as a labeled top-level field.
 2. **Surface verified external accounts** (Twitter/X, GitHub, Bluesky, Mastodon, Telegram,
    Discord, TikTok, YouTube) on the user's profile. Provide an in-app webview entry point
-   to `https://verifier.divine.video` for users to add new verifications.
+   to `https://verifyer.divine.video` for users to add new verifications.
 
 The verifier service already exists (repo: `divine-identify-verification-service`). It
 publishes NIP-39 `i` tags onto the user's kind 0 event using `['i', '<platform>:<identity>',
@@ -28,7 +28,7 @@ API at `/verify` (batch) and `/verify/single`.
 - One feature branch (`feat/3933-verified-accounts`), three small PRs landed in order:
   1. Demote npub on edit profile + add npub display block to key management.
   2. Read path: parse `i` tags off kind 0, verify via REST, render verified chips on profile.
-  3. Write path: in-app WebView entry to verifier.divine.video + post-dismiss kind-0 refresh.
+  3. Write path: in-app WebView entry to verifyer.divine.video + post-dismiss kind-0 refresh.
 
 ### npub destination
 - Move the npub off the edit profile form entirely.
@@ -55,7 +55,7 @@ API at `/verify` (batch) and `/verify/single`.
 - New "Get verified" CTA tile in a "Verified accounts" section on edit profile.
 - Tapping launches the existing in-app WebView host pattern
   (`mobile/lib/screens/apps/nostr_app_sandbox_screen.dart`) pointed at
-  `https://verifier.divine.video`.
+  `https://verifyer.divine.video`.
 - Verifier handles login (shared `login.divine.video` session, browser signer, bunker, or
   NIP-46), platform proof, signing, and publishing the kind 0 update.
 - On WebView dismiss, mobile dispatches a kind-0 refresh on `MyProfileBloc` so newly
@@ -70,7 +70,7 @@ API at `/verify` (batch) and `/verify/single`.
 Layered per project rules (UI → BLoC → Repository → Client).
 
 **Data layer (new):** `mobile/packages/verifier_client/`
-- Thin Dart client over `https://verifier.divine.video`.
+- Thin Dart client over `https://verifyer.divine.video`.
 - `verifyBatch(List<IdentityClaim>) → List<VerificationResult>`.
 - `verifySingle(IdentityClaim) → VerificationResult`.
 - Returns success / failed / unknown per claim. No Nostr knowledge, no BLoC knowledge.
@@ -110,13 +110,13 @@ Layered per project rules (UI → BLoC → Repository → Client).
 ### Read path
 1. Profile load fetches kind 0 (existing).
 2. `IdentityClaimsRepository.verifiedClaims(pubkey, kind0)` parses `i` tags then fires
-   `POST verifier.divine.video/verify` with the batch.
+   `POST verifyer.divine.video/verify` with the batch.
 3. BLoC emits verified-only list.
 4. UI renders chips for verified entries; nothing while loading; nothing on error.
 
 ### Write path
 1. User taps "Get verified" → `ProfileEditorBloc` emits `VerifierLaunchRequested`.
-2. UI-level listener navigates to the WebView host at `https://verifier.divine.video`.
+2. UI-level listener navigates to the WebView host at `https://verifyer.divine.video`.
 3. Verifier handles login, proof, sign, and publish to relays (NIP-39 `i` tag on kind 0).
 4. WebView dismiss → UI emits `VerifierWebViewDismissed` → BLoC dispatches kind-0 refresh
    on `MyProfileBloc`.
@@ -151,7 +151,7 @@ Layered per project rules (UI → BLoC → Repository → Client).
 
 - Verifying *other people's* external accounts (current user only in v1).
 - NIP-05 username verification (already handled separately; closed PR/issues #1539, #420).
-- Removal/revocation UX from inside Divine — handled by verifier.divine.video itself for v1.
+- Removal/revocation UX from inside Divine — handled by verifyer.divine.video itself for v1.
 - Building or deploying the verifier service.
 
 ## Open follow-ups

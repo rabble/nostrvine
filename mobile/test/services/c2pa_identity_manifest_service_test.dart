@@ -49,7 +49,7 @@ void main() {
           pubkey: 'abc',
         ),
         cawgIdentityAssertion: const <String, dynamic>{
-          'issuer': 'verifier.divine.video',
+          'issuer': 'verifyer.divine.video',
           'verified_claims': <Map<String, String>>[
             <String, String>{'type': 'nip05', 'value': 'alice@example.com'},
           ],
@@ -100,7 +100,7 @@ void main() {
           sourceType: DigitalSourceType.digitalCapture,
           aiTrainingOptOut: false,
           cawgIdentityAssertion: const <String, dynamic>{
-            'issuer': 'verifier.divine.video',
+            'issuer': 'verifyer.divine.video',
           },
           enableAdvancedCawgEmbedding: true,
         );

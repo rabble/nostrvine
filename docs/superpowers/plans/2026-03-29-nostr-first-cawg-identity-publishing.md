@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a user-signed Nostr creator-binding assertion to published media and optionally embed a CAWG Identity 1.2 overlay issued by `verifier.divine.video` for verified `nip05`, website/domain, and social-handle claims.
+**Goal:** Add a user-signed Nostr creator-binding assertion to published media and optionally embed a CAWG Identity 1.2 overlay issued by `verifyer.divine.video` for verified `nip05`, website/domain, and social-handle claims.
 
 **Architecture:** Keep Nostr authorship primary by signing an asset-specific payload with the creator's existing Nostr key, then attach CAWG portability metadata only for external claims that Divine verified. Extend the current C2PA publishing path so CAWG issuance is additive and non-blocking, with publish success preserved when verifier calls fail.
 
@@ -25,7 +25,7 @@ Still blocked for strict full CAWG embedding:
 
 Still external to this repo:
 
-- `verifier.divine.video` OAuth adapters
+- `verifyer.divine.video` OAuth adapters
 - public-proof challenge flow
 - NIP-05 and domain verification endpoints
 - CAWG issuance endpoint
@@ -44,7 +44,7 @@ Still external to this repo:
 - `mobile/lib/services/nostr_creator_binding_service.dart`
   Builds the canonical payload and obtains the user signature using the existing Nostr key material.
 - `mobile/lib/services/cawg_verifier_client.dart`
-  Calls `verifier.divine.video` for claim verification and CAWG issuance.
+  Calls `verifyer.divine.video` for claim verification and CAWG issuance.
 - `mobile/lib/services/c2pa_identity_manifest_service.dart`
   Bridges current C2PA signing flow to new identity assertions and hides manifest-assembly complexity from publish code.
 - `mobile/test/services/nostr_creator_binding_service_test.dart`
@@ -85,7 +85,7 @@ Still external to this repo:
 
 - `guardianproject/c2pa-flutter` or Divine's fork of it
   Must expose enough API surface for placeholder assertions, referenced-assertion hashing, and final assertion replacement. Treat this as a blocking dependency for full CAWG embedding.
-- `verifier.divine.video`
+- `verifyer.divine.video`
   New external service. This repo should document and consume its API, but the service implementation is outside this repo.
 
 ## Prerequisites
@@ -369,7 +369,7 @@ Update `mobile/lib/services/video_event_publisher.dart` to add simple discovery 
 
 ```text
 ["identity_binding", "nostr_creator"]
-["identity_verifier", "verifier.divine.video"]
+["identity_verifier", "verifyer.divine.video"]
 ["identity_portable", "cawg"]
 ```
 
@@ -432,7 +432,7 @@ Document the exact missing APIs in `mobile/docs/CAWG_IDENTITY_PUBLISHING_PROTOCO
 - assertion replacement after signature collection
 - builder path support for final CAWG insertion
 
-- [ ] **Step 2: Open the `verifier.divine.video` workstream**
+- [ ] **Step 2: Open the `verifyer.divine.video` workstream**
 
 Document the external service deliverables:
 - OAuth verification adapters
@@ -470,5 +470,5 @@ git commit -m "docs: capture external blockers for nostr-first cawg publishing"
 - Do not let the verifier become the source of truth for authorship.
 - Do not block publish on optional CAWG issuance.
 - Keep Nostr event ownership unchanged.
-- Treat `verifier.divine.video` as issuer-scoped metadata, not universal truth.
+- Treat `verifyer.divine.video` as issuer-scoped metadata, not universal truth.
 - Preserve existing ProofMode and training-mining behavior while identity work is added incrementally.

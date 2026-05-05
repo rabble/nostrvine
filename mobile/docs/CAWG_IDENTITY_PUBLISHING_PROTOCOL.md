@@ -10,7 +10,7 @@ Nostr key while making verified external claims portable through CAWG.
 
 - Nostr remains the source of truth for authorship.
 - The creator signs the creator-binding payload with their own Nostr key.
-- `verifier.divine.video` may attest only to external claims.
+- `verifyer.divine.video` may attest only to external claims.
 - Divine does not certify authorship, personhood, or rights ownership.
 - CAWG issuance is additive and non-blocking.
 
@@ -116,7 +116,7 @@ The verifier returns only the claims it successfully verified. Example:
 
 ```json
 {
-  "issuer": "verifier.divine.video",
+  "issuer": "verifyer.divine.video",
   "status": "partial_success",
   "verified_claims": [
     {
@@ -185,7 +185,7 @@ This protocol defines the mobile-side shapes now.
 ### Shipped In This Repo
 
 - user-signed creator-binding payload transport in `NativeProofData`
-- optional verifier claim fetch through `verifier.divine.video`
+- optional verifier claim fetch through `verifyer.divine.video`
 - Nostr discovery tags:
   - `["identity_binding", "nostr_creator"]`
   - `["identity_verifier", "<issuer>"]`
@@ -206,7 +206,7 @@ transport, but not claim strict end-to-end CAWG 1.2 final-assertion support.
 
 ### External Verifier Workstream
 
-`verifier.divine.video` still needs to expose:
+`verifyer.divine.video` still needs to expose:
 
 - OAuth and federated verification adapters for supported social platforms
 - public-proof challenge issuance and verification

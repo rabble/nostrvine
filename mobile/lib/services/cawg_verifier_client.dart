@@ -231,7 +231,7 @@ class CawgVerifierClient {
           Uri.parse(
             const String.fromEnvironment(
               'CAWG_VERIFIER_BASE_URL',
-              defaultValue: 'https://verifier.divine.video',
+              defaultValue: 'https://verifyer.divine.video',
             ),
           ),
       _timeout = timeout ?? const Duration(seconds: 8);

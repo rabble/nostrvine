@@ -98,9 +98,9 @@ class EnvironmentConfig {
   }
 
   /// Base URL for the Divine identity verification service
-  /// (verifier.divine.video). Single host across all environments — the
+  /// (verifyer.divine.video). Single host across all environments — the
   /// service is not part of local_stack.
-  String get verifierBaseUrl => 'https://verifier.divine.video';
+  String get verifierBaseUrl => 'https://verifyer.divine.video';
 
   /// Get blossom media server URL
   String get blossomUrl {

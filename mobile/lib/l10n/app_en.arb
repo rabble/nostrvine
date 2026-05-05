@@ -3675,6 +3675,6 @@
   },
   "profileEditGetVerifiedSubtitle": "Link your social media accounts so people know it's really you.",
   "@profileEditGetVerifiedSubtitle": {
-    "description": "Subtitle under the Get verified tile, harmonized with verifier.divine.video landing copy."
+    "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
   }
 }

@@ -1074,7 +1074,7 @@ final cawgVerifierBaseUriProvider = Provider<Uri>((ref) {
   return Uri.parse(
     const String.fromEnvironment(
       'CAWG_VERIFIER_BASE_URL',
-      defaultValue: 'https://verifier.divine.video',
+      defaultValue: 'https://verifyer.divine.video',
     ),
   );
 });

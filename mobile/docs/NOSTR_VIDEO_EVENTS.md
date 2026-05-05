@@ -123,14 +123,14 @@ source of truth for authorship.
 | Tag | Format | Description |
 |-----|--------|-------------|
 | `identity_binding` | `["identity_binding", "nostr_creator"]` | Signals that the media carries a user-signed Nostr creator-binding payload |
-| `identity_verifier` | `["identity_verifier", "verifier.divine.video"]` | Signals which verifier issued the optional portable identity overlay |
+| `identity_verifier` | `["identity_verifier", "verifyer.divine.video"]` | Signals which verifier issued the optional portable identity overlay |
 | `identity_portable` | `["identity_portable", "cawg"]` | Signals that a CAWG-compatible identity overlay is present |
 
 ### Nostr-First Identity Layer
 
 - Authorship remains anchored to the event pubkey and the user-signed creator
   binding embedded in the media proof payload.
-- `verifier.divine.video` may attest only to external claims such as `nip05`,
+- `verifyer.divine.video` may attest only to external claims such as `nip05`,
   domain control, and later social-handle proofs.
 - Portable CAWG identity is optional and additive. Publish remains valid when
   only the creator binding is present.
@@ -217,7 +217,7 @@ All tags are stored in `VideoEvent.rawTags` as a `Map<String, String>` for:
     ["device_attestation", "ATTESTATION_TOKEN_HERE"],
     ["pgp_fingerprint", "ABCD1234EFGH5678"],
     ["identity_binding", "nostr_creator"],
-    ["identity_verifier", "verifier.divine.video"],
+    ["identity_verifier", "verifyer.divine.video"],
     ["identity_portable", "cawg"]
   ]
 }

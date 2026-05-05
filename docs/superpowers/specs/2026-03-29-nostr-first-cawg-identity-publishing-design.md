@@ -21,7 +21,7 @@ That is enough for Nostr-native authorship and some provenance, but it does not 
 - Nostr remains the primary identity system.
 - The creator, not Divine, signs the authorship binding for the media.
 - The identity layer should be visible to apps that inspect the media outside Nostr.
-- Divine may run one verifier at `verifier.divine.video`.
+- Divine may run one verifier at `verifyer.divine.video`.
 - The verifier may attest to external claims only:
   - `nip05`
   - website or domain control
@@ -50,7 +50,7 @@ The media file should carry an asset-specific assertion signed by the same Nostr
 
 ### Secondary trust signal
 
-`verifier.divine.video` is an optional identity attester. It does not replace the Nostr trust model. It only says:
+`verifyer.divine.video` is an optional identity attester. It does not replace the Nostr trust model. It only says:
 
 - this pubkey was linked to this `nip05`, domain, and/or social handle
 - the link existed at issuance time
@@ -62,7 +62,7 @@ When a file leaves Nostr, external viewers can still inspect:
 
 - C2PA provenance
 - the user-signed creator binding
-- the CAWG identity credential issued by `verifier.divine.video`
+- the CAWG identity credential issued by `verifyer.divine.video`
 
 That gives Nostr-native authorship plus CAWG-readable identity portability.
 
@@ -141,7 +141,7 @@ Public proof means the user places a verifier-issued nonce in a verifiable publi
 3. Mobile computes the canonical creator-binding payload from asset-specific C2PA data.
 4. The user's Nostr key signs that payload.
 5. Mobile adds `video.divine.nostr.creator_binding` to the manifest.
-6. Mobile sends optional identity claims to `verifier.divine.video`.
+6. Mobile sends optional identity claims to `verifyer.divine.video`.
 7. The verifier validates claims and returns a CAWG identity assertion payload or signed credential for embedding.
 8. Mobile embeds the CAWG identity assertion if available.
 9. Mobile finalizes the media file and publishes the normal Nostr event with the same pubkey.
@@ -154,7 +154,7 @@ Failure behavior:
 
 ## Verifier Responsibilities
 
-`verifier.divine.video` may attest only to:
+`verifyer.divine.video` may attest only to:
 
 - verifier identity
 - verification method
@@ -199,7 +199,7 @@ This repo does not yet ship strict full CAWG embedding because that still
 depends on `c2pa_flutter` support for placeholder assertions, referenced
 assertion hashes, placeholder replacement, and final insertion before signing.
 
-Separately, `verifier.divine.video` still needs production OAuth adapters,
+Separately, `verifyer.divine.video` still needs production OAuth adapters,
 public-proof challenge flow, NIP-05/domain endpoints, CAWG issuance, and
 issuer metadata. Those are external deliverables, not mobile-only changes.
 
@@ -208,7 +208,7 @@ issuer metadata. Those are external deliverables, not mobile-only changes.
 ### Phase 1
 
 - publishing only
-- one verifier: `verifier.divine.video`
+- one verifier: `verifyer.divine.video`
 - external claims: `nip05`, website/domain, social handles
 - user-signed creator-binding assertion
 - optional CAWG overlay
