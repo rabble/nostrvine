@@ -7,15 +7,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/sound_library_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 AudioEvent _createTestAudioEvent({
   String id = 'test-sound-id',
@@ -42,8 +48,11 @@ void main() {
 
   group(AudioSelectionBottomSheet, () {
     late ScrollController scrollController;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       scrollController = ScrollController();
     });
 
@@ -51,17 +60,24 @@ void main() {
       scrollController.dispose();
     });
 
+    List<Override> providerOverrides({
+      AsyncValue<List<AudioEvent>>? trendingSoundsAsync,
+    }) {
+      return [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        soundLibraryServiceProvider.overrideWith((_) => SoundLibraryService()),
+        if (trendingSoundsAsync != null)
+          trendingSoundsProvider.overrideWith(
+            () => _FakeTrendingSounds(trendingSoundsAsync),
+          ),
+      ];
+    }
+
     Widget buildWidget({AsyncValue<List<AudioEvent>>? trendingSoundsAsync}) {
       return ProviderScope(
-        overrides: [
-          soundLibraryServiceProvider.overrideWith(
-            (_) => SoundLibraryService(),
-          ),
-          if (trendingSoundsAsync != null)
-            trendingSoundsProvider.overrideWith(
-              () => _FakeTrendingSounds(trendingSoundsAsync),
-            ),
-        ],
+        overrides: providerOverrides(
+          trendingSoundsAsync: trendingSoundsAsync,
+        ),
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -100,6 +116,7 @@ void main() {
         expect(find.byType(AudioCategoryBar), findsOneWidget);
         expect(find.text(l10n.videoEditorAudioCategoryDivine), findsWidgets);
         expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsWidgets);
+        expect(find.text(l10n.soundsSavedLibraryTitle), findsWidgets);
       });
     });
 
@@ -137,6 +154,152 @@ void main() {
         );
         expect(find.byIcon(Icons.music_off), findsOneWidget);
       });
+
+      testWidgets('renders saved sounds empty state on my sounds tab', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.soundsSavedLibraryTitle));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.soundsSavedEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.soundsSavedEmptyDescription), findsOneWidget);
+      });
+    });
+
+    group('My Sounds', () {
+      testWidgets('shows saved sounds on my sounds tab', (tester) async {
+        await SavedSoundsService(sharedPreferences).saveSound(
+          _createTestAudioEvent(
+            id: 'saved-sound-1',
+            title: 'Saved Loop',
+            source: 'Original Sound',
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: const AsyncValue.data([])),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.soundsSavedLibraryTitle));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved Loop'), findsOneWidget);
+      });
+
+      testWidgets('returns the selected saved sound when done is tapped', (
+        tester,
+      ) async {
+        final savedSound = _createTestAudioEvent(
+          id: 'saved-sound-1',
+          title: 'Saved Loop',
+          source: 'Original Sound',
+          url: 'https://invalid.example/audio.mp3',
+          duration: 5,
+        );
+        await SavedSoundsService(sharedPreferences).saveSound(savedSound);
+
+        AudioEvent? result;
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) {
+                    return Center(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          result = await AudioSelectionBottomSheet.show(
+                            context,
+                          );
+                        },
+                        child: const Text('Open'),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: providerOverrides(
+              trendingSoundsAsync: const AsyncValue.data([]),
+            ),
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.soundsSavedLibraryTitle));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Saved Loop'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.byType(AudioEditorSelectionOverlay), findsOneWidget);
+        expect(find.text('Saved Loop'), findsWidgets);
+
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoEditorDoneSemanticLabel),
+        );
+        await tester.pumpAndSettle();
+
+        expect(result?.id, equals(savedSound.id));
+      });
+
+      testWidgets(
+        'keeps the selected saved sound visible across tab switches',
+        (
+          tester,
+        ) async {
+          await SavedSoundsService(sharedPreferences).saveSound(
+            _createTestAudioEvent(
+              id: 'saved-sound-1',
+              title: 'Saved Loop',
+              source: 'Original Sound',
+              url: 'https://invalid.example/audio.mp3',
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
+          );
+          await tester.pumpAndSettle();
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          await tester.tap(find.text(l10n.soundsSavedLibraryTitle));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Saved Loop'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
+
+          expect(find.byType(AudioEditorSelectionOverlay), findsOneWidget);
+
+          await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(AudioEditorSelectionOverlay), findsOneWidget);
+          expect(find.text('Saved Loop'), findsWidgets);
+        },
+      );
     });
 
     group('Error state', () {
