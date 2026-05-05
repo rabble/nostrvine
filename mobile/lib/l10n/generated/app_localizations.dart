@@ -2537,7 +2537,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoActionRepostLabel.
   ///
   /// In en, this message translates to:
-  /// **'Repost'**
+  /// **'Revine'**
   String get videoActionRepostLabel;
 
   /// No description provided for @videoActionShareLabel.
@@ -2545,6 +2545,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share'**
   String get videoActionShareLabel;
+
+  /// Short caption shown beneath the Report icon in the video overlay action column.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get videoActionReportLabel;
+
+  /// Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Report video'**
+  String get videoActionReport;
 
   /// No description provided for @videoActionAboutLabel.
   ///

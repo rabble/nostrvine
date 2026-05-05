@@ -1764,7 +1764,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
         !isFullscreen && !isPreviewMode && editorEnabled && isOwnVideo;
 
     return Column(
-      spacing: 24,
+      spacing: 20,
       children: [
         if (showEditButton) _VideoEditButton(video: video),
         if (showAutoButton && onAutoPressed != null)
@@ -1785,6 +1785,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),
+        ReportActionButton(video: video, onInteracted: onInteracted),
         MoreActionButton(video: video, onInteracted: onInteracted),
       ],
     );

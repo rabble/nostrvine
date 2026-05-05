@@ -1389,10 +1389,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionReplyLabel => 'Reply';
 
   @override
-  String get videoActionRepostLabel => 'Repost';
+  String get videoActionRepostLabel => 'Revine';
 
   @override
   String get videoActionShareLabel => 'Share';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
 
   @override
   String get videoActionAboutLabel => 'About';

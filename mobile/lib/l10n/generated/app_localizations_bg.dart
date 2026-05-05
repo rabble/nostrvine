@@ -1432,6 +1432,12 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionShareLabel => 'Сподели';
 
   @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
   String get videoActionAboutLabel => 'Инфо';
 
   @override

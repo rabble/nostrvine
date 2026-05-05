@@ -682,8 +682,16 @@
   "videoActionAutoLabel": "Compilation",
   "videoActionLikeLabel": "Like",
   "videoActionReplyLabel": "Reply",
-  "videoActionRepostLabel": "Repost",
+  "videoActionRepostLabel": "Revine",
   "videoActionShareLabel": "Share",
+  "videoActionReportLabel": "Report",
+  "@videoActionReportLabel": {
+    "description": "Short caption shown beneath the Report icon in the video overlay action column."
+  },
+  "videoActionReport": "Report video",
+  "@videoActionReport": {
+    "description": "Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog."
+  },
   "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",

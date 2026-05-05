@@ -1374,6 +1374,12 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionShareLabel => 'አጋራ';
 
   @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
   String get videoActionAboutLabel => 'ስለ';
 
   @override
