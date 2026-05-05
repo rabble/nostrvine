@@ -20,6 +20,14 @@ import SupportProvidersSDK
     // Register plugins with the engine
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
+    // Set up Nostr bridge frame attestation channel.
+    // Must run after GeneratedPluginRegistrant so WebViewFlutterPlugin is
+    // already registered — FWFWebViewFlutterWKWebViewExternalAPI requires it.
+    NostrBridgeAttestationPlugin.setup(
+      messenger: engineBridge.applicationRegistrar.messenger(),
+      pluginRegistry: engineBridge.pluginRegistry
+    )
+
     // Set up ProofMode platform channel
     setupProofModeChannel(with: engineBridge)
 
