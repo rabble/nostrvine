@@ -15,6 +15,12 @@
 ///
 /// This is a server-side defect, but until upstream fixes propagate, the
 /// client must not surface those phrases as captions.
+///
+// TODO(divinevideo/divine-funnelcake#343): Retire this client sanitizer
+// once funnelcake (1) refuses to serve polluted VTTs (E1) and (2) ships
+// constrained-decoding in the transcription post-processor (D). User-signed
+// Kind 39307 events bypass funnelcake — a narrow client defense may stay
+// for that path even after backend lands.
 class TranscriptSanitizer {
   /// Phrases that signal AI prompt instructions leaking into a caption.
   ///
