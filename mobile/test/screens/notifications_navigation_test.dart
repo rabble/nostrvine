@@ -86,10 +86,11 @@ void main() {
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               routerConfig: router,
-              builder: (context, child) => BlocProvider<InviteStatusCubit>.value(
-                value: mockInviteCubit,
-                child: child ?? const SizedBox.shrink(),
-              ),
+              builder: (context, child) =>
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: mockInviteCubit,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
             ),
     );
   }
