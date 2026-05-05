@@ -87,6 +87,14 @@
 - User-installed CAs are not trusted in any build. If you need to proxy-debug with Charles or mitmproxy, add a single `<certificates src="user" />` line to `<trust-anchors>` in `mobile/android/app/src/main/res/xml/network_security_config.xml` in your working copy and don't commit it; CI's transport-security guard will block any commit that re-enables user-CA trust. (For iOS, plist-edit `NSAppTransportSecurity` similarly and revert before commit.)
 - If you add a new exception to either native config, update `mobile/scripts/check_native_transport_security.sh` so the guard recognises the allowance.
 
+## Zapstore Publishing Notes
+
+- Do not complicate Zapstore publish handoff. Let Rabble run `zsp` directly unless explicitly asked to wrap or automate it.
+- Never ask Rabble to paste an `nsec` into chat or into a shell command that would land in history.
+- If `zsp` selects the wrong release, stop and fix the release source/version issue before signing. Do not continue to preview/sign.
+- Divine `1.0.9` was a GitHub prerelease, so `zsp` selected `1.0.8` unless `--pre-release` was passed or a local APK/config path forced the exact APK.
+- Before telling Rabble to sign, verify the `zsp` fetch output shows the intended APK version, for example `Version: 1.0.9 (...)`.
+
 ## Clean Workspace Expectations
 
 - Do not leave untracked or modified files around after a task unless they are part of the intentional diff.
