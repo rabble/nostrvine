@@ -238,9 +238,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
   // Like count batching - accumulates video IDs and fetches counts in batches
   // to prevent ANR issues from too many concurrent relay requests
   final Map<String, SubscriptionType> _pendingLikeCountVideoIds = {};
-  // Addressable IDs (kind:pubkey:d-tag) for pending like count fetches.
-  // Passed to getLikeCounts so reactions on any version of a replaced video
-  // (different event IDs, same d-tag) are also counted via 'a' tag.
+  // Companion map for _pendingLikeCountVideoIds: event ID → addressable ID (kind:pubkey:d-tag).
   final Map<String, String> _pendingLikeCountAddressableIds = {};
   Timer? _likeCountBatchTimer;
   static const Duration _likeCountBatchDebounce = Duration(milliseconds: 150);
@@ -4604,7 +4602,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
     try {
       // Fetch like counts via both 'e' tag (event ID) and 'a' tag (addressable
-      // ID).  The 'a' tag query catches reactions on any previous version of the
+      // ID). The 'a' tag query catches reactions on any previous version of the
       // video so counts stay accurate after a metadata update.
       final likeCounts = await _likesRepository!.getLikeCounts(
         videoIds,
