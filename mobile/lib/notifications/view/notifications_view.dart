@@ -221,6 +221,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     var video = await videosRepository.fetchVideoWithStats(
       resolvedVideoEventId,
     );
+    if (!context.mounted) return;
 
     // Keep a defensive fallback for the rare case where the repository misses
     // but the event is still available directly from the service / relay.
@@ -228,6 +229,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     if (video == null) {
       try {
         final event = await nostrService.fetchEventById(resolvedVideoEventId);
+        if (!context.mounted) return;
         if (event != null) {
           video = VideoEvent.fromNostrEvent(event);
         }
