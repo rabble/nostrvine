@@ -250,7 +250,7 @@ void main() {
                 id: 'wednesday',
                 title: 'Wednesday My Dudes',
                 assetPath: 'assets/sounds/wednesday.mp3',
-                duration: Duration(milliseconds: 6269),
+                duration: const Duration(milliseconds: 6269),
                 tags: ['meme', 'classic', 'frog'],
               ),
             ],
