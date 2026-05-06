@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 /// A tile widget for displaying a sound (AudioEvent) in various list contexts.
@@ -81,9 +82,13 @@ class SoundTile extends StatelessWidget {
   /// Format the duration for display.
   ///
   /// Returns a short format like "6s" for durations under a minute.
-  /// Returns "0s" for null or zero duration.
+  /// Returns the full Vine duration for legacy original sounds without
+  /// stored metadata, otherwise "0s" for null or zero duration.
   String _formatDuration() {
     if (sound.duration == null || sound.duration! <= 0) {
+      if (sound.isOriginalSound) {
+        return '${VideoEditorConstants.maxDuration.inSeconds}s';
+      }
       return '0s';
     }
     final totalSeconds = sound.duration!.round();
