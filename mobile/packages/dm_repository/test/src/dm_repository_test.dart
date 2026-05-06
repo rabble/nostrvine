@@ -669,8 +669,19 @@ void main() {
             ),
           ).thenAnswer((_) async {});
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
+            (invocation) async => PublishOutcome(
+              eventId: (invocation.positionalArguments[0] as Event).id,
+              acceptedBy: const {'wss://default.test'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            ),
+          );
 
           // First send: conversation does not exist yet → NIP-04
           // fallback fires (safe legacy interop).
@@ -688,7 +699,13 @@ void main() {
           );
           await pumpEventQueue();
 
-          verify(() => mockNostrClient.publishEvent(any())).called(1);
+          verify(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).called(1);
 
           // Capture the dmProtocol the repository wrote on first send.
           final upsertCall = verify(
@@ -714,8 +731,19 @@ void main() {
           // The fallback must NOT fire again.
           reset(mockNostrClient);
           when(
-            () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
+            (invocation) async => PublishOutcome(
+              eventId: (invocation.positionalArguments[0] as Event).id,
+              acceptedBy: const {'wss://default.test'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            ),
+          );
           when(
             () => mockConversationsDao.getConversation(
               any(),
@@ -745,7 +773,13 @@ void main() {
           );
           await pumpEventQueue();
 
-          verifyNever(() => mockNostrClient.publishEvent(any()));
+          verifyNever(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          );
         },
       );
     });

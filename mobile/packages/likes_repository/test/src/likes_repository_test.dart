@@ -132,6 +132,30 @@ void main() {
       when(
         () => mockLocalStorage.getLikeRecord(any()),
       ).thenAnswer((_) async => null);
+      when(
+        () => mockLocalStorage.saveLikeRecord(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockLocalStorage.deleteLikeRecord(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockNostrClient.sendLikeAwaitOk(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          addressableId: any(named: 'addressableId'),
+          targetKind: any(named: 'targetKind'),
+          content: any(named: 'content'),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => acceptedOutcome());
+      when(
+        () => mockNostrClient.deleteEventAwaitOk(
+          any(),
+          policy: any(named: 'policy'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => acceptedOutcome());
     });
 
     tearDown(() => repository.dispose());
@@ -378,14 +402,16 @@ void main() {
           // state mid-call. This is the heart of the Follow-pattern fix:
           // the local DB update + stream emit must happen before the
           // network round-trip returns.
-          final sendLikeCompleter = Completer<Event?>();
+          final sendLikeCompleter = Completer<PublishOutcome>();
           when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
+            () => mockNostrClient.sendLikeAwaitOk(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
               addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
               targetKind: any(named: 'targetKind'),
+              content: any(named: 'content'),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
             ),
           ).thenAnswer((_) => sendLikeCompleter.future);
           when(
@@ -418,10 +444,8 @@ void main() {
             reason: 'isLiked must reflect the optimistic state pre-network',
           );
 
-          // Resolve the network call with the real reaction event.
-          final mockEvent = MockEvent();
-          when(() => mockEvent.id).thenReturn(testReactionEventId);
-          sendLikeCompleter.complete(mockEvent);
+          // Resolve the network call with the real reaction event id.
+          sendLikeCompleter.complete(acceptedOutcome());
           final result = await likeFuture;
 
           expect(result, equals(testReactionEventId));
@@ -430,14 +454,16 @@ void main() {
 
       test('rolls back optimistic record when sendLike returns null', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -461,12 +487,14 @@ void main() {
 
       test('rolls back optimistic record when sendLike throws', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenThrow(Exception('relay closed'));
         when(
@@ -498,14 +526,16 @@ void main() {
       test('queues offline action and preserves optimistic state when '
           'sendLike returns null and queueOfflineAction is wired', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
         ).thenAnswer((_) async {});
@@ -553,12 +583,14 @@ void main() {
       test('queues offline action when sendLike throws and '
           'queueOfflineAction is wired', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenThrow(Exception('relay closed'));
         when(
@@ -696,10 +728,14 @@ void main() {
             () => mockLocalStorage.deleteLikeRecord(testEventId),
           ).thenAnswer((_) async => true);
 
-          // Suspend deleteEvent so we can observe the optimistic phase.
-          final deleteCompleter = Completer<Event?>();
+          // Suspend deleteEventAwaitOk so we can observe the optimistic phase.
+          final deleteCompleter = Completer<PublishOutcome>();
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
+            () => mockNostrClient.deleteEventAwaitOk(
+              testReactionEventId,
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
           ).thenAnswer((_) => deleteCompleter.future);
 
           repository = createRepository();
@@ -719,7 +755,7 @@ void main() {
             reason: 'isLiked must reflect optimistic removal pre-network',
           );
 
-          deleteCompleter.complete(MockEvent());
+          deleteCompleter.complete(acceptedOutcome());
           await unlikeFuture;
         },
       );
@@ -731,8 +767,12 @@ void main() {
             () => mockLocalStorage.getAllLikeRecords(),
           ).thenAnswer((_) async => [createLikeRecord()]);
           when(
-            () => mockNostrClient.deleteEvent(testReactionEventId),
-          ).thenAnswer((_) async => null);
+            () => mockNostrClient.deleteEventAwaitOk(
+              testReactionEventId,
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => transientOutcome());
           when(
             () => mockLocalStorage.deleteLikeRecord(testEventId),
           ).thenAnswer((_) async => true);
@@ -759,7 +799,11 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).thenThrow(Exception('relay closed'));
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -789,8 +833,12 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
-        ).thenAnswer((_) async => null);
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => transientOutcome());
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         ).thenAnswer((_) async => true);
@@ -831,7 +879,11 @@ void main() {
           () => mockLocalStorage.getAllLikeRecords(),
         ).thenAnswer((_) async => [createLikeRecord()]);
         when(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).thenThrow(Exception('relay closed'));
         when(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
@@ -999,16 +1051,18 @@ void main() {
 
     group('downvoteEvent', () {
       test('ticks watchDownvotedEventIds before sendLike completes', () async {
-        // Block sendLike on a completer so the optimistic stream emit
+        // Block sendLikeAwaitOk on a completer so the optimistic stream emit
         // is observable before the network call returns.
-        final publishCompleter = Completer<Event?>();
+        final publishCompleter = Completer<PublishOutcome>();
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) => publishCompleter.future);
 
@@ -1031,34 +1085,12 @@ void main() {
           reason: 'stream must tick before publish completes',
         );
 
-        publishCompleter.complete(
-          createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
+        publishCompleter.complete(acceptedOutcome());
         await downvoteFuture;
         await subscription.cancel();
       });
 
       test('publishes kind-7 with content "-" and tracks the record', () async {
-        when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
-          ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-
         repository = createRepository(withLocalStorage: false);
         final result = await repository.downvoteEvent(
           eventId: testEventId,
@@ -1068,31 +1100,19 @@ void main() {
         expect(result, equals(testReactionEventId));
         expect(await repository.isDownvoted(testEventId), isTrue);
         verify(
-          () => mockNostrClient.sendLike(
-            testEventId,
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: testEventId,
+            authorPubkey: testAuthorPubkey,
             content: '-',
-            targetAuthorPubkey: testAuthorPubkey,
+            addressableId: any(named: 'addressableId'),
+            targetKind: any(named: 'targetKind'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       });
 
       test('throws AlreadyDownvotedException when already downvoted', () async {
-        when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
-          ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-
         repository = createRepository(withLocalStorage: false);
         await repository.downvoteEvent(
           eventId: testEventId,
@@ -1110,14 +1130,16 @@ void main() {
 
       test('rolls back record + stream when publish returns null', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
 
         repository = createRepository(withLocalStorage: false);
 
@@ -1134,12 +1156,14 @@ void main() {
 
       test('rolls back record + stream when publish throws', () async {
         when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
+          () => mockNostrClient.sendLikeAwaitOk(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
             addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
+            content: any(named: 'content'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenThrow(Exception('relay unreachable'));
 
@@ -1159,26 +1183,6 @@ void main() {
 
     group('removeDownvote', () {
       test('publishes deletion event and removes the record', () async {
-        when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
-          ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-        final deletionEvent = MockEvent();
-        when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => deletionEvent);
-
         repository = createRepository(withLocalStorage: false);
         await repository.downvoteEvent(
           eventId: testEventId,
@@ -1189,7 +1193,11 @@ void main() {
 
         expect(await repository.isDownvoted(testEventId), isFalse);
         verify(
-          () => mockNostrClient.deleteEvent(testReactionEventId),
+          () => mockNostrClient.deleteEventAwaitOk(
+            testReactionEventId,
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
         ).called(1);
       });
 
@@ -1204,23 +1212,12 @@ void main() {
 
       test('rolls back record + stream when deletion returns null', () async {
         when(
-          () => mockNostrClient.sendLike(
+          () => mockNostrClient.deleteEventAwaitOk(
             any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-        when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => transientOutcome());
 
         repository = createRepository(withLocalStorage: false);
         await repository.downvoteEvent(
@@ -1239,22 +1236,11 @@ void main() {
 
       test('rolls back record + stream when deletion throws', () async {
         when(
-          () => mockNostrClient.sendLike(
+          () => mockNostrClient.deleteEventAwaitOk(
             any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
+            policy: any(named: 'policy'),
+            targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-        when(
-          () => mockNostrClient.deleteEvent(any()),
         ).thenThrow(Exception('relay unreachable'));
 
         repository = createRepository(withLocalStorage: false);
@@ -1274,22 +1260,6 @@ void main() {
 
     group('toggleDownvote', () {
       test('downvotes when not downvoted and returns true', () async {
-        when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
-          ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-
         repository = createRepository(withLocalStorage: false);
         final result = await repository.toggleDownvote(
           eventId: testEventId,
@@ -1303,26 +1273,6 @@ void main() {
       test(
         'removes downvote when already downvoted and returns false',
         () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
-          final deletionEvent = MockEvent();
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenAnswer((_) async => deletionEvent);
-
           repository = createRepository(withLocalStorage: false);
           await repository.downvoteEvent(
             eventId: testEventId,
@@ -1352,22 +1302,6 @@ void main() {
       });
 
       test('getDownvoteRecord returns record after downvoteEvent', () async {
-        when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
-          ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-
         repository = createRepository(withLocalStorage: false);
         await repository.downvoteEvent(
           eventId: testEventId,
@@ -1381,22 +1315,6 @@ void main() {
       });
 
       test('getDownvotedEventIds returns ordered set', () async {
-        when(
-          () => mockNostrClient.sendLike(
-            any(),
-            content: any(named: 'content'),
-            addressableId: any(named: 'addressableId'),
-            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-            targetKind: any(named: 'targetKind'),
-          ),
-        ).thenAnswer(
-          (_) async => createMockReaction(
-            id: testReactionEventId,
-            targetEventId: testEventId,
-            content: '-',
-          ),
-        );
-
         repository = createRepository(withLocalStorage: false);
         await repository.downvoteEvent(
           eventId: testEventId,
@@ -1413,22 +1331,6 @@ void main() {
       test(
         'watchDownvotedEventIds emits initial empty + new state on downvote',
         () async {
-          when(
-            () => mockNostrClient.sendLike(
-              any(),
-              content: any(named: 'content'),
-              addressableId: any(named: 'addressableId'),
-              targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
-              targetKind: any(named: 'targetKind'),
-            ),
-          ).thenAnswer(
-            (_) async => createMockReaction(
-              id: testReactionEventId,
-              targetEventId: testEventId,
-              content: '-',
-            ),
-          );
-
           repository = createRepository(withLocalStorage: false);
 
           final emitted = <List<String>>[];

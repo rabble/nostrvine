@@ -102,7 +102,12 @@ void main() {
 
         expect(reactionId, equals(_testReactionId));
         expect(await repo.isLiked(_testEventId), isTrue);
-        verify(() => mockStorage.saveLikeRecord(any())).called(1);
+        final saved = verify(
+          () => mockStorage.saveLikeRecord(captureAny()),
+        ).captured.cast<LikeRecord>();
+        expect(saved, hasLength(2));
+        expect(saved.first.reactionEventId, startsWith('pending_like_'));
+        expect(saved.last.reactionEventId, equals(_testReactionId));
 
         repo.dispose();
       },
@@ -144,10 +149,9 @@ void main() {
           expect(e.feedback!.messageKey, 'publish_no_relay_response');
         }
 
-        // No optimistic cache write when we haven't accepted yet — the
-        // repository doesn't insert into _likeRecords or save to storage.
         expect(await repo.isLiked(_testEventId), isFalse);
-        verifyNever(() => mockStorage.saveLikeRecord(any()));
+        verify(() => mockStorage.saveLikeRecord(any())).called(1);
+        verify(() => mockStorage.deleteLikeRecord(_testEventId)).called(1);
 
         repo.dispose();
       },
@@ -192,10 +196,9 @@ void main() {
           expect(e.feedback!.firstRejectionReason, 'blocked: spam');
         }
 
-        // Contract: the like is still present locally when the relay
-        // rejected the deletion so the UI can re-try without losing state.
         expect(await repo.isLiked(_testEventId), isTrue);
-        verifyNever(() => mockStorage.deleteLikeRecord(_testEventId));
+        verify(() => mockStorage.deleteLikeRecord(_testEventId)).called(1);
+        verify(() => mockStorage.saveLikeRecord(any())).called(1);
 
         repo.dispose();
       },

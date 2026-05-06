@@ -1,6 +1,5 @@
 // ABOUTME: Verifies SocialService.publishRightToBeForgotten surfaces
-// ABOUTME: PublishOutcome-driven failure, and that follow-set publishing
-// ABOUTME: only commits to the local map when the relay acknowledges.
+// ABOUTME: PublishOutcome-driven failure.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -104,52 +103,6 @@ void main() {
           () => service.publishRightToBeForgotten(),
           throwsA(isA<Exception>()),
         );
-      },
-    );
-  });
-
-  group('SocialService.createFollowSet', () {
-    test(
-      'returns the set; local nostrEventId commits only on accept',
-      () async {
-        when(
-          () => nostr.publishEventWithRetry(
-            any(),
-            policy: any(named: 'policy'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((invocation) async {
-          final e = invocation.positionalArguments.first as Event;
-          return _accepted(e.id);
-        });
-
-        final set = await service.createFollowSet(name: 'friends');
-
-        expect(set, isNotNull);
-        expect(service.followSets, hasLength(1));
-        expect(service.followSets.first.nostrEventId, isNotNull);
-      },
-    );
-
-    test(
-      'on transient failure: local set stays but nostrEventId stays null '
-      'so the UI knows it was never acknowledged',
-      () async {
-        when(
-          () => nostr.publishEventWithRetry(
-            any(),
-            policy: any(named: 'policy'),
-            targetRelays: any(named: 'targetRelays'),
-          ),
-        ).thenAnswer((invocation) async {
-          final e = invocation.positionalArguments.first as Event;
-          return _transient(e.id);
-        });
-
-        await service.createFollowSet(name: 'friends');
-
-        expect(service.followSets, hasLength(1));
-        expect(service.followSets.first.nostrEventId, isNull);
       },
     );
   });

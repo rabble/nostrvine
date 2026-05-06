@@ -1285,8 +1285,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       isFullscreen: widget.isFullscreen,
                       listSources: widget.listSources,
                       showListAttribution: widget.showListAttribution,
-                      hideFollowButtonIfFollowing:
-                          widget.hideFollowButtonIfFollowing,
                     ),
                   ),
             ),

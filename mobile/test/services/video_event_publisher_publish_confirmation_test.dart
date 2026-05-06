@@ -275,11 +275,11 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => const PublishOutcome(
+        (_) async => PublishOutcome(
           eventId: 'selected-audio-video-event',
-          acceptedBy: {'wss://relay.divine.video'},
-          rejectedBy: {},
-          noResponseFrom: {},
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
         ),
       );
 
@@ -328,11 +328,11 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => const PublishOutcome(
+        (_) async => PublishOutcome(
           eventId: 'invalid-audio-video-event',
-          acceptedBy: {'wss://relay.divine.video'},
-          rejectedBy: {},
-          noResponseFrom: {},
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
         ),
       );
 
@@ -432,11 +432,11 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => const PublishOutcome(
+        (_) async => PublishOutcome(
           eventId: 'audio-reuse-video-event',
-          acceptedBy: {'wss://relay.divine.video'},
-          rejectedBy: {},
-          noResponseFrom: {},
+          acceptedBy: const {'wss://relay.divine.video'},
+          rejectedBy: const {},
+          noResponseFrom: const {},
         ),
       );
 

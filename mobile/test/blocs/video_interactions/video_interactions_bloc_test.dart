@@ -592,11 +592,20 @@ void main() {
             isLiked: true,
           ),
           // Rollback after the publish failure restores the pre-tap heart
-          // state. The failure itself is surfaced via addError, asserted
-          // below.
-          const VideoInteractionsState(status: VideoInteractionsStatus.success),
+          // state and records a user-visible interaction error.
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            error: VideoInteractionsError.likeFailed,
+          ),
         ],
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Exception>(),
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<Exception>(),
+          ),
+        ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -624,9 +633,17 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             likeCount: 10,
+            error: VideoInteractionsError.likeFailed,
           ),
         ],
-        errors: () => [isA<Exception>()],
+        errors: () => [
+          isA<Exception>(),
+          isA<Reportable<Object>>().having(
+            (r) => r.unwrap(),
+            'unwrap',
+            isA<Exception>(),
+          ),
+        ],
       );
 
       // Regression for #3503: when the home feed mounts a feed item whose
@@ -669,9 +686,11 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             likeCount: 5,
+            error: VideoInteractionsError.likeFailed,
           ),
         ],
         errors: () => [
+          isA<StateError>(),
           isA<Reportable<Object>>().having(
             (r) => r.unwrap(),
             'unwrap',
@@ -1109,6 +1128,7 @@ void main() {
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             repostCount: 5,
+            error: VideoInteractionsError.repostFailed,
           ),
         ],
         errors: () => [isA<Exception>()],

@@ -344,13 +344,40 @@ void main() {
             nostrService: mockNostrClient,
           );
 
-          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          when(
+            () => mockNostrClient.publishEventWithRetry(
+              any(),
+              policy: any(named: 'policy'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer(
             (invocation) async {
               final event = invocation.positionalArguments[0] as Event;
               capturedEvents.add(event);
-              return event;
+              return PublishOutcome(
+                eventId: event.id,
+                acceptedBy: const {'wss://relay.test'},
+                rejectedBy: const {},
+                noResponseFrom: const {},
+              );
             },
           );
+          when(
+            () => mockNostrClient.publishEventAwaitOk(
+              any(),
+              timeout: any(named: 'timeout'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((invocation) async {
+            final event = invocation.positionalArguments[0] as Event;
+            capturedEvents.add(event);
+            return PublishOutcome(
+              eventId: event.id,
+              acceptedBy: const {'wss://relay.test'},
+              rejectedBy: const {},
+              noResponseFrom: const {},
+            );
+          });
 
           final result = await matchingService.sendPrivateMessage(
             recipientPubkey: _recipientPubkey,

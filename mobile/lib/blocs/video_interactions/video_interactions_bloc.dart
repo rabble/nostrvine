@@ -319,13 +319,13 @@ class VideoInteractionsBloc
         emit(state.copyWith(isLiked: true, likeCount: event.wasCount));
       case _LikeSettleNotLiked():
         emit(state.copyWith(isLiked: false, likeCount: event.wasCount));
-      case _LikeSettleFailed(:final wasLiked):
+      case _LikeSettleFailed(:final wasLiked, :final error, :final feedback):
         emit(
           state.copyWith(
             isLiked: wasLiked,
             likeCount: event.wasCount,
-            error: event.outcome.error,
-            lastActionFeedback: event.outcome.feedback,
+            error: error,
+            lastActionFeedback: feedback,
           ),
         );
     }
@@ -445,12 +445,12 @@ class VideoInteractionsBloc
         emit(state.copyWith(isReposted: true, repostCount: event.wasCount));
       case _RepostSettleNotReposted():
         emit(state.copyWith(isReposted: false, repostCount: event.wasCount));
-      case _RepostSettleFailed(:final wasReposted):
+      case _RepostSettleFailed(:final wasReposted, :final error):
         emit(
           state.copyWith(
             isReposted: wasReposted,
             repostCount: event.wasCount,
-            error: event.outcome.error,
+            error: error,
           ),
         );
     }
