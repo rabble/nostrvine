@@ -166,7 +166,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
-                playerItem.videoComposition = avComposition
                 self.templateItem = playerItem
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
@@ -196,7 +195,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 } else {
                     startTime = leadingBlackFrameSkip
                 }
-                let toleranceAfter = leadingBlackFrameSkip
 
                 if let existing = self.player {
                     self.configureQueue(with: playerItem)

@@ -67,7 +67,6 @@ class DivineVideoPlayerState {
     this.rotationDegrees = 0,
     this.errorMessage,
     this.errorCode,
-    this.rotationDegrees = 0,
   });
 
   /// Current playback status.
@@ -132,15 +131,6 @@ class DivineVideoPlayerState {
   /// Prefer this over string-parsing [errorMessage] for retry/failover logic.
   final NativePlayerErrorCode? errorCode;
 
-  /// Rotation in degrees (0, 90, 180, 270) that the Dart layer must apply
-  /// to the [Texture] widget to show the video upright.
-  ///
-  /// Non-zero only when the `SurfaceProducer` backend does not handle crop
-  /// and rotation automatically (i.e. when the SurfaceTexture path is used
-  /// instead of Impeller/ImageReader). When the backend handles it, the
-  /// native side sends 0 and no [RotatedBox] is needed.
-  final int rotationDegrees;
-
   /// The aspect ratio of the video (width / height).
   ///
   /// Returns 0 when dimensions are not yet available.
@@ -176,7 +166,6 @@ class DivineVideoPlayerState {
     int? rotationDegrees,
     String? errorMessage,
     NativePlayerErrorCode? errorCode,
-    int? rotationDegrees,
   }) {
     return DivineVideoPlayerState(
       status: status ?? this.status,
@@ -194,7 +183,6 @@ class DivineVideoPlayerState {
       rotationDegrees: rotationDegrees ?? this.rotationDegrees,
       errorMessage: errorMessage ?? this.errorMessage,
       errorCode: errorCode ?? this.errorCode,
-      rotationDegrees: rotationDegrees ?? this.rotationDegrees,
     );
   }
 
@@ -222,7 +210,6 @@ class DivineVideoPlayerState {
       errorCode: rawErrorCode is String
           ? NativePlayerErrorCode.fromString(rawErrorCode)
           : null,
-      rotationDegrees: (map['rotationDegrees'] as int?) ?? 0,
     );
   }
 
@@ -257,8 +244,7 @@ class DivineVideoPlayerState {
           videoHeight == other.videoHeight &&
           rotationDegrees == other.rotationDegrees &&
           errorMessage == other.errorMessage &&
-          errorCode == other.errorCode &&
-          rotationDegrees == other.rotationDegrees;
+          errorCode == other.errorCode;
 
   @override
   int get hashCode => Object.hash(
@@ -277,7 +263,6 @@ class DivineVideoPlayerState {
     rotationDegrees,
     errorMessage,
     errorCode,
-    rotationDegrees,
   );
 
   @override

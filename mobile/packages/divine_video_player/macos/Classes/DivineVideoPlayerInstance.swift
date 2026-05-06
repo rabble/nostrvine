@@ -164,7 +164,6 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
-                playerItem.videoComposition = avComposition
                 self.templateItem = playerItem
                 self.textureOutput?.attach(to: playerItem)
 
