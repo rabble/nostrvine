@@ -195,12 +195,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             firstFrameFuture: widget.firstFrameFuture,
             isVisible: widget.isActive,
           ),
-        // Subtitle overlay — Positioned.fill gives the inner Stack a size
-        // so SubtitleOverlay's Positioned can resolve correctly.
-        if (video.hasSubtitles && widget.player != null)
-          Positioned.fill(
-            child: _SubtitleLayer(video: video, player: widget.player!),
-          ),
         // Scroll-faded overlay: author info, badges, and action buttons all
         // fade together as the user swipes to the next video.
         ValueListenableBuilder<double>(
@@ -215,7 +209,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           },
           child: Stack(
             children: [
-              // Author info and description (bottom-left)
+              // Author info, captions, and description (bottom-left)
               PositionedDirectional(
                 bottom: 20 + safeAreaBottom,
                 start: 16,
@@ -223,6 +217,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 child: _AuthorInfoSection(
                   video: video,
                   hasTextContent: hasTextContent,
+                  player: widget.player,
                   onInteracted: widget.onInteracted,
                 ),
               ),
@@ -247,11 +242,13 @@ class _AuthorInfoSection extends ConsumerWidget {
   const _AuthorInfoSection({
     required this.video,
     required this.hasTextContent,
+    this.player,
     this.onInteracted,
   });
 
   final VideoEvent video;
   final bool hasTextContent;
+  final Player? player;
   final VoidCallback? onInteracted;
 
   @override
@@ -267,6 +264,11 @@ class _AuthorInfoSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Caption pill — sits 16 px above the author row, matching Figma
+        if (video.hasSubtitles && player != null) ...[
+          _InlineCaptionPill(video: video, player: player!),
+          const SizedBox(height: 16),
+        ],
         // Avatar and name row
         Row(
           children: [
@@ -445,30 +447,24 @@ class _ActionButtons extends StatelessWidget {
 ///
 /// Uses [Positioned.fill] + inner [Stack] so the [SubtitleOverlay]'s
 /// own [Positioned] resolves against a proper [Stack] ancestor.
-class _SubtitleLayer extends ConsumerWidget {
-  const _SubtitleLayer({required this.video, required this.player});
+/// Streams the player position and renders [SubtitleCuePill] when a cue is
+/// active and captions are enabled. Returns [SizedBox.shrink] otherwise.
+class _InlineCaptionPill extends ConsumerWidget {
+  const _InlineCaptionPill({required this.video, required this.player});
 
   final VideoEvent video;
   final Player player;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
+    final visible = ref.watch(subtitleVisibilityProvider);
+    if (!visible) return const SizedBox.shrink();
 
     return StreamBuilder<Duration>(
       stream: player.stream.position,
       builder: (context, snapshot) {
         final positionMs = snapshot.data?.inMilliseconds ?? 0;
-        return Stack(
-          children: [
-            SubtitleOverlay(
-              video: video,
-              positionMs: positionMs,
-              visible: subtitlesVisible,
-              bottomOffset: 180,
-            ),
-          ],
-        );
+        return SubtitleCuePill(video: video, positionMs: positionMs);
       },
     );
   }
