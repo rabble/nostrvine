@@ -61,6 +61,22 @@ class NotificationFeedBloc
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
 
+  /// Override [ActorNotification.isFollowingBack] for follow-type rows so the
+  /// flag tracks the authoritative follow state in [FollowRepository] rather
+  /// than a transient bloc mutation. Without this, the "Follow back" button
+  /// reappears after the page is unmounted and remounted because the bloc is
+  /// rebuilt with a fresh `isFollowingBack: false` from the repository.
+  List<NotificationItem> _applyFollowState(Iterable<NotificationItem> items) {
+    return items.map((item) {
+      if (item is! ActorNotification || item.type != NotificationKind.follow) {
+        return item;
+      }
+      final isFollowing = _followRepository.isFollowing(item.actor.pubkey);
+      if (isFollowing == item.isFollowingBack) return item;
+      return item.copyWith(isFollowingBack: isFollowing);
+    }).toList();
+  }
+
   /// Handle initial load.
   Future<void> _onStarted(
     NotificationFeedStarted event,
@@ -74,7 +90,7 @@ class NotificationFeedBloc
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: _applyFollowState(page.items),
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -105,7 +121,10 @@ class NotificationFeedBloc
 
       emit(
         state.copyWith(
-          notifications: [...state.notifications, ...newItems],
+          notifications: _applyFollowState([
+            ...state.notifications,
+            ...newItems,
+          ]),
           hasMore: page.hasMore,
           isLoadingMore: false,
         ),
@@ -127,7 +146,7 @@ class NotificationFeedBloc
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: _applyFollowState(page.items),
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -149,7 +168,7 @@ class NotificationFeedBloc
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: page.items,
+          notifications: _applyFollowState(page.items),
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -206,7 +225,7 @@ class NotificationFeedBloc
       if (merged) {
         emit(
           state.copyWith(
-            notifications: mergedList,
+            notifications: _applyFollowState(mergedList),
             unreadCount: state.unreadCount + 1,
           ),
         );
@@ -216,7 +235,7 @@ class NotificationFeedBloc
 
     emit(
       state.copyWith(
-        notifications: [enriched, ...state.notifications],
+        notifications: _applyFollowState([enriched, ...state.notifications]),
         unreadCount: state.unreadCount + 1,
       ),
     );
@@ -265,25 +284,19 @@ class NotificationFeedBloc
 
   /// Handle follow-back action.
   ///
-  /// Calls the follow repository, then updates the matching notification
-  /// to show the follow-back state.
+  /// Calls the follow repository, then re-derives [isFollowingBack] from the
+  /// repository's authoritative state. The flag is not stored on the bloc;
+  /// the next [_applyFollowState] pass on a refresh/remount will reflect the
+  /// same value, so the button stays hidden across navigation.
   Future<void> _onFollowBack(
     NotificationFeedFollowBack event,
     Emitter<NotificationFeedState> emit,
   ) async {
     try {
       await _followRepository.follow(event.pubkey);
-
-      final updated = state.notifications.map((n) {
-        if (n is ActorNotification &&
-            n.type == NotificationKind.follow &&
-            n.actor.pubkey == event.pubkey) {
-          return n.copyWith(isFollowingBack: true);
-        }
-        return n;
-      }).toList();
-
-      emit(state.copyWith(notifications: updated));
+      emit(
+        state.copyWith(notifications: _applyFollowState(state.notifications)),
+      );
     } catch (e, s) {
       addError(e, s);
     }
