@@ -1,7 +1,7 @@
 import 'package:c2pa_flutter/c2pa.dart';
 import 'package:openvine/models/c2pa_import_result.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Validates C2PA Content Credentials on imported video files.
 class C2paImportValidationService {

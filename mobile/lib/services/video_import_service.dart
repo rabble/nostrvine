@@ -10,10 +10,10 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Orchestrates importing a C2PA-verified video into the diVine library.
 ///
