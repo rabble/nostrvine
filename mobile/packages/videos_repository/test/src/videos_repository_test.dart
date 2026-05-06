@@ -7783,7 +7783,9 @@ void main() {
             () => mockFunnelcakeClient.getVideosByAuthor(
               pubkey: any(named: 'pubkey'),
             ),
-          ).thenAnswer((_) async => <VideoStats>[]);
+          ).thenAnswer(
+            (_) async => const VideosByAuthorResponse(videos: <VideoStats>[]),
+          );
 
           final repo = VideosRepository(
             nostrClient: mockNostrClient,
