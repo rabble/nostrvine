@@ -1,8 +1,6 @@
 // ABOUTME: New Videos tab widget showing recent videos sorted by time
 // ABOUTME: Extracted from ExploreScreen for better separation of concerns
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +17,6 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Tab widget displaying new/recent videos sorted by time.
@@ -202,36 +199,10 @@ class _NewVideosContent extends ConsumerStatefulWidget {
 }
 
 class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-  late final StreamController<bool> _hasMoreStreamController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-    _hasMoreStreamController = StreamController<bool>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    _hasMoreStreamController.close();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Listen to provider changes and push to stream for fullscreen updates
-    ref.listen(newVideosFeedProvider, (previous, next) {
-      if (next.hasValue) {
-        final videos = next.value!.videos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList();
-        _videosStreamController.add(videos);
-        _hasMoreStreamController.add(next.value!.hasMoreContent);
-      }
-    });
     final newVideosFeedNotifier = ref.read(newVideosFeedProvider.notifier);
+    final fullscreenBridge = ref.read(newVideosFullscreenFeedBridgeProvider);
 
     return ComposableVideoGrid(
       videos: widget.videos,
@@ -249,12 +220,10 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
         context.push(
           PooledFullscreenVideoFeedScreen.path,
           extra: PooledFullscreenVideoFeedArgs(
-            videosStream: _videosStreamController.stream.startWith(videoList),
+            videosStream: fullscreenBridge.videosStream,
             initialIndex: index,
             onLoadMore: newVideosFeedNotifier.loadMore,
-            hasMoreStream: _hasMoreStreamController.stream.startWith(
-              widget.hasMoreContent,
-            ),
+            hasMoreStream: fullscreenBridge.hasMoreStream,
             removedIdsStream: ref
                 .read(videoEventServiceProvider)
                 .removedVideoIds,
