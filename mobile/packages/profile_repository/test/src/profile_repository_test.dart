@@ -3437,7 +3437,8 @@ void main() {
       );
 
       test(
-        'returns server error message when claim returns 400 with JSON error body',
+        'returns server error message when claim returns 400 '
+        'with JSON error body',
         () async {
           when(
             () => mockNostrClient.createNip98AuthHeader(
