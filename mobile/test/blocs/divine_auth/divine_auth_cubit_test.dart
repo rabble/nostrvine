@@ -467,6 +467,80 @@ void main() {
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
+          'retries invite consumption on transient error during sign in',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(success: true, code: testCode),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).thenAnswer(
+              (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
+            );
+            var consumeCallCount = 0;
+            when(
+              () => mockInviteApiClient.consumeInviteWithSession(
+                code: any(named: 'code'),
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+            ).thenAnswer((_) async {
+              consumeCallCount++;
+              if (consumeCallCount == 1) {
+                throw const InviteApiException(
+                  'timeout',
+                  code: InviteApiErrorCode.clientTimeout,
+                );
+              }
+              return const InviteConsumeResult(
+                message: 'Welcome',
+                codesAllocated: 5,
+              );
+            });
+            when(
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ).thenAnswer((_) async {});
+          },
+          build: () => buildCubit(inviteCode: 'ab12ef34'),
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          expect: () => [
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              isSubmitting: true,
+            ),
+            isA<DivineAuthSuccess>(),
+          ],
+          verify: (_) {
+            verify(
+              () => mockInviteApiClient.consumeInviteWithSession(
+                code: any(named: 'code'),
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+            ).called(2);
+          },
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
           'emits general error when login returns unsuccessful result',
           setUp: () {
             when(
@@ -1403,6 +1477,54 @@ void main() {
           verifyNever(
             () => mockAuthService.createAnonymousAccountFromKeyContainer(any()),
           );
+        },
+      );
+
+      blocTest<DivineAuthCubit, DivineAuthState>(
+        'retries anonymous invite consumption on transient error',
+        setUp: () {
+          var consumeCallCount = 0;
+          when(
+            () => mockInviteApiClient.consumeInviteWithKeyContainer(
+              code: any(named: 'code'),
+              keyContainer: any(named: 'keyContainer'),
+            ),
+          ).thenAnswer((_) async {
+            consumeCallCount++;
+            if (consumeCallCount == 1) {
+              throw const InviteApiException(
+                'network error',
+                code: InviteApiErrorCode.clientNetworkError,
+              );
+            }
+            return const InviteConsumeResult(
+              message: 'Welcome',
+              codesAllocated: 5,
+            );
+          });
+          when(
+            () => mockAuthService.createAnonymousAccountFromKeyContainer(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: () => buildCubit(inviteCode: 'ab12ef34'),
+        seed: () =>
+            const DivineAuthFormState(email: testEmail, password: testPassword),
+        act: (cubit) => cubit.skipWithAnonymousAccount(),
+        expect: () => [
+          const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSkipping: true,
+          ),
+          isA<DivineAuthSuccess>(),
+        ],
+        verify: (_) {
+          verify(
+            () => mockInviteApiClient.consumeInviteWithKeyContainer(
+              code: any(named: 'code'),
+              keyContainer: any(named: 'keyContainer'),
+            ),
+          ).called(2);
         },
       );
 

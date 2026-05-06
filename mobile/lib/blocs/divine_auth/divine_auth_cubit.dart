@@ -432,9 +432,16 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       if (inviteCode != null && inviteApiClient != null) {
         final pendingKey = await SecureKeyContainer.generate();
         try {
-          await inviteApiClient.consumeInviteWithKeyContainer(
-            code: inviteCode,
-            keyContainer: pendingKey,
+          await InviteErrorUtils.retryConsume(
+            consume: () => inviteApiClient.consumeInviteWithKeyContainer(
+              code: inviteCode,
+              keyContainer: pendingKey,
+            ),
+            log: (message) => Log.warning(
+              message,
+              name: 'DivineAuthCubit',
+              category: LogCategory.auth,
+            ),
           );
           await _authService.createAnonymousAccountFromKeyContainer(pendingKey);
         } finally {
@@ -498,10 +505,19 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       return;
     }
 
-    await inviteApiClient.consumeInviteWithSession(
-      code: inviteCode,
-      oauthConfig: _oauthClient.config,
-      session: session,
+    await session.save();
+
+    await InviteErrorUtils.retryConsume(
+      consume: () => inviteApiClient.consumeInviteWithSession(
+        code: inviteCode,
+        oauthConfig: _oauthClient.config,
+        session: session,
+      ),
+      log: (message) => Log.warning(
+        message,
+        name: 'DivineAuthCubit',
+        category: LogCategory.auth,
+      ),
     );
   }
 
