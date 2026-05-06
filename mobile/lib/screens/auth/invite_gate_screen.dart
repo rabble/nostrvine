@@ -808,8 +808,9 @@ class _InviteCodeTextInputFormatter extends TextInputFormatter {
     // not to type one themselves. Skip when deleting so backspace
     // isn't trapped by the dash re-appearing.
     final isDeleting = newValue.text.length < oldValue.text.length;
-    final display =
-        normalized.length == 4 && !isDeleting ? '$normalized-' : normalized;
+    final display = normalized.length == 4 && !isDeleting
+        ? '$normalized-'
+        : normalized;
     return TextEditingValue(
       text: display,
       selection: TextSelection.collapsed(offset: display.length),
