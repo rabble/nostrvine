@@ -42,6 +42,8 @@ class SoundTile extends StatelessWidget {
     this.compact = false,
     this.videoCount,
     this.trailing,
+    this.statusBadgeLabel,
+    this.statusBadgeColor,
     super.key,
   });
 
@@ -69,6 +71,12 @@ class SoundTile extends StatelessWidget {
 
   /// Optional trailing action for list tiles.
   final Widget? trailing;
+
+  /// Optional availability badge label shown under the title.
+  final String? statusBadgeLabel;
+
+  /// Optional color for the availability badge.
+  final Color? statusBadgeColor;
 
   /// Format the duration for display.
   ///
@@ -200,6 +208,13 @@ class SoundTile extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (statusBadgeLabel != null) ...[
+                          const SizedBox(height: 6),
+                          _SoundStatusBadge(
+                            label: statusBadgeLabel!,
+                            color: statusBadgeColor ?? VineTheme.vineGreen,
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         _buildMetadataRow(context),
                       ],
@@ -274,6 +289,32 @@ class SoundTile extends StatelessWidget {
     return Text(
       parts.join(' · '),
       style: const TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+    );
+  }
+}
+
+class _SoundStatusBadge extends StatelessWidget {
+  const _SoundStatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: StadiumBorder(
+          side: BorderSide(color: color.withValues(alpha: 0.45)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: VineTheme.labelSmallFont(color: color),
+        ),
+      ),
     );
   }
 }

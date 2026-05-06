@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/sound_library_service.dart';
@@ -51,11 +52,17 @@ void main() {
       scrollController.dispose();
     });
 
-    Widget buildWidget({AsyncValue<List<AudioEvent>>? trendingSoundsAsync}) {
+    Widget buildWidget({
+      AsyncValue<List<AudioEvent>>? trendingSoundsAsync,
+      List<AudioEvent> savedSounds = const [],
+    }) {
       return ProviderScope(
         overrides: [
           soundLibraryServiceProvider.overrideWith(
             (_) => SoundLibraryService(),
+          ),
+          savedSoundsProvider.overrideWith(
+            () => _FakeSavedSoundsNotifier(savedSounds),
           ),
           if (trendingSoundsAsync != null)
             trendingSoundsProvider.overrideWith(
@@ -88,7 +95,7 @@ void main() {
         expect(find.byType(AudioSelectionBottomSheet), findsOneWidget);
       });
 
-      testWidgets('renders $AudioCategoryBar with both category chips', (
+      testWidgets('renders $AudioCategoryBar with all category chips', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -100,6 +107,8 @@ void main() {
         expect(find.byType(AudioCategoryBar), findsOneWidget);
         expect(find.text(l10n.videoEditorAudioCategoryDivine), findsWidgets);
         expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsWidgets);
+        expect(find.text(l10n.videoEditorAudioCategoryFeatured), findsWidgets);
+        expect(find.text(l10n.videoEditorAudioCategoryMySounds), findsWidgets);
       });
     });
 
@@ -136,6 +145,44 @@ void main() {
           findsOneWidget,
         );
         expect(find.byIcon(Icons.music_off), findsOneWidget);
+      });
+
+      testWidgets('renders featured placeholder on featured tab', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryFeatured));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.videoEditorAudioFeaturedEmptyTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.videoEditorAudioFeaturedEmptySubtitle),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('renders saved sounds empty state on My Sounds tab', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(trendingSoundsAsync: AsyncValue.data(testSounds)),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryMySounds));
+        await tester.pumpAndSettle();
+
+        expect(find.text(l10n.soundsSavedEmptyTitle), findsOneWidget);
+        expect(find.text(l10n.soundsSavedEmptyDescription), findsOneWidget);
       });
     });
 
@@ -193,6 +240,24 @@ void main() {
 
         expect(find.byType(AudioListTile), findsNothing);
       });
+
+      testWidgets('renders saved sounds on My Sounds tab', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            trendingSoundsAsync: AsyncValue.data(testSounds),
+            savedSounds: [
+              _createTestAudioEvent(id: 'saved-sound', title: 'Saved Sound'),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryMySounds));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Saved Sound'), findsOneWidget);
+      });
     });
   });
 }
@@ -211,4 +276,13 @@ class _FakeTrendingSounds extends TrendingSounds {
       error: Future.error,
     );
   }
+}
+
+class _FakeSavedSoundsNotifier extends SavedSoundsNotifier {
+  _FakeSavedSoundsNotifier(this._sounds);
+
+  final List<AudioEvent> _sounds;
+
+  @override
+  List<AudioEvent> build() => _sounds;
 }

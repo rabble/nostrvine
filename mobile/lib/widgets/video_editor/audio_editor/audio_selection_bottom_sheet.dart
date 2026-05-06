@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
@@ -74,7 +75,7 @@ class _AudioSelectionBottomSheetState
   final _audioService = AudioPlaybackService();
   String? _loadedSoundId;
   AudioEvent? _selectedItem;
-  AudioCategory _category = .diVine;
+  AudioCategory _category = .divine;
 
   late final _tabController = TabController(
     length: AudioCategory.values.length,
@@ -226,6 +227,7 @@ class _AudioSelectionBottomSheetState
   Widget build(BuildContext context) {
     final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
     final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
+    final savedSounds = ref.watch(savedSoundsProvider);
 
     // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
@@ -255,7 +257,6 @@ class _AudioSelectionBottomSheetState
                     audioService: _audioService,
                     onSelect: _selectSound,
                   ),
-
                   nostrSoundsAsync.when(
                     data: (nostrSounds) {
                       return _SoundsContent(
@@ -269,6 +270,23 @@ class _AudioSelectionBottomSheetState
                     loading: () =>
                         const Center(child: BrandedLoadingIndicator()),
                     error: (error, stack) => _ErrorState(error: error),
+                  ),
+                  _EmptyState(
+                    icon: Icons.auto_awesome,
+                    title: context.l10n.videoEditorAudioFeaturedEmptyTitle,
+                    subtitle:
+                        context.l10n.videoEditorAudioFeaturedEmptySubtitle,
+                  ),
+                  _SoundsContent(
+                    scrollController: widget.scrollController,
+                    sounds: savedSounds,
+                    selectedSound: _selectedItem,
+                    audioService: _audioService,
+                    onSelect: _selectSound,
+                    emptyState: _EmptyState(
+                      title: context.l10n.soundsSavedEmptyTitle,
+                      subtitle: context.l10n.soundsSavedEmptyDescription,
+                    ),
                   ),
                 ],
               ),
@@ -302,6 +320,7 @@ class _SoundsContent extends StatelessWidget {
     required this.selectedSound,
     required this.audioService,
     required this.onSelect,
+    this.emptyState = const _EmptyState(),
   });
 
   final ScrollController scrollController;
@@ -309,13 +328,14 @@ class _SoundsContent extends StatelessWidget {
   final AudioEvent? selectedSound;
   final AudioPlaybackService audioService;
   final ValueChanged<AudioEvent> onSelect;
+  final Widget emptyState;
 
   static const _bottomSpace = 120.0;
 
   @override
   Widget build(BuildContext context) {
     if (sounds.isEmpty) {
-      return const _EmptyState();
+      return emptyState;
     }
 
     return CustomScrollView(
@@ -361,7 +381,15 @@ class _SoundsContent extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({
+    this.icon = Icons.music_off,
+    this.title,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String? title;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -369,15 +397,15 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
+          Icon(icon, size: 64, color: VineTheme.secondaryText),
           const SizedBox(height: 16),
           Text(
-            context.l10n.videoEditorAudioNoSoundsAvailableTitle,
+            title ?? context.l10n.videoEditorAudioNoSoundsAvailableTitle,
             style: VineTheme.bodyLargeFont(),
           ),
           const SizedBox(height: 8),
           Text(
-            context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
+            subtitle ?? context.l10n.videoEditorAudioNoSoundsAvailableSubtitle,
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),

@@ -3818,6 +3818,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tap Use Sound on a video to save it here.';
 
   @override
+  String get soundsAvailabilityPrivate => 'Private';
+
+  @override
+  String get soundsAvailabilityCommunity => 'Community';
+
+  @override
   String get soundsRemoveSavedSound => 'Remove sound';
 
   @override
@@ -6465,6 +6471,20 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
+
+  @override
+  String get videoEditorAudioCategoryFeatured => 'Featured';
+
+  @override
+  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+
+  @override
+  String get videoEditorAudioFeaturedEmptyTitle =>
+      'Featured sounds coming soon';
+
+  @override
+  String get videoEditorAudioFeaturedEmptySubtitle =>
+      'We’ll drop featured sounds here once they’re ready.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pijlgereedschap';

@@ -4,6 +4,7 @@
 import 'dart:developer' as developer;
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/sound_tile.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:sound_service/sound_service.dart';
 
 /// User-saved sounds tab for the Library screen.
@@ -134,6 +136,8 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           controller: _searchController,
           onChanged: _onSearchChanged,
         ),
+        if (kDebugMode && !kIsWeb)
+          _DebugAudioPickerLauncher(onTap: () => AudioSelectionBottomSheet.show(context)),
         Expanded(child: _buildContent()),
       ],
     );
@@ -219,6 +223,24 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
   }
 }
 
+class _DebugAudioPickerLauncher extends StatelessWidget {
+  const _DebugAudioPickerLauncher({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: DivineButton(
+        label: context.l10n.videoEditorAudioAddAudio,
+        type: DivineButtonType.secondary,
+        onPressed: onTap,
+      ),
+    );
+  }
+}
+
 class _SearchInput extends StatelessWidget {
   const _SearchInput({required this.controller, required this.onChanged});
 
@@ -271,6 +293,20 @@ class _SavedSoundsSection extends StatelessWidget {
   final ValueChanged<AudioEvent> onDetail;
   final ValueChanged<AudioEvent> onRemove;
 
+  String _availabilityLabel(BuildContext context, AudioEvent sound) {
+    if (sound.isOriginalSound) {
+      return context.l10n.soundsAvailabilityPrivate;
+    }
+    return context.l10n.soundsAvailabilityCommunity;
+  }
+
+  Color _availabilityColor(AudioEvent sound) {
+    if (sound.isOriginalSound) {
+      return VineTheme.lightText;
+    }
+    return VineTheme.vineGreen;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -315,6 +351,8 @@ class _SavedSoundsSection extends StatelessWidget {
             return SoundTile(
               sound: sound,
               isPlaying: previewingSoundId == sound.id,
+              statusBadgeLabel: _availabilityLabel(context, sound),
+              statusBadgeColor: _availabilityColor(sound),
               onTap: () => onTap(sound),
               onPlayPreview: () => onPreview(sound),
               onDetailTap: sound.isBundled ? null : () => onDetail(sound),
