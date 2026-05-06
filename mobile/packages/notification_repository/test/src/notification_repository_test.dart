@@ -411,7 +411,8 @@ void main() {
 
     group('video-anchored grouping', () {
       test(
-        '5 likes on same video become 1 $VideoNotification with totalCount 5 and 3 actors',
+        '5 likes on same video become 1 $VideoNotification '
+        'with totalCount 5 and 3 actors',
         () async {
           stubNotifications([
             for (var i = 0; i < 5; i++)
@@ -469,7 +470,8 @@ void main() {
       );
 
       test(
-        'likes + comments on same video become 2 ${VideoNotification}s differing by kind',
+        'likes + comments on same video become 2 ${VideoNotification}s '
+        'differing by kind',
         () async {
           stubNotifications([
             makeNotification(

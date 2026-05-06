@@ -209,22 +209,16 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     final videoEventService = ref.read(videoEventServiceProvider);
     final videosRepository = ref.read(videosRepositoryProvider);
 
-    // For like/repost notifications the referenced video is always owned by
-    // the current user.  Use the stable NIP-33 addressable ID when available —
-    // it survives metadata updates because it's keyed on (kind:pubkey:d-tag)
-    // rather than the mutable event hash.
-    //
-    // For comment/reply notifications the videoEventId is the comment event,
-    // not the video — the resolver walks the E/e tags up to the root video.
+    // Use the stable NIP-33 addressable ID whenever the notification payload
+    // includes one. It survives metadata updates because it's keyed on
+    // (kind:pubkey:d-tag) rather than the mutable event hash.
     final isComment =
         notificationKind == NotificationKind.comment ||
         notificationKind == NotificationKind.reply;
 
     // Resolve the navigation target.
     String routeId;
-    if (videoAddressableId != null &&
-        videoAddressableId.isNotEmpty &&
-        !isComment) {
+    if (videoAddressableId != null && videoAddressableId.isNotEmpty) {
       // Stable path: addressable ID works even after a metadata update.
       routeId = videoAddressableId;
     } else if (isComment) {
