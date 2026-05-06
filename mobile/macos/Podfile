@@ -78,10 +78,19 @@ if [ ! -f "$mpv_framework" ]; then
   exit 1
 fi
 
-# Codesign media_kit frameworks with ad-hoc signature
+# Codesign embedded frameworks with the same identity as Runner. Hardened
+# Runtime rejects ad-hoc embedded frameworks with "different Team IDs".
+sign_identity="${EXPANDED_CODE_SIGN_IDENTITY:-${CODE_SIGN_IDENTITY:--}}"
+if [ -z "$sign_identity" ]; then
+  sign_identity="-"
+fi
+
 for framework in "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"/*.framework; do
   if [ -d "$framework" ]; then
-    codesign --force --deep --sign - "$framework" 2>/dev/null || true
+    codesign --force --deep --options runtime --sign "$sign_identity" "$framework" || {
+      echo "error: Failed to codesign $framework" >&2
+      exit 1
+    }
   fi
 done
       SCRIPT
