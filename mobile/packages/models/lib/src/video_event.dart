@@ -3,6 +3,7 @@
 // Parses video metadata from Nostr events with support for
 // kinds 22, 21, 34236, 34235
 
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:meta/meta.dart';
@@ -862,14 +863,40 @@ class VideoEvent {
     return rawTags['device_attestation'];
   }
 
-  /// ProofMode: Get PGP public key fingerprint from tags (NIP-145)
+  /// ProofMode: Get PGP signature from the embedded `proofmode` manifest.
+  ///
+  /// Reads `pgpSignature` from the JSON payload of the `proofmode` tag.
+  /// The standalone `pgp_fingerprint` tag is only published when the
+  /// publisher could derive a fingerprint from a stored public key —
+  /// the manifest's `pgpSignature` field is the load-bearing signal that
+  /// the video was actually PGP-signed.
   String? get proofModePgpFingerprint {
-    return rawTags['pgp_fingerprint'];
+    final signature = proofModeManifestJson?['pgpSignature'];
+    if (signature is String && signature.isNotEmpty) return signature;
+    return null;
   }
 
   /// ProofMode: Get C2PA Manifest Id
   String? get proofModeC2paManifestId {
     return rawTags['c2pa_manifest_id'];
+  }
+
+  /// Parsed `proofmode` tag manifest, or `null` when the tag is missing or
+  /// not a JSON object.
+  ///
+  /// The `proofmode` Nostr tag carries the full `NativeProofData` JSON, so
+  /// it is the source of truth for proof signals (`pgpSignature`,
+  /// `publicKey`, `deviceAttestation`, `c2paManifestId`) that the publisher
+  /// may not have additionally surfaced as standalone tags.
+  Map<String, dynamic>? get proofModeManifestJson {
+    final manifest = proofModeManifest;
+    if (manifest == null || manifest.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(manifest);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
+    }
   }
 
   /// User-signed creator binding hint emitted alongside ProofMode metadata.

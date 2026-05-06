@@ -128,6 +128,7 @@
                 <data android:pathPrefix="/profile"/>
                 <data android:pathPrefix="/hashtag"/>
                 <data android:pathPrefix="/search"/>
+                <data android:pathPrefix="/invite"/>
                 <data android:pathPrefix="/reset-password"/>
                 <data android:pathPrefix="/verify-email"/>
             </intent-filter>

@@ -175,7 +175,7 @@ extension VideoEventAppExtensions on VideoEvent {
       isFromDivineServer && videoFormatPreference.isHlsFormat;
 
   /// Whether background file caching should be skipped for this video.
-  bool get shouldSkipFileCaching => false;
+  bool get shouldSkipFileCaching => isOriginalVine;
 
   /// Get HLS URL with optional quality override.
   ///

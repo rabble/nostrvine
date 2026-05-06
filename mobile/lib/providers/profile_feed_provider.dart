@@ -39,9 +39,11 @@ class ProfileFeed extends _$ProfileFeed {
   /// Timeout for funnelcake REST API calls to prevent indefinite loading.
   static const _restApiTimeout = Duration(seconds: 10);
 
-  // REST API mode state
-  bool _usingRestApi = false;
-  int? _nextOffset; // Offset for REST API pagination
+  /// REST API pagination offset. Non-null implies REST is the active source
+  /// for pagination; null means we are in Nostr-fallback mode. Reset on every
+  /// build so a transient REST failure doesn't disable REST for subsequent
+  /// calls — see issue #3849.
+  int? _nextOffset;
   int? _totalVideoCount; // Total count from X-Total-Count header
   // Cache of video metadata from REST API (preserves loops, likes, etc.)
   // Key: video ID, Value: metadata fields
@@ -64,7 +66,6 @@ class ProfileFeed extends _$ProfileFeed {
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset REST pagination state at start of build to ensure clean state.
-    _usingRestApi = false;
     _nextOffset = null;
     _listenersRegistered = false;
 
@@ -94,8 +95,12 @@ class ProfileFeed extends _$ProfileFeed {
     _registerRetainedRealtimeListeners();
 
     if (retainedState != null && retainedState.videos.isNotEmpty) {
-      _usingRestApi = funnelcakeAvailable;
-      _nextOffset = estimateNextRestOffset(retainedState);
+      // Only seed REST pagination state when funnelcake is currently
+      // reachable; otherwise leave _nextOffset null so loadMore falls back
+      // to Nostr until a successful REST call repopulates the offset.
+      if (funnelcakeAvailable) {
+        _nextOffset = estimateNextRestOffset(retainedState);
+      }
       _totalVideoCount = retainedState.totalVideoCount;
       unawaited(Future(() => refresh(retainedState: retainedState)));
       return retainedState.copyWith(
@@ -123,7 +128,7 @@ class ProfileFeed extends _$ProfileFeed {
     }
 
     Log.info(
-      'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=$userId (REST API: $_usingRestApi)',
+      'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=$userId (funnelcakeAvailable: $funnelcakeAvailable)',
       name: 'ProfileFeedProvider',
       category: LogCategory.video,
     );
@@ -194,6 +199,16 @@ class ProfileFeed extends _$ProfileFeed {
       if (leftVideo.id != rightVideo.id) return false;
       if (leftVideo.originalLoops != rightVideo.originalLoops) return false;
       if (leftVideo.rawTags['views'] != rightVideo.rawTags['views']) {
+        return false;
+      }
+      if (leftVideo.originalLikes != rightVideo.originalLikes) return false;
+      if (leftVideo.originalComments != rightVideo.originalComments) {
+        return false;
+      }
+      if (leftVideo.originalReposts != rightVideo.originalReposts) {
+        return false;
+      }
+      if (leftVideo.nostrLikeCount != rightVideo.nostrLikeCount) {
         return false;
       }
     }
@@ -269,22 +284,28 @@ class ProfileFeed extends _$ProfileFeed {
       if (!ref.mounted) return;
 
       _totalVideoCount = result.totalCount;
-      _nextOffset = apiVideos.length;
+      _nextOffset = result.nextOffset ?? apiVideos.length;
 
       if (apiVideos.isNotEmpty) {
         final relayVideos = _relayVideosSnapshot();
         final authorVideos = _mergeVideoLists(
           relayVideos,
-          apiVideos.where((v) => !v.isRepost).toList(),
+          // Guard: only include videos genuinely authored by this user.
+          // The backend /api/users/{pubkey}/videos can incorrectly return
+          // videos where pubkey is tagged as a collaborator (p-tag) rather
+          // than being the event author — this filter prevents those from
+          // appearing in the profile grid.
+          apiVideos.where((v) => !v.isRepost && v.pubkey == userId).toList(),
         );
         _cacheVideoMetadata(authorVideos);
 
         final filteredVideos = _videoEventService.filterVideoList(authorVideos);
 
-        _usingRestApi = true;
         _mergeSourceVideos(
           filteredVideos,
-          hasMoreContent: apiVideos.length >= AppConstants.paginationBatchSize,
+          hasMoreContent:
+              result.hasMore ??
+              (apiVideos.length >= AppConstants.paginationBatchSize),
           totalVideoCount: _totalVideoCount,
           isRefreshing: false,
           isInitialLoad: false,
@@ -301,7 +322,8 @@ class ProfileFeed extends _$ProfileFeed {
             _mergeSourceVideos(
               enrichedVideos,
               hasMoreContent:
-                  apiVideos.length >= AppConstants.paginationBatchSize,
+                  result.hasMore ??
+                  (apiVideos.length >= AppConstants.paginationBatchSize),
               totalVideoCount: _totalVideoCount,
               isRefreshing: false,
               isInitialLoad: false,
@@ -317,7 +339,6 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
       } else {
-        _usingRestApi = true;
         _mergeSourceVideos(
           const <VideoEvent>[],
           hasMoreContent: false,
@@ -365,7 +386,7 @@ class ProfileFeed extends _$ProfileFeed {
     if (!ref.mounted) return;
 
     Log.info(
-      'ProfileFeed: loadMore() called for user=$userId - isLoadingMore: ${currentState.isLoadingMore}, usingRestApi: $_usingRestApi',
+      'ProfileFeed: loadMore() called for user=$userId - isLoadingMore: ${currentState.isLoadingMore}, restCursor: $_nextOffset',
       name: 'ProfileFeedProvider',
       category: LogCategory.video,
     );
@@ -392,8 +413,12 @@ class ProfileFeed extends _$ProfileFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      // If using REST API, load more using offset-based pagination.
-      if (_usingRestApi) {
+      // Per-call availability check — never trust a sticky flag (#3849).
+      // Paginate REST only when we have an offset (i.e. the active source is
+      // REST) AND funnelcake is currently reachable.
+      final funnelcakeAvailable =
+          ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+      if (funnelcakeAvailable && _nextOffset != null) {
         final client = ref.read(funnelcakeApiClientProvider);
         final offset = _nextOffset ?? estimateNextRestOffset(currentState);
         Log.info(
@@ -412,10 +437,14 @@ class ProfileFeed extends _$ProfileFeed {
 
         if (!ref.mounted) return;
         _totalVideoCount = result.totalCount ?? _totalVideoCount;
-        _nextOffset = offset + apiVideos.length;
+        _nextOffset = result.nextOffset ?? (offset + apiVideos.length);
 
         if (apiVideos.isNotEmpty) {
-          var newVideos = apiVideos.where((v) => !v.isRepost).toList();
+          // Same guard as _refreshFromRestApi: exclude videos where pubkey
+          // doesn't match userId (backend can leak collaborator-tagged events).
+          var newVideos = apiVideos
+              .where((v) => !v.isRepost && v.pubkey == userId)
+              .toList();
 
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
@@ -442,7 +471,8 @@ class ProfileFeed extends _$ProfileFeed {
               currentState.copyWith(
                 videos: allVideos,
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    result.hasMore ??
+                    (apiVideos.length >= AppConstants.paginationBatchSize),
                 isLoadingMore: false,
                 lastUpdated: DateTime.now(),
                 totalVideoCount: _totalVideoCount,
@@ -457,7 +487,8 @@ class ProfileFeed extends _$ProfileFeed {
             state = AsyncData(
               currentState.copyWith(
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    result.hasMore ??
+                    (apiVideos.length >= AppConstants.paginationBatchSize),
                 isLoadingMore: false,
               ),
             );
@@ -644,6 +675,10 @@ class ProfileFeed extends _$ProfileFeed {
       return video.copyWith(
         rawTags: mergedTags,
         originalLoops: stats.loops ?? video.originalLoops,
+        originalLikes: video.originalLikes ?? stats.reactions,
+        originalComments: video.originalComments ?? stats.comments,
+        originalReposts: video.originalReposts ?? stats.reposts,
+        nostrLikeCount: video.nostrLikeCount ?? 0,
       );
     }).toList();
     return hydrated;
@@ -707,13 +742,15 @@ class ProfileFeed extends _$ProfileFeed {
           video.rawTags['views'] != null ||
           video.originalLikes != null ||
           video.originalComments != null ||
-          video.originalReposts != null) {
+          video.originalReposts != null ||
+          video.nostrLikeCount != null) {
         _metadataCache[video.id.toLowerCase()] = _VideoMetadataCache(
           originalLoops: video.originalLoops,
           views: video.rawTags['views'],
           originalLikes: video.originalLikes,
           originalComments: video.originalComments,
           originalReposts: video.originalReposts,
+          nostrLikeCount: video.nostrLikeCount,
         );
       }
     }
@@ -731,6 +768,7 @@ class ProfileFeed extends _$ProfileFeed {
         originalLikes: cached.originalLikes,
         originalComments: cached.originalComments,
         originalReposts: cached.originalReposts,
+        nostrLikeCount: cached.nostrLikeCount,
       );
     }).toList();
   }
@@ -743,6 +781,7 @@ class ProfileFeed extends _$ProfileFeed {
     int? originalLikes,
     int? originalComments,
     int? originalReposts,
+    int? nostrLikeCount,
   }) {
     final currentViews = video.rawTags['views'];
     final shouldApply =
@@ -750,7 +789,8 @@ class ProfileFeed extends _$ProfileFeed {
         (currentViews == null && views != null) ||
         (video.originalLikes == null && originalLikes != null) ||
         (video.originalComments == null && originalComments != null) ||
-        (video.originalReposts == null && originalReposts != null);
+        (video.originalReposts == null && originalReposts != null) ||
+        (video.nostrLikeCount == null && nostrLikeCount != null);
 
     if (!shouldApply) return video;
 
@@ -762,6 +802,7 @@ class ProfileFeed extends _$ProfileFeed {
       originalLikes: video.originalLikes ?? originalLikes,
       originalComments: video.originalComments ?? originalComments,
       originalReposts: video.originalReposts ?? originalReposts,
+      nostrLikeCount: video.nostrLikeCount ?? nostrLikeCount,
     );
   }
 
@@ -1068,6 +1109,7 @@ class _VideoMetadataCache {
     this.originalLikes,
     this.originalComments,
     this.originalReposts,
+    this.nostrLikeCount,
   });
 
   final int? originalLoops;
@@ -1075,4 +1117,5 @@ class _VideoMetadataCache {
   final int? originalLikes;
   final int? originalComments;
   final int? originalReposts;
+  final int? nostrLikeCount;
 }

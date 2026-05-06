@@ -1,0 +1,73 @@
+name: "Bold Minimalism"
+description: "High-contrast, graphic imagery with strong visual impact. Think Apple keynote meets architectural photography."
+
+photography:
+  style: conceptual, graphic
+  subjects:
+    preferred:
+      - isolated objects on clean backgrounds
+      - strong architectural lines
+      - dramatic silhouettes
+      - high-contrast textures
+      - single focal point
+    avoid:
+      - busy, cluttered scenes
+      - multiple competing subjects
+      - warm nostalgic tones
+      - candid/documentary style
+  lighting:
+    preferred: dramatic, directional, high contrast, studio
+    avoid: flat lighting, multiple soft sources
+  composition:
+    - centered subjects with symmetry
+    - extreme negative space (60%+ empty)
+    - geometric framing
+    - dramatic angles (very low or overhead)
+  color:
+    treatment: high contrast, limited palette, often monochromatic
+    palette_anchors:
+      - "#000000"  # pure black
+      - "#FFFFFF"  # pure white
+      - "#0066FF"  # electric blue accent
+      - "#1A1A1A"  # near-black
+
+mood:
+  primary: confident authority
+  supporting:
+    - precision
+    - innovation
+    - clarity
+    - power
+  energy: dynamic, assertive
+
+lens_preferences:
+  default_order:
+    - literal
+    - oblique
+    - environmental
+    - metaphorical
+    - human
+  weight_toward: literal
+  notes: "Lead with striking literal imagery. Use oblique for conceptual slides. Human moments should feel iconic, not candid."
+
+cliche_blacklist:
+  universal:
+    - handshake silhouette
+    - lightbulb = idea
+    - puzzle pieces
+    - generic team photos
+  brand_specific:
+    - warm earthy tones
+    - textured/vintage looks
+    - busy lifestyle photography
+    - soft focus
+
+ai_prompt_suffixes:
+  photography: "studio photography, high contrast, dramatic lighting, minimalist composition, pure black or white background --ar 16:9 --style raw"
+  illustration: "geometric illustration, limited color palette, vector-clean, bold shapes, Swiss design influence"
+
+reference_touchstones:
+  - "Apple product photography"
+  - "Tesla presentation imagery"
+  - "Architectural Digest minimalism"
+  - "Swiss International Style graphics"

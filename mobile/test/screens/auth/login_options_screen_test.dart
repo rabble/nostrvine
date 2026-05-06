@@ -34,6 +34,7 @@ void main() {
     mockOAuth = _MockKeycastOAuth();
     mockAuthService = _MockAuthService();
     mockPendingVerification = _MockPendingVerificationService();
+    when(() => mockAuthService.isNip07Available).thenReturn(false);
   });
 
   Widget createTestWidget({String initialLocation = LoginOptionsScreen.path}) {
@@ -209,6 +210,40 @@ void main() {
         );
       });
 
+      testWidgets(
+        'hides browser-extension button when NIP-07 is unavailable',
+        (tester) async {
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          expect(
+            find.widgetWithText(
+              DivineButton,
+              'Sign in with browser extension',
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'shows browser-extension button when NIP-07 is available',
+        (tester) async {
+          when(() => mockAuthService.isNip07Available).thenReturn(true);
+
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          expect(
+            find.widgetWithText(
+              DivineButton,
+              'Sign in with browser extension',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
       testWidgets('displays $AuthBackButton', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -238,6 +273,46 @@ void main() {
         expect(find.text('Email & Password'), findsOneWidget);
         expect(find.text('Signer App'), findsOneWidget);
       });
+
+      testWidgets(
+        'info sheet includes browser-extension entry when NIP-07 is available',
+        (tester) async {
+          when(() => mockAuthService.isNip07Available).thenReturn(true);
+
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.info_outline));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Browser Extension'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'tapping browser-extension button calls connectWithNip07',
+        (tester) async {
+          when(() => mockAuthService.isNip07Available).thenReturn(true);
+          when(
+            () => mockAuthService.connectWithNip07(),
+          ).thenAnswer((_) async => AuthResult.failure('extension declined'));
+
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          final button = find.widgetWithText(
+            DivineButton,
+            'Sign in with browser extension',
+          );
+          await tester.ensureVisible(button);
+          await tester.pumpAndSettle();
+          await tester.tap(button);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          verify(() => mockAuthService.connectWithNip07()).called(1);
+        },
+      );
 
       testWidgets('tapping forgot password shows dialog', (tester) async {
         await tester.pumpWidget(createTestWidget());

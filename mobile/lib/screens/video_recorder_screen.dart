@@ -13,6 +13,7 @@ import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/models/video_recorder/video_recorder_mode.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
@@ -22,6 +23,7 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/video_recorder/modes/capture/video_recorder_capture_stack.dart';
 import 'package:openvine/widgets/video_recorder/modes/classic/video_recorder_classic_stack.dart';
+import 'package:openvine/widgets/video_recorder/modes/upload/video_recorder_upload_stack.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -333,6 +335,27 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Release the camera while the Upload tab's static explainer is showing,
+    // and re-initialize it when the user returns to a recording mode. Reuses
+    // the recorder's existing pause/resume lifecycle plumbing so we don't
+    // burn battery or trigger the OS recording indicator on a tab with no
+    // preview.
+    ref.listen<VideoRecorderMode>(
+      videoRecorderProvider.select((s) => s.recorderMode),
+      (previous, next) {
+        if (previous == next) return;
+        if (next == VideoRecorderMode.upload) {
+          unawaited(
+            ref
+                .read(videoRecorderProvider.notifier)
+                .handleAppLifecycleState(AppLifecycleState.paused),
+          );
+        } else if (previous == VideoRecorderMode.upload) {
+          unawaited(_initializeCamera());
+        }
+      },
+    );
+
     return BlocProvider<SoundWaveformBloc>(
       create: (context) {
         final bloc = SoundWaveformBloc();
@@ -365,6 +388,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
                         fromEditor: widget.fromEditor,
                       ),
                       .classic => const VideoRecorderClassicStack(),
+                      .upload => const VideoRecorderUploadStack(),
                     },
                   ),
                 ),

@@ -65,6 +65,7 @@ export 'upload/nip96_uploader.dart';
 // File upload support
 export 'upload/upload_util.dart';
 export 'utils/date_format_util.dart';
+export 'utils/redact_http_headers_for_logs.dart';
 export 'utils/string_util.dart';
 export 'zap/lnurl_response.dart';
 export 'zap/zap.dart';

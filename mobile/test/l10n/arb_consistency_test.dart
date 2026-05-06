@@ -69,9 +69,6 @@ const _knownUntranslatedDebt = {
   'notificationRepliedToYourComment',
   'notificationAndConnector',
   'notificationOthersCount',
-  // Added by #3837 (Blossom URL scheme validation under strict ATS).
-  // English fallback ships until translators pick this up.
-  'blossomServerUrlMustUseHttps',
   // Added while localizing the settings taxonomy and related settings flows
   // for Amharic. Existing locales fall back to English until the next
   // full translation pass.
@@ -202,6 +199,21 @@ const _knownUntranslatedDebt = {
   'soundStopPreview',
   'soundPreviewSemanticLabel',
   'soundViewDetailsSemanticLabel',
+  'soundsSavedToLibrary',
+  'soundsAlreadySavedToLibrary',
+  'soundsSavedLibraryTitle',
+  'soundsSavedEmptyTitle',
+  'soundsSavedEmptyDescription',
+  'soundsAvailabilityPrivate',
+  'soundsAvailabilityCommunity',
+  'soundsRemoveSavedSound',
+  'soundsRemovedFromLibrary',
+  'videoMetadataAudioReuseTitle',
+  'videoMetadataAudioReuseSubtitle',
+  'videoEditorAudioCategoryFeatured',
+  'videoEditorAudioCategoryMySounds',
+  'videoEditorAudioFeaturedEmptyTitle',
+  'videoEditorAudioFeaturedEmptySubtitle',
   'profileSetupImagesTypeGroup',
   'profileSetupExternalNip05InvalidFormat',
   'profileSetupExternalNip05DivineDomain',
@@ -334,22 +346,6 @@ const _knownUntranslatedDebt = {
   'badgesIssuedNoRecipients',
   'badgesRecipientAcceptedStatus',
   'badgesRecipientWaitingStatus',
-  // Added with signup credential validation. Translated for es/fr/de/it/pt/
-  // nl/sv/pl/ro/bg/id/tr; ja/ko/ar/am still fall back to English pending a
-  // native-speaker translation pass.
-  'authConfirmPasswordLabel',
-  'authEmailRequired',
-  'authEmailInvalid',
-  'authPasswordRequired',
-  'authConfirmPasswordRequired',
-  'authPasswordsDoNotMatch',
-  'authConfirmNewPasswordLabel',
-  // Added by the report-reason validation fix (#3475). The strings exist
-  // in app_en.arb but were not added to app_am.arb / app_bg.arb at the
-  // time. Generated locale files fall back to English until translators
-  // pick them up.
-  'reportOtherRequiresDetails',
-  'reportDetailsRequired',
   // Added by the home-feed playback-settings popover (auto-advance / mute /
   // captions toggles). Translators will pick these up in a follow-up pass;
   // until then non-English locales fall back to the English source.

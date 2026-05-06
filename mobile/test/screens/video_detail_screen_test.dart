@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
@@ -42,6 +41,8 @@ void main() {
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
     late _MockVideosRepository mockVideosRepository;
+    late StreamController<Map<String, RelayConnectionStatus>>
+    relayStatusController;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
@@ -49,6 +50,8 @@ void main() {
       mockBlocklistRepository = _MockContentBlocklistRepository();
       mockFollowRepository = _MockFollowRepository();
       mockVideosRepository = _MockVideosRepository();
+      relayStatusController =
+          StreamController<Map<String, RelayConnectionStatus>>.broadcast();
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
@@ -57,6 +60,9 @@ void main() {
       when(() => mockNostrClient.isInitialized).thenReturn(true);
       when(() => mockNostrClient.hasKeys).thenReturn(false);
       when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrClient.relayStatusStream,
+      ).thenAnswer((_) => relayStatusController.stream);
       when(
         () => mockNostrClient.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
@@ -68,9 +74,15 @@ void main() {
       when(
         () => mockBlocklistRepository.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
+      when(() => mockBlocklistRepository.hasMutedUs(any())).thenReturn(false);
+      when(() => mockBlocklistRepository.hasBlockedUs(any())).thenReturn(false);
       when(
         () => mockVideoEventService.shouldHideVideo(any()),
       ).thenReturn(false);
+    });
+
+    tearDown(() async {
+      await relayStatusController.close();
     });
 
     Widget buildSubject({String videoId = 'test_video_id'}) {
@@ -96,10 +108,10 @@ void main() {
       testWidgets('renders $CircularProgressIndicator while fetching video', (
         tester,
       ) async {
-        // fetchVideoWithStats stays pending
+        // fetchVideoWithStatsForRouteId stays pending
         final completer = Completer<VideoEvent?>();
         when(
-          () => mockVideosRepository.fetchVideoWithStats(any()),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
         ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(buildSubject());
@@ -109,30 +121,36 @@ void main() {
     });
 
     group('video found', () {
-      testWidgets('renders player once fetchVideoWithStats resolves', (
-        tester,
-      ) async {
-        final video = createTestVideoEvent(
-          id: 'test_video_id',
-          pubkey: 'test_pubkey',
-          title: 'Deep Link Video',
-        );
+      testWidgets(
+        'renders player once fetchVideoWithStatsForRouteId resolves',
+        (tester) async {
+          final video = createTestVideoEvent(
+            id: 'test_video_id',
+            pubkey: 'test_pubkey',
+            title: 'Deep Link Video',
+          );
 
-        when(
-          () => mockVideosRepository.fetchVideoWithStats('test_video_id'),
-        ).thenAnswer((_) async => video);
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'test_video_id',
+            ),
+          ).thenAnswer((_) async => video);
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
 
-        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
-      });
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
+        },
+      );
 
       testWidgets(
         'stats are hydrated before player renders (regression #3768)',
         (tester) async {
           // Simulate a video returned with loop counts already populated
-          // by fetchVideoWithStats — this is the contract we pin.
+          // by fetchVideoWithStatsForRouteId — this is the contract we pin.
           final videoWithStats =
               createTestVideoEvent(
                 id: 'test_video_id',
@@ -145,7 +163,9 @@ void main() {
 
           VideoEvent? capturedVideo;
           when(
-            () => mockVideosRepository.fetchVideoWithStats('test_video_id'),
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'test_video_id',
+            ),
           ).thenAnswer((_) async => videoWithStats);
 
           await tester.pumpWidget(
@@ -185,42 +205,185 @@ void main() {
           expect(capturedVideo?.rawTags['loops'], equals('99'));
         },
       );
+
+      testWidgets('reloads when the route videoId changes', (tester) async {
+        final firstVideo = createTestVideoEvent(
+          id: 'first_video_id',
+          pubkey: 'first_pubkey',
+          title: 'First Video',
+        );
+        final secondVideo = createTestVideoEvent(
+          id: 'second_video_id',
+          pubkey: 'second_pubkey',
+          title: 'Second Video',
+        );
+
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'first_video_id',
+          ),
+        ).thenAnswer((_) async => firstVideo);
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'second_video_id',
+          ),
+        ).thenAnswer((_) async => secondVideo);
+
+        VideoEvent? capturedVideo;
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
+              ),
+              followRepositoryProvider.overrideWithValue(
+                mockFollowRepository,
+              ),
+              videosRepositoryProvider.overrideWithValue(
+                mockVideosRepository,
+              ),
+            ],
+            home: VideoDetailScreen(
+              videoId: 'first_video_id',
+              videoFeedBuilder: (video) {
+                capturedVideo = video;
+                return const SizedBox(key: Key('video-feed-placeholder'));
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(capturedVideo?.id, equals('first_video_id'));
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
+              ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
+              ),
+              followRepositoryProvider.overrideWithValue(
+                mockFollowRepository,
+              ),
+              videosRepositoryProvider.overrideWithValue(
+                mockVideosRepository,
+              ),
+            ],
+            home: VideoDetailScreen(
+              videoId: 'second_video_id',
+              videoFeedBuilder: (video) {
+                capturedVideo = video;
+                return const SizedBox(key: Key('video-feed-placeholder'));
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(capturedVideo?.id, equals('second_video_id'));
+      });
     });
 
     group('video not found', () {
-      testWidgets('renders error when fetchVideoWithStats returns null', (
-        tester,
-      ) async {
-        when(
-          () => mockVideosRepository.fetchVideoWithStats(any()),
-        ).thenAnswer((_) async => null);
+      testWidgets(
+        'renders error when fetchVideoWithStatsForRouteId returns null',
+        (tester) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) async => null);
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
 
-        expect(find.text('Video not found'), findsOneWidget);
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      });
+          expect(find.text('Video not found'), findsOneWidget);
+          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'retries once when relays become ready after cold-start miss',
+        (tester) async {
+          var connectedRelayCount = 0;
+          var isInitialized = false;
+          when(() => mockNostrClient.isInitialized).thenAnswer(
+            (_) => isInitialized,
+          );
+          when(() => mockNostrClient.connectedRelayCount).thenAnswer(
+            (_) => connectedRelayCount,
+          );
+
+          final video = createTestVideoEvent(
+            id: 'cold_start_video',
+            pubkey: 'test_pubkey',
+            title: 'Cold Start Video',
+          );
+
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+              'cold_start_video',
+            ),
+          ).thenAnswer((_) async {
+            if (!isInitialized || connectedRelayCount == 0) {
+              return null;
+            }
+            return video;
+          });
+
+          await tester.pumpWidget(buildSubject(videoId: 'cold_start_video'));
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.text('Video not found'), findsNothing);
+
+          isInitialized = true;
+          connectedRelayCount = 1;
+          relayStatusController.add({
+            'wss://relay.divine.video': RelayConnectionStatus.connected(
+              'wss://relay.divine.video',
+            ),
+          });
+
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('fetch error', () {
-      testWidgets('renders error message when fetchVideoWithStats throws', (
-        tester,
-      ) async {
-        when(
-          () => mockVideosRepository.fetchVideoWithStats(any()),
-        ).thenAnswer((_) => Future.error(Exception('Network error')));
+      testWidgets(
+        'renders error message when fetchVideoWithStatsForRouteId throws',
+        (tester) async {
+          when(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          ).thenAnswer((_) => Future.error(Exception('Network error')));
 
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
 
-        expect(find.textContaining('Failed to load video'), findsOneWidget);
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      });
+          expect(find.textContaining('Failed to load video'), findsOneWidget);
+          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
+        },
+      );
     });
 
-    group('blocked author', () {
-      testWidgets('renders blocked message for filtered author', (
+    group('explicit route block filtering', () {
+      testWidgets('renders player for author filtered only from feeds', (
         tester,
       ) async {
         final video = createTestVideoEvent(
@@ -231,7 +394,9 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStats('blocked_video_id'),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'blocked_video_id',
+          ),
         ).thenAnswer((_) async => video);
         when(
           () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
@@ -240,11 +405,13 @@ void main() {
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
         await tester.pump();
 
-        expect(find.text('This account is not available'), findsOneWidget);
-        expect(find.byKey(const Key('video-feed-placeholder')), findsNothing);
+        expect(find.text('This account is not available'), findsNothing);
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
       });
 
-      testWidgets('renders back button for blocked author', (tester) async {
+      testWidgets('renders player when author has blocked us', (
+        tester,
+      ) async {
         final video = createTestVideoEvent(
           id: 'blocked_video_id',
           pubkey: 'blocked_pubkey',
@@ -253,16 +420,44 @@ void main() {
         );
 
         when(
-          () => mockVideosRepository.fetchVideoWithStats('blocked_video_id'),
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'blocked_video_id',
+          ),
         ).thenAnswer((_) async => video);
         when(
-          () => mockBlocklistRepository.shouldFilterFromFeeds('blocked_pubkey'),
+          () => mockBlocklistRepository.hasBlockedUs('blocked_pubkey'),
         ).thenReturn(true);
 
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
         await tester.pump();
 
-        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
+        expect(find.text('This account is not available'), findsNothing);
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+      });
+
+      testWidgets('renders exit button when video is hidden after load', (
+        tester,
+      ) async {
+        final video = createTestVideoEvent(
+          id: 'hidden_video_id',
+          pubkey: 'hidden_pubkey',
+          title: 'Hidden Video',
+        );
+
+        when(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+            'hidden_video_id',
+          ),
+        ).thenAnswer((_) async => video);
+        when(
+          () => mockVideoEventService.shouldHideVideo(video),
+        ).thenReturn(true);
+
+        await tester.pumpWidget(buildSubject(videoId: 'hidden_video_id'));
+        await tester.pump();
+
+        expect(find.text('Video not found'), findsOneWidget);
+        expect(find.bySemanticsLabel('Close video player'), findsOneWidget);
       });
     });
   });

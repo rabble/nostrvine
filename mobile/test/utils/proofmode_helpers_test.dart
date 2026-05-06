@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ProofMode helper utilities
 // ABOUTME: Validates VideoEvent extension methods for extracting verification levels from Nostr tags
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
@@ -102,14 +104,16 @@ void main() {
 
       expect(video.hasProofMode, isTrue);
 
-      // Test with fingerprint only
+      // Test with PGP signature in manifest only
       video = VideoEvent(
         id: 'test6',
         pubkey: 'pubkey6',
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: const {'pgp_fingerprint': 'ABC123'},
+        rawTags: {
+          'proofmode': jsonEncode({'pgpSignature': 'SIG-DATA'}),
+        },
       );
 
       expect(video.hasProofMode, isTrue);
@@ -143,18 +147,67 @@ void main() {
       expect(video.proofModeDeviceAttestation, attestation);
     });
 
-    test('extracts PGP fingerprint correctly', () {
-      const fingerprint = 'ABCD1234EFGH5678';
+    test(
+      'extracts PGP signature from proofmode manifest pgpSignature field',
+      () {
+        const signature = '-----BEGIN PGP SIGNATURE-----\n...\n-----END-----';
+        final video = VideoEvent(
+          id: 'test9',
+          pubkey: 'pubkey9',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          content: 'test video',
+          timestamp: DateTime.now(),
+          rawTags: {
+            'proofmode': jsonEncode({'pgpSignature': signature}),
+          },
+        );
+
+        expect(video.proofModePgpFingerprint, signature);
+      },
+    );
+
+    test(
+      'returns null when proofmode manifest is missing pgpSignature field',
+      () {
+        final video = VideoEvent(
+          id: 'test10',
+          pubkey: 'pubkey10',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          content: 'test video',
+          timestamp: DateTime.now(),
+          rawTags: const {
+            'proofmode': '{"publicKey":"abc"}',
+          },
+        );
+
+        expect(video.proofModePgpFingerprint, isNull);
+      },
+    );
+
+    test('returns null when proofmode tag is absent', () {
       final video = VideoEvent(
-        id: 'test9',
-        pubkey: 'pubkey9',
+        id: 'test11',
+        pubkey: 'pubkey11',
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: const {'pgp_fingerprint': fingerprint},
       );
 
-      expect(video.proofModePgpFingerprint, fingerprint);
+      expect(video.proofModePgpFingerprint, isNull);
+    });
+
+    test('returns null when proofmode manifest is malformed JSON', () {
+      final video = VideoEvent(
+        id: 'test12',
+        pubkey: 'pubkey12',
+        createdAt: DateTime.now().millisecondsSinceEpoch,
+        content: 'test video',
+        timestamp: DateTime.now(),
+        rawTags: const {'proofmode': 'not-json'},
+      );
+
+      expect(video.proofModePgpFingerprint, isNull);
+      expect(video.proofModeManifestJson, isNull);
     });
   });
 

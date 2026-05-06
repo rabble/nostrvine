@@ -33,58 +33,64 @@ class VideoEditorTimelineControls extends StatelessWidget {
       ),
       child: Container(
         width: double.infinity,
-        padding: const .fromLTRB(16, 16, 16, 8),
+        padding: const .fromLTRB(0, 16, 0, 8),
         child: SafeArea(
           top: false,
-          child: Wrap(
-            spacing: 32,
-            runSpacing: 24,
-            alignment: .center,
-            runAlignment: .center,
-            crossAxisAlignment: .center,
-            children: [
-              if (onDelete != null)
-                _ControlButton(
-                  icon: .trash,
-                  label: context.l10n.videoEditorDeleteLabel,
-                  semanticLabel:
-                      context.l10n.videoEditorDeleteSelectedItemSemanticLabel,
-                  onPressed: onDelete,
-                  type: .error,
-                ),
-              if (onEdit != null)
-                _ControlButton(
-                  icon: .pencilSimple,
-                  label: context.l10n.videoEditorEditLabel,
-                  semanticLabel:
-                      context.l10n.videoEditorEditSelectedItemSemanticLabel,
-                  onPressed: onEdit,
-                ),
-              if (onDuplicated != null)
-                _ControlButton(
-                  icon: .copy,
-                  label: context.l10n.videoEditorDuplicateLabel,
-                  semanticLabel: context
-                      .l10n
-                      .videoEditorDuplicateSelectedItemSemanticLabel,
-                  onPressed: onDuplicated,
-                ),
-              if (onSplit != null)
-                _ControlButton(
-                  icon: .scissors,
-                  label: context.l10n.videoEditorSplitLabel,
-                  semanticLabel:
-                      context.l10n.videoEditorSplitSelectedClipSemanticLabel,
-                  onPressed: onSplit,
-                ),
-              _ControlButton(
-                icon: .check,
-                label: context.l10n.videoEditorDoneLabel,
-                semanticLabel:
-                    context.l10n.videoEditorFinishTimelineEditingSemanticLabel,
-                onPressed: onDone,
+          child: Center(
+            child: SingleChildScrollView(
+              scrollDirection: .horizontal,
+              padding: const .symmetric(horizontal: 16),
+              child: Row(
+                spacing: 16,
+                mainAxisAlignment: .center,
+                children: [
+                  if (onDelete != null)
+                    _ControlButton(
+                      icon: .trash,
+                      label: context.l10n.videoEditorDeleteLabel,
+                      semanticLabel: context
+                          .l10n
+                          .videoEditorDeleteSelectedItemSemanticLabel,
+                      onPressed: onDelete,
+                      type: .error,
+                    ),
+                  if (onEdit != null)
+                    _ControlButton(
+                      icon: .pencilSimple,
+                      label: context.l10n.videoEditorEditLabel,
+                      semanticLabel:
+                          context.l10n.videoEditorEditSelectedItemSemanticLabel,
+                      onPressed: onEdit,
+                    ),
+                  if (onDuplicated != null)
+                    _ControlButton(
+                      icon: .copy,
+                      label: context.l10n.videoEditorDuplicateLabel,
+                      semanticLabel: context
+                          .l10n
+                          .videoEditorDuplicateSelectedItemSemanticLabel,
+                      onPressed: onDuplicated,
+                    ),
+                  if (onSplit != null)
+                    _ControlButton(
+                      icon: .scissors,
+                      label: context.l10n.videoEditorSplitLabel,
+                      semanticLabel: context
+                          .l10n
+                          .videoEditorSplitSelectedClipSemanticLabel,
+                      onPressed: onSplit,
+                    ),
+                  _ControlButton(
+                    icon: .check,
+                    label: context.l10n.videoEditorDoneLabel,
+                    semanticLabel: context
+                        .l10n
+                        .videoEditorFinishTimelineEditingSemanticLabel,
+                    onPressed: onDone,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

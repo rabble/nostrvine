@@ -218,7 +218,44 @@ void main() {
         );
 
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'passes clearNip05: true when no username in divine mode',
+          'passes clearNip05: false when no username and initialUsername is null '
+          '(profile not loaded — must not destroy an unloaded NIP-05)',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+            ),
+          ),
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: any(named: 'clearNip05', that: isFalse),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'passes clearNip05: true when user explicitly removes a known username',
           setUp: () {
             when(
               () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
@@ -233,14 +270,20 @@ void main() {
             ).thenAnswer((_) async => createTestProfile());
           },
           build: createBloc,
-          act: (bloc) => bloc.add(
-            const ProfileSaved(
-              pubkey: testPubkey,
-              displayName: testDisplayName,
-              about: testAbout,
-              picture: testPicture,
-            ),
-          ),
+          // Dispatch InitialUsernameSet first so the bloc knows the user had
+          // 'testuser' — then saving with no username is an explicit removal.
+          act: (bloc) async {
+            bloc.add(const InitialUsernameSet(testUsername));
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(
+              const ProfileSaved(
+                pubkey: testPubkey,
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+              ),
+            );
+          },
           verify: (_) {
             verify(
               () => mockProfileRepository.saveProfileEvent(
@@ -776,11 +819,19 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'emits error status for username too long',
         build: createBloc,
-        act: (bloc) => bloc.add(const UsernameChanged('aaaaaaaaaaaaaaaaaaaaa')),
+        act: (bloc) => bloc.add(
+          UsernameChanged(
+            List.filled(kDivineUsernameMaxLength + 1, 'a').join(),
+          ),
+        ),
         wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
+              .having(
+                (s) => s.username,
+                'username',
+                List.filled(kDivineUsernameMaxLength + 1, 'a').join(),
+              )
               .having(
                 (s) => s.usernameStatus,
                 'usernameStatus',
@@ -805,7 +856,34 @@ void main() {
               .having(
                 (s) => s.usernameStatus,
                 'usernameStatus',
-                UsernameStatus.error,
+                UsernameStatus.invalidFormat,
+              )
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                equals(UsernameValidationError.invalidFormat),
+              )
+              .having(
+                (s) => s.usernameFormatMessage,
+                'usernameFormatMessage',
+                'Only letters, numbers, and hyphens are allowed '
+                    '(your username becomes username.divine.video)',
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects username with a dot before API (DNS label policy)',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('mr.')),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'mr.')
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.invalidFormat,
               )
               .having(
                 (s) => s.usernameError,
@@ -813,6 +891,41 @@ void main() {
                 equals(UsernameValidationError.invalidFormat),
               ),
         ],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects username with underscore before API (DNS label policy)',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('my_name')),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'my_name')
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.invalidFormat,
+              )
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                equals(UsernameValidationError.invalidFormat),
+              ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: any(named: 'username'),
+            ),
+          );
+        },
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(

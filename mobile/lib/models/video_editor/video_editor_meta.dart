@@ -10,7 +10,7 @@ class VideoEditorMeta {
     required this.title,
     required this.description,
     required this.hashtags,
-    this.allowAudioReuse = true,
+    this.allowAudioReuse = false,
     this.expireTime,
   });
 

@@ -147,7 +147,8 @@ Future<void> showDeleteAllContentWarningDialog({
             ),
           ),
           ElevatedButton(
-            onPressed: confirmationController.text == requiredText
+            onPressed:
+                confirmationController.text.trim().toUpperCase() == requiredText
                 ? () {
                     context.pop();
                     onConfirm();

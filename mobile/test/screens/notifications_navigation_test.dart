@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -14,6 +15,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
@@ -55,10 +57,18 @@ void main() {
     required VideoEventService videoEventService,
     required NostrClient nostrClient,
     required VideosRepository videosRepository,
+    GoRouter? router,
   }) {
     final mockInviteCubit = _MockInviteStatusCubit();
     when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
     when(mockInviteCubit.load).thenAnswer((_) async {});
+    final home = BlocProvider<InviteStatusCubit>.value(
+      value: mockInviteCubit,
+      child: const Scaffold(
+        body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+      ),
+    );
+
     return ProviderScope(
       overrides: [
         relayNotificationsProvider.overrideWith(notifierFactory),
@@ -66,16 +76,22 @@ void main() {
         nostrServiceProvider.overrideWithValue(nostrClient),
         videosRepositoryProvider.overrideWithValue(videosRepository),
       ],
-      child: MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: BlocProvider<InviteStatusCubit>.value(
-          value: mockInviteCubit,
-          child: const Scaffold(
-            body: NotificationsScreen(skipInitialBootstrapForTesting: true),
-          ),
-        ),
-      ),
+      child: router == null
+          ? MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: home,
+            )
+          : MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+              builder: (context, child) =>
+                  BlocProvider<InviteStatusCubit>.value(
+                    value: mockInviteCubit,
+                    child: child ?? const SizedBox.shrink(),
+                  ),
+            ),
     );
   }
 
@@ -102,12 +118,99 @@ void main() {
   ], 'comment body');
 
   group('NotificationsScreen Navigation', () {
+    testWidgets('hydrated repository fetch pushes fullscreen video route', (
+      WidgetTester tester,
+    ) async {
+      final mockVideoService = _MockVideoEventService();
+      final mockNostrClient = _MockNostrClient();
+      final mockVideosRepository = _MockVideosRepository();
+      final resolvedVideo = video('video_root_1');
+      when(
+        () => mockVideoService.removedVideoIds,
+      ).thenAnswer((_) => const Stream<String>.empty());
+
+      when(
+        () => mockVideoService.getVideoById('comment_event_1'),
+      ).thenReturn(null);
+      when(
+        () => mockNostrClient.fetchEventById('comment_event_1'),
+      ).thenAnswer((_) async => commentEvent(rootVideoId: 'video_root_1'));
+      when(
+        () => mockVideosRepository.fetchVideoWithStats('video_root_1'),
+      ).thenAnswer((_) async => resolvedVideo);
+      when(
+        () => mockVideoService.shouldHideVideo(resolvedVideo),
+      ).thenReturn(false);
+
+      PooledFullscreenVideoFeedArgs? capturedArgs;
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const Scaffold(
+              body: NotificationsScreen(skipInitialBootstrapForTesting: true),
+            ),
+          ),
+          GoRoute(
+            path: PooledFullscreenVideoFeedScreen.path,
+            builder: (context, state) {
+              capturedArgs = state.extra! as PooledFullscreenVideoFeedArgs;
+              return const Scaffold(body: SizedBox.shrink());
+            },
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      final notifier = _MockRelayNotifications([
+        NotificationModel(
+          id: 'notif-comment',
+          type: NotificationType.comment,
+          actorPubkey: 'a' * 64,
+          actorName: 'Commenter',
+          message: 'commented on your video',
+          timestamp: DateTime.now(),
+          targetEventId: 'comment_event_1',
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        buildScreen(
+          () => notifier,
+          videoEventService: mockVideoService,
+          nostrClient: mockNostrClient,
+          videosRepository: mockVideosRepository,
+          router: router,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(NotificationListItem).first);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockVideosRepository.fetchVideoWithStats('video_root_1'),
+      ).called(1);
+      expect(capturedArgs, isNotNull);
+      expect(capturedArgs!.initialIndex, 0);
+      expect(capturedArgs!.contextTitle, 'From Notification');
+      expect(capturedArgs!.autoOpenComments, isTrue);
+
+      final videos = await capturedArgs!.videosStream.first;
+      expect(videos, hasLength(1));
+      expect(videos.single.id, resolvedVideo.id);
+    });
+
     testWidgets('comment target id resolves to parent video', (
       WidgetTester tester,
     ) async {
       final mockVideoService = _MockVideoEventService();
       final mockNostrClient = _MockNostrClient();
       final mockVideosRepository = _MockVideosRepository();
+      when(
+        () => mockVideoService.removedVideoIds,
+      ).thenAnswer((_) => const Stream<String>.empty());
 
       final resolvedVideo = video('video_root_1');
 
@@ -168,6 +271,9 @@ void main() {
       final mockVideoService = _MockVideoEventService();
       final mockNostrClient = _MockNostrClient();
       final mockVideosRepository = _MockVideosRepository();
+      when(
+        () => mockVideoService.removedVideoIds,
+      ).thenAnswer((_) => const Stream<String>.empty());
 
       when(() => mockVideoService.getVideoById(any())).thenReturn(null);
       when(

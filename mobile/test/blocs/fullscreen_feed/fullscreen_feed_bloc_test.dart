@@ -47,7 +47,12 @@ void main() {
       hasMoreController.close();
     });
 
-    VideoEvent createTestVideo(String id, {String? sha256}) {
+    VideoEvent createTestVideo(
+      String id, {
+      String? sha256,
+      String? videoUrl,
+      Map<String, String> rawTags = const {},
+    }) {
       final now = DateTime.now();
       return VideoEvent(
         id: id,
@@ -56,9 +61,10 @@ void main() {
         content: '',
         timestamp: now,
         title: 'Test Video $id',
-        videoUrl: 'https://example.com/video_$id.mp4',
+        videoUrl: videoUrl ?? 'https://example.com/video_$id.mp4',
         thumbnailUrl: 'https://example.com/thumb_$id.jpg',
         sha256: sha256,
+        rawTags: rawTags,
       );
     }
 
@@ -750,6 +756,35 @@ void main() {
               timestamp: DateTime.now(),
               title: 'Test',
               videoUrl: '/data/user/0/cache/video1.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) =>
+            bloc.add(const FullscreenFeedVideoCacheStarted(index: 0)),
+        wait: const Duration(milliseconds: 100),
+        verify: (_) {
+          verifyNever(
+            () => mockMediaCache.downloadFile(
+              any(),
+              key: any(named: 'key'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'skips caching for original Vine raw blobs with no cacheable URL',
+        build: createBloc,
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            createTestVideo(
+              'vine1',
+              videoUrl:
+                  'https://media.divine.video/'
+                  'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d',
+              rawTags: const {'platform': 'vine'},
             ),
           ],
         ),

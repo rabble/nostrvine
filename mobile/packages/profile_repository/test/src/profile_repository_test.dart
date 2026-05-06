@@ -1597,6 +1597,80 @@ void main() {
         });
 
         test(
+          'preserves nip05 from currentProfile.nip05 when rawData is empty '
+          '(Funnelcake REST API profile with rawData: {})',
+          () async {
+            // Funnelcake profiles have rawData: {} but nip05 on the object.
+            // saveProfileEvent must fall back to the field so editing bio/photo
+            // doesn't silently strip the verified divine.video handle.
+            final funnelcakeProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Old Name',
+              nip05: '_@ike.divine.video',
+              rawData: const {}, // empty — simulates fromUserProfileFound
+              createdAt: DateTime.now(),
+              eventId: 'rest-$testPubkey',
+            );
+
+            when(() => mockProfileEvent.content).thenReturn(
+              jsonEncode({
+                'display_name': 'New Name',
+                'nip05': '_@ike.divine.video',
+              }),
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: funnelcakeProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': '_@ike.divine.video',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'clearNip05 removes nip05 even when sourced from Funnelcake profile '
+          '(rawData: {} but nip05 field set)',
+          () async {
+            final funnelcakeProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Old Name',
+              nip05: '_@ike.divine.video',
+              rawData: const {},
+              createdAt: DateTime.now(),
+              eventId: 'rest-$testPubkey',
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              clearNip05: true,
+              currentProfile: funnelcakeProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'about': null,
+                  'picture': null,
+                  'banner': null,
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
           'clearNip05 is a no-op when a new nip05 is also provided',
           () async {
             final currentProfile = await createCurrentProfile({
@@ -2083,6 +2157,115 @@ void main() {
       setUp(() {
         mockFunnelcakeClient = MockFunnelcakeApiClient();
       });
+
+      test(
+        'searchUsersFromApi uses Funnelcake only with server sorting',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'd' * 64,
+                displayName: 'GaryVee',
+                picture: 'https://example.com/garyvee.jpg',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act
+          final result = await repoWithFunnelcake.searchUsersFromApi(
+            query: 'ga',
+            limit: 10,
+            sortBy: 'followers',
+          );
+
+          // Assert
+          expect(result, hasLength(1));
+          expect(result.first.displayName, 'GaryVee');
+          expect(result.first.picture, 'https://example.com/garyvee.jpg');
+          verify(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'searchUsersFromApi returns empty results when Funnelcake fails',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenThrow(Exception('REST API error'));
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act
+          final result = await repoWithFunnelcake.searchUsersFromApi(
+            query: 'ga',
+            limit: 10,
+            sortBy: 'followers',
+          );
+
+          // Assert
+          expect(result, isEmpty);
+          verify(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
 
       test(
         'uses Funnelcake first then WebSocket when both available',
@@ -3297,36 +3480,73 @@ void main() {
         },
       );
 
-      test('returns server error message when server returns '
-          'non-200 with JSON error body', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) => Future.value(Response('{"error": "Username too short"}', 400)),
-        );
+      test(
+        'returns validation error for too-short username before request',
+        () async {
+          final result = await profileRepository.claimUsername(username: 'ab');
 
-        final result = await profileRepository.claimUsername(username: 'ab');
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Usernames must be 3–63 characters',
+            ),
+          );
+          verifyNever(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          );
+          verifyNever(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          );
+        },
+      );
 
-        expect(
-          result,
-          isA<UsernameClaimError>().having(
-            (e) => e.message,
-            'message',
-            'Username too short',
-          ),
-        );
-      });
+      test(
+        'returns server error message when claim returns 400 '
+        'with JSON error body',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) => Future.value(
+              Response('{"error": "Name server rejected claim"}', 400),
+            ),
+          );
+
+          final result = await profileRepository.claimUsername(
+            username: 'validuser',
+          );
+
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Name server rejected claim',
+            ),
+          );
+        },
+      );
 
       test('returns error with default message when server returns '
           'non-200 with unparseable body', () async {
@@ -3533,6 +3753,29 @@ void main() {
 
         expect(result, isA<UsernameInvalidFormat>());
       });
+
+      test(
+        'returns UsernameInvalidFormat for too-short names',
+        () async {
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'ab',
+          );
+
+          expect(
+            result,
+            isA<UsernameInvalidFormat>().having(
+              (e) => e.reason,
+              'reason',
+              'Usernames must be 3–63 characters',
+            ),
+          );
+          verifyNever(
+            () => mockHttpClient.get(
+              Uri.parse('https://names.divine.video/api/username/check/ab'),
+            ),
+          );
+        },
+      );
 
       test(
         'returns UsernameInvalidFormat for names with underscores',

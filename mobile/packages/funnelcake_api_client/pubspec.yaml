@@ -13,6 +13,8 @@ dependencies:
   meta: ^1.17.0
   models:
     path: ../models
+  nostr_sdk:
+    path: ../nostr_sdk
 
 dev_dependencies:
   mocktail: ^1.0.4

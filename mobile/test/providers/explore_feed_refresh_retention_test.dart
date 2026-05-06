@@ -79,18 +79,18 @@ void main() {
     test(
       'popular now keeps existing videos visible while refresh is in flight',
       () async {
-        final refreshCompleter = Completer<List<VideoStats>>();
+        final refreshCompleter = Completer<WatchingVideosResponse>();
         var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) {
           watchingCallCount += 1;
           if (watchingCallCount == 1) {
-            return Future.value([_videoStats('popular-now-initial')]);
+            return Future.value(_watchingResponse(['popular-now-initial']));
           }
           return refreshCompleter.future;
         });
@@ -140,7 +140,7 @@ void main() {
         ]);
         expect(refreshingState.isRefreshing, isTrue);
 
-        refreshCompleter.complete([_videoStats('popular-now-refreshed')]);
+        refreshCompleter.complete(_watchingResponse(['popular-now-refreshed']));
         await refreshFuture;
 
         final finalState = container.read(popularNowFeedProvider).value;
@@ -155,19 +155,19 @@ void main() {
     test(
       'popular now refresh during resume-time rebuild stays on REST path',
       () async {
-        final resumeBuildCompleter = Completer<List<VideoStats>>();
-        final refreshCompleter = Completer<List<VideoStats>>();
+        final resumeBuildCompleter = Completer<WatchingVideosResponse>();
+        final refreshCompleter = Completer<WatchingVideosResponse>();
         var watchingCallCount = 0;
 
         when(
-          () => mockFunnelcakeApiClient.getWatchingVideos(
+          () => mockFunnelcakeApiClient.getWatchingVideosPage(
             limit: any(named: 'limit'),
             before: any(named: 'before'),
           ),
         ).thenAnswer((_) {
           watchingCallCount += 1;
           if (watchingCallCount == 1) {
-            return Future.value([_videoStats('popular-now-initial')]);
+            return Future.value(_watchingResponse(['popular-now-initial']));
           }
           if (watchingCallCount == 2) {
             return resumeBuildCompleter.future;
@@ -261,8 +261,10 @@ void main() {
           ),
         );
 
-        resumeBuildCompleter.complete([_videoStats('popular-now-resumed')]);
-        refreshCompleter.complete([_videoStats('popular-now-refreshed')]);
+        resumeBuildCompleter.complete(
+          _watchingResponse(['popular-now-resumed']),
+        );
+        refreshCompleter.complete(_watchingResponse(['popular-now-refreshed']));
         await refreshFuture;
       },
     );
@@ -421,7 +423,112 @@ void main() {
         expect(finalState.isRefreshing, isFalse);
       },
     );
+
+    // Regression for #3849. Pre-fix, popular_now's refresh() flipped a sticky
+    // _usingRestApi=false in the catch fall-through, so the *next* refresh
+    // skipped REST entirely and stayed on Nostr until app restart. The fix
+    // re-checks funnelcakeAvailable per call, so a transient REST failure
+    // must not disable REST for subsequent refreshes.
+    test(
+      'popular now re-attempts REST after a transient refresh failure',
+      () async {
+        var watchingCallCount = 0;
+
+        when(
+          () => mockFunnelcakeApiClient.getWatchingVideosPage(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          watchingCallCount += 1;
+          if (watchingCallCount == 2) {
+            throw const FunnelcakeApiException(
+              message: 'transient',
+              statusCode: 500,
+            );
+          }
+          return _watchingResponse(['popular-now-call-$watchingCallCount']);
+        });
+
+        // Mocks needed for the Nostr fall-through that runs after refresh #1
+        // fails — we don't assert on the Nostr state, only that REST recovers
+        // afterwards.
+        when(() => mockVideoEventService.popularNowVideos).thenReturn([]);
+        when(
+          () => mockVideoEventService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.popularNow,
+            limit: AppConstants.paginationBatchSize,
+            sortBy: VideoSortField.createdAt,
+            force: true,
+          ),
+        ).thenAnswer((_) async {});
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            appReadyProvider.overrideWithValue(true),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+            funnelcakeApiClientProvider.overrideWithValue(
+              mockFunnelcakeApiClient,
+            ),
+            funnelcakeAvailableProvider.overrideWith(
+              _AlwaysAvailableFunnelcake.new,
+            ),
+            nostrServiceProvider.overrideWithValue(mockNostrClient),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(funnelcakeAvailableProvider.future);
+        final subscription = container.listen(
+          popularNowFeedProvider,
+          (_, _) {},
+        );
+        addTearDown(subscription.close);
+
+        // Build: REST call #1 succeeds.
+        final initialState = await container.read(
+          popularNowFeedProvider.future,
+        );
+        expect(initialState.videos.map((video) => video.id), [
+          'popular-now-call-1',
+        ]);
+
+        // Refresh #1: REST call #2 throws — must not poison subsequent calls.
+        await container.read(popularNowFeedProvider.notifier).refresh();
+
+        // Refresh #2: REST call #3 must be issued. Pre-fix this never ran.
+        await container.read(popularNowFeedProvider.notifier).refresh();
+
+        expect(
+          watchingCallCount,
+          3,
+          reason:
+              'Refresh after a REST failure must re-attempt REST, not skip it.',
+        );
+        final recoveredState = container.read(popularNowFeedProvider).value;
+        expect(recoveredState, isNotNull);
+        expect(recoveredState!.videos.map((video) => video.id), [
+          'popular-now-call-3',
+        ]);
+      },
+    );
   });
+}
+
+WatchingVideosResponse _watchingResponse(
+  List<String> ids, {
+  int? nextCursor,
+  bool? hasMore,
+}) {
+  return WatchingVideosResponse(
+    videos: ids.map(_videoStats).toList(),
+    nextCursor: nextCursor,
+    hasMore: hasMore,
+  );
 }
 
 VideoEvent _video(String id) {

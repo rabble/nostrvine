@@ -43,14 +43,18 @@ final class NotificationFeedPushReceived extends NotificationFeedEvent {
 }
 
 /// WebSocket real-time notification received.
+///
+/// Carries the raw [RelayNotification] — the BLoC enriches it via
+/// [NotificationRepository.enrichOne] before merging into state. This
+/// avoids the "row arrives nameless then snaps to real name" flicker.
 final class NotificationFeedRealtimeReceived extends NotificationFeedEvent {
-  const NotificationFeedRealtimeReceived(this.notification);
+  const NotificationFeedRealtimeReceived(this.raw);
 
-  /// The notification item delivered via WebSocket.
-  final NotificationItem notification;
+  /// The raw relay notification delivered via WebSocket.
+  final RelayNotification raw;
 
   @override
-  List<Object?> get props => [notification];
+  List<Object?> get props => [raw];
 }
 
 /// User tapped a notification — mark it as read.

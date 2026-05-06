@@ -39,6 +39,12 @@ abstract class VideoLocalStorage {
   /// ignored.
   Future<List<Event>> getEventsByIds(List<String> eventIds);
 
+  /// Gets video events by their d-tag / stable ID.
+  ///
+  /// Returns matching addressable video events ordered by the storage backend.
+  /// Callers should handle the possibility of multiple matches defensively.
+  Future<List<Event>> getEventsByDTag(String dTag);
+
   /// Gets video events by author pubkeys.
   ///
   /// Useful for home feed (videos from followed users) and profile feed.
@@ -88,10 +94,7 @@ abstract class VideoLocalStorage {
   /// Watches all video events (reactive stream).
   ///
   /// Emits a new list whenever video events change in the database.
-  Stream<List<Event>> watchAllEvents({
-    int limit = 50,
-    String? sortBy,
-  });
+  Stream<List<Event>> watchAllEvents({int limit = 50, String? sortBy});
 
   /// Deletes a video event by its event ID.
   ///
@@ -116,10 +119,7 @@ abstract class VideoLocalStorage {
   /// Parameters:
   /// - [query]: The search text to match against content
   /// - [limit]: Maximum number of events to return (default 100)
-  Future<List<Event>> searchEvents({
-    required String query,
-    int limit = 100,
-  });
+  Future<List<Event>> searchEvents({required String query, int limit = 100});
 
   /// Gets the count of cached video events.
   Future<int> getEventCount();

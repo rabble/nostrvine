@@ -4,9 +4,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/collaborator_invite.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 
 class CollaboratorInviteCard extends StatefulWidget {
@@ -108,41 +110,49 @@ class _CardChrome extends StatelessWidget {
         alignment: isSent
             ? AlignmentDirectional.centerEnd
             : AlignmentDirectional.centerStart,
-        child: Container(
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.sizeOf(context).width * 0.78,
-          ),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceContainerHigh,
-            border: Border.all(color: VineTheme.outlineMuted),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.inboxCollabInviteCardTitle,
-                style: VineTheme.labelLargeFont(color: VineTheme.primary),
+        child: Semantics(
+          button: true,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () =>
+                context.push(VideoDetailScreen.pathForId(invite.videoAddress)),
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.78,
               ),
-              const SizedBox(height: 8),
-              Text(
-                _titleText(),
-                style: VineTheme.titleMediumFont(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: VineTheme.surfaceContainerHigh,
+                border: Border.all(color: VineTheme.outlineMuted),
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.inboxCollabInviteCardRoleLabel(invite.role),
-                style: VineTheme.bodySmallFont(
-                  color: VineTheme.onSurfaceMuted,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    l10n.inboxCollabInviteCardTitle,
+                    style: VineTheme.labelLargeFont(color: VineTheme.primary),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _titleText(),
+                    style: VineTheme.titleMediumFont(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.inboxCollabInviteCardRoleLabel(invite.role),
+                    style: VineTheme.bodySmallFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  action,
+                ],
               ),
-              const SizedBox(height: 16),
-              action,
-            ],
+            ),
           ),
         ),
       ),

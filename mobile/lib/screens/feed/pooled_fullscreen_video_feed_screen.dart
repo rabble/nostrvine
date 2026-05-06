@@ -64,6 +64,11 @@ const double _kOverlayDimmedOpacity = 0.5; // opacity while in the dim band
 // e.g. 0.03 → full↔dim transition spans 7 %–13 %, dim↔hidden spans 47 %–53 %.
 const double _kOverlayFadeHalfWidth = 0.03;
 
+@visibleForTesting
+Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
+  return isPortrait ? Alignment.center : Alignment.topCenter;
+}
+
 /// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
 /// opacity using smooth linear interpolation around each threshold.
 double _scrollDrivenOpacity(double distance) {
@@ -431,6 +436,14 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     return !MediaQuery.disableAnimationsOf(context);
   }
 
+  void _handleBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/');
+  }
+
   void _toggleAutoAdvance() {
     if (!_isAutoAdvanceAvailable()) return;
 
@@ -698,11 +711,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   showBackButton: true,
                   // The BlocListener above already tried `maybePop` and
                   // failed (otherwise we wouldn't be rendering this
-                  // branch). The same `pop` from the appbar back button
-                  // would also be a no-op, so fall back to the home
-                  // shell to avoid a dead-end UX.
-                  onBackPressed: () =>
-                      context.canPop() ? context.pop() : context.go('/'),
+                  // branch). Keep the same root-route fallback here so
+                  // cold-start deep links never strand the user.
+                  onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
@@ -722,7 +733,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 appBar: DiVineAppBar(
                   title: widget.contextTitle ?? '',
                   showBackButton: true,
-                  onBackPressed: context.pop,
+                  onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
@@ -736,7 +747,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 appBar: DiVineAppBar(
                   title: widget.contextTitle ?? '',
                   showBackButton: true,
-                  onBackPressed: context.pop,
+                  onBackPressed: () => _handleBack(context),
                   backgroundMode: DiVineAppBarBackgroundMode.transparent,
                   forceMaterialTransparency: true,
                 ),
@@ -805,7 +816,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               appBar: DiVineAppBar(
                 title: widget.contextTitle ?? '',
                 showBackButton: true,
-                onBackPressed: context.pop,
+                onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
                 actions: [?editAction],
@@ -1359,6 +1370,7 @@ class _FittedVideoPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
 
     // Do not set filterQuality to high — on Android the bicubic
     // interpolation causes visible blur on the Texture widget when
@@ -1366,6 +1378,7 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
+      alignment: alignment,
       controls: null,
       width: videoWidth,
       height: videoHeight,
@@ -1383,6 +1396,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
     final url = thumbnailUrl;
 
     return Stack(
@@ -1393,6 +1407,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
           Image.network(
             url,
             fit: boxFit,
+            alignment: alignment,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.backgroundColor),
           )

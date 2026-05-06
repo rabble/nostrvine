@@ -220,15 +220,35 @@ void main() {
       });
 
       test(
+        'cached metadata rehydrates engagement counts onto relay profile videos',
+        () {
+          final relayVideo = createTestVideo(
+            'id1',
+            'pubkey1',
+            'stable1',
+            baseTime,
+          );
+
+          final hydrated = ProfileFeed.applyCachedMetadataForVideo(
+            relayVideo,
+            originalLikes: 12,
+            originalComments: 4,
+            originalReposts: 2,
+            nostrLikeCount: 0,
+          );
+
+          expect(hydrated.originalLikes, equals(12));
+          expect(hydrated.originalComments, equals(4));
+          expect(hydrated.originalReposts, equals(2));
+          expect(hydrated.nostrLikeCount, equals(0));
+        },
+      );
+
+      test(
         'sequence comparison treats views-only metadata changes as updates',
         () {
           final stale = [
-            createTestVideo(
-              'id1',
-              'pubkey1',
-              'stable1',
-              baseTime,
-            ),
+            createTestVideo('id1', 'pubkey1', 'stable1', baseTime),
           ];
           final enriched = [
             createTestVideo(
@@ -246,24 +266,33 @@ void main() {
         },
       );
 
+      test('sequence comparison treats originalLoops changes as updates', () {
+        final stale = [createTestVideo('id1', 'pubkey1', 'stable1', baseTime)];
+        final enriched = [
+          createTestVideo(
+            'id1',
+            'pubkey1',
+            'stable1',
+            baseTime,
+          ).copyWith(originalLoops: 100),
+        ];
+
+        expect(ProfileFeed.sameVideoSequenceForMerge(stale, enriched), isFalse);
+      });
+
       test(
-        'sequence comparison treats originalLoops changes as updates',
+        'sequence comparison treats engagement-only metadata changes as updates',
         () {
           final stale = [
-            createTestVideo(
-              'id1',
-              'pubkey1',
-              'stable1',
-              baseTime,
-            ),
+            createTestVideo('id1', 'pubkey1', 'stable1', baseTime),
           ];
           final enriched = [
-            createTestVideo(
-              'id1',
-              'pubkey1',
-              'stable1',
-              baseTime,
-            ).copyWith(originalLoops: 100),
+            createTestVideo('id1', 'pubkey1', 'stable1', baseTime).copyWith(
+              originalLikes: 12,
+              originalComments: 4,
+              originalReposts: 2,
+              nostrLikeCount: 0,
+            ),
           ];
 
           expect(

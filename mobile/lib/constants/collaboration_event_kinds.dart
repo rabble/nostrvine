@@ -1,4 +1,6 @@
-// ABOUTME: Nostr event kind constants for Divine collaboration flows.
-// ABOUTME: Kept in sync with Funnelcake collaborator response ingestion.
+// ABOUTME: Divine-specific Nostr event kinds for collaboration workflows.
+// ABOUTME: Keeps custom protocol kind values centralized for mobile publishers.
 
-const int kindCollabResponse = 34238;
+abstract final class CollaborationEventKinds {
+  static const int collaboratorResponse = 34238;
+}

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/notification_preferences.dart';
@@ -305,7 +306,7 @@ class PushNotificationService {
   String? _configuredPushServicePubkey() {
     final pushServicePubkey = _environmentConfig.pushServicePubkey;
     final isPlaceholder = pushServicePubkey.startsWith('TODO_');
-    final isValidHex = RegExp(r'^[0-9a-fA-F]{64}$').hasMatch(pushServicePubkey);
+    final isValidHex = NostrHexUtils.isValidPubkey(pushServicePubkey);
 
     if (!isPlaceholder && isValidHex) {
       return pushServicePubkey;

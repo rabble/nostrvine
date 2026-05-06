@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -19,31 +20,30 @@ class ShareService {
   /// Generate a Nostr event link (nevent format) for a video
   String generateNostrEventLink(VideoEvent video) {
     try {
-      // Create nevent bech32 encoded link
-      final eventId = video.id;
-
-      // For now, create a simple nevent link format
-      // In a full implementation, this would use proper bech32 encoding
-      final neventLink = 'nostr:nevent1$eventId';
-      return neventLink;
+      final nevent = NIP19Tlv.encodeNevent(
+        Nevent(id: video.id, author: video.pubkey),
+      );
+      return 'nostr:$nevent';
     } catch (e) {
       Log.error(
         'Error generating Nostr event link: $e',
         name: 'ShareService',
         category: LogCategory.system,
       );
-      return 'nostr:note1${video.id}';
+      return video.id;
     }
   }
 
   /// Generate a web app link for a video.
   ///
-  /// Uses [VideoEvent.stableId] (d-tag) for addressable events so the URL
-  /// remains valid even if the user edits the video metadata.
-  ///
-  /// Requires funnelcake API to support d-tag lookups on /api/videos/{id}.
+  /// Uses the web route only when the video has a real addressable `d` tag.
+  /// Otherwise falls back to a NIP-19 `nevent` link so this method never
+  /// returns a broken `divine.video/video/{eventId}` URL.
   String generateWebLink(VideoEvent video) {
-    return '$_appUrl/video/${video.stableId}';
+    if (_hasWebShareableRoute(video)) {
+      return '$_appUrl/video/${video.stableId}';
+    }
+    return generateNostrEventLink(video);
   }
 
   /// Generate shareable text content.
@@ -51,6 +51,11 @@ class ShareService {
   /// Returns only the web link so users can add their own context.
   String generateShareText(VideoEvent video) {
     return generateWebLink(video);
+  }
+
+  bool _hasWebShareableRoute(VideoEvent video) {
+    final routeId = video.rawTags['d'];
+    return routeId != null && routeId.isNotEmpty;
   }
 
   /// Copy link to clipboard

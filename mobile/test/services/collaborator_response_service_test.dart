@@ -1,5 +1,5 @@
-// ABOUTME: Tests public collaborator acceptance response publishing.
-// ABOUTME: Verifies kind 34238 acceptance events match Funnelcake semantics.
+// ABOUTME: Tests collaborator acceptance publishing.
+// ABOUTME: Verifies accept publishes a public collaborator response event.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -44,13 +44,14 @@ void main() {
   setUp(() {
     authService = _MockAuthService();
     nostrClient = _MockNostrClient();
+    when(() => authService.currentPublicKeyHex).thenReturn(collaboratorPubkey);
     service = CollaboratorResponseService(
       authService: authService,
       nostrClient: nostrClient,
     );
   });
 
-  test('publishes public collaborator acceptance event', () async {
+  test('publishes public collaborator acceptance response', () async {
     late Event signedEvent;
     when(
       () => authService.createAndSignEvent(
@@ -62,7 +63,7 @@ void main() {
       final tags = invocation.namedArguments[#tags] as List<List<String>>;
       signedEvent = Event(
         collaboratorPubkey,
-        kindCollabResponse,
+        CollaborationEventKinds.collaboratorResponse,
         tags,
         '',
       );
@@ -85,7 +86,10 @@ void main() {
       ),
     );
 
-    expect(verification.captured[0], kindCollabResponse);
+    expect(
+      verification.captured[0],
+      CollaborationEventKinds.collaboratorResponse,
+    );
     expect(verification.captured[1], '');
     expect(verification.captured[2], [
       ['d', videoAddress],
@@ -97,41 +101,49 @@ void main() {
     verify(() => nostrClient.publishEvent(signedEvent)).called(1);
   });
 
-  test('uses default relay hint when invite has none', () async {
-    late List<List<String>> capturedTags;
-    final inviteWithoutRelay = CollaboratorInvite(
-      messageId: invite.messageId,
-      videoAddress: invite.videoAddress,
-      videoKind: invite.videoKind,
-      creatorPubkey: invite.creatorPubkey,
-      videoDTag: invite.videoDTag,
-      role: invite.role,
-    );
+  test(
+    'uses default relay hint for source address when invite has none',
+    () async {
+      late List<List<String>> capturedTags;
+      final inviteWithoutRelay = CollaboratorInvite(
+        messageId: invite.messageId,
+        videoAddress: invite.videoAddress,
+        videoKind: invite.videoKind,
+        creatorPubkey: invite.creatorPubkey,
+        videoDTag: invite.videoDTag,
+        role: invite.role,
+      );
 
-    when(
-      () => authService.createAndSignEvent(
-        kind: any(named: 'kind'),
-        content: any(named: 'content'),
-        tags: any(named: 'tags'),
-      ),
-    ).thenAnswer((invocation) async {
-      capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
-      return Event(collaboratorPubkey, kindCollabResponse, capturedTags, '');
-    });
-    when(() => nostrClient.publishEvent(any())).thenAnswer(
-      (invocation) async => invocation.positionalArguments.single as Event,
-    );
+      when(
+        () => authService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
+        return Event(
+          collaboratorPubkey,
+          CollaborationEventKinds.collaboratorResponse,
+          capturedTags,
+          '',
+        );
+      });
+      when(() => nostrClient.publishEvent(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.single as Event,
+      );
 
-    final result = await service.acceptInvite(inviteWithoutRelay);
+      final result = await service.acceptInvite(inviteWithoutRelay);
 
-    expect(result.success, isTrue);
-    expect(capturedTags[1], [
-      'a',
-      videoAddress,
-      'wss://relay.divine.video',
-      'root',
-    ]);
-  });
+      expect(result.success, isTrue);
+      expect(capturedTags[1], [
+        'a',
+        videoAddress,
+        'wss://relay.divine.video',
+        'root',
+      ]);
+    },
+  );
 
   test('returns failure when signing fails', () async {
     when(

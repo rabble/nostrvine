@@ -698,7 +698,7 @@ void main() {
         rawTags: {
           'verification': 'verified_mobile',
           'device_attestation': 'token_abc',
-          'pgp_fingerprint': 'ABCD1234',
+          'proofmode': '{"pgpSignature":"-----BEGIN PGP SIGNATURE-----"}',
         },
       );
       await tester.pumpWidget(
@@ -710,16 +710,17 @@ void main() {
       expect(find.text('PGP signature'), findsOneWidget);
       expect(find.text('C2PA Content Credentials'), findsOneWidget);
       expect(find.text('Proof manifest'), findsOneWidget);
-      // Two passed (device attestation, PGP), two failed (C2PA, manifest).
-      // DivineIcon renders SVGs — find by widget type and icon enum value.
+      // Three passed (device attestation, PGP via manifest, proof manifest),
+      // one failed (C2PA). DivineIcon renders SVGs — find by widget type
+      // and icon enum value.
       final checkIcons = tester
           .widgetList<DivineIcon>(find.byType(DivineIcon))
           .where((w) => w.icon == DivineIconName.checkCircle);
       final failIcons = tester
           .widgetList<DivineIcon>(find.byType(DivineIcon))
           .where((w) => w.icon == DivineIconName.prohibit);
-      expect(checkIcons.length, 2);
-      expect(failIcons.length, 2);
+      expect(checkIcons.length, 3);
+      expect(failIcons.length, 1);
     });
 
     testWidgets('hides when no proof data', (tester) async {

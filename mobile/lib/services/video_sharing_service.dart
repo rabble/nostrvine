@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -288,13 +289,19 @@ class VideoSharingService {
 
   /// Generate external share URL for the video.
   ///
-  /// Uses [VideoEvent.stableId] (d-tag) for addressable events so the URL
-  /// remains valid even if the user edits the video metadata.
-  ///
-  /// Requires funnelcake API to support d-tag lookups on /api/videos/{id}.
+  /// Uses the web route only when the video has a real addressable `d` tag.
+  /// Otherwise falls back to a NIP-19 `nevent` link so sharing never emits a
+  /// non-routable `divine.video/video/{eventId}` URL.
   String generateShareUrl(VideoEvent video) {
     const baseUrl = 'https://divine.video';
-    return '$baseUrl/video/${video.stableId}';
+    if (_hasWebShareableRoute(video)) {
+      return '$baseUrl/video/${video.stableId}';
+    }
+
+    final nevent = NIP19Tlv.encodeNevent(
+      Nevent(id: video.id, author: video.pubkey),
+    );
+    return 'nostr:$nevent';
   }
 
   /// Generate share text for external sharing (social media, etc.)
@@ -341,11 +348,15 @@ class VideoSharingService {
     };
   }
 
+  bool _hasWebShareableRoute(VideoEvent video) {
+    final routeId = video.rawTags['d'];
+    return routeId != null && routeId.isNotEmpty;
+  }
+
   /// Create the message content for sharing a video.
   ///
-  /// Uses the stable web link (`divine.video/video/{stableId}`) instead of
-  /// the raw CDN/blossom URL so the recipient sees a clean, shareable link
-  /// that can be opened in a browser or deep-linked back into the app.
+  /// Uses the canonical share URL for the video, preferring a stable web route
+  /// and falling back to a Nostr `nevent` when no web route exists.
   String _createShareMessage(VideoEvent video, String? personalMessage) {
     final buffer = StringBuffer();
 

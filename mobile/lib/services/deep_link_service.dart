@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// Types of deep links supported by the app
@@ -21,7 +22,7 @@ enum DeepLinkType {
 class DeepLink {
   const DeepLink({
     required this.type,
-    this.videoId,
+    this.videoRef,
     this.npub,
     this.hashtag,
     this.searchTerm,
@@ -30,7 +31,12 @@ class DeepLink {
   });
 
   final DeepLinkType type;
-  final String? videoId;
+
+  /// Raw `/video/:id` route reference from the incoming URL.
+  ///
+  /// This may be a hex event ID, a first-party stable ID / d-tag, or a
+  /// NIP-19 reference such as `note1`, `nevent1`, or `naddr1`.
+  final String? videoRef;
   final String? npub;
   final String? hashtag;
   final String? searchTerm;
@@ -42,7 +48,7 @@ class DeepLink {
     final indexStr = index != null ? ', index: $index' : '';
     switch (type) {
       case DeepLinkType.video:
-        return 'DeepLink(type: video, videoId: $videoId)';
+        return 'DeepLink(type: video, videoRef: $videoRef)';
       case DeepLinkType.profile:
         return 'DeepLink(type: profile, npub: $npub$indexStr)';
       case DeepLinkType.hashtag:
@@ -50,7 +56,7 @@ class DeepLink {
       case DeepLinkType.search:
         return 'DeepLink(type: search, searchTerm: $searchTerm$indexStr)';
       case DeepLinkType.invite:
-        return 'DeepLink(type: invite, inviteCode: $inviteCode)';
+        return 'DeepLink(type: invite, inviteCode: $redactedSensitiveLogPlaceholder)';
       case DeepLinkType.signerCallback:
         return 'DeepLink(type: signerCallback)';
       case DeepLinkType.unknown:
@@ -77,7 +83,7 @@ class DeepLinkService {
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
         Log.info(
-          '📱 App opened with deep link: $initialUri',
+          '📱 App opened with deep link: ${redactUriStringForLogs(initialUri.toString())}',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
@@ -88,7 +94,7 @@ class DeepLinkService {
       // Listen for deep links while app is running
       _subscription = _appLinks.uriLinkStream.listen((uri) {
         Log.info(
-          '📱 Received deep link while running: $uri',
+          '📱 Received deep link while running: ${redactUriStringForLogs(uri.toString())}',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
@@ -117,7 +123,7 @@ class DeepLinkService {
       // listeners can trigger relay reconnection for the nostrconnect session.
       if (uri.scheme == 'divine') {
         Log.info(
-          'Received NIP-46 signer callback: $url',
+          'Received NIP-46 signer callback: ${redactUriStringForLogs(url)}',
           name: 'DeepLinkService',
           category: LogCategory.auth,
         );
@@ -142,15 +148,16 @@ class DeepLinkService {
 
       final pathSegments = uri.pathSegments;
 
-      // Handle /video/{videoId}
+      // Handle /video/{videoRef}. The path segment is preserved verbatim;
+      // downstream resolution accepts raw IDs, stable IDs, and NIP-19 refs.
       if (pathSegments.length == 2 && pathSegments[0] == 'video') {
-        final videoId = pathSegments[1];
+        final videoRef = pathSegments[1];
         Log.info(
-          '📱 Parsed video deep link: $videoId',
+          '📱 Parsed video deep link ref: $videoRef',
           name: 'DeepLinkService',
           category: LogCategory.ui,
         );
-        return DeepLink(type: DeepLinkType.video, videoId: videoId);
+        return DeepLink(type: DeepLinkType.video, videoRef: videoRef);
       }
 
       // Handle /profile/{npub} or /profile/{npub}/{index}
@@ -214,7 +221,7 @@ class DeepLinkService {
 
         if (inviteCode != null && inviteCode.isNotEmpty) {
           Log.info(
-            'Parsed invite deep link: $inviteCode',
+            'Parsed invite deep link (code $redactedSensitiveLogPlaceholder)',
             name: 'DeepLinkService',
             category: LogCategory.ui,
           );

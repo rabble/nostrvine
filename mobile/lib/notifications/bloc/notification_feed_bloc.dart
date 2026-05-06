@@ -7,6 +7,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
 
@@ -29,18 +30,52 @@ class NotificationFeedBloc
   }) : _notificationRepository = notificationRepository,
        _followRepository = followRepository,
        super(const NotificationFeedState()) {
-    on<NotificationFeedStarted>(_onStarted, transformer: droppable());
-    on<NotificationFeedLoadMore>(_onLoadMore, transformer: droppable());
-    on<NotificationFeedRefreshed>(_onRefreshed, transformer: droppable());
-    on<NotificationFeedPushReceived>(_onPushReceived, transformer: droppable());
-    on<NotificationFeedRealtimeReceived>(_onRealtimeReceived);
+    on<NotificationFeedStarted>(
+      _onStarted,
+      transformer: droppable(),
+    );
+    on<NotificationFeedLoadMore>(
+      _onLoadMore,
+      transformer: droppable(),
+    );
+    on<NotificationFeedRefreshed>(
+      _onRefreshed,
+      transformer: droppable(),
+    );
+    on<NotificationFeedPushReceived>(
+      _onPushReceived,
+      transformer: droppable(),
+    );
+    on<NotificationFeedRealtimeReceived>(
+      _onRealtimeReceived,
+      transformer: sequential(),
+    );
     on<NotificationFeedItemTapped>(_onItemTapped);
     on<NotificationFeedMarkAllRead>(_onMarkAllRead);
-    on<NotificationFeedFollowBack>(_onFollowBack, transformer: sequential());
+    on<NotificationFeedFollowBack>(
+      _onFollowBack,
+      transformer: sequential(),
+    );
   }
 
   final NotificationRepository _notificationRepository;
   final FollowRepository _followRepository;
+
+  /// Override [ActorNotification.isFollowingBack] for follow-type rows so the
+  /// flag tracks the authoritative follow state in [FollowRepository] rather
+  /// than a transient bloc mutation. Without this, the "Follow back" button
+  /// reappears after the page is unmounted and remounted because the bloc is
+  /// rebuilt with a fresh `isFollowingBack: false` from the repository.
+  List<NotificationItem> _applyFollowState(Iterable<NotificationItem> items) {
+    return items.map((item) {
+      if (item is! ActorNotification || item.type != NotificationKind.follow) {
+        return item;
+      }
+      final isFollowing = _followRepository.isFollowing(item.actor.pubkey);
+      if (isFollowing == item.isFollowingBack) return item;
+      return item.copyWith(isFollowingBack: isFollowing);
+    }).toList();
+  }
 
   /// Handle initial load.
   Future<void> _onStarted(
@@ -51,12 +86,11 @@ class NotificationFeedBloc
 
     try {
       final page = await _notificationRepository.refresh();
-      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: filtered,
+          notifications: _applyFollowState(page.items),
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -87,7 +121,10 @@ class NotificationFeedBloc
 
       emit(
         state.copyWith(
-          notifications: [...state.notifications, ...newItems],
+          notifications: _applyFollowState([
+            ...state.notifications,
+            ...newItems,
+          ]),
           hasMore: page.hasMore,
           isLoadingMore: false,
         ),
@@ -105,12 +142,11 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
-      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: filtered,
+          notifications: _applyFollowState(page.items),
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -128,12 +164,11 @@ class NotificationFeedBloc
   ) async {
     try {
       final page = await _notificationRepository.refresh();
-      final filtered = page.items;
 
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: filtered,
+          notifications: _applyFollowState(page.items),
           unreadCount: page.unreadCount,
           hasMore: page.hasMore,
         ),
@@ -146,31 +181,61 @@ class NotificationFeedBloc
 
   /// Handle WebSocket real-time notification.
   ///
-  /// Inserts at the top and increments unread count.
-  /// Deduplicates by ID to prevent showing the same notification twice.
-  void _onRealtimeReceived(
+  /// Enriches the raw [RelayNotification] via the repository (profile +
+  /// video metadata fetched in parallel), then either merges the new
+  /// actor into an existing matching [VideoNotification] group or
+  /// inserts the enriched item at the top.
+  Future<void> _onRealtimeReceived(
     NotificationFeedRealtimeReceived event,
     Emitter<NotificationFeedState> emit,
-  ) {
-    final incoming = _notificationRepository.filterRealtimeNotification(
-      event.notification,
-    );
-    if (incoming == null) return;
+  ) async {
+    final enriched = await _notificationRepository.enrichOne(event.raw);
+    if (enriched == null) return;
 
-    // Deduplicate — skip if we already have this notification by ID,
-    // or if a grouped notification already covers this target event.
-    final exists = state.notifications.any(
-      (n) =>
-          n.id == incoming.id ||
-          (incoming.targetEventId != null &&
-              n is GroupedNotification &&
-              n.targetEventId == incoming.targetEventId),
-    );
+    // Already shown? skip.
+    final exists = state.notifications.any((n) => n.id == enriched.id);
     if (exists) return;
+
+    // Try to merge into an existing matching VideoNotification group.
+    if (enriched is VideoNotification) {
+      final mergedList = <NotificationItem>[];
+      var merged = false;
+      for (final existing in state.notifications) {
+        if (!merged &&
+            existing is VideoNotification &&
+            existing.videoEventId == enriched.videoEventId &&
+            existing.type == enriched.type) {
+          final mergedActors = [
+            enriched.actors.first,
+            ...existing.actors,
+          ].take(3).toList();
+          mergedList.add(
+            existing.copyWith(
+              actors: mergedActors,
+              totalCount: existing.totalCount + 1,
+              isRead: false,
+              timestamp: enriched.timestamp,
+            ),
+          );
+          merged = true;
+        } else {
+          mergedList.add(existing);
+        }
+      }
+      if (merged) {
+        emit(
+          state.copyWith(
+            notifications: _applyFollowState(mergedList),
+            unreadCount: state.unreadCount + 1,
+          ),
+        );
+        return;
+      }
+    }
 
     emit(
       state.copyWith(
-        notifications: [incoming, ...state.notifications],
+        notifications: _applyFollowState([enriched, ...state.notifications]),
         unreadCount: state.unreadCount + 1,
       ),
     );
@@ -184,8 +249,8 @@ class NotificationFeedBloc
     final updated = state.notifications.map((n) {
       if (n.id != event.notificationId || n.isRead) return n;
       return switch (n) {
-        SingleNotification() => n.copyWith(isRead: true),
-        GroupedNotification() => n.copyWith(isRead: true),
+        VideoNotification() => n.copyWith(isRead: true),
+        ActorNotification() => n.copyWith(isRead: true),
       };
     }).toList();
 
@@ -195,59 +260,79 @@ class NotificationFeedBloc
 
     emit(
       state.copyWith(
-        notifications: updated,
+        notifications: _applyFollowState(updated),
         unreadCount: wasUnread
             ? (state.unreadCount - 1).clamp(0, state.unreadCount)
             : state.unreadCount,
       ),
     );
 
-    unawaited(_notificationRepository.markAsRead([event.notificationId]));
+    unawaited(
+      _notificationRepository.markAsRead([event.notificationId]),
+    );
   }
 
   /// Handle mark all as read.
   ///
-  /// Flips `isRead: true` on every visible notification so the derived
-  /// [NotificationFeedState.unreadBadgeCount] drops to 0 immediately,
-  /// then mirrors the same on the server-truth [state.unreadCount].
+  /// Optimistically flips every notification's `isRead` to `true` and zeros
+  /// the unread count, then awaits the server write. On failure the
+  /// pre-optimistic notifications and unread count are restored so the next
+  /// refresh does not silently regress the badge / row state, and the
+  /// underlying error is forwarded to the bloc error stream.
   Future<void> _onMarkAllRead(
     NotificationFeedMarkAllRead event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    final updated = state.notifications.map((n) {
+    final hasUnread =
+        state.unreadCount > 0 || state.notifications.any((n) => !n.isRead);
+    if (!hasUnread) return;
+
+    final previousNotifications = state.notifications;
+    final previousUnreadCount = state.unreadCount;
+
+    final updatedNotifications = state.notifications.map((n) {
       if (n.isRead) return n;
       return switch (n) {
-        SingleNotification() => n.copyWith(isRead: true),
-        GroupedNotification() => n.copyWith(isRead: true),
+        VideoNotification() => n.copyWith(isRead: true),
+        ActorNotification() => n.copyWith(isRead: true),
       };
     }).toList();
 
-    emit(state.copyWith(notifications: updated, unreadCount: 0));
+    emit(
+      state.copyWith(
+        notifications: updatedNotifications,
+        unreadCount: 0,
+      ),
+    );
 
-    unawaited(_notificationRepository.markAllAsRead());
+    try {
+      await _notificationRepository.markAllAsRead();
+    } catch (e, s) {
+      addError(e, s);
+      emit(
+        state.copyWith(
+          notifications: previousNotifications,
+          unreadCount: previousUnreadCount,
+        ),
+      );
+    }
   }
 
   /// Handle follow-back action.
   ///
-  /// Calls the follow repository, then updates the matching notification
-  /// to show the follow-back state.
+  /// Calls the follow repository, then re-derives [isFollowingBack] from the
+  /// repository's authoritative state. The flag is not stored on the bloc;
+  /// the next [_applyFollowState] pass on a refresh/remount will reflect the
+  /// same value, so the button stays hidden across navigation.
   Future<void> _onFollowBack(
     NotificationFeedFollowBack event,
     Emitter<NotificationFeedState> emit,
   ) async {
     try {
       await _followRepository.follow(event.pubkey);
-
-      final updated = state.notifications.map((n) {
-        if (n is SingleNotification &&
-            n.type == NotificationKind.follow &&
-            n.actor.pubkey == event.pubkey) {
-          return n.copyWith(isFollowingBack: true);
-        }
-        return n;
-      }).toList();
-
-      emit(state.copyWith(notifications: updated));
+      emit(
+        state.copyWith(notifications: _applyFollowState(state.notifications)),
+      );
     } catch (e, s) {
       addError(e, s);
     }

@@ -19,9 +19,7 @@ class DbVideoLocalStorage implements VideoLocalStorage {
   /// Creates a new db_client-backed local storage.
   ///
   /// Requires a [NostrEventsDao] for database operations.
-  DbVideoLocalStorage({
-    required NostrEventsDao dao,
-  }) : _dao = dao;
+  DbVideoLocalStorage({required NostrEventsDao dao}) : _dao = dao;
 
   final NostrEventsDao _dao;
 
@@ -45,10 +43,15 @@ class DbVideoLocalStorage implements VideoLocalStorage {
   Future<List<Event>> getEventsByIds(List<String> eventIds) async {
     if (eventIds.isEmpty) return [];
 
-    final filter = Filter(
-      ids: eventIds,
-      kinds: [_videoKind],
-    );
+    final filter = Filter(ids: eventIds, kinds: [_videoKind]);
+    return _dao.getEventsByFilter(filter);
+  }
+
+  @override
+  Future<List<Event>> getEventsByDTag(String dTag) async {
+    if (dTag.isEmpty) return [];
+
+    final filter = Filter(kinds: [_videoKind], d: [dTag]);
     return _dao.getEventsByFilter(filter);
   }
 
@@ -75,11 +78,7 @@ class DbVideoLocalStorage implements VideoLocalStorage {
     int? until,
     String? sortBy,
   }) async {
-    final filter = Filter(
-      kinds: [_videoKind],
-      limit: limit,
-      until: until,
-    );
+    final filter = Filter(kinds: [_videoKind], limit: limit, until: until);
     return _dao.getEventsByFilter(filter, sortBy: sortBy);
   }
 
@@ -107,23 +106,13 @@ class DbVideoLocalStorage implements VideoLocalStorage {
   }) {
     if (authors.isEmpty) return Stream.value([]);
 
-    final filter = Filter(
-      authors: authors,
-      kinds: [_videoKind],
-      limit: limit,
-    );
+    final filter = Filter(authors: authors, kinds: [_videoKind], limit: limit);
     return _dao.watchEventsByFilter(filter);
   }
 
   @override
-  Stream<List<Event>> watchAllEvents({
-    int limit = 50,
-    String? sortBy,
-  }) {
-    final filter = Filter(
-      kinds: [_videoKind],
-      limit: limit,
-    );
+  Stream<List<Event>> watchAllEvents({int limit = 50, String? sortBy}) {
+    final filter = Filter(kinds: [_videoKind], limit: limit);
     return _dao.watchEventsByFilter(filter, sortBy: sortBy);
   }
 
@@ -150,11 +139,7 @@ class DbVideoLocalStorage implements VideoLocalStorage {
   }) async {
     if (query.isEmpty) return [];
 
-    final filter = Filter(
-      kinds: [_videoKind],
-      search: query,
-      limit: limit,
-    );
+    final filter = Filter(kinds: [_videoKind], search: query, limit: limit);
     return _dao.getEventsByFilter(filter);
   }
 

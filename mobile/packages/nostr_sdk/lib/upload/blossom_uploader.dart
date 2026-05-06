@@ -11,6 +11,7 @@ import '../event.dart';
 import '../event_kind.dart';
 import '../utils/base64.dart';
 import '../utils/hash_util.dart';
+import '../utils/redact_http_headers_for_logs.dart';
 import '../utils/string_util.dart';
 
 // This uploader not complete.
@@ -59,7 +60,7 @@ class BolssomUploader {
     payload = HashUtil.sha256Bytes(bytes);
     multipartFile = MultipartFile.fromBytes(bytes, filename: fileName);
 
-    Map<String, String>? headers = {};
+    final headers = <String, String>{};
     if (StringUtil.isNotBlank(fileName)) {
       var mt = lookupMimeType(fileName!);
       if (StringUtil.isNotBlank(mt)) {
@@ -95,7 +96,7 @@ class BolssomUploader {
     headers["Authorization"] =
         "Nostr ${base64.encode(utf8.encode(jsonEncode(nip98Event.toJson())))}";
 
-    log(jsonEncode(headers));
+    log(jsonEncode(redactHttpHeadersForLogs(headers)));
 
     // var formData = FormData.fromMap({"file": multipartFile});
     try {
@@ -111,6 +112,8 @@ class BolssomUploader {
         ),
       );
       var body = response.data;
+      // Success payloads from Blossom are expected to be `{ "url": "…" }`.
+      // Revisit if a server ever returns auth material in JSON bodies.
       log(jsonEncode(response.data));
       if (body is Map<String, dynamic> && body["url"] != null) {
         return body["url"];

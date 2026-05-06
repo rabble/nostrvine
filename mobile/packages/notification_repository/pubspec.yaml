@@ -13,6 +13,7 @@ dependencies:
   db_client:
   equatable: ^2.0.5
   funnelcake_api_client:
+  meta: ^1.14.0
   models:
   nostr_client:
   profile_repository:

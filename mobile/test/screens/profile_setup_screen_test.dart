@@ -2,15 +2,23 @@
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' as models;
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+
+import '../helpers/test_provider_overrides.dart';
 
 class _MockProfileEditorBloc
     extends MockBloc<ProfileEditorEvent, ProfileEditorState>
@@ -169,7 +177,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Username must be 3-20 characters'), findsOneWidget);
+      expect(find.text('Username must be 3-63 characters'), findsOneWidget);
     });
   });
 
@@ -444,13 +452,13 @@ void main() {
       expect(
         profileSetupUploadErrorMessage(
           l10n,
-          Exception('Server error (503): Service Unavailable'),
+          BlossomUploadFailureReason.server,
         ),
         l10n.profileSetupUploadServerError,
       );
     });
 
-    testWidgets('uses a generic fallback without leaking raw exception text', (
+    testWidgets('maps network failures to the network error message', (
       tester,
     ) async {
       final l10n = await loadL10n(tester);
@@ -458,16 +466,166 @@ void main() {
       expect(
         profileSetupUploadErrorMessage(
           l10n,
-          Exception('weird upstream blob storage failure'),
+          BlossomUploadFailureReason.network,
+        ),
+        l10n.profileSetupUploadNetworkError,
+      );
+    });
+
+    testWidgets('maps auth failures to the auth error message', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          BlossomUploadFailureReason.auth,
+        ),
+        l10n.profileSetupUploadAuthError,
+      );
+    });
+
+    testWidgets('maps fileTooLarge failures to the file-too-large message', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          BlossomUploadFailureReason.fileTooLarge,
+        ),
+        l10n.profileSetupUploadFileTooLarge,
+      );
+    });
+
+    testWidgets('falls back to the generic message for unknown failures', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
+      expect(
+        profileSetupUploadErrorMessage(
+          l10n,
+          BlossomUploadFailureReason.unknown,
         ),
         l10n.profileSetupUploadFailedGeneric,
       );
+    });
+
+    testWidgets('falls back to the generic message when reason is null', (
+      tester,
+    ) async {
+      final l10n = await loadL10n(tester);
+
       expect(
-        l10n.profileSetupUploadFailedGeneric.contains(
-          'weird upstream blob storage failure',
-        ),
-        isFalse,
+        profileSetupUploadErrorMessage(l10n, null),
+        l10n.profileSetupUploadFailedGeneric,
       );
     });
+  });
+
+  group('$ProfileSetupScreen npub demotion (#3933)', () {
+    const testPubkeyHex =
+        'a1b2c3d4e5f6789012345678901234567890abcdef1234567890123456789012';
+    const testNpub =
+        'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz';
+
+    late MockAuthService mockAuthService;
+    late MockProfileRepository mockProfileRepository;
+
+    setUp(() {
+      mockAuthService = createMockAuthService();
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkeyHex);
+      when(() => mockAuthService.currentNpub).thenReturn(testNpub);
+      when(() => mockAuthService.hasExistingProfile).thenReturn(true);
+
+      mockProfileRepository = createMockProfileRepository();
+    });
+
+    List<dynamic> baseOverrides() {
+      return [
+        authServiceProvider.overrideWithValue(mockAuthService),
+        profileRepositoryProvider.overrideWith((ref) => mockProfileRepository),
+        fetchUserProfileProvider(testPubkeyHex).overrideWith(
+          (ref) async => null,
+        ),
+        userProfileReactiveProvider(testPubkeyHex).overrideWith(
+          (ref) => Stream<models.UserProfile?>.value(null),
+        ),
+      ];
+    }
+
+    Widget buildSubject() {
+      return testProviderScope(
+        additionalOverrides: baseOverrides(),
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          home: const ProfileSetupScreen(isNewUser: false),
+        ),
+      );
+    }
+
+    Widget buildSubjectWithRouter() {
+      final router = GoRouter(
+        initialLocation: ProfileSetupScreen.editPath,
+        routes: [
+          GoRoute(
+            path: ProfileSetupScreen.editPath,
+            name: ProfileSetupScreen.editRouteName,
+            builder: (context, state) =>
+                const ProfileSetupScreen(isNewUser: false),
+          ),
+          GoRoute(
+            path: KeyManagementScreen.path,
+            name: KeyManagementScreen.routeName,
+            builder: (context, state) => const KeyManagementScreen(),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        additionalOverrides: baseOverrides(),
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: VineTheme.theme,
+          routerConfig: router,
+        ),
+      );
+    }
+
+    testWidgets('does not render the labeled npub field', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      expect(find.text('Public key (npub)'), findsNothing);
+    });
+
+    testWidgets('renders a "View your public key" link', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pump();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      expect(find.text(l10n.profileEditPublicKeyLink), findsOneWidget);
+    });
+
+    testWidgets(
+      'navigates to key management when "View your public key" is tapped',
+      (tester) async {
+        await tester.pumpWidget(buildSubjectWithRouter());
+        await tester.pump();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.profileEditPublicKeyLink));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(KeyManagementScreen), findsOneWidget);
+      },
+    );
   });
 }

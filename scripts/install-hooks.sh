@@ -23,7 +23,11 @@ echo "Installing git hooks..."
 cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 #!/bin/bash
 # Pre-commit hook for divine-mobile
-# Runs format check, analyze, and codegen verification to catch CI failures early
+# Fast checks only:
+#   * dart format on staged files
+#   * codegen verification — only when staged files contain codegen inputs
+# `flutter analyze` is intentionally NOT run here; pre-push runs it once on
+# the full diff, which is the right place to pay that cost.
 
 set -e
 
@@ -58,8 +62,6 @@ capture_generated_status() {
         | sort -u || true
 }
 
-echo "Running pre-commit checks..."
-
 # Check if any Dart files are staged
 STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM \
     | grep '^mobile/.*\.dart$' \
@@ -67,31 +69,21 @@ STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM \
     | grep -v '\.freezed\.dart$' || true)
 
 if [ -z "$STAGED_DART_FILES" ]; then
-    echo "No Dart files staged, skipping checks"
     exit 0
 fi
 
-# Run dart format check (fast)
-echo "[1/3] Checking format..."
-if ! mise exec -- dart format --output=none --set-exit-if-changed lib test integration_test 2>/dev/null; then
+# Run dart format check on the staged files only (fast).
+# Strip the leading "mobile/" prefix because we cd'd into mobile above.
+STAGED_FORMAT_PATHS=$(echo "$STAGED_DART_FILES" | sed 's|^mobile/||')
+if ! echo "$STAGED_FORMAT_PATHS" | xargs mise exec -- dart format --output=none --set-exit-if-changed 2>/dev/null; then
     echo ""
     echo "Format check failed!"
     echo "Run: cd mobile && mise exec -- dart format lib test integration_test"
     exit 1
 fi
-echo "Format OK"
 
-# Run flutter analyze (medium speed)
-echo "[2/3] Running analyzer..."
-if ! mise exec -- flutter analyze lib test integration_test 2>/dev/null; then
-    echo ""
-    echo "Analysis failed!"
-    echo "Fix the issues above before committing"
-    exit 1
-fi
-echo "Analysis OK"
-
-# Verify generated files when codegen inputs changed
+# Verify generated files when codegen inputs were staged.
+# Most commits don't touch codegen inputs, so this is a no-op for them.
 CODEGEN_INPUTS=$(printf '%s\n' "$STAGED_DART_FILES" | list_codegen_inputs)
 if [ -n "$CODEGEN_INPUTS" ]; then
     BEFORE_STATUS_FILE=$(mktemp)
@@ -100,7 +92,7 @@ if [ -n "$CODEGEN_INPUTS" ]; then
 
     capture_generated_status > "$BEFORE_STATUS_FILE"
 
-    echo "[3/3] Verifying generated files..."
+    echo "Verifying generated files..."
     mise exec -- dart run build_runner build --delete-conflicting-outputs >/dev/null
 
     capture_generated_status > "$AFTER_STATUS_FILE"
@@ -118,12 +110,7 @@ if [ -n "$CODEGEN_INPUTS" ]; then
         echo "Then stage the generated files and commit again."
         exit 1
     fi
-
-    echo "Generated files OK"
 fi
-
-echo ""
-echo "All pre-commit checks passed!"
 EOF
 
 chmod +x "$HOOKS_DIR/pre-commit"

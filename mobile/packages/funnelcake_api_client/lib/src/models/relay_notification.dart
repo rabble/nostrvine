@@ -14,10 +14,33 @@ class RelayNotification {
     required this.read,
     this.referencedEventId,
     this.content,
+    this.isReferencedVideo = false,
+    this.referencedVideoTitle,
+    this.referencedVideoThumbnail,
+    this.referencedDTag,
   });
 
   /// Parses a notification payload from the FunnelCake API.
   factory RelayNotification.fromJson(Map<String, dynamic> json) {
+    final referencedVideo = json['referenced_video'];
+    final referencedVideoMap = referencedVideo is Map<String, dynamic>
+        ? referencedVideo
+        : null;
+    final videoTitle =
+        referencedVideoMap?['title'] as String? ??
+        json['referenced_event_title'] as String?;
+
+    // d_tag is the stable vineId for the referenced video. It is sent in two
+    // places by the server — prefer referenced_video.d_tag, fall back to the
+    // top-level referenced_d_tag field.
+    final rawDTag =
+        referencedVideoMap?['d_tag'] as String? ??
+        json['referenced_d_tag'] as String?;
+
+    final rawThumbnail =
+        referencedVideoMap?['thumbnail'] as String? ??
+        json['referenced_event_thumbnail'] as String?;
+
     return RelayNotification(
       id: json['id'] as String? ?? '',
       sourcePubkey: json['source_pubkey'] as String? ?? '',
@@ -30,6 +53,15 @@ class RelayNotification {
       ),
       read: json['read'] as bool? ?? false,
       content: json['content'] as String?,
+      isReferencedVideo: referencedVideoMap != null,
+      referencedVideoTitle: (videoTitle != null && videoTitle.isNotEmpty)
+          ? videoTitle
+          : null,
+      referencedVideoThumbnail:
+          (rawThumbnail != null && rawThumbnail.isNotEmpty)
+          ? rawThumbnail
+          : null,
+      referencedDTag: (rawDTag != null && rawDTag.isNotEmpty) ? rawDTag : null,
     );
   }
 
@@ -59,6 +91,28 @@ class RelayNotification {
 
   /// Optional content from the source event (e.g. reaction emoji).
   final String? content;
+
+  /// Whether the referenced event is a video. Set when the API populates
+  /// `referenced_video` (only present for video kinds). Lets the client
+  /// distinguish a like on a video from a like on a comment.
+  final bool isReferencedVideo;
+
+  /// Title of the referenced video, when the referenced event is a video
+  /// with a non-empty title. `null` for non-video targets or untitled
+  /// videos.
+  final String? referencedVideoTitle;
+
+  /// Thumbnail URL of the referenced video, when the server includes it in
+  /// `referenced_video.thumbnail`. Stable — does not depend on event ID.
+  final String? referencedVideoThumbnail;
+
+  /// The `d` tag (vineId) of the referenced video.
+  ///
+  /// Populated from `referenced_video.d_tag` or the top-level
+  /// `referenced_d_tag` field when the server includes it. Together with the
+  /// notification recipient's pubkey this forms the NIP-33 addressable
+  /// coordinate (`34236:pubkey:d-tag`) which is stable across metadata edits.
+  final String? referencedDTag;
 
   /// Stable dedup key -- falls back to sourceEventId if id is empty.
   String get dedupeKey => id.isNotEmpty ? id : sourceEventId;

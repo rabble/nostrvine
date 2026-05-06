@@ -827,7 +827,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Username must be 3-20 characters';
+      'Username must be 3-63 characters';
 
   @override
   String get profileSetupUsernameNetworkError =>
@@ -2545,6 +2545,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authSignInWithAmber => 'Sign in with Amber';
 
   @override
+  String get authSignInWithBrowserExtension => 'Sign in with browser extension';
+
+  @override
+  String get authNip07ConnectionFailed =>
+      'Couldn\'t connect to your browser extension.';
+
+  @override
+  String get authNip07ExtensionNotFound =>
+      'No browser extension found. Install Alby, nos2x, or another NIP-07 compatible extension.';
+
+  @override
   String get authSignInOptionsTitle => 'Sign-in options';
 
   @override
@@ -2571,6 +2582,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authInfoAmberDescription =>
       'Use the Amber signer app on Android to manage your Nostr keys securely.';
+
+  @override
+  String get authInfoBrowserExtensionTitle => 'Browser Extension';
+
+  @override
+  String get authInfoBrowserExtensionDescription =>
+      'Sign in with a NIP-07 browser extension like Alby or nos2x. Your keys stay in the extension — Divine never sees them.';
 
   @override
   String get authCreateAccountTitle => 'Create account';
@@ -3789,6 +3807,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Try a different search term';
 
   @override
+  String get soundsSavedToLibrary => 'Saved to Sounds';
+
+  @override
+  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+
+  @override
+  String get soundsSavedLibraryTitle => 'My Sounds';
+
+  @override
+  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+
+  @override
+  String get soundsSavedEmptyDescription =>
+      'Tap Use Sound on a video to save it here.';
+
+  @override
+  String get soundsAvailabilityPrivate => 'Private';
+
+  @override
+  String get soundsAvailabilityCommunity => 'Community';
+
+  @override
+  String get soundsRemoveSavedSound => 'Remove sound';
+
+  @override
+  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+
+  @override
   String get soundsFailedToLoad => 'Failed to load sounds';
 
   @override
@@ -4537,6 +4583,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get keyManagementYourPublicKeyLabel => 'Your public key (npub)';
+
+  @override
+  String get keyManagementCopyPublicKeyTooltip => 'Copy public key';
+
+  @override
+  String get keyManagementPublicKeyCopied => 'Public key copied';
+
+  @override
+  String get profileEditPublicKeyLink => 'View your public key';
+
+  @override
   String get saveOriginalSavedToCameraRoll => 'Saved to Camera Roll';
 
   @override
@@ -5109,6 +5167,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inboxConversationCollabInvitePreview => 'Collaborator invite';
+
+  @override
+  String collaboratorInviteDmBody(String title, String url) {
+    return 'You were invited to collaborate on $title: $url\n\nOpen diVine to review and accept.';
+  }
+
+  @override
+  String collaboratorInviteDmBodyUntitled(String url) {
+    return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
+  }
 
   @override
   String get reportDialogCancel => 'Cancel';
@@ -5969,6 +6037,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String notificationLikedYourComment(String actorName) {
+    return '$actorName liked your comment';
+  }
+
+  @override
   String notificationCommentedOnYourVideo(String actorName) {
     return '$actorName commented on your video';
   }
@@ -6004,6 +6077,12 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get notificationSystemUpdate => 'You have a new update';
+
+  @override
+  String get notificationSomeoneLikedYourVideo => 'Someone liked your video';
 
   @override
   String get commentReplyToPrefix => 'Re:';
@@ -6082,6 +6161,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoRecorderWhySixSecondsButton => 'Got it!';
+
+  @override
+  String get videoRecorderUploadTitle => 'Why no upload?';
+
+  @override
+  String get videoRecorderUploadBody =>
+      'What you see on Divine is human-made: raw and captured in the moment. Unlike platforms that allow highly produced or AI-generated uploads, we prioritize the authenticity of the camera-direct experience.';
+
+  @override
+  String get videoRecorderUploadBodyDetail =>
+      'By keeping creation inside the app, we can better guarantee that content is real and unedited. We aren\'t opening up external gallery uploads at this time to protect that realness and keep our community free of synthetic content as much as we can.';
+
+  @override
+  String get videoRecorderUploadBodyCta =>
+      'Switch to Capture or Classic to roll something real.';
+
+  @override
+  String get videoRecorderUploadLearnMore => 'Learn how verification works';
 
   @override
   String get videoRecorderAutosaveFoundTitle => 'We found work in progress';
@@ -6389,10 +6486,24 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select the audio segment for your video';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'Divine';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Community';
+
+  @override
+  String get videoEditorAudioCategoryFeatured => 'Featured';
+
+  @override
+  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+
+  @override
+  String get videoEditorAudioFeaturedEmptyTitle =>
+      'Featured sounds coming soon';
+
+  @override
+  String get videoEditorAudioFeaturedEmptySubtitle =>
+      'We’ll drop featured sounds here once they’re ready.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
@@ -6580,6 +6691,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Done';
+
+  @override
+  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+
+  @override
+  String get videoMetadataAudioReuseSubtitle =>
+      'Let others save and reuse this video\'s audio.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Collaborators';

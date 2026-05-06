@@ -517,11 +517,20 @@ class ProfileRepository {
         nip05 ??
         (username != null ? '_@${username.toLowerCase()}.divine.video' : null);
 
+    // Funnelcake REST API profiles have rawData: {} but nip05 populated on
+    // the object. Fall back to the field so a profile round-trip through the
+    // REST API doesn't silently drop the verified handle from the Kind 0.
+    final existingNip05 =
+        (currentProfile?.rawData.containsKey('nip05') ?? false)
+        ? null // rawData has it; the spread below carries it through
+        : currentProfile?.nip05;
+    final effectiveNip05 = resolvedNip05 ?? existingNip05;
+
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
       'about': about,
-      'nip05': ?resolvedNip05,
+      'nip05': ?effectiveNip05,
       'picture': picture,
       'banner': banner,
     };
@@ -575,7 +584,12 @@ class ProfileRepository {
   ///
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
   Future<UsernameClaimResult> claimUsername({required String username}) async {
-    final normalizedUsername = username.toLowerCase();
+    final validation = validateDivineUsername(username);
+    if (validation case DivineUsernameInvalid(:final reason)) {
+      return UsernameClaimError(reason);
+    }
+
+    final normalizedUsername = (validation as DivineUsernameValid).normalized;
     final payload = jsonEncode({'name': normalizedUsername});
     final authHeader = await _nostrClient.createNip98AuthHeader(
       url: _usernameClaimUrl,
@@ -656,8 +670,10 @@ class ProfileRepository {
   /// Checks if a username is available for registration.
   ///
   /// Queries the NIP-05 endpoint to check if the username is already registered
-  /// on the server. This method does NOT validate username format - format
-  /// validation is the responsibility of the BLoC layer.
+  /// on the server.
+  ///
+  /// This method performs shared client-side validation before making network
+  /// calls so editor and repository behavior stay in sync.
   ///
   /// Returns a [UsernameAvailabilityResult] indicating:
   /// - [UsernameAvailable] if the username is not registered on the server
@@ -668,29 +684,11 @@ class ProfileRepository {
     required String username,
     String? currentUserPubkey,
   }) async {
-    final normalizedUsername = username.toLowerCase().trim();
-
-    // Client-side format validation: usernames become subdomains, so only
-    // lowercase letters, digits, and hyphens are allowed. No dots,
-    // underscores, spaces, or special characters.
-    if (normalizedUsername.isEmpty) {
-      return const UsernameInvalidFormat('Username is required');
+    final validation = validateDivineUsername(username);
+    if (validation case DivineUsernameInvalid(:final reason)) {
+      return UsernameInvalidFormat(reason);
     }
-    if (normalizedUsername.length > 63) {
-      return const UsernameInvalidFormat('Usernames must be 1–63 characters');
-    }
-    if (normalizedUsername.startsWith('-') ||
-        normalizedUsername.endsWith('-')) {
-      return const UsernameInvalidFormat(
-        "Usernames can't start or end with a hyphen",
-      );
-    }
-    if (!RegExp(r'^[a-z0-9-]+$').hasMatch(normalizedUsername)) {
-      return const UsernameInvalidFormat(
-        'Only letters, numbers, and hyphens are allowed '
-        '(your username becomes username.divine.video)',
-      );
-    }
+    final normalizedUsername = (validation as DivineUsernameValid).normalized;
 
     // Server-side check using the name-server API which validates format
     // and checks availability in one call.
@@ -784,6 +782,47 @@ class ProfileRepository {
         stackTrace: st,
       );
       return UsernameCheckError('Network error: $e');
+    }
+  }
+
+  /// Searches for user profiles via the Funnelcake REST API only.
+  ///
+  /// This is for latency-sensitive typeahead surfaces that should not wait
+  /// for NIP-50 relay search. Results are returned in server order.
+  ///
+  /// [offset] skips results for pagination.
+  /// [sortBy] requests server-side sorting (e.g., 'followers').
+  /// [hasVideos] filters to only users who have published at least one video.
+  /// Returns empty list if query is empty, Funnelcake is unavailable, or the
+  /// REST request fails.
+  Future<List<UserProfile>> searchUsersFromApi({
+    required String query,
+    int limit = 50,
+    int offset = 0,
+    String? sortBy,
+    bool hasVideos = false,
+  }) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return [];
+    if (!(_funnelcakeApiClient?.isAvailable ?? false)) return [];
+
+    try {
+      final restResults = await _funnelcakeApiClient!.searchProfiles(
+        query: trimmedQuery,
+        limit: limit,
+        offset: offset,
+        sortBy: sortBy,
+        hasVideos: hasVideos,
+      );
+      final profiles = restResults.map((result) => result.toUserProfile());
+      return _enrichFromCache(profiles.toList());
+    } on Exception catch (e) {
+      Log.warning(
+        'REST profile search failed: $e',
+        name: 'ProfileRepository.searchUsersFromApi',
+        category: LogCategory.api,
+      );
+      return [];
     }
   }
 

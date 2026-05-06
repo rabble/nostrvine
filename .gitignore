@@ -155,3 +155,23 @@ logs/
 *.swp
 *.swo
 .claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# Orphan golden tests for missing lib/screens/live/ — preserved on disk, ignored
+mobile/test/goldens/screens/live/
+
+# Local-only zsp publish config (per-machine APK paths)
+mobile/zapstore.yaml
+
+# Superpowers local scratch (not docs/superpowers/)
+.superpowers/
+
+# Playwright MCP scratch output
+**/.playwright-mcp/
+
+# Local exploration / debug captures
+explore-layout-snapshot.md
+explore-layout.png
+search-route-console.txt
+search-route-network.txt
+search-route-snapshot.md

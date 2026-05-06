@@ -39,10 +39,7 @@ typedef RumorDecryptor = Future<Event?> Function(Nostr nostr, Event giftWrap);
 ///
 /// Returns the decrypted plaintext, or `null` if decryption fails.
 typedef Nip04Decryptor =
-    Future<String?> Function(
-      String peerPubkey,
-      String ciphertext,
-    );
+    Future<String?> Function(String peerPubkey, String ciphertext);
 
 /// Supported NIP-17 rumor event kinds.
 const Set<int> _supportedDmKinds = {
@@ -262,10 +259,9 @@ class DmRepository {
     );
 
     _subscriptionId = 'dm_inbox_$_userPubkey';
-    final stream = _nostrClient.subscribe(
-      [filter],
-      subscriptionId: _subscriptionId,
-    );
+    final stream = _nostrClient.subscribe([
+      filter,
+    ], subscriptionId: _subscriptionId);
 
     _giftWrapSubscription = stream.listen(
       _handleIncomingEvent,
@@ -861,9 +857,7 @@ class DmRepository {
                 category: LogCategory.system,
               );
               // Reuse NIP17SendResult for simplicity
-              return NIP17SendResult.failure(
-                'NIP-04 fallback failed: $e',
-              );
+              return NIP17SendResult.failure('NIP-04 fallback failed: $e');
             }),
           );
         }
@@ -992,11 +986,7 @@ class DmRepository {
       ownerPubkey: _ownerPubkey,
     );
     if (row == null) {
-      throw ArgumentError.value(
-        rumorId,
-        'rumorId',
-        'message not found',
-      );
+      throw ArgumentError.value(rumorId, 'rumorId', 'message not found');
     }
     if (row.senderPubkey != _userPubkey) {
       throw ArgumentError.value(
@@ -1026,16 +1016,11 @@ class DmRepository {
     }
 
     // Build and sign the kind 5 event (NIP-09).
-    final event = Event(
-      _userPubkey,
-      EventKind.eventDeletion,
-      [
-        ['e', rumorId],
-        ['k', '14'],
-        ...pTags,
-      ],
-      '',
-    );
+    final event = Event(_userPubkey, EventKind.eventDeletion, [
+      ['e', rumorId],
+      ['k', '14'],
+      ...pTags,
+    ], '');
 
     final signer = _signer!;
     final signed = await signer.signEvent(event);
@@ -1247,14 +1232,9 @@ class DmRepository {
       return NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
-    final event = Event(
-      _userPubkey,
-      EventKind.directMessage,
-      [
-        ['p', recipientPubkey],
-      ],
-      ciphertext,
-    );
+    final event = Event(_userPubkey, EventKind.directMessage, [
+      ['p', recipientPubkey],
+    ], ciphertext);
 
     final signed = await signer.signEvent(event);
     if (signed == null) {
@@ -1284,9 +1264,7 @@ class DmRepository {
   Stream<List<DmConversation>> watchConversations({int? limit}) {
     return _conversationsDao
         .watchAllConversations(limit: limit, ownerPubkey: _ownerPubkey)
-        .map(
-          (rows) => rows.map(_conversationFromRow).toList(),
-        );
+        .map((rows) => rows.map(_conversationFromRow).toList());
   }
 
   /// Get a single conversation by ID.
@@ -1326,9 +1304,7 @@ class DmRepository {
   Stream<List<DmConversation>> watchPotentialRequests() {
     return _conversationsDao
         .watchPotentialRequestConversations(ownerPubkey: _ownerPubkey)
-        .map(
-          (rows) => rows.map(_conversationFromRow).toList(),
-        );
+        .map((rows) => rows.map(_conversationFromRow).toList());
   }
 
   /// Classifies potential request conversations by follow state.
@@ -1336,10 +1312,7 @@ class DmRepository {
   /// Conversations where `currentUserHasSent == false` are "potential
   /// requests". For 1:1 conversations from followed contacts, they go to
   /// the followed list (Messages tab). Everything else is a true request.
-  static ({
-    List<DmConversation> followed,
-    List<DmConversation> requests,
-  })
+  static ({List<DmConversation> followed, List<DmConversation> requests})
   classifyPotentialRequests(
     List<DmConversation> potentialRequests, {
     required String userPubkey,
@@ -1469,10 +1442,7 @@ class DmRepository {
   /// Watch messages in a conversation (reactive stream).
   Stream<List<DmMessage>> watchMessages(String conversationId) {
     return _directMessagesDao
-        .watchMessagesForConversation(
-          conversationId,
-          ownerPubkey: _ownerPubkey,
-        )
+        .watchMessagesForConversation(conversationId, ownerPubkey: _ownerPubkey)
         .map((rows) => rows.map(_messageFromRow).toList());
   }
 
@@ -1878,13 +1848,11 @@ class DmRepository {
     }
   }
 
-  static final _hexPattern = RegExp(r'^[0-9a-fA-F]{64}$');
-
   /// Validates that [pubkey] is a 64-character hex string.
   ///
   /// Throws [ArgumentError] if the pubkey is invalid.
   static void validatePubkey(String pubkey) {
-    if (!_hexPattern.hasMatch(pubkey)) {
+    if (!NostrHexUtils.isValidPubkey(pubkey)) {
       throw ArgumentError.value(
         pubkey,
         'pubkey',

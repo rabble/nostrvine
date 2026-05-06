@@ -67,8 +67,18 @@ class ContentBlocklistRepository {
   // Mutual mute blocklist (populated from kind 10000 events)
   final Set<String> _mutualMuteBlocklist = <String>{};
 
+  // Latest replaceable kind-10000 mute-list event timestamp per author.
+  // Prevent stale relay delivery order from resurrecting old mute state.
+  final Map<String, int> _latestMuteListEventCreatedAtByAuthor =
+      <String, int>{};
+
   // Users who have blocked us (populated from kind 30000 events with d=block)
   final Set<String> _blockedByOthers = <String>{};
+
+  // Latest replaceable kind-30000 block-list event timestamp per author.
+  // Prevent stale relay delivery order from resurrecting old block state.
+  final Map<String, int> _latestBlockListEventCreatedAtByAuthor =
+      <String, int>{};
 
   // Followers whose follow relationship was severed by a block.
   // Persists across unblocking so these users remain hidden from our
@@ -646,6 +656,20 @@ class ContentBlocklistRepository {
     }
 
     final muterPubkey = event.pubkey;
+    final createdAt = event.createdAt;
+    final latestSeen = _latestMuteListEventCreatedAtByAuthor[muterPubkey];
+
+    if (latestSeen != null && createdAt < latestSeen) {
+      Log.debug(
+        'Ignoring stale mute list event from $muterPubkey '
+        '(createdAt=$createdAt < latestSeen=$latestSeen)',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _latestMuteListEventCreatedAtByAuthor[muterPubkey] = createdAt;
 
     // Check if our pubkey is in this user's mute list
     final stillMuted = event.tags.any(
@@ -753,6 +777,20 @@ class ContentBlocklistRepository {
   /// the blocker from [_blockedByOthers].
   void _handleOthersBlockListEvent(Event event) {
     final blockerPubkey = event.pubkey;
+    final createdAt = event.createdAt;
+    final latestSeen = _latestBlockListEventCreatedAtByAuthor[blockerPubkey];
+
+    if (latestSeen != null && createdAt < latestSeen) {
+      Log.debug(
+        'Ignoring stale block list event from $blockerPubkey '
+        '(createdAt=$createdAt < latestSeen=$latestSeen)',
+        name: 'ContentBlocklistRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _latestBlockListEventCreatedAtByAuthor[blockerPubkey] = createdAt;
 
     // Check if our pubkey is in this user's block list
     final stillBlocked = event.tags.any(

@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show AudioEvent;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 
 /// A tile widget for displaying a sound (AudioEvent) in various list contexts.
@@ -41,6 +42,9 @@ class SoundTile extends StatelessWidget {
     this.isPlaying = false,
     this.compact = false,
     this.videoCount,
+    this.trailing,
+    this.statusBadgeLabel,
+    this.statusBadgeColor,
     super.key,
   });
 
@@ -66,12 +70,25 @@ class SoundTile extends StatelessWidget {
   /// Optional video usage count to display (e.g., "142 videos").
   final int? videoCount;
 
+  /// Optional trailing action for list tiles.
+  final Widget? trailing;
+
+  /// Optional availability badge label shown under the title.
+  final String? statusBadgeLabel;
+
+  /// Optional color for the availability badge.
+  final Color? statusBadgeColor;
+
   /// Format the duration for display.
   ///
   /// Returns a short format like "6s" for durations under a minute.
-  /// Returns "0s" for null or zero duration.
+  /// Returns the full Vine duration for legacy original sounds without
+  /// stored metadata, otherwise "0s" for null or zero duration.
   String _formatDuration() {
     if (sound.duration == null || sound.duration! <= 0) {
+      if (sound.isOriginalSound) {
+        return '${VideoEditorConstants.maxDuration.inSeconds}s';
+      }
       return '0s';
     }
     final totalSeconds = sound.duration!.round();
@@ -196,32 +213,40 @@ class SoundTile extends StatelessWidget {
                             ),
                           ],
                         ),
+                        if (statusBadgeLabel != null) ...[
+                          const SizedBox(height: 6),
+                          _SoundStatusBadge(
+                            label: statusBadgeLabel!,
+                            color: statusBadgeColor ?? VineTheme.vineGreen,
+                          ),
+                        ],
                         const SizedBox(height: 4),
                         _buildMetadataRow(context),
                       ],
                     ),
                   ),
 
-                  // Chevron indicator - tappable for detail navigation
-                  GestureDetector(
-                    onTap: onDetailTap,
-                    behavior: HitTestBehavior.opaque,
-                    child: Semantics(
-                      identifier: 'sound_tile_detail_${sound.id}',
-                      label: context.l10n.soundViewDetailsSemanticLabel(
-                        _displayTitle(context),
-                      ),
-                      button: true,
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(
-                          Icons.chevron_right,
-                          color: VineTheme.lightText,
-                          size: 24,
+                  trailing ??
+                      // Chevron indicator - tappable for detail navigation
+                      GestureDetector(
+                        onTap: onDetailTap,
+                        behavior: HitTestBehavior.opaque,
+                        child: Semantics(
+                          identifier: 'sound_tile_detail_${sound.id}',
+                          label: context.l10n.soundViewDetailsSemanticLabel(
+                            _displayTitle(context),
+                          ),
+                          button: true,
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.chevron_right,
+                              color: VineTheme.lightText,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -269,6 +294,32 @@ class SoundTile extends StatelessWidget {
     return Text(
       parts.join(' · '),
       style: const TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+    );
+  }
+}
+
+class _SoundStatusBadge extends StatelessWidget {
+  const _SoundStatusBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        color: color.withValues(alpha: 0.14),
+        shape: StadiumBorder(
+          side: BorderSide(color: color.withValues(alpha: 0.45)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          label,
+          style: VineTheme.labelSmallFont(color: color),
+        ),
+      ),
     );
   }
 }

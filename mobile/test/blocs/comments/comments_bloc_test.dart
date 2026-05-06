@@ -92,6 +92,15 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockProfileRepository.searchUsersFromApi(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          sortBy: any(named: 'sortBy'),
+          hasVideos: any(named: 'hasVideos'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
       // Default stubs for real-time comment watching
@@ -2595,12 +2604,15 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'fetches remote results when fewer than 5 local matches',
+        'fetches REST results sorted by followers when fewer than 5 local matches',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
-              query: 'rem',
+            () => mockProfileRepository.searchUsersFromApi(
+              query: 'ga',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2609,14 +2621,15 @@ void main() {
                 rawData: const {},
                 createdAt: DateTime.now(),
                 eventId: validId('event4'),
-                displayName: 'RemoteUser',
+                displayName: 'GaryVee',
+                nip05: 'garyvee@example.com',
               ),
             ],
           );
         },
         build: createBloc,
         seed: () => const CommentsState(status: CommentsStatus.success),
-        act: (bloc) => bloc.add(const MentionSearchRequested('rem')),
+        act: (bloc) => bloc.add(const MentionSearchRequested('ga')),
         expect: () => [
           // Tier 1: no local matches
           isA<CommentsState>().having(
@@ -2634,9 +2647,29 @@ void main() {
               .having(
                 (s) => s.mentionSuggestions.first.displayName,
                 'displayName',
-                'RemoteUser',
+                'GaryVee',
+              )
+              .having(
+                (s) => s.mentionSuggestions.first.nip05,
+                'nip05',
+                'garyvee@example.com',
               ),
         ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsersFromApi(
+              query: 'ga',
+              limit: 10,
+              sortBy: 'followers',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockProfileRepository.searchUsers(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
       );
 
       blocTest<CommentsBloc, CommentsState>(
@@ -3662,20 +3695,30 @@ void main() {
         pubkey: 'abc',
         displayName: 'Alice',
         picture: 'pic.jpg',
+        nip05: 'alice@example.com',
       );
       const suggestion2 = MentionSuggestion(
         pubkey: 'abc',
         displayName: 'Alice',
         picture: 'pic.jpg',
+        nip05: 'alice@example.com',
       );
       const suggestion3 = MentionSuggestion(
         pubkey: 'abc',
         displayName: 'Bob',
         picture: 'pic.jpg',
+        nip05: 'alice@example.com',
+      );
+      const suggestion4 = MentionSuggestion(
+        pubkey: 'abc',
+        displayName: 'Alice',
+        picture: 'pic.jpg',
+        nip05: 'alice@elsewhere.example',
       );
 
       expect(suggestion1, equals(suggestion2));
       expect(suggestion1, isNot(equals(suggestion3)));
+      expect(suggestion1, isNot(equals(suggestion4)));
     });
 
     test('treats null and non-null optional fields as unequal', () {

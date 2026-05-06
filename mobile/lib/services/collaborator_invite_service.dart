@@ -1,8 +1,11 @@
 // ABOUTME: Sends encrypted collaborator invites via NIP-17 direct messages.
 // ABOUTME: Builds readable fallback content plus structured collab tags.
 
+import 'dart:ui' show Locale;
+
 import 'package:dm_repository/dm_repository.dart';
 import 'package:equatable/equatable.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 class CollaboratorInviteResult extends Equatable {
   const CollaboratorInviteResult({
@@ -33,18 +36,40 @@ class CollaboratorInviteBatchResult extends Equatable {
 }
 
 class CollaboratorInviteService {
-  const CollaboratorInviteService({
+  CollaboratorInviteService({
     required DmRepository dmRepository,
+    AppLocalizations? l10n,
+    this.videoLinkBase = defaultVideoLinkBase,
     this.defaultRelayHint = 'wss://relay.divine.video',
-  }) : _dmRepository = dmRepository;
+  }) : _dmRepository = dmRepository,
+       _l10n = l10n ?? lookupAppLocalizations(const Locale('en'));
 
   final DmRepository _dmRepository;
+  final AppLocalizations _l10n;
+  final String videoLinkBase;
   final String defaultRelayHint;
 
-  /// Suffix that uniquely identifies the plaintext fallback body of a
-  /// collaborator invite DM — kept in sync with [_buildContent]. The
-  /// conversation view uses this to suppress legacy NIP-04 invite
-  /// duplicates that cannot be turned into actionable cards (#3559).
+  /// Base URL the plaintext fallback uses to link back to the invited
+  /// video. The full URL is `<videoLinkBase>/<stableId>`, where
+  /// `stableId` is the video's d-tag (parameterized addressable per
+  /// NIP-71). Matches the format `ShareService.generateWebLink`
+  /// produces — the divine.video web frontend serves d-tag lookups
+  /// today, so non-Divine clients always see a tappable preview.
+  /// In-app deep-link routing from this d-tag URL on cold start
+  /// depends on the route-ref resolver landing in #3932; until that
+  /// merges, the path inside diVine for recipients is the structured
+  /// `CollaboratorInviteCard` produced from the invite tags by
+  /// `CollaboratorInviteParser`, not URL deep-linking.
+  static const String defaultVideoLinkBase = 'https://divine.video/video';
+
+  /// Suffix that uniquely identifies the plaintext fallback body of an
+  /// **English-locale** collaborator invite DM — kept in sync with the
+  /// English ARB value of `collaboratorInviteDmBody` /
+  /// `collaboratorInviteDmBodyUntitled`. The conversation view uses
+  /// this to suppress legacy NIP-04 invite duplicates that cannot be
+  /// turned into actionable cards (#3559); newer locale-translated
+  /// invites surface inside diVine via the structured-tag parser path
+  /// (`CollaboratorInviteParser`) and don't depend on this suffix.
   static const String invitePlaintextSuffix =
       'Open diVine to review and accept.';
 
@@ -56,7 +81,7 @@ class CollaboratorInviteService {
     String? thumbnailUrl,
     String? relayHint,
   }) async {
-    final content = _buildContent(title);
+    final content = _buildContent(title: title, videoAddress: videoAddress);
     final tags = _buildTags(
       creatorPubkey: creatorPubkey,
       videoAddress: videoAddress,
@@ -104,12 +129,27 @@ class CollaboratorInviteService {
     return CollaboratorInviteBatchResult(results: results);
   }
 
-  String _buildContent(String? title) {
-    final videoLabel = title == null || title.trim().isEmpty
-        ? 'a diVine video'
-        : title.trim();
-    return 'You were invited to collaborate on $videoLabel. '
-        '$invitePlaintextSuffix';
+  String _buildContent({
+    required String videoAddress,
+    String? title,
+  }) {
+    final url = _videoUrlFor(videoAddress);
+    final cleanTitle = title?.trim();
+    if (cleanTitle == null || cleanTitle.isEmpty) {
+      return _l10n.collaboratorInviteDmBodyUntitled(url);
+    }
+    return _l10n.collaboratorInviteDmBody(cleanTitle, url);
+  }
+
+  String _videoUrlFor(String videoAddress) {
+    // Parameterized addressable format: `<kind>:<pubkey>:<dTag>`. The
+    // d-tag is the video's [VideoEvent.stableId], which divine.video
+    // routes via `/video/:id`. NIP-01 doesn't forbid `:` inside a d-tag,
+    // so re-join everything past the kind/pubkey prefix to keep colons
+    // in the stableId intact.
+    final parts = videoAddress.split(':');
+    final stableId = parts.length >= 3 ? parts.sublist(2).join(':') : '';
+    return '$videoLinkBase/$stableId';
   }
 
   List<List<String>> _buildTags({

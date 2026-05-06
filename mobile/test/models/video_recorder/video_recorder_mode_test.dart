@@ -12,6 +12,10 @@ void main() {
       test('classic has label "Classic"', () {
         expect(VideoRecorderMode.classic.label, equals('Classic'));
       });
+
+      test('upload returns "Upload" label', () {
+        expect(VideoRecorderMode.upload.label, equals('Upload'));
+      });
     });
 
     group('hasRecordingLimit', () {
@@ -21,6 +25,10 @@ void main() {
 
       test('classic has recording limit', () {
         expect(VideoRecorderMode.classic.hasRecordingLimit, isTrue);
+      });
+
+      test('upload has no recording limit', () {
+        expect(VideoRecorderMode.upload.hasRecordingLimit, isFalse);
       });
     });
 
@@ -32,6 +40,10 @@ void main() {
       test('classic has no video editor', () {
         expect(VideoRecorderMode.classic.hasVideoEditor, isFalse);
       });
+
+      test('upload has no video editor', () {
+        expect(VideoRecorderMode.upload.hasVideoEditor, isFalse);
+      });
     });
 
     group('supportGridLines', () {
@@ -41,6 +53,10 @@ void main() {
 
       test('classic supports grid lines', () {
         expect(VideoRecorderMode.classic.supportGridLines, isTrue);
+      });
+
+      test('upload does not support grid lines', () {
+        expect(VideoRecorderMode.upload.supportGridLines, isFalse);
       });
     });
 
@@ -56,6 +72,13 @@ void main() {
         expect(
           VideoRecorderMode.classic.defaultAspectRatio,
           equals(model.AspectRatio.square),
+        );
+      });
+
+      test('upload defaults to vertical aspect ratio', () {
+        expect(
+          VideoRecorderMode.upload.defaultAspectRatio,
+          equals(model.AspectRatio.vertical),
         );
       });
     });

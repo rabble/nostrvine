@@ -10,6 +10,8 @@ class VideosByAuthorResponse {
   const VideosByAuthorResponse({
     required this.videos,
     this.totalCount,
+    this.nextOffset,
+    this.hasMore,
   });
 
   /// The videos returned for this page.
@@ -19,4 +21,11 @@ class VideosByAuthorResponse {
   ///
   /// May be `null` if the server does not include the header.
   final int? totalCount;
+
+  /// Server-provided offset for the next page when using v2 envelope
+  /// pagination.
+  final int? nextOffset;
+
+  /// Server-provided "has more" flag from the v2 envelope.
+  final bool? hasMore;
 }

@@ -129,6 +129,8 @@ class _DivineIconButtonContent extends StatelessWidget {
   final String? semanticLabel;
   final String? semanticValue;
 
+  static const _borderWidth = 2.0;
+
   bool get _isEnabled => onPressed != null;
 
   /// Inner padding around the icon.
@@ -205,31 +207,33 @@ class _DivineIconButtonContent extends StatelessWidget {
       color: _backgroundColor,
       borderRadius: BorderRadius.circular(_borderRadius),
       border: _borderColor != null
-          ? Border.all(color: _borderColor!, width: 2)
+          ? Border.all(color: _borderColor!, width: _borderWidth)
           : null,
       boxShadow: _isEnabled ? _boxShadow : null,
     );
-
     Widget button = Semantics(
       label: semanticLabel,
       value: semanticValue,
       button: true,
       enabled: _isEnabled,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 150),
-        opacity: _isEnabled ? 1.0 : _disabledOpacity,
-        child: Material(
-          color: VineTheme.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(_borderRadius),
-            splashColor: _iconColor.withValues(alpha: 0.1),
-            highlightColor: _iconColor.withValues(alpha: 0.05),
-            child: Ink(
-              decoration: decoration,
-              child: Padding(
-                padding: EdgeInsets.all(_padding),
-                child: iconWidget,
+      child: Padding(
+        padding: .all(_borderColor == null ? _borderWidth : 0),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: _isEnabled ? 1.0 : _disabledOpacity,
+          child: Material(
+            type: .transparency,
+            child: InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(_borderRadius),
+              splashColor: _iconColor.withValues(alpha: 0.1),
+              highlightColor: _iconColor.withValues(alpha: 0.05),
+              child: Ink(
+                decoration: decoration,
+                child: Padding(
+                  padding: EdgeInsets.all(_padding),
+                  child: iconWidget,
+                ),
               ),
             ),
           ),

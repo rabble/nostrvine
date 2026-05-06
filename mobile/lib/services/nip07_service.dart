@@ -288,6 +288,52 @@ class Nip07Service {
     }
   }
 
+  /// Encrypt a message using NIP-44 (if extension supports it).
+  ///
+  /// Returns null when the extension lacks nip44 support; callers should
+  /// surface this clearly rather than silently falling back, since there
+  /// is no local key to substitute.
+  Future<String?> nip44EncryptMessage(
+    String recipientPubkey,
+    String message,
+  ) async {
+    if (!isConnected || nip07.nostr?.nip44 == null) {
+      return null;
+    }
+    try {
+      return await nip07.nostr!.nip44!.encrypt(recipientPubkey, message);
+    } catch (e, stackTrace) {
+      Log.error(
+        'NIP-44 encryption failed: $e',
+        name: 'Nip07Service',
+        category: LogCategory.system,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  /// Decrypt a message using NIP-44 (if extension supports it).
+  Future<String?> nip44DecryptMessage(
+    String senderPubkey,
+    String encryptedMessage,
+  ) async {
+    if (!isConnected || nip07.nostr?.nip44 == null) {
+      return null;
+    }
+    try {
+      return await nip07.nostr!.nip44!.decrypt(senderPubkey, encryptedMessage);
+    } catch (e, stackTrace) {
+      Log.error(
+        'NIP-44 decryption failed: $e',
+        name: 'Nip07Service',
+        category: LogCategory.system,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
   /// Disconnect from the extension
   void disconnect() {
     _currentPublicKey = null;
@@ -310,5 +356,6 @@ class Nip07Service {
     'hasRelays': _userRelays != null,
     'relayCount': _userRelays?.length ?? 0,
     'hasNip04': nip07.nostr?.nip04 != null,
+    'hasNip44': nip07.nostr?.nip44 != null,
   };
 }

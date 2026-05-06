@@ -40,6 +40,7 @@ import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/people_lists.dart';
+import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/l10n/email_verification_error_l10n.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/resolve_app_ui_locale.dart';
@@ -81,6 +82,7 @@ import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/recoverable_flutter_error.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
 import 'package:openvine/widgets/upload_failure_sheet.dart';
@@ -1153,9 +1155,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
 
           switch (deepLink.type) {
             case DeepLinkType.video:
-              if (deepLink.videoId != null) {
+              if (deepLink.videoRef != null) {
                 final targetPath = VideoDetailScreen.pathForId(
-                  deepLink.videoId!,
+                  deepLink.videoRef!,
                 );
                 Log.info(
                   '📱 Navigating to video: $targetPath',
@@ -1166,9 +1168,18 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   // Skip if already showing this video (getInitialLink
                   // and uriLinkStream can both fire for the same URL).
                   if (currentLocation == targetPath) break;
-                  // Push (not go) so the home route stays underneath,
-                  // allowing back navigation to return to the main screen.
-                  router.push(targetPath);
+                  final isReplacingExistingVideoRoute = currentLocation
+                      .startsWith('${VideoDetailScreen.basePath}/');
+                  if (isReplacingExistingVideoRoute) {
+                    // When another shared video is opened while a shared
+                    // video route is already visible, replace the current
+                    // detail route instead of stacking it.
+                    router.go(targetPath);
+                  } else {
+                    // Keep the home route underneath the first shared video
+                    // so back navigation returns to the main screen.
+                    router.push(targetPath);
+                  }
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
                     name: 'DeepLinkHandler',
@@ -1183,7 +1194,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 }
               } else {
                 Log.warning(
-                  '⚠️ Video deep link missing videoId',
+                  '⚠️ Video deep link missing videoRef',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );
@@ -1306,7 +1317,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   deepLink.inviteCode!,
                 );
                 Log.info(
-                  '📱 Navigating to invite gate: $targetPath',
+                  '📱 Navigating to invite gate: ${redactUriStringForLogs(targetPath)}',
                   name: 'DeepLinkHandler',
                   category: LogCategory.ui,
                 );
@@ -1567,6 +1578,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         draftService: ref.read(draftStorageServiceProvider),
         collaboratorInviteService: CollaboratorInviteService(
           dmRepository: ref.read(dmRepositoryProvider),
+          l10n: currentAppL10n(ref.read(sharedPreferencesProvider)),
         ),
         onProgressChanged:
             ({required String draftId, required double progress}) {

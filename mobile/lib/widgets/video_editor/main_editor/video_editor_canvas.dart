@@ -177,6 +177,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   String? _lastTrimClipId;
   Duration? _lastTrimPositionInClip;
 
+  bool get _isPlayerInitialized => _videoPlayer?.isInitialized == true;
+
   @override
   void initState() {
     super.initState();
@@ -217,7 +219,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Handles playback restart requests from BLoC.
   void _onPlaybackRestartRequested() {
-    if (!_isPlayerReadyNotifier.value) return;
+    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     _videoPlayer?.seekTo(Duration.zero);
     _videoPlayer?.play();
@@ -225,7 +227,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Handles playback toggle requests from BLoC.
   void _onPlaybackToggleRequested() {
-    if (!_isPlayerReadyNotifier.value) return;
+    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     final isPlaying = _videoPlayer?.state.isPlaying ?? false;
     if (isPlaying) {
@@ -237,7 +239,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Handles external pause requests from BLoC.
   void _onExternalPauseChanged({required bool isPaused}) {
-    if (!_isPlayerReadyNotifier.value) return;
+    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     if (isPaused) {
       _videoPlayer?.pause();
@@ -287,7 +289,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   Future<void> _onSeekRequested(Duration position) async {
-    if (!_isPlayerReadyNotifier.value) return;
+    if (!_isPlayerReadyNotifier.value || !_isPlayerInitialized) return;
 
     _proVideoController.setPlayTime(position);
 
@@ -356,6 +358,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Called when clip paths change. Updates the player with the new clips
   /// or pauses when no clips are available.
   void _onClipPathsChanged(List<String> clipPaths) {
+    if (!_isPlayerInitialized) return;
+
     if (clipPaths.isEmpty) {
       _videoPlayer?.pause();
       _isPlayerReadyNotifier.value = false;
@@ -491,7 +495,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// state and combines them with the source [AudioEvent] from the
   /// Riverpod provider (URL, asset path, start offset).
   Future<void> _syncAudioTracks() async {
-    if (_videoPlayer == null) return;
+    if (!_isPlayerInitialized) return;
 
     final overlayState = context.read<TimelineOverlayBloc>().state;
     final audioEvents = overlayState.audioTracks;
@@ -746,11 +750,15 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // Live volume preview: sync player volumes when state changes
     ref.listen<double>(
       videoEditorProvider.select((s) => s.originalAudioVolume),
-      (_, volume) => _videoPlayer?.setVolume(volume),
+      (_, volume) {
+        if (_isPlayerInitialized) _videoPlayer?.setVolume(volume);
+      },
     );
     ref.listen<double>(
       videoEditorProvider.select((s) => s.customAudioVolume),
-      (_, volume) => _videoPlayer?.setAudioTrackVolume(0, volume),
+      (_, volume) {
+        if (_isPlayerInitialized) _videoPlayer?.setAudioTrackVolume(0, volume);
+      },
     );
 
     // Reinitialize the player when clip paths change.
@@ -790,7 +798,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         // teardown). Sending `setClips([])` to the native player
         // builds a composition with `renderSize == .zero` on iOS,
         // which crashes `AVPlayerItem.setVideoComposition:`.
-        if (clips.isEmpty) return;
+        if (clips.isEmpty || !_isPlayerInitialized) return;
         final currentPosition = context
             .read<VideoEditorMainBloc>()
             .state
@@ -876,7 +884,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               previous.trimmingClipId != current.trimmingClipId,
           listener: (context, state) {
             _isTrimmingClip = state.trimmingClipId != null;
-            if (state.trimmingClipId == null) return;
+            if (state.trimmingClipId == null || !_isPlayerInitialized) return;
             final clip = state.clips.firstWhere(
               (c) => c.id == state.trimmingClipId,
             );
@@ -961,7 +969,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           listener: (context, state) async {
             // See note on the trim-times listener above: skip empty
             // clip lists to avoid crashing the iOS native player.
-            if (state.clips.isEmpty) return;
+            if (state.clips.isEmpty || !_isPlayerInitialized) return;
 
             // Seek to the trim handle's release point when restoring the composite.
             final trimEndPosition = _consumeTrimEndStartPosition(state.clips);
@@ -1045,7 +1053,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           listenWhen: (previous, current) =>
               previous.isMuted != current.isMuted,
           listener: (context, state) {
-            _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
+            if (_isPlayerInitialized) {
+              _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
+            }
             ref
                 .read(videoEditorProvider.notifier)
                 .setOriginalAudioVolume(state.isMuted ? 0 : 1);

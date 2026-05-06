@@ -1,5 +1,5 @@
-// ABOUTME: Publishes public collaborator response events.
-// ABOUTME: Acceptance events are the mobile side of confirmed collab semantics.
+// ABOUTME: Publishes collaborator acceptance events.
+// ABOUTME: Acceptance is a collaborator-authored public response to a video address.
 
 import 'package:equatable/equatable.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -44,21 +44,17 @@ class CollaboratorResponseService {
     CollaboratorInvite invite,
   ) async {
     try {
+      final currentPubkey = _authService.currentPublicKeyHex;
+      if (currentPubkey == null || currentPubkey.isEmpty) {
+        return const CollaboratorResponseResult.failure(
+          'Could not determine collaborator pubkey',
+        );
+      }
+
       final event = await _authService.createAndSignEvent(
-        kind: kindCollabResponse,
+        kind: CollaborationEventKinds.collaboratorResponse,
         content: '',
-        tags: [
-          ['d', invite.videoAddress],
-          [
-            'a',
-            invite.videoAddress,
-            invite.relayHint ?? defaultRelayHint,
-            'root',
-          ],
-          ['p', invite.creatorPubkey],
-          ['role', invite.role],
-          ['status', 'accepted'],
-        ],
+        tags: _buildAcceptanceTags(invite),
       );
 
       if (event == null) {
@@ -78,5 +74,16 @@ class CollaboratorResponseService {
     } on Object catch (error) {
       return CollaboratorResponseResult.failure(error.toString());
     }
+  }
+
+  List<List<String>> _buildAcceptanceTags(CollaboratorInvite invite) {
+    final relayHint = invite.relayHint ?? defaultRelayHint;
+    return [
+      ['d', invite.videoAddress],
+      ['a', invite.videoAddress, relayHint, 'root'],
+      ['p', invite.creatorPubkey],
+      ['role', invite.role],
+      ['status', 'accepted'],
+    ];
   }
 }

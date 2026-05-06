@@ -17,6 +17,73 @@ import 'package:image_metadata_stripper/image_metadata_stripper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+/// Why a Blossom upload failed.
+///
+/// Classification lives at the HTTP/service boundary so that callers
+/// (UI, analytics, telemetry) can branch on a stable enum rather than
+/// inspecting raw [BlossomUploadResult.errorMessage] text or HTTP
+/// status codes themselves.
+enum BlossomUploadFailureReason {
+  /// Connection / send / receive timeout, connection error, transient
+  /// connectivity loss. Caller may show "check your connection".
+  network,
+
+  /// Authentication failure: HTTP 401 / 403, or the service was unable
+  /// to produce a signed Blossom auth header. Caller may prompt the
+  /// user to sign in again.
+  auth,
+
+  /// Server rejected the upload because the file exceeds size limits
+  /// (HTTP 413 "payload too large"). Caller may suggest a smaller file.
+  fileTooLarge,
+
+  /// Server-side error (HTTP 5xx) — usually transient. Caller may show
+  /// "our servers are temporarily unavailable".
+  server,
+
+  /// Anything else: unmapped 4xx, malformed responses, configuration
+  /// errors, or unexpected exceptions. Caller falls back to a generic
+  /// "upload failed" message.
+  unknown
+  ;
+
+  /// Classifies an HTTP [statusCode] into a [BlossomUploadFailureReason].
+  ///
+  /// Returns `null` when [statusCode] is null or represents a success
+  /// (`< 400`), so callers can distinguish "not a failure" from
+  /// `unknown`.
+  static BlossomUploadFailureReason? fromStatusCode(int? statusCode) {
+    if (statusCode == null || statusCode < 400) return null;
+    if (statusCode == 401 || statusCode == 403) {
+      return BlossomUploadFailureReason.auth;
+    }
+    if (statusCode == 413) return BlossomUploadFailureReason.fileTooLarge;
+    if (statusCode >= 500 && statusCode < 600) {
+      return BlossomUploadFailureReason.server;
+    }
+    return BlossomUploadFailureReason.unknown;
+  }
+
+  /// Classifies a [DioException] into a [BlossomUploadFailureReason].
+  ///
+  /// Connection / timeout errors map to [network]. For [bad responses]
+  /// (`DioExceptionType.badResponse`) the status code is used; if no
+  /// status is available the reason falls through to [unknown].
+  ///
+  /// [bad responses]: https://pub.dev/documentation/dio/latest/dio/DioExceptionType.html
+  static BlossomUploadFailureReason fromDioException(DioException error) {
+    return switch (error.type) {
+      DioExceptionType.connectionTimeout ||
+      DioExceptionType.sendTimeout ||
+      DioExceptionType.receiveTimeout ||
+      DioExceptionType.connectionError => BlossomUploadFailureReason.network,
+      _ =>
+        fromStatusCode(error.response?.statusCode) ??
+            BlossomUploadFailureReason.unknown,
+    };
+  }
+}
+
 /// Result type for Blossom upload operations
 class BlossomUploadResult {
   /// Creates a [BlossomUploadResult].
@@ -33,6 +100,8 @@ class BlossomUploadResult {
     this.blurhash,
     this.errorMessage,
     this.statusCode,
+    this.isTransientNetworkFailure = false,
+    this.failureReason,
   });
 
   /// Whether the upload succeeded.
@@ -70,6 +139,23 @@ class BlossomUploadResult {
 
   /// HTTP status code on failure.
   final int? statusCode;
+
+  /// Whether this failure was caused by a transient network condition
+  /// (connection / send / receive timeout, or connection error) that the
+  /// upload internals caught and converted to a result instead of
+  /// rethrowing. Surfaced as a retry signal symmetric with [statusCode]
+  /// for the cases where there is no HTTP status to classify on.
+  final bool isTransientNetworkFailure;
+
+  /// Typed reason for the failure, set at the HTTP/service boundary.
+  ///
+  /// Always `null` on success. On failure, callers should switch on this
+  /// rather than parsing [errorMessage] or [statusCode] — the
+  /// classification is owned by the service layer so the contract stays
+  /// stable across UI, analytics, and telemetry. A `null` value on a
+  /// failure result means the boundary couldn't classify the failure;
+  /// callers should treat it as [BlossomUploadFailureReason.unknown].
+  final BlossomUploadFailureReason? failureReason;
 
   /// Convenience getter for backwards compatibility.
   String? get cdnUrl => fallbackUrl ?? url;
@@ -148,17 +234,24 @@ class _CachedCapability {
 /// Blossom BUD-01 media upload service with resumable upload support.
 class BlossomUploadService {
   /// Creates a [BlossomUploadService].
+  ///
+  /// [sleep] is the awaitable used to space out retries in
+  /// [_uploadWithRetry]. Defaults to `Future<void>.delayed`. Tests pass a
+  /// no-op so the retry-behavior group doesn't pay real wall time on each
+  /// backoff; production code should leave it at the default.
   BlossomUploadService({
     required this.authProvider,
     BlossomPerformanceMonitor? performanceMonitor,
     Dio? dio,
     String? defaultServerUrl,
     DateTime Function()? clock,
+    Future<void> Function(Duration)? sleep,
   }) : _performanceMonitor =
            performanceMonitor ?? const NoOpPerformanceMonitor(),
        dio = dio ?? Dio(),
        _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _sleep = sleep ?? Future<void>.delayed;
 
   static const String _blossomServerKey = 'blossom_server_url';
   static const String _useBlossomKey = 'use_blossom_upload';
@@ -169,6 +262,32 @@ class BlossomUploadService {
   /// Maximum retries for a single chunk PUT before bubbling to the caller.
   static const int _maxChunkRetries = 2;
   static const Duration _chunkRetryDelay = Duration(seconds: 1);
+
+  /// Default total attempts for a whole-image upload to a single server.
+  /// 1 initial + 2 retries; covers transient 5xx and connection blips on
+  /// `media.divine.video` without compounding when a caller (e.g. the
+  /// app-level UploadManager) already wraps the call in its own retry
+  /// loop — those callers pass `maxAttempts: 1`.
+  static const int _defaultUploadImageMaxAttempts = 3;
+
+  /// Base delay between retried image upload attempts. Doubled on each retry
+  /// up to [_uploadImageRetryMaxDelay].
+  static const Duration _uploadImageRetryBaseDelay = Duration(seconds: 1);
+
+  /// Hard ceiling on the per-attempt backoff for image uploads.
+  static const Duration _uploadImageRetryMaxDelay = Duration(seconds: 30);
+
+  /// HTTP status codes that justify retrying an image upload. Mirrors
+  /// `UploadManager.isRetriableError` so service-level and orchestrator-level
+  /// classification stay in sync.
+  static const Set<int> _retriableUploadStatusCodes = {
+    408, // Request timeout
+    429, // Rate limited
+    500, // Generic server error
+    502, // Bad gateway
+    503, // Service unavailable (the symptom in #3862)
+    504, // Gateway timeout
+  };
 
   /// How long a cached capability discovery result stays valid.
   static const Duration _capabilityCacheTtl = Duration(minutes: 5);
@@ -181,6 +300,7 @@ class BlossomUploadService {
   final Dio dio;
   final String _defaultServerUrl;
   final DateTime Function() _clock;
+  final Future<void> Function(Duration) _sleep;
 
   /// In-memory cache of capability discovery results keyed by server URL.
   final Map<String, _CachedCapability> _capabilityCache = {};
@@ -389,6 +509,157 @@ class BlossomUploadService {
     };
   }
 
+  /// Whether an image-upload attempt threw a transient, retriable error.
+  ///
+  /// Transient = the same request stands a real chance of succeeding on a
+  /// subsequent attempt (5xx server, rate limit, connection / timeout).
+  ///
+  /// Covers two thrown shapes symmetrically:
+  ///   * [DioException] with a retriable status code (5xx, 429, 408) or a
+  ///     transient connection / timeout type.
+  ///   * [BlossomResumableUploadException] with a retriable status code —
+  ///     thrown when chunk PUT exhausts its internal retry budget on a 5xx
+  ///     and the resumable session bubbles up. An outer retry rebuilds the
+  ///     session via `_initResumableUpload`. 404/410 (session expired) and
+  ///     null statusCode (auth or malformed-response) are intentionally not
+  ///     transient.
+  bool _isTransientUploadError(Object error) {
+    if (error is DioException) {
+      final statusCode = error.response?.statusCode;
+      if (statusCode != null &&
+          _retriableUploadStatusCodes.contains(statusCode)) {
+        return true;
+      }
+      return switch (error.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout ||
+        DioExceptionType.connectionError => true,
+        _ => false,
+      };
+    }
+    if (error is BlossomResumableUploadException) {
+      final statusCode = error.statusCode;
+      return statusCode != null &&
+          _retriableUploadStatusCodes.contains(statusCode);
+    }
+    return false;
+  }
+
+  /// Classifies a thrown upload exception into a
+  /// [BlossomUploadFailureReason].
+  ///
+  /// Handles the two thrown shapes the upload internals produce:
+  ///
+  ///   * [DioException] — delegated to
+  ///     [BlossomUploadFailureReason.fromDioException].
+  ///   * [BlossomResumableUploadException] — classified by its
+  ///     `statusCode` when present. Throws without a status (auth-header
+  ///     build failure, malformed init response) fall through to
+  ///     [BlossomUploadFailureReason.unknown] — the boundary can't tell
+  ///     them apart from the typed exception alone, and surfacing
+  ///     "authentication error" for a missing init field would mislead.
+  ///
+  /// Anything else falls through to [BlossomUploadFailureReason.unknown].
+  static BlossomUploadFailureReason _classifyUploadException(Object error) {
+    if (error is DioException) {
+      return BlossomUploadFailureReason.fromDioException(error);
+    }
+    if (error is BlossomResumableUploadException) {
+      return BlossomUploadFailureReason.fromStatusCode(error.statusCode) ??
+          BlossomUploadFailureReason.unknown;
+    }
+    return BlossomUploadFailureReason.unknown;
+  }
+
+  /// Whether a [BlossomUploadResult] failure is transient and worth retrying.
+  ///
+  /// Some failure modes are caught inside the upload internals (notably the
+  /// legacy PUT path through [_uploadToServer]) and surface as
+  /// `success: false` rather than re-throwing. Two signals classify a
+  /// caught failure as transient, symmetric with [_isTransientUploadError]:
+  ///
+  ///   * `statusCode` is in the retriable set (5xx, 429, 408), or
+  ///   * `isTransientNetworkFailure` is `true` — set by [_uploadToServer]
+  ///     when it caught a [DioException] of type connection / send /
+  ///     receive timeout or connection error and converted it to a result
+  ///     (these have no HTTP status to classify on).
+  bool _isTransientUploadResult(BlossomUploadResult result) {
+    if (result.success) return false;
+    if (result.isTransientNetworkFailure) return true;
+    final statusCode = result.statusCode;
+    return statusCode != null &&
+        _retriableUploadStatusCodes.contains(statusCode);
+  }
+
+  /// Run [attempt] up to [maxAttempts] times with exponential backoff,
+  /// stopping early on success or on a non-transient failure.
+  ///
+  /// `maxAttempts == 1` disables retry — useful for callers (UploadManager)
+  /// that already wrap the call in their own retry loop and want to avoid
+  /// compounded delays.
+  Future<BlossomUploadResult> _uploadWithRetry({
+    required Future<BlossomUploadResult> Function() attempt,
+    required int maxAttempts,
+    required String debugContext,
+  }) async {
+    var attemptNumber = 0;
+    while (true) {
+      attemptNumber++;
+      BlossomUploadResult? result;
+      Object? thrown;
+      StackTrace? thrownStackTrace;
+      try {
+        result = await attempt();
+      } on Object catch (e, stackTrace) {
+        thrown = e;
+        thrownStackTrace = stackTrace;
+      }
+
+      // Success path — return immediately.
+      if (result != null && result.success) {
+        return result;
+      }
+
+      // Decide whether the failure is retriable.
+      final retriable = thrown != null
+          ? _isTransientUploadError(thrown)
+          : _isTransientUploadResult(result!);
+
+      // Out of budget, or the failure mode is permanent — surface it.
+      if (attemptNumber >= maxAttempts || !retriable) {
+        if (thrown != null) {
+          // The original throwable is preserved so callers see the same
+          // exception type and stack trace (DioException,
+          // BlossomResumableUploadException, etc.) they would have seen
+          // without the retry wrapper.
+          Error.throwWithStackTrace(thrown, thrownStackTrace!);
+        }
+        return result!;
+      }
+
+      // Compute the next backoff. Exponential: base, base*2, base*4 ...
+      // capped at the configured ceiling. attemptNumber is 1-indexed and
+      // we've just *finished* attempt N, so the multiplier is 2^(N-1).
+      final multiplier = 1 << (attemptNumber - 1);
+      final backoffMs = _uploadImageRetryBaseDelay.inMilliseconds * multiplier;
+      final cappedMs = math.min(
+        backoffMs,
+        _uploadImageRetryMaxDelay.inMilliseconds,
+      );
+      final delay = Duration(milliseconds: cappedMs);
+
+      Log.warning(
+        'Image upload attempt $attemptNumber/$maxAttempts failed '
+        '($debugContext); retrying in ${delay.inMilliseconds}ms',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      await _sleep(delay);
+    }
+  }
+
   bool _isDivineOwnedUploadHost(String serverUrl) {
     final host = Uri.tryParse(serverUrl)?.host.toLowerCase();
     if (host == null || host.isEmpty) {
@@ -450,6 +721,7 @@ class BlossomUploadService {
       result = BlossomUploadResult(
         success: false,
         errorMessage: error.toString(),
+        failureReason: _classifyUploadException(error),
       );
     }
 
@@ -1037,6 +1309,7 @@ class BlossomUploadService {
       return const BlossomUploadResult(
         success: false,
         errorMessage: 'Upload response missing URL field',
+        failureReason: BlossomUploadFailureReason.unknown,
       );
     }
 
@@ -1060,6 +1333,9 @@ class BlossomUploadService {
       statusCode: response.statusCode,
       errorMessage:
           'Upload failed: ${response.statusCode} - ${xReason ?? response.data}',
+      failureReason:
+          BlossomUploadFailureReason.fromStatusCode(response.statusCode) ??
+          BlossomUploadFailureReason.unknown,
     );
   }
 
@@ -1085,6 +1361,7 @@ class BlossomUploadService {
         return BlossomUploadResult(
           success: false,
           errorMessage: 'Invalid Blossom server URL: $serverUrl',
+          failureReason: BlossomUploadFailureReason.unknown,
         );
         // coverage:ignore-end
       }
@@ -1100,6 +1377,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Failed to create Blossom authentication',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1173,48 +1451,62 @@ class BlossomUploadService {
           success: false,
           statusCode: statusCode,
           errorMessage: 'Connection timeout - check server URL',
+          isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.sendTimeout) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Send timeout - upload too slow or connection dropped',
+          isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.receiveTimeout) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Receive timeout - server not responding',
+          isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.connectionError) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Cannot connect to Blossom server: $errorDetail',
+          isTransientNetworkFailure: true,
+          failureReason: BlossomUploadFailureReason.network,
         );
       } else if (e.type == DioExceptionType.cancel) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Upload cancelled',
+          failureReason: BlossomUploadFailureReason.unknown,
         );
       } else if (e.type == DioExceptionType.badResponse) {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Server error ($statusCode): $errorDetail',
+          failureReason:
+              BlossomUploadFailureReason.fromStatusCode(statusCode) ??
+              BlossomUploadFailureReason.unknown,
         );
       } else {
         return BlossomUploadResult(
           success: false,
           statusCode: statusCode,
           errorMessage: 'Network error: $errorDetail',
+          failureReason: BlossomUploadFailureReason.fromDioException(e),
         );
       }
     } on Object catch (e) {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Upload error: $e',
+        failureReason: BlossomUploadFailureReason.unknown,
       );
     }
   }
@@ -1252,6 +1544,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'User not authenticated - please sign in to upload',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1422,6 +1715,7 @@ class BlossomUploadService {
             success: false,
             statusCode: statusCode,
             errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
           );
           Log.warning(
             'Upload to $serverUrl failed: $e, '
@@ -1445,6 +1739,7 @@ class BlossomUploadService {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
           );
     } on Object catch (e) {
       Log.error(
@@ -1456,6 +1751,7 @@ class BlossomUploadService {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Blossom upload failed: $e',
+        failureReason: _classifyUploadException(e),
       );
     } finally {
       // Stop performance trace
@@ -1482,13 +1778,16 @@ class BlossomUploadService {
     required String nostrPubkey,
     String mimeType = 'image/jpeg',
     void Function(double)? onProgress,
+    int maxAttempts = _defaultUploadImageMaxAttempts,
   }) async {
+    assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
     try {
       // Check authentication
       if (!authProvider.isAuthenticated) {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1539,39 +1838,51 @@ class BlossomUploadService {
 
           final capability = await _fetchDivineUploadCapability(serverUrl);
 
-          late BlossomUploadResult result;
-          if (capability.supportsResumable) {
-            result = await _uploadWithSingleLegacyFallback(
-              serverUrl: serverUrl,
-              uploadResumable: () => _uploadToServerResumable(
+          // Retry the actual upload work on transient 5xx / network blips
+          // before falling through to the next configured server. Capability
+          // discovery is not retried here — it has its own fail-soft path
+          // (`_isTransientCapabilityDiscoveryError`).
+          //
+          // #3862: previously a single 503 from the only server in the list
+          // (default config has just `media.divine.video`) surfaced to the
+          // user as a hard failure with no automatic recovery.
+          final result = await _uploadWithRetry(
+            attempt: () {
+              if (capability.supportsResumable) {
+                return _uploadWithSingleLegacyFallback(
+                  serverUrl: serverUrl,
+                  uploadResumable: () => _uploadToServerResumable(
+                    serverUrl: serverUrl,
+                    file: strippedFile,
+                    fileHash: fileHash,
+                    fileSize: fileSize,
+                    contentType: mimeType,
+                    onProgress: onProgress,
+                  ),
+                  uploadLegacyFallback: (fallbackReason) =>
+                      _uploadToServerLegacyFallback(
+                        serverUrl: serverUrl,
+                        file: strippedFile,
+                        fileHash: fileHash,
+                        fileSize: fileSize,
+                        contentType: mimeType,
+                        fallbackReason: fallbackReason,
+                        onProgress: onProgress,
+                      ),
+                );
+              }
+              return _uploadToServer(
                 serverUrl: serverUrl,
                 file: strippedFile,
                 fileHash: fileHash,
                 fileSize: fileSize,
                 contentType: mimeType,
                 onProgress: onProgress,
-              ),
-              uploadLegacyFallback: (fallbackReason) =>
-                  _uploadToServerLegacyFallback(
-                    serverUrl: serverUrl,
-                    file: strippedFile,
-                    fileHash: fileHash,
-                    fileSize: fileSize,
-                    contentType: mimeType,
-                    fallbackReason: fallbackReason,
-                    onProgress: onProgress,
-                  ),
-            );
-          } else {
-            result = await _uploadToServer(
-              serverUrl: serverUrl,
-              file: strippedFile,
-              fileHash: fileHash,
-              fileSize: fileSize,
-              contentType: mimeType,
-              onProgress: onProgress,
-            );
-          }
+              );
+            },
+            maxAttempts: maxAttempts,
+            debugContext: 'uploadImage($serverUrl)',
+          );
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash
@@ -1611,6 +1922,7 @@ class BlossomUploadService {
             success: false,
             statusCode: statusCode,
             errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
           );
           Log.warning(
             'Upload to $serverUrl failed: $e, '
@@ -1635,6 +1947,7 @@ class BlossomUploadService {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
           );
     } on Object catch (e) {
       Log.error(
@@ -1645,6 +1958,7 @@ class BlossomUploadService {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Image upload failed: $e',
+        failureReason: _classifyUploadException(e),
       );
     }
   }
@@ -1855,6 +2169,7 @@ class BlossomUploadService {
         return const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
+          failureReason: BlossomUploadFailureReason.auth,
         );
       }
 
@@ -1941,6 +2256,7 @@ class BlossomUploadService {
             success: false,
             statusCode: statusCode,
             errorMessage: 'Upload to $serverUrl failed: $e',
+            failureReason: _classifyUploadException(e),
           );
           Log.warning(
             'Upload to $serverUrl failed: $e, '
@@ -1965,6 +2281,7 @@ class BlossomUploadService {
           const BlossomUploadResult(
             success: false,
             errorMessage: 'All servers failed',
+            failureReason: BlossomUploadFailureReason.unknown,
           );
     } on Object catch (e) {
       Log.error(
@@ -1975,6 +2292,7 @@ class BlossomUploadService {
       return BlossomUploadResult(
         success: false,
         errorMessage: 'Audio upload failed: $e',
+        failureReason: _classifyUploadException(e),
       );
     }
   }

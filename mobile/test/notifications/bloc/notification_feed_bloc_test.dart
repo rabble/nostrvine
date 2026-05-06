@@ -1,11 +1,13 @@
 // ABOUTME: Tests for NotificationFeedBloc — covers initial load, pagination,
-// ABOUTME: refresh, push, realtime, mark-read, and follow-back events.
+// ABOUTME: refresh, push, realtime enrichment + group merge, mark-read, and
+// ABOUTME: follow-back events.
 
 // ignore_for_file: prefer_const_constructors
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:follow_repository/follow_repository.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:notification_repository/notification_repository.dart';
@@ -16,70 +18,87 @@ class _MockNotificationRepository extends Mock
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-/// Test actor helper.
-ActorInfo _actor({String pubkey = 'abc123', String displayName = 'Alice'}) {
+class _FakeRelayNotification extends Fake implements RelayNotification {}
+
+const _alicePubkey =
+    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const _bobPubkey =
+    'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+const _videoEventId =
+    '1111111111111111111111111111111111111111111111111111111111111111';
+
+ActorInfo _actor({
+  String pubkey = _alicePubkey,
+  String displayName = 'Alice',
+}) {
   return ActorInfo(pubkey: pubkey, displayName: displayName);
 }
 
-/// Test single notification helper.
-SingleNotification _single({
-  String id = 'n1',
+VideoNotification _videoNotif({
+  String id = 'v1',
   NotificationKind type = NotificationKind.like,
-  String pubkey = 'abc123',
-  String displayName = 'Alice',
+  List<ActorInfo>? actors,
+  int totalCount = 1,
+  String videoEventId = _videoEventId,
   bool isRead = false,
-  String? targetEventId,
+  DateTime? timestamp,
 }) {
-  return SingleNotification(
+  return VideoNotification(
+    id: id,
+    type: type,
+    videoEventId: videoEventId,
+    actors: actors ?? [_actor()],
+    totalCount: totalCount,
+    timestamp: timestamp ?? DateTime(2026),
+    isRead: isRead,
+  );
+}
+
+ActorNotification _actorNotif({
+  String id = 'a1',
+  NotificationKind type = NotificationKind.follow,
+  String pubkey = _alicePubkey,
+  String displayName = 'Alice',
+  bool isFollowingBack = false,
+  bool isRead = false,
+}) {
+  return ActorNotification(
     id: id,
     type: type,
     actor: _actor(pubkey: pubkey, displayName: displayName),
     timestamp: DateTime(2026),
+    isFollowingBack: isFollowingBack,
     isRead: isRead,
-    targetEventId: targetEventId,
   );
 }
 
-/// Test grouped notification helper.
-GroupedNotification _grouped({
-  String id = 'group_like_video1',
-  String? targetEventId = 'video1',
-  int totalCount = 3,
-  bool isRead = false,
-}) {
-  return GroupedNotification(
+RelayNotification _rawRelay({String id = 'realtime'}) {
+  return RelayNotification(
     id: id,
-    type: NotificationKind.like,
-    actors: [
-      _actor(),
-      _actor(pubkey: 'def456', displayName: 'Bob'),
-    ],
-    totalCount: totalCount,
-    timestamp: DateTime(2026),
-    isRead: isRead,
-    targetEventId: targetEventId,
+    sourcePubkey: _alicePubkey,
+    sourceEventId: 'src_$id',
+    sourceKind: 7,
+    notificationType: 'reaction',
+    createdAt: DateTime(2026),
+    read: false,
+    referencedEventId: _videoEventId,
   );
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeRelayNotification());
+  });
+
   group(NotificationFeedBloc, () {
     late _MockNotificationRepository mockNotificationRepo;
     late _MockFollowRepository mockFollowRepo;
 
-    setUpAll(() {
-      registerFallbackValue(_single());
-    });
-
     setUp(() {
       mockNotificationRepo = _MockNotificationRepository();
       mockFollowRepo = _MockFollowRepository();
-
-      when(
-        () => mockNotificationRepo.filterRealtimeNotification(any()),
-      ).thenAnswer(
-        (invocation) =>
-            invocation.positionalArguments.first as NotificationItem,
-      );
+      // Default: not following anyone. Individual tests override per-pubkey.
+      when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
     });
 
     NotificationFeedBloc createBloc() => NotificationFeedBloc(
@@ -89,7 +108,7 @@ void main() {
 
     group('NotificationFeedStarted', () {
       final page = NotificationPage(
-        items: [_single()],
+        items: [_videoNotif()],
         unreadCount: 1,
         hasMore: true,
       );
@@ -131,13 +150,19 @@ void main() {
     });
 
     group('NotificationFeedLoadMore', () {
-      final existingItem = _single();
-      final newItem = _single(id: 'n2', displayName: 'Bob', pubkey: 'def456');
+      final existingItem = _videoNotif();
+      final newItem = _videoNotif(
+        id: 'v2',
+        videoEventId:
+            '2222222222222222222222222222222222222222222222222222222222222222',
+      );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
         'appends new items and deduplicates',
         setUp: () {
-          when(() => mockNotificationRepo.getNotifications()).thenAnswer(
+          when(
+            () => mockNotificationRepo.getNotifications(),
+          ).thenAnswer(
             (_) async => NotificationPage(
               items: [existingItem, newItem],
               unreadCount: 2,
@@ -151,16 +176,76 @@ void main() {
         ),
         act: (bloc) => bloc.add(NotificationFeedLoadMore()),
         expect: () => [
-          // isLoadingMore = true
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: [existingItem],
             isLoadingMore: true,
           ),
-          // Appended — n1 deduped, only n2 added
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: [existingItem, newItem],
+            hasMore: false,
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        're-derives follow state for existing and appended follow rows',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.getNotifications(),
+          ).thenAnswer(
+            (_) async => NotificationPage(
+              items: [
+                _actorNotif(
+                  id: 'existing-follow',
+                ),
+                _actorNotif(
+                  id: 'new-follow',
+                  pubkey: _bobPubkey,
+                  displayName: 'Bob',
+                ),
+              ],
+              unreadCount: 2,
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
+          when(() => mockFollowRepo.isFollowing(_bobPubkey)).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _actorNotif(
+              id: 'existing-follow',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(NotificationFeedLoadMore()),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'existing-follow',
+              ),
+            ],
+            isLoadingMore: true,
+          ),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'existing-follow',
+                isFollowingBack: true,
+              ),
+              _actorNotif(
+                id: 'new-follow',
+                pubkey: _bobPubkey,
+                displayName: 'Bob',
+                isFollowingBack: true,
+              ),
+            ],
             hasMore: false,
           ),
         ],
@@ -191,7 +276,7 @@ void main() {
 
     group('NotificationFeedRefreshed', () {
       final page = NotificationPage(
-        items: [_single(id: 'refreshed')],
+        items: [_videoNotif(id: 'refreshed')],
         unreadCount: 0,
       );
 
@@ -205,7 +290,7 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(id: 'old')],
+          notifications: [_videoNotif(id: 'old')],
         ),
         act: (bloc) => bloc.add(NotificationFeedRefreshed()),
         expect: () => [
@@ -220,7 +305,7 @@ void main() {
 
     group('NotificationFeedPushReceived', () {
       final page = NotificationPage(
-        items: [_single(id: 'pushed')],
+        items: [_videoNotif(id: 'pushed')],
         unreadCount: 3,
         hasMore: true,
       );
@@ -235,7 +320,7 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(id: 'old')],
+          notifications: [_videoNotif(id: 'old')],
         ),
         act: (bloc) => bloc.add(NotificationFeedPushReceived()),
         expect: () => [
@@ -246,65 +331,270 @@ void main() {
           ),
         ],
       );
-    });
 
-    group('NotificationFeedRealtimeReceived', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'inserts at top and increments unread count',
+        're-derives follow state on push-triggered refresh',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.refresh(),
+          ).thenAnswer(
+            (_) async => NotificationPage(
+              items: [
+                _actorNotif(
+                  id: 'follow-push',
+                ),
+              ],
+              unreadCount: 3,
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
+        },
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(id: 'existing')],
-          unreadCount: 1,
+          notifications: [_videoNotif(id: 'old')],
         ),
-        act: (bloc) =>
-            bloc.add(NotificationFeedRealtimeReceived(_single(id: 'realtime'))),
+        act: (bloc) => bloc.add(NotificationFeedPushReceived()),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
             notifications: [
-              _single(id: 'realtime'),
-              _single(id: 'existing'),
+              _actorNotif(
+                id: 'follow-push',
+                isFollowingBack: true,
+              ),
             ],
-            unreadCount: 2,
+            unreadCount: 3,
+            hasMore: false,
+          ),
+        ],
+      );
+    });
+
+    group('NotificationFeedRealtimeReceived', () {
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'inserts enriched VideoNotification at top when no matching group',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer((_) async => _videoNotif(id: 'realtime'));
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_actorNotif(id: 'existing')],
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(_rawRelay()),
+        ),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _videoNotif(id: 'realtime'),
+              _actorNotif(id: 'existing'),
+            ],
+            unreadCount: 1,
           ),
         ],
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'deduplicates by ID — skips if already present',
+        're-derives follow state when prepending a realtime follow row',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer(
+            (_) async => _actorNotif(
+              id: 'realtime-follow',
+              pubkey: _bobPubkey,
+              displayName: 'Bob',
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
+          when(() => mockFollowRepo.isFollowing(_bobPubkey)).thenReturn(true);
+        },
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(id: 'existing')],
-          unreadCount: 1,
+          notifications: [
+            _actorNotif(
+              id: 'existing-follow',
+            ),
+          ],
         ),
-        act: (bloc) =>
-            bloc.add(NotificationFeedRealtimeReceived(_single(id: 'existing'))),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(_rawRelay(id: 'realtime-follow')),
+        ),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'realtime-follow',
+                pubkey: _bobPubkey,
+                displayName: 'Bob',
+                isFollowingBack: true,
+              ),
+              _actorNotif(
+                id: 'existing-follow',
+                isFollowingBack: true,
+              ),
+            ],
+            unreadCount: 1,
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'merges actor into existing matching VideoNotification group',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer(
+            (_) async => _videoNotif(
+              id: 'newest',
+              actors: [_actor(pubkey: _bobPubkey, displayName: 'Bob')],
+              timestamp: DateTime(2026, 5, 4, 13),
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_videoNotif(id: 'existing')],
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(_rawRelay()),
+        ),
+        verify: (_) {},
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'does NOT emit when enrichOne returns null',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer((_) async => null);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(_rawRelay()),
+        ),
         expect: () => <NotificationFeedState>[],
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'deduplicates by targetEventId — skips if grouped notification '
-        'already covers that video',
+        'deduplicates by ID — skips if enriched.id already present',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer((_) async => _videoNotif(id: 'existing'));
+        },
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_grouped()],
+          notifications: [_videoNotif(id: 'existing')],
           unreadCount: 1,
         ),
         act: (bloc) => bloc.add(
-          NotificationFeedRealtimeReceived(
-            _single(id: 'new-like', targetEventId: 'video1'),
-          ),
+          NotificationFeedRealtimeReceived(_rawRelay()),
         ),
         expect: () => <NotificationFeedState>[],
+      );
+
+      test(
+        'merges into existing video group: actors length 2, totalCount 2',
+        () async {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer(
+            (_) async => _videoNotif(
+              id: 'newest',
+              actors: [_actor(pubkey: _bobPubkey, displayName: 'Bob')],
+              timestamp: DateTime(2026, 5, 4, 13),
+            ),
+          );
+
+          final bloc = createBloc();
+          bloc.emit(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: [_videoNotif(id: 'existing')],
+            ),
+          );
+
+          bloc.add(NotificationFeedRealtimeReceived(_rawRelay()));
+          await Future<void>.delayed(Duration.zero);
+
+          final merged = bloc.state.notifications.single as VideoNotification;
+          expect(merged.actors, hasLength(2));
+          expect(merged.actors.first.pubkey, equals(_bobPubkey));
+          expect(merged.totalCount, equals(2));
+          expect(merged.isRead, isFalse);
+          expect(bloc.state.unreadCount, equals(1));
+
+          await bloc.close();
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        're-derives follow state when merging a realtime video notification',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.enrichOne(any()),
+          ).thenAnswer(
+            (_) async => _videoNotif(
+              id: 'newest',
+              actors: [_actor(pubkey: _bobPubkey, displayName: 'Bob')],
+              timestamp: DateTime(2026, 5, 4, 13),
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _videoNotif(id: 'existing'),
+            _actorNotif(
+              id: 'existing-follow',
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          NotificationFeedRealtimeReceived(_rawRelay()),
+        ),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _videoNotif(
+                id: 'existing',
+                actors: [
+                  _actor(pubkey: _bobPubkey, displayName: 'Bob'),
+                  _actor(),
+                ],
+                totalCount: 2,
+                timestamp: DateTime(2026, 5, 4, 13),
+              ),
+              _actorNotif(
+                id: 'existing-follow',
+                isFollowingBack: true,
+              ),
+            ],
+            unreadCount: 1,
+          ),
+        ],
       );
     });
 
     group('NotificationFeedItemTapped', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'marks notification as read locally and decrements unread',
+        'marks $VideoNotification as read locally and decrements unread',
         setUp: () {
           when(
             () => mockNotificationRepo.markAsRead(any()),
@@ -313,20 +603,53 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single()],
+          notifications: [_videoNotif()],
           unreadCount: 1,
         ),
-        act: (bloc) => bloc.add(NotificationFeedItemTapped('n1')),
+        act: (bloc) => bloc.add(NotificationFeedItemTapped('v1')),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [_single(isRead: true)],
+            notifications: [_videoNotif(isRead: true)],
           ),
         ],
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'marks a tapped grouped notification as read and decrements unread',
+        're-derives follow state when tapping a follow notification',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAsRead(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _actorNotif(
+              id: 'follow1',
+            ),
+          ],
+          unreadCount: 1,
+        ),
+        act: (bloc) => bloc.add(NotificationFeedItemTapped('follow1')),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'follow1',
+                isFollowingBack: true,
+                isRead: true,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'marks $ActorNotification as read locally and decrements unread',
         setUp: () {
           when(
             () => mockNotificationRepo.markAsRead(any()),
@@ -335,15 +658,14 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_grouped()],
+          notifications: [_actorNotif()],
           unreadCount: 1,
         ),
-        act: (bloc) =>
-            bloc.add(NotificationFeedItemTapped('group_like_video1')),
+        act: (bloc) => bloc.add(NotificationFeedItemTapped('a1')),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [_grouped(isRead: true)],
+            notifications: [_actorNotif(isRead: true)],
           ),
         ],
       );
@@ -351,7 +673,7 @@ void main() {
 
     group('NotificationFeedMarkAllRead', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'flips isRead on every notification and zeros unread count',
+        'flips every notification to read and zeros unread count on success',
         setUp: () {
           when(
             () => mockNotificationRepo.markAllAsRead(),
@@ -360,56 +682,90 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(), _grouped()],
+          notifications: [_videoNotif(), _actorNotif()],
           unreadCount: 5,
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [_single(isRead: true), _grouped(isRead: true)],
+            notifications: [
+              _videoNotif(isRead: true),
+              _actorNotif(isRead: true),
+            ],
           ),
         ],
-        verify: (bloc) {
-          // Derived badge reflects the flipped list immediately.
-          expect(bloc.state.unreadBadgeCount, 0);
+        verify: (_) {
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
         },
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'is a no-op when everything is already read and the count is zero',
+        'rolls back optimistic update and forwards error when server fails',
         setUp: () {
           when(
             () => mockNotificationRepo.markAllAsRead(),
-          ).thenAnswer((_) async {});
+          ).thenThrow(Exception('network error'));
         },
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(isRead: true)],
-          // ignore: avoid_redundant_argument_values
-          unreadCount: 0,
+          notifications: [_videoNotif(), _actorNotif()],
+          unreadCount: 5,
+        ),
+        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
+        expect: () => [
+          // Optimistic update — rows flipped, count zeroed.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _videoNotif(isRead: true),
+              _actorNotif(isRead: true),
+            ],
+          ),
+          // Rollback on failure — original rows and count restored so the
+          // next refresh does not silently regress the badge.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_videoNotif(), _actorNotif()],
+            unreadCount: 5,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'no-ops when nothing is unread',
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_videoNotif(isRead: true)],
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         expect: () => <NotificationFeedState>[],
         verify: (_) {
-          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
         },
       );
     });
 
     group('NotificationFeedFollowBack', () {
-      final followNotif = _single(
+      final followNotif = _actorNotif(
         id: 'follow1',
-        type: NotificationKind.follow,
         pubkey: 'pub123',
         displayName: 'Charlie',
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'updates isFollowingBack on matching follow notification',
+        'derives isFollowingBack from FollowRepository after follow succeeds',
         setUp: () {
-          when(() => mockFollowRepo.follow('pub123')).thenAnswer((_) async {});
+          var following = false;
+          when(() => mockFollowRepo.follow('pub123')).thenAnswer((_) async {
+            following = true;
+          });
+          when(
+            () => mockFollowRepo.isFollowing('pub123'),
+          ).thenAnswer((_) => following);
         },
         build: createBloc,
         seed: () => NotificationFeedState(
@@ -443,89 +799,103 @@ void main() {
       );
     });
 
-    group('unreadBadgeCount', () {
-      test('derives from the consolidated unread list, not the server-reported '
-          'unreadCount inflated by Kind 3 republishes', () {
-        // Repository already consolidated 5 raw follow rows from 2 distinct
-        // pubkeys down to 2 visible items, but the server still reports
-        // unreadCount: 5 (funnelcake#234). The badge must follow the list.
-        final state = NotificationFeedState(
-          status: NotificationFeedStatus.loaded,
-          notifications: [
-            _single(
-              id: 'follow_a',
-              type: NotificationKind.follow,
-              pubkey: 'follower_a',
-            ),
-            _single(
-              id: 'follow_b',
-              type: NotificationKind.follow,
-              pubkey: 'follower_b',
-            ),
-          ],
-          unreadCount: 5,
-        );
+    group('isFollowingBack derivation', () {
+      // Regression: button used to reappear on remount because the bloc
+      // ignored FollowRepository and relied on a transient mutation that
+      // didn't survive a fresh fetch. See issue #4023.
+      const pubkey =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
-        expect(state.unreadBadgeCount, 2);
-      });
-
-      test('drops to 0 when notifications list is empty even if server reports '
-          'unread items', () {
-        const state = NotificationFeedState(
-          status: NotificationFeedStatus.loaded,
-          unreadCount: 42,
-        );
-
-        expect(state.unreadBadgeCount, 0);
-      });
-
-      test('excludes already-read notifications', () {
-        final state = NotificationFeedState(
-          status: NotificationFeedStatus.loaded,
-          notifications: [
-            _single(id: 'unread_1'),
-            _single(id: 'unread_2', pubkey: 'def'),
-            _single(id: 'read_1', pubkey: 'ghi', isRead: true),
-          ],
-          unreadCount: 3,
-        );
-
-        expect(state.unreadBadgeCount, 2);
-      });
-
-      test('counts unread grouped notifications alongside singles', () {
-        final state = NotificationFeedState(
-          status: NotificationFeedStatus.loaded,
-          notifications: [
-            _single(),
-            _grouped(),
-            _grouped(id: 'group2', targetEventId: 'video2', isRead: true),
-          ],
-        );
-
-        // Two unread (one single + one grouped), one read group excluded.
-        expect(state.unreadBadgeCount, 2);
-      });
-    });
-
-    group('realtime blocklist filtering', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'skips realtime notification when repository filter returns null',
+        'NotificationFeedStarted overrides isFollowingBack from repository',
         setUp: () {
-          when(
-            () => mockNotificationRepo.filterRealtimeNotification(any()),
-          ).thenReturn(null);
+          when(() => mockNotificationRepo.refresh()).thenAnswer(
+            (_) async => NotificationPage(
+              items: [
+                _actorNotif(id: 'f1', pubkey: pubkey, displayName: 'Carol'),
+              ],
+              unreadCount: 1,
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(pubkey)).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'f1',
+                pubkey: pubkey,
+                displayName: 'Carol',
+                isFollowingBack: true,
+              ),
+            ],
+            unreadCount: 1,
+            hasMore: false,
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'NotificationFeedRefreshed overrides isFollowingBack from repository',
+        setUp: () {
+          when(() => mockNotificationRepo.refresh()).thenAnswer(
+            (_) async => NotificationPage(
+              items: [
+                _actorNotif(id: 'f1', pubkey: pubkey, displayName: 'Carol'),
+              ],
+              unreadCount: 0,
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(pubkey)).thenReturn(true);
         },
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_single(id: 'existing')],
-          unreadCount: 1,
+          notifications: [_videoNotif(id: 'old')],
         ),
-        act: (bloc) => bloc.add(
-          NotificationFeedRealtimeReceived(_single(id: 'blocked-notif')),
-        ),
-        expect: () => <NotificationFeedState>[],
+        act: (bloc) => bloc.add(NotificationFeedRefreshed()),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'f1',
+                pubkey: pubkey,
+                displayName: 'Carol',
+                isFollowingBack: true,
+              ),
+            ],
+            hasMore: false,
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'leaves non-follow ActorNotifications untouched',
+        setUp: () {
+          when(() => mockNotificationRepo.refresh()).thenAnswer(
+            (_) async => NotificationPage(
+              items: [
+                _actorNotif(
+                  id: 'mention1',
+                  type: NotificationKind.mention,
+                  pubkey: pubkey,
+                ),
+              ],
+              unreadCount: 1,
+            ),
+          );
+          when(() => mockFollowRepo.isFollowing(pubkey)).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        verify: (_) {
+          verifyNever(() => mockFollowRepo.isFollowing(pubkey));
+        },
       );
     });
   });

@@ -25,6 +25,8 @@ import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/local_key_signer.dart';
+import 'package:openvine/services/nip07_service.dart';
+import 'package:openvine/services/nip07_signer_adapter.dart';
 import 'package:openvine/services/nostr_identity.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -169,6 +171,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     List<String>? indexerRelays,
     String? primaryRelayUrl,
     RelayDiscoveryService? relayDiscoveryService,
+    Nip07Service? nip07ServiceForTest,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _nostrKeyManager = nostrKeyManager,
        _userDataCleanupService = userDataCleanupService,
@@ -182,7 +185,8 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
            RelayDiscoveryService(indexerRelays: indexerRelays),
        _oauthConfig =
            oauthConfig ??
-           const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
+           const OAuthConfig(serverUrl: '', clientId: '', redirectUri: ''),
+       _injectedNip07ServiceForTest = nip07ServiceForTest;
   final SecureKeyStorage _keyStorage;
   final NostrKeyManager? _nostrKeyManager;
   final UserDataCleanupService _userDataCleanupService;
@@ -190,6 +194,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   final FlutterSecureStorage? _flutterSecureStorage;
   final PreFetchFollowingCallback? _preFetchFollowing;
   final String? _profileCheckIndexerUrl;
+
+  /// Test seam: when supplied, bypasses the [Nip07Service] singleton and the
+  /// [kIsWeb] guard so unit tests can exercise the full NIP-07 flow on the VM
+  /// target.
+  final Nip07Service? _injectedNip07ServiceForTest;
 
   /// Relay URL used when self-publishing the bootstrap kind:10002 event for
   /// accounts whose indexer discovery returned empty. Injected from
@@ -216,6 +225,9 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
   // NIP-55 Android signer (Amber) state
   AndroidNostrSigner? _amberSigner;
+
+  // NIP-07 browser extension signer state (nullable; null when no session active)
+  Nip07Service? _nip07Service;
 
   // NIP-46 nostrconnect:// session state (for client-initiated connections)
   NostrConnectSession? _nostrConnectSession;
@@ -323,6 +335,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
 
+  /// True only on web targets where `window.nostr` (a NIP-07 extension) is
+  /// reachable. Used by the welcome screen to decide whether to surface the
+  /// browser-extension sign-in button.
+  bool get isNip07Available {
+    if (!kIsWeb && _injectedNip07ServiceForTest == null) return false;
+    return (_injectedNip07ServiceForTest ?? Nip07Service()).isAvailable;
+  }
+
   /// Current RPC capability state.
   AuthRpcCapability get authRpcCapability => _authRpcCapability;
 
@@ -342,6 +362,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       KeycastNostrIdentity() => true,
       AmberNostrIdentity() => true,
       BunkerNostrIdentity() => true,
+      Nip07NostrIdentity() => true,
     };
   }
 
@@ -849,6 +870,25 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
           );
           _setAuthState(AuthState.unauthenticated);
           return;
+
+        case AuthenticationSource.nip07:
+          Log.info(
+            'initialize: restoring NIP-07 session...',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          if (kIsWeb) {
+            await _reconnectNip07();
+            return;
+          }
+          Log.warning(
+            'initialize: persisted nip07 source on non-web platform — '
+            'falling back to unauthenticated',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          _setAuthState(AuthState.unauthenticated);
+          return;
       }
 
       Log.info(
@@ -1153,6 +1193,11 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         case AuthenticationSource.divineOAuth:
           final session = await KeycastSession.load(_flutterSecureStorage);
           pubkeyHex = session?.userPubkey;
+
+        case AuthenticationSource.nip07:
+          // NIP-07 was introduced after the legacy migration; no archived
+          // hint to recover. Leave pubkeyHex null so this path is skipped.
+          break;
 
         case AuthenticationSource.none:
           break;
@@ -1570,6 +1615,7 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         case AuthenticationSource.automatic:
         case AuthenticationSource.importedKeys:
         case AuthenticationSource.none:
+        case AuthenticationSource.nip07:
           // Clear any stale global signer keys so they don't hijack signing
           // operations for the non-bunker/non-keycast account.
           await _clearBunkerInfo();
@@ -1685,6 +1731,23 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
             category: LogCategory.auth,
           );
           throw Exception('No archived Bunker info found for $pubkeyHex');
+        }
+
+      case AuthenticationSource.nip07:
+        Log.info(
+          'signInForAccount: restoring NIP-07 session...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        if (kIsWeb) {
+          await _reconnectNip07();
+        } else {
+          Log.error(
+            'signInForAccount: persisted nip07 source on non-web platform',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          throw Exception('NIP-07 sign-in is only available on the web.');
         }
 
       case AuthenticationSource.divineOAuth:
@@ -2069,6 +2132,72 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
     }
   }
 
+  /// Connect using a NIP-07 browser extension (Alby, nos2x, Nostore, etc.)
+  ///
+  /// Only valid on the web platform. On non-web targets this returns an
+  /// [AuthResult.failure] immediately without touching auth state.
+  Future<AuthResult> connectWithNip07() async {
+    Log.info(
+      'Connecting with NIP-07 browser extension...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    if (!kIsWeb && _injectedNip07ServiceForTest == null) {
+      return AuthResult.failure(
+        'NIP-07 browser extensions are only available on the web platform.',
+      );
+    }
+
+    _setAuthState(AuthState.authenticating);
+    _lastError = null;
+
+    try {
+      final service = _injectedNip07ServiceForTest ?? Nip07Service();
+
+      if (!service.isAvailable) {
+        throw Exception(
+          'No NIP-07 extension found. '
+          'Please install Alby, nos2x, or another compatible extension.',
+        );
+      }
+
+      final result = await service.connect();
+      if (!result.success || result.publicKey == null) {
+        throw Exception(
+          result.errorMessage ?? 'NIP-07 authentication failed.',
+        );
+      }
+
+      final pubkey = result.publicKey!;
+      _nip07Service = service;
+
+      await _setupUserSession(
+        SecureKeyContainer.fromPublicKey(pubkey),
+        AuthenticationSource.nip07,
+      );
+
+      Log.info(
+        'NIP-07 connection successful for user: $pubkey',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+
+      return const AuthResult(success: true);
+    } catch (e) {
+      Log.error(
+        'NIP-07 connection failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _nip07Service = null;
+      _lastError = 'NIP-07 connection failed: $e';
+      _setAuthState(AuthState.unauthenticated);
+
+      return AuthResult.failure(_lastError!);
+    }
+  }
+
   /// Helper to check if running on Android
   bool _isAndroid() {
     try {
@@ -2145,6 +2274,56 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+    }
+  }
+
+  /// Silent NIP-07 reconnect at startup.
+  ///
+  /// Browser extensions remember per-origin grants, so we can hydrate the
+  /// session by calling getPublicKey() again. If the extension is no
+  /// longer present or refuses, fall back to unauthenticated.
+  Future<void> _reconnectNip07() async {
+    if (!kIsWeb && _injectedNip07ServiceForTest == null) {
+      _setAuthState(AuthState.unauthenticated);
+      return;
+    }
+    final service = _injectedNip07ServiceForTest ?? Nip07Service();
+    if (!service.isAvailable) {
+      Log.info(
+        'NIP-07 extension no longer available — falling back to '
+        'unauthenticated',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _setAuthState(AuthState.unauthenticated);
+      return;
+    }
+    try {
+      final result = await service.connect();
+      if (!result.success || result.publicKey == null) {
+        Log.info(
+          'NIP-07 silent reconnect failed — falling back to '
+          'unauthenticated: ${result.errorMessage}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        _setAuthState(AuthState.unauthenticated);
+        return;
+      }
+      _nip07Service = service;
+      await _setupUserSession(
+        SecureKeyContainer.fromPublicKey(result.publicKey!),
+        AuthenticationSource.nip07,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        'NIP-07 reconnect failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+        stackTrace: stackTrace,
+      );
+      _nip07Service = null;
+      _setAuthState(AuthState.unauthenticated);
     }
   }
 
@@ -3707,9 +3886,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
 
     final pubkey = keyContainer.publicKeyHex;
 
-    // Priority matches rpcSigner: Amber > Bunker > Keycast > Local
+    // Priority: Amber > NIP-07 > Bunker > Keycast > Local
     if (_amberSigner case final signer?) {
       return AmberNostrIdentity(pubkey: pubkey, amberSigner: signer);
+    }
+    if (_nip07Service case final service?) {
+      return Nip07NostrIdentity(
+        pubkey: pubkey,
+        nip07Signer: Nip07SignerAdapter(service),
+      );
     }
     if (_bunkerSigner case final signer?) {
       return BunkerNostrIdentity(pubkey: pubkey, remoteSigner: signer);
@@ -3793,6 +3978,15 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
       );
       _amberSigner!.close();
       _amberSigner = null;
+    }
+    if (source != AuthenticationSource.nip07 && _nip07Service != null) {
+      Log.info(
+        '_setupUserSession: clearing stale NIP-07 service '
+        '(new source=${source.name})',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _nip07Service = null;
     }
 
     // Build atomic identity AFTER stale signers are cleared.

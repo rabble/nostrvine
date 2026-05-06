@@ -38,6 +38,7 @@ class PooledVideoFeed extends StatefulWidget {
     this.nearEndThreshold = 3,
     this.onScrollOffsetChanged,
     this.maxLoopDuration,
+    this.physics,
     super.key,
   });
 
@@ -76,6 +77,16 @@ class PooledVideoFeed extends StatefulWidget {
 
   /// Maximum playback duration before automatically seeking back to zero.
   final Duration? maxLoopDuration;
+
+  /// Optional [ScrollPhysics] for the underlying [PageView].
+  ///
+  /// Defaults to Flutter's default ([PageScrollPhysics]). Pass an
+  /// always-scrollable physics (e.g. wrapping [PageScrollPhysics]) when the
+  /// feed is hosted inside a [RefreshIndicator] so a pull-down at index 0
+  /// produces the overscroll notification the indicator listens for —
+  /// otherwise on platforms that clamp by default (Android), the gesture is
+  /// swallowed before reaching the indicator.
+  final ScrollPhysics? physics;
 
   /// Called continuously as the feed scrolls with the fractional page position.
   ///
@@ -296,6 +307,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed>
         allowImplicitScrolling: true,
         controller: _pageController,
         scrollDirection: widget.scrollDirection,
+        physics: widget.physics,
         onPageChanged: _onPageChanged,
         itemCount: _videoCount,
         itemBuilder: (context, index) {
