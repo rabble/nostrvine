@@ -24,6 +24,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
@@ -381,15 +382,23 @@ class _ProfileSetupScreenViewState
               (app) => app.slug == 'verifyer',
             );
             if (nostrAppsSandboxSupported) {
+              // Native (iOS / Android / macOS): full webview_flutter
+              // sandbox with NIP-07 bridge injection.
               await context.push(
                 NostrAppSandboxScreen.pathForAppId(verifyer.id),
                 extra: verifyer,
               );
+            } else if (kIsWeb) {
+              // Flutter web: webview_flutter is unavailable, but we can
+              // host the verifyer in an <iframe> with a postMessage
+              // NIP-07 bridge to Divine's web signer.
+              await context.push(
+                WebIframeSandboxScreen.pathForAppId(verifyer.id),
+                extra: verifyer,
+              );
             } else {
-              // Flutter web cannot run the integrated-apps sandbox
-              // (webview_flutter is mobile-only). Fall back to opening
-              // verifyer.divine.video in a new tab so the entry point
-              // still works for web users.
+              // Last-resort fallback for any future platform without
+              // either capability — open in the system browser.
               await launchUrl(
                 Uri.parse(verifyer.launchUrl),
                 mode: LaunchMode.externalApplication,
