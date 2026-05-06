@@ -526,11 +526,9 @@ class _VideoGroupKey {
   final NotificationKind kind;
 
   @override
-  // ignore: avoid_equals_and_hash_code_on_mutable_classes, private value object
   bool operator ==(Object other) =>
       other is _VideoGroupKey && other.eventId == eventId && other.kind == kind;
 
   @override
-  // ignore: avoid_equals_and_hash_code_on_mutable_classes, private value object
   int get hashCode => Object.hash(eventId, kind);
 }

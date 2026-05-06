@@ -13,13 +13,13 @@ class _MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 class _MockCancellable extends Mock implements CancellableCacheOperation {}
 
-VideoEvent _makeVideo(String id) => VideoEvent(
+VideoEvent _makeVideo(String id, {String? videoUrl}) => VideoEvent(
   id: id,
   pubkey: 'pk',
   createdAt: 0,
   content: '',
   timestamp: DateTime(2024),
-  videoUrl: 'https://example.com/$id.m3u8',
+  videoUrl: videoUrl ?? 'https://example.com/$id.m3u8',
 );
 
 Widget _wrapFeed(InfiniteVideoFeed feed) => Directionality(
@@ -486,6 +486,204 @@ void main() {
 
         expect(find.byType(InfiniteVideoFeed), findsOneWidget);
       });
+
+      testWidgets(
+        'same id but changed playback URL is treated as non-append '
+        '(controller is rebuilt)',
+        (tester) async {
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos1 = [
+            _makeVideo('a', videoUrl: 'https://example.com/a-v1.m3u8'),
+            _makeVideo('b'),
+          ];
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos1,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Same ids, but the playback URL for index 0 changed.
+          final videos2 = [
+            _makeVideo('a', videoUrl: 'https://example.com/a-v2.m3u8'),
+            _makeVideo('b'),
+          ];
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos2,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          // pump twice (not pumpAndSettle): the post-frame callback that
+          // jumps the PageController needs one frame; pumpAndSettle would
+          // hang waiting for the mocked controller.initialize() future.
+          await tester.pump();
+          await tester.pump();
+
+          // The widget survives the URL swap. The teardown branch runs
+          // because the resolved source for index 0 differs even though
+          // the id matches; without the URL comparison the cached
+          // controller for 'a' would still be wired to the old URL.
+          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+          expect(key.currentState!.currentIndex, equals(0));
+        },
+      );
+
+      testWidgets(
+        'urlResolver change for same id is treated as non-append',
+        (tester) async {
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos = [_makeVideo('a'), _makeVideo('b')];
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos,
+                cache: cache,
+                urlResolver: (v) => 'https://cdn.example.com/v1/${v.id}.mp4',
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Replace the videos list (new identity) AND swap the resolver
+          // so the same ids resolve to a different playback source.
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: List<VideoEvent>.from(videos),
+                cache: cache,
+                urlResolver: (v) => 'https://cdn.example.com/v2/${v.id}.mp4',
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'non-append replacement jumps PageController to widget.initialIndex',
+        (tester) async {
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos1 = List.generate(5, (i) => _makeVideo('old$i'));
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos1,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Scroll to index 3 in the old feed without awaiting the
+          // animation future (DivineVideoPlayerController.initialize never
+          // completes under flutter_test, so pumpAndSettle would hang).
+          unawaited(key.currentState!.animateToPage(3));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(key.currentState!.currentIndex, equals(3));
+
+          // Replace with a completely different feed; new feed wants to
+          // start at its own initialIndex (default 0). The PageController
+          // must jump back to 0, not stay at the stale index 3.
+          final videos2 = List.generate(4, (i) => _makeVideo('new$i'));
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos2,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          // Two pumps: one to flush the rebuild + post-frame callback that
+          // schedules the jumpToPage, one (with Duration.zero) to drain the
+          // grace-period timer that jumpToPage → _onPageChanged →
+          // _onIndexChanged → _waitForFirstFrameOrGracePeriod creates before
+          // the test ends.
+          await tester.pump();
+          await tester.pump(Duration.zero);
+
+          expect(key.currentState!.currentIndex, equals(0));
+          final pageView = tester.widget<PageView>(find.byType(PageView));
+          expect(pageView.controller!.page?.round(), equals(0));
+        },
+      );
+
+      testWidgets(
+        'non-append replacement honours non-zero widget.initialIndex',
+        (tester) async {
+          final key = GlobalKey<InfiniteVideoFeedState>();
+          final videos1 = List.generate(3, (i) => _makeVideo('old$i'));
+
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos1,
+                cache: cache,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 50));
+
+          // Replace the feed and ask the new feed to start at index 2.
+          final videos2 = List.generate(5, (i) => _makeVideo('new$i'));
+          await tester.pumpWidget(
+            _wrapFeed(
+              InfiniteVideoFeed(
+                key: key,
+                videos: videos2,
+                cache: cache,
+                initialIndex: 2,
+                preloadGracePeriod: Duration.zero,
+                prefetchCount: 0,
+              ),
+            ),
+          );
+          // Two pumps: one to flush the rebuild + post-frame callback,
+          // one (with Duration.zero) to drain the grace-period timer that
+          // jumpToPage → _onPageChanged → _onIndexChanged
+          // → _waitForFirstFrameOrGracePeriod creates before the test ends.
+          await tester.pump();
+          await tester.pump(Duration.zero);
+
+          expect(key.currentState!.currentIndex, equals(2));
+          final pageView = tester.widget<PageView>(find.byType(PageView));
+          expect(pageView.controller!.page?.round(), equals(2));
+        },
+      );
     });
 
     group('overlayBuilder', () {

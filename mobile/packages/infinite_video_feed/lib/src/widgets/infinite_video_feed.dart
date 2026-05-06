@@ -367,17 +367,22 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     super.didUpdateWidget(oldWidget);
     if (widget.videos == oldWidget.videos) return;
 
-    final newIds = widget.videos.map((v) => v.id).toList();
-
-    // Append-only: the new list starts with exactly the same IDs in the same
-    // order — only new items were appended (e.g. pagination). Existing
-    // controllers are still valid; just let _onIndexChanged extend the
-    // window.
+    // Append-only: the new list starts with exactly the same items in the
+    // same order — same id AND same effective playback source — only new
+    // items were appended (e.g. pagination). Existing controllers are
+    // still valid; just let _onIndexChanged extend the window. If the
+    // resolved URL for an existing index changed (e.g. the caller updated
+    // the playback source for the same id) the cached controller is stale
+    // and we must fall through to the non-append teardown path.
     final oldLen = oldWidget.videos.length;
-    var isAppendOnly = newIds.length >= oldLen;
+    var isAppendOnly = widget.videos.length >= oldLen;
     if (isAppendOnly) {
       for (var i = 0; i < oldLen; i++) {
-        if (newIds[i] != oldWidget.videos[i].id) {
+        final oldVideo = oldWidget.videos[i];
+        final newVideo = widget.videos[i];
+        if (oldVideo.id != newVideo.id ||
+            _resolvedSourceFor(oldVideo, oldWidget.urlResolver) !=
+                _resolvedSourceFor(newVideo, widget.urlResolver)) {
           isAppendOnly = false;
           break;
         }
@@ -390,7 +395,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     }
 
     // Non-append-only change (e.g. tab switch forYou → following, or full
-    // feed replacement). Tear down all live controllers and restart.
+    // feed replacement). Tear down all live controllers, reset to the
+    // caller's intended starting index, and jump the PageController so
+    // the next frame opens on the right item instead of whatever stale
+    // page the previous feed was on.
     _log(
       'Non-append-only video list change — tearing down all controllers '
       '(old=${oldWidget.videos.length} new=${widget.videos.length})',
@@ -400,11 +408,32 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     _currentIndex = widget.videos.isEmpty
         ? 0
-        : _currentIndex.clamp(0, widget.videos.length - 1);
+        : widget.initialIndex.clamp(0, widget.videos.length - 1);
+    _pagePosition.value = _currentIndex.toDouble();
 
     _rebuild();
+
+    // The PageController is shared across rebuilds, so its current page
+    // does not reset on its own. Jump after the rebuild schedules a
+    // frame, once the PageView has re-attached against the new item
+    // count. If the controller has no clients (e.g. videos became empty)
+    // skip the jump — the next mount will pick up _currentIndex via
+    // PageController.initialPage on a fresh attach.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.videos.isEmpty) return;
+      if (!_pageController.hasClients) return;
+      if (_pageController.page?.round() == _currentIndex) return;
+      _pageController.jumpToPage(_currentIndex);
+    });
+
     unawaited(_onIndexChanged(_currentIndex));
   }
+
+  String? _resolvedSourceFor(
+    VideoEvent video,
+    String? Function(VideoEvent video)? resolver,
+  ) => resolver?.call(video) ?? video.videoUrl;
 
   @override
   void dispose() {
@@ -932,16 +961,30 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _watchdog.stop(previousIndex);
     _staleDetector.stop();
 
-    unawaited(_controllers[previousIndex]?.pause());
+    // Guard: only call methods on controllers that have finished initializing.
+    // _initController stores the instance in _controllers synchronously before
+    // awaiting initialize(), so there is a short window where the controller
+    // exists in the map but is not yet ready. Calling pause()/play() in that
+    // window throws StateError. The guard makes _onPageChanged safe to call
+    // from jumpToPage callbacks that fire before initialization completes
+    // (e.g. from the didUpdateWidget post-frame jumpToPage on feed
+    // replacement).
+    final prevController = _controllers[previousIndex];
+    if (prevController != null && prevController.isInitialized) {
+      unawaited(prevController.pause());
+    }
 
     // Play the current video if it is already initialized. Otherwise
     // _initController will play it and start the watchdog + stale detector
     // once the source is ready.
     if (_controllers.containsKey(index)) {
-      unawaited(_controllers[index]!.setVolume(_volume));
-      unawaited(_controllers[index]!.play());
-      _watchdog.start(index, _controllers[index]);
-      _staleDetector.start(index, _controllers[index]);
+      final curr = _controllers[index]!;
+      if (curr.isInitialized) {
+        unawaited(curr.setVolume(_volume));
+        unawaited(curr.play());
+        _watchdog.start(index, curr);
+        _staleDetector.start(index, curr);
+      }
     }
 
     if (index < widget.videos.length) {
