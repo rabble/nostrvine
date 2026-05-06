@@ -3176,6 +3176,61 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.id, equals('safe-video'));
       });
+
+      group('with Funnelcake bulk-stats hydration', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        });
+
+        test(
+          'fills loop counts from bulk stats when relay event has loops: 0',
+          () async {
+            const eventId = 'liked-tab-video-id';
+            final event = _createVideoEvent(
+              id: eventId,
+              pubkey: 'author-pubkey',
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+              loops: 0,
+            );
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [event]);
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
+            ).thenAnswer(
+              (_) async => BulkVideoStatsResponse(
+                stats: {
+                  eventId: BulkVideoStatsEntry(
+                    eventId: eventId,
+                    reactions: 1,
+                    comments: 2,
+                    reposts: 3,
+                    loops: 42,
+                  ),
+                },
+              ),
+            );
+
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo.getVideosByIds([eventId]);
+
+            expect(result, hasLength(1));
+            expect(result.single.originalLoops, equals(42));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
+            ).called(1);
+          },
+        );
+      });
     });
 
     group('getVideosByAddressableIds', () {
@@ -3433,6 +3488,69 @@ void main() {
 
         expect(result, hasLength(1));
         expect(result.first.vineId, equals('safe-dtag'));
+      });
+
+      group('with Funnelcake bulk-stats hydration', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        });
+
+        test(
+          'fills loop counts from bulk stats when relay event has loops: 0',
+          () async {
+            const author = '4bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+            const dTag = 'reposted-vine';
+            const eventId =
+                'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
+            final addressableId =
+                '${EventKind.videoVertical}:$author:$dTag';
+            final event = _createVideoEventWithDTag(
+              id: eventId,
+              pubkey: author,
+              dTag: dTag,
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+              loops: 0,
+            );
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [event]);
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
+            ).thenAnswer(
+              (_) async => BulkVideoStatsResponse(
+                stats: {
+                  eventId: BulkVideoStatsEntry(
+                    eventId: eventId,
+                    reactions: 0,
+                    comments: 0,
+                    reposts: 0,
+                    loops: 99,
+                  ),
+                },
+              ),
+            );
+
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repo.getVideosByAddressableIds([
+              addressableId,
+            ]);
+
+            expect(result, hasLength(1));
+            expect(result.single.originalLoops, equals(99));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
+            ).called(1);
+          },
+        );
       });
 
       group('Funnelcake API fallback', () {

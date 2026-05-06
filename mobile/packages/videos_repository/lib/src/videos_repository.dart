@@ -231,6 +231,9 @@ class VideosRepository {
           (video) =>
               video.id.isNotEmpty &&
               (video.originalLoops == null ||
+                  // Relay-sourced zeroes are frequently stale placeholders;
+                  // treat them as missing so Funnelcake can reconcile counts.
+                  video.originalLoops == 0 ||
                   video.rawTags['views'] == null ||
                   video.originalLikes == null ||
                   video.originalComments == null ||
@@ -666,9 +669,20 @@ class VideosRepository {
   ///
   /// Returns a list of [VideoEvent] in the same order as [eventIds].
   /// Videos that couldn't be found or failed to parse are omitted.
+  ///
+  /// When a Funnelcake API client is configured and available, results are
+  /// merged with that client's bulk video stats endpoint so relay-sourced rows
+  /// (e.g. profile Liked / Saved tabs) get loop and engagement totals like the
+  /// home feed — unless [hydrateBulkStats] is false.
+  ///
+  /// Use [hydrateBulkStats] `false` when the caller will run bulk-stats
+  /// hydration under its own timeout or policy ([fetchVideoWithStats] does
+  /// this so a slow Funnelcake call cannot block indefinitely on the relay
+  /// fetch+hydrate path).
   Future<List<VideoEvent>> getVideosByIds(
     List<String> eventIds, {
     bool cacheResults = false,
+    bool hydrateBulkStats = true,
   }) async {
     if (eventIds.isEmpty) return [];
 
@@ -716,7 +730,10 @@ class VideosRepository {
       if (video != null) videos.add(video);
     }
 
-    return videos;
+    if (!hydrateBulkStats) {
+      return videos;
+    }
+    return _hydrateVideosWithBulkStats(videos);
   }
 
   /// Number of filters to batch in a single relay query.
@@ -746,6 +763,11 @@ class VideosRepository {
   ///
   /// Returns a list of [VideoEvent] in the same order as [addressableIds].
   /// Videos that couldn't be found or failed to parse are omitted.
+  ///
+  /// When a Funnelcake API client is configured and available, results are
+  /// merged with that client's bulk video stats endpoint (same as
+  /// [getVideosByIds]) so repost tabs and other addressable lookups show
+  /// accurate loop counts.
   Future<List<VideoEvent>> getVideosByAddressableIds(
     List<String> addressableIds, {
     bool cacheResults = false,
@@ -827,7 +849,7 @@ class VideosRepository {
       }
     }
 
-    return videos;
+    return _hydrateVideosWithBulkStats(videos);
   }
 
   /// Fetches missing videos from Funnelcake API and adds them to [foundVideos].
@@ -1422,12 +1444,11 @@ class VideosRepository {
   /// Fetches a single video by event ID and enriches it with REST-side stats
   /// (loop counts, view counts) from the Funnelcake bulk-stats endpoint.
   ///
-  /// Strategy:
-  /// 1. Delegates to [getVideosByIds] for the cache→relay lookup and content
-  ///    filtering (same path used by all feed providers).
-  /// 2. Calls [_hydrateVideosWithBulkStats] on the result so the returned
-  ///    [VideoEvent] carries accurate [VideoEvent.originalLoops] and view
-  ///    counts — identical to what home/profile feeds receive.
+  /// Delegates to [getVideosByIds], which runs the cache→relay lookup,
+  /// content filtering, and bulk-stats enrichment when the API client is
+  /// filtering, then runs bulk-stats enrichment in a second step bounded by
+  /// [_statsFetchTimeout] (relay fetch completes first via
+  /// `getVideosByIds(..., hydrateBulkStats: false)`).
   ///
   /// Returns `null` when the event is not found or fails content filtering.
   /// The Funnelcake stats hydration is bounded by [_statsFetchTimeout]: on
@@ -1438,7 +1459,10 @@ class VideosRepository {
   /// feed context: notification taps and `divine.video/video/:id` deep-links.
   Future<VideoEvent?> fetchVideoWithStats(String eventId) async {
     if (eventId.isEmpty) return null;
-    final videos = await getVideosByIds([eventId]);
+    final videos = await getVideosByIds(
+      [eventId],
+      hydrateBulkStats: false,
+    );
     if (videos.isEmpty) return null;
     final hydrated = await _hydrateVideosWithBulkStats(videos).timeout(
       _statsFetchTimeout,
@@ -1464,10 +1488,7 @@ class VideosRepository {
       final videos = await getVideosByAddressableIds([
         candidate.addressableId!,
       ]);
-      if (videos.isNotEmpty) {
-        final hydrated = await _hydrateVideosWithBulkStats(videos);
-        if (hydrated.isNotEmpty) return hydrated.first;
-      }
+      if (videos.isNotEmpty) return videos.first;
     }
 
     if (candidate.stableId != null) {
