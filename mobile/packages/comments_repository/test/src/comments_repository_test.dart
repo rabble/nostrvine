@@ -852,6 +852,56 @@ void main() {
         expect(lowercasePTags.first[1], equals(parentAuthorPubkey));
       });
 
+      test('posts video comment with imeta tag metadata', () async {
+        Event? capturedEvent;
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        final result = await repository.postComment(
+          content: 'Video reply https://cdn.example.com/reply.mp4',
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+          imetaTag: const [
+            'url https://cdn.example.com/reply.mp4',
+            'm video/mp4',
+            'image https://cdn.example.com/reply.jpg',
+            'dim 720x1280',
+            'duration 6',
+            'blurhash LKO2?U%2Tw=w]~RBVZRi};RPxuwH',
+          ],
+        );
+
+        expect(capturedEvent, isNotNull);
+        final imetaTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((tag) => tag.first == 'imeta')
+            .toList();
+        expect(imetaTags, hasLength(1));
+        expect(
+          imetaTags.single,
+          containsAll(<String>[
+            'url https://cdn.example.com/reply.mp4',
+            'm video/mp4',
+            'image https://cdn.example.com/reply.jpg',
+            'dim 720x1280',
+            'duration 6',
+            'blurhash LKO2?U%2Tw=w]~RBVZRi};RPxuwH',
+          ]),
+        );
+        expect(result.hasVideo, isTrue);
+        expect(result.videoUrl, equals('https://cdn.example.com/reply.mp4'));
+        expect(
+          result.thumbnailUrl,
+          equals('https://cdn.example.com/reply.jpg'),
+        );
+        expect(result.videoDimensions, equals('720x1280'));
+        expect(result.videoDuration, equals(6));
+        expect(result.videoBlurhash, equals('LKO2?U%2Tw=w]~RBVZRi};RPxuwH'));
+      });
+
       test(
         'posts top-level comment with A/a tags for addressable events',
         () async {

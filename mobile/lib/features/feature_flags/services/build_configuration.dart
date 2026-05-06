@@ -48,6 +48,12 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_PROFILE_LIST_FEATURES');
       case FeatureFlag.contentPolicyV2:
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
+      case FeatureFlag.videoReplies:
+        const isReleaseBuild = bool.fromEnvironment('dart.vm.product');
+        return const bool.fromEnvironment(
+          'FF_VIDEO_REPLIES',
+          defaultValue: !isReleaseBuild,
+        );
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
     }
@@ -94,6 +100,8 @@ class BuildConfiguration {
         return 'FF_PROFILE_LIST_FEATURES';
       case FeatureFlag.contentPolicyV2:
         return 'FF_CONTENT_POLICY_V2';
+      case FeatureFlag.videoReplies:
+        return 'FF_VIDEO_REPLIES';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
     }

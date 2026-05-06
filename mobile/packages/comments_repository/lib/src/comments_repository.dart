@@ -220,6 +220,7 @@ class CommentsRepository {
     String? rootAddressableId,
     String? replyToEventId,
     String? replyToAuthorPubkey,
+    List<String>? imetaTag,
   }) async {
     final trimmedContent = content.trim();
     if (trimmedContent.isEmpty) {
@@ -254,6 +255,7 @@ class CommentsRepository {
         ['k', rootEventKind.toString()],
         ['p', rootEventAuthorPubkey],
       ],
+      if (imetaTag != null && imetaTag.isNotEmpty) ['imeta', ...imetaTag],
     ];
 
     // Create the event
@@ -275,16 +277,22 @@ class CommentsRepository {
 
       final cached = _commentCountCache[rootEventId];
       if (cached != null) _commentCountCache[rootEventId] = cached + 1;
+      final videoMetadata = _parseVideoMetadataFromImetaTags(sentEvent.tags);
 
       return Comment(
         id: sentEvent.id,
         content: trimmedContent,
         authorPubkey: sentEvent.pubkey,
-        createdAt: event.createdAtDateTime,
+        createdAt: sentEvent.createdAtDateTime,
         rootEventId: rootEventId,
         rootAuthorPubkey: rootEventAuthorPubkey,
         replyToEventId: replyToEventId,
         replyToAuthorPubkey: replyToAuthorPubkey,
+        videoUrl: videoMetadata.videoUrl,
+        thumbnailUrl: videoMetadata.thumbnailUrl,
+        videoDimensions: videoMetadata.videoDimensions,
+        videoDuration: videoMetadata.videoDuration,
+        videoBlurhash: videoMetadata.videoBlurhash,
       );
     } on CommentsRepositoryException {
       rethrow;
@@ -853,6 +861,50 @@ class CommentsRepository {
     }
   }
 
+  _CommentVideoMetadata _parseVideoMetadataFromImetaTags(
+    List<List<dynamic>> tags,
+  ) {
+    String? videoUrl;
+    String? thumbnailUrl;
+    String? videoDimensions;
+    int? videoDuration;
+    String? videoBlurhash;
+
+    for (final tag in tags) {
+      if (tag.isEmpty || tag.first != 'imeta') continue;
+
+      for (var i = 1; i < tag.length; i++) {
+        final field = tag[i].toString().trim();
+        if (field.startsWith('url ')) {
+          final url = field.substring(4).trim();
+          if (_isVideoUrl(url)) videoUrl = url;
+        } else if (field.startsWith('image ')) {
+          thumbnailUrl = field.substring(6).trim();
+        } else if (field.startsWith('dim ')) {
+          videoDimensions = field.substring(4).trim();
+        } else if (field.startsWith('duration ')) {
+          videoDuration = int.tryParse(field.substring(9).trim());
+        } else if (field.startsWith('blurhash ')) {
+          videoBlurhash = field.substring(9).trim();
+        }
+      }
+    }
+
+    return _CommentVideoMetadata(
+      videoUrl: videoUrl,
+      thumbnailUrl: thumbnailUrl,
+      videoDimensions: videoDimensions,
+      videoDuration: videoDuration,
+      videoBlurhash: videoBlurhash,
+    );
+  }
+
+  bool _isVideoUrl(String url) =>
+      url.endsWith('.mp4') ||
+      url.endsWith('.mov') ||
+      url.endsWith('.webm') ||
+      url.contains('video');
+
   /// Builds a CommentThread from a map of comments.
   ///
   /// Organizes comments into a flat list sorted chronologically (newest first).
@@ -877,4 +929,20 @@ class CommentsRepository {
       commentCache: Map<String, Comment>.unmodifiable(commentMap),
     );
   }
+}
+
+class _CommentVideoMetadata {
+  const _CommentVideoMetadata({
+    this.videoUrl,
+    this.thumbnailUrl,
+    this.videoDimensions,
+    this.videoDuration,
+    this.videoBlurhash,
+  });
+
+  final String? videoUrl;
+  final String? thumbnailUrl;
+  final String? videoDimensions;
+  final int? videoDuration;
+  final String? videoBlurhash;
 }

@@ -19,6 +19,7 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
+import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -151,6 +152,20 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             content: widget.comment.content,
                           ),
                         ),
+                        if (widget.comment.hasVideo) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 180),
+                              child: VideoCommentPlayer(
+                                videoUrl: widget.comment.videoUrl!,
+                                thumbnailUrl: widget.comment.thumbnailUrl,
+                                blurhash: widget.comment.videoBlurhash,
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 12),
                         _ActionsRow(
                           commentId: widget.comment.id,

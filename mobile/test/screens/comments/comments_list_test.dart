@@ -46,6 +46,7 @@ void main() {
     Widget buildTestWidget({
       required CommentsState commentsState,
       bool showClassicVineNotice = false,
+      bool showVideoReplies = true,
       ScrollController? scrollController,
     }) {
       final sc = scrollController ?? ScrollController();
@@ -63,6 +64,7 @@ void main() {
               child: CommentsList(
                 showClassicVineNotice: showClassicVineNotice,
                 scrollController: sc,
+                showVideoReplies: showVideoReplies,
               ),
             ),
           ),
@@ -150,6 +152,45 @@ void main() {
       expect(find.byType(CommentItem), findsNWidgets(2));
       expect(find.text('First comment'), findsOneWidget);
       expect(find.text('Second comment'), findsOneWidget);
+    });
+
+    testWidgets('filters video comments when video replies are hidden', (
+      tester,
+    ) async {
+      final textComment = CommentBuilder()
+          .withId(TestCommentIds.comment1Id)
+          .withContent('Text only comment')
+          .build();
+
+      final videoComment = CommentBuilder()
+          .withId(TestCommentIds.comment2Id)
+          .withContent('Video comment https://cdn.example.com/reply.mp4')
+          .build()
+          .copyWith(videoUrl: 'https://cdn.example.com/reply.mp4');
+
+      final state = CommentsState(
+        rootEventId: testVideoEventId,
+        rootAuthorPubkey: testVideoAuthorPubkey,
+        status: CommentsStatus.success,
+        commentsById: {
+          textComment.id: textComment,
+          videoComment.id: videoComment,
+        },
+      );
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          commentsState: state,
+          showVideoReplies: false,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Text only comment'), findsOneWidget);
+      expect(
+        find.text('Video comment https://cdn.example.com/reply.mp4'),
+        findsNothing,
+      );
     });
 
     testWidgets('uses provided scroll controller', (tester) async {

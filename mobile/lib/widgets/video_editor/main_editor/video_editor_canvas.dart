@@ -22,8 +22,13 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/timeline_overlay_item.dart';
+import 'package:openvine/models/video_reply_context.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_comment_publish_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -119,6 +124,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   DivineVideoPlayerController? _videoPlayer;
   StreamSubscription<DivineVideoPlayerState>? _videoPlayerSubscription;
+  ProviderSubscription<DivineVideoClip?>? _replyRenderSubscription;
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
@@ -204,6 +210,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _videoPlayerSubscription?.cancel();
+    _replyRenderSubscription?.close();
     _videoPlayer?.dispose();
     _isPlayerReadyNotifier.dispose();
     super.dispose();
@@ -710,11 +717,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// and resumes video when returning only if it was playing before.
   /// Audio sync handled by listener.
   Future<void> _handleDone() async {
-    Log.info(
-      '🎬 Done pressed - navigating to metadata screen',
-      name: 'VideoEditorCanvas',
-      category: LogCategory.video,
-    );
     final wasPlaying = _videoPlayer?.state.isPlaying ?? false;
     _videoPlayer?.pause();
     // IMPORTANT: Don't start video rendering here. We must await
@@ -722,10 +724,91 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // rendering! However, we can navigate to the metadata screen immediately
     // since it shows a progress spinner anyway (~200ms task).
     ref.read(videoEditorProvider.notifier).setProcessing(true);
+
+    final replyContext = ref.read(videoReplyContextProvider);
+    if (replyContext != null) {
+      Log.info(
+        '🎬 Done pressed - video reply mode, skipping metadata screen',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+      );
+      _setupVideoReplyPublish(replyContext);
+      return;
+    }
+
+    Log.info(
+      '🎬 Done pressed - navigating to metadata screen',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     await context.push(VideoMetadataScreen.path);
     if (mounted && wasPlaying) {
       _videoPlayer?.play();
     }
+  }
+
+  void _setupVideoReplyPublish(VideoReplyContext replyContext) {
+    _replyRenderSubscription?.close();
+    _replyRenderSubscription = ref.listenManual<DivineVideoClip?>(
+      videoEditorProvider.select((state) => state.finalRenderedClip),
+      (previous, next) {
+        if (next == null) return;
+        _replyRenderSubscription?.close();
+        _replyRenderSubscription = null;
+        unawaited(_publishAndReturnFromVideoReply(next, replyContext));
+      },
+    );
+  }
+
+  Future<void> _publishAndReturnFromVideoReply(
+    DivineVideoClip renderedClip,
+    VideoReplyContext replyContext,
+  ) async {
+    final videoFilePath = renderedClip.video.file?.path;
+    final nostrPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+    var success = false;
+
+    if (videoFilePath == null || nostrPubkey == null) {
+      ref.read(videoReplyContextProvider.notifier).clear();
+      ref.read(videoEditorProvider.notifier).setProcessing(false);
+      return;
+    }
+
+    try {
+      final result = await ref
+          .read(videoCommentPublishServiceProvider)
+          .publishVideoComment(
+            videoFilePath: videoFilePath,
+            rootEventId: replyContext.rootEventId,
+            rootEventKind: replyContext.rootEventKind,
+            rootEventAuthorPubkey: replyContext.rootAuthorPubkey,
+            nostrPubkey: nostrPubkey,
+            rootAddressableId: replyContext.rootAddressableId,
+            parentCommentId: replyContext.parentCommentId,
+            parentAuthorPubkey: replyContext.parentAuthorPubkey,
+          );
+      success = result.isSuccess;
+    } on Exception catch (error, stackTrace) {
+      Log.error(
+        'Video reply publish failed: $error',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      ref.read(videoReplyContextProvider.notifier).clear();
+      ref.read(videoEditorProvider.notifier).setProcessing(false);
+    }
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      DivineSnackbarContainer.snackBar(
+        success ? 'Video reply posted' : 'Failed to post video reply',
+        error: !success,
+      ),
+    );
+    if (success) context.go(VideoFeedPage.pathForIndex(0));
   }
 
   @override

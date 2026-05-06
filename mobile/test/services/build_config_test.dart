@@ -37,6 +37,12 @@ void main() {
       expect(config.getDefault(FeatureFlag.debugTools), isTrue);
     });
 
+    test('videoReplies should be enabled by default in debug builds', () {
+      const config = BuildConfiguration();
+
+      expect(config.getDefault(FeatureFlag.videoReplies), isTrue);
+    });
+
     test('should provide all flags with defaults', () {
       const config = BuildConfiguration();
 
@@ -79,6 +85,10 @@ void main() {
       expect(
         config.getEnvironmentKey(FeatureFlag.enhancedVideoPlayer),
         equals('FF_ENHANCED_VIDEO_PLAYER'),
+      );
+      expect(
+        config.getEnvironmentKey(FeatureFlag.videoReplies),
+        equals('FF_VIDEO_REPLIES'),
       );
     });
 

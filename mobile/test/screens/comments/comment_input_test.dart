@@ -59,6 +59,36 @@ void main() {
       expect(find.byIcon(Icons.arrow_upward), findsOneWidget);
     });
 
+    testWidgets('shows video reply button when callback is provided', (
+      tester,
+    ) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              onSubmit: () {},
+              onVideoReplyPressed: () => tapped = true,
+            ),
+          ),
+        ),
+      );
+
+      final videoButton = find.bySemanticsIdentifier(
+        'record_video_comment_button',
+      );
+      expect(videoButton, findsOneWidget);
+
+      await tester.tap(videoButton);
+      await tester.pump();
+
+      expect(tapped, isTrue);
+    });
+
     testWidgets(
       'never shows a CircularProgressIndicator on the send button',
       (tester) async {

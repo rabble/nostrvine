@@ -55,6 +55,10 @@ enum FeatureFlag {
     'Content Policy v2',
     'Parse-gated policy engine — filter blocked/muted authors at ingress',
   ),
+  videoReplies(
+    'Video Replies',
+    'Enable recording and posting short video replies from comment threads',
+  ),
   advancedRelaySettings(
     'Advanced Relay Settings',
     'Show Nostr relay configuration and diagnostics in Settings. '

@@ -5,13 +5,19 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// Maps [CommentsError] to user-facing strings.
@@ -197,23 +203,33 @@ class _CommentsScreenBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<CommentsBloc, CommentsState>(
-      listenWhen: (prev, next) =>
-          prev.error != next.error && next.error != null,
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(_errorToString(state.error!))));
-          context.read<CommentsBloc>().add(const CommentErrorCleared());
-        }
+    return Consumer(
+      builder: (context, ref, _) {
+        final showVideoReplies = ref.watch(
+          isFeatureEnabledProvider(FeatureFlag.videoReplies),
+        );
+        return BlocListener<CommentsBloc, CommentsState>(
+          listenWhen: (prev, next) =>
+              prev.error != next.error && next.error != null,
+          listener: (context, state) {
+            if (state.error != null) {
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(
+                SnackBar(content: Text(_errorToString(state.error!))),
+              );
+              context.read<CommentsBloc>().add(const CommentErrorCleared());
+            }
+          },
+          child: SizedBox(
+            child: CommentsList(
+              showClassicVineNotice: videoEvent.isVintageRecoveredVine,
+              scrollController: sheetScrollController,
+              showVideoReplies: showVideoReplies,
+            ),
+          ),
+        );
       },
-      child: SizedBox(
-        child: CommentsList(
-          showClassicVineNotice: videoEvent.isVintageRecoveredVine,
-          scrollController: sheetScrollController,
-        ),
-      ),
     );
   }
 }
@@ -325,6 +341,12 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
               ..add(MentionRegistered(displayName: displayName, npub: npub))
               ..add(const MentionSuggestionsCleared());
           },
+          onVideoReplyPressed:
+              ref.watch(
+                isFeatureEnabledProvider(FeatureFlag.videoReplies),
+              )
+              ? () => _openVideoReplyCamera(context, state, replyToAuthorPubkey)
+              : null,
           onChanged: (text) {
             context.read<CommentsBloc>().add(
               CommentTextChanged(text, commentId: state.activeReplyCommentId),
@@ -355,6 +377,26 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
         );
       },
     );
+  }
+
+  void _openVideoReplyCamera(
+    BuildContext context,
+    CommentsState state,
+    String? replyToAuthorPubkey,
+  ) {
+    ref
+        .read(videoReplyContextProvider.notifier)
+        .set(
+          VideoReplyContext(
+            rootEventId: state.rootEventId,
+            rootEventKind: state.rootEventKind,
+            rootAuthorPubkey: state.rootAuthorPubkey,
+            rootAddressableId: state.rootAddressableId,
+            parentCommentId: state.activeReplyCommentId,
+            parentAuthorPubkey: replyToAuthorPubkey,
+          ),
+        );
+    context.push(VideoRecorderScreen.path);
   }
 }
 

@@ -14,11 +14,17 @@ class VideoRecorderModeSelectorWheel extends StatefulWidget {
   const VideoRecorderModeSelectorWheel({
     required this.selectedMode,
     required this.onModeChanged,
+    this.modes = const [
+      VideoRecorderMode.capture,
+      VideoRecorderMode.classic,
+      VideoRecorderMode.upload,
+    ],
     super.key,
   });
 
   final VideoRecorderMode selectedMode;
   final ValueChanged<VideoRecorderMode> onModeChanged;
+  final List<VideoRecorderMode> modes;
 
   @override
   State<VideoRecorderModeSelectorWheel> createState() =>
@@ -39,7 +45,8 @@ class _VideoRecorderModeSelectorWheelState
   @override
   void initState() {
     super.initState();
-    _selectedIndex = VideoRecorderMode.values.indexOf(widget.selectedMode);
+    _selectedIndex = widget.modes.indexOf(widget.selectedMode);
+    if (_selectedIndex < 0) _selectedIndex = 0;
     _scrollController = ScrollController(
       initialScrollOffset: _selectedIndex * _itemExtent,
     );
@@ -49,7 +56,8 @@ class _VideoRecorderModeSelectorWheelState
   void didUpdateWidget(VideoRecorderModeSelectorWheel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedMode != widget.selectedMode) {
-      final index = VideoRecorderMode.values.indexOf(widget.selectedMode);
+      final index = widget.modes.indexOf(widget.selectedMode);
+      if (index < 0) return;
       setState(() => _selectedIndex = index);
       _animateTo(index);
     }
@@ -84,7 +92,7 @@ class _VideoRecorderModeSelectorWheelState
     } else {
       targetIndex = fractional.round();
     }
-    targetIndex = targetIndex.clamp(0, VideoRecorderMode.values.length - 1);
+    targetIndex = targetIndex.clamp(0, widget.modes.length - 1);
     _lastScrollDelta = 0;
     // Defer to the next frame — animateTo called directly inside a scroll
     // notification callback is silently ignored by Flutter's scroll system.
@@ -99,7 +107,7 @@ class _VideoRecorderModeSelectorWheelState
     if (index == _selectedIndex) return;
     setState(() => _selectedIndex = index);
     HapticFeedback.selectionClick();
-    widget.onModeChanged(VideoRecorderMode.values[index]);
+    widget.onModeChanged(widget.modes[index]);
   }
 
   /// Measures the width the pill needs for the given label text.
@@ -114,7 +122,7 @@ class _VideoRecorderModeSelectorWheelState
 
   @override
   Widget build(BuildContext context) {
-    const modes = VideoRecorderMode.values;
+    final modes = widget.modes;
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.3);
