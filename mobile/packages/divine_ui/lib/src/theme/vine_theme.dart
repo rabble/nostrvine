@@ -478,6 +478,11 @@ class VineTheme {
   /// Pressed-state inner shadow for buttons (24% black).
   static const Color innerShadowPressed = Color(0x3D000000);
 
+  /// Figma `effects/shadow-25` drop-shadow color (25% black). Use as the
+  /// color for [Shadow] / [BoxShadow] drops on elements layered above
+  /// video content (caption pills, floating popups, etc.).
+  static const Color shadow25 = Color(0x40000000);
+
   /// Figma `effects/shadow-10` drop-shadow pair, for use in
   /// [TextStyle.shadows] on text overlaid on video content or other
   /// bright surfaces (caption block, action-button labels, feed-mode

@@ -58,7 +58,8 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
       link: _link,
       child: OverlayPortal(
         controller: _controller,
-        overlayChildBuilder: _buildOverlay,
+        overlayChildBuilder: (_) =>
+            _FeedSettingsOverlay(link: _link, onClose: _close),
         child: DivineIconButton(
           icon: _controller.isShowing
               ? DivineIconName.x
@@ -73,18 +74,29 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
       ),
     );
   }
+}
 
-  Widget _buildOverlay(BuildContext context) {
+/// Overlay rendered while the popover is open: a full-screen tap catcher
+/// that dismisses the popover, plus the popover itself anchored 16 px below
+/// the trigger button's bottom-right corner.
+class _FeedSettingsOverlay extends StatelessWidget {
+  const _FeedSettingsOverlay({required this.link, required this.onClose});
+
+  final LayerLink link;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
     return Stack(
       children: [
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: _close,
+            onTap: onClose,
           ),
         ),
         CompositedTransformFollower(
-          link: _link,
+          link: link,
           targetAnchor: Alignment.bottomRight,
           followerAnchor: Alignment.topRight,
           offset: const Offset(0, 16),
@@ -115,10 +127,7 @@ class _PlaybackSettingsPopover extends ConsumerWidget {
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: VineTheme.scrim15),
             boxShadow: const [
-              BoxShadow(
-                color: Color(0x40000000),
-                blurRadius: 4,
-              ),
+              BoxShadow(color: VineTheme.shadow25, blurRadius: 4),
             ],
           ),
           child: const Padding(

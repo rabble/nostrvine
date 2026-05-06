@@ -83,11 +83,7 @@ class _CaptionPill extends StatelessWidget {
           letterSpacing: 0.5,
           color: VineTheme.whiteText,
           shadows: const [
-            Shadow(
-              blurRadius: 4,
-              // rgba(0,0,0,0.25) = shadow-25
-              color: Color(0x40000000),
-            ),
+            Shadow(blurRadius: 4, color: VineTheme.shadow25),
           ],
         ),
       ),

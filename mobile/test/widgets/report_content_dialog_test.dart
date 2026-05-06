@@ -37,6 +37,8 @@ class _MockModerationLabelService extends Mock
     implements ModerationLabelService {}
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+
   setUpAll(() {
     registerFallbackValue(ContentFilterReason.spam);
   });
@@ -109,7 +111,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Why are you reporting this content?'),
+        find.text(l10n.reportWhyReporting),
         findsOneWidget,
       );
     });
@@ -120,15 +122,15 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Spam or Unwanted Content'), findsOneWidget);
-      expect(find.text('Harassment, Bullying, or Threats'), findsOneWidget);
-      expect(find.text('Violent or Extremist Content'), findsOneWidget);
-      expect(find.text('Sexual or Adult Content'), findsOneWidget);
-      expect(find.text('Copyright Violation'), findsOneWidget);
-      expect(find.text('False Information'), findsOneWidget);
-      expect(find.text('Child Safety Violation'), findsOneWidget);
-      expect(find.text('AI-Generated Content'), findsOneWidget);
-      expect(find.text('Other Policy Violation'), findsOneWidget);
+      expect(find.text(l10n.reportReasonSpam), findsOneWidget);
+      expect(find.text(l10n.reportReasonHarassment), findsOneWidget);
+      expect(find.text(l10n.reportReasonViolence), findsOneWidget);
+      expect(find.text(l10n.reportReasonSexualContent), findsOneWidget);
+      expect(find.text(l10n.reportReasonCopyright), findsOneWidget);
+      expect(find.text(l10n.reportReasonFalseInfo), findsOneWidget);
+      expect(find.text(l10n.reportReasonCsam), findsOneWidget);
+      expect(find.text(l10n.reportReasonAiGenerated), findsOneWidget);
+      expect(find.text(l10n.reportReasonOther), findsOneWidget);
     });
 
     testWidgets('renders subtitle text for each reason', (tester) async {
@@ -138,10 +140,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('Harmful and unwanted replies or mentions'),
+        find.text(l10n.reportReasonHarassmentSubtitle),
         findsOneWidget,
       );
-      expect(find.text('Violations not listed above'), findsOneWidget);
+      expect(find.text(l10n.reportReasonOtherSubtitle), findsOneWidget);
     });
 
     testWidgets('details field is hidden until Other is selected', (
@@ -154,7 +156,7 @@ void main() {
 
       expect(find.byType(TextField), findsNothing);
 
-      await tester.tap(find.text('Other Policy Violation'));
+      await tester.tap(find.text(l10n.reportReasonOther));
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsOneWidget);
@@ -168,7 +170,10 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        final submitButton = find.widgetWithText(DivineButton, 'Report');
+        final submitButton = find.widgetWithText(
+          DivineButton,
+          l10n.reportSubmit,
+        );
         expect(submitButton, findsOneWidget);
 
         final DivineButton button = tester.widget(submitButton);
@@ -190,11 +195,11 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
 
         expect(
-          find.text('Please select a reason for reporting this content'),
+          find.text(l10n.reportSelectReason),
           findsOneWidget,
           reason: 'Should show error when no reason selected',
         );
@@ -209,14 +214,14 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Other Policy Violation'));
+        await tester.tap(find.text(l10n.reportReasonOther));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
 
         expect(
-          find.text('Please describe the issue when selecting Other'),
+          find.text(l10n.reportOtherRequiresDetails),
           findsOneWidget,
           reason: 'Should require details when Other is selected',
         );
@@ -239,8 +244,8 @@ void main() {
         reason: 'Sanity-check: 9 report reasons defined',
       );
       // Verify all titles render by checking the last and first in the list.
-      expect(find.text('Spam or Unwanted Content'), findsOneWidget);
-      expect(find.text('Other Policy Violation'), findsOneWidget);
+      expect(find.text(l10n.reportReasonSpam), findsOneWidget);
+      expect(find.text(l10n.reportReasonOther), findsOneWidget);
     });
   });
 
@@ -309,10 +314,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.tap(find.text(l10n.reportReasonSpam));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
       verify(
@@ -333,15 +338,15 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      await tester.tap(find.text('Harassment, Bullying, or Threats'));
+      await tester.tap(find.text(l10n.reportReasonHarassment));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
-      expect(find.text('Report Received'), findsOneWidget);
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
       expect(
-        find.text('Thank you for helping keep Divine safe.'),
+        find.text(l10n.reportReceivedThankYou),
         findsOneWidget,
       );
     });
@@ -365,14 +370,14 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
         await openReportDialog(tester);
 
-        await tester.tap(find.text('Spam or Unwanted Content'));
+        await tester.tap(find.text(l10n.reportReasonSpam));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pump();
 
         final submitBtn = tester.widget<DivineButton>(
-          find.widgetWithText(DivineButton, 'Report'),
+          find.widgetWithText(DivineButton, l10n.reportSubmit),
         );
         expect(
           submitBtn.isLoading,
@@ -400,10 +405,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.tap(find.text(l10n.reportReasonSpam));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to report content'), findsOneWidget);
@@ -424,10 +429,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.tap(find.text(l10n.reportReasonSpam));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to report content'), findsOneWidget);
@@ -439,13 +444,13 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      await tester.tap(find.text('Other Policy Violation'));
+      await tester.tap(find.text(l10n.reportReasonOther));
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Custom report details');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
 
       verify(
@@ -484,9 +489,9 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Report Received'), findsOneWidget);
+      expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
       expect(
-        find.text('Thank you for helping keep Divine safe.'),
+        find.text(l10n.reportReceivedThankYou),
         findsOneWidget,
       );
       expect(
@@ -494,8 +499,8 @@ void main() {
         findsOneWidget,
         reason: 'TC-025: Confirmation should mention DM follow-up',
       );
-      expect(find.text('Learn More'), findsOneWidget);
-      expect(find.text('divine.video/safety'), findsOneWidget);
+      expect(find.text(l10n.reportLearnMore), findsOneWidget);
+      expect(find.text(l10n.reportSafetyUrl), findsOneWidget);
     });
 
     testWidgets('renders Close button', (tester) async {
@@ -520,7 +525,7 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Close'), findsOneWidget);
+      expect(find.text(l10n.reportClose), findsOneWidget);
     });
   });
 
@@ -602,10 +607,10 @@ void main() {
       await tester.tap(find.text('Open Report'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.tap(find.text(l10n.reportReasonSpam));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
       await tester.pumpAndSettle();
     }
 
@@ -669,7 +674,7 @@ void main() {
       await openAndSubmitReport(tester);
 
       expect(
-        find.text('Report Received'),
+        find.text(l10n.reportReceivedTitle),
         findsOneWidget,
         reason: 'Report should succeed even if DM fails',
       );
@@ -729,13 +734,13 @@ void main() {
         await tester.tap(find.text('Open Report'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Spam or Unwanted Content'));
+        await tester.tap(find.text(l10n.reportReasonSpam));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+        await tester.tap(find.widgetWithText(DivineButton, l10n.reportSubmit));
         await tester.pumpAndSettle();
 
-        expect(find.text('Report Received'), findsOneWidget);
+        expect(find.text(l10n.reportReceivedTitle), findsOneWidget);
         verifyNever(
           () => mockDmRepository.sendMessage(
             recipientPubkey: any(named: 'recipientPubkey'),

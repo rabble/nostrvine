@@ -382,8 +382,8 @@ class _ReportConfirmationView extends StatelessWidget {
           Row(
             spacing: 12,
             children: [
-              const Icon(
-                Icons.check_circle,
+              const DivineIcon(
+                icon: DivineIconName.checkCircle,
                 color: VineTheme.vineGreen,
                 size: 28,
               ),

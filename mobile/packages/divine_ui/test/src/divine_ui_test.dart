@@ -61,6 +61,7 @@ void main() {
       test('has correct utility colors', () {
         expect(VineTheme.darkOverlay, const Color(0x88000000));
         expect(VineTheme.scrim30, const Color(0x4D000000));
+        expect(VineTheme.shadow25, const Color(0x40000000));
         expect(VineTheme.alphaLight25, const Color(0x40FFFFFF));
         expect(VineTheme.outlineVariant, const Color(0xFF254136));
         expect(VineTheme.borderWhite25, const Color(0x40FFFFFF));
