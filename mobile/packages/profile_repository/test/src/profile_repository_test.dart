@@ -3436,6 +3436,43 @@ void main() {
         },
       );
 
+      test(
+        'returns server error message when claim returns 400 with JSON error body',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) => Future.value(
+              Response('{"error": "Name server rejected claim"}', 400),
+            ),
+          );
+
+          final result = await profileRepository.claimUsername(
+            username: 'validuser',
+          );
+
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Name server rejected claim',
+            ),
+          );
+        },
+      );
+
       test('returns error with default message when server returns '
           'non-200 with unparseable body', () async {
         when(
