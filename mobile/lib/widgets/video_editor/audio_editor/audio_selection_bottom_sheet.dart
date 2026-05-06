@@ -2,7 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' show AudioEvent;
+import 'package:models/models.dart' show AudioEvent, VineSound;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
@@ -15,6 +15,18 @@ import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selectio
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
+
+final _featuredSounds = [
+  AudioEvent.fromBundledSound(
+    VineSound(
+      id: 'wednesday',
+      title: 'Wednesday',
+      assetPath: 'assets/sounds/wednesday.mp3',
+      duration: const Duration(milliseconds: 6269),
+      tags: const ['featured'],
+    ),
+  ),
+];
 
 class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
   const AudioSelectionBottomSheet({required this.scrollController, super.key});
@@ -271,11 +283,12 @@ class _AudioSelectionBottomSheetState
                         const Center(child: BrandedLoadingIndicator()),
                     error: (error, stack) => _ErrorState(error: error),
                   ),
-                  _EmptyState(
-                    icon: Icons.auto_awesome,
-                    title: context.l10n.videoEditorAudioFeaturedEmptyTitle,
-                    subtitle:
-                        context.l10n.videoEditorAudioFeaturedEmptySubtitle,
+                  _SoundsContent(
+                    scrollController: widget.scrollController,
+                    sounds: _featuredSounds,
+                    selectedSound: _selectedItem,
+                    audioService: _audioService,
+                    onSelect: _selectSound,
                   ),
                   _SoundsContent(
                     scrollController: widget.scrollController,
@@ -382,12 +395,10 @@ class _SoundsContent extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({
-    this.icon = Icons.music_off,
     this.title,
     this.subtitle,
   });
 
-  final IconData icon;
   final String? title;
   final String? subtitle;
 
@@ -397,7 +408,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: VineTheme.secondaryText),
+          const Icon(
+            Icons.music_off,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
           const SizedBox(height: 16),
           Text(
             title ?? context.l10n.videoEditorAudioNoSoundsAvailableTitle,

@@ -147,7 +147,7 @@ void main() {
         expect(find.byIcon(Icons.music_off), findsOneWidget);
       });
 
-      testWidgets('renders featured placeholder on featured tab', (
+      testWidgets('renders featured sounds on featured tab', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -159,14 +159,7 @@ void main() {
         await tester.tap(find.text(l10n.videoEditorAudioCategoryFeatured));
         await tester.pumpAndSettle();
 
-        expect(
-          find.text(l10n.videoEditorAudioFeaturedEmptyTitle),
-          findsOneWidget,
-        );
-        expect(
-          find.text(l10n.videoEditorAudioFeaturedEmptySubtitle),
-          findsOneWidget,
-        );
+        expect(find.text('Wednesday'), findsOneWidget);
       });
 
       testWidgets('renders saved sounds empty state on My Sounds tab', (
