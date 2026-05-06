@@ -202,6 +202,11 @@ void main() {
                   (error) => error.code,
                   'code',
                   InviteApiErrorCode.clientTimeout,
+                )
+                .having(
+                  (error) => error.cause,
+                  'cause',
+                  isA<TimeoutException>(),
                 ),
           ),
         );
@@ -232,6 +237,11 @@ void main() {
                   (error) => error.code,
                   'code',
                   InviteApiErrorCode.clientNetworkError,
+                )
+                .having(
+                  (error) => error.cause,
+                  'cause',
+                  isA<SocketException>(),
                 ),
           ),
         );
@@ -490,6 +500,11 @@ void main() {
                   (error) => error.code,
                   'code',
                   InviteApiErrorCode.clientTimeout,
+                )
+                .having(
+                  (error) => error.cause,
+                  'cause',
+                  isA<TimeoutException>(),
                 ),
           ),
         );
@@ -520,6 +535,11 @@ void main() {
                   (error) => error.code,
                   'code',
                   InviteApiErrorCode.clientNetworkError,
+                )
+                .having(
+                  (error) => error.cause,
+                  'cause',
+                  isA<SocketException>(),
                 ),
           ),
         );
@@ -556,6 +576,11 @@ void main() {
                   (error) => error.code,
                   'code',
                   InviteApiErrorCode.clientAuthFailed,
+                )
+                .having(
+                  (error) => error.cause,
+                  'cause',
+                  isNotNull,
                 ),
           ),
         );

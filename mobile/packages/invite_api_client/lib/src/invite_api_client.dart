@@ -202,6 +202,7 @@ class InviteApiClient {
       throw InviteApiException(
         'Failed to authenticate invite request: $error',
         code: InviteApiErrorCode.clientAuthFailed,
+        cause: error,
       );
     }
 
@@ -224,6 +225,7 @@ class InviteApiClient {
       throw InviteApiException(
         'Failed to authenticate invite request: $error',
         code: InviteApiErrorCode.clientAuthFailed,
+        cause: error,
       );
     }
     try {
@@ -438,6 +440,7 @@ class InviteApiClient {
       throw InviteApiException(
         'Failed to authenticate invite request: $error',
         code: InviteApiErrorCode.clientAuthFailed,
+        cause: error,
       );
     }
   }
@@ -452,13 +455,18 @@ class InviteApiClient {
       return InviteApiException(
         timeoutMessage,
         code: InviteApiErrorCode.clientTimeout,
+        cause: error,
       );
     }
 
     final code = _isNetworkError(error)
         ? InviteApiErrorCode.clientNetworkError
         : InviteApiErrorCode.clientError;
-    return InviteApiException('$failureMessage: $error', code: code);
+    return InviteApiException(
+      '$failureMessage: $error',
+      code: code,
+      cause: error,
+    );
   }
 
   InviteApiException _requestFailed({
