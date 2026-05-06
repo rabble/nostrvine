@@ -137,7 +137,9 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           onChanged: _onSearchChanged,
         ),
         if (kDebugMode && !kIsWeb)
-          _DebugAudioPickerLauncher(onTap: () => AudioSelectionBottomSheet.show(context)),
+          _DebugAudioPickerLauncher(
+            onTap: () => AudioSelectionBottomSheet.show(context),
+          ),
         Expanded(child: _buildContent()),
       ],
     );
