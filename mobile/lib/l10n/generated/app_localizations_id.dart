@@ -6408,7 +6408,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Pilih segmen audio untuk videomu';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Komunitas';

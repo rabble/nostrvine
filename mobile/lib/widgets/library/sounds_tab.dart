@@ -13,6 +13,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:sound_service/sound_service.dart';
@@ -22,7 +23,9 @@ import 'package:sound_service/sound_service.dart';
 /// Shows sounds saved through the out-of-flow "Use Sound" actions. Editor
 /// selection remains inside the recording/editor flow.
 class SoundsTab extends ConsumerStatefulWidget {
-  const SoundsTab({super.key});
+  const SoundsTab({this.showAudioPicker, super.key});
+
+  final Future<AudioEvent?> Function(BuildContext context)? showAudioPicker;
 
   @override
   ConsumerState<SoundsTab> createState() => _SoundsTabState();
@@ -120,6 +123,32 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
     );
   }
 
+  Future<void> _onAddAudioTap() async {
+    await _stopPreview();
+    if (!mounted) return;
+
+    final selectedSound =
+        await (widget.showAudioPicker?.call(context) ??
+            AudioSelectionBottomSheet.show(context));
+    if (selectedSound == null || !mounted) return;
+
+    final result = await ref
+        .read(savedSoundsProvider.notifier)
+        .saveSound(selectedSound);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result == SavedSoundSaveResult.saved
+              ? context.l10n.soundsSavedToLibrary
+              : context.l10n.soundsAlreadySavedToLibrary,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   List<AudioEvent> _filterSounds(List<AudioEvent> sounds) {
     if (_searchQuery.isEmpty) return sounds;
     return sounds.where((sound) {
@@ -137,9 +166,7 @@ class _SoundsTabState extends ConsumerState<SoundsTab> {
           onChanged: _onSearchChanged,
         ),
         if (kDebugMode && !kIsWeb)
-          _DebugAudioPickerLauncher(
-            onTap: () => AudioSelectionBottomSheet.show(context),
-          ),
+          _DebugAudioPickerLauncher(onTap: _onAddAudioTap),
         Expanded(child: _buildContent()),
       ],
     );

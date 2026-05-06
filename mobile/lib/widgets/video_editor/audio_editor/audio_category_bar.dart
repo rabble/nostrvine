@@ -21,19 +21,14 @@ class AudioCategoryBar extends StatelessWidget {
         spacing: 8,
         children: [
           _Chip(
-            onTap: () => onSelect(.divine),
-            isSelected: category == .divine,
-            label: context.l10n.videoEditorAudioCategoryDivine,
-          ),
-          _Chip(
-            onTap: () => onSelect(.community),
-            isSelected: category == .community,
-            label: context.l10n.videoEditorAudioCategoryCommunity,
-          ),
-          _Chip(
             onTap: () => onSelect(.featured),
             isSelected: category == .featured,
             label: context.l10n.videoEditorAudioCategoryFeatured,
+          ),
+          _Chip(
+            onTap: () => onSelect(.divine),
+            isSelected: category == .divine,
+            label: context.l10n.videoEditorAudioCategoryDivine,
           ),
           _Chip(
             onTap: () => onSelect(.mySounds),
@@ -86,4 +81,4 @@ class _Chip extends StatelessWidget {
   }
 }
 
-enum AudioCategory { divine, community, featured, mySounds }
+enum AudioCategory { featured, divine, mySounds }

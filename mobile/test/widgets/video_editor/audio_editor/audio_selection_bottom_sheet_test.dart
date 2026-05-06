@@ -13,7 +13,6 @@ import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/sound_library_service.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
@@ -95,7 +94,7 @@ void main() {
         expect(find.byType(AudioSelectionBottomSheet), findsOneWidget);
       });
 
-      testWidgets('renders $AudioCategoryBar with all category chips', (
+      testWidgets('renders picker categories without broken community tab', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -106,32 +105,14 @@ void main() {
         final l10n = lookupAppLocalizations(const Locale('en'));
         expect(find.byType(AudioCategoryBar), findsOneWidget);
         expect(find.text(l10n.videoEditorAudioCategoryDivine), findsWidgets);
-        expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsWidgets);
+        expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsNothing);
         expect(find.text(l10n.videoEditorAudioCategoryFeatured), findsWidgets);
         expect(find.text(l10n.videoEditorAudioCategoryMySounds), findsWidgets);
       });
     });
 
-    group('Loading state', () {
-      testWidgets('renders $BrandedLoadingIndicator on community tab', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildWidget(trendingSoundsAsync: const AsyncValue.loading()),
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-
-        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
-      });
-    });
-
     group('Empty state', () {
-      testWidgets('renders empty state when no bundled sounds available', (
+      testWidgets('opens on featured sounds', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -139,15 +120,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        expect(
-          find.text(l10n.videoEditorAudioNoSoundsAvailableTitle),
-          findsOneWidget,
-        );
-        expect(find.byIcon(Icons.music_off), findsOneWidget);
+        expect(find.text('Wednesday'), findsOneWidget);
       });
 
-      testWidgets('renders featured sounds on featured tab', (
+      testWidgets('leaves featured list when OG Sounds tab is selected', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -156,10 +132,10 @@ void main() {
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.videoEditorAudioCategoryFeatured));
+        await tester.tap(find.text(l10n.videoEditorAudioCategoryDivine));
         await tester.pumpAndSettle();
 
-        expect(find.text('Wednesday'), findsOneWidget);
+        expect(find.text('Wednesday'), findsNothing);
       });
 
       testWidgets('renders saved sounds empty state on My Sounds tab', (
@@ -179,51 +155,8 @@ void main() {
       });
     });
 
-    group('Error state', () {
-      testWidgets('renders error state when community fails', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(
-            trendingSoundsAsync: AsyncValue.error(
-              Exception('network error'),
-              StackTrace.current,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
-        await tester.pumpAndSettle();
-
-        expect(
-          find.text(l10n.videoEditorAudioFailedToLoadTitle),
-          findsOneWidget,
-        );
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      });
-
-      testWidgets('renders retry button on error state', (tester) async {
-        await tester.pumpWidget(
-          buildWidget(
-            trendingSoundsAsync: AsyncValue.error(
-              Exception('network error'),
-              StackTrace.current,
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
-        await tester.pumpAndSettle();
-
-        expect(find.text(l10n.commonRetry), findsOneWidget);
-        expect(find.byType(ElevatedButton), findsOneWidget);
-      });
-    });
-
     group('Initial state', () {
-      testWidgets('renders no $AudioListTile while no sounds are loaded', (
+      testWidgets('renders featured $AudioListTile initially', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -231,7 +164,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(AudioListTile), findsNothing);
+        expect(find.byType(AudioListTile), findsOneWidget);
       });
 
       testWidgets('renders saved sounds on My Sounds tab', (tester) async {

@@ -6606,7 +6606,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alege segmentul audio pentru videoclipul tău';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Comunitate';

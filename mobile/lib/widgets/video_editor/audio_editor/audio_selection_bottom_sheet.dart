@@ -7,9 +7,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
@@ -87,7 +85,7 @@ class _AudioSelectionBottomSheetState
   final _audioService = AudioPlaybackService();
   String? _loadedSoundId;
   AudioEvent? _selectedItem;
-  AudioCategory _category = .divine;
+  AudioCategory _category = .featured;
 
   late final _tabController = TabController(
     length: AudioCategory.values.length,
@@ -238,7 +236,6 @@ class _AudioSelectionBottomSheetState
   @override
   Widget build(BuildContext context) {
     final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
-    final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
     final savedSounds = ref.watch(savedSoundsProvider);
 
     // Convert bundled VineSounds to AudioEvents
@@ -264,28 +261,14 @@ class _AudioSelectionBottomSheetState
                 children: [
                   _SoundsContent(
                     scrollController: widget.scrollController,
-                    sounds: bundledSounds,
+                    sounds: _featuredSounds,
                     selectedSound: _selectedItem,
                     audioService: _audioService,
                     onSelect: _selectSound,
                   ),
-                  nostrSoundsAsync.when(
-                    data: (nostrSounds) {
-                      return _SoundsContent(
-                        scrollController: widget.scrollController,
-                        sounds: nostrSounds,
-                        selectedSound: _selectedItem,
-                        audioService: _audioService,
-                        onSelect: _selectSound,
-                      );
-                    },
-                    loading: () =>
-                        const Center(child: BrandedLoadingIndicator()),
-                    error: (error, stack) => _ErrorState(error: error),
-                  ),
                   _SoundsContent(
                     scrollController: widget.scrollController,
-                    sounds: _featuredSounds,
+                    sounds: bundledSounds,
                     selectedSound: _selectedItem,
                     audioService: _audioService,
                     onSelect: _selectSound,
@@ -425,56 +408,6 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ErrorState extends ConsumerWidget {
-  const _ErrorState({required this.error});
-
-  final Object error;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
-            const SizedBox(height: 16),
-            Text(
-              context.l10n.videoEditorAudioFailedToLoadTitle,
-              style: VineTheme.bodyLargeFont(),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-              textAlign: TextAlign.center,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                ref.invalidate(trendingSoundsProvider);
-              },
-              icon: const Icon(Icons.refresh),
-              label: Text(context.l10n.commonRetry),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
-                foregroundColor: VineTheme.backgroundColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -6192,7 +6192,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => '커뮤니티';

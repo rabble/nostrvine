@@ -6587,7 +6587,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wybierz fragment audio dla swojego filmu';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Społeczność';

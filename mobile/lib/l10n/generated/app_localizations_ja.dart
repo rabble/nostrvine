@@ -6169,7 +6169,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '動画に使うオーディオ範囲を選択';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'コミュニティ';

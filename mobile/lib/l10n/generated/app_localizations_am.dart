@@ -6303,7 +6303,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => 'ለቪዲዮዎ የድምጽ ክፍሉን ይምረጡ';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'ማህበረሰብ';

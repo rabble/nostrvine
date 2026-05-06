@@ -6409,7 +6409,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Videon için ses bölümünü seç';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Topluluk';

@@ -39,7 +39,10 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
     });
 
-    Future<void> pumpSoundsTab(WidgetTester tester) async {
+    Future<void> pumpSoundsTab(
+      WidgetTester tester, {
+      Future<AudioEvent?> Function(BuildContext)? showAudioPicker,
+    }) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -49,7 +52,9 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: VineTheme.theme,
-            home: const Scaffold(body: SoundsTab()),
+            home: Scaffold(
+              body: SoundsTab(showAudioPicker: showAudioPicker),
+            ),
           ),
         ),
       );
@@ -81,6 +86,22 @@ void main() {
 
       expect(find.text('Drum Loop'), findsOneWidget);
       expect(find.text('Piano Loop'), findsNothing);
+    });
+
+    testWidgets('saves sound selected from Add audio picker', (tester) async {
+      await pumpSoundsTab(
+        tester,
+        showAudioPicker: (_) async =>
+            _sound(id: 'wednesday', title: 'Wednesday'),
+      );
+
+      await tester.tap(find.text('Add audio'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Wednesday'), findsOneWidget);
+
+      final savedSounds = SavedSoundsService(sharedPreferences).loadSounds();
+      expect(savedSounds.map((sound) => sound.title), contains('Wednesday'));
     });
 
     testWidgets('shows empty state when no sounds have been saved', (
