@@ -217,7 +217,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             children: [
               // Author info and description (bottom-left)
               PositionedDirectional(
-                bottom: 16 + safeAreaBottom,
+                bottom: 20 + safeAreaBottom,
                 start: 16,
                 end: 80,
                 child: _AuthorInfoSection(
@@ -228,7 +228,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
               ),
               // Action buttons column (bottom-right)
               PositionedDirectional(
-                bottom: 16 + safeAreaBottom,
+                bottom: 20 + safeAreaBottom,
                 end: 16,
                 child: _ActionButtons(
                   video: video,
