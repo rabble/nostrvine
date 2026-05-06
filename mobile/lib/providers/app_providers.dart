@@ -171,6 +171,9 @@ final collaboratorResponseServiceProvider =
       return CollaboratorResponseService(
         authService: ref.watch(authServiceProvider),
         nostrClient: ref.watch(nostrServiceProvider),
+        loadSourceVideo: ref
+            .watch(videosRepositoryProvider)
+            .fetchVideoWithStatsForRouteId,
       );
     });
 

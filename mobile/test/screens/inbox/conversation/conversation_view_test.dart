@@ -15,7 +15,9 @@ import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 
+import '../../../helpers/go_router.dart';
 import '../../../helpers/test_provider_overrides.dart';
 
 class _MockConversationBloc
@@ -79,7 +81,11 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    Widget buildSubject({ConversationState? state, UserProfile? otherProfile}) {
+    Widget buildSubject({
+      ConversationState? state,
+      UserProfile? otherProfile,
+      MockGoRouter? goRouter,
+    }) {
       final effectiveState = state ?? const ConversationState();
       whenListen(
         mockBloc,
@@ -87,7 +93,7 @@ void main() {
         initialState: effectiveState,
       );
 
-      return testMaterialApp(
+      final app = testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
           fetchUserProfileProvider(
@@ -104,6 +110,9 @@ void main() {
           ),
         ),
       );
+      return goRouter == null
+          ? app
+          : MockGoRouterProvider(goRouter: goRouter, child: app);
     }
 
     group('renders', () {
@@ -254,6 +263,58 @@ void main() {
 
           verify(
             () => mockInviteActionsCubit.acceptInvite(any()),
+          ).called(1);
+        },
+      );
+
+      testWidgets(
+        'opens collaborator invite video when card is tapped',
+        (tester) async {
+          final mockGoRouter = MockGoRouter();
+          when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
+
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
+              ['title', 'Skate loop'],
+            ],
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+              goRouter: mockGoRouter,
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.byType(CollaboratorInviteCard));
+          await tester.pump();
+
+          verify(
+            () => mockGoRouter.push(
+              VideoDetailScreen.pathForId(
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:skate-loop',
+              ),
+            ),
           ).called(1);
         },
       );

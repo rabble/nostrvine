@@ -1,11 +1,11 @@
-// ABOUTME: Tests public collaborator acceptance response publishing.
-// ABOUTME: Verifies kind 34238 acceptance events match Funnelcake semantics.
+// ABOUTME: Tests collaborator acceptance publishing.
+// ABOUTME: Verifies accept mirrors Connect by publishing an accepter-owned video copy.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/constants/collaboration_event_kinds.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
@@ -27,6 +27,21 @@ void main() {
   late _MockNostrClient nostrClient;
   late CollaboratorResponseService service;
 
+  final sourceVideo = VideoEvent(
+    id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+    pubkey: creatorPubkey,
+    createdAt: 1700000000,
+    content: 'A collab video',
+    timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+    title: 'Collab Video',
+    nostrEventTags: const [
+      ['d', 'video-d-tag'],
+      ['title', 'Collab Video'],
+      ['p', collaboratorPubkey, 'wss://relay.divine.video', 'collaborator'],
+      ['url', 'https://media.divine.video/video.mp4'],
+    ],
+  );
+
   const invite = CollaboratorInvite(
     messageId: 'message-id',
     videoAddress: videoAddress,
@@ -44,13 +59,15 @@ void main() {
   setUp(() {
     authService = _MockAuthService();
     nostrClient = _MockNostrClient();
+    when(() => authService.currentPublicKeyHex).thenReturn(collaboratorPubkey);
     service = CollaboratorResponseService(
       authService: authService,
       nostrClient: nostrClient,
+      loadSourceVideo: (_) async => sourceVideo,
     );
   });
 
-  test('publishes public collaborator acceptance event', () async {
+  test('publishes accepter-owned collaborator video copy', () async {
     late Event signedEvent;
     when(
       () => authService.createAndSignEvent(
@@ -62,9 +79,9 @@ void main() {
       final tags = invocation.namedArguments[#tags] as List<List<String>>;
       signedEvent = Event(
         collaboratorPubkey,
-        kindCollabResponse,
+        34236,
         tags,
-        '',
+        'A collab video',
       );
       return signedEvent;
     });
@@ -85,52 +102,82 @@ void main() {
       ),
     );
 
-    expect(verification.captured[0], kindCollabResponse);
-    expect(verification.captured[1], '');
+    expect(verification.captured[0], 34236);
+    expect(verification.captured[1], 'A collab video');
     expect(verification.captured[2], [
-      ['d', videoAddress],
-      ['a', videoAddress, 'wss://relay.divine.video', 'root'],
-      ['p', creatorPubkey],
-      ['role', 'Collaborator'],
-      ['status', 'accepted'],
+      ['d', 'video-d-tag'],
+      ['title', 'Collab Video'],
+      ['url', 'https://media.divine.video/video.mp4'],
+      ['p', creatorPubkey, '', 'collaborator'],
+      [
+        'e',
+        'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        '',
+        'source',
+      ],
+      ['a', videoAddress, 'wss://relay.divine.video', 'source'],
     ]);
     verify(() => nostrClient.publishEvent(signedEvent)).called(1);
   });
 
-  test('uses default relay hint when invite has none', () async {
-    late List<List<String>> capturedTags;
-    final inviteWithoutRelay = CollaboratorInvite(
-      messageId: invite.messageId,
-      videoAddress: invite.videoAddress,
-      videoKind: invite.videoKind,
-      creatorPubkey: invite.creatorPubkey,
-      videoDTag: invite.videoDTag,
-      role: invite.role,
+  test(
+    'uses default relay hint for source address when invite has none',
+    () async {
+      late List<List<String>> capturedTags;
+      final inviteWithoutRelay = CollaboratorInvite(
+        messageId: invite.messageId,
+        videoAddress: invite.videoAddress,
+        videoKind: invite.videoKind,
+        creatorPubkey: invite.creatorPubkey,
+        videoDTag: invite.videoDTag,
+        role: invite.role,
+      );
+
+      when(
+        () => authService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
+        return Event(collaboratorPubkey, 34236, capturedTags, 'A collab video');
+      });
+      when(() => nostrClient.publishEvent(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.single as Event,
+      );
+
+      final result = await service.acceptInvite(inviteWithoutRelay);
+
+      expect(result.success, isTrue);
+      expect(capturedTags.last, [
+        'a',
+        videoAddress,
+        'wss://relay.divine.video',
+        'source',
+      ]);
+    },
+  );
+
+  test('returns failure when source video cannot be loaded', () async {
+    service = CollaboratorResponseService(
+      authService: authService,
+      nostrClient: nostrClient,
+      loadSourceVideo: (_) async => null,
     );
 
-    when(
+    final result = await service.acceptInvite(invite);
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('source video'));
+    verifyNever(
       () => authService.createAndSignEvent(
         kind: any(named: 'kind'),
         content: any(named: 'content'),
         tags: any(named: 'tags'),
       ),
-    ).thenAnswer((invocation) async {
-      capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
-      return Event(collaboratorPubkey, kindCollabResponse, capturedTags, '');
-    });
-    when(() => nostrClient.publishEvent(any())).thenAnswer(
-      (invocation) async => invocation.positionalArguments.single as Event,
     );
-
-    final result = await service.acceptInvite(inviteWithoutRelay);
-
-    expect(result.success, isTrue);
-    expect(capturedTags[1], [
-      'a',
-      videoAddress,
-      'wss://relay.divine.video',
-      'root',
-    ]);
+    verifyNever(() => nostrClient.publishEvent(any()));
   });
 
   test('returns failure when signing fails', () async {
