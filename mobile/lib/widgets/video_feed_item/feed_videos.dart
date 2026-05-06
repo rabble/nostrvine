@@ -724,8 +724,6 @@ class _SubtitleLayer extends ConsumerWidget {
 
 /// Shows [VideoLoadingPlaceholder] initially.
 ///
-/// Shows [VideoLoadingPlaceholder] initially.
-///
 /// If the video is still loading after the moderation-check delay, the
 /// moderation API is queried via [FeedLoadingModerationCubit]. Cached
 /// videos load immediately and never reach the delay, so no unnecessary
