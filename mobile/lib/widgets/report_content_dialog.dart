@@ -8,6 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -22,23 +23,34 @@ class ReportContentDialog extends ConsumerStatefulWidget {
     required this.video,
     super.key,
     this.isFromShareMenu = false,
+    this.draggableController,
   });
 
   final VideoEvent video;
   final bool isFromShareMenu;
+
+  /// Optional controller used to programmatically expand the bottom sheet
+  /// to full height when the "Other" reason is selected (so the details
+  /// field is reachable above the keyboard).
+  final DraggableScrollableController? draggableController;
 
   static Future<void> show(
     BuildContext context, {
     required VideoEvent video,
     bool isFromShareMenu = false,
   }) {
-    return VineBottomSheet.show<void>(
-      context: context,
+    final controller = DraggableScrollableController();
+    return context.showVideoPausingVineBottomSheet<void>(
       initialChildSize: 0.85,
       maxChildSize: 0.95,
       minChildSize: 0.5,
       title: Text(context.l10n.reportTitle),
-      body: ReportContentDialog(video: video, isFromShareMenu: isFromShareMenu),
+      draggableController: controller,
+      body: ReportContentDialog(
+        video: video,
+        isFromShareMenu: isFromShareMenu,
+        draggableController: controller,
+      ),
     );
   }
 
@@ -50,13 +62,64 @@ class ReportContentDialog extends ConsumerStatefulWidget {
 class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   ContentFilterReason? _selectedReason;
   final TextEditingController _detailsController = TextEditingController();
+  final FocusNode _detailsFocusNode = FocusNode();
+  final GlobalKey _detailsFieldKey = GlobalKey();
+  final GlobalKey _otherCardKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
   bool _isSubmitting = false;
+  bool _scrollWhenKeyboardOpens = false;
+  double _previousViewInsetsBottom = 0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final currentBottom = MediaQuery.viewInsetsOf(context).bottom;
+    if (_scrollWhenKeyboardOpens &&
+        currentBottom > _previousViewInsetsBottom &&
+        currentBottom > 100) {
+      _scrollWhenKeyboardOpens = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final ctx = _otherCardKey.currentContext;
+        if (ctx == null) return;
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      });
+    }
+    _previousViewInsetsBottom = currentBottom;
+  }
+
+  void _onReasonSelected(ContentFilterReason reason) {
+    final wasOther = _selectedReason == ContentFilterReason.other;
+    setState(() => _selectedReason = reason);
+
+    if (reason == ContentFilterReason.other && !wasOther) {
+      final controller = widget.draggableController;
+      if (controller != null && controller.isAttached) {
+        controller.animateTo(
+          0.95,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+        );
+      }
+      _scrollWhenKeyboardOpens = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _detailsFocusNode.requestFocus();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     return SingleChildScrollView(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 24),
+      controller: _scrollController,
+      padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 24 + keyboardInset),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -73,28 +136,51 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           const SizedBox(height: 16),
           ...ContentFilterReason.values.map(
             (reason) => Padding(
+              key: reason == ContentFilterReason.other ? _otherCardKey : null,
               padding: const EdgeInsets.only(bottom: 8),
               child: _ReasonCard(
                 title: _getReasonTitle(reason),
                 subtitle: _getReasonSubtitle(reason),
                 isSelected: _selectedReason == reason,
-                onTap: () => setState(() => _selectedReason = reason),
+                onTap: () => _onReasonSelected(reason),
               ),
             ),
           ),
           if (_selectedReason == ContentFilterReason.other) ...[
             const SizedBox(height: 4),
-            TextField(
-              controller: _detailsController,
-              enableInteractiveSelection: true,
-              style: VineTheme.bodyMediumFont(),
-              decoration: InputDecoration(
-                labelText: l10n.reportDetailsRequired,
-                labelStyle: VineTheme.bodyMediumFont(
-                  color: VineTheme.onSurfaceMuted,
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
+                  children: [
+                    Text(
+                      l10n.reportDetailsRequired,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.vineGreen,
+                      ),
+                    ),
+                    TextField(
+                      key: _detailsFieldKey,
+                      controller: _detailsController,
+                      focusNode: _detailsFocusNode,
+                      enableInteractiveSelection: true,
+                      style: VineTheme.bodyLargeFont(),
+                      minLines: 3,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        isCollapsed: true,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              maxLines: 3,
             ),
           ],
           const SizedBox(height: 24),
@@ -104,7 +190,6 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             onPressed: _isSubmitting ? null : _handleSubmitReport,
             isLoading: _isSubmitting,
           ),
-          SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
         ],
       ),
     );
@@ -268,6 +353,8 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   @override
   void dispose() {
     _detailsController.dispose();
+    _detailsFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 }
@@ -302,7 +389,7 @@ class _ReasonCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: VineTheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
               color: isSelected
                   ? VineTheme.vineGreen
@@ -358,14 +445,10 @@ class _RadioIndicator extends StatelessWidget {
         ),
         child: isSelected
             ? const Center(
-                child: SizedBox.square(
-                  dimension: 8,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: VineTheme.whiteText,
-                    ),
-                  ),
+                child: DivineIcon(
+                  icon: DivineIconName.check,
+                  size: 14,
+                  color: VineTheme.surfaceBackground,
                 ),
               )
             : null,

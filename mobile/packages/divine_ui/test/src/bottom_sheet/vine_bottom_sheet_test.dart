@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VineBottomSheet component
 // ABOUTME: Verifies structure and behavior of the bottom sheet
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -659,6 +661,93 @@ void main() {
           // Wrapper wraps the real sheet content.
           expect(find.byType(_WrapperMarker), findsOneWidget);
           expect(find.text('Body'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'draggableController animates the sheet between sizes '
+        '(tapOutsideToDismiss path)',
+        (tester) async {
+          final controller = DraggableScrollableController();
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        initialChildSize: 0.4,
+                        minChildSize: 0.2,
+                        maxChildSize: 0.95,
+                        title: const Text('Resizable'),
+                        children: const [
+                          SizedBox(height: 200, child: Text('Body')),
+                        ],
+                        draggableController: controller,
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          expect(controller.isAttached, isTrue);
+          expect(controller.size, closeTo(0.4, 0.001));
+
+          unawaited(
+            controller.animateTo(
+              0.95,
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.linear,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(controller.size, closeTo(0.95, 0.001));
+        },
+      );
+
+      testWidgets(
+        'draggableController is forwarded when tapOutsideToDismiss is false',
+        (tester) async {
+          final controller = DraggableScrollableController();
+          addTearDown(controller.dispose);
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () async {
+                      await VineBottomSheet.show<void>(
+                        context: context,
+                        tapOutsideToDismiss: false,
+                        initialChildSize: 0.5,
+                        title: const Text('Resizable'),
+                        children: const [Text('Body')],
+                        draggableController: controller,
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.tap(find.text('Open'));
+          await tester.pumpAndSettle();
+
+          expect(controller.isAttached, isTrue);
+          expect(controller.size, closeTo(0.5, 0.001));
         },
       );
 
