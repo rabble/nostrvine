@@ -2232,6 +2232,9 @@
   "routeNoVideosToDisplay": "No videos to display",
   "routeInvalidProfileId": "Invalid profile ID",
   "routeUnknownPath": "That page isn’t in the app.",
+  "@routeUnknownPath": {
+    "description": "Body text when navigation hits an unknown route (GoRouter.errorBuilder)."
+  },
   "routeDefaultListName": "List",
   "supportTitle": "Support Center",
   "supportContactSupport": "Contact Support",

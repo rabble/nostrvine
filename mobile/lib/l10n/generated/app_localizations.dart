@@ -7526,7 +7526,7 @@ abstract class AppLocalizations {
   /// **'Invalid profile ID'**
   String get routeInvalidProfileId;
 
-  /// No description provided for @routeUnknownPath.
+  /// Body text when navigation hits an unknown route (GoRouter.errorBuilder).
   ///
   /// In en, this message translates to:
   /// **'That page isn’t in the app.'**
