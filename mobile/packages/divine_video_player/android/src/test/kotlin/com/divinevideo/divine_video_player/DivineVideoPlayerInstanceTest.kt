@@ -3,10 +3,12 @@ package com.divinevideo.divine_video_player
 import android.content.Context
 import android.os.Handler
 import android.view.Surface
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
+import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
 import io.mockk.clearMocks
 import io.mockk.every
@@ -257,5 +259,74 @@ class DivineVideoPlayerInstanceTest {
         listener.onMediaItemTransition(null, Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED)
 
         verify(exactly = 0) { mockPlayer.setVideoSurface(any()) }
+    }
+
+    // -- setClips async completion contract --
+
+    private fun setClipsCall(uri: String = "file:///tmp/a.mp4"): MethodCall =
+        MethodCall(
+            "setClips",
+            mapOf(
+                "clips" to listOf(
+                    mapOf("uri" to uri, "startMs" to 0, "endMs" to 1000),
+                ),
+            ),
+        )
+
+    @Test
+    fun `setClips holds Dart result until STATE_READY then completes with success`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(setClipsCall(), result)
+
+        // Result must NOT have completed yet — STATE_READY hasn't fired.
+        verify(exactly = 0) { result.success(any()) }
+        verify(exactly = 0) { result.error(any(), any(), any()) }
+
+        listener.onPlaybackStateChanged(Player.STATE_READY)
+
+        verify(exactly = 1) { result.success(null) }
+    }
+
+    @Test
+    fun `onPlayerError completes pending setClips result with error`() {
+        val listener = capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        val error = mockk<PlaybackException>(relaxed = true)
+        every { error.message } returns "boom"
+        listener.onPlayerError(error)
+
+        verify(exactly = 1) { result.error("PLAYER_ERROR", "boom", null) }
+        verify(exactly = 0) { result.success(any()) }
+    }
+
+    @Test
+    fun `superseding setClips completes the previous result with CANCELLED`() {
+        capturePlayerListener()
+        val first = mockk<MethodChannel.Result>(relaxed = true)
+        val second = mockk<MethodChannel.Result>(relaxed = true)
+
+        instance.onMethodCall(setClipsCall("file:///tmp/a.mp4"), first)
+        instance.onMethodCall(setClipsCall("file:///tmp/b.mp4"), second)
+
+        verify(exactly = 1) {
+            first.error("CANCELLED", "Superseded by newer setClips call", null)
+        }
+        verify(exactly = 0) { first.success(any()) }
+        verify(exactly = 0) { second.success(any()) }
+    }
+
+    @Test
+    fun `dispose completes pending setClips result so Dart is not left hanging`() {
+        capturePlayerListener()
+        val result = mockk<MethodChannel.Result>(relaxed = true)
+        instance.onMethodCall(setClipsCall(), result)
+
+        instance.dispose()
+
+        verify(exactly = 1) { result.success(null) }
     }
 }

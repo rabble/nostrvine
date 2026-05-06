@@ -495,7 +495,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// state and combines them with the source [AudioEvent] from the
   /// Riverpod provider (URL, asset path, start offset).
   Future<void> _syncAudioTracks() async {
-    if (_videoPlayer == null || !_videoPlayer!.isInitialized) return;
+    if (!_isPlayerInitialized) return;
 
     final overlayState = context.read<TimelineOverlayBloc>().state;
     final audioEvents = overlayState.audioTracks;

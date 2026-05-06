@@ -110,9 +110,8 @@ internal class DivineVideoPlayerInstance(
      * Pending result for an async setClips call.
      * Held until ExoPlayer transitions to STATE_READY (or reports an error),
      * so `await setClips()` on the Dart side only resolves once the decoder
-     * is truly ready. This replaces the `Future.delayed` workarounds in the
-     * Dart canvas and ensures correctness on OEM decoders (e.g. Mediatek)
-     * that take variable time to reach STATE_READY after prepare().
+     * is truly ready. Required for OEM decoders (e.g. Mediatek) that take
+     * variable time to reach STATE_READY after prepare().
      */
     private var pendingSetClipsResult: MethodChannel.Result? = null
 
@@ -297,9 +296,15 @@ internal class DivineVideoPlayerInstance(
 
         // Hold the Dart result until STATE_READY so `await setClips()` only
         // resolves once the decoder is truly ready. Cancel any previous
-        // in-flight setClips (shouldn't happen, but defensive).
+        // in-flight setClips (shouldn't happen, but defensive) — surface as
+        // an error so the superseded caller doesn't believe the player is
+        // ready for its clips.
         mainHandler.removeCallbacks(setClipsTimeoutRunnable)
-        pendingSetClipsResult?.success(null)
+        pendingSetClipsResult?.error(
+            "CANCELLED",
+            "Superseded by newer setClips call",
+            null,
+        )
         pendingSetClipsResult = result
         // 10 s safety net — if STATE_READY never fires (e.g. corrupt file),
         // Dart is unblocked rather than hanging forever.
