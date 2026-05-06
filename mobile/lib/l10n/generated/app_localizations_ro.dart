@@ -4059,6 +4059,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.';
 
   @override
+  String get feedModeForYou => 'Pentru tine';
+
+  @override
+  String get feedModeNew => 'Nou';
+
+  @override
+  String get feedModeFollowing => 'Urmăresc';
+
+  @override
   String get feedForYouEmpty =>
       'Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.';
 

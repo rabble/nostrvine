@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
 /// and allows users to switch between modes via a bottom sheet.
@@ -20,13 +21,6 @@ class FeedModeSwitch extends StatelessWidget {
   /// When true, displays a static "For You" label without requiring
   /// [VideoFeedBloc] or feature-flag providers in the widget tree.
   final bool isPreviewMode;
-
-  /// Labels for each feed mode displayed in the UI.
-  static const Map<FeedMode, String> feedModeLabels = {
-    FeedMode.forYou: 'For You',
-    FeedMode.latest: 'New',
-    FeedMode.following: 'Following',
-  };
 
   @override
   Widget build(BuildContext context) {
@@ -55,15 +49,14 @@ class FeedModeSwitch extends StatelessWidget {
             ),
             child: isPreviewMode
                 ? _FeedModeContent(
-                    label:
-                        feedModeLabels[FeedMode.forYou] ?? FeedMode.forYou.name,
+                    label: _labelForMode(FeedMode.forYou, context.l10n),
                   )
                 : BlocBuilder<VideoFeedBloc, VideoFeedState>(
                     buildWhen: (prev, curr) => prev.mode != curr.mode,
                     builder: (context, state) => _FeedModeContent(
                       onTap: () =>
                           _showFeedModeBottomSheet(context, state.mode),
-                      label: feedModeLabels[state.mode] ?? state.mode.name,
+                      label: _labelForMode(state.mode, context.l10n),
                     ),
                   ),
           ),
@@ -76,14 +69,21 @@ class FeedModeSwitch extends StatelessWidget {
     BuildContext context,
     FeedMode currentMode,
   ) async {
+    final l10n = context.l10n;
     final selected = await VineBottomSheetSelectionMenu.show(
       context: context,
       selectedValue: currentMode.name,
-      options: const [
-        VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
-        VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
+      options: [
         VineBottomSheetSelectionOptionData(
-          label: 'Following',
+          label: l10n.feedModeForYou,
+          value: 'forYou',
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeNew,
+          value: 'latest',
+        ),
+        VineBottomSheetSelectionOptionData(
+          label: l10n.feedModeFollowing,
           value: 'following',
         ),
       ],
@@ -95,6 +95,12 @@ class FeedModeSwitch extends StatelessWidget {
     }
   }
 }
+
+String _labelForMode(FeedMode mode, AppLocalizations l10n) => switch (mode) {
+  FeedMode.forYou => l10n.feedModeForYou,
+  FeedMode.latest => l10n.feedModeNew,
+  FeedMode.following => l10n.feedModeFollowing,
+};
 
 /// Shared row rendering — label + caret — used for both the live
 /// [BlocBuilder]-driven label and the static preview-mode label.
@@ -112,6 +118,7 @@ class _FeedModeContent extends StatelessWidget {
           label: 'Feed mode: $label',
           button: true,
           child: GestureDetector(
+            behavior: .opaque,
             onTap: onTap,
             child: Row(
               mainAxisSize: MainAxisSize.min,

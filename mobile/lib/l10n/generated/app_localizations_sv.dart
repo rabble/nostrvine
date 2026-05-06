@@ -3934,6 +3934,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga följda användare.\nFölj någon för att se deras videor här.';
 
   @override
+  String get feedModeForYou => 'För dig';
+
+  @override
+  String get feedModeNew => 'Nytt';
+
+  @override
+  String get feedModeFollowing => 'Följer';
+
+  @override
   String get feedForYouEmpty =>
       'Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.';
 

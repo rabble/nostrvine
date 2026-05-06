@@ -3982,6 +3982,15 @@ class AppLocalizationsBg extends AppLocalizations {
       'Още не следваш никого.\nПоследвай някого, за да виждаш видеата му тук.';
 
   @override
+  String get feedModeForYou => 'За теб';
+
+  @override
+  String get feedModeNew => 'Ново';
+
+  @override
+  String get feedModeFollowing => 'Следвани';
+
+  @override
   String get feedForYouEmpty =>
       'Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.';
 

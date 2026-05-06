@@ -3986,6 +3986,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine abonnierten Nutzer.\nFolge jemandem, um hier seine Videos zu sehen.';
 
   @override
+  String get feedModeForYou => 'Für dich';
+
+  @override
+  String get feedModeNew => 'Neu';
+
+  @override
+  String get feedModeFollowing => 'Abonniert';
+
+  @override
   String get feedForYouEmpty =>
       'Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creator:innen, um ihn zu personalisieren.';
 

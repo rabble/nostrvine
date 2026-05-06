@@ -4044,6 +4044,15 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie obserwujesz nikogo.\nZacznij obserwować, żeby zobaczyć ich filmy tutaj.';
 
   @override
+  String get feedModeForYou => 'Dla ciebie';
+
+  @override
+  String get feedModeNew => 'Nowe';
+
+  @override
+  String get feedModeFollowing => 'Obserwowane';
+
+  @override
   String get feedForYouEmpty =>
       'Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.';
 

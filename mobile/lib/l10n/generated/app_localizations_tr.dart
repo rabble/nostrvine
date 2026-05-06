@@ -3917,6 +3917,15 @@ class AppLocalizationsTr extends AppLocalizations {
       'Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.';
 
   @override
+  String get feedModeForYou => 'Senin için';
+
+  @override
+  String get feedModeNew => 'Yeni';
+
+  @override
+  String get feedModeFollowing => 'Takip';
+
+  @override
   String get feedForYouEmpty =>
       'Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.';
 

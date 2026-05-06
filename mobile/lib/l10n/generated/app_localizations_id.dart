@@ -3907,6 +3907,15 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.';
 
   @override
+  String get feedModeForYou => 'Untukmu';
+
+  @override
+  String get feedModeNew => 'Baru';
+
+  @override
+  String get feedModeFollowing => 'Mengikuti';
+
+  @override
   String get feedForYouEmpty =>
       'Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
 

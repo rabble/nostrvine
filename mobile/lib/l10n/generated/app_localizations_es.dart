@@ -3982,6 +3982,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Todavía no seguís a nadie.\nSeguí a alguien para ver sus videos acá.';
 
   @override
+  String get feedModeForYou => 'Para ti';
+
+  @override
+  String get feedModeNew => 'Nuevo';
+
+  @override
+  String get feedModeFollowing => 'Siguiendo';
+
+  @override
   String get feedForYouEmpty =>
       'Tu feed Para ti está vacío.\nExplora videos y sigue a creadores para personalizarlo.';
 

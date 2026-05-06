@@ -6906,6 +6906,24 @@ abstract class AppLocalizations {
   /// **'No followed users.\nFollow someone to see their videos here.'**
   String get feedNoFollowedUsers;
 
+  /// No description provided for @feedModeForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For You'**
+  String get feedModeForYou;
+
+  /// No description provided for @feedModeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get feedModeNew;
+
+  /// No description provided for @feedModeFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedModeFollowing;
+
   /// No description provided for @feedForYouEmpty.
   ///
   /// In en, this message translates to:

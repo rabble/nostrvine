@@ -3850,6 +3850,15 @@ class AppLocalizationsAm extends AppLocalizations {
       'ምንም የተከተሉት ተጠቃሚዎች የሉም።\nቪዲዮዎቻቸውን እዚህ ለማየት አንድ ሰው ይከተሉ።';
 
   @override
+  String get feedModeForYou => 'ለእርስዎ';
+
+  @override
+  String get feedModeNew => 'አዲስ';
+
+  @override
+  String get feedModeFollowing => 'እየተከተሉ';
+
+  @override
   String get feedForYouEmpty =>
       'የእርስዎ ለአንተ ምግብ ባዶ ነው።\nቪዲዮዎችን ያስሱ እና ለመቅረጽ ፈጣሪዎችን ይከተሉ።';
 

@@ -3951,6 +3951,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen gevolgde gebruikers.\nVolg iemand om hun video\'s hier te zien.';
 
   @override
+  String get feedModeForYou => 'Voor jou';
+
+  @override
+  String get feedModeNew => 'Nieuw';
+
+  @override
+  String get feedModeFollowing => 'Volgend';
+
+  @override
   String get feedForYouEmpty =>
       'Je Voor jou-feed is leeg.\nVerken video\'s en volg makers om hem vorm te geven.';
 

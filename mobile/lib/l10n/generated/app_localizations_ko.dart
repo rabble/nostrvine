@@ -3758,6 +3758,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedNoFollowedUsers => '팔로우한 사용자가 없어요.\n누군가를 팔로우하면 여기에 영상이 표시돼요.';
 
   @override
+  String get feedModeForYou => '추천';
+
+  @override
+  String get feedModeNew => '최신';
+
+  @override
+  String get feedModeFollowing => '팔로잉';
+
+  @override
   String get feedForYouEmpty =>
       '추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.';
 

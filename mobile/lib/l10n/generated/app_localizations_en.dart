@@ -3938,6 +3938,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'No followed users.\nFollow someone to see their videos here.';
 
   @override
+  String get feedModeForYou => 'For You';
+
+  @override
+  String get feedModeNew => 'New';
+
+  @override
+  String get feedModeFollowing => 'Following';
+
+  @override
   String get feedForYouEmpty =>
       'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
 

@@ -3743,6 +3743,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedNoFollowedUsers => 'まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。';
 
   @override
+  String get feedModeForYou => 'おすすめ';
+
+  @override
+  String get feedModeNew => '新着';
+
+  @override
+  String get feedModeFollowing => 'フォロー中';
+
+  @override
   String get feedForYouEmpty =>
       'おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。';
 

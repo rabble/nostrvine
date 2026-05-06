@@ -3962,6 +3962,15 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum usuário seguido.\nSiga alguém para ver os vídeos dessa pessoa aqui.';
 
   @override
+  String get feedModeForYou => 'Para você';
+
+  @override
+  String get feedModeNew => 'Novo';
+
+  @override
+  String get feedModeFollowing => 'Seguindo';
+
+  @override
   String get feedForYouEmpty =>
       'Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.';
 
