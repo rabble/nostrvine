@@ -216,6 +216,22 @@ class _PopCountingObserver extends NavigatorObserver {
 
 void main() {
   group('PooledFullscreenVideoFeedScreen', () {
+    group('fullscreen video media alignment', () {
+      test('top-aligns contained square and landscape videos', () {
+        expect(
+          fullscreenVideoMediaAlignment(isPortrait: false),
+          Alignment.topCenter,
+        );
+      });
+
+      test('keeps portrait videos centered while they cover the viewport', () {
+        expect(
+          fullscreenVideoMediaAlignment(isPortrait: true),
+          Alignment.center,
+        );
+      });
+    });
+
     late MockFullscreenFeedBloc mockBloc;
     late MockVideoFeedController defaultController;
     late MockProfileRepository mockProfileRepository;
