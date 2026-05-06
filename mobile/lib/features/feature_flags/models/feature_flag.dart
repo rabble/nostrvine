@@ -60,7 +60,8 @@ enum FeatureFlag {
   feedAutoAdvance(
     'Feed Auto-Advance',
     'Automatically advance to the next video when the current one finishes',
-  );
+  )
+  ;
 
   const FeatureFlag(
     this.displayName,

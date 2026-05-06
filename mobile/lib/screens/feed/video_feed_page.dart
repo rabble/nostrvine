@@ -655,8 +655,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                           );
                           if (!_hasMarkedVideoReady && index == 0) {
                             _hasMarkedVideoReady = true;
-                            StartupPerformanceService.instance
-                                .markVideoReady();
+                            StartupPerformanceService.instance.markVideoReady();
                           }
                         },
                         onNearEnd: () {
