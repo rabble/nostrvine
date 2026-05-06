@@ -29,6 +29,16 @@ part 'profile_feed_provider.g.dart';
 /// Strategy: Try Funnelcake REST API first for better performance,
 /// fall back to Nostr subscription if unavailable.
 ///
+/// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+/// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+/// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+/// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+/// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+/// or stale figures while the API reflects current aggregates. When only Nostr
+/// data exists (no REST row, no cache backfill), relay values remain the sole
+/// source. [_mergeVideo] and [mergeRawTagsForVideoMerge] must stay aligned with
+/// this policy whenever merge logic changes.
+///
 /// Usage:
 /// ```dart
 /// final feed = ref.watch(profileFeedProvider(userId));
@@ -182,8 +192,11 @@ class ProfileFeed extends _$ProfileFeed {
     Map<String, String> primary,
     Map<String, String> secondary,
   ) {
-    // Preserve REST-only analytics tags like `views` while still letting the
-    // primary video win on collisions for actual event metadata.
+    // Spread order: secondary first, primary wins on duplicate keys. That keeps
+    // canonical event tags on the newer (primary) copy while still exposing
+    // secondary-only keys — important for REST-issued analytics such as
+    // `views` that Nostr events often omit. Do not invert without re-checking
+    // profile engagement parity with the home feed (#3384).
     return {...secondary, ...primary};
   }
 
@@ -986,6 +999,12 @@ class ProfileFeed extends _$ProfileFeed {
     return _withoutTombstones(merged);
   }
 
+  /// Merges two [VideoEvent]s for the same addressable video.
+  ///
+  /// Chooses the newer copy as [primary] (by [createdAt], then id). Engagement
+  /// fields and [mergeRawTagsForVideoMerge] must follow the class-level
+  /// **Engagement merge policy** so profile fullscreen matches Funnelcake-backed
+  /// counts from the home feed (#3384).
   VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {
     final incomingIsNewer =
         incoming.createdAt > existing.createdAt ||
