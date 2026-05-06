@@ -1108,8 +1108,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Редактиране на видео';
 
   @override
-  String get videoPlayerTapHint =>
-      'Докоснете за възпроизвеждане или пауза. Докоснете двукратно, за да харесате.';
+  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
 
   @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
