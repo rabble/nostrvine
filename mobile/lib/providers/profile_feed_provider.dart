@@ -15,6 +15,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_session_cache.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
+import 'package:openvine/utils/video_event_merge_utils.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -37,8 +38,9 @@ part 'profile_feed_provider.g.dart';
 /// or stale figures while the API reflects current aggregates. When only Nostr
 /// data exists (no REST row, no cache backfill), relay values remain the sole
 /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
-/// and [mergeRawTagsForVideoMerge] must stay aligned with this policy whenever
-/// merge logic changes.
+/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// Nostr enrichment) must stay aligned with this policy whenever merge logic
+/// changes.
 ///
 /// Usage:
 /// ```dart
@@ -198,36 +200,7 @@ class ProfileFeed extends _$ProfileFeed {
     // secondary-only keys — important for REST-issued analytics such as
     // `views` that Nostr events often omit. Do not invert without re-checking
     // profile engagement parity with the home feed (#3384).
-    final merged = {...secondary, ...primary};
-    // #3384: `views` feeds into [VideoEvent.totalLoops]. A newer relay copy can
-    // carry `0` or an empty value while the REST snapshot holds the API
-    // aggregate — take the higher non-negative parsed count.
-    return _mergeViewsTagPreferMax(merged, primary, secondary);
-  }
-
-  static Map<String, String> _mergeViewsTagPreferMax(
-    Map<String, String> merged,
-    Map<String, String> primary,
-    Map<String, String> secondary,
-  ) {
-    final p = _parseNonNegativeIntTag(primary['views']);
-    final s = _parseNonNegativeIntTag(secondary['views']);
-    if (p == null && s == null) return merged;
-    final m = math.max(p ?? 0, s ?? 0);
-    merged['views'] = m.toString();
-    return merged;
-  }
-
-  static int? _parseNonNegativeIntTag(String? raw) {
-    if (raw == null) return null;
-    final n = raw.replaceAll(',', '').trim();
-    if (n.isEmpty) return null;
-    final asInt = int.tryParse(n);
-    if (asInt != null) return asInt < 0 ? null : asInt;
-    final asDouble = double.tryParse(n);
-    if (asDouble == null) return null;
-    final rounded = asDouble.round();
-    return rounded < 0 ? null : rounded;
+    return mergeVideoRawTagsPrimaryWins(primary, secondary);
   }
 
   /// Combines two nullable engagement ints from relay vs REST duplicates.
@@ -236,8 +209,7 @@ class ProfileFeed extends _$ProfileFeed {
   /// Funnelcake aggregates (#3384). When both are null, returns null.
   @visibleForTesting
   static int? mergeProfileEngagementCount(int? primary, int? secondary) {
-    if (primary == null && secondary == null) return null;
-    return math.max(primary ?? 0, secondary ?? 0);
+    return mergeNullableEngagementMax(primary, secondary);
   }
 
   @visibleForTesting

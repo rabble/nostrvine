@@ -85,6 +85,42 @@ void main() {
       },
     );
 
+    test(
+      'uses higher views when Nostr carries zero and REST has aggregate (#3384)',
+      () async {
+        const pubkey =
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+        final nostrEvent = Event(
+          pubkey,
+          34236,
+          [
+            ['d', 'video-views-max'],
+            ['url', 'https://example.com/video-views-max.mp4'],
+            ['title', 'T'],
+            ['m', 'video/mp4'],
+            ['views', '0'],
+          ],
+          'c',
+          createdAt: 1704067200,
+        );
+        final restVideo = _restVideo(
+          id: nostrEvent.id,
+          extraTags: const {'views': '34'},
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nostrEvent]);
+
+        final enriched = await enrichVideosWithNostrTags([
+          restVideo,
+        ], nostrService: mockNostrClient);
+
+        expect(enriched.single.rawTags['views'], equals('34'));
+        expect(enriched.single.totalLoops, equals(34));
+      },
+    );
+
     test('Nostr-supplied tags override REST tags on key collision', () async {
       const pubkey =
           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
