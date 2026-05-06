@@ -52,7 +52,7 @@ void main() {
 
     test('preserves SocketException as cause', () {
       const cause = SocketException('Connection refused');
-      final exception = InviteApiException(
+      const exception = InviteApiException(
         'Network error',
         code: InviteApiErrorCode.clientNetworkError,
         cause: cause,
