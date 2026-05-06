@@ -458,6 +458,15 @@
       "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
       "sourceUrl": "https://freesound.org/people/Matio888/sounds/789329/",
       "tags": ["music", "uplifting", "energy", "positive", "freesound"]
+    },
+    {
+      "id": "new_zealand_state_highway_73",
+      "title": "New Zealand Road State Highway 73",
+      "assetPath": "assets/sounds/new-zealand-state-highway-73.mp3",
+      "durationMs": 9334,
+      "license": "Public Domain",
+      "sourceUrl": "https://www.youtube.com/shorts/kcEM8xNVyiU",
+      "tags": ["default", "short", "road", "new zealand", "travel"]
     }
   ]
 }

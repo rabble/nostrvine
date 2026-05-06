@@ -29,12 +29,12 @@ test('real manifest includes the bundled public domain short audio', () async {
     await manifestFile.readAsString(),
   );
 
-  final sound = sounds.singleWhere((s) => s.id == 'youtube_short_kcem8xnvyiU');
+  final sound = sounds.singleWhere((s) => s.id == 'new_zealand_state_highway_73');
 
-  expect(sound.title, equals('<final title>'));
+  expect(sound.title, equals('New Zealand Road State Highway 73'));
   expect(
     sound.assetPath,
-    equals('assets/sounds/youtube-short-kcem8xnvyiU.mp3'),
+    equals('assets/sounds/new-zealand-state-highway-73.mp3'),
   );
   expect(sound.duration.inMilliseconds, greaterThan(0));
   expect(sound.license, equals('Public Domain'));
@@ -54,12 +54,12 @@ Run from `mobile/`:
 flutter test test/services/sound_library_service_test.dart --plain-name "real manifest includes the bundled public domain short audio"
 ```
 
-Expected: FAIL because the manifest does not contain `youtube_short_kcem8xnvyiU`.
+Expected: FAIL because the manifest does not contain `new_zealand_state_highway_73`.
 
 ### Task 2: Extract and Add Asset
 
 **Files:**
-- Create: `mobile/assets/sounds/youtube-short-kcem8xnvyiU.mp3`
+- Create: `mobile/assets/sounds/new-zealand-state-highway-73.mp3`
 
 - [ ] **Step 1: Extract audio**
 
@@ -67,7 +67,7 @@ Use a downloader/extractor such as `yt-dlp` with `ffmpeg` available:
 
 ```bash
 yt-dlp -x --audio-format mp3 --audio-quality 0 \
-  -o 'mobile/assets/sounds/youtube-short-kcem8xnvyiU.%(ext)s' \
+  -o 'mobile/assets/sounds/new-zealand-state-highway-73.%(ext)s' \
   'https://www.youtube.com/shorts/kcEM8xNVyiU'
 ```
 
@@ -78,7 +78,7 @@ Run:
 ```bash
 ffprobe -v error -show_entries format=duration \
   -of default=noprint_wrappers=1:nokey=1 \
-  mobile/assets/sounds/youtube-short-kcem8xnvyiU.mp3
+  mobile/assets/sounds/new-zealand-state-highway-73.mp3
 ```
 
 Use the rounded millisecond duration in the manifest.
@@ -94,11 +94,11 @@ Insert one entry in the `sounds` array:
 
 ```json
 {
-  "id": "youtube_short_kcem8xnvyiU",
-  "title": "<final title>",
-  "assetPath": "assets/sounds/youtube-short-kcem8xnvyiU.mp3",
-  "durationMs": <duration_ms>,
-  "tags": ["default", "short", "<search tag>"],
+  "id": "new_zealand_state_highway_73",
+  "title": "New Zealand Road State Highway 73",
+  "assetPath": "assets/sounds/new-zealand-state-highway-73.mp3",
+  "durationMs": 9334,
+  "tags": ["default", "short", "road", "new zealand", "travel"],
   "license": "Public Domain",
   "sourceUrl": "https://www.youtube.com/shorts/kcEM8xNVyiU"
 }
@@ -146,6 +146,6 @@ git add docs/superpowers/specs/2026-05-06-default-short-audio-design.md \
   docs/superpowers/plans/2026-05-06-default-short-audio.md \
   mobile/test/services/sound_library_service_test.dart \
   mobile/assets/sounds/sounds_manifest.json \
-  mobile/assets/sounds/youtube-short-kcem8xnvyiU.mp3
+  mobile/assets/sounds/new-zealand-state-highway-73.mp3
 git commit -m "feat(audio): add bundled short default sound"
 ```

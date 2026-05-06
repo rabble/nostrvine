@@ -1,6 +1,8 @@
 // ABOUTME: Tests for SoundLibraryService - loads and searches bundled sounds
 // ABOUTME: Validates manifest loading, search, and custom sound import functionality
 
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/sound_library_service.dart';
@@ -37,6 +39,33 @@ void main() {
       expect(sounds[0].title, equals('What Are Those'));
       expect(sounds[1].artist, equals('Drew Gooden'));
     });
+
+    test(
+      'real manifest includes the bundled public domain short audio',
+      () async {
+        final manifestFile = File('assets/sounds/sounds_manifest.json');
+        final sounds = SoundLibraryService.parseManifest(
+          await manifestFile.readAsString(),
+        );
+
+        final sound = sounds.singleWhere(
+          (s) => s.id == 'new_zealand_state_highway_73',
+        );
+
+        expect(sound.title, equals('New Zealand Road State Highway 73'));
+        expect(
+          sound.assetPath,
+          equals('assets/sounds/new-zealand-state-highway-73.mp3'),
+        );
+        expect(sound.duration.inMilliseconds, greaterThan(0));
+        expect(sound.license, equals('Public Domain'));
+        expect(
+          sound.sourceUrl,
+          equals('https://www.youtube.com/shorts/kcEM8xNVyiU'),
+        );
+        expect(sound.tags, containsAll(<String>['default', 'short']));
+      },
+    );
 
     test('searchSounds filters by query', () {
       final sounds = [
