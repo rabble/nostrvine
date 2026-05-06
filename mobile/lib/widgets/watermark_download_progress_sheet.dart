@@ -240,6 +240,16 @@ class _WatermarkDownloadProgressSheetState
   Future<void> _openSettings() async {
     final permissionsService = widget.ref.read(permissionsServiceProvider);
     await permissionsService.openAppSettings();
+    // After returning from Settings, retry the download automatically.
+    // The user may have just granted the permission.
+    if (mounted) {
+      setState(() {
+        _result = null;
+        _stage = WatermarkDownloadStage.downloading;
+        _isProcessing = true;
+      });
+      _startDownload();
+    }
   }
 
   Future<void> _shareFile() async {
