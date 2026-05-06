@@ -839,9 +839,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     // Tier 2: Async remote search if <5 local results
     if (suggestions.length < 5 && _profileRepository != null) {
       try {
-        final remoteResults = await _profileRepository.searchUsers(
+        final remoteResults = await _profileRepository.searchUsersFromApi(
           query: query,
           limit: 10,
+          sortBy: 'followers',
         );
 
         // Merge with local results, deduplicating by pubkey

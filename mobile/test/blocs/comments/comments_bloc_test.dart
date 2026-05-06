@@ -92,6 +92,15 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockProfileRepository.searchUsersFromApi(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          sortBy: any(named: 'sortBy'),
+          hasVideos: any(named: 'hasVideos'),
+        ),
+      ).thenAnswer((_) async => []);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
       // Default stubs for real-time comment watching
@@ -2595,12 +2604,15 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
-        'fetches remote results when fewer than 5 local matches',
+        'fetches REST results sorted by followers when fewer than 5 local matches',
         setUp: () {
           when(
-            () => mockProfileRepository.searchUsers(
-              query: 'rem',
+            () => mockProfileRepository.searchUsersFromApi(
+              query: 'ga',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -2609,14 +2621,14 @@ void main() {
                 rawData: const {},
                 createdAt: DateTime.now(),
                 eventId: validId('event4'),
-                displayName: 'RemoteUser',
+                displayName: 'GaryVee',
               ),
             ],
           );
         },
         build: createBloc,
         seed: () => const CommentsState(status: CommentsStatus.success),
-        act: (bloc) => bloc.add(const MentionSearchRequested('rem')),
+        act: (bloc) => bloc.add(const MentionSearchRequested('ga')),
         expect: () => [
           // Tier 1: no local matches
           isA<CommentsState>().having(
@@ -2634,9 +2646,24 @@ void main() {
               .having(
                 (s) => s.mentionSuggestions.first.displayName,
                 'displayName',
-                'RemoteUser',
+                'GaryVee',
               ),
         ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsersFromApi(
+              query: 'ga',
+              limit: 10,
+              sortBy: 'followers',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockProfileRepository.searchUsers(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
       );
 
       blocTest<CommentsBloc, CommentsState>(

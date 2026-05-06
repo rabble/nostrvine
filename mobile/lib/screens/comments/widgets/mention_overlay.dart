@@ -85,7 +85,9 @@ class _MentionSuggestionItem extends ConsumerWidget {
         .watch(userProfileReactiveProvider(suggestion.pubkey))
         .value;
 
-    final displayName = profile?.displayName ?? profile?.name;
+    final displayName =
+        suggestion.displayName ?? profile?.displayName ?? profile?.name;
+    final picture = suggestion.picture ?? profile?.picture;
     final npub = NostrKeyUtils.encodePubKey(suggestion.pubkey);
 
     return InkWell(
@@ -97,7 +99,8 @@ class _MentionSuggestionItem extends ConsumerWidget {
           children: [
             UserAvatar(
               size: 32,
-              imageUrl: profile?.picture,
+              imageUrl: picture,
+              name: displayName,
               placeholderSeed: suggestion.pubkey,
             ),
             Expanded(
