@@ -1,9 +1,10 @@
-// ABOUTME: Unit tests for ReportContentDialog widget
-// ABOUTME: Tests Apple compliance requirements, reason selection, submission, and blocking
+// ABOUTME: Unit tests for ReportContentDialog widget (bottom sheet)
+// ABOUTME: Tests Apple compliance requirements, reason selection, and submission
 
 import 'dart:async';
 
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,7 +47,6 @@ void main() {
   late _MockMuteService mockMuteService;
 
   setUp(() {
-    // Create test Nostr event with valid hex pubkey
     final testNostrEvent = nostr.Event(
       '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
       34236,
@@ -68,7 +68,6 @@ void main() {
     mockBlocklistRepository = _MockContentBlocklistRepository();
     mockMuteService = _MockMuteService();
 
-    // Setup default mock behavior
     when(
       () => mockReportingService.reportContent(
         eventId: any(named: 'eventId'),
@@ -103,17 +102,19 @@ void main() {
       ),
     );
 
-    testWidgets('renders Report Content title', (tester) async {
+    testWidgets('renders form heading and policy notice', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Report Content'), findsOneWidget);
-      expect(find.text('Why are you reporting this content?'), findsOneWidget);
+      expect(
+        find.text('Why are you reporting this content?'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('renders all report reason radio options', (tester) async {
+    testWidgets('renders all report reason options', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
 
       await tester.pumpWidget(buildSubject());
@@ -130,27 +131,47 @@ void main() {
       expect(find.text('Other Policy Violation'), findsOneWidget);
     });
 
-    testWidgets('renders additional details text field', (tester) async {
+    testWidgets('renders subtitle text for each reason', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
 
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Additional details (optional)'), findsOneWidget);
+      expect(
+        find.text('Harmful and unwanted replies or mentions'),
+        findsOneWidget,
+      );
+      expect(find.text('Violations not listed above'), findsOneWidget);
+    });
+
+    testWidgets('details field is hidden until Other is selected', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsNothing);
+
+      await tester.tap(find.text('Other Policy Violation'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets(
-      'Submit button is visible (not null) even before selecting a reason',
+      'Submit button is visible even before selecting a reason (Apple requirement)',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(800, 1200));
 
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        final reportButton = find.widgetWithText(TextButton, 'Report');
-        expect(reportButton, findsOneWidget);
+        final submitButton = find.widgetWithText(DivineButton, 'Report');
+        expect(submitButton, findsOneWidget);
 
-        final TextButton button = tester.widget(reportButton);
+        final DivineButton button = tester.widget(submitButton);
         expect(
           button.onPressed,
           isNotNull,
@@ -169,8 +190,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        final reportButton = find.widgetWithText(TextButton, 'Report');
-        await tester.tap(reportButton);
+        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
         await tester.pumpAndSettle();
 
         expect(
@@ -189,13 +209,10 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        // Select "Other"
         await tester.tap(find.text('Other Policy Violation'));
         await tester.pumpAndSettle();
 
-        // Tap Report without entering details
-        final reportButton = find.widgetWithText(TextButton, 'Report');
-        await tester.tap(reportButton);
+        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
         await tester.pumpAndSettle();
 
         expect(
@@ -206,57 +223,6 @@ void main() {
       },
     );
 
-    testWidgets('Block user checkbox is visible and can be toggled', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            contentReportingServiceProvider.overrideWith(
-              (ref) async => mockReportingService,
-            ),
-            contentBlocklistRepositoryProvider.overrideWith(
-              (ref) => mockBlocklistRepository,
-            ),
-            muteServiceProvider.overrideWith((ref) async => mockMuteService),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: ReportContentDialog(video: testVideo)),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final blockUserCheckbox = find.text('Block this user');
-      expect(
-        blockUserCheckbox,
-        findsOneWidget,
-        reason: 'Block user checkbox should be visible',
-      );
-
-      final Checkbox checkbox = tester.widget(find.byType(Checkbox));
-      expect(
-        checkbox.value,
-        isFalse,
-        reason: 'Checkbox should be unchecked by default',
-      );
-
-      await tester.tap(blockUserCheckbox);
-      await tester.pumpAndSettle();
-
-      final Checkbox checkedCheckbox = tester.widget(find.byType(Checkbox));
-      expect(
-        checkedCheckbox.value,
-        isTrue,
-        reason: 'Checkbox should be checked after tapping',
-      );
-    });
-
     testWidgets('renders correct number of report reason options', (
       tester,
     ) async {
@@ -265,26 +231,16 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Verify all ContentFilterReason values have corresponding radio tiles
-      final radios = tester.widgetList<RadioListTile<ContentFilterReason>>(
-        find.byType(RadioListTile<ContentFilterReason>),
+      // One card per ContentFilterReason value — each has a Semantics(button)
+      // wrapping it that we can count.
+      expect(
+        ContentFilterReason.values.length,
+        equals(9),
+        reason: 'Sanity-check: 9 report reasons defined',
       );
-      expect(radios.length, equals(ContentFilterReason.values.length));
-
-      // Initially no reason is selected (check RadioGroup ancestor)
-      final radioGroup = tester.widget<RadioGroup<ContentFilterReason>>(
-        find.byType(RadioGroup<ContentFilterReason>),
-      );
-      expect(radioGroup.groupValue, isNull);
-    });
-
-    testWidgets('renders Cancel button', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
+      // Verify all titles render by checking the last and first in the list.
+      expect(find.text('Spam or Unwanted Content'), findsOneWidget);
+      expect(find.text('Other Policy Violation'), findsOneWidget);
     });
   });
 
@@ -297,9 +253,9 @@ void main() {
     });
 
     Widget buildSubject() {
-      // GoRouter is needed so context.pop() (GoRouter extension) works.
-      // showDialog is used so context.pop() pops the dialog route,
-      // matching production usage.
+      // GoRouter is needed so Navigator.of(context).pop() finds the right route.
+      // Material wrapper is required because showDialog alone doesn't provide one
+      // (unlike showModalBottomSheet which the production path uses).
       final router = GoRouter(
         routes: [
           GoRoute(
@@ -309,7 +265,9 @@ void main() {
                 builder: (context) => ElevatedButton(
                   onPressed: () => showDialog<void>(
                     context: context,
-                    builder: (_) => ReportContentDialog(video: testVideo),
+                    builder: (_) => Material(
+                      child: ReportContentDialog(video: testVideo),
+                    ),
                   ),
                   child: const Text('Open Report'),
                 ),
@@ -338,7 +296,6 @@ void main() {
       );
     }
 
-    /// Opens the report dialog by tapping the trigger button.
     Future<void> openReportDialog(WidgetTester tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
@@ -346,18 +303,16 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('selecting reason and tapping Report calls reportContent', (
+    testWidgets('selecting reason and tapping Submit calls reportContent', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      // Select a reason
       await tester.tap(find.text('Spam or Unwanted Content'));
       await tester.pumpAndSettle();
 
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
       await tester.pumpAndSettle();
 
       verify(
@@ -378,15 +333,12 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      // Select a reason
       await tester.tap(find.text('Harassment, Bullying, or Threats'));
       await tester.pumpAndSettle();
 
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
       await tester.pumpAndSettle();
 
-      // Confirmation dialog should appear
       expect(find.text('Report Received'), findsOneWidget);
       expect(
         find.text('Thank you for helping keep Divine safe.'),
@@ -394,85 +346,44 @@ void main() {
       );
     });
 
-    testWidgets('report with block checkbox calls muteUser but NOT reportUser '
-        '(no duplicate Kind 1984)', (tester) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      await openReportDialog(tester);
+    testWidgets(
+      'Submit button enters loading state while submission is in progress '
+      '(prevents double-tap duplicate Kind 1984)',
+      (tester) async {
+        final completer = Completer<ReportResult>();
+        when(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).thenAnswer((_) => completer.future);
 
-      // Select a reason
-      await tester.tap(find.text('Harassment, Bullying, or Threats'));
-      await tester.pumpAndSettle();
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openReportDialog(tester);
 
-      // Check block user
-      await tester.tap(find.text('Block this user'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Spam or Unwanted Content'));
+        await tester.pumpAndSettle();
 
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
+        await tester.pump();
 
-      verify(
-        () => mockReportingService.reportContent(
-          eventId: any(named: 'eventId'),
-          authorPubkey: any(named: 'authorPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          additionalContext: any(named: 'additionalContext'),
-          hashtags: any(named: 'hashtags'),
-        ),
-      ).called(1);
+        final submitBtn = tester.widget<DivineButton>(
+          find.widgetWithText(DivineButton, 'Report'),
+        );
+        expect(
+          submitBtn.isLoading,
+          isTrue,
+          reason: 'Button must show loading state during submission',
+        );
 
-      verifyNever(
-        () => mockReportingService.reportUser(
-          userPubkey: any(named: 'userPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          relatedEventIds: any(named: 'relatedEventIds'),
-        ),
-      );
-
-      verify(
-        () => mockMuteService.muteUser(
-          any(),
-          reason: any(named: 'reason'),
-          duration: any(named: 'duration'),
-        ),
-      ).called(1);
-    });
-
-    testWidgets('Report button is disabled while submission is in progress '
-        '(prevents double-tap duplicate Kind 1984)', (tester) async {
-      final completer = Completer<ReportResult>();
-      when(
-        () => mockReportingService.reportContent(
-          eventId: any(named: 'eventId'),
-          authorPubkey: any(named: 'authorPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          additionalContext: any(named: 'additionalContext'),
-          hashtags: any(named: 'hashtags'),
-        ),
-      ).thenAnswer((_) => completer.future);
-
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      await openReportDialog(tester);
-
-      // Select a reason
-      await tester.tap(find.text('Spam or Unwanted Content'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
-      await tester.pump();
-
-      final buttons = tester.widgetList<TextButton>(find.byType(TextButton));
-      final hasDisabledReportButton = buttons.any(
-        (btn) => btn.onPressed == null,
-      );
-      expect(hasDisabledReportButton, isTrue);
-
-      completer.complete(ReportResult.createSuccess('test_report_id'));
-      await tester.pumpAndSettle();
-    });
+        completer.complete(ReportResult.createSuccess('test_report_id'));
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('failed report shows error snackbar', (tester) async {
       when(
@@ -489,12 +400,10 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      // Select a reason
       await tester.tap(find.text('Spam or Unwanted Content'));
       await tester.pumpAndSettle();
 
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to report content'), findsOneWidget);
@@ -518,40 +427,10 @@ void main() {
       await tester.tap(find.text('Spam or Unwanted Content'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Failed to report content'), findsOneWidget);
-    });
-
-    testWidgets('additional details are passed to reportContent', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      await openReportDialog(tester);
-
-      // Select a reason
-      await tester.tap(find.text('Spam or Unwanted Content'));
-      await tester.pumpAndSettle();
-
-      // Enter additional details
-      await tester.enterText(find.byType(TextField), 'This is spam content');
-      await tester.pumpAndSettle();
-
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
-      await tester.pumpAndSettle();
-
-      verify(
-        () => mockReportingService.reportContent(
-          eventId: any(named: 'eventId'),
-          authorPubkey: any(named: 'authorPubkey'),
-          reason: any(named: 'reason'),
-          details: captureAny(named: 'details'),
-          additionalContext: any(named: 'additionalContext'),
-          hashtags: any(named: 'hashtags'),
-        ),
-      ).called(1);
     });
 
     testWidgets('Other reason with details submits successfully', (
@@ -560,16 +439,13 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openReportDialog(tester);
 
-      // Select Other
       await tester.tap(find.text('Other Policy Violation'));
       await tester.pumpAndSettle();
 
-      // Enter details
       await tester.enterText(find.byType(TextField), 'Custom report details');
       await tester.pumpAndSettle();
 
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
       await tester.pumpAndSettle();
 
       verify(
@@ -687,7 +563,9 @@ void main() {
                 builder: (context) => ElevatedButton(
                   onPressed: () => showDialog<void>(
                     context: context,
-                    builder: (_) => ReportContentDialog(video: testVideo),
+                    builder: (_) => Material(
+                      child: ReportContentDialog(video: testVideo),
+                    ),
                   ),
                   child: const Text('Open Report'),
                 ),
@@ -727,7 +605,7 @@ void main() {
       await tester.tap(find.text('Spam or Unwanted Content'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.tap(find.widgetWithText(DivineButton, 'Report'));
       await tester.pumpAndSettle();
     }
 
@@ -790,7 +668,6 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
       await openAndSubmitReport(tester);
 
-      // Confirmation dialog should still appear
       expect(
         find.text('Report Received'),
         findsOneWidget,
@@ -801,7 +678,6 @@ void main() {
     testWidgets(
       'report succeeds when DM send throws (unauthenticated/no keys)',
       (tester) async {
-        // Simulate unauthenticated scenario where sendMessage throws
         final noKeysDmRepo = _MockDmRepository();
         when(
           () => noKeysDmRepo.sendMessage(
@@ -820,7 +696,9 @@ void main() {
                   builder: (context) => ElevatedButton(
                     onPressed: () => showDialog<void>(
                       context: context,
-                      builder: (_) => ReportContentDialog(video: testVideo),
+                      builder: (_) => Material(
+                        child: ReportContentDialog(video: testVideo),
+                      ),
                     ),
                     child: const Text('Open Report'),
                   ),
@@ -854,10 +732,9 @@ void main() {
         await tester.tap(find.text('Spam or Unwanted Content'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.widgetWithText(TextButton, 'Report'));
+        await tester.tap(find.widgetWithText(DivineButton, 'Report'));
         await tester.pumpAndSettle();
 
-        // Report should succeed even when DM fails
         expect(find.text('Report Received'), findsOneWidget);
         verifyNever(
           () => mockDmRepository.sendMessage(

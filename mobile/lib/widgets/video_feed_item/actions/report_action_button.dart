@@ -31,10 +31,7 @@ class ReportActionButton extends StatelessWidget {
       labelWhenZero: context.l10n.videoActionReportLabel,
       onPressed: () {
         onInteracted?.call();
-        showDialog<void>(
-          context: context,
-          builder: (context) => ReportContentDialog(video: video),
-        );
+        ReportContentDialog.show(context, video: video);
       },
     );
   }

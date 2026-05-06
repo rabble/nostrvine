@@ -4347,29 +4347,62 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Тормоз, малтретиране или заплахи';
 
   @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
+
+  @override
   String get reportReasonViolence => 'Насилствено или екстремистко съдържание';
+
+  @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent =>
       'Сексуално съдържание или съдържание за възрастни';
 
   @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
+
+  @override
   String get reportReasonCopyright => 'Нарушаване на авторски права';
+
+  @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => 'Невярна информация';
 
   @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+
+  @override
   String get reportReasonCsam => 'Нарушение на безопасността на детето';
+
+  @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'AI-генерирано съдържание';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Друго нарушение на правилата';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {

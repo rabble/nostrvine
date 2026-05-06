@@ -1,28 +1,46 @@
-// ABOUTME: Standalone report content dialog for Apple-compliant content reporting
-// ABOUTME: Extracted from share_video_menu.dart for reuse across the app
+// ABOUTME: Report content bottom sheet for Apple-compliant content reporting.
+// ABOUTME: Replaces the legacy AlertDialog with a VineBottomSheet-based flow.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Dialog for reporting content
-/// Public report content dialog that can be used from anywhere
+/// Shows a [VineBottomSheet] for reporting a video.
+///
+/// Usage:
+/// ```dart
+/// await ReportContentDialog.show(context, video: video);
+/// ```
 class ReportContentDialog extends ConsumerStatefulWidget {
   const ReportContentDialog({
     required this.video,
     super.key,
     this.isFromShareMenu = false,
   });
+
   final VideoEvent video;
   final bool isFromShareMenu;
+
+  static Future<void> show(
+    BuildContext context, {
+    required VideoEvent video,
+    bool isFromShareMenu = false,
+  }) {
+    return VineBottomSheet.show<void>(
+      context: context,
+      initialChildSize: 0.85,
+      maxChildSize: 0.95,
+      minChildSize: 0.5,
+      title: Text(context.l10n.reportTitle),
+      body: ReportContentDialog(video: video, isFromShareMenu: isFromShareMenu),
+    );
+  }
 
   @override
   ConsumerState<ReportContentDialog> createState() =>
@@ -32,103 +50,69 @@ class ReportContentDialog extends ConsumerStatefulWidget {
 class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   ContentFilterReason? _selectedReason;
   final TextEditingController _detailsController = TextEditingController();
-  bool _blockUser = false;
   bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: Text(
-        l10n.reportTitle,
-        style: const TextStyle(color: VineTheme.whiteText),
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                l10n.reportWhyReporting,
-                style: const TextStyle(color: VineTheme.whiteText),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.reportPolicyNotice,
-                style: const TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-              const SizedBox(height: 16),
-              RadioGroup<ContentFilterReason>(
-                groupValue: _selectedReason,
-                onChanged: (value) => setState(() => _selectedReason = value),
-                child: Column(
-                  children: ContentFilterReason.values
-                      .map(
-                        (reason) => RadioListTile<ContentFilterReason>(
-                          title: Text(
-                            _getReasonDisplayName(reason),
-                            style: const TextStyle(color: VineTheme.whiteText),
-                          ),
-                          value: reason,
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _detailsController,
-                enableInteractiveSelection: true,
-                style: const TextStyle(color: VineTheme.whiteText),
-                decoration: InputDecoration(
-                  labelText: _selectedReason == ContentFilterReason.other
-                      ? l10n.reportDetailsRequired
-                      : l10n.reportAdditionalDetails,
-                  labelStyle: const TextStyle(color: VineTheme.secondaryText),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                title: Text(
-                  l10n.reportBlockUser,
-                  style: const TextStyle(color: VineTheme.whiteText),
-                ),
-                value: _blockUser,
-                onChanged: (value) =>
-                    setState(() => _blockUser = value ?? false),
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-            ],
+    return SingleChildScrollView(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          Text(
+            l10n.reportWhyReporting,
+            style: VineTheme.titleMediumFont(),
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            l10n.reportPolicyNotice,
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          ),
+          const SizedBox(height: 16),
+          ...ContentFilterReason.values.map(
+            (reason) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _ReasonCard(
+                title: _getReasonTitle(reason),
+                subtitle: _getReasonSubtitle(reason),
+                isSelected: _selectedReason == reason,
+                onTap: () => setState(() => _selectedReason = reason),
+              ),
+            ),
+          ),
+          if (_selectedReason == ContentFilterReason.other) ...[
+            const SizedBox(height: 4),
+            TextField(
+              controller: _detailsController,
+              enableInteractiveSelection: true,
+              style: VineTheme.bodyMediumFont(),
+              decoration: InputDecoration(
+                labelText: l10n.reportDetailsRequired,
+                labelStyle: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurfaceMuted,
+                ),
+              ),
+              maxLines: 3,
+            ),
+          ],
+          const SizedBox(height: 24),
+          DivineButton(
+            label: l10n.reportSubmit,
+            expanded: true,
+            onPressed: _isSubmitting ? null : _handleSubmitReport,
+            isLoading: _isSubmitting,
+          ),
+          SizedBox(height: MediaQuery.viewPaddingOf(context).bottom),
+        ],
       ),
-      actions: [
-        TextButton(onPressed: context.pop, child: Text(l10n.reportCancel)),
-        TextButton(
-          onPressed: _isSubmitting ? null : _handleSubmitReport,
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(l10n.reportSubmit),
-        ),
-      ],
     );
   }
 
   void _handleSubmitReport() {
     if (_isSubmitting) return;
     if (_selectedReason == null) {
-      // Show error when no reason selected (Apple requires button to be visible)
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.reportSelectReason),
@@ -150,28 +134,36 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     _submitReport();
   }
 
-  String _getReasonDisplayName(ContentFilterReason reason) {
+  String _getReasonTitle(ContentFilterReason reason) {
     final l10n = context.l10n;
-    switch (reason) {
-      case ContentFilterReason.spam:
-        return l10n.reportReasonSpam;
-      case ContentFilterReason.harassment:
-        return l10n.reportReasonHarassment;
-      case ContentFilterReason.violence:
-        return l10n.reportReasonViolence;
-      case ContentFilterReason.sexualContent:
-        return l10n.reportReasonSexualContent;
-      case ContentFilterReason.copyright:
-        return l10n.reportReasonCopyright;
-      case ContentFilterReason.falseInformation:
-        return l10n.reportReasonFalseInfo;
-      case ContentFilterReason.csam:
-        return l10n.reportReasonCsam;
-      case ContentFilterReason.aiGenerated:
-        return l10n.reportReasonAiGenerated;
-      case ContentFilterReason.other:
-        return l10n.reportReasonOther;
-    }
+    return switch (reason) {
+      ContentFilterReason.spam => l10n.reportReasonSpam,
+      ContentFilterReason.harassment => l10n.reportReasonHarassment,
+      ContentFilterReason.violence => l10n.reportReasonViolence,
+      ContentFilterReason.sexualContent => l10n.reportReasonSexualContent,
+      ContentFilterReason.copyright => l10n.reportReasonCopyright,
+      ContentFilterReason.falseInformation => l10n.reportReasonFalseInfo,
+      ContentFilterReason.csam => l10n.reportReasonCsam,
+      ContentFilterReason.aiGenerated => l10n.reportReasonAiGenerated,
+      ContentFilterReason.other => l10n.reportReasonOther,
+    };
+  }
+
+  String _getReasonSubtitle(ContentFilterReason reason) {
+    final l10n = context.l10n;
+    return switch (reason) {
+      ContentFilterReason.spam => l10n.reportReasonSpamSubtitle,
+      ContentFilterReason.harassment => l10n.reportReasonHarassmentSubtitle,
+      ContentFilterReason.violence => l10n.reportReasonViolenceSubtitle,
+      ContentFilterReason.sexualContent =>
+        l10n.reportReasonSexualContentSubtitle,
+      ContentFilterReason.copyright => l10n.reportReasonCopyrightSubtitle,
+      ContentFilterReason.falseInformation =>
+        l10n.reportReasonFalseInfoSubtitle,
+      ContentFilterReason.csam => l10n.reportReasonCsamSubtitle,
+      ContentFilterReason.aiGenerated => l10n.reportReasonAiGeneratedSubtitle,
+      ContentFilterReason.other => l10n.reportReasonOtherSubtitle,
+    };
   }
 
   Future<void> _submitReport() async {
@@ -188,46 +180,17 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         authorPubkey: widget.video.pubkey,
         reason: _selectedReason!,
         details: _detailsController.text.trim().isEmpty
-            ? _getReasonDisplayName(_selectedReason!)
+            ? _getReasonTitle(_selectedReason!)
             : _detailsController.text.trim(),
       );
 
       if (mounted) {
-        context.pop(); // Close report dialog
+        Navigator.of(context).pop(); // Close the bottom sheet
         if (widget.isFromShareMenu) {
-          context.pop(); // Close share menu (only if opened from share menu)
+          Navigator.of(context).pop(); // Also close share menu
         }
 
         if (result.success) {
-          // Block user if checkbox was checked.
-          // The Kind 1984 published by reportContent() already includes the
-          // author pubkey in the `p` tag, so no second Kind 1984 is needed.
-          if (_blockUser) {
-            // 1. Add to mute list (publishes kind 10000 NIP-51 mute list)
-            final muteService = await ref.read(muteServiceProvider.future);
-            await muteService.muteUser(
-              widget.video.pubkey,
-              reason:
-                  'Reported and blocked for ${_getReasonDisplayName(_selectedReason!)}',
-            );
-
-            // 2. Also add to local blocklist for immediate filtering
-            final blocklistRepository = ref.read(
-              contentBlocklistRepositoryProvider,
-            );
-            final nostrClient = ref.read(nostrServiceProvider);
-            blocklistRepository.blockUser(
-              widget.video.pubkey,
-              ourPubkey: nostrClient.publicKey,
-            );
-
-            Log.info(
-              'User blocked: kind 10000 mute list published for ${widget.video.pubkey}',
-              name: 'ReportContentDialog',
-              category: LogCategory.ui,
-            );
-          }
-
           // Send DM to moderation team with report details (TC-025/026)
           final dmRepo = ref.read(dmRepositoryProvider);
           final labelService = ref.read(moderationLabelServiceProvider);
@@ -241,8 +204,6 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               ),
             );
           } catch (e) {
-            // Report was already submitted via NIP-56 + ZenDesk;
-            // DM is a supplementary notification channel.
             Log.warning(
               'Failed to send moderation DM: $e',
               name: 'ReportContentDialog',
@@ -250,21 +211,21 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             );
           }
 
-          // Show success confirmation dialog using root navigator
           if (mounted) {
-            showDialog(
+            showDialog<void>(
               context: context,
               builder: (context) => const ReportConfirmationDialog(),
             );
           }
         } else {
-          // Show error snackbar
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.reportFailed(result.error ?? '')),
-              backgroundColor: VineTheme.error,
-            ),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.reportFailed(result.error ?? '')),
+                backgroundColor: VineTheme.error,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -296,7 +257,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }) {
     final buffer = StringBuffer()
       ..writeln('Content Report')
-      ..writeln('Reason: ${_getReasonDisplayName(reason)}')
+      ..writeln('Reason: ${_getReasonTitle(reason)}')
       ..writeln('Event: $eventId');
     if (details.isNotEmpty) {
       buffer.writeln('Details: $details');
@@ -311,7 +272,116 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   }
 }
 
-/// Confirmation dialog shown after successfully reporting content
+// =============================================================================
+// Reason card
+// =============================================================================
+
+class _ReasonCard extends StatelessWidget {
+  const _ReasonCard({
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: title,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? VineTheme.vineGreen
+                  : VineTheme.outlinedDisabled,
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            children: [
+              _RadioIndicator(isSelected: isSelected),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: VineTheme.bodyLargeFont(),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RadioIndicator extends StatelessWidget {
+  const _RadioIndicator({required this.isSelected});
+
+  final bool isSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 24,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? VineTheme.vineGreen : VineTheme.transparent,
+          border: Border.all(color: VineTheme.vineGreen, width: 2),
+        ),
+        child: isSelected
+            ? const Center(
+                child: SizedBox.square(
+                  dimension: 8,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: VineTheme.whiteText,
+                    ),
+                  ),
+                ),
+              )
+            : null,
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Confirmation dialog (shown after successful report submission)
+// =============================================================================
+
+/// Confirmation dialog shown after successfully reporting content.
+///
+/// Used by [ReportContentDialog], [share_video_menu.dart], and
+/// [report_message_dialog.dart].
 class ReportConfirmationDialog extends StatelessWidget {
   const ReportConfirmationDialog({super.key});
 
@@ -404,7 +474,7 @@ class ReportConfirmationDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
-          onPressed: context.pop,
+          onPressed: Navigator.of(context).pop,
           child: Text(
             l10n.reportClose,
             style: const TextStyle(color: VineTheme.vineGreen),

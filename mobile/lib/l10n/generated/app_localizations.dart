@@ -7584,11 +7584,23 @@ abstract class AppLocalizations {
   /// **'Spam or Unwanted Content'**
   String get reportReasonSpam;
 
+  /// No description provided for @reportReasonSpamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unwanted or repetitive content'**
+  String get reportReasonSpamSubtitle;
+
   /// No description provided for @reportReasonHarassment.
   ///
   /// In en, this message translates to:
   /// **'Harassment, Bullying, or Threats'**
   String get reportReasonHarassment;
+
+  /// No description provided for @reportReasonHarassmentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Harmful and unwanted replies or mentions'**
+  String get reportReasonHarassmentSubtitle;
 
   /// No description provided for @reportReasonViolence.
   ///
@@ -7596,11 +7608,23 @@ abstract class AppLocalizations {
   /// **'Violent or Extremist Content'**
   String get reportReasonViolence;
 
+  /// No description provided for @reportReasonViolenceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Violent, extremist, or harmful content'**
+  String get reportReasonViolenceSubtitle;
+
   /// No description provided for @reportReasonSexualContent.
   ///
   /// In en, this message translates to:
   /// **'Sexual or Adult Content'**
   String get reportReasonSexualContent;
+
+  /// No description provided for @reportReasonSexualContentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudity, porn, or explicit content'**
+  String get reportReasonSexualContentSubtitle;
 
   /// No description provided for @reportReasonCopyright.
   ///
@@ -7608,11 +7632,23 @@ abstract class AppLocalizations {
   /// **'Copyright Violation'**
   String get reportReasonCopyright;
 
+  /// No description provided for @reportReasonCopyrightSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized use of intellectual property'**
+  String get reportReasonCopyrightSubtitle;
+
   /// No description provided for @reportReasonFalseInfo.
   ///
   /// In en, this message translates to:
   /// **'False Information'**
   String get reportReasonFalseInfo;
+
+  /// No description provided for @reportReasonFalseInfoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Misleading or false claims'**
+  String get reportReasonFalseInfoSubtitle;
 
   /// No description provided for @reportReasonCsam.
   ///
@@ -7620,17 +7656,35 @@ abstract class AppLocalizations {
   /// **'Child Safety Violation'**
   String get reportReasonCsam;
 
+  /// No description provided for @reportReasonCsamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content that exploits or endangers minors'**
+  String get reportReasonCsamSubtitle;
+
   /// No description provided for @reportReasonAiGenerated.
   ///
   /// In en, this message translates to:
   /// **'AI-Generated Content'**
   String get reportReasonAiGenerated;
 
+  /// No description provided for @reportReasonAiGeneratedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspected AI-generated content'**
+  String get reportReasonAiGeneratedSubtitle;
+
   /// No description provided for @reportReasonOther.
   ///
   /// In en, this message translates to:
   /// **'Other Policy Violation'**
   String get reportReasonOther;
+
+  /// No description provided for @reportReasonOtherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Violations not listed above'**
+  String get reportReasonOtherSubtitle;
 
   /// No description provided for @reportFailed.
   ///
