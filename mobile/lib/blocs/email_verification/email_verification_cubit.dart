@@ -386,7 +386,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         return; // Success - exit the retry loop
       } on InviteApiException catch (e) {
         Log.error(
-          'Invite activation failed: ${e.message}',
+          'Invite activation failed: ${e.message} '
+          '[code=${e.code}, status=${e.statusCode}, '
+          'cause=${e.cause?.runtimeType}: ${e.cause}]',
           name: 'EmailVerificationCubit',
           category: LogCategory.auth,
         );
