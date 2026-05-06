@@ -229,7 +229,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                clearNip05: false,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -248,7 +248,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                clearNip05: false,
+                clearNip05: any(named: 'clearNip05', that: isFalse),
               ),
             ).called(1);
           },
