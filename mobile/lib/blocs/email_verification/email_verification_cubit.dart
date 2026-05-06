@@ -316,7 +316,6 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   /// Delay between exchange retries
   static const _exchangeRetryDelay = Duration(seconds: 2);
 
-
   Future<void> _exchangeCodeAndLogin(String code, String verifier) async {
     for (var attempt = 1; attempt <= _maxExchangeRetries; attempt++) {
       try {
