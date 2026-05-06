@@ -334,7 +334,9 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       emit(const DivineAuthSuccess());
     } on InviteApiException catch (e) {
       Log.error(
-        'Invite activation failed: ${e.message}',
+        'Invite activation failed: ${e.message} '
+        '[code=${e.code}, status=${e.statusCode}, '
+        'cause=${e.cause?.runtimeType}: ${e.cause}]',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
