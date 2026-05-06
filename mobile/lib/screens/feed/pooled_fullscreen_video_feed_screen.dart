@@ -63,6 +63,7 @@ import 'package:video_player/video_player.dart';
 Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return isPortrait ? Alignment.center : Alignment.topCenter;
 }
+
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
 /// Uses a stream-based approach where the source BLoC/provider remains
