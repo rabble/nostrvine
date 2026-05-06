@@ -1,11 +1,11 @@
 // ABOUTME: Tests collaborator acceptance publishing.
-// ABOUTME: Verifies accept mirrors Connect by publishing an accepter-owned video copy.
+// ABOUTME: Verifies accept publishes a public collaborator response event.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/constants/collaboration_event_kinds.dart';
 import 'package:openvine/models/collaborator_invite.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
@@ -26,21 +26,6 @@ void main() {
   late _MockAuthService authService;
   late _MockNostrClient nostrClient;
   late CollaboratorResponseService service;
-
-  final sourceVideo = VideoEvent(
-    id: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-    pubkey: creatorPubkey,
-    createdAt: 1700000000,
-    content: 'A collab video',
-    timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000000),
-    title: 'Collab Video',
-    nostrEventTags: const [
-      ['d', 'video-d-tag'],
-      ['title', 'Collab Video'],
-      ['p', collaboratorPubkey, 'wss://relay.divine.video', 'collaborator'],
-      ['url', 'https://media.divine.video/video.mp4'],
-    ],
-  );
 
   const invite = CollaboratorInvite(
     messageId: 'message-id',
@@ -63,11 +48,10 @@ void main() {
     service = CollaboratorResponseService(
       authService: authService,
       nostrClient: nostrClient,
-      loadSourceVideo: (_) async => sourceVideo,
     );
   });
 
-  test('publishes accepter-owned collaborator video copy', () async {
+  test('publishes public collaborator acceptance response', () async {
     late Event signedEvent;
     when(
       () => authService.createAndSignEvent(
@@ -79,9 +63,9 @@ void main() {
       final tags = invocation.namedArguments[#tags] as List<List<String>>;
       signedEvent = Event(
         collaboratorPubkey,
-        34236,
+        CollaborationEventKinds.collaboratorResponse,
         tags,
-        'A collab video',
+        '',
       );
       return signedEvent;
     });
@@ -102,20 +86,17 @@ void main() {
       ),
     );
 
-    expect(verification.captured[0], 34236);
-    expect(verification.captured[1], 'A collab video');
+    expect(
+      verification.captured[0],
+      CollaborationEventKinds.collaboratorResponse,
+    );
+    expect(verification.captured[1], '');
     expect(verification.captured[2], [
-      ['d', 'video-d-tag'],
-      ['title', 'Collab Video'],
-      ['url', 'https://media.divine.video/video.mp4'],
-      ['p', creatorPubkey, '', 'collaborator'],
-      [
-        'e',
-        'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
-        '',
-        'source',
-      ],
-      ['a', videoAddress, 'wss://relay.divine.video', 'source'],
+      ['d', videoAddress],
+      ['a', videoAddress, 'wss://relay.divine.video', 'root'],
+      ['p', creatorPubkey],
+      ['role', 'Collaborator'],
+      ['status', 'accepted'],
     ]);
     verify(() => nostrClient.publishEvent(signedEvent)).called(1);
   });
@@ -141,7 +122,12 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         capturedTags = invocation.namedArguments[#tags] as List<List<String>>;
-        return Event(collaboratorPubkey, 34236, capturedTags, 'A collab video');
+        return Event(
+          collaboratorPubkey,
+          CollaborationEventKinds.collaboratorResponse,
+          capturedTags,
+          '',
+        );
       });
       when(() => nostrClient.publishEvent(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments.single as Event,
@@ -150,35 +136,14 @@ void main() {
       final result = await service.acceptInvite(inviteWithoutRelay);
 
       expect(result.success, isTrue);
-      expect(capturedTags.last, [
+      expect(capturedTags[1], [
         'a',
         videoAddress,
         'wss://relay.divine.video',
-        'source',
+        'root',
       ]);
     },
   );
-
-  test('returns failure when source video cannot be loaded', () async {
-    service = CollaboratorResponseService(
-      authService: authService,
-      nostrClient: nostrClient,
-      loadSourceVideo: (_) async => null,
-    );
-
-    final result = await service.acceptInvite(invite);
-
-    expect(result.success, isFalse);
-    expect(result.error, contains('source video'));
-    verifyNever(
-      () => authService.createAndSignEvent(
-        kind: any(named: 'kind'),
-        content: any(named: 'content'),
-        tags: any(named: 'tags'),
-      ),
-    );
-    verifyNever(() => nostrClient.publishEvent(any()));
-  });
 
   test('returns failure when signing fails', () async {
     when(
