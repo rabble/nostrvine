@@ -119,7 +119,7 @@ final class SubtitleCuesProvider
   }
 }
 
-String _$subtitleCuesHash() => r'2fe38ed9a65de84798b6903ab9c7bb8aaf36b8e7';
+String _$subtitleCuesHash() => r'7da3f43b8359e99d0a97bbb8e5c2c29316c26fff';
 
 /// Fetches subtitle cues for a video, using the fastest available path.
 ///
