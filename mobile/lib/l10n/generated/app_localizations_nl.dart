@@ -4395,6 +4395,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get reportLearnMore => 'Meer info';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

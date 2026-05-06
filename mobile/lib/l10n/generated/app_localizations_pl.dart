@@ -4485,6 +4485,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reportLearnMore => 'Dowiedz się więcej';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

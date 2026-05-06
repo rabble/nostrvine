@@ -4362,6 +4362,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportLearnMore => 'Daha Fazla Bilgi';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

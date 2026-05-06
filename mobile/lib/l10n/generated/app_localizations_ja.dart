@@ -4183,6 +4183,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportLearnMore => 'もっと詳しく';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

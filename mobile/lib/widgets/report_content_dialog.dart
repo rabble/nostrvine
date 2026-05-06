@@ -44,7 +44,6 @@ class ReportContentDialog extends ConsumerStatefulWidget {
       initialChildSize: 0.85,
       maxChildSize: 0.95,
       minChildSize: 0.5,
-      title: Text(context.l10n.reportTitle),
       draggableController: controller,
       body: ReportContentDialog(
         video: video,
@@ -67,6 +66,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   final GlobalKey _otherCardKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
   bool _isSubmitting = false;
+  bool _submitted = false;
   bool _scrollWhenKeyboardOpens = false;
   double _previousViewInsetsBottom = 0;
 
@@ -115,11 +115,15 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
   @override
   Widget build(BuildContext context) {
+    if (_submitted) {
+      return _ReportConfirmationView(isFromShareMenu: widget.isFromShareMenu);
+    }
+
     final l10n = context.l10n;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: EdgeInsetsDirectional.fromSTEB(16, 0, 16, 24 + keyboardInset),
+      padding: EdgeInsetsDirectional.fromSTEB(16, 8, 16, 24 + keyboardInset),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -270,11 +274,6 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
       );
 
       if (mounted) {
-        Navigator.of(context).pop(); // Close the bottom sheet
-        if (widget.isFromShareMenu) {
-          Navigator.of(context).pop(); // Also close share menu
-        }
-
         if (result.success) {
           // Send DM to moderation team with report details (TC-025/026)
           final dmRepo = ref.read(dmRepositoryProvider);
@@ -297,20 +296,23 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           }
 
           if (mounted) {
-            showDialog<void>(
-              context: context,
-              builder: (context) => const ReportConfirmationDialog(),
-            );
+            setState(() => _submitted = true);
+            final controller = widget.draggableController;
+            if (controller != null && controller.isAttached) {
+              controller.animateTo(
+                0.65,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
           }
         } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(context.l10n.reportFailed(result.error ?? '')),
-                backgroundColor: VineTheme.error,
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.l10n.reportFailed(result.error ?? '')),
+              backgroundColor: VineTheme.error,
+            ),
+          );
         }
       }
     } catch (e) {
@@ -356,6 +358,94 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     _detailsFocusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+}
+
+// =============================================================================
+// Confirmation view (shown inside the sheet after successful submission)
+// =============================================================================
+
+class _ReportConfirmationView extends StatelessWidget {
+  const _ReportConfirmationView({required this.isFromShareMenu});
+
+  final bool isFromShareMenu;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return SingleChildScrollView(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 8, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 8),
+          Row(
+            spacing: 12,
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: VineTheme.vineGreen,
+                size: 28,
+              ),
+              Expanded(
+                child: Text(
+                  l10n.reportReceivedTitle,
+                  style: VineTheme.titleMediumFont(),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.reportReceivedThankYou,
+            style: VineTheme.bodyLargeFont(),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            l10n.reportReceivedReviewNotice,
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () async {
+              final uri = Uri.parse('https://divine.video/safety');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: '${l10n.reportLearnMoreAt} ',
+                    style: VineTheme.bodyMediumFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                  ),
+                  TextSpan(
+                    text: l10n.reportSafetyUrl,
+                    style: VineTheme.bodyMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          DivineButton(
+            label: l10n.reportClose,
+            expanded: true,
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (isFromShareMenu) {
+                Navigator.of(context).pop();
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -463,8 +553,8 @@ class _RadioIndicator extends StatelessWidget {
 
 /// Confirmation dialog shown after successfully reporting content.
 ///
-/// Used by [ReportContentDialog], [share_video_menu.dart], and
-/// [report_message_dialog.dart].
+/// Used by [share_video_menu.dart] and [report_message_dialog.dart].
+/// [ReportContentDialog] uses [_ReportConfirmationView] (in-sheet) instead.
 class ReportConfirmationDialog extends StatelessWidget {
   const ReportConfirmationDialog({super.key});
 

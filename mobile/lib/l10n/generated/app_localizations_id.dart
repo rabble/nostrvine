@@ -4351,6 +4351,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get reportLearnMore => 'Pelajari Lebih Lanjut';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

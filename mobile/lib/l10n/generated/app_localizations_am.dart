@@ -4282,6 +4282,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportLearnMore => 'የበለጠ ተማር';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

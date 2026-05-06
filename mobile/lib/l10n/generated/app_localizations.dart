@@ -7716,6 +7716,12 @@ abstract class AppLocalizations {
   /// **'Learn More'**
   String get reportLearnMore;
 
+  /// No description provided for @reportLearnMoreAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more at'**
+  String get reportLearnMoreAt;
+
   /// No description provided for @reportSafetyUrl.
   ///
   /// In en, this message translates to:

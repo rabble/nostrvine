@@ -4197,6 +4197,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportLearnMore => '더 알아보기';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

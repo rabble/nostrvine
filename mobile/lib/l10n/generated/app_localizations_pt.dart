@@ -4404,6 +4404,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get reportLearnMore => 'Saiba mais';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

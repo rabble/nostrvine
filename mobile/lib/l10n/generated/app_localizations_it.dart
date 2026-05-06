@@ -4420,6 +4420,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get reportLearnMore => 'Scopri di più';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override

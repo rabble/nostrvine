@@ -4375,6 +4375,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reportLearnMore => 'Läs mer';
 
   @override
+  String get reportLearnMoreAt => 'Learn more at';
+
+  @override
   String get reportSafetyUrl => 'divine.video/safety';
 
   @override
