@@ -1063,7 +1063,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'ቪዲዮን ያርትዑ';
 
   @override
-  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
+  String get videoPlayerTapHint => 'ለማጫወት ወይም ለማቆም ይንኩ። ለመውደድ ሁለት ጊዜ ይንኩ።';
 
   @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';

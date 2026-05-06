@@ -501,6 +501,7 @@
     "videoPlayerUnmute": "Включване на звука на видеото",
     "videoPlayerEditVideo": "Редактиране на видео",
     "videoPlayerEditVideoTooltip": "Редактиране на видео",
+    "videoPlayerTapHint": "Докоснете за пускане или пауза. Докоснете два пъти, за да харесате.",
     "contentWarningLabel": "Предупреждение за съдържание",
     "contentWarningNudity": "Голота",
     "contentWarningSexualContent": "Сексуално съдържание",
