@@ -388,7 +388,6 @@ void main() {
             );
           },
           log: (_) {},
-          maxAttempts: 3,
           delay: Duration.zero,
         ),
         throwsA(isA<InviteApiException>()),
@@ -411,7 +410,6 @@ void main() {
           return const InviteConsumeResult(message: 'ok', codesAllocated: 5);
         },
         log: logs.add,
-        maxAttempts: 3,
         delay: Duration.zero,
       );
       expect(logs.length, 2);
