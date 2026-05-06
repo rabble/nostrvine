@@ -213,14 +213,8 @@ void main() {
         });
       });
 
-      // Regression: server returns 409 "Another consumption is in progress;
-      // retry" when invite consumption races (e.g. user double-taps the
-      // verification link or the polling timer hits the same code twice).
-      // The server message literally tells the client to retry, but the
-      // cubit used to give up immediately, leaving the user stuck on the
-      // verify-email screen.
       test(
-        'retries invite consumption on 409 conflict and succeeds on retry',
+        'retries invite consumption on transient error and succeeds on retry',
         () {
           when(() => mockAuthService.isRegistered).thenReturn(false);
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -253,8 +247,8 @@ void main() {
             consumeCallCount++;
             if (consumeCallCount == 1) {
               throw const InviteApiException(
-                'Another consumption is in progress; retry',
-                statusCode: 409,
+                'timeout',
+                code: InviteApiErrorCode.clientTimeout,
               );
             }
             return const InviteConsumeResult(
@@ -275,16 +269,16 @@ void main() {
               inviteCode: 'ab12ef34',
             );
 
-            // Poll fires after 3s; retry waits another ~500ms.
-            fake.elapse(const Duration(seconds: 5));
+            // Poll fires after 3s; retry waits another 2s.
+            fake.elapse(const Duration(seconds: 8));
 
             expect(cubit.state.status, EmailVerificationStatus.success);
             expect(
               consumeCallCount,
               equals(2),
               reason:
-                  'Cubit should retry once on 409 before considering '
-                  'invite consumption successful.',
+                  'Cubit should retry once on transient error before '
+                  'succeeding.',
             );
             verify(
               () => mockAuthService.signInWithDivineOAuth(any()),
@@ -296,7 +290,8 @@ void main() {
         },
       );
 
-      test('gives up after exhausting retries on persistent 409', () {
+      test('gives up after exhausting retries on persistent transient error',
+          () {
         when(() => mockAuthService.isRegistered).thenReturn(false);
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockOAuth.config).thenReturn(
@@ -325,8 +320,8 @@ void main() {
         ).thenAnswer((_) async {
           consumeCallCount++;
           throw const InviteApiException(
-            'Another consumption is in progress; retry',
-            statusCode: 409,
+            'timeout',
+            code: InviteApiErrorCode.clientTimeout,
           );
         });
 
@@ -345,10 +340,8 @@ void main() {
           expect(cubit.state.status, EmailVerificationStatus.failure);
           expect(
             consumeCallCount,
-            greaterThan(1),
-            reason:
-                'Cubit should retry at least once on 409 before giving '
-                'up.',
+            equals(3),
+            reason: 'Cubit should retry 3 times before giving up.',
           );
           verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
 
@@ -357,7 +350,7 @@ void main() {
         });
       });
 
-      test('does NOT retry on non-conflict InviteApiException (e.g. 400)', () {
+      test('does NOT retry on terminal InviteApiException', () {
         when(() => mockAuthService.isRegistered).thenReturn(false);
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockOAuth.config).thenReturn(
@@ -386,8 +379,8 @@ void main() {
         ).thenAnswer((_) async {
           consumeCallCount++;
           throw const InviteApiException(
-            'Invite is not valid',
-            statusCode: 400,
+            'Invite already used',
+            code: InviteApiErrorCode.inviteAlreadyUsed,
           );
         });
 
@@ -406,7 +399,7 @@ void main() {
           expect(
             consumeCallCount,
             equals(1),
-            reason: 'Non-409 invite errors must not be retried.',
+            reason: 'Terminal invite errors must not be retried.',
           );
 
           cubit.close();

@@ -316,14 +316,6 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   /// Delay between exchange retries
   static const _exchangeRetryDelay = Duration(seconds: 2);
 
-  /// Maximum retries for invite consumption when the server returns
-  /// HTTP 409 ("Another consumption is in progress; retry"). The conflict
-  /// happens when the server is briefly serializing concurrent attempts
-  /// for the same invite — clearing in a few hundred ms.
-  static const _maxConsumeRetries = 3;
-
-  /// Delay between invite-consumption retries on 409 conflict.
-  static const _consumeRetryDelay = Duration(milliseconds: 500);
 
   Future<void> _exchangeCodeAndLogin(String code, String verifier) async {
     for (var attempt = 1; attempt <= _maxExchangeRetries; attempt++) {
@@ -472,29 +464,20 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       return;
     }
 
-    for (var attempt = 1; attempt <= _maxConsumeRetries; attempt++) {
-      try {
-        await inviteApiClient.consumeInviteWithSession(
-          code: inviteCode,
-          oauthConfig: _oauthClient.config,
-          session: session,
-        );
-        return;
-      } on InviteApiException catch (e) {
-        final isLastAttempt = attempt == _maxConsumeRetries;
-        if (e.statusCode != 409 || isLastAttempt) {
-          rethrow;
-        }
-        Log.warning(
-          'Invite consumption conflict, retrying in '
-          '${_consumeRetryDelay.inMilliseconds}ms '
-          '(attempt $attempt/$_maxConsumeRetries): ${e.message}',
-          name: 'EmailVerificationCubit',
-          category: LogCategory.auth,
-        );
-        await Future<void>.delayed(_consumeRetryDelay);
-      }
-    }
+    await session.save();
+
+    await InviteErrorUtils.retryConsume(
+      consume: () => inviteApiClient.consumeInviteWithSession(
+        code: inviteCode,
+        oauthConfig: _oauthClient.config,
+        session: session,
+      ),
+      log: (message) => Log.warning(
+        message,
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      ),
+    );
   }
 
   @override
