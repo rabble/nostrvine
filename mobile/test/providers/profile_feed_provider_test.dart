@@ -188,18 +188,75 @@ void main() {
           'pubkey1',
           'stable1',
           baseTime.subtract(const Duration(seconds: 1)),
-        ).copyWith(rawTags: {'views': '42'});
+        ).copyWith(rawTags: {'d': 'stable1', 'views': '42'});
 
-        final mergedVideo = relayVideo.copyWith(
-          rawTags: ProfileFeed.mergeRawTagsForVideoMerge(
-            relayVideo.rawTags,
-            restVideo.rawTags,
-          ),
-          originalLoops: relayVideo.originalLoops ?? restVideo.originalLoops,
+        final mergedVideo = ProfileFeed.mergeTwoProfileVideos(
+          restVideo,
+          relayVideo,
         );
 
         expect(mergedVideo.rawTags['views'], equals('42'));
         expect(mergedVideo.totalLoops, equals(42));
+      });
+
+      test(
+        'merge takes max views when newer primary overwrote REST with zero',
+        () {
+          final merged = ProfileFeed.mergeRawTagsForVideoMerge(
+            {'d': 'stable1', 'views': '0'},
+            {'views': '42', 'd': 'stable1'},
+          );
+          expect(merged['views'], equals('42'));
+        },
+      );
+
+      test(
+        'merge preserves higher originalLoops when newer relay carries zero',
+        () {
+          final newerRelay = createTestVideo(
+            'id1',
+            'pubkey1',
+            'stable1',
+            baseTime,
+          ).copyWith(originalLoops: 0);
+          final olderRest = createTestVideo(
+            'id2',
+            'pubkey1',
+            'stable1',
+            baseTime.subtract(const Duration(seconds: 1)),
+          ).copyWith(originalLoops: 500);
+
+          final merged = ProfileFeed.mergeTwoProfileVideos(
+            olderRest,
+            newerRelay,
+          );
+
+          expect(merged.originalLoops, equals(500));
+          expect(merged.totalLoops, equals(500));
+        },
+      );
+
+      group('mergeProfileEngagementCount', () {
+        test('returns null when both sources are null', () {
+          expect(ProfileFeed.mergeProfileEngagementCount(null, null), isNull);
+        });
+
+        test('returns the non-null side when the other is null', () {
+          expect(ProfileFeed.mergeProfileEngagementCount(null, 7), equals(7));
+          expect(ProfileFeed.mergeProfileEngagementCount(7, null), equals(7));
+        });
+
+        test('returns the higher count when both are non-null', () {
+          expect(ProfileFeed.mergeProfileEngagementCount(3, 10), equals(10));
+          expect(ProfileFeed.mergeProfileEngagementCount(10, 3), equals(10));
+        });
+
+        test(
+          'treats zero and null so relay zero does not wipe a positive REST',
+          () {
+            expect(ProfileFeed.mergeProfileEngagementCount(0, 42), equals(42));
+          },
+        );
       });
 
       test('cached metadata rehydrates views onto relay profile videos', () {
