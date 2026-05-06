@@ -441,7 +441,7 @@ void main() {
 
     group('NotificationFeedMarkAllRead', () {
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'sets unread count to 0',
+        'flips every notification to read and zeros unread count on success',
         setUp: () {
           when(
             () => mockNotificationRepo.markAllAsRead(),
@@ -450,16 +450,70 @@ void main() {
         build: createBloc,
         seed: () => NotificationFeedState(
           status: NotificationFeedStatus.loaded,
-          notifications: [_videoNotif()],
+          notifications: [_videoNotif(), _actorNotif()],
           unreadCount: 5,
         ),
         act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
         expect: () => [
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: [_videoNotif()],
+            notifications: [
+              _videoNotif(isRead: true),
+              _actorNotif(isRead: true),
+            ],
           ),
         ],
+        verify: (_) {
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'rolls back optimistic update and forwards error when server fails',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenThrow(Exception('network error'));
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_videoNotif(), _actorNotif()],
+          unreadCount: 5,
+        ),
+        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
+        expect: () => [
+          // Optimistic update — rows flipped, count zeroed.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _videoNotif(isRead: true),
+              _actorNotif(isRead: true),
+            ],
+          ),
+          // Rollback on failure — original rows and count restored so the
+          // next refresh does not silently regress the badge.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_videoNotif(), _actorNotif()],
+            unreadCount: 5,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'no-ops when nothing is unread',
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [_videoNotif(isRead: true)],
+        ),
+        act: (bloc) => bloc.add(NotificationFeedMarkAllRead()),
+        expect: () => <NotificationFeedState>[],
+        verify: (_) {
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+        },
       );
     });
 

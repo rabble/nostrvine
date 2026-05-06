@@ -254,13 +254,49 @@ class NotificationFeedBloc
   }
 
   /// Handle mark all as read.
+  ///
+  /// Optimistically flips every notification's `isRead` to `true` and zeros
+  /// the unread count, then awaits the server write. On failure the
+  /// pre-optimistic notifications and unread count are restored so the next
+  /// refresh does not silently regress the badge / row state, and the
+  /// underlying error is forwarded to the bloc error stream.
   Future<void> _onMarkAllRead(
     NotificationFeedMarkAllRead event,
     Emitter<NotificationFeedState> emit,
   ) async {
-    emit(state.copyWith(unreadCount: 0));
+    final hasUnread =
+        state.unreadCount > 0 || state.notifications.any((n) => !n.isRead);
+    if (!hasUnread) return;
 
-    unawaited(_notificationRepository.markAllAsRead());
+    final previousNotifications = state.notifications;
+    final previousUnreadCount = state.unreadCount;
+
+    final updatedNotifications = state.notifications.map((n) {
+      if (n.isRead) return n;
+      return switch (n) {
+        VideoNotification() => n.copyWith(isRead: true),
+        ActorNotification() => n.copyWith(isRead: true),
+      };
+    }).toList();
+
+    emit(
+      state.copyWith(
+        notifications: updatedNotifications,
+        unreadCount: 0,
+      ),
+    );
+
+    try {
+      await _notificationRepository.markAllAsRead();
+    } catch (e, s) {
+      addError(e, s);
+      emit(
+        state.copyWith(
+          notifications: previousNotifications,
+          unreadCount: previousUnreadCount,
+        ),
+      );
+    }
   }
 
   /// Handle follow-back action.
