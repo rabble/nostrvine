@@ -260,7 +260,7 @@ class NotificationFeedBloc
 
     emit(
       state.copyWith(
-        notifications: updated,
+        notifications: _applyFollowState(updated),
         unreadCount: wasUnread
             ? (state.unreadCount - 1).clamp(0, state.unreadCount)
             : state.unreadCount,

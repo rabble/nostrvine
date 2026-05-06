@@ -419,6 +419,42 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
+        're-derives follow state when tapping a follow notification',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.markAsRead(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
+        },
+        build: createBloc,
+        seed: () => NotificationFeedState(
+          status: NotificationFeedStatus.loaded,
+          notifications: [
+            _actorNotif(
+              id: 'follow1',
+              pubkey: _alicePubkey,
+              isFollowingBack: false,
+            ),
+          ],
+          unreadCount: 1,
+        ),
+        act: (bloc) => bloc.add(NotificationFeedItemTapped('follow1')),
+        expect: () => [
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'follow1',
+                pubkey: _alicePubkey,
+                isFollowingBack: true,
+                isRead: true,
+              ),
+            ],
+          ),
+        ],
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
         'marks $ActorNotification as read locally and decrements unread',
         setUp: () {
           when(
