@@ -776,11 +776,19 @@ void main() {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'emits error status for username too long',
         build: createBloc,
-        act: (bloc) => bloc.add(const UsernameChanged('aaaaaaaaaaaaaaaaaaaaa')),
+        act: (bloc) => bloc.add(
+          UsernameChanged(
+            List.filled(kDivineUsernameMaxLength + 1, 'a').join(),
+          ),
+        ),
         wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
+              .having(
+                (s) => s.username,
+                'username',
+                List.filled(kDivineUsernameMaxLength + 1, 'a').join(),
+              )
               .having(
                 (s) => s.usernameStatus,
                 'usernameStatus',
@@ -805,12 +813,18 @@ void main() {
               .having(
                 (s) => s.usernameStatus,
                 'usernameStatus',
-                UsernameStatus.error,
+                UsernameStatus.invalidFormat,
               )
               .having(
                 (s) => s.usernameError,
                 'usernameError',
                 equals(UsernameValidationError.invalidFormat),
+              )
+              .having(
+                (s) => s.usernameFormatMessage,
+                'usernameFormatMessage',
+                'Only letters, numbers, and hyphens are allowed '
+                    '(your username becomes username.divine.video)',
               ),
         ],
       );

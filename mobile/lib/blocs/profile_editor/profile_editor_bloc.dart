@@ -13,15 +13,10 @@ import 'package:unified_logger/unified_logger.dart';
 part 'profile_editor_event.dart';
 part 'profile_editor_state.dart';
 
-/// Minimum username length.
-const _minUsernameLength = 3;
-
-/// Maximum username length.
-const _maxUsernameLength = 20;
-
-/// Username format: lowercase letters, numbers, hyphens, underscores, periods.
-/// NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec.
-final _usernamePattern = RegExp(r'^[a-z0-9._-]+$');
+/// Matches [DivineUsernameInvalid.reason] for length failures from
+/// [validateDivineUsername].
+String get _divineUsernameLengthFailureReason =>
+    'Usernames must be $kDivineUsernameMinLength–$kDivineUsernameMaxLength characters';
 
 /// External NIP-05 format: `local-part@domain` per NIP-05 spec.
 /// Local part: a-z0-9-_. (lowercase only).
@@ -130,31 +125,27 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
-    if (!_usernamePattern.hasMatch(rawUsername)) {
+    final validation = validateDivineUsername(rawUsername);
+    if (validation case DivineUsernameInvalid(:final reason)) {
+      final isLength = reason == _divineUsernameLengthFailureReason;
       emit(
         state.copyWith(
           username: username,
-          usernameStatus: UsernameStatus.error,
-          usernameError: UsernameValidationError.invalidFormat,
+          usernameStatus: isLength
+              ? UsernameStatus.error
+              : UsernameStatus.invalidFormat,
+          usernameError: isLength
+              ? UsernameValidationError.invalidLength
+              : UsernameValidationError.invalidFormat,
+          usernameFormatMessage: isLength ? null : reason,
         ),
       );
       return;
     }
 
-    // Then check length
-    if (username.length < _minUsernameLength ||
-        username.length > _maxUsernameLength) {
-      emit(
-        state.copyWith(
-          username: username,
-          usernameStatus: UsernameStatus.error,
-          usernameError: UsernameValidationError.invalidLength,
-        ),
-      );
-      return;
-    }
+    final normalized = (validation as DivineUsernameValid).normalized;
 
-    if (state.reservedUsernames.contains(username)) {
+    if (state.reservedUsernames.contains(normalized)) {
       emit(
         state.copyWith(
           username: username,
@@ -166,7 +157,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     // Skip API check if username matches the user's own claimed username
     final initial = state.initialUsername;
-    if (initial != null && username == initial.toLowerCase()) {
+    if (initial != null && normalized == initial.toLowerCase()) {
       emit(
         state.copyWith(username: username, usernameStatus: UsernameStatus.idle),
       );
@@ -181,7 +172,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
 
     final result = await _profileRepository.checkUsernameAvailability(
-      username: username,
+      username: normalized,
       currentUserPubkey: _currentUserPubkey,
     );
 
@@ -194,7 +185,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(
           state.copyWith(
             usernameStatus: UsernameStatus.reserved,
-            reservedUsernames: {...state.reservedUsernames, username},
+            reservedUsernames: {...state.reservedUsernames, normalized},
           ),
         );
       case UsernameBurned():
@@ -299,8 +290,14 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final username = state.username;
     if (username.isEmpty) return;
 
+    final validation = validateDivineUsername(username);
+    if (validation case DivineUsernameInvalid()) {
+      return;
+    }
+    final normalized = (validation as DivineUsernameValid).normalized;
+
     // Remove from local reserved cache so the check runs against the server
-    final updatedReserved = {...state.reservedUsernames}..remove(username);
+    final updatedReserved = {...state.reservedUsernames}..remove(normalized);
 
     emit(
       state.copyWith(
@@ -310,7 +307,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
 
     final result = await _profileRepository.checkUsernameAvailability(
-      username: username,
+      username: normalized,
       currentUserPubkey: _currentUserPubkey,
     );
 
@@ -323,7 +320,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(
           state.copyWith(
             usernameStatus: UsernameStatus.reserved,
-            reservedUsernames: {...state.reservedUsernames, username},
+            reservedUsernames: {...state.reservedUsernames, normalized},
           ),
         );
       case UsernameBurned():
@@ -344,7 +341,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(
           state.copyWith(
             usernameStatus: UsernameStatus.reserved,
-            reservedUsernames: {...state.reservedUsernames, username},
+            reservedUsernames: {...state.reservedUsernames, normalized},
           ),
         );
     }
@@ -369,9 +366,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     // Bloc decides which NIP-05 value to use based on current mode
     final isExternal = state.nip05Mode == Nip05Mode.external_;
-    final username = isExternal || (event.username?.trim().isEmpty ?? true)
+    final trimmedUsername = event.username?.trim();
+    final username = isExternal || (trimmedUsername?.isEmpty ?? true)
         ? null
-        : event.username;
+        : switch (validateDivineUsername(trimmedUsername!)) {
+            DivineUsernameValid(:final normalized) => normalized,
+            DivineUsernameInvalid() => trimmedUsername,
+          };
     final externalNip05 =
         !isExternal || (event.externalNip05?.trim().isEmpty ?? true)
         ? null

@@ -65,7 +65,7 @@ enum UsernameStatus {
   /// Username has been permanently burned and is no longer available.
   burned,
 
-  /// Username has invalid format (e.g. contains dots, underscores).
+  /// Username has invalid format for divine.video (e.g. dots, underscores).
   invalidFormat,
 
   /// Validation error (network or other error).
@@ -76,13 +76,13 @@ enum UsernameStatus {
 ///
 /// The UI layer should map these to localized strings.
 enum UsernameValidationError {
-  /// Username contains invalid characters.
+  /// Username contains invalid characters or hyphen placement.
   ///
-  /// Valid characters: lowercase letters, numbers, hyphens, underscores,
-  /// periods. Per NIP-05, local parts are lowercase-only (a-z0-9-_.).
+  /// Valid characters for a divine.video username are lowercase letters,
+  /// digits, and non-edge hyphens (single DNS label under *.divine.video).
   invalidFormat,
 
-  /// Username length is outside allowed range (3-20 characters).
+  /// Username length is outside allowed range (3–63 characters).
   invalidLength,
 
   /// Failed to check username availability due to network error.
