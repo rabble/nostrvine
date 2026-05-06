@@ -3409,30 +3409,30 @@ void main() {
       test(
         'returns validation error for too-short username before request',
         () async {
-        final result = await profileRepository.claimUsername(username: 'ab');
+          final result = await profileRepository.claimUsername(username: 'ab');
 
-        expect(
-          result,
-          isA<UsernameClaimError>().having(
-            (e) => e.message,
-            'message',
-            'Usernames must be 3–63 characters',
-          ),
-        );
-        verifyNever(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        );
-        verifyNever(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        );
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Usernames must be 3–63 characters',
+            ),
+          );
+          verifyNever(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          );
+          verifyNever(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          );
         },
       );
 
