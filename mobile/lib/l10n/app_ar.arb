@@ -2806,6 +2806,8 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "تقسيم المقطع المحدد",
+    "videoEditorExtractAudioLabel": "استخراج الصوت",
+    "videoEditorExtractAudioFromClipSemanticLabel": "استخراج الصوت من المقطع وكتم الصوت الأصلي",
     "videoEditorStickersDivineOriginals": "Divine الأصلية",
     "videoEditorStickerSearchHint": "البحث في الملصقات...",
     "videoEditorTextAlignmentSemanticLabel": "محاذاة النص",

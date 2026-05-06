@@ -11600,6 +11600,18 @@ abstract class AppLocalizations {
   /// **'Split selected clip'**
   String get videoEditorSplitSelectedClipSemanticLabel;
 
+  /// No description provided for @videoEditorExtractAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract Audio'**
+  String get videoEditorExtractAudioLabel;
+
+  /// No description provided for @videoEditorExtractAudioFromClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract audio from clip and mute original'**
+  String get videoEditorExtractAudioFromClipSemanticLabel;
+
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///
   /// In en, this message translates to:

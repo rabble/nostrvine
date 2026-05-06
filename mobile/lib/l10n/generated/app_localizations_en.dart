@@ -6571,6 +6571,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'Split selected clip';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Extract audio from clip and mute original';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finish timeline editing';
 

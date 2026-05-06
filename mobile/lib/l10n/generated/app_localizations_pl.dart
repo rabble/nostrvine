@@ -6727,6 +6727,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Podziel wybrany klip';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Wyodrębnij dźwięk';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Wyodrębnij dźwięk z klipu i wycisz oryginał';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Zakończ edycję osi czasu';
 

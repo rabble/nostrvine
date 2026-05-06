@@ -6514,6 +6514,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'تقسيم المقطع المحدد';
 
   @override
+  String get videoEditorExtractAudioLabel => 'استخراج الصوت';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'استخراج الصوت من المقطع وكتم الصوت الأصلي';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'إنهاء تحرير الجدول الزمني';
 

@@ -2803,6 +2803,8 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Geselecteerd item dupliceren",
     "videoEditorSplitLabel": "Splitsen",
     "videoEditorSplitSelectedClipSemanticLabel": "Geselecteerde clip splitsen",
+    "videoEditorExtractAudioLabel": "Audio extraheren",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Audio uit clip extraheren en origineel dempen",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
     "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",

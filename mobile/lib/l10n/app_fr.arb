@@ -2803,6 +2803,8 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Dupliquer l'élément sélectionné",
     "videoEditorSplitLabel": "Scinder",
     "videoEditorSplitSelectedClipSemanticLabel": "Scinder le clip sélectionné",
+    "videoEditorExtractAudioLabel": "Extraire l'audio",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Extraire l'audio du clip et couper le son de l'original",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminer l'édition de la timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "Lire l'aperçu",
     "videoEditorAudioPausePreviewSemanticLabel": "Mettre l'aperçu en pause",

@@ -6609,6 +6609,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geselecteerde clip splitsen';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Audio extraheren';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Audio uit clip extraheren en origineel dempen';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Bewerken van tijdlijn voltooien';
 

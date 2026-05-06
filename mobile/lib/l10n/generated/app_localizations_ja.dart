@@ -6303,6 +6303,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => '選択したクリップを分割';
 
   @override
+  String get videoEditorExtractAudioLabel => '音声を抽出';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'クリップから音声を抽出してオリジナルをミュート';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel => 'タイムライン編集を終了';
 
   @override

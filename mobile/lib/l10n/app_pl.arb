@@ -2803,6 +2803,8 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Duplikuj wybrany element",
     "videoEditorSplitLabel": "Podziel",
     "videoEditorSplitSelectedClipSemanticLabel": "Podziel wybrany klip",
+    "videoEditorExtractAudioLabel": "Wyodrębnij dźwięk",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Wyodrębnij dźwięk z klipu i wycisz oryginał",
     "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
     "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",
     "videoEditorAudioPausePreviewSemanticLabel": "Wstrzymaj podgląd",

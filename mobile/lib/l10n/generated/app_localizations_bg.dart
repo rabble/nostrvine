@@ -6648,6 +6648,13 @@ class AppLocalizationsBg extends AppLocalizations {
       'Разделете избрания клип';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Извличане на аудио';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Извлечи аудио от клип и заглуши оригинала';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Завършете редактирането на времевата линия';
 

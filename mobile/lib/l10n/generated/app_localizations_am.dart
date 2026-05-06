@@ -6437,6 +6437,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'የተመረጠውን ቅንጥብ ክፈል።';
 
   @override
+  String get videoEditorExtractAudioLabel => 'ኦዲዮ ያውጡ';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'የጊዜ መስመር አርትዖትን ጨርስ';
 

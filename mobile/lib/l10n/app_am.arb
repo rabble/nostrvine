@@ -3362,6 +3362,8 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "የተመረጠውን ንጥል ያባዛ",
     "videoEditorSplitLabel": "ተከፈለ",
     "videoEditorSplitSelectedClipSemanticLabel": "የተመረጠውን ቅንጥብ ክፈል።",
+    "videoEditorExtractAudioLabel": "ኦዲዮ ያውጡ",
+    "videoEditorExtractAudioFromClipSemanticLabel": "ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ",
     "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",
     "videoEditorAudioPausePreviewSemanticLabel": "ቅድመ እይታን ባለበት አቁም",

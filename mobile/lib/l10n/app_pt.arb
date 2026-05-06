@@ -2803,6 +2803,8 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicar item selecionado",
     "videoEditorSplitLabel": "Dividir",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividir clipe selecionado",
+    "videoEditorExtractAudioLabel": "Extrair áudio",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Extrair áudio do clipe e silenciar o original",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizar edição da linha do tempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproduzir prévia",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausar prévia",

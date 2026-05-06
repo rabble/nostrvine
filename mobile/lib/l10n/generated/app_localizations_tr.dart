@@ -6549,6 +6549,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => 'Seçili klibi böl';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Sesi çıkar';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Klipten sesi çıkar ve orijinali sessize al';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Zaman çizelgesi düzenlemeyi bitir';
 

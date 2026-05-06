@@ -3600,6 +3600,8 @@
   "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicate selected item",
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
+  "videoEditorExtractAudioLabel": "Extract Audio",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Extract audio from clip and mute original",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",

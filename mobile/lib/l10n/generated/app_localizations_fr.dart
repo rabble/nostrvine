@@ -6676,6 +6676,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Scinder le clip sélectionné';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Extraire l\'audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Extraire l\'audio du clip et couper le son de l\'original';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Terminer l\'édition de la timeline';
 

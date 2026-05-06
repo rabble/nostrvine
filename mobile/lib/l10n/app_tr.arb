@@ -2813,6 +2813,8 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "Seçili klibi böl",
+    "videoEditorExtractAudioLabel": "Sesi çıkar",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Klipten sesi çıkar ve orijinali sessize al",
     "videoEditorStickersDivineOriginals": "Divine Orijinaller",
     "videoEditorStickerSearchHint": "Çıkartma ara...",
     "videoEditorTextAlignmentSemanticLabel": "Metin hizalama",

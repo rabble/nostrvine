@@ -2806,6 +2806,8 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "選択したクリップを分割",
+    "videoEditorExtractAudioLabel": "音声を抽出",
+    "videoEditorExtractAudioFromClipSemanticLabel": "クリップから音声を抽出してオリジナルをミュート",
     "videoEditorStickersDivineOriginals": "Divine オリジナル",
     "videoEditorStickerSearchHint": "ステッカーを検索...",
     "videoEditorTextAlignmentSemanticLabel": "テキストの配置",

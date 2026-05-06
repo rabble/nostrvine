@@ -6744,6 +6744,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Împarte clipul selectat';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Extrage audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Extrage audio din clip și dezactivează sunetul originalului';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finalizează editarea cronologiei';
 

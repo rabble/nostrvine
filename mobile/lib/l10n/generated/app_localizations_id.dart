@@ -6550,6 +6550,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Bagi klip yang dipilih';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Ekstrak audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Ekstrak audio dari klip dan bisukan aslinya';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Selesai mengedit timeline';
 

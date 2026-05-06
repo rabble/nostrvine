@@ -6326,6 +6326,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorSplitSelectedClipSemanticLabel => '선택한 클립 분할';
 
   @override
+  String get videoEditorExtractAudioLabel => '오디오 추출';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      '클립에서 오디오를 추출하고 원본을 음소거';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';
 
   @override
