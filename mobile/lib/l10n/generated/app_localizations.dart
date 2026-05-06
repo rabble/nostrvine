@@ -11355,7 +11355,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoEditorAudioCategoryDivine.
   ///
   /// In en, this message translates to:
-  /// **'OG Sounds'**
+  /// **'Divine'**
   String get videoEditorAudioCategoryDivine;
 
   /// No description provided for @videoEditorAudioCategoryCommunity.

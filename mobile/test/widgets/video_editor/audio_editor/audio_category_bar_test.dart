@@ -23,34 +23,58 @@ void main() {
       );
     }
 
-    testWidgets('renders picker category chips in product order', (
-      tester,
-    ) async {
+    testWidgets('renders all category chips', (tester) async {
       await tester.pumpWidget(
-        buildWidget(category: AudioCategory.featured, onSelect: (_) {}),
+        buildWidget(category: AudioCategory.divine, onSelect: (_) {}),
       );
       await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      expect(find.text(l10n.videoEditorAudioCategoryFeatured), findsOneWidget);
       expect(find.text(l10n.videoEditorAudioCategoryDivine), findsOneWidget);
+      expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsOneWidget);
+      expect(find.text(l10n.videoEditorAudioCategoryFeatured), findsOneWidget);
       expect(find.text(l10n.videoEditorAudioCategoryMySounds), findsOneWidget);
-      expect(find.text(l10n.videoEditorAudioCategoryCommunity), findsNothing);
-
-      final featuredLeft = tester.getTopLeft(
-        find.text(l10n.videoEditorAudioCategoryFeatured),
-      );
-      final ogLeft = tester.getTopLeft(
-        find.text(l10n.videoEditorAudioCategoryDivine),
-      );
-      final mySoundsLeft = tester.getTopLeft(
-        find.text(l10n.videoEditorAudioCategoryMySounds),
-      );
-      expect(featuredLeft.dx, lessThan(ogLeft.dx));
-      expect(ogLeft.dx, lessThan(mySoundsLeft.dx));
     });
 
-    testWidgets('calls onSelect with featured when first chip is tapped', (
+    testWidgets('calls onSelect with divine when first chip is tapped', (
+      tester,
+    ) async {
+      AudioCategory? selected;
+      await tester.pumpWidget(
+        buildWidget(
+          category: AudioCategory.community,
+          onSelect: (c) => selected = c,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.videoEditorAudioCategoryDivine));
+      await tester.pumpAndSettle();
+
+      expect(selected, equals(AudioCategory.divine));
+    });
+
+    testWidgets('calls onSelect with community when second chip is tapped', (
+      tester,
+    ) async {
+      AudioCategory? selected;
+      await tester.pumpWidget(
+        buildWidget(
+          category: AudioCategory.divine,
+          onSelect: (c) => selected = c,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = lookupAppLocalizations(const Locale('en'));
+      await tester.tap(find.text(l10n.videoEditorAudioCategoryCommunity));
+      await tester.pumpAndSettle();
+
+      expect(selected, equals(AudioCategory.community));
+    });
+
+    testWidgets('calls onSelect with featured when third chip is tapped', (
       tester,
     ) async {
       AudioCategory? selected;
@@ -69,32 +93,13 @@ void main() {
       expect(selected, equals(AudioCategory.featured));
     });
 
-    testWidgets('calls onSelect with divine when second chip is tapped', (
+    testWidgets('calls onSelect with mySounds when fourth chip is tapped', (
       tester,
     ) async {
       AudioCategory? selected;
       await tester.pumpWidget(
         buildWidget(
-          category: AudioCategory.featured,
-          onSelect: (c) => selected = c,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final l10n = lookupAppLocalizations(const Locale('en'));
-      await tester.tap(find.text(l10n.videoEditorAudioCategoryDivine));
-      await tester.pumpAndSettle();
-
-      expect(selected, equals(AudioCategory.divine));
-    });
-
-    testWidgets('calls onSelect with mySounds when third chip is tapped', (
-      tester,
-    ) async {
-      AudioCategory? selected;
-      await tester.pumpWidget(
-        buildWidget(
-          category: AudioCategory.featured,
+          category: AudioCategory.divine,
           onSelect: (c) => selected = c,
         ),
       );
@@ -111,20 +116,12 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        buildWidget(category: AudioCategory.featured, onSelect: (_) {}),
+        buildWidget(category: AudioCategory.divine, onSelect: (_) {}),
       );
       await tester.pumpAndSettle();
 
       final l10n = lookupAppLocalizations(const Locale('en'));
-      final featuredSemantics = tester.widget<Semantics>(
-        find.ancestor(
-          of: find.text(l10n.videoEditorAudioCategoryFeatured),
-          matching: find.byWidgetPredicate(
-            (w) => w is Semantics && w.properties.selected != null,
-          ),
-        ),
-      );
-      final ogSemantics = tester.widget<Semantics>(
+      final divineSemantics = tester.widget<Semantics>(
         find.ancestor(
           of: find.text(l10n.videoEditorAudioCategoryDivine),
           matching: find.byWidgetPredicate(
@@ -132,9 +129,17 @@ void main() {
           ),
         ),
       );
+      final communitySemantics = tester.widget<Semantics>(
+        find.ancestor(
+          of: find.text(l10n.videoEditorAudioCategoryCommunity),
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.selected != null,
+          ),
+        ),
+      );
 
-      expect(featuredSemantics.properties.selected, isTrue);
-      expect(ogSemantics.properties.selected, isFalse);
+      expect(divineSemantics.properties.selected, isTrue);
+      expect(communitySemantics.properties.selected, isFalse);
     });
   });
 }

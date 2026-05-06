@@ -7,22 +7,22 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
-final _featuredSounds = [
-  AudioEvent.fromBundledSound(
-    VineSound(
-      id: 'wednesday',
-      title: 'Wednesday',
-      assetPath: 'assets/sounds/wednesday.mp3',
-      duration: const Duration(milliseconds: 6269),
-      tags: const ['featured'],
-    ),
+final _featuredVineSounds = [
+  VineSound(
+    id: 'wednesday',
+    title: 'Wednesday',
+    assetPath: 'assets/sounds/wednesday.mp3',
+    duration: const Duration(milliseconds: 6269),
+    tags: const ['featured'],
   ),
 ];
 
@@ -83,9 +83,11 @@ class _AudioSelectionBottomSheetState
     extends ConsumerState<AudioSelectionBottomSheet>
     with SingleTickerProviderStateMixin {
   final _audioService = AudioPlaybackService();
+  final _searchController = TextEditingController();
   String? _loadedSoundId;
   AudioEvent? _selectedItem;
-  AudioCategory _category = .featured;
+  AudioCategory _category = .divine;
+  String _searchQuery = '';
 
   late final _tabController = TabController(
     length: AudioCategory.values.length,
@@ -101,6 +103,7 @@ class _AudioSelectionBottomSheetState
   @override
   void dispose() {
     _audioService.dispose();
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -120,6 +123,21 @@ class _AudioSelectionBottomSheetState
         AudioCategory.values.indexWhere((el) => el == category),
       );
     });
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase().trim();
+    });
+  }
+
+  List<AudioEvent> _filterAudioEvents(List<AudioEvent> sounds) {
+    if (_searchQuery.isEmpty) return sounds;
+    return sounds.where((sound) {
+      final title = sound.title?.toLowerCase() ?? '';
+      final source = sound.source?.toLowerCase() ?? '';
+      return title.contains(_searchQuery) || source.contains(_searchQuery);
+    }).toList();
   }
 
   Future<void> _togglePlayPause({bool enforcePlay = false}) async {
@@ -236,18 +254,31 @@ class _AudioSelectionBottomSheetState
   @override
   Widget build(BuildContext context) {
     final bundledSoundsAsync = ref.watch(soundLibraryServiceProvider);
+    final nostrSoundsAsync = ref.watch(trendingSoundsProvider);
     final savedSounds = ref.watch(savedSoundsProvider);
 
-    // Convert bundled VineSounds to AudioEvents
-    final bundledSounds =
-        bundledSoundsAsync.whenOrNull(
-          data: (service) {
-            return service.sounds.indexed
-                .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
-                .toList();
-          },
-        ) ??
-        <AudioEvent>[];
+    final bundledVineSounds =
+        bundledSoundsAsync.whenOrNull(data: (service) => service.sounds) ??
+        <VineSound>[];
+    final filteredBundledVineSounds = _searchQuery.isEmpty
+        ? bundledVineSounds
+        : bundledVineSounds
+              .where((sound) => sound.matchesSearch(_searchQuery))
+              .toList();
+    final bundledSounds = filteredBundledVineSounds.indexed
+        .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
+        .toList();
+    final featuredSounds =
+        (_searchQuery.isEmpty
+                ? _featuredVineSounds
+                : _featuredVineSounds
+                      .where((sound) => sound.matchesSearch(_searchQuery))
+                      .toList())
+            .indexed
+            .map((e) => AudioEvent.fromBundledSound(e.$2, index: e.$1))
+            .toList();
+    final filteredSavedSounds = _filterAudioEvents(savedSounds);
+    const searchEmptyState = _SearchEmptyState();
 
     return Stack(
       children: [
@@ -255,17 +286,14 @@ class _AudioSelectionBottomSheetState
           crossAxisAlignment: .stretch,
           children: [
             AudioCategoryBar(category: _category, onSelect: _selectCategory),
+            _PickerSearchInput(
+              controller: _searchController,
+              onChanged: _onSearchChanged,
+            ),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _SoundsContent(
-                    scrollController: widget.scrollController,
-                    sounds: _featuredSounds,
-                    selectedSound: _selectedItem,
-                    audioService: _audioService,
-                    onSelect: _selectSound,
-                  ),
                   _SoundsContent(
                     scrollController: widget.scrollController,
                     sounds: bundledSounds,
@@ -273,16 +301,45 @@ class _AudioSelectionBottomSheetState
                     audioService: _audioService,
                     onSelect: _selectSound,
                   ),
+                  nostrSoundsAsync.when(
+                    data: (nostrSounds) {
+                      return _SoundsContent(
+                        scrollController: widget.scrollController,
+                        sounds: _filterAudioEvents(nostrSounds),
+                        selectedSound: _selectedItem,
+                        audioService: _audioService,
+                        onSelect: _selectSound,
+                        emptyState: _searchQuery.isNotEmpty
+                            ? searchEmptyState
+                            : const _EmptyState(),
+                      );
+                    },
+                    loading: () =>
+                        const Center(child: BrandedLoadingIndicator()),
+                    error: (error, stack) => _ErrorState(error: error),
+                  ),
                   _SoundsContent(
                     scrollController: widget.scrollController,
-                    sounds: savedSounds,
+                    sounds: featuredSounds,
                     selectedSound: _selectedItem,
                     audioService: _audioService,
                     onSelect: _selectSound,
-                    emptyState: _EmptyState(
-                      title: context.l10n.soundsSavedEmptyTitle,
-                      subtitle: context.l10n.soundsSavedEmptyDescription,
-                    ),
+                    emptyState: _searchQuery.isNotEmpty
+                        ? searchEmptyState
+                        : const _EmptyState(),
+                  ),
+                  _SoundsContent(
+                    scrollController: widget.scrollController,
+                    sounds: filteredSavedSounds,
+                    selectedSound: _selectedItem,
+                    audioService: _audioService,
+                    onSelect: _selectSound,
+                    emptyState: _searchQuery.isNotEmpty
+                        ? searchEmptyState
+                        : _EmptyState(
+                            title: context.l10n.soundsSavedEmptyTitle,
+                            subtitle: context.l10n.soundsSavedEmptyDescription,
+                          ),
                   ),
                 ],
               ),
@@ -305,6 +362,41 @@ class _AudioSelectionBottomSheetState
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PickerSearchInput extends StatelessWidget {
+  const _PickerSearchInput({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: VineTheme.onPrimary,
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: const TextStyle(color: VineTheme.whiteText),
+        decoration: InputDecoration(
+          hintText: context.l10n.soundsSearchHint,
+          hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+          prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
+          filled: true,
+          fillColor: VineTheme.backgroundColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -377,10 +469,7 @@ class _SoundsContent extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    this.title,
-    this.subtitle,
-  });
+  const _EmptyState({this.title, this.subtitle});
 
   final String? title;
   final String? subtitle;
@@ -391,11 +480,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.music_off,
-            size: 64,
-            color: VineTheme.secondaryText,
-          ),
+          const Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
           const SizedBox(height: 16),
           Text(
             title ?? context.l10n.videoEditorAudioNoSoundsAvailableTitle,
@@ -408,6 +493,87 @@ class _EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SearchEmptyState extends StatelessWidget {
+  const _SearchEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.search_off,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.soundsNoSoundsFound,
+            style: VineTheme.bodyLargeFont(),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            context.l10n.soundsNoSoundsFoundDescription,
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends ConsumerWidget {
+  const _ErrorState({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
+            const SizedBox(height: 16),
+            Text(
+              context.l10n.videoEditorAudioFailedToLoadTitle,
+              style: VineTheme.bodyLargeFont(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.invalidate(trendingSoundsProvider);
+              },
+              icon: const Icon(Icons.refresh),
+              label: Text(context.l10n.commonRetry),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.backgroundColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
