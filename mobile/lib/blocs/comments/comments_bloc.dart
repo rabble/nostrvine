@@ -706,8 +706,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       return;
     }
 
-    emit(state.copyWith(isPosting: true));
-
     try {
       final postedComment = await _commentsRepository.postStickerComment(
         stickerShortcode: event.stickerShortcode,
@@ -728,7 +726,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       emit(
         state.copyWith(
           commentsById: updatedCommentsById,
-          isPosting: false,
           replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
         ),
       );
@@ -740,10 +737,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       );
 
       emit(
-        state.copyWith(
-          isPosting: false,
-          error: CommentsError.postCommentFailed,
-        ),
+        state.copyWith(error: CommentsError.postCommentFailed),
       );
     }
   }

@@ -547,11 +547,9 @@ class _MentionLink extends ConsumerWidget {
       onTap: () => context.push(OtherProfileScreen.pathForNpub(npub)),
       child: Text(
         '@$displayText',
-        style: VineTheme.bodyFont(
-          fontSize: 14,
+        style: VineTheme.bodyMediumFont(
           color: VineTheme.tabIndicatorGreen,
-          fontWeight: FontWeight.w600,
-        ),
+        ).copyWith(fontWeight: FontWeight.w600),
       ),
     );
   }

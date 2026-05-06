@@ -1010,7 +1010,7 @@ void main() {
       const testStickerUrl = 'https://blossom.example.com/fire.webp';
 
       blocTest<CommentsBloc, CommentsState>(
-        'emits posting state and adds sticker comment on success',
+        'adds sticker comment on success',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(true);
           when(
@@ -1047,13 +1047,7 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<CommentsState>().having(
-            (s) => s.isPosting,
-            'isPosting',
-            isTrue,
-          ),
           isA<CommentsState>()
-              .having((s) => s.isPosting, 'isPosting', isFalse)
               .having((s) => s.comments, 'comments', hasLength(1))
               .having(
                 (s) => s.comments.first.content,
@@ -1114,17 +1108,10 @@ void main() {
         ),
         expect: () => [
           isA<CommentsState>().having(
-            (s) => s.isPosting,
-            'isPosting',
-            isTrue,
+            (s) => s.error,
+            'error',
+            CommentsError.postCommentFailed,
           ),
-          isA<CommentsState>()
-              .having((s) => s.isPosting, 'isPosting', isFalse)
-              .having(
-                (s) => s.error,
-                'error',
-                CommentsError.postCommentFailed,
-              ),
         ],
       );
 

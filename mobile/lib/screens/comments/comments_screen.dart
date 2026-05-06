@@ -259,11 +259,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
       context: context,
       title: Text(
         'Stickers',
-        style: VineTheme.bodyFont(
-          fontSize: 18,
-          fontWeight: FontWeight.w800,
-          color: VineTheme.onSurface,
-        ),
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: BlocProvider(
         create: (_) =>

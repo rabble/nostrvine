@@ -72,7 +72,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(
               message,
-              style: VineTheme.bodyFont(color: VineTheme.secondaryText),
+              style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
             ),
           ],
@@ -138,11 +138,11 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return TextField(
       onChanged: onChanged,
-      style: VineTheme.bodyFont(color: VineTheme.onSurface),
+      style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
       cursorColor: VineTheme.tabIndicatorGreen,
       decoration: InputDecoration(
         hintText: 'Search stickers...',
-        hintStyle: VineTheme.bodyFont(color: VineTheme.onSurfaceMuted),
+        hintStyle: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
         prefixIcon: const Icon(
           Icons.search,
           color: VineTheme.onSurfaceMuted,
@@ -169,7 +169,7 @@ class _EmptyState extends StatelessWidget {
     return Center(
       child: Text(
         'No stickers found',
-        style: VineTheme.bodyFont(color: VineTheme.onSurfaceMuted),
+        style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
       ),
     );
   }
