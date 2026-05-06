@@ -4394,6 +4394,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get routeInvalidProfileId => 'ID de profil invalid';
 
   @override
+  String get routeUnknownPath => 'Această pagină nu e în aplicație.';
+
+  @override
   String get routeDefaultListName => 'Listă';
 
   @override

@@ -1877,6 +1877,7 @@
     "routeInvalidCategory": "Catégorie invalide",
     "routeNoVideosToDisplay": "Aucune vidéo à afficher",
     "routeInvalidProfileId": "ID de profil invalide",
+    "routeUnknownPath": "Cette page n’est pas dans l’app.",
     "routeDefaultListName": "Liste",
     "supportTitle": "Centre d'aide",
     "supportContactSupport": "Contacter le support",

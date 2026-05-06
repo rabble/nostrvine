@@ -2231,6 +2231,7 @@
   "routeInvalidCategory": "Invalid category",
   "routeNoVideosToDisplay": "No videos to display",
   "routeInvalidProfileId": "Invalid profile ID",
+  "routeUnknownPath": "That page isn’t in the app.",
   "routeDefaultListName": "List",
   "supportTitle": "Support Center",
   "supportContactSupport": "Contact Support",

@@ -2177,6 +2177,7 @@
     "routeInvalidCategory": "ልክ ያልሆነ ምድብ",
     "routeNoVideosToDisplay": "ምንም የሚታዩ ቪዲዮዎች የሉም",
     "routeInvalidProfileId": "ልክ ያልሆነ የመገለጫ መታወቂያ",
+    "routeUnknownPath": "ያ ገጽ በመተግበሪያው ውስጥ የለም።",
     "routeDefaultListName": "ዝርዝር",
     "supportTitle": "የድጋፍ ማዕከል",
     "supportContactSupport": "ድጋፍን ያነጋግሩ",

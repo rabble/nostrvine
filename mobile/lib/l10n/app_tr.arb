@@ -1876,6 +1876,7 @@
     "routeInvalidCategory": "Geçersiz kategori",
     "routeNoVideosToDisplay": "Gösterilecek video yok",
     "routeInvalidProfileId": "Geçersiz profil kimliği",
+    "routeUnknownPath": "Bu sayfa uygulamada yok.",
     "routeDefaultListName": "Liste",
     "supportTitle": "Destek Merkezi",
     "supportContactSupport": "Destekle İletişime Geç",

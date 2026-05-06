@@ -4069,6 +4069,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get routeInvalidProfileId => '無効なプロフィール ID';
 
   @override
+  String get routeUnknownPath => 'このページはアプリ内にありません。';
+
+  @override
   String get routeDefaultListName => 'リスト';
 
   @override

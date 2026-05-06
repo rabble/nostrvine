@@ -7526,6 +7526,12 @@ abstract class AppLocalizations {
   /// **'Invalid profile ID'**
   String get routeInvalidProfileId;
 
+  /// No description provided for @routeUnknownPath.
+  ///
+  /// In en, this message translates to:
+  /// **'That page isn’t in the app.'**
+  String get routeUnknownPath;
+
   /// No description provided for @routeDefaultListName.
   ///
   /// In en, this message translates to:

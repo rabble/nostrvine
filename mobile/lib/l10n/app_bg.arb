@@ -2078,6 +2078,7 @@
     "routeInvalidCategory": "Невалидна категория",
     "routeNoVideosToDisplay": "Няма видеа за показване",
     "routeInvalidProfileId": "Невалиден ID на потребителския профил",
+    "routeUnknownPath": "Тази страница не е налична в приложението.",
     "routeDefaultListName": "Списък",
     "supportTitle": "Център за поддръжка",
     "supportContactSupport": "Свържи се с поддръжката",

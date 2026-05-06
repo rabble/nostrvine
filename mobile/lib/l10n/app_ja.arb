@@ -1869,6 +1869,7 @@
     "routeInvalidCategory": "無効なカテゴリ",
     "routeNoVideosToDisplay": "表示する動画がないよ",
     "routeInvalidProfileId": "無効なプロフィール ID",
+    "routeUnknownPath": "このページはアプリ内にありません。",
     "routeDefaultListName": "リスト",
     "supportTitle": "サポート",
     "supportContactSupport": "サポートに連絡",

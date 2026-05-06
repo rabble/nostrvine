@@ -1877,6 +1877,7 @@
     "routeInvalidCategory": "Ogiltig kategori",
     "routeNoVideosToDisplay": "Inga videor att visa",
     "routeInvalidProfileId": "Ogiltigt profil-ID",
+    "routeUnknownPath": "Den sidan finns inte i appen.",
     "routeDefaultListName": "Lista",
     "supportTitle": "Supportcenter",
     "supportContactSupport": "Kontakta support",

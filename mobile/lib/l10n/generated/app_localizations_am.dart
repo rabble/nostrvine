@@ -4179,6 +4179,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get routeInvalidProfileId => 'ልክ ያልሆነ የመገለጫ መታወቂያ';
 
   @override
+  String get routeUnknownPath => 'ያ ገጽ በመተግበሪያው ውስጥ የለም።';
+
+  @override
   String get routeDefaultListName => 'ዝርዝር';
 
   @override

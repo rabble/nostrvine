@@ -1877,6 +1877,7 @@
     "routeInvalidCategory": "Ongeldige categorie",
     "routeNoVideosToDisplay": "Geen video's om weer te geven",
     "routeInvalidProfileId": "Ongeldige profiel-ID",
+    "routeUnknownPath": "Die pagina zit niet in de app.",
     "routeDefaultListName": "Lijst",
     "supportTitle": "Supportcentrum",
     "supportContactSupport": "Contact met support",

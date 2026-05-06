@@ -1877,6 +1877,7 @@
     "routeInvalidCategory": "Categorie invalidă",
     "routeNoVideosToDisplay": "Niciun videoclip de afișat",
     "routeInvalidProfileId": "ID de profil invalid",
+    "routeUnknownPath": "Această pagină nu e în aplicație.",
     "routeDefaultListName": "Listă",
     "supportTitle": "Centru de asistență",
     "supportContactSupport": "Contactează asistența",

@@ -1165,6 +1165,7 @@
     "routeInvalidCategory": "잘못된 카테고리예요",
     "routeNoVideosToDisplay": "표시할 영상이 없어요",
     "routeInvalidProfileId": "잘못된 프로필 ID예요",
+    "routeUnknownPath": "앱에 없는 화면이에요.",
     "routeDefaultListName": "목록",
     "supportTitle": "지원 센터",
     "supportContactSupport": "지원팀 문의",

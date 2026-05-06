@@ -4226,6 +4226,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get routeInvalidProfileId => 'مُعرِّف ملف شخصي غير صالح';
 
   @override
+  String get routeUnknownPath => 'هذه الصفحة غير متوفرة في التطبيق.';
+
+  @override
   String get routeDefaultListName => 'قائمة';
 
   @override

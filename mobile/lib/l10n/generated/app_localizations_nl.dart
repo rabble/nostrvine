@@ -4284,6 +4284,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get routeInvalidProfileId => 'Ongeldige profiel-ID';
 
   @override
+  String get routeUnknownPath => 'Die pagina zit niet in de app.';
+
+  @override
   String get routeDefaultListName => 'Lijst';
 
   @override

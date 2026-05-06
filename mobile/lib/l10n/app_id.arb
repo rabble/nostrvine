@@ -1876,6 +1876,7 @@
     "routeInvalidCategory": "Kategori tidak valid",
     "routeNoVideosToDisplay": "Tidak ada video untuk ditampilkan",
     "routeInvalidProfileId": "ID profil tidak valid",
+    "routeUnknownPath": "Halaman itu tidak ada di aplikasi.",
     "routeDefaultListName": "Daftar",
     "supportTitle": "Pusat Bantuan",
     "supportContactSupport": "Hubungi Dukungan",

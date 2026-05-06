@@ -4266,6 +4266,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get routeInvalidProfileId => 'Ogiltigt profil-ID';
 
   @override
+  String get routeUnknownPath => 'Den sidan finns inte i appen.';
+
+  @override
   String get routeDefaultListName => 'Lista';
 
   @override

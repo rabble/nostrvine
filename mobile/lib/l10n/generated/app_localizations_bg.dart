@@ -4315,6 +4315,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get routeInvalidProfileId => 'Невалиден ID на потребителския профил';
 
   @override
+  String get routeUnknownPath => 'Тази страница не е налична в приложението.';
+
+  @override
   String get routeDefaultListName => 'Списък';
 
   @override

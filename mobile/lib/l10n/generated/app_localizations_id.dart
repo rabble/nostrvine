@@ -4241,6 +4241,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get routeInvalidProfileId => 'ID profil tidak valid';
 
   @override
+  String get routeUnknownPath => 'Halaman itu tidak ada di aplikasi.';
+
+  @override
   String get routeDefaultListName => 'Daftar';
 
   @override

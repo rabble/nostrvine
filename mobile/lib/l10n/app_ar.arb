@@ -1869,6 +1869,7 @@
     "routeInvalidCategory": "فئة غير صالحة",
     "routeNoVideosToDisplay": "لا توجد مقاطع فيديو لعرضها",
     "routeInvalidProfileId": "مُعرِّف ملف شخصي غير صالح",
+    "routeUnknownPath": "هذه الصفحة غير متوفرة في التطبيق.",
     "routeDefaultListName": "قائمة",
     "supportTitle": "مركز الدعم",
     "supportContactSupport": "التواصل مع الدعم",

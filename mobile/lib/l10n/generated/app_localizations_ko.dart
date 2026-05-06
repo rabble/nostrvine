@@ -4084,6 +4084,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get routeInvalidProfileId => '잘못된 프로필 ID예요';
 
   @override
+  String get routeUnknownPath => '앱에 없는 화면이에요.';
+
+  @override
   String get routeDefaultListName => '목록';
 
   @override

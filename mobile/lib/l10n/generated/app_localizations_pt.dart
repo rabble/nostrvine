@@ -4294,6 +4294,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get routeInvalidProfileId => 'ID de perfil inválido';
 
   @override
+  String get routeUnknownPath => 'Essa página não existe no app.';
+
+  @override
   String get routeDefaultListName => 'Lista';
 
   @override

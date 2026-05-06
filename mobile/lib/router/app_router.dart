@@ -159,6 +159,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ],
     // Refresh router when auth state changes
     refreshListenable: authListenable,
+    errorBuilder: (context, state) => RouteErrorScreen(
+      message: context.l10n.routeUnknownPath,
+    ),
     redirect: (context, state) {
       // Rewrite divine.video universal-link URLs to internal paths before the
       // auth/match logic runs. Android delivers the full intent URL (scheme +

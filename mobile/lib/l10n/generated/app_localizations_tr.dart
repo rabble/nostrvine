@@ -4252,6 +4252,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get routeInvalidProfileId => 'Geçersiz profil kimliği';
 
   @override
+  String get routeUnknownPath => 'Bu sayfa uygulamada yok.';
+
+  @override
   String get routeDefaultListName => 'Liste';
 
   @override
