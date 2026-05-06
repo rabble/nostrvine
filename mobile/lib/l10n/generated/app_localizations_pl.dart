@@ -840,7 +840,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Nazwa użytkownika musi mieć 3-63 znaków';
+      'Nazwa użytkownika musi mieć od 3 do 63 znaków';
 
   @override
   String get profileSetupUsernameNetworkError =>
