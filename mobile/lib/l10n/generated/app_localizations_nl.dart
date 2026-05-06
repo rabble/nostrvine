@@ -5437,7 +5437,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get categoryGallerySortOptionsLabel => 'Sorteeropties categorie';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Populair';
 
   @override
   String get categoryGallerySortNew => 'Nieuw';

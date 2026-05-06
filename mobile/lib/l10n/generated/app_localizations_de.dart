@@ -5480,13 +5480,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryGallerySortOptionsLabel => 'Sortieroptionen für Kategorie';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Beliebt';
 
   @override
   String get categoryGallerySortNew => 'Neu';
 
   @override
-  String get categoryGallerySortClassic => 'Classic';
+  String get categoryGallerySortClassic => 'Klassiker';
 
   @override
   String get categoryGallerySortForYou => 'Für dich';

@@ -5468,7 +5468,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Opciones de orden de la categoría';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Populares';
 
   @override
   String get categoryGallerySortNew => 'Nuevos';
