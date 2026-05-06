@@ -10,15 +10,7 @@ environment:
 
 dependencies:
   cronet_http: ^1.8.0
-  # Pinned to 1.x because cupertino_http 2.x switched to the experimental
-  # `native-assets` Dart feature, which does not embed
-  # `cupertino_http.framework` into `Runner.app/Frameworks` reliably and
-  # caused `_NativeCupertinoHttp_protocolTrampoline_…` lookup failures at
-  # runtime (silent fallback to dart:io). 1.5.1 uses classic CocoaPods
-  # integration, keeps HTTP/2 + HTTP/3 via NSURLSession, and embeds
-  # correctly. Re-evaluate once cupertino_http 2.x's native-assets path
-  # works without manual Xcode steps.
-  cupertino_http: '>=1.5.1 <2.0.0'
+  cupertino_http: ^2.4.0
   flutter:
     sdk: flutter
   flutter_cache_manager: ^3.4.1

@@ -173,4 +173,47 @@ post_install do |installer|
 
     end
   end
+
+  # Force-load cupertino_http's static framework into Runner.
+  #
+  # cupertino_http v2.x looks up native symbols
+  # (e.g. `_NativeCupertinoHttp_protocolTrampoline_*`) from the
+  # process via Dart FFI. With our
+  # `use_frameworks! :linkage => :static` Podfile setting, the static
+  # framework is built but the linker drops these symbols as unused
+  # because no Swift/ObjC call site references them — they are only
+  # ever called from Dart at runtime. The result at runtime is:
+  #   Couldn't resolve native function ... No asset with id
+  #   'package:cupertino_http/src/native_cupertino_bindings.dart'.
+  # `-force_load` tells the linker to keep every object file from the
+  # framework, preserving the FFI symbols so dlsym(RTLD_DEFAULT, ...)
+  # finds them. See dart-lang/http#1417.
+  #
+  # We also strip the regular `-framework "cupertino_http"` entry
+  # that CocoaPods auto-injects into Pods-Runner.*.xcconfig — without
+  # that, the framework is linked twice (once via -framework, once
+  # via -force_load) which produces "duplicate symbols" errors.
+  installer.aggregate_targets.each do |aggregate_target|
+    aggregate_target.xcconfigs.each do |config_name, xcconfig|
+      xcconfig_path = aggregate_target.xcconfig_path(config_name)
+      next unless File.exist?(xcconfig_path)
+      content = File.read(xcconfig_path)
+      stripped = content.gsub(/\s*-framework\s+"cupertino_http"/, '')
+      File.write(xcconfig_path, stripped) if stripped != content
+    end
+
+    aggregate_target.user_project.native_targets.each do |native_target|
+      next unless native_target.name == 'Runner'
+      native_target.build_configurations.each do |config|
+        ldflags = Array(config.build_settings['OTHER_LDFLAGS']).dup
+        ldflags << '$(inherited)' unless ldflags.include?('$(inherited)')
+        force_load_flag =
+          '-force_load "${BUILT_PRODUCTS_DIR}/cupertino_http/' \
+          'cupertino_http.framework/cupertino_http"'
+        ldflags << force_load_flag unless ldflags.include?(force_load_flag)
+        config.build_settings['OTHER_LDFLAGS'] = ldflags
+      end
+    end
+    aggregate_target.user_project.save
+  end
 end
