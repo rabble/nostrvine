@@ -1,5 +1,8 @@
 # Invite Consume Telemetry Design
 
+Status: Current
+Validated against: `invite_api_client`, `EmailVerificationCubit`, `DivineAuthCubit` on 2026-05-06.
+
 **Goal:** Preserve original exception context through invite activation failures so we can diagnose why consume calls fail and make informed decisions about retry behavior.
 
 **Background:** When `consumeInviteWithSession` fails, the original exception (signer RPC failure, network error, timeout, etc.) is flattened into a generic `InviteApiException` string before the cubit sees it. This makes it impossible to distinguish transient signer failures from permanent errors, blocking informed retry logic. See [#3795](https://github.com/divinevideo/divine-mobile/issues/3795) -- Liz's comment recommends telemetry as the first PR before session preservation or classification changes.

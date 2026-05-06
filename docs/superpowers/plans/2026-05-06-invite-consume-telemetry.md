@@ -1,5 +1,8 @@
 # Invite Consume Telemetry Implementation Plan
 
+Status: Historical
+Validated against: implementation on branch `fix/invite-consume-retry`, 2026-05-06.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Preserve original exception context through invite activation failures so we can diagnose why consume calls fail.

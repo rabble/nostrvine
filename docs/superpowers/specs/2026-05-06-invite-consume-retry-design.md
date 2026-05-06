@@ -1,5 +1,8 @@
 # Invite Consume Retry Design
 
+Status: Current
+Validated against: `invite_api_client`, `EmailVerificationCubit`, `DivineAuthCubit` on 2026-05-06.
+
 PR 2 of 3 for #3795. Adds automatic retry on transient consume failures across all three invite activation paths.
 
 ## Problem
