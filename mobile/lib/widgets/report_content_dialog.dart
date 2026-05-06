@@ -40,17 +40,19 @@ class ReportContentDialog extends ConsumerStatefulWidget {
     bool isFromShareMenu = false,
   }) {
     final controller = DraggableScrollableController();
-    return context.showVideoPausingVineBottomSheet<void>(
-      initialChildSize: 0.85,
-      maxChildSize: 0.95,
-      minChildSize: 0.5,
-      draggableController: controller,
-      body: ReportContentDialog(
-        video: video,
-        isFromShareMenu: isFromShareMenu,
-        draggableController: controller,
-      ),
-    );
+    return context
+        .showVideoPausingVineBottomSheet<void>(
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          draggableController: controller,
+          body: ReportContentDialog(
+            video: video,
+            isFromShareMenu: isFromShareMenu,
+            draggableController: controller,
+          ),
+        )
+        .whenComplete(controller.dispose);
   }
 
   @override
