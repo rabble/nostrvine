@@ -184,4 +184,36 @@ class InviteErrorUtils {
             'or contact support.';
     }
   }
+
+  /// Whether the error is worth retrying (fresh NIP-98 timestamp may fix it).
+  static bool isRetryable(InviteApiException error) {
+    final reason = activationFailureReason(error);
+    return reason == InviteActivationFailureReason.temporary ||
+        reason == InviteActivationFailureReason.authFailure;
+  }
+
+  static Future<InviteConsumeResult> retryConsume({
+    required Future<InviteConsumeResult> Function() consume,
+    required void Function(String message) log,
+    int maxAttempts = 3,
+    Duration delay = const Duration(seconds: 2),
+  }) async {
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        return await consume();
+      } on InviteApiException catch (e) {
+        final isLastAttempt = attempt == maxAttempts;
+        if (!isRetryable(e) || isLastAttempt) {
+          rethrow;
+        }
+        log(
+          'Invite consume failed (attempt $attempt/$maxAttempts), '
+          'retrying in ${delay.inMilliseconds}ms: '
+          '${e.message} [code=${e.code}]',
+        );
+        await Future<void>.delayed(delay);
+      }
+    }
+    throw StateError('Unreachable');
+  }
 }

@@ -270,4 +270,173 @@ void main() {
       expect(message, contains("couldn't activate"));
     });
   });
+
+  group('isRetryable', () {
+    test('temporary is retryable', () {
+      expect(
+        InviteErrorUtils.isRetryable(
+          makeException(code: InviteApiErrorCode.clientTimeout),
+        ),
+        isTrue,
+      );
+    });
+
+    test('authFailure is retryable', () {
+      expect(
+        InviteErrorUtils.isRetryable(
+          makeException(code: InviteApiErrorCode.authInvalid, statusCode: 401),
+        ),
+        isTrue,
+      );
+    });
+
+    test('alreadyUsed is not retryable', () {
+      expect(
+        InviteErrorUtils.isRetryable(
+          makeException(code: InviteApiErrorCode.inviteAlreadyUsed),
+        ),
+        isFalse,
+      );
+    });
+
+    test('invalid is not retryable', () {
+      expect(
+        InviteErrorUtils.isRetryable(
+          makeException(code: InviteApiErrorCode.inviteNotFound),
+        ),
+        isFalse,
+      );
+    });
+
+    test('creatorFull is not retryable', () {
+      expect(
+        InviteErrorUtils.isRetryable(
+          makeException(code: InviteApiErrorCode.creatorPageFull),
+        ),
+        isFalse,
+      );
+    });
+
+    test('unknown is not retryable', () {
+      expect(
+        InviteErrorUtils.isRetryable(
+          makeException(message: 'something unexpected'),
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  group('retryConsume', () {
+    test('returns result on first success', () async {
+      final result = await InviteErrorUtils.retryConsume(
+        consume: () async =>
+            const InviteConsumeResult(message: 'ok', codesAllocated: 5),
+        log: (_) {},
+      );
+      expect(result.message, 'ok');
+    });
+
+    test('retries on retryable error and succeeds', () async {
+      var calls = 0;
+      final result = await InviteErrorUtils.retryConsume(
+        consume: () async {
+          calls++;
+          if (calls == 1) {
+            throw const InviteApiException(
+              'timeout',
+              code: InviteApiErrorCode.clientTimeout,
+            );
+          }
+          return const InviteConsumeResult(message: 'ok', codesAllocated: 5);
+        },
+        log: (_) {},
+        delay: Duration.zero,
+      );
+      expect(result.message, 'ok');
+      expect(calls, 2);
+    });
+
+    test('rethrows terminal error immediately', () async {
+      var calls = 0;
+      await expectLater(
+        () => InviteErrorUtils.retryConsume(
+          consume: () async {
+            calls++;
+            throw const InviteApiException(
+              'already used',
+              code: InviteApiErrorCode.inviteAlreadyUsed,
+            );
+          },
+          log: (_) {},
+          delay: Duration.zero,
+        ),
+        throwsA(isA<InviteApiException>()),
+      );
+      expect(calls, 1);
+    });
+
+    test('rethrows after exhausting max attempts', () async {
+      var calls = 0;
+      await expectLater(
+        () => InviteErrorUtils.retryConsume(
+          consume: () async {
+            calls++;
+            throw const InviteApiException(
+              'timeout',
+              code: InviteApiErrorCode.clientTimeout,
+            );
+          },
+          log: (_) {},
+          maxAttempts: 3,
+          delay: Duration.zero,
+        ),
+        throwsA(isA<InviteApiException>()),
+      );
+      expect(calls, 3);
+    });
+
+    test('logs warning on each retry', () async {
+      final logs = <String>[];
+      var calls = 0;
+      await InviteErrorUtils.retryConsume(
+        consume: () async {
+          calls++;
+          if (calls <= 2) {
+            throw const InviteApiException(
+              'timeout',
+              code: InviteApiErrorCode.clientTimeout,
+            );
+          }
+          return const InviteConsumeResult(message: 'ok', codesAllocated: 5);
+        },
+        log: logs.add,
+        maxAttempts: 3,
+        delay: Duration.zero,
+      );
+      expect(logs.length, 2);
+      expect(logs[0], contains('attempt 1/3'));
+      expect(logs[1], contains('attempt 2/3'));
+    });
+
+    test('respects maxAttempts parameter', () async {
+      var calls = 0;
+      await expectLater(
+        () => InviteErrorUtils.retryConsume(
+          consume: () async {
+            calls++;
+            throw const InviteApiException(
+              'network',
+              code: InviteApiErrorCode.clientNetworkError,
+            );
+          },
+          log: (_) {},
+          maxAttempts: 2,
+          delay: Duration.zero,
+        ),
+        throwsA(isA<InviteApiException>()),
+      );
+      expect(calls, 2);
+    });
+  });
 }
