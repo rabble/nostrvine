@@ -152,7 +152,7 @@ class DivineVideoDraft {
       publishStatus: json['publishStatus'] != null
           ? PublishStatus.values.byName(json['publishStatus'] as String)
           : PublishStatus.draft, // Migration: default for old drafts
-      allowAudioReuse: json['allowAudioReuse'] as bool? ?? true,
+      allowAudioReuse: json['allowAudioReuse'] as bool? ?? false,
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       proofManifestJson: json['proofManifestJson'] as String?,

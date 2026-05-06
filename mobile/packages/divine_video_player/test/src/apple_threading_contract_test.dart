@@ -18,6 +18,32 @@ void main() {
         expect(source, contains('DispatchQueue.main.async'));
         expect(source, contains('sendStateUpdateOnMain'));
       });
+
+      test('$platform uses native queue-based looping', () {
+        final source = _appleSourceFile(platform).readAsStringSync();
+
+        expect(
+          source,
+          contains('AVQueuePlayer'),
+          reason:
+              'Apple loop playback should use a queue player so the next '
+              'iteration can be prepared before the current one ends.',
+        );
+        expect(
+          source,
+          contains('AVPlayerLooper'),
+          reason:
+              'Manual AVPlayerItemDidPlayToEndTime seek-and-replay loops '
+              'can create an end-of-item playback gap.',
+        );
+        expect(
+          source,
+          isNot(contains('player?.seek(to: .zero)')),
+          reason:
+              'Looping must not restart by seeking after the item has already '
+              'finished.',
+        );
+      });
     }
   });
 }

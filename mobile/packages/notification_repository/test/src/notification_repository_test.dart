@@ -82,6 +82,7 @@ void main() {
     DateTime? createdAt,
     bool read = false,
     String? referencedEventId = 'video_default',
+    String? referencedDTag,
     String? content,
     bool isReferencedVideo = true,
   }) {
@@ -94,6 +95,7 @@ void main() {
       createdAt: createdAt ?? DateTime(2025),
       read: read,
       referencedEventId: referencedEventId,
+      referencedDTag: referencedDTag,
       content: content,
       isReferencedVideo: isReferencedVideo,
     );
@@ -443,6 +445,73 @@ void main() {
       );
 
       test(
+        'grouped video notifications build addressable id from '
+        'user pubkey and d-tag',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'l1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'video_x',
+              referencedDTag: 'vine-id',
+            ),
+            makeNotification(
+              id: 'l2',
+              sourcePubkey: 'pub_b',
+              referencedEventId: 'video_x',
+              referencedDTag: 'vine-id',
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(
+            item.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:vine-id',
+            ),
+          );
+        },
+      );
+
+      test(
+        'grouped video notifications leave addressable id null when d-tag '
+        'is null or empty',
+        () async {
+          stubNotifications([
+            makeNotification(
+              id: 'l1',
+              sourcePubkey: 'pub_a',
+              referencedEventId: 'video_x',
+              referencedDTag: '',
+            ),
+            makeNotification(
+              id: 'l2',
+              sourcePubkey: 'pub_b',
+              referencedEventId: 'video_x',
+            ),
+          ]);
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+          });
+
+          final page = await repository.getNotifications();
+
+          expect(page.items, hasLength(1));
+          final item = page.items.single as VideoNotification;
+          expect(item.videoAddressableId, isNull);
+        },
+      );
+
+      test(
         '5 likes on 5 different videos produce 5 ${VideoNotification}s',
         () async {
           stubNotifications([
@@ -470,8 +539,8 @@ void main() {
       );
 
       test(
-        'likes + comments on same video become 2 '
-        '${VideoNotification}s differing by kind',
+        'likes + comments on same video become 2 ${VideoNotification}s '
+        'differing by kind',
         () async {
           stubNotifications([
             makeNotification(
@@ -994,6 +1063,7 @@ void main() {
         int sourceKind = 7,
         String notificationType = 'reaction',
         String? referencedEventId = 'video_x',
+        String? referencedDTag,
         bool isReferencedVideo = true,
       }) {
         return RelayNotification(
@@ -1005,6 +1075,7 @@ void main() {
           createdAt: DateTime(2025),
           read: false,
           referencedEventId: referencedEventId,
+          referencedDTag: referencedDTag,
           isReferencedVideo: isReferencedVideo,
         );
       }
@@ -1030,6 +1101,46 @@ void main() {
           expect(video.videoTitle, equals('T'));
         },
       );
+
+      test(
+        'builds addressable id from user pubkey and d-tag for realtime '
+        'video notifications',
+        () async {
+          stubProfiles({
+            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          });
+          stubVideoStats(
+            'video_x',
+            makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
+          );
+
+          final result = await repository.enrichOne(
+            raw(referencedDTag: 'vine-id'),
+          );
+
+          expect(result, isA<VideoNotification>());
+          final video = result! as VideoNotification;
+          expect(
+            video.videoAddressableId,
+            equals(
+              '${NIP71VideoKinds.addressableShortVideo}:'
+              '$userPubkey:vine-id',
+            ),
+          );
+        },
+      );
+
+      test('leaves addressable id null when realtime d-tag is empty', () async {
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+        });
+
+        final result = await repository.enrichOne(raw(referencedDTag: ''));
+
+        expect(result, isA<VideoNotification>());
+        final video = result! as VideoNotification;
+        expect(video.videoAddressableId, isNull);
+      });
 
       test('returns null for like with null referencedEventId', () async {
         stubProfiles({

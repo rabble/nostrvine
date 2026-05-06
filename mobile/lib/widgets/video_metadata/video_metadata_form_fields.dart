@@ -18,6 +18,7 @@ class VideoMetadataFormFields extends ConsumerStatefulWidget {
     this.enableContentWarning = true,
     this.enableCollaborators = true,
     this.enableInspiredBy = true,
+    this.enableAudioReuse = true,
   });
 
   final bool enableTags;
@@ -25,6 +26,7 @@ class VideoMetadataFormFields extends ConsumerStatefulWidget {
   final bool enableContentWarning;
   final bool enableCollaborators;
   final bool enableInspiredBy;
+  final bool enableAudioReuse;
 
   @override
   ConsumerState<VideoMetadataFormFields> createState() =>
@@ -112,6 +114,11 @@ class _VideoMetadataFormFieldsState
           const VideoMetadataContentWarningSelector(),
         ],
 
+        if (widget.enableAudioReuse) ...[
+          const _Divider(),
+          const _VideoMetadataAudioReuseToggle(),
+        ],
+
         if (widget.enableCollaborators) ...[
           const _Divider(),
           const VideoMetadataCollaboratorsInput(),
@@ -125,6 +132,38 @@ class _VideoMetadataFormFieldsState
         const _Divider(),
         const SizedBox(height: 48),
       ],
+    );
+  }
+}
+
+class _VideoMetadataAudioReuseToggle extends ConsumerWidget {
+  const _VideoMetadataAudioReuseToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allowAudioReuse = ref.watch(
+      videoEditorProvider.select((state) => state.allowAudioReuse),
+    );
+
+    return Padding(
+      padding: const .symmetric(horizontal: 4),
+      child: SwitchListTile(
+        value: allowAudioReuse,
+        title: Text(
+          context.l10n.videoMetadataAudioReuseTitle,
+          style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+        ),
+        subtitle: Text(
+          context.l10n.videoMetadataAudioReuseSubtitle,
+          style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+        ),
+        contentPadding: const .symmetric(horizontal: 12, vertical: 4),
+        activeThumbColor: VineTheme.vineGreen,
+        inactiveThumbColor: VineTheme.lightText,
+        onChanged: (value) {
+          ref.read(videoEditorProvider.notifier).setAllowAudioReuse(value);
+        },
+      ),
     );
   }
 }

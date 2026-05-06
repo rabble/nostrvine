@@ -3612,6 +3612,34 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => '다른 검색어로 시도해 보세요';
 
   @override
+  String get soundsSavedToLibrary => 'Saved to Sounds';
+
+  @override
+  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+
+  @override
+  String get soundsSavedLibraryTitle => 'My Sounds';
+
+  @override
+  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+
+  @override
+  String get soundsSavedEmptyDescription =>
+      'Tap Use Sound on a video to save it here.';
+
+  @override
+  String get soundsAvailabilityPrivate => 'Private';
+
+  @override
+  String get soundsAvailabilityCommunity => 'Community';
+
+  @override
+  String get soundsRemoveSavedSound => 'Remove sound';
+
+  @override
+  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+
+  @override
   String get soundsFailedToLoad => '사운드를 불러오지 못했어요';
 
   @override
@@ -6164,10 +6192,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioSegmentInstruction => '동영상에 사용할 오디오 구간을 선택하세요';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => '커뮤니티';
+
+  @override
+  String get videoEditorAudioCategoryFeatured => 'Featured';
+
+  @override
+  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+
+  @override
+  String get videoEditorAudioFeaturedEmptyTitle =>
+      'Featured sounds coming soon';
+
+  @override
+  String get videoEditorAudioFeaturedEmptySubtitle =>
+      'We’ll drop featured sounds here once they’re ready.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';
@@ -6349,6 +6391,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningDoneButton => '완료';
+
+  @override
+  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+
+  @override
+  String get videoMetadataAudioReuseSubtitle =>
+      'Let others save and reuse this video\'s audio.';
 
   @override
   String get videoMetadataCollaboratorsLabel => '협업자';

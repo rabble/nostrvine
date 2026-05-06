@@ -5,9 +5,39 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+
+class MentionNip05Claim {
+  const MentionNip05Claim({required this.pubkey, required this.nip05});
+
+  final String pubkey;
+  final String nip05;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MentionNip05Claim &&
+          runtimeType == other.runtimeType &&
+          pubkey == other.pubkey &&
+          nip05 == other.nip05;
+
+  @override
+  int get hashCode => Object.hash(pubkey, nip05);
+}
+
+// ignore: specify_nonobvious_property_types
+final mentionNip05VerificationProvider =
+    FutureProvider.family<Nip05VerificationStatus, MentionNip05Claim>((
+      ref,
+      claim,
+    ) {
+      final service = ref.watch(nip05VerificationServiceProvider);
+      return service.getVerificationStatus(claim.pubkey, claim.nip05);
+    });
 
 /// Overlay widget showing mention suggestions above the comment input.
 class MentionOverlay extends ConsumerWidget {
@@ -85,8 +115,29 @@ class _MentionSuggestionItem extends ConsumerWidget {
         .watch(userProfileReactiveProvider(suggestion.pubkey))
         .value;
 
-    final displayName = profile?.displayName ?? profile?.name;
+    final displayName =
+        suggestion.displayName ?? profile?.displayName ?? profile?.name;
+    final picture = suggestion.picture ?? profile?.picture;
+    final rawNip05 = suggestion.nip05 ?? profile?.nip05;
+    final displayNip05 = _displayNip05(rawNip05);
+    final verificationStatus = rawNip05 != null && rawNip05.isNotEmpty
+        ? ref
+              .watch(
+                mentionNip05VerificationProvider(
+                  MentionNip05Claim(
+                    pubkey: suggestion.pubkey,
+                    nip05: rawNip05,
+                  ),
+                ),
+              )
+              .whenOrNull(data: (status) => status)
+        : null;
     final npub = NostrKeyUtils.encodePubKey(suggestion.pubkey);
+    final identifier =
+        verificationStatus == Nip05VerificationStatus.verified &&
+            displayNip05 != null
+        ? displayNip05
+        : npub;
 
     return InkWell(
       onTap: onTap,
@@ -97,7 +148,8 @@ class _MentionSuggestionItem extends ConsumerWidget {
           children: [
             UserAvatar(
               size: 32,
-              imageUrl: profile?.picture,
+              imageUrl: picture,
+              name: displayName,
               placeholderSeed: suggestion.pubkey,
             ),
             Expanded(
@@ -114,7 +166,7 @@ class _MentionSuggestionItem extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   Text(
-                    npub,
+                    identifier,
                     style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
@@ -129,4 +181,15 @@ class _MentionSuggestionItem extends ConsumerWidget {
       ),
     );
   }
+}
+
+String? _displayNip05(String? nip05) {
+  if (nip05 == null || nip05.isEmpty) return null;
+  if (nip05.startsWith('_@')) return nip05.substring(1);
+
+  if (nip05.endsWith('@divine.video') || nip05.endsWith('@openvine.co')) {
+    return '@${nip05.split('@')[0]}.divine.video';
+  }
+
+  return nip05;
 }

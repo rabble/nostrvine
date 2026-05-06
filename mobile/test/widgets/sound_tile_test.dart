@@ -287,6 +287,27 @@ void main() {
         expect(find.text('0s'), findsOneWidget);
       });
 
+      testWidgets('uses full Vine duration for legacy original sounds', (
+        tester,
+      ) async {
+        const legacyOriginalSound = AudioEvent(
+          id: 'video_legacy-original-id-0123456789abcdef0123456789abcdef0123456789abcdef',
+          pubkey:
+              'legacy-original-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef',
+          createdAt: 1704067200,
+          title: 'Original sound - Kenya',
+          url: 'https://example.com/video.mp4',
+          source: 'Original Sound',
+          sourceVideoReference:
+              '34236:legacy-original-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef:legacy-vine',
+        );
+
+        await tester.pumpWidget(buildTestWidget(sound: legacyOriginalSound));
+
+        expect(find.text('6s'), findsOneWidget);
+        expect(find.text('0s'), findsNothing);
+      });
+
       testWidgets('handles zero duration', (tester) async {
         final zeroSound = testSound.copyWith(duration: 0.0);
 

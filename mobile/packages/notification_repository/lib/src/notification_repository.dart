@@ -293,13 +293,33 @@ class NotificationRepository {
           .map((n) => _buildActor(n.sourcePubkey, profiles))
           .toList();
       final video = videosById[entry.key.eventId];
+      // Build the stable NIP-33 addressable ID from the d_tag returned by the
+      // server and the current user's pubkey (all video notifications are for
+      // videos owned by this user, so _userPubkey is always the right author).
+      final dTag = group
+          .map((n) => n.referencedDTag)
+          .firstWhere((d) => d != null, orElse: () => null);
+      final addressableId = dTag != null && dTag.isNotEmpty
+          ? '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag'
+          : null;
+      // Prefer thumbnail from the notification payload — it comes directly from
+      // the server and is stable even after a metadata update (unlike the stats
+      // lookup which uses the mutable event ID and may 404 post-edit).
+      final thumbnailFromNotif = group
+          .map((n) => n.referencedVideoThumbnail)
+          .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
+      final titleFromNotif = group
+          .map((n) => n.referencedVideoTitle)
+          .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
       result.add(
         VideoNotification(
           id: group.first.dedupeKey,
           type: entry.key.kind,
           videoEventId: entry.key.eventId,
-          videoThumbnailUrl: _nonEmpty(video?.thumbnail),
-          videoTitle: _nonEmpty(video?.title),
+          videoAddressableId: addressableId,
+          videoThumbnailUrl:
+              _nonEmpty(thumbnailFromNotif) ?? _nonEmpty(video?.thumbnail),
+          videoTitle: _nonEmpty(titleFromNotif) ?? _nonEmpty(video?.title),
           actors: actors,
           totalCount: group.length,
           timestamp: group.first.createdAt,
@@ -382,12 +402,20 @@ class NotificationRepository {
     if (isVideoAnchored) {
       if (referenced == null || referenced.isEmpty) return null;
       final video = videosById[referenced];
+      final dTag = raw.referencedDTag;
+      final addressableId = dTag != null && dTag.isNotEmpty
+          ? '${NIP71VideoKinds.addressableShortVideo}:$_userPubkey:$dTag'
+          : null;
       return VideoNotification(
         id: raw.dedupeKey,
         type: kind,
         videoEventId: referenced,
-        videoThumbnailUrl: _nonEmpty(video?.thumbnail),
-        videoTitle: _nonEmpty(video?.title),
+        videoAddressableId: addressableId,
+        videoThumbnailUrl:
+            _nonEmpty(raw.referencedVideoThumbnail) ??
+            _nonEmpty(video?.thumbnail),
+        videoTitle:
+            _nonEmpty(raw.referencedVideoTitle) ?? _nonEmpty(video?.title),
         actors: [actor],
         totalCount: 1,
         timestamp: raw.createdAt,
@@ -498,9 +526,11 @@ class _VideoGroupKey {
   final NotificationKind kind;
 
   @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes, private value object
   bool operator ==(Object other) =>
       other is _VideoGroupKey && other.eventId == eventId && other.kind == kind;
 
   @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes, private value object
   int get hashCode => Object.hash(eventId, kind);
 }

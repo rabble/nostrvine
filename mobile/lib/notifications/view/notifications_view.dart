@@ -163,8 +163,17 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     );
 
     switch (notification) {
-      case VideoNotification(:final videoEventId, :final type):
-        await _navigateToVideo(context, videoEventId, notificationKind: type);
+      case VideoNotification(
+        :final videoEventId,
+        :final videoAddressableId,
+        :final type,
+      ):
+        await _navigateToVideo(
+          context,
+          videoEventId,
+          videoAddressableId: videoAddressableId,
+          notificationKind: type,
+        );
       case ActorNotification(:final actor, :final type):
         switch (type) {
           case NotificationKind.follow:
@@ -186,60 +195,66 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
 
   Future<void> _navigateToVideo(
     BuildContext context,
-    String targetId, {
+    String videoEventId, {
+    String? videoAddressableId,
     NotificationKind? notificationKind,
   }) async {
     Log.info(
-      'Navigating to video from notification: $targetId',
+      'Navigating to video from notification: '
+      'addressable=$videoAddressableId eventId=$videoEventId',
       name: 'NotificationsView',
       category: LogCategory.ui,
     );
 
     final videoEventService = ref.read(videoEventServiceProvider);
-    final nostrService = ref.read(nostrServiceProvider);
     final videosRepository = ref.read(videosRepositoryProvider);
 
-    // Resolve the target event ID to a video event ID.
-    final resolver = NotificationTargetResolver(
-      videoEventService: videoEventService,
-      nostrService: nostrService,
-    );
-    final resolvedVideoEventId = await resolver
-        .resolveVideoEventIdFromNotificationTarget(targetId);
+    // Use the stable NIP-33 addressable ID whenever the notification payload
+    // includes one. It survives metadata updates because it's keyed on
+    // (kind:pubkey:d-tag) rather than the mutable event hash.
+    final isComment =
+        notificationKind == NotificationKind.comment ||
+        notificationKind == NotificationKind.reply;
 
-    if (!context.mounted) return;
+    // Resolve the navigation target.
+    String routeId;
+    if (videoAddressableId != null && videoAddressableId.isNotEmpty) {
+      // Stable path: addressable ID works even after a metadata update.
+      routeId = videoAddressableId;
+    } else if (isComment) {
+      // Comment path: walk E/e tags to find the root video event ID.
+      final resolved = await NotificationTargetResolver(
+        videoEventService: videoEventService,
+        nostrService: ref.read(nostrServiceProvider),
+      ).resolveVideoEventIdFromNotificationTarget(videoEventId);
 
-    if (resolvedVideoEventId == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Video not found')));
-      return;
+      if (!context.mounted) return;
+
+      if (resolved == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Video not found'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      routeId = resolved;
+    } else {
+      // Fallback: no addressable ID available, use raw event ID.
+      routeId = videoEventId;
     }
 
-    // Notification entry should use the same hydrated fetch path as feed and
-    // deep-link routes so fullscreen stats don't regress to zero.
-    var video = await videosRepository.fetchVideoWithStats(
-      resolvedVideoEventId,
-    );
-    if (!context.mounted) return;
-
-    // Keep a defensive fallback for the rare case where the repository misses
-    // but the event is still available directly from the service / relay.
-    video ??= videoEventService.getVideoById(resolvedVideoEventId);
-    if (video == null) {
-      try {
-        final event = await nostrService.fetchEventById(resolvedVideoEventId);
-        if (!context.mounted) return;
-        if (event != null) {
-          video = VideoEvent.fromNostrEvent(event);
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to fetch video from Nostr: $e',
-          name: 'NotificationsView',
-          category: LogCategory.ui,
-        );
-      }
+    VideoEvent? video;
+    try {
+      video = await videosRepository.fetchVideoWithStatsForRouteId(routeId);
+      if (!context.mounted) return;
+    } catch (e) {
+      Log.error(
+        'Failed to fetch video: $e',
+        name: 'NotificationsView',
+        category: LogCategory.ui,
+      );
     }
 
     if (!context.mounted) return;
@@ -264,19 +279,13 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
       return;
     }
 
-    final shouldAutoOpenComments =
-        notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply;
-    final videoForNav = video;
-
     context.push(
       PooledFullscreenVideoFeedScreen.path,
       extra: PooledFullscreenVideoFeedArgs(
-        videosStream: Stream.value([videoForNav]),
+        videosStream: Stream.value([video]),
         initialIndex: 0,
         contextTitle: 'From Notification',
-
-        autoOpenComments: shouldAutoOpenComments,
+        autoOpenComments: isComment,
       ),
     );
   }

@@ -787,6 +787,47 @@ class ProfileRepository {
     }
   }
 
+  /// Searches for user profiles via the Funnelcake REST API only.
+  ///
+  /// This is for latency-sensitive typeahead surfaces that should not wait
+  /// for NIP-50 relay search. Results are returned in server order.
+  ///
+  /// [offset] skips results for pagination.
+  /// [sortBy] requests server-side sorting (e.g., 'followers').
+  /// [hasVideos] filters to only users who have published at least one video.
+  /// Returns empty list if query is empty, Funnelcake is unavailable, or the
+  /// REST request fails.
+  Future<List<UserProfile>> searchUsersFromApi({
+    required String query,
+    int limit = 50,
+    int offset = 0,
+    String? sortBy,
+    bool hasVideos = false,
+  }) async {
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return [];
+    if (!(_funnelcakeApiClient?.isAvailable ?? false)) return [];
+
+    try {
+      final restResults = await _funnelcakeApiClient!.searchProfiles(
+        query: trimmedQuery,
+        limit: limit,
+        offset: offset,
+        sortBy: sortBy,
+        hasVideos: hasVideos,
+      );
+      final profiles = restResults.map((result) => result.toUserProfile());
+      return _enrichFromCache(profiles.toList());
+    } on Exception catch (e) {
+      Log.warning(
+        'REST profile search failed: $e',
+        name: 'ProfileRepository.searchUsersFromApi',
+        category: LogCategory.api,
+      );
+      return [];
+    }
+  }
+
   /// Searches for user profiles matching the query.
   ///
   /// Uses a hybrid search approach:

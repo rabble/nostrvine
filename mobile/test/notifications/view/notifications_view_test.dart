@@ -8,17 +8,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/notifications/widgets/notification_empty_state.dart';
 import 'package:openvine/notifications/widgets/notification_list_item.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class _MockNotificationFeedBloc
     extends MockBloc<NotificationFeedEvent, NotificationFeedState>
     implements NotificationFeedBloc {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 /// Pumps [NotificationsView] inside the required providers.
 Future<void> _pumpView(
@@ -40,6 +53,68 @@ Future<void> _pumpView(
     ),
   );
 }
+
+Future<List<PooledFullscreenVideoFeedArgs>> _pumpRoutedView(
+  WidgetTester tester,
+  NotificationFeedBloc bloc, {
+  required VideoEventService videoEventService,
+  required NostrClient nostrClient,
+  required VideosRepository videosRepository,
+}) async {
+  final capturedArgs = <PooledFullscreenVideoFeedArgs>[];
+  final router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          body: NotificationsView(),
+        ),
+      ),
+      GoRoute(
+        path: PooledFullscreenVideoFeedScreen.path,
+        builder: (context, state) {
+          capturedArgs.add(state.extra! as PooledFullscreenVideoFeedArgs);
+          return const Scaffold(body: SizedBox.shrink());
+        },
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        videoEventServiceProvider.overrideWithValue(videoEventService),
+        nostrServiceProvider.overrideWithValue(nostrClient),
+        videosRepositoryProvider.overrideWithValue(videosRepository),
+      ],
+      child: MaterialApp.router(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: ThemeData.dark(),
+        routerConfig: router,
+        builder: (context, child) => BlocProvider<NotificationFeedBloc>.value(
+          value: bloc,
+          child: child ?? const SizedBox.shrink(),
+        ),
+      ),
+    ),
+  );
+
+  return capturedArgs;
+}
+
+VideoEvent _video(String id) => VideoEvent(
+  id: id,
+  pubkey: 'pubkey_$id',
+  createdAt: DateTime(2026).millisecondsSinceEpoch ~/ 1000,
+  timestamp: DateTime(2026),
+  content: 'content',
+  title: 'title',
+  videoUrl: 'https://example.com/$id.mp4',
+  thumbnailUrl: 'https://example.com/$id.jpg',
+);
 
 void main() {
   group(NotificationsView, () {
@@ -194,6 +269,73 @@ void main() {
           () => mockBloc.add(NotificationFeedItemTapped('n1')),
         ).called(1);
       });
+
+      testWidgets(
+        'comment notification fetches by addressable id and opens comments',
+        (tester) async {
+          final videoService = _MockVideoEventService();
+          final nostrClient = _MockNostrClient();
+          final videosRepository = _MockVideosRepository();
+          const staleVideoEventId = 'stale_video_event';
+          const addressableId =
+              '34236:'
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+              ':vine-id';
+          final resolvedVideo = _video('replacement_video_event');
+
+          when(
+            () => videoService.getVideoById(staleVideoEventId),
+          ).thenReturn(null);
+          when(
+            () => nostrClient.fetchEventById(staleVideoEventId),
+          ).thenAnswer((_) async => null);
+          when(
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+          ).thenAnswer((_) async => resolvedVideo);
+          when(
+            () => videoService.shouldHideVideo(resolvedVideo),
+          ).thenReturn(false);
+
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: [
+                VideoNotification(
+                  id: 'comment-notification',
+                  type: NotificationKind.comment,
+                  videoEventId: staleVideoEventId,
+                  videoAddressableId: addressableId,
+                  actors: const [
+                    ActorInfo(pubkey: 'actor_pubkey', displayName: 'Alice'),
+                  ],
+                  totalCount: 1,
+                  timestamp: DateTime(2026),
+                ),
+              ],
+            ),
+          );
+
+          final capturedArgs = await _pumpRoutedView(
+            tester,
+            mockBloc,
+            videoEventService: videoService,
+            nostrClient: nostrClient,
+            videosRepository: videosRepository,
+          );
+
+          await tester.tap(find.byType(NotificationListItem).first);
+          await tester.pumpAndSettle();
+
+          verify(
+            () => videosRepository.fetchVideoWithStatsForRouteId(addressableId),
+          ).called(1);
+          expect(capturedArgs, hasLength(1));
+          final args = capturedArgs.single;
+          expect(args.autoOpenComments, isTrue);
+          final videos = await args.videosStream.first;
+          expect(videos.single.id, resolvedVideo.id);
+        },
+      );
     });
 
     group('kindFilter', () {

@@ -12,10 +12,14 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sound_service/sound_service.dart';
 
 import '../helpers/go_router.dart';
@@ -664,24 +668,30 @@ void main() {
       });
 
       testWidgets(
-        'tapping Use Sound selects sound and calls context.pop(true)',
+        'tapping Use Sound saves sound to library and stays on detail screen',
         (tester) async {
           final testSound = createTestAudioEvent(id: 'sound1');
-          AudioEvent? selectedSound;
+          SharedPreferences.setMockInitialValues({});
+          final sharedPreferences = await SharedPreferences.getInstance();
+          final container = ProviderContainer(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              soundUsageCountProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(0)),
+              videosUsingSoundProvider(
+                testSound.id,
+              ).overrideWith((ref) => Future.value(<String>[])),
+              audioPlaybackServiceProvider.overrideWithValue(
+                mockAudioService,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
 
           await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                soundUsageCountProvider(
-                  testSound.id,
-                ).overrideWith((ref) => Future.value(0)),
-                videosUsingSoundProvider(
-                  testSound.id,
-                ).overrideWith((ref) => Future.value(<String>[])),
-                audioPlaybackServiceProvider.overrideWithValue(
-                  mockAudioService,
-                ),
-              ],
+            UncontrolledProviderScope(
+              container: container,
               child: MockGoRouterProvider(
                 goRouter: mockGoRouter,
                 child: MaterialApp(
@@ -689,15 +699,7 @@ void main() {
                       AppLocalizations.localizationsDelegates,
                   supportedLocales: AppLocalizations.supportedLocales,
                   theme: VineTheme.theme,
-                  home: Consumer(
-                    builder: (context, ref, _) {
-                      // Watch the selected sound provider
-                      ref.listen<AudioEvent?>(selectedSoundProvider, (_, next) {
-                        selectedSound = next;
-                      });
-                      return SoundDetailScreen(sound: testSound);
-                    },
-                  ),
+                  home: SoundDetailScreen(sound: testSound),
                 ),
               ),
             ),
@@ -708,18 +710,24 @@ void main() {
           await tester.tap(find.text('Use Sound'));
           await tester.pumpAndSettle();
 
-          // Verify GoRouter.pop(true) was called
-          verify(() => mockGoRouter.pop<bool>(true)).called(1);
-          expect(selectedSound?.id, equals(testSound.id));
+          verifyNever(() => mockGoRouter.pop<bool>(true));
+          expect(find.text('Saved to Sounds'), findsOneWidget);
+          expect(container.read(savedSoundsProvider).map((sound) => sound.id), [
+            testSound.id,
+          ]);
+          expect(container.read(selectedSoundProvider), isNull);
         },
       );
 
       testWidgets('Use Sound stops preview if playing', (tester) async {
         final testSound = createTestAudioEvent(id: 'sound1');
+        SharedPreferences.setMockInitialValues({});
+        final sharedPreferences = await SharedPreferences.getInstance();
 
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
               soundUsageCountProvider(
                 testSound.id,
               ).overrideWith((ref) => Future.value(0)),
@@ -1033,12 +1041,18 @@ void main() {
         },
       );
 
-      testWidgets('use sound button calls context.pop(true)', (tester) async {
+      testWidgets('use sound button shows existing saved feedback', (
+        tester,
+      ) async {
         final testSound = createTestAudioEvent(id: 'sound1');
+        SharedPreferences.setMockInitialValues({});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        await SavedSoundsService(sharedPreferences).saveSound(testSound);
 
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
               soundUsageCountProvider(
                 testSound.id,
               ).overrideWith((ref) => Future.value(0)),
@@ -1060,12 +1074,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Tap Use Sound (which uses context.pop(true))
         await tester.tap(find.text('Use Sound'));
         await tester.pumpAndSettle();
 
-        // Verify GoRouter.pop(true) was called
-        verify(() => mockGoRouter.pop<bool>(true)).called(1);
+        verifyNever(() => mockGoRouter.pop<bool>(true));
+        expect(find.text('Already in Sounds'), findsOneWidget);
       });
 
       testWidgets('back button stops preview if playing', (tester) async {

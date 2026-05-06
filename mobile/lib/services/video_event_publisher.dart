@@ -21,6 +21,7 @@ import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -113,6 +114,7 @@ class VideoEventPublisher {
     ProfileRepository? profileRepository,
     AudioExtractionService? audioExtractionService,
     ProfileStatsDao? profileStatsDao,
+    SavedSoundsService? savedSoundsService,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
@@ -121,7 +123,8 @@ class VideoEventPublisher {
        _blossomUploadService = blossomUploadService,
        _profileRepository = profileRepository,
        _audioExtractionService = audioExtractionService,
-       _profileStatsDao = profileStatsDao;
+       _profileStatsDao = profileStatsDao,
+       _savedSoundsService = savedSoundsService;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
   final AuthService? _authService;
@@ -131,6 +134,7 @@ class VideoEventPublisher {
   final ProfileRepository? _profileRepository;
   final AudioExtractionService? _audioExtractionService;
   final ProfileStatsDao? _profileStatsDao;
+  final SavedSoundsService? _savedSoundsService;
 
   // Statistics
   int _totalEventsPublished = 0;
@@ -786,11 +790,26 @@ class VideoEventPublisher {
 
       // Handle selected audio: reference an existing Kind 1063 audio event
       // (e.g., when recording with a selected sound from another video)
-      if (selectedAudioEventId != null && selectedAudioEventId.isNotEmpty) {
+      final hasSelectedAudioEventId =
+          selectedAudioEventId != null && selectedAudioEventId.isNotEmpty;
+      final reusableSelectedAudioEventId =
+          NostrHexUtils.isValidEventId(selectedAudioEventId)
+          ? selectedAudioEventId
+          : null;
+      if (hasSelectedAudioEventId && reusableSelectedAudioEventId == null) {
+        Log.warning(
+          'Skipping selected audio reference because it is not a Nostr event id: '
+          '$selectedAudioEventId',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
+
+      if (reusableSelectedAudioEventId != null) {
         final audioRelay = selectedAudioRelay ?? 'wss://relay.divine.video';
-        tags.add(['e', selectedAudioEventId, audioRelay, 'audio']);
+        tags.add(['e', reusableSelectedAudioEventId, audioRelay, 'audio']);
         Log.info(
-          'Added selected audio reference e tag: $selectedAudioEventId',
+          'Added selected audio reference e tag: $reusableSelectedAudioEventId',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
@@ -801,7 +820,7 @@ class VideoEventPublisher {
       // Skip if we already referenced a selected audio event above
       String? audioEventId;
       if (allowAudioReuse &&
-          selectedAudioEventId == null &&
+          !hasSelectedAudioEventId &&
           upload.localVideoPath.isNotEmpty) {
         tags.add(['allow_audio_reuse', 'true']);
         Log.info(
@@ -1363,6 +1382,25 @@ class VideoEventPublisher {
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
+
+      if (_savedSoundsService != null) {
+        try {
+          await _savedSoundsService.saveSound(
+            AudioEvent.fromNostrEvent(signedAudioEvent),
+          );
+          Log.info(
+            'Saved published audio event to My Sounds: ${signedAudioEvent.id}',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        } catch (e) {
+          Log.warning(
+            'Failed to save published audio event to My Sounds: $e',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+      }
 
       return signedAudioEvent.id;
     } on AudioExtractionException catch (e) {

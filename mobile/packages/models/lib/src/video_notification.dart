@@ -21,6 +21,7 @@ class VideoNotification extends NotificationItem {
     super.isRead,
     this.videoThumbnailUrl,
     this.videoTitle,
+    this.videoAddressableId,
   }) : assert(
          type == NotificationKind.like ||
              type == NotificationKind.likeComment ||
@@ -37,7 +38,16 @@ class VideoNotification extends NotificationItem {
        super(targetEventId: videoEventId);
 
   /// The Nostr event id of the video that was acted on.
+  ///
+  /// May become stale after a metadata update (NIP-33 replacement).
+  /// Prefer [videoAddressableId] for navigation when available.
   final String videoEventId;
+
+  /// The NIP-33 addressable ID (`34236:pubkey:d-tag`) of the video.
+  ///
+  /// Stable across metadata updates. Use this for navigation instead of
+  /// [videoEventId] whenever it is non-null.
+  final String? videoAddressableId;
 
   /// Thumbnail URL of the referenced video, if available.
   final String? videoThumbnailUrl;
@@ -57,6 +67,7 @@ class VideoNotification extends NotificationItem {
     String? id,
     NotificationKind? type,
     String? videoEventId,
+    String? videoAddressableId,
     String? videoThumbnailUrl,
     String? videoTitle,
     List<ActorInfo>? actors,
@@ -68,6 +79,7 @@ class VideoNotification extends NotificationItem {
       id: id ?? this.id,
       type: type ?? this.type,
       videoEventId: videoEventId ?? this.videoEventId,
+      videoAddressableId: videoAddressableId ?? this.videoAddressableId,
       videoThumbnailUrl: videoThumbnailUrl ?? this.videoThumbnailUrl,
       videoTitle: videoTitle ?? this.videoTitle,
       actors: actors ?? this.actors,
@@ -82,6 +94,7 @@ class VideoNotification extends NotificationItem {
     id,
     type,
     videoEventId,
+    videoAddressableId,
     videoThumbnailUrl,
     videoTitle,
     actors,

@@ -3802,6 +3802,34 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Probeer een andere zoekterm';
 
   @override
+  String get soundsSavedToLibrary => 'Saved to Sounds';
+
+  @override
+  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+
+  @override
+  String get soundsSavedLibraryTitle => 'My Sounds';
+
+  @override
+  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+
+  @override
+  String get soundsSavedEmptyDescription =>
+      'Tap Use Sound on a video to save it here.';
+
+  @override
+  String get soundsAvailabilityPrivate => 'Private';
+
+  @override
+  String get soundsAvailabilityCommunity => 'Community';
+
+  @override
+  String get soundsRemoveSavedSound => 'Remove sound';
+
+  @override
+  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+
+  @override
   String get soundsFailedToLoad => 'Laden van geluiden mislukt';
 
   @override
@@ -6439,10 +6467,24 @@ class AppLocalizationsNl extends AppLocalizations {
       'Selecteer het audiofragment voor je video';
 
   @override
-  String get videoEditorAudioCategoryDivine => 'diVine';
+  String get videoEditorAudioCategoryDivine => 'OG Sounds';
 
   @override
   String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
+
+  @override
+  String get videoEditorAudioCategoryFeatured => 'Featured';
+
+  @override
+  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+
+  @override
+  String get videoEditorAudioFeaturedEmptyTitle =>
+      'Featured sounds coming soon';
+
+  @override
+  String get videoEditorAudioFeaturedEmptySubtitle =>
+      'We’ll drop featured sounds here once they’re ready.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pijlgereedschap';
@@ -6632,6 +6674,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoMetadataContentWarningDoneButton => 'Gereed';
+
+  @override
+  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+
+  @override
+  String get videoMetadataAudioReuseSubtitle =>
+      'Let others save and reuse this video\'s audio.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Samenwerkers';

@@ -1682,6 +1682,17 @@ class _VideoRouteCandidate {
       );
     }
 
+    // Raw NIP-33 addressable coordinate: "kind:pubkey:d-tag"
+    // Produced by VideoNotification.videoAddressableId for stable notification
+    // navigation. AId.fromString validates the format and extracts the d-tag.
+    final aid = AId.fromString(trimmed);
+    if (aid != null && NIP71VideoKinds.isVideoKind(aid.kind)) {
+      return _VideoRouteCandidate(
+        addressableId: trimmed,
+        stableId: aid.dTag,
+      );
+    }
+
     return _VideoRouteCandidate(stableId: trimmed);
   }
 }

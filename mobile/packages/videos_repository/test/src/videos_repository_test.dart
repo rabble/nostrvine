@@ -6607,6 +6607,56 @@ void main() {
       });
 
       test(
+        'resolves raw kind:pubkey:d-tag addressable IDs via addressable lookup',
+        () async {
+          const eventId =
+              'd695f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const author =
+              '4bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const dTag = 'my-vine-id';
+          // Raw addressable coordinate as produced by
+          // VideoNotification.videoAddressableId — no bech32 encoding.
+          const rawAddressableId = '34236:$author:$dTag';
+          final event = _createVideoEventWithDTag(
+            id: eventId,
+            pubkey: author,
+            dTag: dTag,
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1739350000,
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [event]);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(
+            rawAddressableId,
+          );
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.vineId, equals(dTag));
+
+          // Verify the relay was queried by author + d-tag, not by event ID.
+          final captured =
+              verify(
+                    () => mockNostrClient.queryEvents(captureAny()),
+                  ).captured.single
+                  as List<Filter>;
+          expect(captured, hasLength(1));
+          expect(captured.single.authors, equals([author]));
+          expect(captured.single.d, equals([dTag]));
+        },
+      );
+
+      test(
         'resolves plain stable IDs from local storage before relay',
         () async {
           const eventId =

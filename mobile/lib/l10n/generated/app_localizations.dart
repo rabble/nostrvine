@@ -6648,6 +6648,60 @@ abstract class AppLocalizations {
   /// **'Try a different search term'**
   String get soundsNoSoundsFoundDescription;
 
+  /// No description provided for @soundsSavedToLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Sounds'**
+  String get soundsSavedToLibrary;
+
+  /// No description provided for @soundsAlreadySavedToLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Already in Sounds'**
+  String get soundsAlreadySavedToLibrary;
+
+  /// No description provided for @soundsSavedLibraryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My Sounds'**
+  String get soundsSavedLibraryTitle;
+
+  /// No description provided for @soundsSavedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved sounds yet'**
+  String get soundsSavedEmptyTitle;
+
+  /// No description provided for @soundsSavedEmptyDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Use Sound on a video to save it here.'**
+  String get soundsSavedEmptyDescription;
+
+  /// No description provided for @soundsAvailabilityPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get soundsAvailabilityPrivate;
+
+  /// No description provided for @soundsAvailabilityCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community'**
+  String get soundsAvailabilityCommunity;
+
+  /// No description provided for @soundsRemoveSavedSound.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove sound'**
+  String get soundsRemoveSavedSound;
+
+  /// No description provided for @soundsRemovedFromLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from Sounds'**
+  String get soundsRemovedFromLibrary;
+
   /// No description provided for @soundsFailedToLoad.
   ///
   /// In en, this message translates to:
@@ -11301,7 +11355,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoEditorAudioCategoryDivine.
   ///
   /// In en, this message translates to:
-  /// **'diVine'**
+  /// **'Divine'**
   String get videoEditorAudioCategoryDivine;
 
   /// No description provided for @videoEditorAudioCategoryCommunity.
@@ -11309,6 +11363,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Community'**
   String get videoEditorAudioCategoryCommunity;
+
+  /// No description provided for @videoEditorAudioCategoryFeatured.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get videoEditorAudioCategoryFeatured;
+
+  /// No description provided for @videoEditorAudioCategoryMySounds.
+  ///
+  /// In en, this message translates to:
+  /// **'My Sounds'**
+  String get videoEditorAudioCategoryMySounds;
+
+  /// No description provided for @videoEditorAudioFeaturedEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured sounds coming soon'**
+  String get videoEditorAudioFeaturedEmptyTitle;
+
+  /// No description provided for @videoEditorAudioFeaturedEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We’ll drop featured sounds here once they’re ready.'**
+  String get videoEditorAudioFeaturedEmptySubtitle;
 
   /// No description provided for @videoEditorDrawToolArrowSemanticLabel.
   ///
@@ -11631,6 +11709,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get videoMetadataContentWarningDoneButton;
+
+  /// No description provided for @videoMetadataAudioReuseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Publish this sound'**
+  String get videoMetadataAudioReuseTitle;
+
+  /// No description provided for @videoMetadataAudioReuseSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Let others save and reuse this video\'s audio.'**
+  String get videoMetadataAudioReuseSubtitle;
 
   /// No description provided for @videoMetadataCollaboratorsLabel.
   ///

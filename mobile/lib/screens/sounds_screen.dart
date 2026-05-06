@@ -1,6 +1,8 @@
 // ABOUTME: Sounds browser screen for discovering and selecting sounds for recordings
 // ABOUTME: Features bundled sounds, trending Nostr sounds, search, and sound selection
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +10,11 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 import 'package:sound_service/sound_service.dart';
@@ -41,8 +45,7 @@ class SoundsScreen extends ConsumerStatefulWidget {
   /// Creates a SoundsScreen.
   ///
   /// [onSoundSelected] is called when the user selects a sound.
-  /// If not provided, the screen will use the selectedSoundProvider
-  /// and pop the navigation stack.
+  /// If not provided, the screen saves the sound to the user's library.
   const SoundsScreen({this.onSoundSelected, super.key});
 
   /// Callback when a sound is selected.
@@ -99,10 +102,26 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     if (widget.onSoundSelected != null) {
       widget.onSoundSelected!(sound);
     } else {
-      // Use the provider and navigate back
-      ref.read(selectedSoundProvider.notifier).select(sound);
-      context.pop();
+      unawaited(_saveSoundToLibrary(sound));
     }
+  }
+
+  Future<void> _saveSoundToLibrary(AudioEvent sound) async {
+    final result = await ref
+        .read(savedSoundsProvider.notifier)
+        .saveSound(sound);
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result == SavedSoundSaveResult.saved
+              ? context.l10n.soundsSavedToLibrary
+              : context.l10n.soundsAlreadySavedToLibrary,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _onPreviewTap(AudioEvent sound) async {

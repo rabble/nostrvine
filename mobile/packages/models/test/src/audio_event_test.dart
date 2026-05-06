@@ -345,6 +345,34 @@ void main() {
       });
     });
 
+    group('fromVideoOriginalSound', () {
+      test('copies video duration for library display', () {
+        final now = DateTime(2026);
+        final video = VideoEvent(
+          id: testHexId,
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          content: 'classic vine',
+          timestamp: now,
+          videoUrl: 'https://example.com/video.mp4',
+          duration: 6,
+          vineId: 'vine-123',
+        );
+
+        final audioEvent = AudioEvent.fromVideoOriginalSound(
+          video,
+          creatorName: 'Kenya',
+        );
+
+        expect(audioEvent.duration, equals(6.0));
+        expect(audioEvent.title, equals('Original sound - Kenya'));
+        expect(
+          audioEvent.sourceVideoReference,
+          equals('34236:$testPubkey:vine-123'),
+        );
+      });
+    });
+
     group('toTags', () {
       test('generates complete tags list', () {
         // Arrange

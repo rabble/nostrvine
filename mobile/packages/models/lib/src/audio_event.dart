@@ -158,6 +158,7 @@ class AudioEvent {
       pubkey: video.pubkey,
       createdAt: video.createdAt,
       url: video.videoUrl,
+      duration: video.duration?.toDouble(),
       title: 'Original sound - $creatorName',
       source: 'Original Sound',
       sourceVideoReference: '34236:${video.pubkey}:${video.vineId ?? video.id}',

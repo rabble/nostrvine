@@ -95,6 +95,24 @@ void main() {
       expect(draft.publishAttempts, 0);
     });
 
+    test('should migrate old drafts without allowAudioReuse to off', () {
+      final json = {
+        'id': 'old_draft',
+        'videoFilePath': 'video.mp4',
+        'title': 'Old Draft',
+        'description': 'From before audio reuse opt-in existed',
+        'hashtags': ['old'],
+        'frameCount': 30,
+        'selectedApproach': 'native',
+        'createdAt': '2025-01-01T00:00:00.000Z',
+        'lastModified': '2025-01-01T00:00:00.000Z',
+      };
+
+      final draft = DivineVideoDraft.fromJson(json, '/path/to');
+
+      expect(draft.allowAudioReuse, isFalse);
+    });
+
     test('should serialize publishError when present', () {
       final now = DateTime.now();
       final draft = DivineVideoDraft(

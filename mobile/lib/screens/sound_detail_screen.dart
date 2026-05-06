@@ -1,6 +1,8 @@
 // ABOUTME: Detail screen for viewing a sound and videos using that sound.
 // ABOUTME: Displays sound info, preview/use buttons, and grid of related videos.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +11,11 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/saved_sounds_provider.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/saved_sounds_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -166,21 +170,38 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
 
   void _onUseSound() {
     Log.info(
-      'Using sound: ${widget.sound.title} (${widget.sound.id})',
+      'Saving sound to library: ${widget.sound.title} (${widget.sound.id})',
       name: 'SoundDetailScreen',
       category: LogCategory.ui,
     );
 
-    // Stop preview if playing
+    unawaited(_saveSoundToLibrary());
+  }
+
+  Future<void> _saveSoundToLibrary() async {
     if (_isPlayingPreview && _audioService != null) {
-      _audioService!.stop();
+      await _audioService!.stop();
+      if (!mounted) return;
+      setState(() {
+        _isPlayingPreview = false;
+      });
     }
 
-    // Set the selected sound via provider
-    ref.read(selectedSoundProvider.notifier).select(widget.sound);
+    final result = await ref
+        .read(savedSoundsProvider.notifier)
+        .saveSound(widget.sound);
+    if (!mounted) return;
 
-    // Pop with result indicating success
-    context.pop(true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result == SavedSoundSaveResult.saved
+              ? context.l10n.soundsSavedToLibrary
+              : context.l10n.soundsAlreadySavedToLibrary,
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   void _navigateToVideo(String videoId, int index, List<VideoEvent> videos) {
