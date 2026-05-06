@@ -29,6 +29,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -820,6 +821,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
                 actions: [?editAction],
+                customActions: const [FeedSettingsMenu()],
               ),
               body: kIsWeb
                   ? WebVideoFeed(
@@ -1461,7 +1463,12 @@ class _LoadingIndicatorState extends State<_LoadingIndicator> {
   }
 }
 
-/// Streams player position and renders subtitle text for fullscreen feed.
+/// Streams player position and renders the inline caption pill for the
+/// fullscreen feed.
+///
+/// Mirrors the home feed's [SubtitleCuePill] placement so the same Figma
+/// caption block surfaces wherever a video plays. Positioned 180 px above
+/// the bottom edge with `right: 80` to leave room for the action column.
 class _SubtitleLayer extends ConsumerWidget {
   const _SubtitleLayer({required this.video, required this.player});
 
@@ -1471,6 +1478,7 @@ class _SubtitleLayer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
+    if (!subtitlesVisible) return const SizedBox.shrink();
 
     return StreamBuilder<Duration>(
       stream: player.stream.position,
@@ -1478,11 +1486,14 @@ class _SubtitleLayer extends ConsumerWidget {
         final positionMs = snapshot.data?.inMilliseconds ?? 0;
         return Stack(
           children: [
-            SubtitleOverlay(
-              video: video,
-              positionMs: positionMs,
-              visible: subtitlesVisible,
-              bottomOffset: 180,
+            Positioned(
+              left: 16,
+              right: 80,
+              bottom: 180,
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: SubtitleCuePill(video: video, positionMs: positionMs),
+              ),
             ),
           ],
         );

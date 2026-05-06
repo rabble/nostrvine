@@ -20,6 +20,7 @@ void main() {
       IconSource? leadingIcon,
       VoidCallback? onLeadingPressed,
       List<DiVineAppBarAction> actions = const [],
+      List<Widget> customActions = const [],
       DiVineAppBarBackgroundMode backgroundMode =
           DiVineAppBarBackgroundMode.solid,
       DiVineAppBarGradient? gradient,
@@ -44,6 +45,7 @@ void main() {
             leadingIcon: leadingIcon,
             onLeadingPressed: onLeadingPressed,
             actions: actions,
+            customActions: customActions,
             backgroundMode: backgroundMode,
             gradient: gradient,
             backgroundColor: backgroundColor,
@@ -316,6 +318,78 @@ void main() {
 
         await tester.tap(find.byIcon(Icons.search));
         expect(pressed, isTrue);
+      });
+    });
+
+    group('customActions', () {
+      testWidgets('renders a custom widget in the trailing slot', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            customActions: const [
+              SizedBox(
+                key: Key('custom-trailing'),
+                width: 24,
+                height: 24,
+              ),
+            ],
+          ),
+        );
+
+        expect(find.byKey(const Key('custom-trailing')), findsOneWidget);
+      });
+
+      testWidgets('renders typed actions and custom actions side by side', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            actions: [
+              DiVineAppBarAction(
+                icon: const MaterialIconSource(Icons.search),
+                onPressed: () {},
+              ),
+            ],
+            customActions: const [
+              SizedBox(
+                key: Key('custom-trailing'),
+                width: 24,
+                height: 24,
+              ),
+            ],
+          ),
+        );
+
+        expect(find.byIcon(Icons.search), findsOneWidget);
+        expect(find.byKey(const Key('custom-trailing')), findsOneWidget);
+      });
+
+      testWidgets('renders multiple custom actions with spacing between', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            customActions: const [
+              SizedBox(
+                key: Key('custom-1'),
+                width: 24,
+                height: 24,
+              ),
+              SizedBox(
+                key: Key('custom-2'),
+                width: 24,
+                height: 24,
+              ),
+            ],
+          ),
+        );
+
+        expect(find.byKey(const Key('custom-1')), findsOneWidget);
+        expect(find.byKey(const Key('custom-2')), findsOneWidget);
       });
     });
 
