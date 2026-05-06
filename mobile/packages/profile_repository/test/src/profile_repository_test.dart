@@ -2145,6 +2145,55 @@ void main() {
       );
 
       test(
+        'searchUsersFromApi returns empty results when Funnelcake fails',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenThrow(Exception('REST API error'));
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act
+          final result = await repoWithFunnelcake.searchUsersFromApi(
+            query: 'ga',
+            limit: 10,
+            sortBy: 'followers',
+          );
+
+          // Assert
+          expect(result, isEmpty);
+          verify(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'ga',
+              limit: 10,
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      test(
         'uses Funnelcake first then WebSocket when both available',
         () async {
           // Arrange

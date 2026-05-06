@@ -2622,6 +2622,7 @@ void main() {
                 createdAt: DateTime.now(),
                 eventId: validId('event4'),
                 displayName: 'GaryVee',
+                nip05: 'garyvee@example.com',
               ),
             ],
           );
@@ -2647,6 +2648,11 @@ void main() {
                 (s) => s.mentionSuggestions.first.displayName,
                 'displayName',
                 'GaryVee',
+              )
+              .having(
+                (s) => s.mentionSuggestions.first.nip05,
+                'nip05',
+                'garyvee@example.com',
               ),
         ],
         verify: (_) {
@@ -3689,20 +3695,30 @@ void main() {
         pubkey: 'abc',
         displayName: 'Alice',
         picture: 'pic.jpg',
+        nip05: 'alice@example.com',
       );
       const suggestion2 = MentionSuggestion(
         pubkey: 'abc',
         displayName: 'Alice',
         picture: 'pic.jpg',
+        nip05: 'alice@example.com',
       );
       const suggestion3 = MentionSuggestion(
         pubkey: 'abc',
         displayName: 'Bob',
         picture: 'pic.jpg',
+        nip05: 'alice@example.com',
+      );
+      const suggestion4 = MentionSuggestion(
+        pubkey: 'abc',
+        displayName: 'Alice',
+        picture: 'pic.jpg',
+        nip05: 'alice@elsewhere.example',
       );
 
       expect(suggestion1, equals(suggestion2));
       expect(suggestion1, isNot(equals(suggestion3)));
+      expect(suggestion1, isNot(equals(suggestion4)));
     });
 
     test('treats null and non-null optional fields as unequal', () {

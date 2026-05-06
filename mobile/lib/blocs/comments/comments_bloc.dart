@@ -822,6 +822,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
             pubkey: pubkey,
             displayName: displayName,
             picture: profile?.picture,
+            nip05: profile?.nip05,
           ),
         );
       }
@@ -859,6 +860,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
               pubkey: profile.pubkey,
               displayName: name,
               picture: profile.picture,
+              nip05: profile.nip05,
             ),
           );
 
