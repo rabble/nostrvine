@@ -56,10 +56,6 @@ enum FeatureFlag {
     'Show Nostr relay configuration and diagnostics in Settings. '
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
-  ),
-  feedAutoAdvance(
-    'Feed Auto-Advance',
-    'Automatically advance to the next video when the current one finishes',
   )
   ;
 

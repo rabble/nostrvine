@@ -48,8 +48,6 @@ class BuildConfiguration {
         return const bool.fromEnvironment('FF_CONTENT_POLICY_V2');
       case FeatureFlag.advancedRelaySettings:
         return const bool.fromEnvironment('FF_ADVANCED_RELAY_SETTINGS');
-      case FeatureFlag.feedAutoAdvance:
-        return const bool.fromEnvironment('FF_FEED_AUTO_ADVANCE');
     }
   }
 
@@ -94,8 +92,6 @@ class BuildConfiguration {
         return 'FF_CONTENT_POLICY_V2';
       case FeatureFlag.advancedRelaySettings:
         return 'FF_ADVANCED_RELAY_SETTINGS';
-      case FeatureFlag.feedAutoAdvance:
-        return 'FF_FEED_AUTO_ADVANCE';
     }
   }
 }
