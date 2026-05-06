@@ -2939,9 +2939,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Wstrzymaj podgląd",
     "videoMetadataClosePreviewSemanticLabel": "Zamknij podgląd wideo",
     "videoMetadataRemoveSemanticLabel": "Usuń",
-    "metadataCaptionsLabel": "Napisy",
-    "metadataCaptionsEnabledSemantics": "Napisy włączone dla wszystkich filmów",
-    "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

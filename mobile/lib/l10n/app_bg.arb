@@ -3192,15 +3192,12 @@
   "videoMetadataPausePreviewSemanticLabel": "Пауза на прегледа",
   "videoMetadataClosePreviewSemanticLabel": "Затворете визуализацията на видеото",
   "videoMetadataRemoveSemanticLabel": "Премахни",
-  "metadataCaptionsLabel": "Надписи",
   "@metadataCaptionsLabel": {
     "description": "Label for the global captions toggle in the video metadata sheet"
   },
-  "metadataCaptionsEnabledSemantics": "Субтитрите са включени за всички видеа",
   "@metadataCaptionsEnabledSemantics": {
     "description": "Screen reader label when the global captions toggle is on"
   },
-  "metadataCaptionsDisabledSemantics": "Субтитрите са изключени за всички видеа",
   "@metadataCaptionsDisabledSemantics": {
     "description": "Screen reader label when the global captions toggle is off"
   },

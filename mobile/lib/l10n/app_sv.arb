@@ -2939,9 +2939,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Pausa förhandsvisning",
     "videoMetadataClosePreviewSemanticLabel": "Stäng videoförhandsvisning",
     "videoMetadataRemoveSemanticLabel": "Ta bort",
-    "metadataCaptionsLabel": "Undertexter",
-    "metadataCaptionsEnabledSemantics": "Undertexter aktiverade för alla videor",
-    "metadataCaptionsDisabledSemantics": "Undertexter inaktiverade för alla videor",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

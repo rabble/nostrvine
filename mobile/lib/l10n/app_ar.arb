@@ -2934,9 +2934,6 @@
     "videoActionAutoLabel": "تلقائي",
     "videoActionEnableAutoAdvance": "تفعيل التشغيل التلقائي",
     "videoActionDisableAutoAdvance": "تعطيل التشغيل التلقائي",
-    "metadataCaptionsLabel": "التسميات التوضيحية",
-    "metadataCaptionsEnabledSemantics": "التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو",
-    "metadataCaptionsDisabledSemantics": "التسميات التوضيحية معطّلة لجميع مقاطع الفيديو",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

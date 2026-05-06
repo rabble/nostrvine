@@ -2230,9 +2230,6 @@
     "videoActionAutoLabel": "자동",
     "videoActionEnableAutoAdvance": "자동 넘기기 활성화",
     "videoActionDisableAutoAdvance": "자동 넘기기 비활성화",
-    "metadataCaptionsLabel": "자막",
-    "metadataCaptionsEnabledSemantics": "모든 동영상에서 자막이 활성화되었습니다",
-    "metadataCaptionsDisabledSemantics": "모든 동영상에서 자막이 비활성화되었습니다",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

@@ -2934,9 +2934,6 @@
     "videoActionAutoLabel": "自動",
     "videoActionEnableAutoAdvance": "自動送りを有効にする",
     "videoActionDisableAutoAdvance": "自動送りを無効にする",
-    "metadataCaptionsLabel": "字幕",
-    "metadataCaptionsEnabledSemantics": "すべての動画で字幕が有効になっています",
-    "metadataCaptionsDisabledSemantics": "すべての動画で字幕が無効になっています",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

@@ -2939,9 +2939,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
     "videoMetadataClosePreviewSemanticLabel": "Închide previzualizarea videoclipului",
     "videoMetadataRemoveSemanticLabel": "Elimină",
-    "metadataCaptionsLabel": "Subtitrări",
-    "metadataCaptionsEnabledSemantics": "Subtitrări activate pentru toate videoclipurile",
-    "metadataCaptionsDisabledSemantics": "Subtitrări dezactivate pentru toate videoclipurile",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

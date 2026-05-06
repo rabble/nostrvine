@@ -2939,9 +2939,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Pausar prévia",
     "videoMetadataClosePreviewSemanticLabel": "Fechar prévia do vídeo",
     "videoMetadataRemoveSemanticLabel": "Remover",
-    "metadataCaptionsLabel": "Legendas",
-    "metadataCaptionsEnabledSemantics": "Legendas ativadas para todos os vídeos",
-    "metadataCaptionsDisabledSemantics": "Legendas desativadas para todos os vídeos",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

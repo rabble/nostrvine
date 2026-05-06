@@ -350,6 +350,33 @@ const _knownUntranslatedDebt = {
   // pick them up.
   'reportOtherRequiresDetails',
   'reportDetailsRequired',
+  // Added by the home-feed playback-settings popover (auto-advance / mute /
+  // captions toggles). Translators will pick these up in a follow-up pass;
+  // until then non-English locales fall back to the English source.
+  'videoSettingsMenuOpen',
+  'videoSettingsMenuClose',
+  'videoSettingsCaptionsEnable',
+  'videoSettingsCaptionsDisable',
+  // Added by the Report action button on the video overlay (renamed from
+  // Repost → Revine). English ships; other locales fall back until a pass.
+  'videoActionReportLabel',
+  'videoActionReport',
+  // Added by the Apple-compliance pass on the Report bottom sheet — each
+  // reason now has a one-line subtitle clarifying scope. English ships;
+  // translators will pick these up in a follow-up pass.
+  'reportReasonSpamSubtitle',
+  'reportReasonHarassmentSubtitle',
+  'reportReasonViolenceSubtitle',
+  'reportReasonSexualContentSubtitle',
+  'reportReasonCopyrightSubtitle',
+  'reportReasonFalseInfoSubtitle',
+  'reportReasonCsamSubtitle',
+  'reportReasonAiGeneratedSubtitle',
+  'reportReasonOtherSubtitle',
+  // Added by the in-sheet Report confirmation state ("Learn more at
+  // divine.video/safety" link). Falls back to English in non-English
+  // locales until translated.
+  'reportLearnMoreAt',
 };
 
 Map<String, Object?> _readArb(File file) {

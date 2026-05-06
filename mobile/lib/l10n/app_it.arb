@@ -2939,9 +2939,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Metti in pausa anteprima",
     "videoMetadataClosePreviewSemanticLabel": "Chiudi anteprima video",
     "videoMetadataRemoveSemanticLabel": "Rimuovi",
-    "metadataCaptionsLabel": "Sottotitoli",
-    "metadataCaptionsEnabledSemantics": "Sottotitoli abilitati per tutti i video",
-    "metadataCaptionsDisabledSemantics": "Sottotitoli disabilitati per tutti i video",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

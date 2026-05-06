@@ -2941,9 +2941,6 @@
     "videoActionAutoLabel": "Otomatis",
     "videoActionEnableAutoAdvance": "Aktifkan lanjut otomatis",
     "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
-    "metadataCaptionsLabel": "Teks",
-    "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
-    "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

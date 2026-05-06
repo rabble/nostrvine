@@ -2939,9 +2939,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Voorbeeld pauzeren",
     "videoMetadataClosePreviewSemanticLabel": "Videovoorbeeld sluiten",
     "videoMetadataRemoveSemanticLabel": "Verwijderen",
-    "metadataCaptionsLabel": "Ondertitels",
-    "metadataCaptionsEnabledSemantics": "Ondertitels ingeschakeld voor alle video's",
-    "metadataCaptionsDisabledSemantics": "Ondertitels uitgeschakeld voor alle video's",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {
