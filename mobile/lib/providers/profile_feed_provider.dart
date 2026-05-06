@@ -290,7 +290,12 @@ class ProfileFeed extends _$ProfileFeed {
         final relayVideos = _relayVideosSnapshot();
         final authorVideos = _mergeVideoLists(
           relayVideos,
-          apiVideos.where((v) => !v.isRepost).toList(),
+          // Guard: only include videos genuinely authored by this user.
+          // The backend /api/users/{pubkey}/videos can incorrectly return
+          // videos where pubkey is tagged as a collaborator (p-tag) rather
+          // than being the event author — this filter prevents those from
+          // appearing in the profile grid.
+          apiVideos.where((v) => !v.isRepost && v.pubkey == userId).toList(),
         );
         _cacheVideoMetadata(authorVideos);
 
@@ -435,7 +440,11 @@ class ProfileFeed extends _$ProfileFeed {
         _nextOffset = result.nextOffset ?? (offset + apiVideos.length);
 
         if (apiVideos.isNotEmpty) {
-          var newVideos = apiVideos.where((v) => !v.isRepost).toList();
+          // Same guard as _refreshFromRestApi: exclude videos where pubkey
+          // doesn't match userId (backend can leak collaborator-tagged events).
+          var newVideos = apiVideos
+              .where((v) => !v.isRepost && v.pubkey == userId)
+              .toList();
 
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
