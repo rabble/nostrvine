@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "Verifică din nou",
     "profileSetupUsernameBurned": "Acest nume nu mai e disponibil",
     "profileSetupUsernameInvalidFormat": "Sunt permise doar litere, cifre și cratime",
-    "profileSetupUsernameInvalidLength": "Numele trebuie să aibă 3-20 de caractere",
+    "profileSetupUsernameInvalidLength": "Numele trebuie să aibă 3-63 de caractere",
     "profileSetupUsernameNetworkError": "N-am putut verifica disponibilitatea. Încearcă din nou.",
     "profileSetupUsernameInvalidFormatGeneric": "Format invalid de nume",
     "profileSetupUsernameCheckFailed": "N-am putut verifica disponibilitatea",

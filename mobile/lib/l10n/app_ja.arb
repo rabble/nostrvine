@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "もう一回確認",
     "profileSetupUsernameBurned": "このユーザー名はもう使えないよ",
     "profileSetupUsernameInvalidFormat": "使えるのは英数字とハイフンだけだよ",
-    "profileSetupUsernameInvalidLength": "ユーザー名は3〜20文字にしてね",
+    "profileSetupUsernameInvalidLength": "ユーザー名は3〜63文字にしてね",
     "profileSetupUsernameNetworkError": "使えるか確認できなかった。もう一回試してみて。",
     "profileSetupUsernameInvalidFormatGeneric": "ユーザー名の形式が正しくないよ",
     "profileSetupUsernameCheckFailed": "使えるか確認できなかった",

@@ -810,7 +810,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Username harus 3-20 karakter';
+      'Username harus 3-63 karakter';
 
   @override
   String get profileSetupUsernameNetworkError =>

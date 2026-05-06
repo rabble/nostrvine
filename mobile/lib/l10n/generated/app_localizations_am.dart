@@ -800,7 +800,7 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'የተጠቃሚ ስም 3-20 ቁምፊዎች መሆን አለበት።';
+      'የተጠቃሚ ስም 3-63 ቁምፊዎች መሆን አለበት።';
 
   @override
   String get profileSetupUsernameNetworkError =>

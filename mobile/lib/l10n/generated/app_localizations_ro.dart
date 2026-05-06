@@ -855,7 +855,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Numele trebuie să aibă 3-20 de caractere';
+      'Numele trebuie să aibă 3-63 de caractere';
 
   @override
   String get profileSetupUsernameNetworkError =>

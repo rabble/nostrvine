@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "Cek ulang",
     "profileSetupUsernameBurned": "Username ini tidak tersedia lagi",
     "profileSetupUsernameInvalidFormat": "Hanya huruf, angka, dan tanda hubung yang diperbolehkan",
-    "profileSetupUsernameInvalidLength": "Username harus 3-20 karakter",
+    "profileSetupUsernameInvalidLength": "Username harus 3-63 karakter",
     "profileSetupUsernameNetworkError": "Tidak bisa mengecek ketersediaan. Silakan coba lagi.",
     "profileSetupUsernameInvalidFormatGeneric": "Format username tidak valid",
     "profileSetupUsernameCheckFailed": "Gagal mengecek ketersediaan",

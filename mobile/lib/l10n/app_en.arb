@@ -409,7 +409,7 @@
   "profileSetupCheckAgain": "Check again",
   "profileSetupUsernameBurned": "This username is no longer available",
   "profileSetupUsernameInvalidFormat": "Only letters, numbers, and hyphens are allowed",
-  "profileSetupUsernameInvalidLength": "Username must be 3-20 characters",
+  "profileSetupUsernameInvalidLength": "Username must be 3-63 characters",
   "profileSetupUsernameNetworkError": "Could not check availability. Please try again.",
   "profileSetupUsernameInvalidFormatGeneric": "Invalid username format",
   "profileSetupUsernameCheckFailed": "Failed to check availability",

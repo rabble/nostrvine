@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "Opnieuw controleren",
     "profileSetupUsernameBurned": "Deze gebruikersnaam is niet meer beschikbaar",
     "profileSetupUsernameInvalidFormat": "Alleen letters, cijfers en koppeltekens zijn toegestaan",
-    "profileSetupUsernameInvalidLength": "Gebruikersnaam moet 3-20 tekens zijn",
+    "profileSetupUsernameInvalidLength": "Gebruikersnaam moet 3-63 tekens zijn",
     "profileSetupUsernameNetworkError": "Beschikbaarheid checken mislukt. Probeer opnieuw.",
     "profileSetupUsernameInvalidFormatGeneric": "Ongeldig formaat voor gebruikersnaam",
     "profileSetupUsernameCheckFailed": "Beschikbaarheid checken mislukt",

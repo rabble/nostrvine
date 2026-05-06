@@ -802,7 +802,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'يجب أن يتراوح طول اسم المستخدم بين 3 و 20 حرفًا';
+      'يجب أن يتراوح طول اسم المستخدم بين 3 و 63 حرفًا';
 
   @override
   String get profileSetupUsernameNetworkError =>

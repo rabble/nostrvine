@@ -409,7 +409,7 @@
     "profileSetupCheckAgain": "እንደገና ያረጋግጡ",
     "profileSetupUsernameBurned": "ይህ የተጠቃሚ ስም ከአሁን በኋላ አይገኝም",
     "profileSetupUsernameInvalidFormat": "ፊደሎች፣ ቁጥሮች እና ሰረዞች ብቻ ይፈቀዳሉ።",
-    "profileSetupUsernameInvalidLength": "የተጠቃሚ ስም 3-20 ቁምፊዎች መሆን አለበት።",
+    "profileSetupUsernameInvalidLength": "የተጠቃሚ ስም 3-63 ቁምፊዎች መሆን አለበት።",
     "profileSetupUsernameNetworkError": "ተገኝነትን ማረጋገጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።",
     "profileSetupUsernameInvalidFormatGeneric": "የተሳሳተ የተጠቃሚ ስም ቅርጸት",
     "profileSetupUsernameCheckFailed": "ተገኝነትን ማረጋገጥ አልተሳካም።",

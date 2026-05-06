@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "Erneut prüfen",
     "profileSetupUsernameBurned": "Dieser Benutzername ist nicht mehr verfügbar",
     "profileSetupUsernameInvalidFormat": "Nur Buchstaben, Zahlen und Bindestriche sind erlaubt",
-    "profileSetupUsernameInvalidLength": "Benutzername muss 3-20 Zeichen lang sein",
+    "profileSetupUsernameInvalidLength": "Benutzername muss 3-63 Zeichen lang sein",
     "profileSetupUsernameNetworkError": "Verfügbarkeit konnte nicht geprüft werden. Bitte versuch es nochmal.",
     "profileSetupUsernameInvalidFormatGeneric": "Ungültiges Benutzernamen-Format",
     "profileSetupUsernameCheckFailed": "Verfügbarkeit konnte nicht geprüft werden",

@@ -813,7 +813,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Användarnamnet måste vara 3–20 tecken';
+      'Användarnamnet måste vara 3–63 tecken';
 
   @override
   String get profileSetupUsernameNetworkError =>

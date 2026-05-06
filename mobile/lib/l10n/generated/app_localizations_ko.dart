@@ -767,7 +767,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileSetupUsernameInvalidFormat => '문자, 숫자, 하이픈만 쓸 수 있어요';
 
   @override
-  String get profileSetupUsernameInvalidLength => '사용자명은 3~20자 사이여야 해요';
+  String get profileSetupUsernameInvalidLength => '사용자명은 3~63자 사이여야 해요';
 
   @override
   String get profileSetupUsernameNetworkError =>

@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "Controlla di nuovo",
     "profileSetupUsernameBurned": "Questo nome utente non è più disponibile",
     "profileSetupUsernameInvalidFormat": "Sono ammessi solo lettere, numeri e trattini",
-    "profileSetupUsernameInvalidLength": "Il nome utente deve avere da 3 a 20 caratteri",
+    "profileSetupUsernameInvalidLength": "Il nome utente deve avere da 3 a 63 caratteri",
     "profileSetupUsernameNetworkError": "Impossibile verificare la disponibilità. Riprova.",
     "profileSetupUsernameInvalidFormatGeneric": "Formato nome utente non valido",
     "profileSetupUsernameCheckFailed": "Verifica disponibilità fallita",

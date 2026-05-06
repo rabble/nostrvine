@@ -829,7 +829,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Gebruikersnaam moet 3-20 tekens zijn';
+      'Gebruikersnaam moet 3-63 tekens zijn';
 
   @override
   String get profileSetupUsernameNetworkError =>

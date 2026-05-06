@@ -1529,7 +1529,7 @@ abstract class AppLocalizations {
   /// No description provided for @profileSetupUsernameInvalidLength.
   ///
   /// In en, this message translates to:
-  /// **'Username must be 3-20 characters'**
+  /// **'Username must be 3-63 characters'**
   String get profileSetupUsernameInvalidLength;
 
   /// No description provided for @profileSetupUsernameNetworkError.

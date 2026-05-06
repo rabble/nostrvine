@@ -837,7 +837,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Benutzername muss 3-20 Zeichen lang sein';
+      'Benutzername muss 3-63 Zeichen lang sein';
 
   @override
   String get profileSetupUsernameNetworkError =>

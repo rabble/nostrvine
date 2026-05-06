@@ -838,7 +838,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Потребителското име трябва да е 3-20 знака';
+      'Потребителското име трябва да е 3-63 знака';
 
   @override
   String get profileSetupUsernameNetworkError =>

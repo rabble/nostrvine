@@ -810,7 +810,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get profileSetupUsernameInvalidLength =>
-      'Kullanıcı adı 3-20 karakter olmalı';
+      'Kullanıcı adı 3-63 karakter olmalı';
 
   @override
   String get profileSetupUsernameNetworkError =>

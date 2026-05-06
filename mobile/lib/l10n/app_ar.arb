@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "تحقّق مجددًا",
     "profileSetupUsernameBurned": "اسم المستخدم هذا لم يعد متاحًا",
     "profileSetupUsernameInvalidFormat": "يُسمح بالأحرف والأرقام والواصلات فقط",
-    "profileSetupUsernameInvalidLength": "يجب أن يتراوح طول اسم المستخدم بين 3 و 20 حرفًا",
+    "profileSetupUsernameInvalidLength": "يجب أن يتراوح طول اسم المستخدم بين 3 و 63 حرفًا",
     "profileSetupUsernameNetworkError": "تعذّر التحقق من التوفر. حاول مرّة أخرى.",
     "profileSetupUsernameInvalidFormatGeneric": "تنسيق اسم المستخدم غير صالح",
     "profileSetupUsernameCheckFailed": "تعذّر التحقق من التوفر",

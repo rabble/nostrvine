@@ -765,7 +765,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileSetupUsernameInvalidFormat => '使えるのは英数字とハイフンだけだよ';
 
   @override
-  String get profileSetupUsernameInvalidLength => 'ユーザー名は3〜20文字にしてね';
+  String get profileSetupUsernameInvalidLength => 'ユーザー名は3〜63文字にしてね';
 
   @override
   String get profileSetupUsernameNetworkError => '使えるか確認できなかった。もう一回試してみて。';

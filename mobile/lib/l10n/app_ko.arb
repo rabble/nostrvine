@@ -198,7 +198,7 @@
     "profileSetupCheckAgain": "다시 확인",
     "profileSetupUsernameBurned": "이 사용자명은 더 이상 사용할 수 없어요",
     "profileSetupUsernameInvalidFormat": "문자, 숫자, 하이픈만 쓸 수 있어요",
-    "profileSetupUsernameInvalidLength": "사용자명은 3~20자 사이여야 해요",
+    "profileSetupUsernameInvalidLength": "사용자명은 3~63자 사이여야 해요",
     "profileSetupUsernameNetworkError": "사용 가능 여부를 확인하지 못했어요. 다시 시도해보세요.",
     "profileSetupUsernameInvalidFormatGeneric": "잘못된 사용자명 형식",
     "profileSetupUsernameCheckFailed": "사용 가능 여부 확인에 실패했어요",

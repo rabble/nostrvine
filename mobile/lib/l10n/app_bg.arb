@@ -387,7 +387,7 @@
     "profileSetupCheckAgain": "Провери пак",
     "profileSetupUsernameBurned": "Това потребителско име вече не е достъпно",
     "profileSetupUsernameInvalidFormat": "Разрешени са само букви, цифри и тирета",
-    "profileSetupUsernameInvalidLength": "Потребителското име трябва да е 3-20 знака",
+    "profileSetupUsernameInvalidLength": "Потребителското име трябва да е 3-63 знака",
     "profileSetupUsernameNetworkError": "Не можем да проверим дали е свободно. Опитай пак.",
     "profileSetupUsernameInvalidFormatGeneric": "Невалиден формат на потребителското име",
     "profileSetupUsernameCheckFailed": "Неуспешна проверка за наличност",

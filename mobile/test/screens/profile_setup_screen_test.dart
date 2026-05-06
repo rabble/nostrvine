@@ -177,7 +177,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Username must be 3-20 characters'), findsOneWidget);
+      expect(find.text('Username must be 3-63 characters'), findsOneWidget);
     });
   });
 

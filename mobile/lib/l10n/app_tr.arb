@@ -358,7 +358,7 @@
     "profileSetupCheckAgain": "Tekrar kontrol et",
     "profileSetupUsernameBurned": "Bu kullanıcı adı artık kullanılamıyor",
     "profileSetupUsernameInvalidFormat": "Sadece harfler, rakamlar ve tire kullanılabilir",
-    "profileSetupUsernameInvalidLength": "Kullanıcı adı 3-20 karakter olmalı",
+    "profileSetupUsernameInvalidLength": "Kullanıcı adı 3-63 karakter olmalı",
     "profileSetupUsernameNetworkError": "Uygunluk kontrol edilemedi. Lütfen tekrar dene.",
     "profileSetupUsernameInvalidFormatGeneric": "Geçersiz kullanıcı adı formatı",
     "profileSetupUsernameCheckFailed": "Uygunluk kontrolü başarısız",
