@@ -1053,8 +1053,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           listenWhen: (previous, current) =>
               previous.isMuted != current.isMuted,
           listener: (context, state) {
-            if (_isPlayerInitialized)
+            if (_isPlayerInitialized) {
               _videoPlayer?.setVolume(state.isMuted ? 0 : 1);
+            }
             ref
                 .read(videoEditorProvider.notifier)
                 .setOriginalAudioVolume(state.isMuted ? 0 : 1);
