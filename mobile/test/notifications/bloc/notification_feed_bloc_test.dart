@@ -199,14 +199,11 @@ void main() {
               items: [
                 _actorNotif(
                   id: 'existing-follow',
-                  pubkey: _alicePubkey,
-                  isFollowingBack: false,
                 ),
                 _actorNotif(
                   id: 'new-follow',
                   pubkey: _bobPubkey,
                   displayName: 'Bob',
-                  isFollowingBack: false,
                 ),
               ],
               unreadCount: 2,
@@ -221,8 +218,6 @@ void main() {
           notifications: [
             _actorNotif(
               id: 'existing-follow',
-              pubkey: _alicePubkey,
-              isFollowingBack: false,
             ),
           ],
         ),
@@ -233,8 +228,6 @@ void main() {
             notifications: [
               _actorNotif(
                 id: 'existing-follow',
-                pubkey: _alicePubkey,
-                isFollowingBack: false,
               ),
             ],
             isLoadingMore: true,
@@ -244,7 +237,6 @@ void main() {
             notifications: [
               _actorNotif(
                 id: 'existing-follow',
-                pubkey: _alicePubkey,
                 isFollowingBack: true,
               ),
               _actorNotif(
@@ -350,8 +342,6 @@ void main() {
               items: [
                 _actorNotif(
                   id: 'follow-push',
-                  pubkey: _alicePubkey,
-                  isFollowingBack: false,
                 ),
               ],
               unreadCount: 3,
@@ -371,7 +361,6 @@ void main() {
             notifications: [
               _actorNotif(
                 id: 'follow-push',
-                pubkey: _alicePubkey,
                 isFollowingBack: true,
               ),
             ],
@@ -420,7 +409,6 @@ void main() {
               id: 'realtime-follow',
               pubkey: _bobPubkey,
               displayName: 'Bob',
-              isFollowingBack: false,
             ),
           );
           when(() => mockFollowRepo.isFollowing(_alicePubkey)).thenReturn(true);
@@ -432,8 +420,6 @@ void main() {
           notifications: [
             _actorNotif(
               id: 'existing-follow',
-              pubkey: _alicePubkey,
-              isFollowingBack: false,
             ),
           ],
         ),
@@ -452,7 +438,6 @@ void main() {
               ),
               _actorNotif(
                 id: 'existing-follow',
-                pubkey: _alicePubkey,
                 isFollowingBack: true,
               ),
             ],
@@ -577,8 +562,6 @@ void main() {
             _videoNotif(id: 'existing'),
             _actorNotif(
               id: 'existing-follow',
-              pubkey: _alicePubkey,
-              isFollowingBack: false,
             ),
           ],
         ),
@@ -596,12 +579,10 @@ void main() {
                   _actor(),
                 ],
                 totalCount: 2,
-                isRead: false,
                 timestamp: DateTime(2026, 5, 4, 13),
               ),
               _actorNotif(
                 id: 'existing-follow',
-                pubkey: _alicePubkey,
                 isFollowingBack: true,
               ),
             ],
@@ -648,8 +629,6 @@ void main() {
           notifications: [
             _actorNotif(
               id: 'follow1',
-              pubkey: _alicePubkey,
-              isFollowingBack: false,
             ),
           ],
           unreadCount: 1,
@@ -661,7 +640,6 @@ void main() {
             notifications: [
               _actorNotif(
                 id: 'follow1',
-                pubkey: _alicePubkey,
                 isFollowingBack: true,
                 isRead: true,
               ),
