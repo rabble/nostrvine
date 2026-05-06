@@ -67,6 +67,19 @@ void main() {
       },
     );
 
+    test('real manifest includes Wednesday My Dudes bundled clip', () async {
+      final manifestFile = File('assets/sounds/sounds_manifest.json');
+      final sounds = SoundLibraryService.parseManifest(
+        await manifestFile.readAsString(),
+      );
+
+      final sound = sounds.singleWhere((s) => s.id == 'wednesday');
+
+      expect(sound.title, equals('Wednesday My Dudes'));
+      expect(sound.assetPath, equals('assets/sounds/wednesday.mp3'));
+      expect(sound.duration.inMilliseconds, equals(6269));
+    });
+
     test('searchSounds filters by query', () {
       final sounds = [
         VineSound(
