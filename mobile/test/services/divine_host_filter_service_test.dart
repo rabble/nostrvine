@@ -4,29 +4,43 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('DivineHostFilterService', () {
-    test('defaults to disabled', () async {
+    test('defaults to enabled when no preference is stored', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
       final service = DivineHostFilterService(prefs);
-
-      expect(service.showDivineHostedOnly, isFalse);
-    });
-
-    test('persists enabled state', () async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-
-      final service = DivineHostFilterService(prefs);
-      await service.setShowDivineHostedOnly(true);
 
       expect(service.showDivineHostedOnly, isTrue);
-
-      final reloaded = DivineHostFilterService(prefs);
-      expect(reloaded.showDivineHostedOnly, isTrue);
     });
 
-    test('notifies listeners when value changes', () async {
+    test(
+      'respects an explicitly disabled preference (opt-in to wider Nostr)',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'show_divine_hosted_only': false,
+        });
+        final prefs = await SharedPreferences.getInstance();
+
+        final service = DivineHostFilterService(prefs);
+
+        expect(service.showDivineHostedOnly, isFalse);
+      },
+    );
+
+    test('persists disabled state across reloads', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final service = DivineHostFilterService(prefs);
+      await service.setShowDivineHostedOnly(false);
+
+      expect(service.showDivineHostedOnly, isFalse);
+
+      final reloaded = DivineHostFilterService(prefs);
+      expect(reloaded.showDivineHostedOnly, isFalse);
+    });
+
+    test('notifies listeners only when value actually changes', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
 
@@ -34,8 +48,8 @@ void main() {
       var notificationCount = 0;
       service.addListener(() => notificationCount++);
 
-      await service.setShowDivineHostedOnly(true);
-      await service.setShowDivineHostedOnly(true);
+      await service.setShowDivineHostedOnly(false);
+      await service.setShowDivineHostedOnly(false);
 
       expect(notificationCount, 1);
     });
