@@ -3406,25 +3406,9 @@ void main() {
         },
       );
 
-      test('returns server error message when server returns '
-          'non-200 with JSON error body', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) => Future.value(Response('{"error": "Username too short"}', 400)),
-        );
-
+      test(
+        'returns validation error for too-short username before request',
+        () async {
         final result = await profileRepository.claimUsername(username: 'ab');
 
         expect(
@@ -3432,10 +3416,25 @@ void main() {
           isA<UsernameClaimError>().having(
             (e) => e.message,
             'message',
-            'Username too short',
+            'Usernames must be 3–63 characters',
           ),
         );
-      });
+        verifyNever(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        );
+        verifyNever(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        );
+        },
+      );
 
       test('returns error with default message when server returns '
           'non-200 with unparseable body', () async {
@@ -3642,6 +3641,29 @@ void main() {
 
         expect(result, isA<UsernameInvalidFormat>());
       });
+
+      test(
+        'returns UsernameInvalidFormat for too-short names',
+        () async {
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'ab',
+          );
+
+          expect(
+            result,
+            isA<UsernameInvalidFormat>().having(
+              (e) => e.reason,
+              'reason',
+              'Usernames must be 3–63 characters',
+            ),
+          );
+          verifyNever(
+            () => mockHttpClient.get(
+              Uri.parse('https://names.divine.video/api/username/check/ab'),
+            ),
+          );
+        },
+      );
 
       test(
         'returns UsernameInvalidFormat for names with underscores',

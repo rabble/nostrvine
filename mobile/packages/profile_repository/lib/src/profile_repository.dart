@@ -575,7 +575,12 @@ class ProfileRepository {
   ///
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
   Future<UsernameClaimResult> claimUsername({required String username}) async {
-    final normalizedUsername = username.toLowerCase();
+    final validation = validateDivineUsername(username);
+    if (validation case DivineUsernameInvalid(:final reason)) {
+      return UsernameClaimError(reason);
+    }
+
+    final normalizedUsername = (validation as DivineUsernameValid).normalized;
     final payload = jsonEncode({'name': normalizedUsername});
     final authHeader = await _nostrClient.createNip98AuthHeader(
       url: _usernameClaimUrl,
@@ -656,8 +661,10 @@ class ProfileRepository {
   /// Checks if a username is available for registration.
   ///
   /// Queries the NIP-05 endpoint to check if the username is already registered
-  /// on the server. This method does NOT validate username format - format
-  /// validation is the responsibility of the BLoC layer.
+  /// on the server.
+  ///
+  /// This method performs shared client-side validation before making network
+  /// calls so editor and repository behavior stay in sync.
   ///
   /// Returns a [UsernameAvailabilityResult] indicating:
   /// - [UsernameAvailable] if the username is not registered on the server
@@ -668,29 +675,11 @@ class ProfileRepository {
     required String username,
     String? currentUserPubkey,
   }) async {
-    final normalizedUsername = username.toLowerCase().trim();
-
-    // Client-side format validation: usernames become subdomains, so only
-    // lowercase letters, digits, and hyphens are allowed. No dots,
-    // underscores, spaces, or special characters.
-    if (normalizedUsername.isEmpty) {
-      return const UsernameInvalidFormat('Username is required');
+    final validation = validateDivineUsername(username);
+    if (validation case DivineUsernameInvalid(:final reason)) {
+      return UsernameInvalidFormat(reason);
     }
-    if (normalizedUsername.length > 63) {
-      return const UsernameInvalidFormat('Usernames must be 1–63 characters');
-    }
-    if (normalizedUsername.startsWith('-') ||
-        normalizedUsername.endsWith('-')) {
-      return const UsernameInvalidFormat(
-        "Usernames can't start or end with a hyphen",
-      );
-    }
-    if (!RegExp(r'^[a-z0-9-]+$').hasMatch(normalizedUsername)) {
-      return const UsernameInvalidFormat(
-        'Only letters, numbers, and hyphens are allowed '
-        '(your username becomes username.divine.video)',
-      );
-    }
+    final normalizedUsername = (validation as DivineUsernameValid).normalized;
 
     // Server-side check using the name-server API which validates format
     // and checks availability in one call.
