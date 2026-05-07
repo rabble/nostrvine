@@ -150,6 +150,11 @@ class DivineVideoPlayerState {
   bool get hasError => status.hasError;
 
   /// Creates a copy with the given fields replaced.
+  ///
+  /// Pass `clearError: true` to reset [errorMessage] and [errorCode] to
+  /// `null` (e.g. when transitioning out of [PlaybackStatus.error] back
+  /// to [PlaybackStatus.idle] or [PlaybackStatus.ready]). Without it,
+  /// the standard `??` fall-through would keep stale error fields.
   DivineVideoPlayerState copyWith({
     PlaybackStatus? status,
     Duration? position,
@@ -166,6 +171,7 @@ class DivineVideoPlayerState {
     int? rotationDegrees,
     String? errorMessage,
     NativePlayerErrorCode? errorCode,
+    bool clearError = false,
   }) {
     return DivineVideoPlayerState(
       status: status ?? this.status,
@@ -181,8 +187,8 @@ class DivineVideoPlayerState {
       videoWidth: videoWidth ?? this.videoWidth,
       videoHeight: videoHeight ?? this.videoHeight,
       rotationDegrees: rotationDegrees ?? this.rotationDegrees,
-      errorMessage: errorMessage ?? this.errorMessage,
-      errorCode: errorCode ?? this.errorCode,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      errorCode: clearError ? null : (errorCode ?? this.errorCode),
     );
   }
 

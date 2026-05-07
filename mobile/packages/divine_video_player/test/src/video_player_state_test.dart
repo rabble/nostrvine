@@ -362,6 +362,37 @@ void main() {
         expect(copy.volume, equals(0.7));
         expect(copy.position, equals(original.position));
       });
+
+      test('clearError: true resets errorMessage and errorCode', () {
+        const original = DivineVideoPlayerState(
+          status: PlaybackStatus.error,
+          errorMessage: 'boom',
+          errorCode: NativePlayerErrorCode.networkError,
+        );
+        final copy = original.copyWith(
+          status: PlaybackStatus.idle,
+          clearError: true,
+        );
+
+        expect(copy.status, equals(PlaybackStatus.idle));
+        expect(copy.errorMessage, isNull);
+        expect(copy.errorCode, isNull);
+      });
+
+      test('without clearError, error fields persist on status change', () {
+        const original = DivineVideoPlayerState(
+          status: PlaybackStatus.error,
+          errorMessage: 'boom',
+          errorCode: NativePlayerErrorCode.networkError,
+        );
+        final copy = original.copyWith(status: PlaybackStatus.idle);
+
+        expect(copy.errorMessage, equals('boom'));
+        expect(
+          copy.errorCode,
+          equals(NativePlayerErrorCode.networkError),
+        );
+      });
     });
 
     group('fromMap', () {
