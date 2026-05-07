@@ -307,7 +307,14 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
   /// Rejects non-main-frame messages before the nonce check: the platform
   /// itself reports isMainFrame, so no JS can spoof this value.
   void _handleAttestedEvent(dynamic event) {
-    if (event is! Map) return;
+    if (event is! Map) {
+      Log.warning(
+        'Unexpected attestation event shape: ${event.runtimeType}',
+        name: 'NostrAppSandboxScreen',
+        category: LogCategory.system,
+      );
+      return;
+    }
     final message = event['message'] as String? ?? '';
     final isMainFrame = event['isMainFrame'] as bool? ?? false;
 
