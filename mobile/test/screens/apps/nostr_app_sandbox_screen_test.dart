@@ -405,10 +405,14 @@ void main() {
 
     group('iOS frame attestation', () {
       void Function(dynamic event)? attestedEventHandler;
-      List<String> capturedScripts = [];
+      List<String> capturedScripts = <String>[];
+
+      setUp(() {
+        attestedEventHandler = null;
+        capturedScripts = <String>[];
+      });
 
       Future<void> pumpSandbox(WidgetTester tester) async {
-        capturedScripts = [];
         await tester.pumpWidget(
           MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -491,7 +495,6 @@ void main() {
             signerFactory: _FakeNostrSigner.new,
           );
 
-          capturedScripts = [];
           await tester.pumpWidget(
             MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,

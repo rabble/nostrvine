@@ -294,7 +294,7 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         'Native frame attestation unavailable (${error.code}); '
         'falling back to nonce-only enforcement.',
         name: 'NostrAppSandboxScreen',
-        category: LogCategory.auth,
+        category: LogCategory.system,
       );
     } on MissingPluginException catch (_) {
       // Channel is not registered (tests, simulator without the plugin set
