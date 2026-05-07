@@ -2774,5 +2774,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "내 피드에도 공유",
+  "videoMetadataShareReplyToFeedSubtitle": "끔으로 두면 이 동영상은 댓글 스레드에만 남습니다.",
+  "commentsRecordVideoButtonLabel": "영상 댓글 녹화",
+  "commentsOpenVideoLabel": "영상 댓글 열기",
+  "commentsMuteVideoReplyLabel": "영상 답글 음소거",
+  "commentsUnmuteVideoReplyLabel": "영상 답글 음소거 해제",
+  "commentsOpenReplyParentLabel": "답글 대상 영상 열기",
+  "commentsReplyParentSectionTitle": "답글 대상",
+  "commentsReplyParentLabel": "{target}에 답글",
+  "commentsReplyParentFallbackLabel": "영상에 답글"
 }

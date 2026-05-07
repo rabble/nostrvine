@@ -201,9 +201,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(VideoMetadataFormFields)),
+      );
       final tile = find.widgetWithText(
         SwitchListTile,
-        'Also share to my feed',
+        l10n.videoMetadataShareReplyToFeedTitle,
       );
       expect(tile, findsOneWidget);
       expect(tester.widget<SwitchListTile>(tile).value, isFalse);

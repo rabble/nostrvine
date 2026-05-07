@@ -6859,11 +6859,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publicera video i flödet';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => 'Dela också i mitt flöde';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Av betyder att den här videon bara stannar i kommentarstråden.';
 
   @override
   String get videoMetadataFormNotReadyHint =>
@@ -6973,28 +6973,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Väntar på mottagare';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Spela in videokommentar';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Öppna videokommentar';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => 'Tysta videosvar';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => 'Slå på ljud för videosvar';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => 'Öppna videon som detta svarar på';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'Som svar på';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'Svar på $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Svar på video';
 }

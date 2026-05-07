@@ -3478,5 +3478,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Partager aussi dans mon fil",
+  "videoMetadataShareReplyToFeedSubtitle": "Désactivé, cette vidéo reste seulement dans le fil de commentaires.",
+  "commentsRecordVideoButtonLabel": "Enregistrer un commentaire vidéo",
+  "commentsOpenVideoLabel": "Ouvrir le commentaire vidéo",
+  "commentsMuteVideoReplyLabel": "Couper le son de la réponse vidéo",
+  "commentsUnmuteVideoReplyLabel": "Remettre le son de la réponse vidéo",
+  "commentsOpenReplyParentLabel": "Ouvrir la vidéo à laquelle ceci répond",
+  "commentsReplyParentSectionTitle": "En réponse à",
+  "commentsReplyParentLabel": "Réponse à {target}",
+  "commentsReplyParentFallbackLabel": "Réponse à la vidéo"
 }

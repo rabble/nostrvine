@@ -6830,11 +6830,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publikasikan video ke feed';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => 'Bagikan juga ke feed saya';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Jika dimatikan, video ini hanya tetap di utas komentar.';
 
   @override
   String get videoMetadataFormNotReadyHint => 'Isi formulir untuk mengaktifkan';
@@ -6942,28 +6942,28 @@ class AppLocalizationsId extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Menunggu penerima';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Rekam komentar video';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Buka komentar video';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => 'Bisukan balasan video';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => 'Aktifkan suara balasan video';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => 'Buka video yang dibalas ini';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'Menanggapi';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'Balas $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Balas video';
 }

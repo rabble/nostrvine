@@ -3478,5 +3478,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "شارك أيضًا في موجزي",
+  "videoMetadataShareReplyToFeedSubtitle": "إيقافه يبقي هذا الفيديو داخل سلسلة التعليقات فقط.",
+  "commentsRecordVideoButtonLabel": "سجّل تعليق فيديو",
+  "commentsOpenVideoLabel": "افتح تعليق الفيديو",
+  "commentsMuteVideoReplyLabel": "اكتم رد الفيديو",
+  "commentsUnmuteVideoReplyLabel": "ألغِ كتم رد الفيديو",
+  "commentsOpenReplyParentLabel": "افتح الفيديو الذي يرد عليه هذا",
+  "commentsReplyParentSectionTitle": "ردًا على",
+  "commentsReplyParentLabel": "رد على {target}",
+  "commentsReplyParentFallbackLabel": "رد على فيديو"
 }

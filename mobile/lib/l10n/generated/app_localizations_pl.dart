@@ -7011,11 +7011,12 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Opublikuj wideo w feedzie';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle =>
+      'Udostępnij też w moim feedzie';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Wyłączenie sprawia, że ten film zostaje tylko w wątku komentarzy.';
 
   @override
   String get videoMetadataFormNotReadyHint => 'Wypełnij formularz, aby włączyć';
@@ -7123,28 +7124,29 @@ class AppLocalizationsPl extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Oczekiwanie na odbiorcę';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Nagraj komentarz wideo';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Otwórz komentarz wideo';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => 'Wycisz odpowiedź wideo';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => 'Włącz dźwięk odpowiedzi wideo';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel =>
+      'Otwórz film, na który to odpowiada';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'W odpowiedzi na';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'Odpowiedź na $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Odpowiedź na film';
 }

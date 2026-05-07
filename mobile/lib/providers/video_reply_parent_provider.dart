@@ -6,8 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-final FutureProviderFamily<VideoEvent?, String>
-videoReplyParentProvider =
+final FutureProviderFamily<VideoEvent?, String> videoReplyParentProvider =
     FutureProvider.autoDispose.family<VideoEvent?, String>((ref, routeId) {
       final repository = ref.watch(videosRepositoryProvider);
       return repository.fetchVideoWithStatsForRouteId(routeId);

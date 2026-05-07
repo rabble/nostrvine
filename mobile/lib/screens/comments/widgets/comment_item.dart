@@ -159,8 +159,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                     widget.comment.id,
                                   ),
                                   extra: VideoDetailRouteExtra(
-                                    initialVideo:
-                                        widget.comment.toSyntheticVideoEvent(),
+                                    initialVideo: widget.comment
+                                        .toSyntheticVideoEvent(),
                                   ),
                                 ),
                               ),

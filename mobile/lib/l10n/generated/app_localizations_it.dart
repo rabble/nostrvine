@@ -6930,11 +6930,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Pubblica video nel feed';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle =>
+      'Condividi anche nel mio feed';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Se disattivato, questo video resta solo nel thread dei commenti.';
 
   @override
   String get videoMetadataFormNotReadyHint => 'Compila il modulo per abilitare';
@@ -7043,28 +7044,30 @@ class AppLocalizationsIt extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'In attesa del destinatario';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Registra un commento video';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Apri il commento video';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel =>
+      'Disattiva audio della risposta video';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel =>
+      'Riattiva audio della risposta video';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => 'Apri il video a cui risponde';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'In risposta a';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'Risposta a $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Risposta al video';
 }

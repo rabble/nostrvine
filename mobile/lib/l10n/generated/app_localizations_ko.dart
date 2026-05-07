@@ -6601,11 +6601,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataPublishVideoHint => '피드에 동영상 게시';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => '내 피드에도 공유';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      '끔으로 두면 이 동영상은 댓글 스레드에만 남습니다.';
 
   @override
   String get videoMetadataFormNotReadyHint => '활성화하려면 양식을 작성하세요';
@@ -6708,28 +6708,28 @@ class AppLocalizationsKo extends AppLocalizations {
   String get badgesRecipientWaitingStatus => '수령자를 기다리는 중';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => '영상 댓글 녹화';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => '영상 댓글 열기';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => '영상 답글 음소거';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => '영상 답글 음소거 해제';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => '답글 대상 영상 열기';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => '답글 대상';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return '$target에 답글';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => '영상에 답글';
 }

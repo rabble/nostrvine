@@ -6714,11 +6714,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'ለመመገብ ቪዲዮ ያትሙ';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => 'በፊዴ ላይም አጋራ';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'ሲጠፋ ይህ ቪዲዮ በአስተያየት ክር ውስጥ ብቻ ይቀራል።';
 
   @override
   String get videoMetadataFormNotReadyHint => 'ለማንቃት ቅጹን ይሙሉ';
@@ -6821,28 +6821,28 @@ class AppLocalizationsAm extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'የቪዲዮ አስተያየት ቅረጽ';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'የቪዲዮ አስተያየት ክፈት';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => 'የቪዲዮ ምላሽን ዝም አድርግ';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => 'የቪዲዮ ምላሽን ድምጽ አስጀምር';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => 'ይህ የሚመልስበትን ቪዲዮ ክፈት';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'ምላሽ ለ';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'ምላሽ ለ $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'ምላሽ ለ ቪዲዮ';
 }

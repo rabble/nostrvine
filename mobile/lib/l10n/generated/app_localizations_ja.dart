@@ -6577,11 +6577,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'フィードに動画を公開';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => '自分のフィードにも共有';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'オフにすると、この動画はコメントスレッド内にのみ表示されます。';
 
   @override
   String get videoMetadataFormNotReadyHint => '有効にするにはフォームを入力してください';
@@ -6684,28 +6684,28 @@ class AppLocalizationsJa extends AppLocalizations {
   String get badgesRecipientWaitingStatus => '受信者の承認待ち';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => '動画コメントを録画';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => '動画コメントを開く';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => '動画返信をミュート';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => '動画返信のミュートを解除';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => '返信先の動画を開く';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => '返信先';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return '$target への返信';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => '動画への返信';
 }

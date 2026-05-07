@@ -7030,11 +7030,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publică videoclipul în feed';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle =>
+      'Distribuie și în feedul meu';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Oprit păstrează acest videoclip doar în firul de comentarii.';
 
   @override
   String get videoMetadataFormNotReadyHint =>
@@ -7145,28 +7146,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Se așteaptă destinatarul';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Înregistrează comentariu video';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Deschide comentariul video';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel =>
+      'Dezactivează sunetul răspunsului video';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel =>
+      'Activează sunetul răspunsului video';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel =>
+      'Deschide videoclipul la care răspunde';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'Ca răspuns la';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'Răspuns la $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Răspuns la videoclip';
 }

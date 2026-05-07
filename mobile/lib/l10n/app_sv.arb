@@ -3478,5 +3478,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Dela också i mitt flöde",
+  "videoMetadataShareReplyToFeedSubtitle": "Av betyder att den här videon bara stannar i kommentarstråden.",
+  "commentsRecordVideoButtonLabel": "Spela in videokommentar",
+  "commentsOpenVideoLabel": "Öppna videokommentar",
+  "commentsMuteVideoReplyLabel": "Tysta videosvar",
+  "commentsUnmuteVideoReplyLabel": "Slå på ljud för videosvar",
+  "commentsOpenReplyParentLabel": "Öppna videon som detta svarar på",
+  "commentsReplyParentSectionTitle": "Som svar på",
+  "commentsReplyParentLabel": "Svar på {target}",
+  "commentsReplyParentFallbackLabel": "Svar på video"
 }

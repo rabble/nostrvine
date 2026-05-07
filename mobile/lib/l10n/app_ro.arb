@@ -3478,5 +3478,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Distribuie și în feedul meu",
+  "videoMetadataShareReplyToFeedSubtitle": "Oprit păstrează acest videoclip doar în firul de comentarii.",
+  "commentsRecordVideoButtonLabel": "Înregistrează comentariu video",
+  "commentsOpenVideoLabel": "Deschide comentariul video",
+  "commentsMuteVideoReplyLabel": "Dezactivează sunetul răspunsului video",
+  "commentsUnmuteVideoReplyLabel": "Activează sunetul răspunsului video",
+  "commentsOpenReplyParentLabel": "Deschide videoclipul la care răspunde",
+  "commentsReplyParentSectionTitle": "Ca răspuns la",
+  "commentsReplyParentLabel": "Răspuns la {target}",
+  "commentsReplyParentFallbackLabel": "Răspuns la videoclip"
 }

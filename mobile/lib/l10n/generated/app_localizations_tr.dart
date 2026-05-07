@@ -6832,11 +6832,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Videoyu akışa yayınla';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => 'Akışımda da paylaş';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Kapalı olduğunda bu video yalnızca yorum dizisinde kalır.';
 
   @override
   String get videoMetadataFormNotReadyHint =>
@@ -6945,28 +6945,28 @@ class AppLocalizationsTr extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Alıcı bekleniyor';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Video yorum kaydet';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Video yorumu aç';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => 'Video yanıtını sessize al';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel => 'Video yanıtının sesini aç';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => 'Bunun yanıt verdiği videoyu aç';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'Yanıt olarak';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return '$target için yanıt';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Videoya yanıt';
 }

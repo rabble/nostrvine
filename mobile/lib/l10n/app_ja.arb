@@ -3478,5 +3478,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "自分のフィードにも共有",
+  "videoMetadataShareReplyToFeedSubtitle": "オフにすると、この動画はコメントスレッド内にのみ表示されます。",
+  "commentsRecordVideoButtonLabel": "動画コメントを録画",
+  "commentsOpenVideoLabel": "動画コメントを開く",
+  "commentsMuteVideoReplyLabel": "動画返信をミュート",
+  "commentsUnmuteVideoReplyLabel": "動画返信のミュートを解除",
+  "commentsOpenReplyParentLabel": "返信先の動画を開く",
+  "commentsReplyParentSectionTitle": "返信先",
+  "commentsReplyParentLabel": "{target} への返信",
+  "commentsReplyParentFallbackLabel": "動画への返信"
 }

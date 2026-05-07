@@ -6891,11 +6891,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Video publiceren naar feed';
 
   @override
-  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+  String get videoMetadataShareReplyToFeedTitle => 'Ook delen in mijn feed';
 
   @override
   String get videoMetadataShareReplyToFeedSubtitle =>
-      'Off keeps this video only in the comment thread.';
+      'Uit laat deze video alleen in de reactiethread staan.';
 
   @override
   String get videoMetadataFormNotReadyHint =>
@@ -7004,28 +7004,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'Wacht op ontvanger';
 
   @override
-  String get commentsRecordVideoButtonLabel => 'Record video comment';
+  String get commentsRecordVideoButtonLabel => 'Videoreactie opnemen';
 
   @override
-  String get commentsOpenVideoLabel => 'Open video comment';
+  String get commentsOpenVideoLabel => 'Videoreactie openen';
 
   @override
-  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+  String get commentsMuteVideoReplyLabel => 'Videoreactie dempen';
 
   @override
-  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+  String get commentsUnmuteVideoReplyLabel =>
+      'Dempen van videoreactie opheffen';
 
   @override
-  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+  String get commentsOpenReplyParentLabel => 'Video openen waarop dit reageert';
 
   @override
-  String get commentsReplyParentSectionTitle => 'In reply to';
+  String get commentsReplyParentSectionTitle => 'Als reactie op';
 
   @override
   String commentsReplyParentLabel(String target) {
-    return 'Reply to $target';
+    return 'Reactie op $target';
   }
 
   @override
-  String get commentsReplyParentFallbackLabel => 'Reply to video';
+  String get commentsReplyParentFallbackLabel => 'Reactie op video';
 }
