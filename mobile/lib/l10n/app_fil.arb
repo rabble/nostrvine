@@ -1104,6 +1104,7 @@
     "routeInvalidCategory": "Invalid na category",
     "routeNoVideosToDisplay": "Walang video na maipapakita",
     "routeInvalidProfileId": "Invalid na profile ID",
+    "routeUnknownPath": "Wala ang page na iyon sa app.",
     "routeDefaultListName": "Listahan",
     "supportTitle": "Support Center",
     "supportContactSupport": "Makipag-ugnayan sa Support",

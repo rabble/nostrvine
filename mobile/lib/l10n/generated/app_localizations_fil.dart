@@ -4321,6 +4321,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get routeInvalidProfileId => 'Invalid na profile ID';
 
   @override
+  String get routeUnknownPath => 'Wala ang page na iyon sa app.';
+
+  @override
   String get routeDefaultListName => 'Listahan';
 
   @override
