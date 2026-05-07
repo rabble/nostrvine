@@ -6,6 +6,12 @@ import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart'
 
 void main() {
   group(ModeratedContentOverlay, () {
+    late AppLocalizations enL10n;
+
+    setUpAll(() {
+      enL10n = lookupAppLocalizations(const Locale('en'));
+    });
+
     Future<void> pumpOverlay(
       WidgetTester tester, {
       required PlaybackStatus status,
@@ -119,7 +125,10 @@ void main() {
       await pumpOverlay(tester, status: PlaybackStatus.forbidden);
 
       // The overlay must NOT show the usual FeedVideoOverlay chrome.
-      expect(find.bySemanticsLabel(RegExp('Video author: .*')), findsNothing);
+      final videoAuthorSemanticsPrefix = RegExp(
+        '^${RegExp.escape(enL10n.videoAuthorSemanticLabel(''))}',
+      );
+      expect(find.bySemanticsLabel(videoAuthorSemanticsPrefix), findsNothing);
       // The description tap target uses an action-oriented label
       // ("Open video details") in FeedVideoOverlay; either that or the
       // older content-echoing label would still indicate chrome leaked
