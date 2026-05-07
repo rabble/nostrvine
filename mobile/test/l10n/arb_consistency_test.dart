@@ -317,6 +317,9 @@ const _knownUntranslatedDebt = {
   // next pass.
   'relaySettingsInsecureUrl',
   'keyImportInsecureBunkerRelay',
+  // Added by the sticker comments spike (#1529). Non-English locales fall
+  // back to English until translations are picked up in a follow-up pass.
+  'commentsStickerOpenSemanticLabel',
   // Added by the badges dashboard in #3825. Translations are tracked in
   // #3864; until that lands, non-English locales fall back to English.
   'settingsBadgesTitle',
