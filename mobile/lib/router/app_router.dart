@@ -975,6 +975,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return VideoDetailScreen(
             videoId: videoId,
             autoOpenComments: routeExtra?.autoOpenComments ?? false,
+            initialVideo: routeExtra?.initialVideo,
           );
         },
       ),

@@ -122,6 +122,58 @@ void main() {
 
     group('video found', () {
       testWidgets(
+        'renders supplied route video without fetching it again',
+        (tester) async {
+          final initialVideo = createTestVideoEvent(
+            id: 'reply_video_id',
+            pubkey: 'reply_pubkey',
+            title: 'Reply Video',
+            videoUrl: 'https://example.com/reply.mp4',
+          );
+
+          VideoEvent? capturedVideo;
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockNostrService: mockNostrClient,
+              additionalOverrides: [
+                videoEventServiceProvider.overrideWithValue(
+                  mockVideoEventService,
+                ),
+                contentBlocklistRepositoryProvider.overrideWithValue(
+                  mockBlocklistRepository,
+                ),
+                followRepositoryProvider.overrideWithValue(
+                  mockFollowRepository,
+                ),
+                videosRepositoryProvider.overrideWithValue(
+                  mockVideosRepository,
+                ),
+              ],
+              home: VideoDetailScreen(
+                videoId: 'reply_video_id',
+                initialVideo: initialVideo,
+                videoFeedBuilder: (video) {
+                  capturedVideo = video;
+                  return const SizedBox(key: Key('video-feed-placeholder'));
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
+          expect(capturedVideo, same(initialVideo));
+          verifyNever(
+            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+          );
+        },
+      );
+
+      testWidgets(
         'renders player once fetchVideoWithStatsForRouteId resolves',
         (tester) async {
           final video = createTestVideoEvent(
