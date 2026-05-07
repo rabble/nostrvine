@@ -380,30 +380,32 @@ void main() {
         },
       );
 
-      test('returns success with selfWrapPublished=false when self-wrap '
-          'publish returns PublishFailed (relay rejected with no exception)',
-          () async {
-        var callCount = 0;
-        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async {
-            callCount++;
-            if (callCount == 1) {
-              return PublishSuccess(
-                event: invocation.positionalArguments[0] as Event,
-              );
-            }
-            return const PublishFailed();
-          },
-        );
+      test(
+        'returns success with selfWrapPublished=false when self-wrap '
+        'publish returns PublishFailed (relay rejected with no exception)',
+        () async {
+          var callCount = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async {
+              callCount++;
+              if (callCount == 1) {
+                return PublishSuccess(
+                  event: invocation.positionalArguments[0] as Event,
+                );
+              }
+              return const PublishFailed();
+            },
+          );
 
-        final result = await service.sendPrivateMessage(
-          recipientPubkey: _recipientPubkey,
-          content: 'Test message',
-        );
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
 
-        expect(result.success, isTrue);
-        expect(result.selfWrapPublished, isFalse);
-      });
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+        },
+      );
 
       test(
         'publishes a self-wrap with selfWrapPublished=true '
