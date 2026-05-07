@@ -29,6 +29,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<ConversationStarted>(_onStarted, transformer: restartable());
     on<ConversationMessageSent>(_onMessageSent, transformer: sequential());
     on<ConversationMessageDeleted>(_onMessageDeleted, transformer: droppable());
+    on<ConversationSelfWrapRecoveryRequested>(
+      _onSelfWrapRecoveryRequested,
+      transformer: sequential(),
+    );
   }
 
   final DmRepository _dmRepository;
@@ -112,6 +116,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         sendStatus: SendStatus.sending,
         messages: [optimisticMessage, ...state.messages],
         clearLastFailedSend: true,
+        clearLastPartialSend: true,
       ),
     );
 
@@ -120,15 +125,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // persisted it locally, but the self-addressed gift wrap did not
       // reach relays. The sender's other devices will not see this
       // message on relay-only restore. Surface as a distinct status so
-      // the UI can offer a retry-sync path without claiming the send
-      // failed (the optimistic stays — the message *was* sent).
-      //
-      // Retrying redispatches the full send via [lastFailedSend], which
-      // double-delivers to the recipient on success. That tradeoff is
-      // accepted here: silent loss of cross-device sync is worse than a
-      // duplicate bubble. The principled fix — a durable outgoing queue
-      // that retries the self-wrap only — is tracked in #3909.
-      var selfWrapPublished = true;
+      // the UI can offer a self-wrap-only retry without re-delivering
+      // to the recipient (the optimistic stays — the message *was*
+      // sent). [lastPartialSend.rumorIds] carries the per-recipient
+      // rumor ids whose self-wrap publish failed, so retrying
+      // republishes only those self-wraps via [recoverSelfWrap].
+      final partialRumorIds = <String>[];
       if (event.recipientPubkeys.length == 1) {
         final result = await _dmRepository.sendMessage(
           recipientPubkey: event.recipientPubkeys.first,
@@ -137,7 +139,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (!result.success) {
           throw Exception(result.error ?? 'Failed to send message');
         }
-        selfWrapPublished = result.selfWrapPublished!;
+        if (result.selfWrapPublished == false) {
+          partialRumorIds.add(result.rumorEventId!);
+        }
       } else {
         final results = await _dmRepository.sendGroupMessage(
           recipientPubkeys: event.recipientPubkeys,
@@ -148,22 +152,20 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             results.first.error ?? 'Failed to send group message',
           );
         }
-        // For groups, "self-wrap" is per-recipient. We treat the send as
-        // partial if any successful per-recipient send had its self-wrap
-        // fail, because that recipient's copy will not sync to the
-        // sender's other devices.
-        selfWrapPublished = results
-            .where((r) => r.success)
-            .every((r) => r.selfWrapPublished!);
+        // For groups, "self-wrap" is per-recipient. We collect the rumor
+        // ids of the successful per-recipient sends whose self-wrap
+        // failed — only those rumors need a recovery republish.
+        for (final result in results) {
+          if (result.success && result.selfWrapPublished == false) {
+            partialRumorIds.add(result.rumorEventId!);
+          }
+        }
       }
-      if (!selfWrapPublished) {
+      if (partialRumorIds.isNotEmpty) {
         emit(
           state.copyWith(
             sendStatus: SendStatus.sentPartial,
-            lastFailedSend: FailedSend(
-              content: event.content,
-              recipientPubkeys: event.recipientPubkeys,
-            ),
+            lastPartialSend: PartialSend(rumorIds: partialRumorIds),
           ),
         );
         return;
@@ -181,6 +183,58 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             content: event.content,
             recipientPubkeys: event.recipientPubkeys,
           ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onSelfWrapRecoveryRequested(
+    ConversationSelfWrapRecoveryRequested event,
+    Emitter<ConversationState> emit,
+  ) async {
+    if (event.rumorIds.isEmpty) return;
+
+    emit(state.copyWith(sendStatus: SendStatus.sending));
+
+    final stillFailing = <String>[];
+    Object? lastError;
+    StackTrace? lastStackTrace;
+
+    for (final rumorId in event.rumorIds) {
+      try {
+        final result = await _dmRepository.recoverSelfWrap(rumorId: rumorId);
+        if (!result.success) {
+          stillFailing.add(rumorId);
+        }
+      } on Object catch (e, stackTrace) {
+        // recoverSelfWrap can throw on missing/foreign queue rows or a
+        // missing DAO. Treat each thrown rumor as still-failing so the
+        // user can retry — recording the error for telemetry.
+        stillFailing.add(rumorId);
+        lastError = e;
+        lastStackTrace = stackTrace;
+      }
+    }
+
+    if (lastError != null) {
+      addError(lastError, lastStackTrace);
+    }
+
+    if (stillFailing.isEmpty) {
+      emit(
+        state.copyWith(
+          sendStatus: SendStatus.sent,
+          clearLastPartialSend: true,
+        ),
+      );
+    } else {
+      // Reduce lastPartialSend to only the rumors that are still
+      // failing, so a second Retry tap targets exactly those — never
+      // the ones that already recovered.
+      emit(
+        state.copyWith(
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: stillFailing),
         ),
       );
     }

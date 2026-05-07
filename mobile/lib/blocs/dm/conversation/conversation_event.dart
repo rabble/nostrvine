@@ -37,3 +37,23 @@ class ConversationMessageDeleted extends ConversationEvent {
   @override
   List<Object?> get props => [rumorId];
 }
+
+/// Re-publish only the sender self-addressed gift wraps for rumors
+/// whose recipient publish landed but whose self-wrap did not.
+///
+/// Dispatched by the retry action on the `sentPartial` SnackBar. The
+/// repository's [recoverSelfWrap] never republishes the recipient
+/// wrap, so recipients are not re-delivered to. Carries the affected
+/// [rumorIds] explicitly rather than reading them from state — the
+/// handler stays decoupled from state shape and tests can act on the
+/// event payload alone.
+class ConversationSelfWrapRecoveryRequested extends ConversationEvent {
+  const ConversationSelfWrapRecoveryRequested({required this.rumorIds});
+
+  /// Rumor ids to re-publish self-wraps for. Sourced from
+  /// [PartialSend.rumorIds] in the originating sentPartial state.
+  final List<String> rumorIds;
+
+  @override
+  List<Object?> get props => [rumorIds];
+}
