@@ -95,7 +95,6 @@ class _OriginalSoundSection extends ConsumerWidget {
         button: true,
         label: 'Original sound by $creatorName. Tap to use this sound.',
         child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
           onTap: () => _navigateToSoundDetail(context, creatorName),
           child: Row(
             spacing: 16,
@@ -190,7 +189,6 @@ class _SoundListItem extends ConsumerWidget {
       button: true,
       label: 'Sound: $soundName by $creatorName. Tap to view details.',
       child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
         onTap: () => _navigateToSoundDetail(context),
         child: Row(
           spacing: 16,

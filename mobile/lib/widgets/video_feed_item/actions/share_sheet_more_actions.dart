@@ -185,7 +185,6 @@ class _ActionCircle extends StatelessWidget {
       button: true,
       label: label,
       child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
           width: 68,

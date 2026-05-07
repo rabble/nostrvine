@@ -414,7 +414,6 @@ class _EditIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
       onTap: onCancel,
       child: Padding(
         padding: const EdgeInsetsDirectional.only(
@@ -462,7 +461,6 @@ class _ReplyIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
       onTap: onCancel,
       child: Padding(
         padding: const EdgeInsetsDirectional.only(
