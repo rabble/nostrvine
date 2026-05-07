@@ -9,6 +9,6 @@ import 'package:openvine/providers/app_providers.dart';
 final FutureProviderFamily<VideoEvent?, String>
 videoReplyParentProvider =
     FutureProvider.autoDispose.family<VideoEvent?, String>((ref, routeId) {
-      final repository = ref.read(videosRepositoryProvider);
+      final repository = ref.watch(videosRepositoryProvider);
       return repository.fetchVideoWithStatsForRouteId(routeId);
     });

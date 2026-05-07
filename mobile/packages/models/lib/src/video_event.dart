@@ -858,7 +858,11 @@ class VideoEvent {
   /// Root Nostr kind from an uppercase NIP-22 reply tag.
   int? get replyRootKind {
     final explicitKind = int.tryParse(_firstNostrTagValue('K') ?? '');
-    if (explicitKind != null) return explicitKind;
+    if (explicitKind != null) {
+      return NIP71VideoKinds.isAcceptableVideoKind(explicitKind)
+          ? explicitKind
+          : null;
+    }
 
     final addressableId = replyRootAddressableId;
     return addressableId == null ? null : _kindFromAddressableId(addressableId);

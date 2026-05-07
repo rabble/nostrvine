@@ -12317,6 +12317,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unmute video reply'**
   String get commentsUnmuteVideoReplyLabel;
+
+  /// Semantics label for the UI that opens the parent video for a video reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video this replies to'**
+  String get commentsOpenReplyParentLabel;
+
+  /// Section title shown above the parent video label for a video reply.
+  ///
+  /// In en, this message translates to:
+  /// **'In reply to'**
+  String get commentsReplyParentSectionTitle;
+
+  /// Label describing the parent video a reply points to.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {target}'**
+  String commentsReplyParentLabel(String target);
+
+  /// Fallback label when the parent video has no title, author name, or usable content.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to video'**
+  String get commentsReplyParentFallbackLabel;
 }
 
 class _AppLocalizationsDelegate

@@ -5,9 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_reply_parent_provider.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 enum VideoReplyParentLinkVariant { overlay, metadata }
 
@@ -27,19 +29,27 @@ class VideoReplyParentLink extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final routeId = video.replyRootRouteId;
     if (routeId == null) return const SizedBox.shrink();
+    final l10n = context.l10n;
 
     final parent = ref.watch(videoReplyParentProvider(routeId));
     final label = _labelFor(
+      context,
       parent.when(
         data: (video) => video,
-        error: (_, _) => null,
+        error: (error, stackTrace) {
+          Log.warning(
+            'Failed to load parent video for reply routeId=$routeId',
+            category: LogCategory.video,
+          );
+          return null;
+        },
         loading: () => null,
       ),
     );
 
     return Semantics(
       button: true,
-      label: 'Open video this replies to',
+      label: l10n.commentsOpenReplyParentLabel,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
@@ -53,19 +63,24 @@ class VideoReplyParentLink extends ConsumerWidget {
     );
   }
 
-  String _labelFor(VideoEvent? parent) {
+  String _labelFor(BuildContext context, VideoEvent? parent) {
+    final l10n = context.l10n;
     final title = parent?.displayTitle?.trim();
-    if (title != null && title.isNotEmpty) return 'Reply to $title';
+    if (title != null && title.isNotEmpty) {
+      return l10n.commentsReplyParentLabel(title);
+    }
 
     final authorName = parent?.authorName?.trim();
     if (authorName != null && authorName.isNotEmpty) {
-      return 'Reply to $authorName';
+      return l10n.commentsReplyParentLabel(authorName);
     }
 
     final content = parent?.displayContent.trim();
-    if (content != null && content.isNotEmpty) return 'Reply to $content';
+    if (content != null && content.isNotEmpty) {
+      return l10n.commentsReplyParentLabel(content);
+    }
 
-    return 'Reply to video';
+    return l10n.commentsReplyParentFallbackLabel;
   }
 }
 
@@ -91,8 +106,8 @@ class _OverlayReplyLink extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.reply_rounded,
+              const DivineIcon(
+                icon: DivineIconName.arrowBendUpLeft,
                 color: VineTheme.vineGreen,
                 size: 16,
               ),
@@ -122,6 +137,7 @@ class _MetadataReplyLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DecoratedBox(
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: VineTheme.outlineDisabled)),
@@ -130,8 +146,8 @@ class _MetadataReplyLink extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            const Icon(
-              Icons.reply_rounded,
+            const DivineIcon(
+              icon: DivineIconName.arrowBendUpLeft,
               color: VineTheme.vineGreen,
               size: 20,
             ),
@@ -141,7 +157,7 @@ class _MetadataReplyLink extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'In reply to',
+                    l10n.commentsReplyParentSectionTitle,
                     style: VineTheme.labelMediumFont(
                       color: VineTheme.onSurfaceVariant,
                     ),
@@ -157,10 +173,9 @@ class _MetadataReplyLink extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            const Icon(
-              Icons.chevron_right_rounded,
+            const DivineIcon(
+              icon: DivineIconName.caretRight,
               color: VineTheme.onSurfaceVariant,
-              size: 24,
             ),
           ],
         ),

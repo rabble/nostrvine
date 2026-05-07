@@ -3784,5 +3784,26 @@
   "commentsUnmuteVideoReplyLabel": "Unmute video reply",
   "@commentsUnmuteVideoReplyLabel": {
     "description": "Semantics label for the button that unmutes inline video comment playback."
+  },
+  "commentsOpenReplyParentLabel": "Open video this replies to",
+  "@commentsOpenReplyParentLabel": {
+    "description": "Semantics label for the UI that opens the parent video for a video reply."
+  },
+  "commentsReplyParentSectionTitle": "In reply to",
+  "@commentsReplyParentSectionTitle": {
+    "description": "Section title shown above the parent video label for a video reply."
+  },
+  "commentsReplyParentLabel": "Reply to {target}",
+  "@commentsReplyParentLabel": {
+    "description": "Label describing the parent video a reply points to.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "commentsReplyParentFallbackLabel": "Reply to video",
+  "@commentsReplyParentFallbackLabel": {
+    "description": "Fallback label when the parent video has no title, author name, or usable content."
   }
 }

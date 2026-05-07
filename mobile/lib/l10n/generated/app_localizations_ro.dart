@@ -7155,4 +7155,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'In reply to';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Reply to $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Reply to video';
 }
