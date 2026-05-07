@@ -4021,6 +4021,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Personne suivie.\nSuis quelqu\'un pour voir ses vidéos ici.';
 
   @override
+  String get feedModeForYou => 'Pour toi';
+
+  @override
+  String get feedModeNew => 'Nouveau';
+
+  @override
+  String get feedModeFollowing => 'Abonnements';
+
+  @override
   String get feedForYouEmpty =>
       'Ton fil Pour toi est vide.\nExplore des vidéos et abonne-toi à des créateurs pour le personnaliser.';
 

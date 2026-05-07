@@ -207,6 +207,45 @@ void main() {
       expect(textField.onSubmitted, isNull);
     });
 
+    testWidgets('cancels reply when tapping the gap before the close icon', (
+      tester,
+    ) async {
+      var cancelled = false;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CommentInput(
+              controller: controller,
+              replyToDisplayName: 'alice',
+              onCancelReply: () => cancelled = true,
+              onSubmit: () {},
+            ),
+          ),
+        ),
+      );
+
+      final label = find.text('Re: alice');
+      final closeIcon = find.byIcon(Icons.close);
+      expect(label, findsOneWidget);
+      expect(closeIcon, findsOneWidget);
+
+      final labelRect = tester.getRect(label);
+      final closeRect = tester.getRect(closeIcon);
+
+      await tester.tapAt(
+        Offset(
+          (labelRect.right + closeRect.left) / 2,
+          closeRect.center.dy,
+        ),
+      );
+      await tester.pump();
+
+      expect(cancelled, isTrue);
+    });
+
     testWidgets('shows keyboard dismissal control while focused', (
       tester,
     ) async {

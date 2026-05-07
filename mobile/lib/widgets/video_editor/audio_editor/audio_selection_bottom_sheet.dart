@@ -19,7 +19,7 @@ import 'package:unified_logger/unified_logger.dart';
 final _featuredVineSounds = [
   VineSound(
     id: 'wednesday',
-    title: 'Wednesday',
+    title: 'Wednesday My Dudes',
     assetPath: 'assets/sounds/wednesday.mp3',
     duration: const Duration(milliseconds: 6269),
     tags: const ['featured'],

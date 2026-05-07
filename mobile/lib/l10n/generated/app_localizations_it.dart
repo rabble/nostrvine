@@ -4004,6 +4004,15 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun utente seguito.\nSegui qualcuno per vedere i suoi video qui.';
 
   @override
+  String get feedModeForYou => 'Per te';
+
+  @override
+  String get feedModeNew => 'Nuovo';
+
+  @override
+  String get feedModeFollowing => 'Seguiti';
+
+  @override
   String get feedForYouEmpty =>
       'Il tuo feed Per te è vuoto.\nEsplora i video e segui i creator per personalizzarlo.';
 
@@ -5522,7 +5531,7 @@ class AppLocalizationsIt extends AppLocalizations {
       'Opzioni di ordinamento categoria';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Popolari';
 
   @override
   String get categoryGallerySortNew => 'Nuovi';

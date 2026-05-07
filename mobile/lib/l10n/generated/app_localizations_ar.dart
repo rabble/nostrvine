@@ -3919,6 +3919,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.';
 
   @override
+  String get feedModeForYou => 'لك';
+
+  @override
+  String get feedModeNew => 'جديد';
+
+  @override
+  String get feedModeFollowing => 'المتابَعون';
+
+  @override
   String get feedForYouEmpty =>
       'خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.';
 

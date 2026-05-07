@@ -33,7 +33,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   bool _isAgeVerified = false;
   bool _isDivineLabelerEnabled = true;
   bool _isPeopleIFollowEnabled = false;
-  bool _showDivineHostedOnly = false;
+  bool _showDivineHostedOnly = true;
 
   @override
   void initState() {
@@ -102,9 +102,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
           constraints: const BoxConstraints(maxWidth: 600),
           child: _isLoading
               ? const Center(
-                  child: CircularProgressIndicator(
-                    color: VineTheme.vineGreen,
-                  ),
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
                 )
               : ListView(
                   children: [

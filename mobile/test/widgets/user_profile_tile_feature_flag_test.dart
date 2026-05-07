@@ -8,6 +8,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -54,12 +55,44 @@ void main() {
         expect(find.byIcon(Icons.playlist_add), findsOneWidget);
       },
     );
+
+    testWidgets('tile responds when tapping the avatar-name gap', (
+      tester,
+    ) async {
+      var tapped = false;
+
+      await tester.pumpWidget(
+        _buildSubject(
+          authService: authService,
+          profileListFeaturesEnabled: false,
+          onTap: () => tapped = true,
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final avatar = find.byType(UserAvatar);
+      expect(avatar, findsOneWidget);
+
+      final avatarRect = tester.getRect(avatar);
+
+      await tester.tapAt(
+        Offset(
+          avatarRect.right + 6,
+          avatarRect.center.dy,
+        ),
+      );
+      await tester.pump();
+
+      expect(tapped, isTrue);
+    });
   });
 }
 
 Widget _buildSubject({
   required _TestAuthService authService,
   required bool profileListFeaturesEnabled,
+  VoidCallback? onTap,
 }) {
   return MaterialApp(
     localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -71,10 +104,11 @@ Widget _buildSubject({
           FeatureFlag.profileListFeatures,
         ).overrideWithValue(profileListFeaturesEnabled),
       ],
-      child: const Scaffold(
+      child: Scaffold(
         body: UserProfileTile(
           pubkey:
               'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          onTap: onTap,
         ),
       ),
     ),

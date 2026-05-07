@@ -4010,6 +4010,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine abonnierten Nutzer.\nFolge jemandem, um hier seine Videos zu sehen.';
 
   @override
+  String get feedModeForYou => 'Für dich';
+
+  @override
+  String get feedModeNew => 'Neu';
+
+  @override
+  String get feedModeFollowing => 'Abonniert';
+
+  @override
   String get feedForYouEmpty =>
       'Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creator:innen, um ihn zu personalisieren.';
 
@@ -5540,13 +5549,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryGallerySortOptionsLabel => 'Sortieroptionen für Kategorie';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Beliebt';
 
   @override
   String get categoryGallerySortNew => 'Neu';
 
   @override
-  String get categoryGallerySortClassic => 'Classic';
+  String get categoryGallerySortClassic => 'Klassiker';
 
   @override
   String get categoryGallerySortForYou => 'Für dich';

@@ -33,6 +33,7 @@ class InviteApiException implements Exception {
     this.code,
     this.creatorSlug,
     this.creatorDisplayName,
+    this.cause,
   });
 
   final String message;
@@ -41,9 +42,18 @@ class InviteApiException implements Exception {
   final String? code;
   final String? creatorSlug;
   final String? creatorDisplayName;
+  final Object? cause;
 
   @override
-  String toString() =>
+  String toString() {
+    final buffer = StringBuffer(
       'InviteApiException(message: $message, statusCode: $statusCode, '
-      'code: $code)';
+      'code: $code',
+    );
+    if (cause != null) {
+      buffer.write(', cause: ${cause.runtimeType}: $cause');
+    }
+    buffer.write(')');
+    return buffer.toString();
+  }
 }

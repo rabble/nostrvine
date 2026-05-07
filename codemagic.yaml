@@ -354,7 +354,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.41.1
+      flutter: 3.41.9
       xcode: latest
       cocoapods: default
       groups:
@@ -415,7 +415,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.41.1
+      flutter: 3.41.9
       xcode: 16.1  # Pinned to avoid FFmpeg Kit linker issues with newer Xcode
       cocoapods: default
       groups:
@@ -460,7 +460,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.41.1
+      flutter: 3.41.9
       java: 17
       groups:
         - zendesk_credentials
@@ -513,7 +513,7 @@ workflows:
           - "NO"
           - "YES"
     environment:
-      flutter: 3.41.1
+      flutter: 3.41.9
       xcode: latest
       cocoapods: default
       groups:
@@ -544,7 +544,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
-      flutter: 3.41.1
+      flutter: 3.41.9
       xcode: 16.1
       cocoapods: default
       groups:
@@ -580,7 +580,7 @@ workflows:
     max_build_duration: 60
     instance_type: linux_x2
     environment:
-      flutter: 3.41.1
+      flutter: 3.41.9
       java: 17
       groups:
         - zendesk_credentials

@@ -197,6 +197,13 @@
       "tags": ["meme", "classic", "profanity"]
     },
     {
+      "id": "wednesday",
+      "title": "Wednesday My Dudes",
+      "assetPath": "assets/sounds/wednesday.mp3",
+      "durationMs": 6269,
+      "tags": ["meme", "classic", "frog"]
+    },
+    {
       "id": "what_da_dog_doing",
       "title": "What Da Dog Doing",
       "assetPath": "assets/sounds/what-what-da-dog-doing.mp3",

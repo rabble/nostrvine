@@ -334,7 +334,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       emit(const DivineAuthSuccess());
     } on InviteApiException catch (e) {
       Log.error(
-        'Invite activation failed: ${e.message}',
+        'Invite activation failed: '
+        '${InviteErrorUtils.activationFailureLogDetails(e)}',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );
@@ -451,7 +452,8 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       emit(const DivineAuthSuccess());
     } on InviteApiException catch (e) {
       Log.error(
-        'Anonymous account invite activation failed: ${e.message}',
+        'Anonymous account invite activation failed: '
+        '${InviteErrorUtils.activationFailureLogDetails(e)}',
         name: 'DivineAuthCubit',
         category: LogCategory.auth,
       );

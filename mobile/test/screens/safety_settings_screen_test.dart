@@ -277,22 +277,24 @@ void main() {
       expect(listViewWidth, moreOrLessEquals(600));
     });
 
-    testWidgets('shows Divine-hosted-only toggle and persists changes', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'shows Divine-hosted-only toggle enabled by default and persists '
+      'opt-out',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Only show Divine-hosted videos'), findsOneWidget);
-      expect(divineHostFilterService.showDivineHostedOnly, isFalse);
+        expect(find.text('Only show Divine-hosted videos'), findsOneWidget);
+        expect(divineHostFilterService.showDivineHostedOnly, isTrue);
 
-      await tester.tap(
-        find.widgetWithText(SwitchListTile, 'Only show Divine-hosted videos'),
-      );
-      await tester.pumpAndSettle();
+        await tester.tap(
+          find.widgetWithText(SwitchListTile, 'Only show Divine-hosted videos'),
+        );
+        await tester.pumpAndSettle();
 
-      expect(divineHostFilterService.showDivineHostedOnly, isTrue);
-    });
+        expect(divineHostFilterService.showDivineHostedOnly, isFalse);
+      },
+    );
 
     testWidgets(
       'enables People I follow moderation with current following list',

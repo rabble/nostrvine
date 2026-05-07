@@ -95,6 +95,7 @@ class UserProfileTile extends ConsumerWidget {
       label: displayName,
       container: true,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -206,6 +207,7 @@ class _FollowButton extends StatelessWidget {
         label: 'Unfollow user$indexSuffix',
         button: true,
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: () => _confirmUnfollow(context),
           child: Container(
             width: 48,
@@ -236,22 +238,28 @@ class _FollowButton extends StatelessWidget {
       label: 'Follow user$indexSuffix',
       button: true,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onToggleFollow,
-        child: Container(
-          width: 40,
-          height: 40,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: VineTheme.vineGreen,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: SvgPicture.asset(
-            DivineIconName.userPlus.assetPath,
-            width: 24,
-            height: 24,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.onPrimary,
-              BlendMode.srcIn,
+        child: SizedBox.square(
+          dimension: 48,
+          child: Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: VineTheme.vineGreen,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: SvgPicture.asset(
+                DivineIconName.userPlus.assetPath,
+                width: 24,
+                height: 24,
+                colorFilter: const ColorFilter.mode(
+                  VineTheme.onPrimary,
+                  BlendMode.srcIn,
+                ),
+              ),
             ),
           ),
         ),

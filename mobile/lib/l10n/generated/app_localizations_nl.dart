@@ -3975,6 +3975,15 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geen gevolgde gebruikers.\nVolg iemand om hun video\'s hier te zien.';
 
   @override
+  String get feedModeForYou => 'Voor jou';
+
+  @override
+  String get feedModeNew => 'Nieuw';
+
+  @override
+  String get feedModeFollowing => 'Volgend';
+
+  @override
   String get feedForYouEmpty =>
       'Je Voor jou-feed is leeg.\nVerken video\'s en volg makers om hem vorm te geven.';
 
@@ -5497,7 +5506,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get categoryGallerySortOptionsLabel => 'Sorteeropties categorie';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Populair';
 
   @override
   String get categoryGallerySortNew => 'Nieuw';

@@ -18,6 +18,7 @@ class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
 void main() {
   group(FeedModeSwitch, () {
     late _MockVideoFeedBloc mockBloc;
+    late AppLocalizations l10n;
 
     setUp(() {
       mockBloc = _MockVideoFeedBloc();
@@ -25,6 +26,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(const VideoFeedModeChanged(FeedMode.latest));
+      l10n = lookupAppLocalizations(const Locale('en'));
     });
 
     tearDown(() {
@@ -60,7 +62,7 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        expect(find.text('New'), findsOneWidget);
+        expect(find.text(l10n.feedModeNew), findsOneWidget);
       });
 
       testWidgets('displays "For You" label for the default home mode', (
@@ -71,7 +73,7 @@ void main() {
         ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
-        expect(find.text('For You'), findsOneWidget);
+        expect(find.text(l10n.feedModeForYou), findsOneWidget);
       });
     });
 
@@ -85,7 +87,7 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text('New'));
+        await tester.tap(find.text(l10n.feedModeNew));
         await tester.pumpAndSettle();
 
         expect(find.byType(VineBottomSheet), findsOneWidget);
@@ -102,10 +104,10 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text('New'));
+        await tester.tap(find.text(l10n.feedModeNew));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Following'));
+        await tester.tap(find.text(l10n.feedModeFollowing));
         await tester.pumpAndSettle();
 
         verify(
@@ -121,10 +123,10 @@ void main() {
         ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text('For You'));
+        await tester.tap(find.text(l10n.feedModeForYou));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('New'));
+        await tester.tap(find.text(l10n.feedModeNew));
         await tester.pumpAndSettle();
 
         verify(
@@ -143,7 +145,7 @@ void main() {
         );
         await tester.pumpWidget(createTestWidget());
 
-        await tester.tap(find.text('New'));
+        await tester.tap(find.text(l10n.feedModeNew));
         await tester.pumpAndSettle();
 
         // Dismiss by tapping outside (on the barrier)
@@ -152,6 +154,177 @@ void main() {
 
         verifyNever(() => mockBloc.add(any()));
       });
+    });
+
+    group('Tap Area Coverage', () {
+      // Regression: before HitTestBehavior.opaque was set on the
+      // GestureDetector, taps on the caret icon and the spacing gap
+      // between label and caret fell through — only the text label itself
+      // responded.
+
+      testWidgets(
+        'opens bottom sheet when caret icon is tapped (not the text label)',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const VideoFeedState(
+              status: VideoFeedStatus.success,
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          // The visible caret uses VineTheme.whiteText; shadow copies use
+          // VineTheme.innerShadow — filter to the real icon only.
+          final caretIcon = find.descendant(
+            of: find.byType(FeedModeSwitch),
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is DivineIcon &&
+                  w.icon == DivineIconName.caretDown &&
+                  w.color == VineTheme.whiteText,
+            ),
+          );
+          expect(caretIcon, findsOneWidget);
+
+          await tester.tap(caretIcon);
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VineBottomSheet), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'opens bottom sheet when tapping the spacing gap between label and caret',
+        (tester) async {
+          // The 12 px Row spacing gap has no child widget drawn in it;
+          // HitTestBehavior.opaque ensures it still registers taps.
+          when(() => mockBloc.state).thenReturn(
+            const VideoFeedState(
+              status: VideoFeedStatus.success,
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          final textRect = tester.getRect(find.text(l10n.feedModeForYou));
+          final caretIcon = find.descendant(
+            of: find.byType(FeedModeSwitch),
+            matching: find.byWidgetPredicate(
+              (w) =>
+                  w is DivineIcon &&
+                  w.icon == DivineIconName.caretDown &&
+                  w.color == VineTheme.whiteText,
+            ),
+          );
+          final caretRect = tester.getRect(caretIcon);
+
+          await tester.tapAt(
+            Offset(
+              (textRect.right + caretRect.left) / 2,
+              textRect.center.dy,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VineBottomSheet), findsOneWidget);
+        },
+      );
+    });
+
+    group('Accessibility', () {
+      // Helper: finds the Semantics widget that wraps the feed-mode
+      // GestureDetector by walking up from the visible label text.
+      Semantics findFeedModeSemanticsWidget(WidgetTester tester, String label) {
+        return tester.widget<Semantics>(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byWidgetPredicate(
+                  (w) =>
+                      w is Semantics &&
+                      w.properties.label?.startsWith('Feed mode') == true,
+                ),
+              )
+              .first,
+        );
+      }
+
+      testWidgets(
+        'Semantics widget carries button=true and the current mode label',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const VideoFeedState(
+              status: VideoFeedStatus.success,
+              mode: FeedMode.latest,
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          final semanticsWidget = findFeedModeSemanticsWidget(tester, 'New');
+          expect(
+            semanticsWidget.properties.label,
+            equals('Feed mode: ${l10n.feedModeNew}'),
+          );
+          expect(semanticsWidget.properties.button, isTrue);
+        },
+      );
+
+      testWidgets(
+        'semantics label updates when the feed mode changes',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream.fromIterable([
+              const VideoFeedState(
+                status: VideoFeedStatus.success,
+                mode: FeedMode.following,
+              ),
+            ]),
+            initialState: const VideoFeedState(
+              status: VideoFeedStatus.success,
+              mode: FeedMode.latest,
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+          await tester.pump();
+
+          final semanticsWidget = findFeedModeSemanticsWidget(
+            tester,
+            l10n.feedModeFollowing,
+          );
+          expect(
+            semanticsWidget.properties.label,
+            equals('Feed mode: ${l10n.feedModeFollowing}'),
+          );
+        },
+      );
+
+      testWidgets(
+        'opens bottom sheet when the Semantics button area is tapped',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const VideoFeedState(
+              status: VideoFeedStatus.success,
+              mode: FeedMode.latest,
+            ),
+          );
+          await tester.pumpWidget(createTestWidget());
+
+          await tester.tap(
+            find
+                .ancestor(
+                  of: find.text(l10n.feedModeNew),
+                  matching: find.byWidgetPredicate(
+                    (w) =>
+                        w is Semantics &&
+                        w.properties.label?.startsWith('Feed mode') == true,
+                  ),
+                )
+                .first,
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(VineBottomSheet), findsOneWidget);
+        },
+      );
     });
 
     testWidgets('label gets updated when mode changes', (tester) async {
@@ -169,7 +342,7 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
-      expect(find.text('For You'), findsOneWidget);
+      expect(find.text(l10n.feedModeForYou), findsOneWidget);
     });
   });
 }

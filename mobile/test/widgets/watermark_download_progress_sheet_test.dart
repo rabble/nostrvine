@@ -1,5 +1,5 @@
-// ABOUTME: Tests for SaveOriginalProgressSheet widget
-// ABOUTME: Validates UI states for downloading, success, failure, and permission denied
+// ABOUTME: Tests for WatermarkDownloadProgressSheet widget
+// ABOUTME: Validates UI states: loading, success, permission-denied (+ retry), failure
 
 import 'dart:async';
 
@@ -12,7 +12,7 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/services/watermark_download_service.dart';
-import 'package:openvine/widgets/save_original_progress_sheet.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:permissions_service/permissions_service.dart';
 
 class _MockWatermarkDownloadService extends Mock
@@ -39,7 +39,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(_createTestVideo());
-    registerFallbackValue(OriginalSaveStage.downloading);
+    registerFallbackValue(WatermarkDownloadStage.downloading);
   });
 
   setUp(() {
@@ -64,10 +64,11 @@ void main() {
                 return Scaffold(
                   body: ElevatedButton(
                     onPressed: () {
-                      showSaveOriginalSheet(
+                      showWatermarkDownloadSheet(
                         context: context,
                         ref: ref,
                         video: video,
+                        watermarkText: 'TestUser',
                       );
                     },
                     child: const Text('Show Sheet'),
@@ -81,130 +82,127 @@ void main() {
     );
   }
 
-  group('showSaveOriginalSheet', () {
+  group('showWatermarkDownloadSheet', () {
     testWidgets('shows progress indicator while downloading', (tester) async {
-      // Use a Completer that never completes (no timer involved)
       final neverComplete = Completer<WatermarkDownloadResult>();
 
       when(
-        () => mockService.downloadOriginal(
+        () => mockService.downloadWithWatermark(
           video: any(named: 'video'),
+          watermarkText: any(named: 'watermarkText'),
           onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer((invocation) {
-        // Simulate being stuck in downloading stage
         final onProgress =
             invocation.namedArguments[#onProgress]
-                as void Function(OriginalSaveStage);
-        onProgress(OriginalSaveStage.downloading);
-        // Never return - stays in processing state (Completer avoids timer)
+                as void Function(WatermarkDownloadStage);
+        onProgress(WatermarkDownloadStage.downloading);
         return neverComplete.future;
       });
 
       await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
-
-      // Open the sheet
       await tester.tap(find.text('Show Sheet'));
       await tester.pump();
 
-      // Should show progress indicator
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text(l10n.saveOriginalDownloadingVideo), findsOneWidget);
+      expect(
+        find.text(l10n.watermarkDownloadStageDownloading),
+        findsOneWidget,
+      );
       // Prove the widget actually reads from l10n
-      expect(find.text(l10nDe.saveOriginalDownloadingVideo), findsNothing);
+      expect(
+        find.text(l10nDe.watermarkDownloadStageDownloading),
+        findsNothing,
+      );
     });
 
-    testWidgets('shows success state with share button', (tester) async {
+    testWidgets('shows watermarking stage label', (tester) async {
+      final neverComplete = Completer<WatermarkDownloadResult>();
+
       when(
-        () => mockService.downloadOriginal(
+        () => mockService.downloadWithWatermark(
           video: any(named: 'video'),
+          watermarkText: any(named: 'watermarkText'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((invocation) async {
+      ).thenAnswer((invocation) {
         final onProgress =
             invocation.namedArguments[#onProgress]
-                as void Function(OriginalSaveStage);
-        onProgress(OriginalSaveStage.downloading);
-        onProgress(OriginalSaveStage.saving);
-        return const WatermarkDownloadSuccess('/tmp/video.mp4');
+                as void Function(WatermarkDownloadStage);
+        onProgress(WatermarkDownloadStage.watermarking);
+        return neverComplete.future;
       });
 
       await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await tester.tap(find.text('Show Sheet'));
+      await tester.pump();
 
+      expect(
+        find.text(l10n.watermarkDownloadStageWatermarking),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows success state after completed download', (tester) async {
+      when(
+        () => mockService.downloadWithWatermark(
+          video: any(named: 'video'),
+          watermarkText: any(named: 'watermarkText'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) async => const WatermarkDownloadSuccess('/tmp/v.mp4'));
+
+      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
-      // Should show success state
-      expect(find.text(l10n.saveOriginalSavedToCameraRoll), findsOneWidget);
-      expect(find.text(l10n.saveOriginalShare), findsOneWidget);
-      expect(find.text(l10n.saveOriginalDone), findsOneWidget);
+      expect(
+        find.text(l10n.watermarkDownloadSavedToCameraRoll),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.watermarkDownloadShare), findsOneWidget);
+      expect(find.text(l10n.watermarkDownloadDone), findsOneWidget);
     });
 
     testWidgets('shows permission denied state', (tester) async {
       when(
-        () => mockService.downloadOriginal(
+        () => mockService.downloadWithWatermark(
           video: any(named: 'video'),
+          watermarkText: any(named: 'watermarkText'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((invocation) async {
-        final onProgress =
-            invocation.namedArguments[#onProgress]
-                as void Function(OriginalSaveStage);
-        onProgress(OriginalSaveStage.downloading);
-        return const WatermarkDownloadPermissionDenied();
-      });
+      ).thenAnswer((_) async => const WatermarkDownloadPermissionDenied());
 
       await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
-
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.saveOriginalPhotosAccessNeeded), findsOneWidget);
-      expect(find.text(l10n.saveOriginalOpenSettings), findsOneWidget);
-      expect(find.text(l10n.saveOriginalNotNow), findsOneWidget);
+      expect(
+        find.text(l10n.watermarkDownloadPhotosAccessNeeded),
+        findsOneWidget,
+      );
+      expect(find.text(l10n.watermarkDownloadOpenSettings), findsOneWidget);
+      expect(find.text(l10n.watermarkDownloadNotNow), findsOneWidget);
     });
 
     testWidgets('shows failure state with reason', (tester) async {
       when(
-        () => mockService.downloadOriginal(
+        () => mockService.downloadWithWatermark(
           video: any(named: 'video'),
+          watermarkText: any(named: 'watermarkText'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((_) async {
-        return const WatermarkDownloadFailure('Network timeout');
-      });
+      ).thenAnswer(
+        (_) async => const WatermarkDownloadFailure('Network error'),
+      );
 
       await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
-
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
-      expect(find.text(l10n.saveOriginalDownloadFailed), findsOneWidget);
-      expect(find.text('Network timeout'), findsOneWidget);
-      expect(find.text(l10n.saveOriginalDismiss), findsOneWidget);
-    });
-
-    testWidgets('dismiss button closes the sheet', (tester) async {
-      when(
-        () => mockService.downloadOriginal(
-          video: any(named: 'video'),
-          onProgress: any(named: 'onProgress'),
-        ),
-      ).thenAnswer((_) async {
-        return const WatermarkDownloadFailure('Error');
-      });
-
-      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
-
-      await tester.tap(find.text('Show Sheet'));
-      await tester.pumpAndSettle();
-
-      // Tap dismiss
-      await tester.tap(find.text(l10n.saveOriginalDismiss));
-      await tester.pumpAndSettle();
-
-      // Sheet should be closed
-      expect(find.text(l10n.saveOriginalDownloadFailed), findsNothing);
+      expect(find.text(l10n.watermarkDownloadFailed), findsOneWidget);
+      expect(find.text('Network error'), findsOneWidget);
+      expect(find.text(l10n.watermarkDownloadDismiss), findsOneWidget);
     });
 
     testWidgets(
@@ -214,44 +212,43 @@ void main() {
           () => mockPermissions.openAppSettings(),
         ).thenAnswer((_) async => true);
 
-        // First call: permission denied. Second call (retry): success.
         var callCount = 0;
         when(
-          () => mockService.downloadOriginal(
+          () => mockService.downloadWithWatermark(
             video: any(named: 'video'),
+            watermarkText: any(named: 'watermarkText'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer((invocation) async {
           callCount++;
           final onProgress =
               invocation.namedArguments[#onProgress]
-                  as void Function(OriginalSaveStage);
-          onProgress(OriginalSaveStage.downloading);
+                  as void Function(WatermarkDownloadStage);
+          onProgress(WatermarkDownloadStage.downloading);
           if (callCount == 1) {
             return const WatermarkDownloadPermissionDenied();
           }
-          onProgress(OriginalSaveStage.saving);
-          return const WatermarkDownloadSuccess('/tmp/video.mp4');
+          onProgress(WatermarkDownloadStage.saving);
+          return const WatermarkDownloadSuccess('/tmp/v.mp4');
         });
 
         await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
         await tester.tap(find.text('Show Sheet'));
         await tester.pumpAndSettle();
 
-        // Permission denied UI is showing
         expect(
-          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
           findsOneWidget,
         );
 
-        await tester.tap(find.text(l10n.saveOriginalOpenSettings));
+        await tester.tap(find.text(l10n.watermarkDownloadOpenSettings));
         await tester.pump();
 
         // openAppSettings() returns when Settings opens, so the sheet should
         // wait for the app to resume before retrying.
         expect(callCount, equals(1));
         expect(
-          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
           findsOneWidget,
         );
 
@@ -260,18 +257,20 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Should now show success (retry succeeded)
         expect(
-          find.text(l10n.saveOriginalSavedToCameraRoll),
+          find.text(l10n.watermarkDownloadSavedToCameraRoll),
           findsOneWidget,
         );
-        expect(find.text(l10n.saveOriginalPhotosAccessNeeded), findsNothing);
+        expect(
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
+          findsNothing,
+        );
         expect(callCount, equals(2));
       },
     );
 
     testWidgets(
-      'Open Settings shows loading indicator while resumed retry is in progress',
+      'Open Settings shows loading state while resumed retry is in progress',
       (tester) async {
         when(
           () => mockPermissions.openAppSettings(),
@@ -281,16 +280,17 @@ void main() {
         var callCount = 0;
 
         when(
-          () => mockService.downloadOriginal(
+          () => mockService.downloadWithWatermark(
             video: any(named: 'video'),
+            watermarkText: any(named: 'watermarkText'),
             onProgress: any(named: 'onProgress'),
           ),
         ).thenAnswer((invocation) async {
           callCount++;
           final onProgress =
               invocation.namedArguments[#onProgress]
-                  as void Function(OriginalSaveStage);
-          onProgress(OriginalSaveStage.downloading);
+                  as void Function(WatermarkDownloadStage);
+          onProgress(WatermarkDownloadStage.downloading);
           if (callCount == 1) {
             return const WatermarkDownloadPermissionDenied();
           }
@@ -302,17 +302,16 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
           findsOneWidget,
         );
 
-        // Tap Open Settings
-        await tester.tap(find.text(l10n.saveOriginalOpenSettings));
+        await tester.tap(find.text(l10n.watermarkDownloadOpenSettings));
         await tester.pump();
 
         expect(callCount, equals(1));
         expect(
-          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
           findsOneWidget,
         );
 
@@ -321,10 +320,30 @@ void main() {
         );
         await tester.pump();
 
-        // Sheet should be in loading/processing state during retry
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
         expect(callCount, equals(2));
       },
     );
+
+    testWidgets('Dismiss button closes the sheet', (tester) async {
+      when(
+        () => mockService.downloadWithWatermark(
+          video: any(named: 'video'),
+          watermarkText: any(named: 'watermarkText'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer(
+        (_) async => const WatermarkDownloadFailure('Network error'),
+      );
+
+      await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+      await tester.tap(find.text('Show Sheet'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.watermarkDownloadDismiss));
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.watermarkDownloadFailed), findsNothing);
+    });
   });
 }

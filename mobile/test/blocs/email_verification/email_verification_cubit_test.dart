@@ -9,6 +9,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
@@ -39,7 +40,8 @@ void main() {
     const testVerifier = 'test-verifier-xyz789';
     const testEmail = 'test@example.com';
 
-    setUp(() {
+    setUp(() async {
+      await LogCaptureService().clearAllLogs();
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
       mockInviteApiClient = _MockInviteApiClient();
@@ -207,6 +209,69 @@ void main() {
           expect(cubit.state.showInviteGateRecovery, isTrue);
           expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
           verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
+
+          cubit.close();
+          fake.flushMicrotasks();
+        });
+      });
+
+      test('redacts sensitive invite activation causes in logs', () {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockOAuth.config).thenReturn(
+          const OAuthConfig(
+            serverUrl: 'https://login.divine.video',
+            clientId: 'client-id',
+            redirectUri: 'divine://auth',
+          ),
+        );
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete(testCode));
+        when(
+          () => mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockInviteApiClient.consumeInviteWithSession(
+            code: any(named: 'code'),
+            oauthConfig: any(named: 'oauthConfig'),
+            session: any(named: 'session'),
+          ),
+        ).thenThrow(
+          const InviteApiException(
+            'Failed to authenticate invite request: signer leaked '
+            'nsec1qwertyuiopasdfghjklzxcvbnm0123456789abcdef',
+            code: InviteApiErrorCode.clientAuthFailed,
+            cause: FormatException(
+              'relay refused npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefg',
+            ),
+          ),
+        );
+
+        fakeAsync((fake) {
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+            inviteCode: 'ab12ef34',
+          );
+
+          fake.elapse(const Duration(seconds: 4));
+
+          final logMessage = LogCaptureService()
+              .getRecentLogs()
+              .map((entry) => entry.message)
+              .lastWhere(
+                (message) => message.startsWith('Invite activation failed:'),
+              );
+
+          expect(logMessage, contains('nsec1<redacted>'));
+          expect(logMessage, contains('npub1<redacted>'));
+          expect(logMessage, isNot(contains('nsec1qwerty')));
+          expect(logMessage, isNot(contains('npub1abc')));
 
           cubit.close();
           fake.flushMicrotasks();
