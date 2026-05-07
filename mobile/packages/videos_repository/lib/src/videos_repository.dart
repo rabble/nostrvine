@@ -1167,8 +1167,8 @@ class VideosRepository {
   bool _shouldSkipEmptyFilteredStatsPage(
     List<VideoStats> stats, {
     required int limit,
-    bool hasMore = false,
     required int skippedPages,
+    bool hasMore = false,
   }) {
     return (hasMore || stats.length >= limit) &&
         skippedPages < _maxEmptyFilteredPageSkips;
