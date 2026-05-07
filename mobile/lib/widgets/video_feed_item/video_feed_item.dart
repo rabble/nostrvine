@@ -1708,10 +1708,14 @@ class VideoOverlayActions extends ConsumerWidget {
                   ),
                 ),
               ),
-            // Action buttons at bottom right
+            // Action buttons at bottom right.
+            // In fullscreen mode the right inset tightens to 12 px to match
+            // the trailing inset on the fullscreen app bar's More popover.
+            // Other consumers (video metadata preview, video editor preview)
+            // keep the legacy 16 px so their layouts are unaffected.
             PositionedDirectional(
               bottom: isFullscreen ? bottomOffset : bottomOffset - 6,
-              end: 16,
+              end: isFullscreen ? 12 : 16,
               child: AnimatedOpacity(
                 opacity: isActive ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 200),

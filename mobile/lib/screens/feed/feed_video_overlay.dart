@@ -213,7 +213,10 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
               // Action buttons column (bottom-right)
               PositionedDirectional(
                 bottom: 20 + safeAreaBottom,
-                end: 16,
+                // Right inset matches the trailing inset on the home top
+                // bar's More popover (12 px) so the column lines up with
+                // the popover icon above it.
+                end: 12,
                 child: _ActionButtons(
                   video: video,
                   onInteracted: widget.onInteracted,
