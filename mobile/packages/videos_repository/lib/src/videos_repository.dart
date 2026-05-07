@@ -32,6 +32,14 @@ const int _defaultLimit = 5;
 /// user-configured personal relays.
 const Duration _relaySearchTimeout = Duration(seconds: 15);
 
+/// Timeout for the Funnelcake bulk-stats hydration phase inside
+/// [VideosRepository.fetchVideoWithStats].
+///
+/// On timeout the method returns the video without hydrated stats rather than
+/// blocking the caller indefinitely. Three seconds is generous enough for
+/// healthy Funnelcake responses while still bounding degraded-service latency.
+const Duration _statsFetchTimeout = Duration(seconds: 3);
+
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
 ///
@@ -1421,9 +1429,10 @@ class VideosRepository {
   ///    [VideoEvent] carries accurate [VideoEvent.originalLoops] and view
   ///    counts — identical to what home/profile feeds receive.
   ///
-  /// Returns `null` when the event is not found, fails content filtering, or
-  /// the Funnelcake API is unavailable (stats are omitted but the video is
-  /// still returned in that case via the hydration fallback).
+  /// Returns `null` when the event is not found or fails content filtering.
+  /// The Funnelcake stats hydration is bounded by [_statsFetchTimeout]: on
+  /// timeout the video is returned without hydrated stats rather than blocking
+  /// the caller indefinitely.
   ///
   /// Intended for code paths that fetch a single video by ID outside of a
   /// feed context: notification taps and `divine.video/video/:id` deep-links.
@@ -1431,7 +1440,10 @@ class VideosRepository {
     if (eventId.isEmpty) return null;
     final videos = await getVideosByIds([eventId]);
     if (videos.isEmpty) return null;
-    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    final hydrated = await _hydrateVideosWithBulkStats(videos).timeout(
+      _statsFetchTimeout,
+      onTimeout: () => videos,
+    );
     return hydrated.firstOrNull;
   }
 

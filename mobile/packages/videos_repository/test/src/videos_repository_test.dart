@@ -6230,6 +6230,48 @@ void main() {
           expect(result.originalLoops, isNull);
         },
       );
+
+      test(
+        'returns video without stats when stats hydration times out',
+        () {
+          const eventId = 'timeout-event-id';
+          final nostrEvent = _createVideoEvent(
+            id: eventId,
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1739350000,
+          );
+
+          return fakeAsync((async) {
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [nostrEvent]);
+
+            // Funnelcake hangs indefinitely — never completes.
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
+            ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
+
+            final repo = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            VideoEvent? result;
+            unawaited(
+              repo.fetchVideoWithStats(eventId).then((v) => result = v),
+            );
+
+            // Advance past the 3-second stats-fetch timeout.
+            async.elapse(const Duration(seconds: 4));
+
+            expect(result, isNotNull);
+            expect(result!.id, equals(eventId));
+            // No stats hydrated — originalLoops should remain null.
+            expect(result!.originalLoops, isNull);
+          });
+        },
+      );
     });
 
     group('fetchVideoWithStatsForRouteId', () {
