@@ -297,7 +297,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: ExploreScreen.pathTabSubpath,
             pageBuilder: (ctx, st) {
-              final tabName = st.pathParameters['name'];
+              final tabName = ExploreScreen.tabNameFromPathParameter(
+                st.pathParameters['name'],
+              );
+              if (tabName == null) {
+                return NoTransitionPage(
+                  key: st.pageKey,
+                  child: RouteErrorScreen(message: ctx.l10n.routeUnknownPath),
+                );
+              }
               return NoTransitionPage(
                 key: st.pageKey,
                 child: Navigator(

@@ -10,7 +10,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -76,10 +77,32 @@ void main() {
         ExploreScreen.pathForTab('categories'),
         equals('/explore/tab/categories'),
       );
+      expect(
+        ExploreScreen.pathForTab('for_you'),
+        equals('/explore/tab/for-you'),
+      );
     });
 
     test('pathTabSubpath constant equals /explore/tab/:name', () {
       expect(ExploreScreen.pathTabSubpath, equals('/explore/tab/:name'));
+    });
+  });
+
+  group('ExploreScreen.tabNameFromPathParameter', () {
+    test('maps URL slugs to internal tab names', () {
+      expect(
+        ExploreScreen.tabNameFromPathParameter('popular'),
+        equals('popular'),
+      );
+      expect(
+        ExploreScreen.tabNameFromPathParameter('for-you'),
+        equals('for_you'),
+      );
+    });
+
+    test('rejects unknown and underscore tab slugs', () {
+      expect(ExploreScreen.tabNameFromPathParameter('garbage'), isNull);
+      expect(ExploreScreen.tabNameFromPathParameter('for_you'), isNull);
     });
   });
 
@@ -111,8 +134,8 @@ void main() {
     });
 
     test(
-      'production app_router.dart registers ExploreScreen.pathTabSubpath '
-      'and threads :name into ExploreScreen.initialTabName',
+      'production app_router.dart validates :name before threading it into '
+      'ExploreScreen.initialTabName',
       () {
         final source = File('lib/router/app_router.dart').readAsStringSync();
 
@@ -128,9 +151,10 @@ void main() {
               'a valid URL.',
         );
 
-        // The pageBuilder for this route must read the :name path
-        // parameter and pass it to ExploreScreen as initialTabName,
-        // otherwise the URL has no effect on the rendered tab.
+        // The pageBuilder for this route must read and validate the :name
+        // path parameter before passing it to ExploreScreen. Invalid slugs
+        // should render RouteErrorScreen instead of silently coercing to some
+        // other tab.
         final nextGoRouteAfter = source.indexOf('GoRoute(', tabRouteOffset + 1);
         final region = source.substring(
           tabRouteOffset,
@@ -144,14 +168,72 @@ void main() {
               "state.pathParameters['name'] in its pageBuilder.",
         );
         expect(
+          region.contains('tabNameFromPathParameter'),
+          isTrue,
+          reason:
+              'The /explore/tab/:name route must validate the slug with '
+              'ExploreScreen.tabNameFromPathParameter before rendering.',
+        );
+        expect(
+          region.contains('RouteErrorScreen'),
+          isTrue,
+          reason:
+              'The /explore/tab/:name route must render RouteErrorScreen '
+              'for an invalid tab slug.',
+        );
+        expect(
+          region.contains('routeUnknownPath'),
+          isTrue,
+          reason:
+              'The invalid-tab route error should use the shared localized '
+              'routeUnknownPath copy.',
+        );
+        expect(
           region.contains('initialTabName:'),
           isTrue,
           reason:
-              'The /explore/tab/:name route must thread the :name '
-              'parameter into ExploreScreen(initialTabName: …).',
+              'A valid /explore/tab/:name route must still thread the '
+              'validated name into ExploreScreen(initialTabName: …).',
         );
       },
     );
+
+    testWidgets('invalid tab slug renders RouteErrorScreen', (tester) async {
+      final strings = AppLocalizationsEn();
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(path: '/', builder: (_, _) => const SizedBox.shrink()),
+          GoRoute(
+            path: ExploreScreen.pathTabSubpath,
+            pageBuilder: (ctx, st) {
+              final tabName = ExploreScreen.tabNameFromPathParameter(
+                st.pathParameters['name'],
+              );
+              if (tabName == null) {
+                return NoTransitionPage(
+                  child: RouteErrorScreen(message: ctx.l10n.routeUnknownPath),
+                );
+              }
+              return NoTransitionPage(child: Text(tabName));
+            },
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          routerConfig: router,
+        ),
+      );
+      router.go('/explore/tab/garbage');
+      await tester.pumpAndSettle();
+
+      expect(find.text(strings.routeUnknownPath), findsOneWidget);
+    });
   });
 
   group('ExploreScreen initialTabName', () {

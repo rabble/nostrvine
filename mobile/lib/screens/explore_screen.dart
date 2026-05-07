@@ -47,6 +47,18 @@ import 'package:unified_logger/unified_logger.dart';
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {
+  static const _forYouTabName = 'for_you';
+  static const _forYouTabSlug = 'for-you';
+  static const _routeTabNames = <String>{
+    'classics',
+    'new',
+    'popular',
+    'categories',
+    _forYouTabName,
+    'lists',
+    'apps',
+  };
+
   /// Route name for this screen.
   static const routeName = 'explore';
 
@@ -57,8 +69,8 @@ class ExploreScreen extends ConsumerStatefulWidget {
   static const pathWithIndex = '/explore/:index';
 
   /// Path for selecting a specific tab by name (grid mode).
-  /// Valid tab names: 'classics', 'new', 'popular', 'categories',
-  /// 'for_you', 'lists', 'apps'.
+  /// Valid URL slugs: 'classics', 'new', 'popular', 'categories',
+  /// 'for-you', 'lists', 'apps'.
   static const pathTabSubpath = '/explore/tab/:name';
 
   /// Build path for grid mode or specific index.
@@ -66,7 +78,25 @@ class ExploreScreen extends ConsumerStatefulWidget {
       index == null ? path : '$path/$index';
 
   /// Build path for selecting a specific tab by name.
-  static String pathForTab(String name) => '/explore/tab/$name';
+  static String pathForTab(String name) =>
+      '/explore/tab/${tabSlugForName(name)}';
+
+  /// Convert an internal tab name to the public URL slug.
+  static String tabSlugForName(String name) => switch (name) {
+    _forYouTabName => _forYouTabSlug,
+    _ => name,
+  };
+
+  /// Convert a URL path parameter to the internal tab name.
+  static String? tabNameFromPathParameter(String? slug) {
+    if (slug == null) return null;
+    if (slug.contains('_')) return null;
+    final name = switch (slug) {
+      _forYouTabSlug => _forYouTabName,
+      _ => slug,
+    };
+    return _routeTabNames.contains(name) ? name : null;
+  }
 
   const ExploreScreen({super.key, this.initialTabName});
 
@@ -117,7 +147,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final names = <String>[];
     if (_classicsAvailable) names.add('classics');
     names.addAll(['new', 'popular', 'categories']);
-    if (_forYouAvailable) names.add('for_you');
+    if (_forYouAvailable) names.add(ExploreScreen._forYouTabName);
     names.add('lists');
     if (_appsAvailable) names.add('apps');
     return names;
@@ -126,7 +156,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   /// Convert a tab name to index based on current availability
   int _tabNameToIndex(String name) {
     final index = _tabNames.indexOf(name);
-    return index >= 0 ? index : 1; // Default to index 1 if not found
+    if (index >= 0) {
+      return index;
+    }
+    return _tabNames.indexOf('new');
   }
 
   /// Convert a tab index to name based on current availability
