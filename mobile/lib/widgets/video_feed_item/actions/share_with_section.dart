@@ -94,6 +94,7 @@ class _FindPeopleItem extends StatelessWidget {
       button: true,
       label: context.l10n.shareFindPeople,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
           width: _ShareWithSection._itemWidth,
@@ -176,6 +177,7 @@ class _ContactItem extends StatelessWidget {
       button: true,
       label: user.displayName ?? context.l10n.shareContactFallback,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: isSent ? null : onTap,
         child: SizedBox(
           width: _ShareWithSection._itemWidth,
