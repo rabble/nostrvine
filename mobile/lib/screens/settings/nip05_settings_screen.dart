@@ -3,6 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 
@@ -63,19 +65,21 @@ class Nip05SettingsView extends StatefulWidget {
 }
 
 class _Nip05SettingsViewState extends State<Nip05SettingsView> {
+  final _usernameController = TextEditingController();
   final _externalController = TextEditingController();
+  final _usernameFocus = FocusNode();
   final _externalFocus = FocusNode();
 
   String _displayName = '';
   String? _about;
   String? _picture;
   String? _banner;
-  String? _username;
   bool _profileLoaded = false;
 
   @override
   void initState() {
     super.initState();
+    _usernameFocus.addListener(_onFocusChange);
     _externalFocus.addListener(_onFocusChange);
   }
 
@@ -83,9 +87,13 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
 
   @override
   void dispose() {
+    _usernameFocus
+      ..removeListener(_onFocusChange)
+      ..dispose();
     _externalFocus
       ..removeListener(_onFocusChange)
       ..dispose();
+    _usernameController.dispose();
     _externalController.dispose();
     super.dispose();
   }
@@ -119,6 +127,8 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
               children: const [
                 _Intro(),
                 SizedBox(height: 8),
+                _DivineUsernameField(),
+                SizedBox(height: 16),
                 _ToggleRow(),
                 _ExternalNip05Field(),
                 SizedBox(height: 24),
@@ -145,9 +155,11 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
       _banner = color != null
           ? '0x${color.toARGB32().toRadixString(16).substring(2)}'
           : null;
-      _username = extractedUsername;
       if (externalNip05 != null) {
         _externalController.text = externalNip05;
+      }
+      if (extractedUsername != null) {
+        _usernameController.text = extractedUsername;
       }
       _profileLoaded = true;
     });
@@ -245,7 +257,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
         pubkey: widget.pubkey,
         displayName: _displayName,
         about: _about,
-        username: isExternal ? null : _username,
+        username: isExternal ? null : _usernameController.text,
         externalNip05: isExternal ? _externalController.text : null,
         picture: _picture,
         banner: _banner,
@@ -265,6 +277,115 @@ class _Intro extends StatelessWidget {
         context.l10n.nostrSettingsNip05AddressSubtitle,
         style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
       ),
+    );
+  }
+}
+
+class _DivineUsernameField extends StatelessWidget {
+  const _DivineUsernameField();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
+      buildWhen: (prev, curr) =>
+          prev.nip05Mode != curr.nip05Mode ||
+          prev.usernameStatus != curr.usernameStatus ||
+          prev.usernameError != curr.usernameError ||
+          prev.usernameFormatMessage != curr.usernameFormatMessage,
+      builder: (context, state) {
+        final viewState = context
+            .findAncestorStateOfType<_Nip05SettingsViewState>();
+        if (viewState == null) return const SizedBox.shrink();
+        final isExternal = state.nip05Mode == Nip05Mode.external_;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.profileSetupUsernameLabel,
+                style: VineTheme.labelMediumFont(
+                  color: viewState._usernameFocus.hasFocus && !isExternal
+                      ? VineTheme.primary
+                      : VineTheme.onSurfaceMuted,
+                ),
+              ),
+              const SizedBox(height: 4),
+              TextFormField(
+                controller: viewState._usernameController,
+                focusNode: viewState._usernameFocus,
+                enabled: !isExternal,
+                style: VineTheme.bodyLargeFont(
+                  color: isExternal
+                      ? VineTheme.onSurfaceMuted
+                      : VineTheme.onSurface,
+                ),
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  hintText: context.l10n.profileSetupUsernameHint,
+                  helperText: context.l10n.profileSetupUsernameHelper,
+                  helperStyle: const TextStyle(
+                    color: VineTheme.onSurfaceMuted,
+                    fontSize: 12,
+                  ),
+                  hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+                  border: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  enabledBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  disabledBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  errorBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  focusedErrorBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                  prefixText: '@',
+                  prefixStyle: VineTheme.bodyLargeFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
+                  suffixText: '.divine.video',
+                  suffixStyle: VineTheme.bodyLargeFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
+                  errorMaxLines: 2,
+                ),
+                inputFormatters: [
+                  const LowercaseTextInputFormatter(),
+                  FilteringTextInputFormatter.allow(RegExp('[a-z0-9-]')),
+                ],
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                onChanged: (value) => context.read<ProfileEditorBloc>().add(
+                  UsernameChanged(value),
+                ),
+              ),
+              if (!isExternal)
+                UsernameStatusIndicator(
+                  status: state.usernameStatus,
+                  error: state.usernameError,
+                  formatMessage: state.usernameFormatMessage,
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -406,17 +527,18 @@ class _SaveButton extends StatelessWidget {
       buildWhen: (prev, curr) =>
           prev.status != curr.status ||
           prev.nip05Mode != curr.nip05Mode ||
+          prev.username != curr.username ||
+          prev.usernameStatus != curr.usernameStatus ||
           prev.externalNip05Error != curr.externalNip05Error ||
           prev.externalNip05 != curr.externalNip05,
       builder: (context, state) {
         final viewState = context
             .findAncestorStateOfType<_Nip05SettingsViewState>();
         final isLoading = state.status == ProfileEditorStatus.loading;
-        final isExternal = state.nip05Mode == Nip05Mode.external_;
         final canSave =
             !isLoading &&
             (viewState?._profileLoaded ?? false) &&
-            (!isExternal || state.isExternalNip05SaveReady);
+            state.isSaveReady;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DivineButton(
