@@ -10343,17 +10343,29 @@ class $OutgoingDmsTable extends OutgoingDms
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
-  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
-    'lastError',
+  static const VerificationMeta _recipientWrapLastErrorMeta =
+      const VerificationMeta('recipientWrapLastError');
+  @override
+  late final GeneratedColumn<String> recipientWrapLastError =
+      GeneratedColumn<String>(
+        'recipient_wrap_last_error',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _selfWrapLastErrorMeta = const VerificationMeta(
+    'selfWrapLastError',
   );
   @override
-  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
-    'last_error',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
+  late final GeneratedColumn<String> selfWrapLastError =
+      GeneratedColumn<String>(
+        'self_wrap_last_error',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
     'lastAttemptAt',
   );
@@ -10403,7 +10415,8 @@ class $OutgoingDmsTable extends OutgoingDms
     recipientWrapEventId,
     selfWrapEventId,
     retryCount,
-    lastError,
+    recipientWrapLastError,
+    selfWrapLastError,
     lastAttemptAt,
     queuedAt,
     ownerPubkey,
@@ -10535,10 +10548,22 @@ class $OutgoingDmsTable extends OutgoingDms
         retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
       );
     }
-    if (data.containsKey('last_error')) {
+    if (data.containsKey('recipient_wrap_last_error')) {
       context.handle(
-        _lastErrorMeta,
-        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+        _recipientWrapLastErrorMeta,
+        recipientWrapLastError.isAcceptableOrUnknown(
+          data['recipient_wrap_last_error']!,
+          _recipientWrapLastErrorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('self_wrap_last_error')) {
+      context.handle(
+        _selfWrapLastErrorMeta,
+        selfWrapLastError.isAcceptableOrUnknown(
+          data['self_wrap_last_error']!,
+          _selfWrapLastErrorMeta,
+        ),
       );
     }
     if (data.containsKey('last_attempt_at')) {
@@ -10630,9 +10655,13 @@ class $OutgoingDmsTable extends OutgoingDms
         DriftSqlType.int,
         data['${effectivePrefix}retry_count'],
       )!,
-      lastError: attachedDatabase.typeMapping.read(
+      recipientWrapLastError: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}last_error'],
+        data['${effectivePrefix}recipient_wrap_last_error'],
+      ),
+      selfWrapLastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}self_wrap_last_error'],
       ),
       lastAttemptAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
@@ -10693,8 +10722,12 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
   final String? replyToId;
 
   /// Status of the recipient gift-wrap publish: `pending` | `sent` |
-  /// `failed`. Stored as a string so adding new states (e.g. `cancelled`)
-  /// is a non-migration change.
+  /// `failed`. Stored as a string (rather than an int-coded enum) so a
+  /// dump of the table is human-readable. Adding a new state requires a
+  /// matching update to `OutgoingWrapStatus` in the DAO — the read
+  /// path throws on unknown values rather than silently coercing them
+  /// back to `pending` (which would put corrupt or future-schema rows
+  /// back into the retry service's active set and risk double-delivery).
   final String recipientWrapStatus;
 
   /// Status of the self-addressed gift-wrap publish: same enum as
@@ -10717,9 +10750,22 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
   /// affordance.
   final int retryCount;
 
-  /// Last error message from a failed publish attempt. `null` when the
-  /// most recent transition was a success.
-  final String? lastError;
+  /// Last error message from the most recent failed **recipient** wrap
+  /// publish. `null` when the recipient wrap has never failed or when the
+  /// most recent recipient transition was a success.
+  ///
+  /// Stored independently of [selfWrapLastError] because the two wraps
+  /// fail for different reasons (e.g. recipient relay rejected the
+  /// kind-1059 vs ephemeral self-relay timeout) — collapsing both into a
+  /// single column would silently overwrite one cause with the other on
+  /// the second failure and starve the retry service of useful diagnostics.
+  final String? recipientWrapLastError;
+
+  /// Last error message from the most recent failed **self** wrap
+  /// publish. Same lifecycle and rationale as [recipientWrapLastError];
+  /// kept in its own column so a recipient failure followed by a self
+  /// failure preserves both reasons.
+  final String? selfWrapLastError;
 
   /// Wall-clock timestamp of the most recent publish attempt. Drives
   /// the retry service's backoff scheduling.
@@ -10746,7 +10792,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     this.recipientWrapEventId,
     this.selfWrapEventId,
     required this.retryCount,
-    this.lastError,
+    this.recipientWrapLastError,
+    this.selfWrapLastError,
     this.lastAttemptAt,
     required this.queuedAt,
     required this.ownerPubkey,
@@ -10773,8 +10820,13 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       map['self_wrap_event_id'] = Variable<String>(selfWrapEventId);
     }
     map['retry_count'] = Variable<int>(retryCount);
-    if (!nullToAbsent || lastError != null) {
-      map['last_error'] = Variable<String>(lastError);
+    if (!nullToAbsent || recipientWrapLastError != null) {
+      map['recipient_wrap_last_error'] = Variable<String>(
+        recipientWrapLastError,
+      );
+    }
+    if (!nullToAbsent || selfWrapLastError != null) {
+      map['self_wrap_last_error'] = Variable<String>(selfWrapLastError);
     }
     if (!nullToAbsent || lastAttemptAt != null) {
       map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt);
@@ -10805,9 +10857,12 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
           ? const Value.absent()
           : Value(selfWrapEventId),
       retryCount: Value(retryCount),
-      lastError: lastError == null && nullToAbsent
+      recipientWrapLastError: recipientWrapLastError == null && nullToAbsent
           ? const Value.absent()
-          : Value(lastError),
+          : Value(recipientWrapLastError),
+      selfWrapLastError: selfWrapLastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selfWrapLastError),
       lastAttemptAt: lastAttemptAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastAttemptAt),
@@ -10839,7 +10894,12 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       ),
       selfWrapEventId: serializer.fromJson<String?>(json['selfWrapEventId']),
       retryCount: serializer.fromJson<int>(json['retryCount']),
-      lastError: serializer.fromJson<String?>(json['lastError']),
+      recipientWrapLastError: serializer.fromJson<String?>(
+        json['recipientWrapLastError'],
+      ),
+      selfWrapLastError: serializer.fromJson<String?>(
+        json['selfWrapLastError'],
+      ),
       lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
       queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
       ownerPubkey: serializer.fromJson<String>(json['ownerPubkey']),
@@ -10862,7 +10922,10 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       'recipientWrapEventId': serializer.toJson<String?>(recipientWrapEventId),
       'selfWrapEventId': serializer.toJson<String?>(selfWrapEventId),
       'retryCount': serializer.toJson<int>(retryCount),
-      'lastError': serializer.toJson<String?>(lastError),
+      'recipientWrapLastError': serializer.toJson<String?>(
+        recipientWrapLastError,
+      ),
+      'selfWrapLastError': serializer.toJson<String?>(selfWrapLastError),
       'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
       'queuedAt': serializer.toJson<DateTime>(queuedAt),
       'ownerPubkey': serializer.toJson<String>(ownerPubkey),
@@ -10883,7 +10946,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     Value<String?> recipientWrapEventId = const Value.absent(),
     Value<String?> selfWrapEventId = const Value.absent(),
     int? retryCount,
-    Value<String?> lastError = const Value.absent(),
+    Value<String?> recipientWrapLastError = const Value.absent(),
+    Value<String?> selfWrapLastError = const Value.absent(),
     Value<DateTime?> lastAttemptAt = const Value.absent(),
     DateTime? queuedAt,
     String? ownerPubkey,
@@ -10905,7 +10969,12 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
         ? selfWrapEventId.value
         : this.selfWrapEventId,
     retryCount: retryCount ?? this.retryCount,
-    lastError: lastError.present ? lastError.value : this.lastError,
+    recipientWrapLastError: recipientWrapLastError.present
+        ? recipientWrapLastError.value
+        : this.recipientWrapLastError,
+    selfWrapLastError: selfWrapLastError.present
+        ? selfWrapLastError.value
+        : this.selfWrapLastError,
     lastAttemptAt: lastAttemptAt.present
         ? lastAttemptAt.value
         : this.lastAttemptAt,
@@ -10945,7 +11014,12 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
       retryCount: data.retryCount.present
           ? data.retryCount.value
           : this.retryCount,
-      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      recipientWrapLastError: data.recipientWrapLastError.present
+          ? data.recipientWrapLastError.value
+          : this.recipientWrapLastError,
+      selfWrapLastError: data.selfWrapLastError.present
+          ? data.selfWrapLastError.value
+          : this.selfWrapLastError,
       lastAttemptAt: data.lastAttemptAt.present
           ? data.lastAttemptAt.value
           : this.lastAttemptAt,
@@ -10972,7 +11046,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
           ..write('recipientWrapEventId: $recipientWrapEventId, ')
           ..write('selfWrapEventId: $selfWrapEventId, ')
           ..write('retryCount: $retryCount, ')
-          ..write('lastError: $lastError, ')
+          ..write('recipientWrapLastError: $recipientWrapLastError, ')
+          ..write('selfWrapLastError: $selfWrapLastError, ')
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('queuedAt: $queuedAt, ')
           ..write('ownerPubkey: $ownerPubkey')
@@ -10995,7 +11070,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
     recipientWrapEventId,
     selfWrapEventId,
     retryCount,
-    lastError,
+    recipientWrapLastError,
+    selfWrapLastError,
     lastAttemptAt,
     queuedAt,
     ownerPubkey,
@@ -11017,7 +11093,8 @@ class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
           other.recipientWrapEventId == this.recipientWrapEventId &&
           other.selfWrapEventId == this.selfWrapEventId &&
           other.retryCount == this.retryCount &&
-          other.lastError == this.lastError &&
+          other.recipientWrapLastError == this.recipientWrapLastError &&
+          other.selfWrapLastError == this.selfWrapLastError &&
           other.lastAttemptAt == this.lastAttemptAt &&
           other.queuedAt == this.queuedAt &&
           other.ownerPubkey == this.ownerPubkey);
@@ -11037,7 +11114,8 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
   final Value<String?> recipientWrapEventId;
   final Value<String?> selfWrapEventId;
   final Value<int> retryCount;
-  final Value<String?> lastError;
+  final Value<String?> recipientWrapLastError;
+  final Value<String?> selfWrapLastError;
   final Value<DateTime?> lastAttemptAt;
   final Value<DateTime> queuedAt;
   final Value<String> ownerPubkey;
@@ -11056,7 +11134,8 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     this.recipientWrapEventId = const Value.absent(),
     this.selfWrapEventId = const Value.absent(),
     this.retryCount = const Value.absent(),
-    this.lastError = const Value.absent(),
+    this.recipientWrapLastError = const Value.absent(),
+    this.selfWrapLastError = const Value.absent(),
     this.lastAttemptAt = const Value.absent(),
     this.queuedAt = const Value.absent(),
     this.ownerPubkey = const Value.absent(),
@@ -11076,7 +11155,8 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     this.recipientWrapEventId = const Value.absent(),
     this.selfWrapEventId = const Value.absent(),
     this.retryCount = const Value.absent(),
-    this.lastError = const Value.absent(),
+    this.recipientWrapLastError = const Value.absent(),
+    this.selfWrapLastError = const Value.absent(),
     this.lastAttemptAt = const Value.absent(),
     required DateTime queuedAt,
     required String ownerPubkey,
@@ -11105,7 +11185,8 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     Expression<String>? recipientWrapEventId,
     Expression<String>? selfWrapEventId,
     Expression<int>? retryCount,
-    Expression<String>? lastError,
+    Expression<String>? recipientWrapLastError,
+    Expression<String>? selfWrapLastError,
     Expression<DateTime>? lastAttemptAt,
     Expression<DateTime>? queuedAt,
     Expression<String>? ownerPubkey,
@@ -11127,7 +11208,9 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
         'recipient_wrap_event_id': recipientWrapEventId,
       if (selfWrapEventId != null) 'self_wrap_event_id': selfWrapEventId,
       if (retryCount != null) 'retry_count': retryCount,
-      if (lastError != null) 'last_error': lastError,
+      if (recipientWrapLastError != null)
+        'recipient_wrap_last_error': recipientWrapLastError,
+      if (selfWrapLastError != null) 'self_wrap_last_error': selfWrapLastError,
       if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
       if (queuedAt != null) 'queued_at': queuedAt,
       if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
@@ -11149,7 +11232,8 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     Value<String?>? recipientWrapEventId,
     Value<String?>? selfWrapEventId,
     Value<int>? retryCount,
-    Value<String?>? lastError,
+    Value<String?>? recipientWrapLastError,
+    Value<String?>? selfWrapLastError,
     Value<DateTime?>? lastAttemptAt,
     Value<DateTime>? queuedAt,
     Value<String>? ownerPubkey,
@@ -11169,7 +11253,9 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
       recipientWrapEventId: recipientWrapEventId ?? this.recipientWrapEventId,
       selfWrapEventId: selfWrapEventId ?? this.selfWrapEventId,
       retryCount: retryCount ?? this.retryCount,
-      lastError: lastError ?? this.lastError,
+      recipientWrapLastError:
+          recipientWrapLastError ?? this.recipientWrapLastError,
+      selfWrapLastError: selfWrapLastError ?? this.selfWrapLastError,
       lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
       queuedAt: queuedAt ?? this.queuedAt,
       ownerPubkey: ownerPubkey ?? this.ownerPubkey,
@@ -11223,8 +11309,13 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
     if (retryCount.present) {
       map['retry_count'] = Variable<int>(retryCount.value);
     }
-    if (lastError.present) {
-      map['last_error'] = Variable<String>(lastError.value);
+    if (recipientWrapLastError.present) {
+      map['recipient_wrap_last_error'] = Variable<String>(
+        recipientWrapLastError.value,
+      );
+    }
+    if (selfWrapLastError.present) {
+      map['self_wrap_last_error'] = Variable<String>(selfWrapLastError.value);
     }
     if (lastAttemptAt.present) {
       map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt.value);
@@ -11257,7 +11348,8 @@ class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
           ..write('recipientWrapEventId: $recipientWrapEventId, ')
           ..write('selfWrapEventId: $selfWrapEventId, ')
           ..write('retryCount: $retryCount, ')
-          ..write('lastError: $lastError, ')
+          ..write('recipientWrapLastError: $recipientWrapLastError, ')
+          ..write('selfWrapLastError: $selfWrapLastError, ')
           ..write('lastAttemptAt: $lastAttemptAt, ')
           ..write('queuedAt: $queuedAt, ')
           ..write('ownerPubkey: $ownerPubkey, ')
@@ -16163,7 +16255,8 @@ typedef $$OutgoingDmsTableCreateCompanionBuilder =
       Value<String?> recipientWrapEventId,
       Value<String?> selfWrapEventId,
       Value<int> retryCount,
-      Value<String?> lastError,
+      Value<String?> recipientWrapLastError,
+      Value<String?> selfWrapLastError,
       Value<DateTime?> lastAttemptAt,
       required DateTime queuedAt,
       required String ownerPubkey,
@@ -16184,7 +16277,8 @@ typedef $$OutgoingDmsTableUpdateCompanionBuilder =
       Value<String?> recipientWrapEventId,
       Value<String?> selfWrapEventId,
       Value<int> retryCount,
-      Value<String?> lastError,
+      Value<String?> recipientWrapLastError,
+      Value<String?> selfWrapLastError,
       Value<DateTime?> lastAttemptAt,
       Value<DateTime> queuedAt,
       Value<String> ownerPubkey,
@@ -16265,8 +16359,13 @@ class $$OutgoingDmsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get lastError => $composableBuilder(
-    column: $table.lastError,
+  ColumnFilters<String> get recipientWrapLastError => $composableBuilder(
+    column: $table.recipientWrapLastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selfWrapLastError => $composableBuilder(
+    column: $table.selfWrapLastError,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -16360,8 +16459,13 @@ class $$OutgoingDmsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get lastError => $composableBuilder(
-    column: $table.lastError,
+  ColumnOrderings<String> get recipientWrapLastError => $composableBuilder(
+    column: $table.recipientWrapLastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selfWrapLastError => $composableBuilder(
+    column: $table.selfWrapLastError,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -16447,8 +16551,15 @@ class $$OutgoingDmsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get lastError =>
-      $composableBuilder(column: $table.lastError, builder: (column) => column);
+  GeneratedColumn<String> get recipientWrapLastError => $composableBuilder(
+    column: $table.recipientWrapLastError,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get selfWrapLastError => $composableBuilder(
+    column: $table.selfWrapLastError,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get lastAttemptAt => $composableBuilder(
     column: $table.lastAttemptAt,
@@ -16508,7 +16619,8 @@ class $$OutgoingDmsTableTableManager
                 Value<String?> recipientWrapEventId = const Value.absent(),
                 Value<String?> selfWrapEventId = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
-                Value<String?> lastError = const Value.absent(),
+                Value<String?> recipientWrapLastError = const Value.absent(),
+                Value<String?> selfWrapLastError = const Value.absent(),
                 Value<DateTime?> lastAttemptAt = const Value.absent(),
                 Value<DateTime> queuedAt = const Value.absent(),
                 Value<String> ownerPubkey = const Value.absent(),
@@ -16527,7 +16639,8 @@ class $$OutgoingDmsTableTableManager
                 recipientWrapEventId: recipientWrapEventId,
                 selfWrapEventId: selfWrapEventId,
                 retryCount: retryCount,
-                lastError: lastError,
+                recipientWrapLastError: recipientWrapLastError,
+                selfWrapLastError: selfWrapLastError,
                 lastAttemptAt: lastAttemptAt,
                 queuedAt: queuedAt,
                 ownerPubkey: ownerPubkey,
@@ -16548,7 +16661,8 @@ class $$OutgoingDmsTableTableManager
                 Value<String?> recipientWrapEventId = const Value.absent(),
                 Value<String?> selfWrapEventId = const Value.absent(),
                 Value<int> retryCount = const Value.absent(),
-                Value<String?> lastError = const Value.absent(),
+                Value<String?> recipientWrapLastError = const Value.absent(),
+                Value<String?> selfWrapLastError = const Value.absent(),
                 Value<DateTime?> lastAttemptAt = const Value.absent(),
                 required DateTime queuedAt,
                 required String ownerPubkey,
@@ -16567,7 +16681,8 @@ class $$OutgoingDmsTableTableManager
                 recipientWrapEventId: recipientWrapEventId,
                 selfWrapEventId: selfWrapEventId,
                 retryCount: retryCount,
-                lastError: lastError,
+                recipientWrapLastError: recipientWrapLastError,
+                selfWrapLastError: selfWrapLastError,
                 lastAttemptAt: lastAttemptAt,
                 queuedAt: queuedAt,
                 ownerPubkey: ownerPubkey,

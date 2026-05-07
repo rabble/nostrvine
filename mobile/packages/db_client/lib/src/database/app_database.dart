@@ -441,29 +441,42 @@ class AppDatabase extends _$AppDatabase {
           recipient_wrap_event_id TEXT,
           self_wrap_event_id TEXT,
           retry_count INTEGER NOT NULL DEFAULT 0,
-          last_error TEXT,
+          recipient_wrap_last_error TEXT,
+          self_wrap_last_error TEXT,
           last_attempt_at INTEGER,
           queued_at INTEGER NOT NULL,
           owner_pubkey TEXT NOT NULL
         )
       ''');
-      await customStatement('''
-        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_conversation
-        ON outgoing_dms (owner_pubkey, conversation_id, created_at DESC)
-      ''');
-      await customStatement('''
-        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_recipient_status
-        ON outgoing_dms (owner_pubkey, recipient_wrap_status)
-      ''');
-      await customStatement('''
-        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_self_status
-        ON outgoing_dms (owner_pubkey, self_wrap_status)
-      ''');
-      await customStatement('''
-        CREATE INDEX IF NOT EXISTS idx_outgoing_dms_queued_at
-        ON outgoing_dms (queued_at)
-      ''');
     }
+    // Create indexes unconditionally (for new and existing databases).
+    // Drift's `m.createAll()` doesn't register the `List<Index> get
+    // indexes` getter on `OutgoingDms` (the project doesn't wire them
+    // through `@DriftDatabase(indexes: ...)`), so a Drift-created fresh
+    // install would otherwise have the table but none of its indexes,
+    // and `getRetryableForOwner` / `getStillPendingForOwner` would fall
+    // back to a full table scan. Hoisting the CREATE INDEX statements
+    // outside the "if table missing" block makes the runtime path the
+    // single source of truth for the index set on both new and existing
+    // databases — and makes the fresh-install vs runtime-create paths
+    // emit identical schemas, which the schema-parity test in
+    // `app_database_test.dart` pins.
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_conversation
+      ON outgoing_dms (owner_pubkey, conversation_id, created_at DESC)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_recipient_status
+      ON outgoing_dms (owner_pubkey, recipient_wrap_status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_owner_self_status
+      ON outgoing_dms (owner_pubkey, self_wrap_status)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_outgoing_dms_queued_at
+      ON outgoing_dms (queued_at)
+    ''');
 
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();

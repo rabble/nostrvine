@@ -85,7 +85,8 @@ void main() {
         expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.pending);
         expect(fetched.selfWrapStatus, OutgoingWrapStatus.pending);
         expect(fetched.retryCount, equals(0));
-        expect(fetched.lastError, isNull);
+        expect(fetched.recipientWrapLastError, isNull);
+        expect(fetched.selfWrapLastError, isNull);
       });
 
       test(
@@ -116,7 +117,15 @@ void main() {
           expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.sent);
           expect(fetched.recipientWrapEventId, equals('rcpt-evt-id'));
           expect(fetched.selfWrapStatus, OutgoingWrapStatus.failed);
-          expect(fetched.lastError, equals('self-wrap relay rejected'));
+          expect(
+            fetched.selfWrapLastError,
+            equals('self-wrap relay rejected'),
+          );
+          expect(
+            fetched.recipientWrapLastError,
+            isNull,
+            reason: 'recipient wrap never failed; its error column stays null',
+          );
           expect(fetched.retryCount, equals(1));
         },
       );
@@ -165,9 +174,51 @@ void main() {
           final fetched = await dao.getById('aaaa');
           expect(fetched!.recipientWrapStatus, OutgoingWrapStatus.sent);
           expect(fetched.selfWrapStatus, OutgoingWrapStatus.failed);
-          expect(fetched.lastError, equals('self-wrap relay rejected'));
+          expect(
+            fetched.selfWrapLastError,
+            equals('self-wrap relay rejected'),
+          );
+          expect(
+            fetched.recipientWrapLastError,
+            isNull,
+            reason: 'recipient wrap succeeded; its error column must stay null',
+          );
           expect(fetched.isFullyDelivered, isFalse);
           expect(fetched.hasRetryableFailure, isTrue);
+        },
+      );
+
+      test(
+        'recipient failure followed by self failure preserves both '
+        'errors independently — neither overwrites the other',
+        () async {
+          await dao.enqueue(makeDm(id: 'aaaa'));
+
+          await dao.markRecipientWrapStatus(
+            id: 'aaaa',
+            status: OutgoingWrapStatus.failed,
+            lastError: 'recipient relay rejected: rate-limited',
+          );
+          await dao.markSelfWrapStatus(
+            id: 'aaaa',
+            status: OutgoingWrapStatus.failed,
+            lastError: 'self-relay timeout',
+          );
+
+          final fetched = await dao.getById('aaaa');
+          expect(
+            fetched!.recipientWrapLastError,
+            equals('recipient relay rejected: rate-limited'),
+            reason:
+                'B2 contract: per-wrap error columns mean a later self '
+                'failure must not overwrite the earlier recipient reason',
+          );
+          expect(
+            fetched.selfWrapLastError,
+            equals('self-relay timeout'),
+          );
+          expect(fetched.recipientWrapStatus, OutgoingWrapStatus.failed);
+          expect(fetched.selfWrapStatus, OutgoingWrapStatus.failed);
         },
       );
 
@@ -188,12 +239,43 @@ void main() {
         expect(before!.retryCount, equals(0));
         expect(before.lastAttemptAt, isNull);
 
+        // Capture wall-clock before/after the increment. The decoded
+        // lastAttemptAt must land inside this window — locks the codec
+        // contract so a future regression to a raw-SQL writer that
+        // disagreed about ms-vs-seconds (the bug rabble flagged on
+        // `outgoing_dms_dao.dart:306`) fails the test loudly instead of
+        // returning a year-57000 timestamp.
+        final beforeNow = DateTime.now();
         await dao.incrementRetry('aaaa');
         await dao.incrementRetry('aaaa');
+        final afterNow = DateTime.now();
 
         final after = await dao.getById('aaaa');
         expect(after!.retryCount, equals(2));
         expect(after.lastAttemptAt, isNotNull);
+        // Drift's int DateTime codec stores seconds, so the truncation
+        // may push lastAttemptAt up to one second behind beforeNow.
+        // Allow a 2-second slack on each side to absorb that and any
+        // CI scheduling noise; the bug we're guarding against would
+        // produce a value ~50,000 years off, not 2 seconds.
+        final lower = beforeNow.subtract(const Duration(seconds: 2));
+        final upper = afterNow.add(const Duration(seconds: 2));
+        expect(
+          after.lastAttemptAt!.isAfter(lower),
+          isTrue,
+          reason:
+              'lastAttemptAt ${after.lastAttemptAt} should be after $lower; '
+              'a value far in the past would suggest a codec mismatch in the '
+              'opposite direction',
+        );
+        expect(
+          after.lastAttemptAt!.isBefore(upper),
+          isTrue,
+          reason:
+              'lastAttemptAt ${after.lastAttemptAt} should be before $upper; '
+              'a value far in the future suggests incrementRetry is writing '
+              'milliseconds into a seconds-typed column',
+        );
       });
     });
 
@@ -360,23 +442,38 @@ void main() {
     group('getRetryableForOwner', () {
       test(
         'returns rows where either wrap is failed and retry_count is '
-        'under the cap',
+        'under the cap, ordered oldest queuedAt first (FIFO)',
         () async {
+          // Distinct queuedAt timestamps so the ordering assertion is
+          // meaningful — the retry service depends on FIFO so older
+          // failures are replayed before newer ones.
+          // 'self-failed' is queued FIRST and 'rcpt-failed' SECOND, so
+          // ordering by queuedAt asc must surface 'self-failed' before
+          // 'rcpt-failed' regardless of the row insertion order or
+          // alphabetical id ordering.
+
           // Both pending: not retryable yet (no failure recorded).
-          await dao.enqueue(makeDm(id: 'pending'));
-          // Recipient failed: retryable.
           await dao.enqueue(
             makeDm(
-              id: 'rcpt-failed',
-              recipientStatus: OutgoingWrapStatus.failed,
+              id: 'pending',
+              queuedAt: DateTime.utc(2026, 5),
             ),
           );
-          // Self failed (the F3 partial-delivery): retryable.
+          // Self failed (the F3 partial-delivery): retryable, queued earliest.
           await dao.enqueue(
             makeDm(
               id: 'self-failed',
               recipientStatus: OutgoingWrapStatus.sent,
               selfStatus: OutgoingWrapStatus.failed,
+              queuedAt: DateTime.utc(2026, 5, 2),
+            ),
+          );
+          // Recipient failed: retryable, queued LATER than self-failed.
+          await dao.enqueue(
+            makeDm(
+              id: 'rcpt-failed',
+              recipientStatus: OutgoingWrapStatus.failed,
+              queuedAt: DateTime.utc(2026, 5, 3),
             ),
           );
           // Both sent: not retryable.
@@ -385,6 +482,7 @@ void main() {
               id: 'both-sent',
               recipientStatus: OutgoingWrapStatus.sent,
               selfStatus: OutgoingWrapStatus.sent,
+              queuedAt: DateTime.utc(2026, 5, 4),
             ),
           );
           // Failed but past the retry cap: excluded.
@@ -393,6 +491,7 @@ void main() {
               id: 'exhausted',
               recipientStatus: OutgoingWrapStatus.failed,
               retryCount: 5,
+              queuedAt: DateTime.utc(2026, 5, 5),
             ),
           );
 
@@ -403,7 +502,11 @@ void main() {
 
           expect(
             retryable.map((e) => e.id),
-            unorderedEquals(['rcpt-failed', 'self-failed']),
+            equals(['self-failed', 'rcpt-failed']),
+            reason:
+                'FIFO contract: getRetryableForOwner orders by queuedAt asc, '
+                'so self-failed (2026-05-02) must precede rcpt-failed '
+                '(2026-05-03)',
           );
         },
       );
@@ -433,36 +536,56 @@ void main() {
     });
 
     group('getStillPendingForOwner', () {
-      test('returns rows with at least one wrap still pending', () async {
-        await dao.enqueue(makeDm(id: 'pending'));
-        await dao.enqueue(
-          makeDm(
-            id: 'half-pending',
-            recipientStatus: OutgoingWrapStatus.sent,
-          ),
-        );
-        await dao.enqueue(
-          makeDm(
-            id: 'both-sent',
-            recipientStatus: OutgoingWrapStatus.sent,
-            selfStatus: OutgoingWrapStatus.sent,
-          ),
-        );
-        await dao.enqueue(
-          makeDm(
-            id: 'failed',
-            recipientStatus: OutgoingWrapStatus.failed,
-            selfStatus: OutgoingWrapStatus.failed,
-          ),
-        );
+      test(
+        'returns rows with at least one wrap still pending, ordered '
+        'oldest queuedAt first (FIFO)',
+        () async {
+          // 'half-pending' is queued FIRST (oldest), 'pending' SECOND.
+          // Insertion order is reversed from chronological order to
+          // prove the query orders by queuedAt, not by row id or
+          // primary-key default order.
+          await dao.enqueue(
+            makeDm(
+              id: 'half-pending',
+              recipientStatus: OutgoingWrapStatus.sent,
+              queuedAt: DateTime.utc(2026, 5),
+            ),
+          );
+          await dao.enqueue(
+            makeDm(
+              id: 'pending',
+              queuedAt: DateTime.utc(2026, 5, 2),
+            ),
+          );
+          await dao.enqueue(
+            makeDm(
+              id: 'both-sent',
+              recipientStatus: OutgoingWrapStatus.sent,
+              selfStatus: OutgoingWrapStatus.sent,
+              queuedAt: DateTime.utc(2026, 5, 3),
+            ),
+          );
+          await dao.enqueue(
+            makeDm(
+              id: 'failed',
+              recipientStatus: OutgoingWrapStatus.failed,
+              selfStatus: OutgoingWrapStatus.failed,
+              queuedAt: DateTime.utc(2026, 5, 4),
+            ),
+          );
 
-        final pending = await dao.getStillPendingForOwner(ownerA);
+          final pending = await dao.getStillPendingForOwner(ownerA);
 
-        expect(
-          pending.map((e) => e.id),
-          unorderedEquals(['pending', 'half-pending']),
-        );
-      });
+          expect(
+            pending.map((e) => e.id),
+            equals(['half-pending', 'pending']),
+            reason:
+                'FIFO contract: getStillPendingForOwner orders by queuedAt '
+                'asc, so half-pending (2026-05-01) must precede pending '
+                '(2026-05-02) even though pending was inserted second',
+          );
+        },
+      );
     });
 
     group('unknown wrap status', () {

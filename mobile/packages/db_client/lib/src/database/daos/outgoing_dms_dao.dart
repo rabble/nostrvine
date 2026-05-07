@@ -77,7 +77,8 @@ class OutgoingDm {
     this.recipientWrapEventId,
     this.selfWrapEventId,
     this.retryCount = 0,
-    this.lastError,
+    this.recipientWrapLastError,
+    this.selfWrapLastError,
     this.lastAttemptAt,
   });
 
@@ -95,7 +96,16 @@ class OutgoingDm {
   final String? recipientWrapEventId;
   final String? selfWrapEventId;
   final int retryCount;
-  final String? lastError;
+
+  /// Last error from a failed recipient-wrap publish, independent of
+  /// [selfWrapLastError]. See the table doc on
+  /// `OutgoingDms.recipientWrapLastError` for why the two wraps carry
+  /// their own error channels.
+  final String? recipientWrapLastError;
+
+  /// Last error from a failed self-wrap publish.
+  final String? selfWrapLastError;
+
   final DateTime? lastAttemptAt;
   final DateTime queuedAt;
   final String ownerPubkey;
@@ -127,7 +137,8 @@ class OutgoingDm {
     String? recipientWrapEventId,
     String? selfWrapEventId,
     int? retryCount,
-    String? lastError,
+    String? recipientWrapLastError,
+    String? selfWrapLastError,
     DateTime? lastAttemptAt,
     DateTime? queuedAt,
     String? ownerPubkey,
@@ -145,7 +156,9 @@ class OutgoingDm {
     recipientWrapEventId: recipientWrapEventId ?? this.recipientWrapEventId,
     selfWrapEventId: selfWrapEventId ?? this.selfWrapEventId,
     retryCount: retryCount ?? this.retryCount,
-    lastError: lastError ?? this.lastError,
+    recipientWrapLastError:
+        recipientWrapLastError ?? this.recipientWrapLastError,
+    selfWrapLastError: selfWrapLastError ?? this.selfWrapLastError,
     lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
     queuedAt: queuedAt ?? this.queuedAt,
     ownerPubkey: ownerPubkey ?? this.ownerPubkey,
@@ -190,7 +203,8 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       recipientWrapEventId: Value(dm.recipientWrapEventId),
       selfWrapEventId: Value(dm.selfWrapEventId),
       retryCount: Value(dm.retryCount),
-      lastError: Value(dm.lastError),
+      recipientWrapLastError: Value(dm.recipientWrapLastError),
+      selfWrapLastError: Value(dm.selfWrapLastError),
       lastAttemptAt: Value(dm.lastAttemptAt),
       queuedAt: dm.queuedAt,
       ownerPubkey: dm.ownerPubkey,
@@ -212,7 +226,8 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
       recipientWrapEventId: row.recipientWrapEventId,
       selfWrapEventId: row.selfWrapEventId,
       retryCount: row.retryCount,
-      lastError: row.lastError,
+      recipientWrapLastError: row.recipientWrapLastError,
+      selfWrapLastError: row.selfWrapLastError,
       lastAttemptAt: row.lastAttemptAt,
       queuedAt: row.queuedAt,
       ownerPubkey: row.ownerPubkey,
@@ -254,7 +269,9 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
 
   /// Update the recipient gift-wrap status for [id]. Pass [eventId] when
   /// transitioning to [OutgoingWrapStatus.sent] so the published id is
-  /// recorded for downstream debugging.
+  /// recorded for downstream debugging. Pass [lastError] when transitioning
+  /// to [OutgoingWrapStatus.failed]; it lands in `recipient_wrap_last_error`
+  /// so the self-wrap's own error history is never overwritten.
   Future<bool> markRecipientWrapStatus({
     required String id,
     required OutgoingWrapStatus status,
@@ -268,7 +285,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
             recipientWrapEventId: eventId != null
                 ? Value(eventId)
                 : const Value.absent(),
-            lastError: lastError != null
+            recipientWrapLastError: lastError != null
                 ? Value(lastError)
                 : const Value.absent(),
             lastAttemptAt: Value(DateTime.now()),
@@ -277,7 +294,9 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
     return rows > 0;
   }
 
-  /// Update the self-addressed gift-wrap status for [id].
+  /// Update the self-addressed gift-wrap status for [id]. Same per-wrap
+  /// error semantics as [markRecipientWrapStatus] — [lastError] writes to
+  /// `self_wrap_last_error` only.
   Future<bool> markSelfWrapStatus({
     required String id,
     required OutgoingWrapStatus status,
@@ -291,7 +310,7 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
             selfWrapEventId: eventId != null
                 ? Value(eventId)
                 : const Value.absent(),
-            lastError: lastError != null
+            selfWrapLastError: lastError != null
                 ? Value(lastError)
                 : const Value.absent(),
             lastAttemptAt: Value(DateTime.now()),
@@ -303,17 +322,32 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
   /// Increment the retry count for [id]. The retry service calls this
   /// after scheduling a replay regardless of the eventual outcome —
   /// backoff caps growth at the policy max.
+  ///
+  /// Implemented as a typed Drift `update().write()` inside a transaction
+  /// so the [DateTime] write goes through the same codec
+  /// `markRecipientWrapStatus` / `markSelfWrapStatus` use. The earlier raw
+  /// `customUpdate` form wrote `Variable<int>(millisecondsSinceEpoch)`
+  /// while the codec is configured for seconds-since-epoch
+  /// (`store_date_time_values_as_text: false` in `drift_schema_v1.json`),
+  /// so reads decoded the value ~1000× in the future. Going through the
+  /// codec is the only durable fix — `incrementRetry` and the
+  /// `markXxxWrapStatus` writers must not disagree about the unit.
   Future<bool> incrementRetry(String id) async {
-    final rows = await customUpdate(
-      'UPDATE outgoing_dms SET retry_count = retry_count + 1, '
-      'last_attempt_at = ? WHERE id = ?',
-      variables: [
-        Variable<int>(DateTime.now().millisecondsSinceEpoch),
-        Variable<String>(id),
-      ],
-      updates: {outgoingDms},
-    );
-    return rows > 0;
+    return transaction(() async {
+      final row = await (select(
+        outgoingDms,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (row == null) return false;
+
+      final affected =
+          await (update(outgoingDms)..where((t) => t.id.equals(id))).write(
+            OutgoingDmsCompanion(
+              retryCount: Value(row.retryCount + 1),
+              lastAttemptAt: Value(DateTime.now()),
+            ),
+          );
+      return affected > 0;
+    });
   }
 
   /// Delete the row for [id]. Called by the repository in the same

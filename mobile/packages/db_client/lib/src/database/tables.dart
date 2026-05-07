@@ -1007,9 +1007,24 @@ class OutgoingDms extends Table {
   IntColumn get retryCount =>
       integer().withDefault(const Constant(0)).named('retry_count')();
 
-  /// Last error message from a failed publish attempt. `null` when the
-  /// most recent transition was a success.
-  TextColumn get lastError => text().nullable().named('last_error')();
+  /// Last error message from the most recent failed **recipient** wrap
+  /// publish. `null` when the recipient wrap has never failed or when the
+  /// most recent recipient transition was a success.
+  ///
+  /// Stored independently of [selfWrapLastError] because the two wraps
+  /// fail for different reasons (e.g. recipient relay rejected the
+  /// kind-1059 vs ephemeral self-relay timeout) — collapsing both into a
+  /// single column would silently overwrite one cause with the other on
+  /// the second failure and starve the retry service of useful diagnostics.
+  TextColumn get recipientWrapLastError =>
+      text().nullable().named('recipient_wrap_last_error')();
+
+  /// Last error message from the most recent failed **self** wrap
+  /// publish. Same lifecycle and rationale as [recipientWrapLastError];
+  /// kept in its own column so a recipient failure followed by a self
+  /// failure preserves both reasons.
+  TextColumn get selfWrapLastError =>
+      text().nullable().named('self_wrap_last_error')();
 
   /// Wall-clock timestamp of the most recent publish attempt. Drives
   /// the retry service's backoff scheduling.
