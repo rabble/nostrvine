@@ -17,6 +17,7 @@ import 'package:openvine/l10n/current_app_l10n.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -24,8 +25,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/router/navigator_keys.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -41,6 +42,13 @@ final videoPublishProvider =
     NotifierProvider<VideoPublishNotifier, VideoPublishProviderState>(
       VideoPublishNotifier.new,
     );
+
+({String path, VideoDetailRouteExtra extra}) videoReplyPublishDestinationFor(
+  VideoReplyContext context,
+) => (
+  path: VideoDetailScreen.pathForId(context.rootEventId),
+  extra: const VideoDetailRouteExtra(autoOpenComments: true),
+);
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
@@ -412,7 +420,8 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       final publishmentProcess = publishService.publishVideo(
         draft: publishDraft,
       );
-      final isVideoReply = publishDraft.videoReplyContext != null;
+      final videoReplyContext = publishDraft.videoReplyContext;
+      final isVideoReply = videoReplyContext != null;
       backgroundPublishBloc.add(
         BackgroundPublishRequested(
           draft: publishDraft,
@@ -424,8 +433,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         ref.read(videoReplyContextProvider.notifier).clear();
       }
 
-      if (context.mounted && isVideoReply) {
-        context.go(VideoFeedPage.pathForIndex(0));
+      if (context.mounted && videoReplyContext != null) {
+        final destination = videoReplyPublishDestinationFor(videoReplyContext);
+        context.go(destination.path, extra: destination.extra);
         // Clear editor state after navigation animation completes (~350ms)
         // Draft is already saved for background upload
         Future.delayed(const Duration(milliseconds: 600), clearAll);

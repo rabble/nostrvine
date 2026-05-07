@@ -16,6 +16,12 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:unified_logger/unified_logger.dart';
 
+class VideoDetailRouteExtra {
+  const VideoDetailRouteExtra({this.autoOpenComments = false});
+
+  final bool autoOpenComments;
+}
+
 class VideoDetailScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'video';
@@ -34,11 +40,13 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
 
   const VideoDetailScreen({
     required this.videoId,
+    this.autoOpenComments = false,
     this.videoFeedBuilder,
     super.key,
   });
 
   final String videoId;
+  final bool autoOpenComments;
   final Widget Function(VideoEvent video)? videoFeedBuilder;
 
   @override
@@ -270,6 +278,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           removedIdsStream: ref.read(videoEventServiceProvider).removedVideoIds,
           contextTitle: 'Shared Video',
           trafficSource: ViewTrafficSource.share,
+          autoOpenComments: widget.autoOpenComments,
         );
   }
 

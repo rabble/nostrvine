@@ -11,12 +11,14 @@ class VideoCommentPlayer extends StatefulWidget {
     required this.videoUrl,
     this.thumbnailUrl,
     this.blurhash,
+    this.onOpenVideo,
     super.key,
   });
 
   final String videoUrl;
   final String? thumbnailUrl;
   final String? blurhash;
+  final VoidCallback? onOpenVideo;
 
   @override
   State<VideoCommentPlayer> createState() => _VideoCommentPlayerState();
@@ -143,12 +145,35 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
                         onTap: _toggleMute,
                       ),
                     ),
+                  if (widget.onOpenVideo != null)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: _OpenVideoButton(onTap: widget.onOpenVideo!),
+                    ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OpenVideoButton extends StatelessWidget {
+  const _OpenVideoButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return DivineIconButton(
+      icon: DivineIconName.arrowUpRight,
+      semanticLabel: 'Open video comment',
+      size: DivineIconButtonSize.small,
+      type: DivineIconButtonType.ghostSecondary,
+      onPressed: onTap,
     );
   }
 }

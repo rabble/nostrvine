@@ -970,7 +970,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           if (videoId == null || videoId.isEmpty) {
             return RouteErrorScreen(message: ctx.l10n.routeInvalidVideoId);
           }
-          return VideoDetailScreen(videoId: videoId);
+          final extra = st.extra;
+          final routeExtra = extra is VideoDetailRouteExtra ? extra : null;
+          return VideoDetailScreen(
+            videoId: videoId,
+            autoOpenComments: routeExtra?.autoOpenComments ?? false,
+          );
         },
       ),
       // Sound detail route (for audio reuse feature)

@@ -21,6 +21,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -150,6 +151,11 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                 videoUrl: widget.comment.videoUrl!,
                                 thumbnailUrl: widget.comment.thumbnailUrl,
                                 blurhash: widget.comment.videoBlurhash,
+                                onOpenVideo: () => context.push(
+                                  VideoDetailScreen.pathForId(
+                                    widget.comment.id,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
