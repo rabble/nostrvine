@@ -110,9 +110,9 @@ void main() {
       tester,
     ) async {
       final mockGoRouter = MockGoRouter();
-      when(
-        () => mockGoRouter.pushNamed<Object?>(Nip05SettingsScreen.routeName),
-      ).thenAnswer((_) async => null);
+      when(() => mockGoRouter.push(Nip05SettingsScreen.path)).thenAnswer(
+        (_) async => null,
+      );
 
       await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
       await tester.pumpAndSettle();
@@ -121,9 +121,7 @@ void main() {
       await tester.tap(find.text(l10n.nostrSettingsNip05Address));
       await tester.pump();
 
-      verify(
-        () => mockGoRouter.pushNamed<Object?>(Nip05SettingsScreen.routeName),
-      ).called(1);
+      verify(() => mockGoRouter.push(Nip05SettingsScreen.path)).called(1);
     });
   });
 }
