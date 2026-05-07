@@ -1,11 +1,13 @@
-// ABOUTME: Tests for ActorNotificationRow — follow / mention / system
-// ABOUTME: rendering, follow-back button visibility, and tap callbacks.
+// ABOUTME: Tests for ActorNotificationRow — follow / mention / system /
+// ABOUTME: likeComment / reply rendering, follow-back button visibility,
+// ABOUTME: and tap callbacks.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
+import 'package:openvine/widgets/notification_type_icon.dart';
 
 const _alice = ActorInfo(
   pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -58,13 +60,18 @@ Future<void> _pump(
 void main() {
   group(ActorNotificationRow, () {
     group('renders', () {
-      testWidgets('"{actor} started following you" for follow', (
+      testWidgets('leading $NotificationTypeIcon for every kind', (
         tester,
       ) async {
         await _pump(tester, notification: _actor());
+        expect(find.byType(NotificationTypeIcon), findsOneWidget);
+      });
+
+      testWidgets('"{actor} started following you" for follow', (tester) async {
+        await _pump(tester, notification: _actor());
 
         expect(
-          find.text(_l10n.notificationStartedFollowing('Alice')),
+          find.textContaining(_l10n.notificationStartedFollowing('Alice')),
           findsOneWidget,
         );
       });
@@ -76,7 +83,7 @@ void main() {
         );
 
         expect(
-          find.text(_l10n.notificationMentionedYou('Alice')),
+          find.textContaining(_l10n.notificationMentionedYou('Alice')),
           findsOneWidget,
         );
       });
@@ -87,7 +94,10 @@ void main() {
           notification: _actor(type: NotificationKind.system),
         );
 
-        expect(find.text(_l10n.notificationSystemUpdate), findsOneWidget);
+        expect(
+          find.textContaining(_l10n.notificationSystemUpdate),
+          findsOneWidget,
+        );
       });
 
       testWidgets('"{actor} liked your comment" for likeComment', (
@@ -99,7 +109,7 @@ void main() {
         );
 
         expect(
-          find.text(_l10n.notificationLikedYourComment('Alice')),
+          find.textContaining(_l10n.notificationLikedYourComment('Alice')),
           findsOneWidget,
         );
       });
@@ -113,7 +123,9 @@ void main() {
         );
 
         expect(
-          find.text('Alice ${_l10n.notificationRepliedToYourComment}'),
+          find.textContaining(
+            'Alice ${_l10n.notificationRepliedToYourComment}',
+          ),
           findsOneWidget,
         );
       });
@@ -121,7 +133,7 @@ void main() {
       testWidgets('Follow back button when not yet following', (tester) async {
         await _pump(tester, notification: _actor());
 
-        expect(find.text('Follow back'), findsOneWidget);
+        expect(find.text(_l10n.notificationFollowBack), findsOneWidget);
       });
 
       testWidgets('no Follow back button when already following back', (
@@ -132,7 +144,7 @@ void main() {
           notification: _actor(isFollowingBack: true),
         );
 
-        expect(find.text('Follow back'), findsNothing);
+        expect(find.text(_l10n.notificationFollowBack), findsNothing);
       });
 
       testWidgets('comment text for mention with commentText', (tester) async {
@@ -144,7 +156,7 @@ void main() {
           ),
         );
 
-        expect(find.text('Hey check this out'), findsOneWidget);
+        expect(find.textContaining('Hey check this out'), findsOneWidget);
       });
     });
 
@@ -173,7 +185,7 @@ void main() {
           onFollowBack: () => tapped = true,
         );
 
-        await tester.tap(find.text('Follow back'));
+        await tester.tap(find.text(_l10n.notificationFollowBack));
         await tester.pump();
 
         expect(tapped, isTrue);

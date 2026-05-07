@@ -1,19 +1,19 @@
-// ABOUTME: One-row layout for ActorNotification — single avatar with type
-// ABOUTME: badge, message + timestamp, optional Follow back button.
+// ABOUTME: One-row layout for ActorNotification — leading 32x32 type icon,
+// ABOUTME: avatar + bold actor name + verb + inline timestamp, optional
+// ABOUTME: comment quote, optional Follow back button.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:time_formatter/time_formatter.dart';
-
-const double _avatarSize = 48;
-const double _badgeSize = 20;
-const double _followBackHeight = 32;
+import 'package:openvine/l10n/localized_time_formatter.dart';
+import 'package:openvine/notifications/widgets/notification_type_icon_spec.dart';
+import 'package:openvine/widgets/notification_type_icon.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 /// Displays a single actor-anchored notification row (follow / mention /
-/// system).
+/// likeComment / reply / system).
 class ActorNotificationRow extends StatelessWidget {
   /// Creates an [ActorNotificationRow].
   const ActorNotificationRow({
@@ -46,64 +46,70 @@ class ActorNotificationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final actorName = notification.actor.displayName;
-    final message = switch (notification.type) {
-      NotificationKind.follow => l10n.notificationStartedFollowing(actorName),
-      NotificationKind.mention => l10n.notificationMentionedYou(actorName),
-      NotificationKind.likeComment => l10n.notificationLikedYourComment(
-        actorName,
-      ),
-      NotificationKind.reply =>
-        '$actorName ${l10n.notificationRepliedToYourComment}',
-      NotificationKind.system => l10n.notificationSystemUpdate,
-      NotificationKind.like ||
-      NotificationKind.comment ||
-      NotificationKind.repost => actorName,
-    };
+    final spec = notificationTypeIconSpec(notification.type);
 
     return Material(
-      color: notification.isRead
-          ? VineTheme.backgroundColor
-          : VineTheme.cardBackground,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _AvatarWithBadge(
-                actor: notification.actor,
-                type: notification.type,
-                onProfileTap: onProfileTap,
+      color: VineTheme.surfaceContainerHigh,
+      child: Semantics(
+        button: true,
+        container: true,
+        label: notification.isRead ? null : l10n.notificationsUnreadPrefix,
+        child: InkWell(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: VineTheme.outlineDisabled),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(message, style: VineTheme.bodyMediumFont()),
-                    if (_hasComment) ...[
-                      const SizedBox(height: 4),
-                      _CommentPreview(text: notification.commentText!),
-                    ],
-                    const SizedBox(height: 4),
-                    Text(
-                      TimeFormatter.formatRelativeVerbose(
-                        notification.timestamp.millisecondsSinceEpoch ~/ 1000,
-                      ),
-                      style: VineTheme.bodySmallFont(
-                        color: VineTheme.lightText,
-                      ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  NotificationTypeIcon(
+                    icon: spec.icon,
+                    backgroundColor: spec.background,
+                    foregroundColor: spec.foreground,
+                    showUnreadDot: !notification.isRead,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        UserAvatar(
+                          imageUrl: notification.actor.pictureUrl,
+                          name: notification.actor.displayName,
+                          placeholderSeed: notification.actor.pubkey,
+                          size: NotificationConstants.avatarSize,
+                          cornerRadius:
+                              NotificationConstants.avatarCornerRadius,
+                          onTap: onProfileTap,
+                          semanticLabel: l10n
+                              .notificationsViewProfileSemanticLabel(
+                                notification.actor.displayName,
+                              ),
+                        ),
+                        const SizedBox(height: 8),
+                        _MessageText(notification: notification),
+                        if (_hasComment) ...[
+                          const SizedBox(height: 4),
+                          _CommentQuote(text: notification.commentText!),
+                        ],
+                      ],
                     ),
-                    if (_showFollowBack) ...[
-                      const SizedBox(height: 8),
-                      _FollowBackButton(onPressed: onFollowBack),
-                    ],
+                  ),
+                  if (_showFollowBack) ...[
+                    const SizedBox(width: 8),
+                    _FollowBackButton(onPressed: onFollowBack),
                   ],
-                ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -111,146 +117,91 @@ class ActorNotificationRow extends StatelessWidget {
   }
 }
 
-class _AvatarWithBadge extends StatelessWidget {
-  const _AvatarWithBadge({
-    required this.actor,
-    required this.type,
-    required this.onProfileTap,
-  });
+class _MessageText extends StatelessWidget {
+  const _MessageText({required this.notification});
 
-  final ActorInfo actor;
-  final NotificationKind type;
-  final VoidCallback onProfileTap;
+  final ActorNotification notification;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: 'View ${actor.displayName} profile',
-      button: true,
-      child: GestureDetector(
-        onTap: onProfileTap,
-        child: SizedBox(
-          width: _avatarSize,
-          height: _avatarSize,
-          child: Stack(
-            children: [
-              ClipOval(
-                child: actor.pictureUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: actor.pictureUrl!,
-                        width: _avatarSize,
-                        height: _avatarSize,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const _DefaultAvatar(),
-                        errorWidget: (context, url, error) =>
-                            const _DefaultAvatar(),
-                      )
-                    : const _DefaultAvatar(),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: _TypeBadge(type: type),
-              ),
-            ],
-          ),
+    final l10n = context.l10n;
+    final spans = <InlineSpan>[];
+    final type = notification.type;
+
+    if (type == NotificationKind.system) {
+      spans.add(
+        TextSpan(
+          text: l10n.notificationSystemUpdate,
+          style: VineTheme.bodyMediumFont(),
         ),
+      );
+    } else {
+      spans.add(
+        TextSpan(
+          text: notification.actor.displayName,
+          style: VineTheme.labelLargeFont(),
+        ),
+      );
+      spans.add(
+        TextSpan(
+          text: ' ${_verbFor(l10n, type)}',
+          style: VineTheme.bodyMediumFont(),
+        ),
+      );
+    }
+
+    spans.add(
+      TextSpan(
+        text:
+            ' ${LocalizedTimeFormatter.formatRelative(l10n, notification.timestamp.millisecondsSinceEpoch ~/ 1000)}',
+        style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
       ),
+    );
+
+    return Text.rich(
+      TextSpan(children: spans),
+      textScaler: MediaQuery.textScalerOf(context),
     );
   }
 }
 
-class _DefaultAvatar extends StatelessWidget {
-  const _DefaultAvatar();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.accentPurple.withValues(alpha: 0.2),
-        shape: BoxShape.circle,
-      ),
-      child: const SizedBox(
-        width: _avatarSize,
-        height: _avatarSize,
-        child: Center(
-          child: Icon(Icons.person, color: VineTheme.accentPurple, size: 24),
-        ),
-      ),
-    );
-  }
+/// Returns just the verb portion (no actor name) for inline composition.
+///
+/// l10n verb keys carry the actor name as a leading `{actorName}`
+/// placeholder. Calling them with an empty string leaves a leading
+/// separator (a space in English, possibly something different in other
+/// locales) — strip it so the caller can prepend its own bold actor name.
+/// `notificationRepliedToYourComment` is already actor-free and used
+/// as-is.
+String _verbFor(AppLocalizations l10n, NotificationKind type) {
+  return switch (type) {
+    NotificationKind.follow => l10n.notificationStartedFollowing('').trimLeft(),
+    NotificationKind.mention => l10n.notificationMentionedYou('').trimLeft(),
+    NotificationKind.likeComment =>
+      l10n.notificationLikedYourComment('').trimLeft(),
+    NotificationKind.reply => l10n.notificationRepliedToYourComment,
+    // System is handled inline in _MessageText. The remaining cases are
+    // unreachable because ActorNotification asserts on type — but
+    // exhaustivity requires them.
+    NotificationKind.system ||
+    NotificationKind.like ||
+    NotificationKind.comment ||
+    NotificationKind.repost => '',
+  };
 }
 
-class _TypeBadge extends StatelessWidget {
-  const _TypeBadge({required this.type});
-
-  final NotificationKind type;
-
-  Color get _backgroundColor {
-    return switch (type) {
-      NotificationKind.like => VineTheme.error,
-      NotificationKind.likeComment => VineTheme.error,
-      NotificationKind.comment => VineTheme.info,
-      NotificationKind.reply => VineTheme.info,
-      NotificationKind.follow => VineTheme.accentPurple,
-      NotificationKind.repost => VineTheme.vineGreen,
-      NotificationKind.mention => VineTheme.warning,
-      NotificationKind.system => VineTheme.lightText,
-    };
-  }
-
-  String get _emoji {
-    return switch (type) {
-      NotificationKind.like => '❤️',
-      NotificationKind.likeComment => '❤️',
-      NotificationKind.comment => '💬',
-      NotificationKind.reply => '↩️',
-      NotificationKind.follow => '👤',
-      NotificationKind.repost => '🔁',
-      NotificationKind.mention => '@',
-      NotificationKind.system => 'ℹ️',
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: _badgeSize,
-      height: _badgeSize,
-      decoration: BoxDecoration(
-        color: _backgroundColor,
-        shape: BoxShape.circle,
-        border: Border.all(width: 2),
-      ),
-      child: Center(
-        child: Text(
-          _emoji,
-          style: const TextStyle(fontSize: 10),
-        ),
-      ),
-    );
-  }
-}
-
-class _CommentPreview extends StatelessWidget {
-  const _CommentPreview({required this.text});
+class _CommentQuote extends StatelessWidget {
+  const _CommentQuote({required this.text});
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        text,
-        style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
+    return Text(
+      '“$text”',
+      style: VineTheme.bodyMediumFont(),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -262,20 +213,10 @@ class _FollowBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _followBackHeight,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: VineTheme.vineGreen,
-          foregroundColor: VineTheme.onPrimary,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: const Text('Follow back'),
-      ),
+    return DivineButton(
+      label: context.l10n.notificationFollowBack,
+      onPressed: onPressed,
+      size: DivineButtonSize.small,
     );
   }
 }
