@@ -48,12 +48,11 @@ class FeedModeSwitch extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.only(
-              top: 16,
-              bottom: 16,
-              left: 20,
-              right: 20,
-            ),
+            // Horizontal padding matches the video metadata container's
+            // start (16 px) and the action column's end (16 px) on the
+            // overlay below, so the top bar's visual edges line up with
+            // the bottom-overlay edges.
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: isPreviewMode
                 ? _FeedModeContent(
                     label:
