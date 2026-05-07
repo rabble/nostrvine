@@ -126,7 +126,7 @@ class NIP17MessageService {
         );
         if (selfWrapEvent != null) {
           final selfSent = await _nostrService.publishEvent(selfWrapEvent);
-          selfWrapPublished = selfSent != null;
+          selfWrapPublished = selfSent is PublishSuccess;
         }
       } on Object catch (e) {
         Log.error(

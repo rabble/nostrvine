@@ -281,10 +281,12 @@ void main() {
               callCount++;
               if (callCount == 1) {
                 // Recipient publish succeeds.
-                return invocation.positionalArguments[0] as Event;
+                return PublishSuccess(
+                  event: invocation.positionalArguments[0] as Event,
+                );
               }
-              // Self-wrap publish returns null (silent failure).
-              return null;
+              // Self-wrap publish fails silently.
+              return const PublishFailed();
             },
           );
 
