@@ -2435,6 +2435,7 @@
     "proofmodeCheckAiGenerated": "Vérifier si généré par IA",
     "dmSendFailedMessage": "Impossible d'envoyer le message",
     "dmSendFailedRetry": "Réessayer",
+    "dmSendPartialMessage": "Envoyé, mais pas synchronisé avec tes autres appareils",
     "reportDialogCancel": "Annuler",
     "reportDialogReport": "Signaler",
     "routerInvalidCreator": "Créateur non valide",

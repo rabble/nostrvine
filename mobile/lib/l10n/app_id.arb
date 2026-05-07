@@ -2434,6 +2434,7 @@
     "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
     "dmSendFailedMessage": "Pesan gagal dikirim",
     "dmSendFailedRetry": "Coba Lagi",
+    "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",
     "reportDialogCancel": "Batal",
     "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",

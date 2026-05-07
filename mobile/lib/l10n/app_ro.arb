@@ -2435,6 +2435,7 @@
     "proofmodeCheckAiGenerated": "Verifică dacă este generat de AI",
     "dmSendFailedMessage": "Mesajul nu a putut fi trimis",
     "dmSendFailedRetry": "Reîncearcă",
+    "dmSendPartialMessage": "Trimis, dar nu s-a sincronizat cu celelalte dispozitive",
     "reportDialogCancel": "Anulează",
     "reportDialogReport": "Raportează",
     "routerInvalidCreator": "Creator invalid",

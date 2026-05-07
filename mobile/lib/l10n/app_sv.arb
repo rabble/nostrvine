@@ -2435,6 +2435,7 @@
     "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
     "dmSendFailedMessage": "Meddelandet kunde inte skickas",
     "dmSendFailedRetry": "Försök igen",
+    "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",
     "reportDialogCancel": "Avbryt",
     "reportDialogReport": "Rapportera",
     "routerInvalidCreator": "Ogiltig skapare",

@@ -1723,6 +1723,7 @@
     "proofmodeCheckAiGenerated": "AI 생성 여부 확인",
     "dmSendFailedMessage": "메시지를 보내지 못했어요",
     "dmSendFailedRetry": "다시 시도",
+    "dmSendPartialMessage": "보냈지만 다른 기기에 동기화되지 않았어요",
     "reportDialogCancel": "취소",
     "reportDialogReport": "신고",
     "routerInvalidCreator": "유효하지 않은 크리에이터",

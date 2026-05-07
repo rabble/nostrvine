@@ -2608,8 +2608,9 @@
     "collaboratorInviteDmBody": "በ{title} ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
     "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
     "dmSendFailedMessage": "መልዕክቱ መላክ አልተሳካም",
-  "dmSendFailedRetry": "እንደገና ይሞክሩ",
-  "reportDialogCancel": "ሰርዝ",
+    "dmSendFailedRetry": "እንደገና ይሞክሩ",
+    "dmSendPartialMessage": "ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም",
+    "reportDialogCancel": "ሰርዝ",
     "reportDialogReport": "ሪፖርት አድርግ",
     "exploreVideoId": "ID: {id}",
     "@exploreVideoId": {

@@ -2427,6 +2427,7 @@
     "proofmodeCheckAiGenerated": "التحقق إذا كان مُنشأً بالذكاء الاصطناعي",
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",
     "dmSendFailedRetry": "إعادة المحاولة",
+    "dmSendPartialMessage": "أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى",
     "reportDialogCancel": "إلغاء",
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",

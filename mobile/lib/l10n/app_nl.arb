@@ -2435,6 +2435,7 @@
     "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",
     "dmSendFailedRetry": "Opnieuw",
+    "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",
     "reportDialogCancel": "Annuleren",
     "reportDialogReport": "Rapporteren",
     "routerInvalidCreator": "Ongeldige maker",

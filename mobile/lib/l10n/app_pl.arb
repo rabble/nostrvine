@@ -2435,6 +2435,7 @@
     "proofmodeCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
     "dmSendFailedMessage": "Nie udało się wysłać wiadomości",
     "dmSendFailedRetry": "Spróbuj ponownie",
+    "dmSendPartialMessage": "Wysłano, ale nie zsynchronizowano z twoimi innymi urządzeniami",
     "reportDialogCancel": "Anuluj",
     "reportDialogReport": "Zgłoś",
     "routerInvalidCreator": "Nieprawidłowy twórca",
