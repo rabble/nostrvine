@@ -53,7 +53,7 @@ void main() {
 
       // Mock successful event publishing
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(event: invocation.positionalArguments[0] as Event);
       });
 
       // Mock subscribeToEvents for relay sync
@@ -159,7 +159,7 @@ void main() {
         when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) {
           final event = invocation.positionalArguments[0] as Event;
           lists.add(event.toCuratedList());
-          return Future.value(event);
+          return Future.value(PublishSuccess(event: event));
         });
 
         // Mock subscription to return collected lists
@@ -480,7 +480,7 @@ void main() {
         when(() => mockNostr.publishEvent(any())).thenAnswer((
           invocation,
         ) async {
-          return invocation.positionalArguments[0] as Event;
+          return PublishSuccess(event: invocation.positionalArguments[0] as Event);
         });
 
         await service.updateList(listId: list.id, name: 'Updated Name');

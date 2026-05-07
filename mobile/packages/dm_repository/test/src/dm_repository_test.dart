@@ -400,7 +400,7 @@ void main() {
         // Stub publishEvent for the NIP-04 fallback (fire-and-forget)
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         final repository = createRepository();
 
@@ -565,7 +565,7 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         final repository = createRepository();
 
@@ -649,7 +649,7 @@ void main() {
           ).thenAnswer((_) async {});
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           // First send: conversation does not exist yet → NIP-04
           // fallback fires (safe legacy interop).
@@ -694,7 +694,7 @@ void main() {
           reset(mockNostrClient);
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
           when(
             () => mockConversationsDao.getConversation(
               any(),
@@ -3124,7 +3124,7 @@ void main() {
           // Stub publishEvent for the NIP-04 fallback (fire-and-forget)
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           final repository = createRepository();
 
@@ -3360,7 +3360,7 @@ void main() {
           // Stub publishEvent for the NIP-04 fallback (fire-and-forget)
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           final repository = createRepository();
 
@@ -4150,17 +4150,19 @@ void main() {
           when(
             () => mockNostrClient.publishEvent(any()),
           ).thenAnswer(
-            (_) async => Event.fromJson({
-              'id': _giftWrapEventId,
-              'pubkey': _validPubkeyA,
-              'created_at': 1700000000,
-              'kind': EventKind.directMessage,
-              'tags': [
-                ['p', _validPubkeyB],
-              ],
-              'content': 'encrypted',
-              'sig': 'sig',
-            }),
+            (_) async => PublishSuccess(
+              event: Event.fromJson({
+                'id': _giftWrapEventId,
+                'pubkey': _validPubkeyA,
+                'created_at': 1700000000,
+                'kind': EventKind.directMessage,
+                'tags': [
+                  ['p', _validPubkeyB],
+                ],
+                'content': 'encrypted',
+                'sig': 'sig',
+              }),
+            ),
           );
 
           final repository = createRepository();
@@ -4374,7 +4376,7 @@ void main() {
 
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => _FakeEvent());
+          ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
           when(
             () => mockDirectMessagesDao.markMessageDeleted(
@@ -5851,7 +5853,7 @@ void main() {
 
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => _FakeEvent());
+          ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
           when(
             () => mockDirectMessagesDao.markMessageDeleted(
@@ -5958,7 +5960,7 @@ void main() {
 
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => _FakeEvent());
+          ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
           when(
             () => mockDirectMessagesDao.markMessageDeleted(
@@ -6247,7 +6249,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => _FakeEvent());
+        ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
         final repo = createRepository();
         const replyId =
@@ -6999,7 +7001,7 @@ void main() {
 
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           final repo = DmRepository(
             nostrClient: mockNostrClient,

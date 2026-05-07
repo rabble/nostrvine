@@ -282,7 +282,7 @@ class BadgeRepository {
     }
 
     final published = await _nostrClient.publishEvent(event);
-    if (published == null) {
+    if (published is! PublishSuccess) {
       throw StateError('Could not publish profile badges event');
     }
   }

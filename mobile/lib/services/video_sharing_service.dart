@@ -188,7 +188,7 @@ class VideoSharingService {
 
     final sentEvent = await _nostrService.publishEvent(event);
 
-    if (sentEvent != null) {
+    if (sentEvent is PublishSuccess) {
       _shareHistory[recipientPubkey] = DateTime.now();
       await _updateRecentlySharedWith(recipientPubkey);
 

@@ -105,7 +105,7 @@ class NIP17MessageService {
       // Publish the recipient's gift wrap
       final sentEvent = await _nostrService.publishEvent(giftWrapEvent);
 
-      if (sentEvent == null) {
+      if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(errorMsg, category: LogCategory.system);
         return NIP17SendResult.failure(errorMsg);

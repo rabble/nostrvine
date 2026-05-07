@@ -103,7 +103,7 @@ void main() {
     ) async {
       final event = invocation.positionalArguments[0] as Event;
       publishedEvents.add(event);
-      return event;
+      return PublishSuccess(event: event);
     });
   }
 
@@ -347,7 +347,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         final result = await repairService.repairIfNeeded();
 

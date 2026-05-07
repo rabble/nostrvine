@@ -51,7 +51,7 @@ void main() {
     group('sendPrivateMessage', () {
       test('returns success with gift wrap event details', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Event,
+          (invocation) async => PublishSuccess(event: invocation.positionalArguments[0] as Event),
         );
 
         final result = await service.sendPrivateMessage(
@@ -77,7 +77,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event; return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -95,7 +95,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event; return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -119,7 +119,7 @@ void main() {
           (invocation) async {
             final event = invocation.positionalArguments[0] as Event;
             capturedEvents.add(event);
-            return event;
+            return PublishSuccess(event: event);
           },
         );
 
@@ -149,7 +149,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event; return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -169,7 +169,7 @@ void main() {
       test('returns failure when publish returns null', () async {
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         final result = await service.sendPrivateMessage(
           recipientPubkey: _recipientPubkey,
@@ -185,7 +185,7 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event; return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -203,7 +203,7 @@ void main() {
 
       test('uses provided eventKind for the rumor', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Event,
+          (invocation) async => PublishSuccess(event: invocation.positionalArguments[0] as Event),
         );
 
         final result = await service.sendPrivateMessage(
@@ -228,7 +228,7 @@ void main() {
               callCount++;
               if (callCount == 1) {
                 // Recipient publish succeeds.
-                return invocation.positionalArguments[0] as Event;
+                return PublishSuccess(event: invocation.positionalArguments[0] as Event);
               }
               // Self-wrap publish throws — should be non-fatal.
               throw Exception('self-wrap relay error');
@@ -262,7 +262,7 @@ void main() {
             (invocation) async {
               final event = invocation.positionalArguments[0] as Event;
               capturedEvents.add(event);
-              return event;
+              return PublishSuccess(event: event);
             },
           );
 

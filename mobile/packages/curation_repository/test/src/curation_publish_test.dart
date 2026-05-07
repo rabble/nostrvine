@@ -153,12 +153,12 @@ void main() {
           when(
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer(
-            (_) async => _testEvent(
+            (_) async => PublishSuccess(event: _testEvent(
               tags: [
                 ['d', 'test_id'],
               ],
               content: 'Test content',
-            ),
+            )),
           );
 
           final result = await curationRepository.publishCuration(
@@ -184,7 +184,7 @@ void main() {
         () async {
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           final result = await curationRepository.publishCuration(
             id: 'test_curation',
@@ -210,7 +210,7 @@ void main() {
             await Future<void>.delayed(
               const Duration(seconds: 10),
             );
-            return _testEvent();
+            return PublishSuccess(event: _testEvent());
           });
 
           CurationPublishResult? result;
@@ -238,7 +238,7 @@ void main() {
         'should prevent duplicate concurrent publishes',
         () {
           fakeAsync((async) {
-            final completer = Completer<Event?>();
+            final completer = Completer<PublishResult>();
             when(
               () => mockNostrService.publishEvent(any()),
             ).thenAnswer((_) => completer.future);
@@ -279,7 +279,7 @@ void main() {
             );
 
             // Complete the first publish
-            completer.complete(_testEvent());
+            completer.complete(PublishSuccess(event: _testEvent()));
             async.flushMicrotasks();
             expect(firstResult!.success, isTrue);
           });
@@ -294,7 +294,7 @@ void main() {
         () async {
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => _testEvent());
+          ).thenAnswer((_) async => PublishSuccess(event: _testEvent()));
 
           await curationRepository.publishCuration(
             id: 'test_curation',
@@ -319,7 +319,7 @@ void main() {
         () async {
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           await curationRepository.publishCuration(
             id: 'failed_curation',
@@ -391,7 +391,7 @@ void main() {
         () async {
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => _testEvent());
+          ).thenAnswer((_) async => PublishSuccess(event: _testEvent()));
 
           final futures = <Future<dynamic>>[];
           for (var i = 0; i < 5; i++) {
@@ -418,7 +418,7 @@ void main() {
         'publish',
         () {
           fakeAsync((async) {
-            final completer = Completer<Event?>();
+            final completer = Completer<PublishResult>();
             when(
               () => mockNostrService.publishEvent(any()),
             ).thenAnswer((_) => completer.future);
@@ -444,7 +444,7 @@ void main() {
             );
 
             // Complete the publish
-            completer.complete(_testEvent());
+            completer.complete(PublishSuccess(event: _testEvent()));
             async.flushMicrotasks();
 
             final finalStatus = curationRepository.getCurationPublishStatus(
@@ -465,7 +465,7 @@ void main() {
         () async {
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           await curationRepository.publishCuration(
             id: 'error_curation',

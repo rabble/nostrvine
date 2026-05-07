@@ -128,7 +128,7 @@ class SocialService {
       // Publish the deletion request
       final sentEvent = await _nostrService.publishEvent(event);
 
-      if (sentEvent == null) {
+      if (sentEvent is! PublishSuccess) {
         throw Exception('Failed to publish deletion request to relays');
       }
 

@@ -94,7 +94,11 @@ class TestNostrService implements NostrClient {
       createdAt: NostrTimestamp.now(),
     );
 
-    return publishEvent(event);
+    final result = await publishEvent(event);
+    return switch (result) {
+      PublishSuccess(:final event) => event,
+      PublishNoRelays() || PublishFailed() => null,
+    };
   }
 
   Future<Event?> publishVideoEvent({
@@ -125,7 +129,11 @@ class TestNostrService implements NostrClient {
       createdAt: NostrTimestamp.now(),
     );
 
-    return publishEvent(event);
+    final result = await publishEvent(event);
+    return switch (result) {
+      PublishSuccess(:final event) => event,
+      PublishNoRelays() || PublishFailed() => null,
+    };
   }
 
   @override
@@ -217,7 +225,10 @@ class TestNostrService implements NostrClient {
   }
 
   @override
-  Future<Event?> publishEvent(Event event, {List<String>? targetRelays}) async {
+  Future<PublishResult> publishEvent(
+    Event event, {
+    List<String>? targetRelays,
+  }) async {
     if (!_isConnected) throw StateError('Not connected');
     _storedEvents.add(event);
 
@@ -229,7 +240,7 @@ class TestNostrService implements NostrClient {
       }
     }
 
-    return event;
+    return PublishSuccess(event: event);
   }
 
   @override

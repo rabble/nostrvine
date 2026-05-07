@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -1570,10 +1571,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
       // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
-      final publishedEvent = await nostrService.publishEvent(event);
-      if (publishedEvent == null) {
+      final publishResult = await nostrService.publishEvent(event);
+      if (publishResult is! PublishSuccess) {
         throw Exception('Failed to publish updated event');
       }
+      final publishedEvent = publishResult.event;
 
       // Update local cache for immediate UI update
       final personalEventCache = ref.read(personalEventCacheServiceProvider);

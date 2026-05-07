@@ -898,7 +898,7 @@ class CuratedListService extends ChangeNotifier {
 
       if (event != null) {
         final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
+        if (sentEvent is PublishSuccess) {
           // Update local list with Nostr event ID
           final listIndex = _lists.indexWhere((l) => l.id == list.id);
           if (listIndex != -1) {

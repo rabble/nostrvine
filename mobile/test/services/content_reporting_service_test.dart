@@ -147,7 +147,7 @@ void main() {
             any(),
             targetRelays: any(named: 'targetRelays'),
           ),
-        ).thenAnswer((_) async => reportEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
         // Act
         final result = await service.reportContent(
@@ -203,7 +203,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       const reasons = ContentFilterReason.values;
 
@@ -270,12 +270,12 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => createTestEvent(
+        (_) async => PublishSuccess(event: createTestEvent(
           pubkey: testPublicKey,
           kind: 1984,
           tags: [],
           content: 'test',
-        ),
+        )),
       );
 
       for (final reason in ContentFilterReason.values) {
@@ -357,7 +357,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Act - This should not throw an exception due to missing switch case
       final result = await service.reportContent(
@@ -395,7 +395,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       // Act
       final result = await service.reportContent(
@@ -437,7 +437,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Act
       await service.reportContent(
@@ -565,7 +565,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       await service.reportContent(
         eventId: 'evt_1',
@@ -612,13 +612,13 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => Event(
+        (_) async => PublishSuccess(event: Event(
           testPublicKey,
           EventKind.report,
           [],
           '',
           createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        ),
+        )),
       );
 
       await service.reportContent(
@@ -691,13 +691,13 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer(
-          (_) async => Event(
+          (_) async => PublishSuccess(event: Event(
             testPublicKey,
             EventKind.report,
             [],
             '',
             createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
+          )),
         );
 
         await service.reportContent(
@@ -768,7 +768,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       // Now reportContent should work
       final result = await service.reportContent(

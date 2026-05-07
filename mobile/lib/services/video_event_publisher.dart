@@ -316,9 +316,9 @@ class VideoEventPublisher {
       // shape sidesteps the closure-cast entirely; behaviour against a
       // real `NostrClient` is identical.
       final outerTimeout = currentOuterPublishTimeout;
-      Event? sentEvent;
+      PublishResult? publishResult;
       try {
-        sentEvent = await _nostrService
+        publishResult = await _nostrService
             .publishEvent(event)
             .timeout(outerTimeout);
       } on TimeoutException {
@@ -329,11 +329,11 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        sentEvent = null;
+        publishResult = null;
       }
 
       // Check if publish was successful
-      if (sentEvent != null) {
+      if (publishResult is PublishSuccess) {
         Log.info(
           '📡 Event sent to relays, awaiting visibility confirmation: '
           '${event.id}',

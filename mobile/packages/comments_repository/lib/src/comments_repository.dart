@@ -266,11 +266,12 @@ class CommentsRepository {
 
     try {
       // Broadcast the event (NostrClient handles signing)
-      final sentEvent = await _nostrClient.publishEvent(event);
+      final result = await _nostrClient.publishEvent(event);
 
-      if (sentEvent == null) {
+      if (result is! PublishSuccess) {
         throw const PostCommentFailedException('Failed to publish comment');
       }
+      final sentEvent = result.event;
 
       final cached = _commentCountCache[rootEventId];
       if (cached != null) _commentCountCache[rootEventId] = cached + 1;
@@ -406,7 +407,7 @@ class CommentsRepository {
       );
 
       final sentEvent = await _nostrClient.publishEvent(event);
-      if (sentEvent == null) {
+      if (sentEvent is! PublishSuccess) {
         throw const DeleteCommentFailedException(
           'Failed to publish deletion request',
         );

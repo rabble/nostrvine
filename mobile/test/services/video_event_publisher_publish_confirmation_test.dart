@@ -138,7 +138,7 @@ void main() {
   void stubPublish(Event event) {
     when(
       () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => event);
+    ).thenAnswer((_) async => PublishSuccess(event: event));
   }
 
   bool containsTag(List<List<String>> tags, List<String> expected) {
@@ -178,7 +178,7 @@ void main() {
         // Relay rejects the event (publishEvent returns null).
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         final result = await publisher.publishDirectUpload(createUpload());
 
@@ -236,7 +236,7 @@ void main() {
         );
       });
       when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.single as Event,
+        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
       );
 
       final result = await publisher.publishDirectUpload(
@@ -276,7 +276,7 @@ void main() {
         );
       });
       when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.single as Event,
+        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
       );
 
       final result = await publisher.publishDirectUpload(
@@ -366,7 +366,7 @@ void main() {
         return Event(testPubkey, kind, tags, 'video content');
       });
       when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.single as Event,
+        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
       );
 
       final result = await audioPublisher.publishDirectUpload(

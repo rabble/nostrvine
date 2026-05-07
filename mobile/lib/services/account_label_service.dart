@@ -146,7 +146,7 @@ class AccountLabelService {
       }
 
       final sentEvent = await _nostrClient.publishEvent(event);
-      if (sentEvent != null) {
+      if (sentEvent is PublishSuccess) {
         Log.info(
           'Published account labels: '
           '${labels.map((l) => l.value).join(", ")}',

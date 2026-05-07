@@ -1145,10 +1145,10 @@ class CurationRepository {
       final publishFuture = _nostrService.publishEvent(event);
       const timeoutDuration = Duration(seconds: 5);
 
-      Event? sentEvent;
+      PublishResult? publishResult;
 
       try {
-        sentEvent = await publishFuture.timeout(timeoutDuration);
+        publishResult = await publishFuture.timeout(timeoutDuration);
       } on TimeoutException {
         Log.warning(
           'Curation publish timed out after 5s: $id',
@@ -1175,6 +1175,8 @@ class CurationRepository {
         );
       }
 
+      final sentEvent =
+          publishResult is PublishSuccess ? publishResult.event : null;
       final isSuccess = sentEvent != null;
 
       if (isSuccess) {

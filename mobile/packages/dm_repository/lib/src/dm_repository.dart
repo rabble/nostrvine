@@ -1241,14 +1241,14 @@ class DmRepository {
       return NIP17SendResult.failure('NIP-04 sign returned null');
     }
 
-    final published = await _nostrClient.publishEvent(signed);
-    if (published == null) {
+    final publishResult = await _nostrClient.publishEvent(signed);
+    if (publishResult is! PublishSuccess) {
       return NIP17SendResult.failure('NIP-04 publish returned null');
     }
 
     return NIP17SendResult.success(
-      rumorEventId: published.id,
-      messageEventId: published.id,
+      rumorEventId: publishResult.event.id,
+      messageEventId: publishResult.event.id,
       recipientPubkey: recipientPubkey,
     );
   }
