@@ -1111,16 +1111,16 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Edytuj film';
 
   @override
-  String get videoSettingsMenuOpen => 'Otwórz ustawienia odtwarzania';
+  String get videoSettingsMenuOpen => 'Open playback settings';
 
   @override
-  String get videoSettingsMenuClose => 'Zamknij ustawienia odtwarzania';
+  String get videoSettingsMenuClose => 'Close playback settings';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Włącz napisy';
+  String get videoSettingsCaptionsEnable => 'Enable captions';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Wyłącz napisy';
+  String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
   String get contentWarningLabel => 'Ostrzeżenie o treści';
@@ -1431,16 +1431,16 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionShareLabel => 'Udostępnij';
 
   @override
-  String get videoActionReportLabel => 'Zgłoś';
+  String get videoActionReportLabel => 'Report';
 
   @override
-  String get videoActionReport => 'Zgłoś film';
+  String get videoActionReport => 'Report video';
 
   @override
-  String get videoActionEditLabel => 'Edytuj';
+  String get videoActionEditLabel => 'Edit';
 
   @override
-  String get videoActionEdit => 'Edytuj film';
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'O filmie';
@@ -4489,62 +4489,61 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reportReasonSpam => 'Spam lub niechciana treść';
 
   @override
-  String get reportReasonSpamSubtitle =>
-      'Niechciane lub powtarzające się treści';
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
 
   @override
   String get reportReasonHarassment => 'Nagabywanie, zniesławianie lub groźby';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Szkodliwe i niechciane odpowiedzi lub wzmianki';
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Treści brutalne lub ekstremistyczne';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Treści brutalne, ekstremistyczne lub szkodliwe';
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent => 'Treści seksualne lub dla dorosłych';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nagość, pornografia lub treści dosłowne';
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Naruszenie praw autorskich';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Nieautoryzowane użycie własności intelektualnej';
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => 'Fałszywe informacje';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Mylące lub fałszywe twierdzenia';
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Naruszenie bezpieczeństwa dzieci';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Treści wykorzystujące lub narażające nieletnich';
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'Treść wygenerowana przez AI';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Podejrzenie treści wygenerowanej przez AI';
+      'Suspected AI-generated content';
 
   @override
   String get reportReasonOther => 'Inne naruszenie regulaminu';
 
   @override
-  String get reportReasonOtherSubtitle => 'Naruszenia niewymienione powyżej';
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4566,7 +4565,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reportLearnMore => 'Dowiedz się więcej';
 
   @override
-  String get reportLearnMoreAt => 'Dowiedz się więcej na';
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -7012,6 +7011,13 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Opublikuj wideo w feedzie';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Off keeps this video only in the comment thread.';
+
+  @override
   String get videoMetadataFormNotReadyHint => 'Wypełnij formularz, aby włączyć';
 
   @override
@@ -7115,4 +7121,16 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Oczekiwanie na odbiorcę';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Record video comment';
+
+  @override
+  String get commentsOpenVideoLabel => 'Open video comment';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
 }

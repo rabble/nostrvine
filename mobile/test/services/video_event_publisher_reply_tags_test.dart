@@ -4,7 +4,11 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart' show VideoEvent;
+import 'package:models/models.dart'
+    show
+        VideoEvent,
+        videoReplyVisibilityFeedValue,
+        videoReplyVisibilityTagName;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -136,7 +140,7 @@ void main() {
 
     when(
       () => nostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => publishedEvent);
+    ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
     when(
       () => nostrClient.queryEvents(
         any(),
@@ -254,7 +258,10 @@ void main() {
 
     expect(result, isTrue);
     expect(
-      _containsTag(capturedTags, const ['divine:reply_visibility', 'feed']),
+      _containsTag(capturedTags, const [
+        videoReplyVisibilityTagName,
+        videoReplyVisibilityFeedValue,
+      ]),
       isTrue,
     );
     verify(() => videoEventService.addVideoEvent(any())).called(1);

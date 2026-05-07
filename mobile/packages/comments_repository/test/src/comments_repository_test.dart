@@ -114,8 +114,66 @@ void main() {
             offset: any(named: 'offset'),
           ),
         ).called(1);
-        verify(() => mockNostrClient.queryEvents(any())).called(1);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
       });
+
+      test(
+        'does not merge relay video replies into REST bootstrap comments '
+        'when video replies are disabled',
+        () async {
+          when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeApiClient.getVideoComments(
+              videoId: any(named: 'videoId'),
+              sort: any(named: 'sort'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => VideoCommentsResponse(
+              comments: [
+                VideoComment(
+                  id: 'rest_comment',
+                  pubkey: testUserPubkey,
+                  createdAt: 1000,
+                  kind: _commentKind,
+                  content: 'REST comment',
+                  sig: 'sig',
+                  tags: [
+                    ['E', testRootEventId],
+                    ['K', _testRootEventKind.toString()],
+                    ['P', testRootAuthorPubkey],
+                    ['e', testRootEventId],
+                    ['k', _testRootEventKind.toString()],
+                    ['p', testRootAuthorPubkey],
+                  ],
+                ),
+              ],
+              total: 1,
+            ),
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          repository = CommentsRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeApiClient,
+          );
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.totalCount, equals(1));
+          expect(
+            result.comments.map((comment) => comment.id),
+            ['rest_comment'],
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
 
       test('merges relay video replies into REST bootstrap comments', () async {
         when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
@@ -175,6 +233,7 @@ void main() {
         final result = await repository.loadComments(
           rootEventId: testRootEventId,
           rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
         );
 
         expect(result.totalCount, equals(2));
@@ -226,6 +285,7 @@ void main() {
         final result = await repository.loadComments(
           rootEventId: testRootEventId,
           rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
         );
 
         expect(result.comments, hasLength(1));
@@ -255,6 +315,7 @@ void main() {
         final result = await repository.loadComments(
           rootEventId: testRootEventId,
           rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
         );
 
         expect(result.comments, hasLength(1));
@@ -273,6 +334,80 @@ void main() {
         expect(captured.single.kinds, contains(EventKind.comment));
         expect(captured.single.kinds, contains(EventKind.videoVertical));
       });
+
+      test(
+        'does not treat video hosts as playable comment videos without video '
+        'mime or extension',
+        () async {
+          final imageOnlyEvent = _createCommentEvent(
+            id: 'image_only',
+            kind: EventKind.videoVertical,
+            content: 'Image only',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            extraTags: const [
+              [
+                'imeta',
+                'url https://media.divine.video/thumb',
+                'image https://media.divine.video/thumb.jpg',
+              ],
+            ],
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [imageOnlyEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            includeVideoReplies: true,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.hasVideo, isFalse);
+          expect(
+            result.comments.first.videoUrl,
+            isNull,
+          );
+        },
+      );
+
+      test(
+        'treats extensionless imeta urls as videos when the imeta mime type '
+        'is video',
+        () async {
+          final videoReplyEvent = _createCommentEvent(
+            id: 'video_reply',
+            kind: EventKind.videoVertical,
+            content: 'Reply title',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            extraTags: const [
+              ['imeta', 'url https://media.divine.video/reply/12345', 'm video/mp4'],
+            ],
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [videoReplyEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            includeVideoReplies: true,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.hasVideo, isTrue);
+          expect(
+            result.comments.first.videoUrl,
+            equals('https://media.divine.video/reply/12345'),
+          );
+        },
+      );
 
       test('returns empty thread when no comments', () async {
         when(
@@ -976,7 +1111,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         final result = await repository.postComment(

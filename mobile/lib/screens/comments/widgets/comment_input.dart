@@ -274,22 +274,27 @@ class _VideoReplyButton extends StatelessWidget {
     return Semantics(
       identifier: 'record_video_comment_button',
       button: true,
-      label: 'Record video comment',
-      child: Container(
-        width: 40,
-        height: 40,
-        margin: const EdgeInsets.only(bottom: 4),
-        decoration: BoxDecoration(
-          color: VineTheme.containerLow,
-          borderRadius: BorderRadius.circular(17),
-        ),
-        child: IconButton(
-          onPressed: onPressed,
-          padding: EdgeInsets.zero,
-          icon: const DivineIcon(
-            icon: DivineIconName.videoCamera,
-            color: VineTheme.whiteText,
-            size: 22,
+      label: context.l10n.commentsRecordVideoButtonLabel,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        child: Center(
+          child: Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: VineTheme.containerLow,
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: IconButton(
+              onPressed: onPressed,
+              padding: EdgeInsets.zero,
+              icon: const DivineIcon(
+                icon: DivineIconName.videoCamera,
+                color: VineTheme.whiteText,
+                size: 22,
+              ),
+            ),
           ),
         ),
       ),

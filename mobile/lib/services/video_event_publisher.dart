@@ -553,7 +553,12 @@ class VideoEventPublisher {
       if (replyContext != null) {
         _addReplyTags(tags, replyContext);
         if (addReplyToFeed) {
-          tags.add(const ['divine:reply_visibility', 'feed']);
+          tags.add(
+            const [
+              videoReplyVisibilityTagName,
+              videoReplyVisibilityFeedValue,
+            ],
+          );
         }
       }
 

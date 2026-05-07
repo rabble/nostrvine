@@ -1016,16 +1016,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '動画を編集';
 
   @override
-  String get videoSettingsMenuOpen => '再生設定を開く';
+  String get videoSettingsMenuOpen => 'Open playback settings';
 
   @override
-  String get videoSettingsMenuClose => '再生設定を閉じる';
+  String get videoSettingsMenuClose => 'Close playback settings';
 
   @override
-  String get videoSettingsCaptionsEnable => 'キャプションをオン';
+  String get videoSettingsCaptionsEnable => 'Enable captions';
 
   @override
-  String get videoSettingsCaptionsDisable => 'キャプションをオフ';
+  String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
   String get contentWarningLabel => 'コンテンツ警告';
@@ -1321,16 +1321,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionShareLabel => 'シェア';
 
   @override
-  String get videoActionReportLabel => '報告';
+  String get videoActionReportLabel => 'Report';
 
   @override
-  String get videoActionReport => '動画を報告';
+  String get videoActionReport => 'Report video';
 
   @override
-  String get videoActionEditLabel => '編集';
+  String get videoActionEditLabel => 'Edit';
 
   @override
-  String get videoActionEdit => '動画を編集';
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => '詳細';
@@ -4174,55 +4174,61 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportReasonSpam => 'スパムや迷惑なコンテンツ';
 
   @override
-  String get reportReasonSpamSubtitle => '不要または反復的なコンテンツ';
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
 
   @override
   String get reportReasonHarassment => '嫌がらせ、いじめ、脅迫';
 
   @override
-  String get reportReasonHarassmentSubtitle => '有害で望ましくない返信やメンション';
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => '暴力的・過激なコンテンツ';
 
   @override
-  String get reportReasonViolenceSubtitle => '暴力的、過激、または有害なコンテンツ';
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent => '性的・成人向けコンテンツ';
 
   @override
-  String get reportReasonSexualContentSubtitle => 'ヌード、ポルノ、または露骨なコンテンツ';
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => '著作権侵害';
 
   @override
-  String get reportReasonCopyrightSubtitle => '知的財産の無断使用';
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => '虚偽の情報';
 
   @override
-  String get reportReasonFalseInfoSubtitle => '誤解を招く、または虚偽の主張';
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => '子どもの安全に関する違反';
 
   @override
-  String get reportReasonCsamSubtitle => '未成年者を搾取または危険にさらすコンテンツ';
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'AI 生成コンテンツ';
 
   @override
-  String get reportReasonAiGeneratedSubtitle => 'AI生成が疑われるコンテンツ';
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
 
   @override
   String get reportReasonOther => 'その他のポリシー違反';
 
   @override
-  String get reportReasonOtherSubtitle => '上記以外の違反';
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4243,7 +4249,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportLearnMore => 'もっと詳しく';
 
   @override
-  String get reportLearnMoreAt => '詳しくはこちら';
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6571,6 +6577,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'フィードに動画を公開';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Off keeps this video only in the comment thread.';
+
+  @override
   String get videoMetadataFormNotReadyHint => '有効にするにはフォームを入力してください';
 
   @override
@@ -6669,4 +6682,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => '受信者の承認待ち';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Record video comment';
+
+  @override
+  String get commentsOpenVideoLabel => 'Open video comment';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
 }

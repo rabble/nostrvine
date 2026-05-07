@@ -1,6 +1,8 @@
 // ABOUTME: Screen for displaying and posting comments on videos with threaded reply support
 // ABOUTME: Uses BLoC pattern with Nostr Kind 1111 (NIP-22) events for comments
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -124,6 +126,9 @@ abstract final class CommentsScreen {
     );
     final profileRepository = container.read(profileRepositoryProvider);
     final followRepository = container.read(followRepositoryProvider);
+    final showVideoReplies = container.read(
+      isFeatureEnabledProvider(FeatureFlag.videoReplies),
+    );
 
     // The draggable scroll controller is created inside buildScrollBody but
     // is also needed by the title's "new comments" pill (which lives above
@@ -155,6 +160,7 @@ abstract final class CommentsScreen {
           initialTotalCount: video.originalComments,
           profileRepository: profileRepository,
           followRepository: followRepository,
+          includeVideoReplies: showVideoReplies,
         )..add(const CommentsLoadRequested()),
         child: BlocListener<CommentsBloc, CommentsState>(
           listenWhen: (prev, next) =>
@@ -396,7 +402,12 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
             parentAuthorPubkey: replyToAuthorPubkey,
           ),
         );
-    context.push(VideoRecorderScreen.path);
+    final replyContextNotifier = ref.read(videoReplyContextProvider.notifier);
+    unawaited(
+      context
+          .push(VideoRecorderScreen.path)
+          .then((_) => replyContextNotifier.clear()),
+    );
   }
 }
 

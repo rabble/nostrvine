@@ -160,11 +160,11 @@ class _VideoReplyVisibilityToggle extends ConsumerWidget {
           child: SwitchListTile(
             value: shareReplyToFeed,
             title: Text(
-              'Also share to my feed',
+              context.l10n.videoMetadataShareReplyToFeedTitle,
               style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
             ),
             subtitle: Text(
-              'Off keeps this video only in the comment thread.',
+              context.l10n.videoMetadataShareReplyToFeedSubtitle,
               style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
             ),
             contentPadding: const .symmetric(horizontal: 12, vertical: 4),

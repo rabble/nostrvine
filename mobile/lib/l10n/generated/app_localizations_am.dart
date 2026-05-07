@@ -1063,16 +1063,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'ቪዲዮን ያርትዑ';
 
   @override
-  String get videoSettingsMenuOpen => 'የመልሶ ማጫወቻ ቅንብሮችን ክፈት';
+  String get videoSettingsMenuOpen => 'Open playback settings';
 
   @override
-  String get videoSettingsMenuClose => 'የመልሶ ማጫወቻ ቅንብሮችን ዝጋ';
+  String get videoSettingsMenuClose => 'Close playback settings';
 
   @override
-  String get videoSettingsCaptionsEnable => 'መግለጫ ጽሑፎችን አብራ';
+  String get videoSettingsCaptionsEnable => 'Enable captions';
 
   @override
-  String get videoSettingsCaptionsDisable => 'መግለጫ ጽሑፎችን አጥፋ';
+  String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';
@@ -1374,16 +1374,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionShareLabel => 'አጋራ';
 
   @override
-  String get videoActionReportLabel => 'ሪፖርት';
+  String get videoActionReportLabel => 'Report';
 
   @override
-  String get videoActionReport => 'ቪዲዮ ሪፖርት አድርግ';
+  String get videoActionReport => 'Report video';
 
   @override
-  String get videoActionEditLabel => 'አርትዕ';
+  String get videoActionEditLabel => 'Edit';
 
   @override
-  String get videoActionEdit => 'ቪዲዮ አርትዕ';
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'ስለ';
@@ -4283,55 +4283,61 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
 
   @override
-  String get reportReasonSpamSubtitle => 'ያልተፈለገ ወይም ተደጋጋሚ ይዘት';
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
 
   @override
   String get reportReasonHarassment => 'ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት';
 
   @override
-  String get reportReasonHarassmentSubtitle => 'ጎጂ እና ያልተፈለጉ ምላሾች ወይም መጥቀሶች';
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'የጥቃት ወይም ጽንፈኛ ይዘት';
 
   @override
-  String get reportReasonViolenceSubtitle => 'የኃይል፣ ጽንፈኛ፣ ወይም ጎጂ ይዘት';
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent => 'ወሲባዊ ወይም የአዋቂ ይዘት';
 
   @override
-  String get reportReasonSexualContentSubtitle => 'እርቃን፣ ፖርን፣ ወይም ግልጽ የወሲብ ይዘት';
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'የቅጂ መብት ጥሰት';
 
   @override
-  String get reportReasonCopyrightSubtitle => 'ያልተፈቀደ የአእምሯዊ ንብረት አጠቃቀም';
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => 'የውሸት መረጃ';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'የሚያሳስቱ ወይም ሐሰተኛ ክሶች';
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'የልጅ ደህንነት ጥሰት';
 
   @override
-  String get reportReasonCsamSubtitle => 'ሕፃናትን የሚበዘብዝ ወይም አደጋ ላይ የሚጥል ይዘት';
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'በAI የተፈጠረ ይዘት';
 
   @override
-  String get reportReasonAiGeneratedSubtitle => 'በAI የተፈጠረ ይመስላል';
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
 
   @override
   String get reportReasonOther => 'ሌላ የፖሊሲ ጥሰት';
 
   @override
-  String get reportReasonOtherSubtitle => 'ከላይ ያልተዘረዘሩ ጥሰቶች';
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4352,7 +4358,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportLearnMore => 'የበለጠ ተማር';
 
   @override
-  String get reportLearnMoreAt => 'ተጨማሪ ይወቁ በ';
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6708,6 +6714,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'ለመመገብ ቪዲዮ ያትሙ';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Off keeps this video only in the comment thread.';
+
+  @override
   String get videoMetadataFormNotReadyHint => 'ለማንቃት ቅጹን ይሙሉ';
 
   @override
@@ -6806,4 +6819,16 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Record video comment';
+
+  @override
+  String get commentsOpenVideoLabel => 'Open video comment';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
 }

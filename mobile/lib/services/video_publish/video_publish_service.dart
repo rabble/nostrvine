@@ -179,47 +179,27 @@ class VideoPublishService {
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
 
-      final published = draft.videoReplyContext == null
-          ? await videoEventPublisher.publishVideoEvent(
-              upload: pendingUpload,
-              title: draft.title,
-              description: draft.description,
-              hashtags: draft.hashtags.toList(),
-              expirationTimestamp: draft.expireTime != null
-                  ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
-                        draft.expireTime!.inSeconds
-                  : null,
-              allowAudioReuse: draft.allowAudioReuse,
-              collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
-              inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
-              inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
-              inspiredByNpub: draft.inspiredByNpub,
-              selectedAudioEventId: draft.selectedSound?.id,
-              selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
-              language: languagePreferenceService?.contentLanguage,
-              contentWarning: draft.contentWarning,
-            )
-          : await videoEventPublisher.publishVideoEvent(
-              upload: pendingUpload,
-              title: draft.title,
-              description: draft.description,
-              hashtags: draft.hashtags.toList(),
-              expirationTimestamp: draft.expireTime != null
-                  ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
-                        draft.expireTime!.inSeconds
-                  : null,
-              allowAudioReuse: draft.allowAudioReuse,
-              collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
-              inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
-              inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
-              inspiredByNpub: draft.inspiredByNpub,
-              selectedAudioEventId: draft.selectedSound?.id,
-              selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
-              language: languagePreferenceService?.contentLanguage,
-              contentWarning: draft.contentWarning,
-              replyContext: draft.videoReplyContext,
-              addReplyToFeed: draft.shareReplyToFeed,
-            );
+      final published = await videoEventPublisher.publishVideoEvent(
+        upload: pendingUpload,
+        title: draft.title,
+        description: draft.description,
+        hashtags: draft.hashtags.toList(),
+        expirationTimestamp: draft.expireTime != null
+            ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
+                  draft.expireTime!.inSeconds
+            : null,
+        allowAudioReuse: draft.allowAudioReuse,
+        collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
+        inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
+        inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
+        inspiredByNpub: draft.inspiredByNpub,
+        selectedAudioEventId: draft.selectedSound?.id,
+        selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
+        language: languagePreferenceService?.contentLanguage,
+        contentWarning: draft.contentWarning,
+        replyContext: draft.videoReplyContext,
+        addReplyToFeed: draft.shareReplyToFeed,
+      );
 
       if (!published) {
         Log.error('❌ Failed to publish Nostr event', category: .video);

@@ -1070,16 +1070,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Videoyu düzenle';
 
   @override
-  String get videoSettingsMenuOpen => 'Oynatma ayarlarını aç';
+  String get videoSettingsMenuOpen => 'Open playback settings';
 
   @override
-  String get videoSettingsMenuClose => 'Oynatma ayarlarını kapat';
+  String get videoSettingsMenuClose => 'Close playback settings';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Altyazıları aç';
+  String get videoSettingsCaptionsEnable => 'Enable captions';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Altyazıları kapat';
+  String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
   String get contentWarningLabel => 'İçerik Uyarısı';
@@ -1392,16 +1392,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionShareLabel => 'Paylaş';
 
   @override
-  String get videoActionReportLabel => 'Bildir';
+  String get videoActionReportLabel => 'Report';
 
   @override
-  String get videoActionReport => 'Videoyu bildir';
+  String get videoActionReport => 'Report video';
 
   @override
-  String get videoActionEditLabel => 'Düzenle';
+  String get videoActionEditLabel => 'Edit';
 
   @override
-  String get videoActionEdit => 'Videoyu düzenle';
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'Hakkında';
@@ -4362,61 +4362,61 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';
 
   @override
-  String get reportReasonSpamSubtitle => 'İstenmeyen veya tekrarlanan içerik';
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
 
   @override
   String get reportReasonHarassment => 'Taciz, Zorbalık veya Tehdit';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Zararlı ve istenmeyen yanıtlar veya bahsetmeler';
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Şiddet veya Aşırı İçerik';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Şiddet içeren, aşırılıkçı veya zararlı içerik';
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent => 'Cinsel veya Yetişkin İçerik';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Çıplaklık, porno veya açık içerik';
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Telif Hakkı İhlali';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Fikri mülkiyetin izinsiz kullanımı';
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => 'Yanlış Bilgi';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Yanıltıcı veya yanlış iddialar';
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Reşit olmayanları istismar eden veya tehlikeye atan içerik';
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'Yapay Zeka Üretimi İçerik';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Yapay zeka tarafından oluşturulduğundan şüphelenilen içerik';
+      'Suspected AI-generated content';
 
   @override
   String get reportReasonOther => 'Diğer Politika İhlali';
 
   @override
-  String get reportReasonOtherSubtitle => 'Yukarıda listelenmeyen ihlaller';
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4438,7 +4438,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportLearnMore => 'Daha Fazla Bilgi';
 
   @override
-  String get reportLearnMoreAt => 'Daha fazla bilgi:';
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6832,6 +6832,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Videoyu akışa yayınla';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Off keeps this video only in the comment thread.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Etkinleştirmek için formu doldurun';
 
@@ -6936,4 +6943,16 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Alıcı bekleniyor';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Record video comment';
+
+  @override
+  String get commentsOpenVideoLabel => 'Open video comment';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
 }

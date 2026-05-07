@@ -12084,6 +12084,18 @@ abstract class AppLocalizations {
   /// **'Publish video to feed'**
   String get videoMetadataPublishVideoHint;
 
+  /// Label for the toggle that also surfaces a video reply in normal feeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Also share to my feed'**
+  String get videoMetadataShareReplyToFeedTitle;
+
+  /// Helper text for the video reply feed visibility toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off keeps this video only in the comment thread.'**
+  String get videoMetadataShareReplyToFeedSubtitle;
+
   /// No description provided for @videoMetadataFormNotReadyHint.
   ///
   /// In en, this message translates to:
@@ -12281,6 +12293,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
+
+  /// Semantics label for the button that opens the recorder to create a video reply in comments.
+  ///
+  /// In en, this message translates to:
+  /// **'Record video comment'**
+  String get commentsRecordVideoButtonLabel;
+
+  /// Semantics label for the button that opens an inline video reply in the full video detail route.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video comment'**
+  String get commentsOpenVideoLabel;
+
+  /// Semantics label for the button that mutes inline video comment playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute video reply'**
+  String get commentsMuteVideoReplyLabel;
+
+  /// Semantics label for the button that unmutes inline video comment playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute video reply'**
+  String get commentsUnmuteVideoReplyLabel;
 }
 
 class _AppLocalizationsDelegate

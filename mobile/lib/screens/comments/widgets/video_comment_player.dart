@@ -3,6 +3,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -117,10 +119,9 @@ class _VideoCommentPlayerState extends State<VideoCommentPlayer> {
                   if (_controller?.value.isInitialized ?? false)
                     VideoPlayer(_controller!)
                   else if (widget.thumbnailUrl?.isNotEmpty ?? false)
-                    Image.network(
-                      widget.thumbnailUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const _VideoPlaceholder(),
+                    VineCachedImage(
+                      imageUrl: widget.thumbnailUrl!,
+                      errorWidget: (_, _, _) => const _VideoPlaceholder(),
                     )
                   else
                     const _VideoPlaceholder(),
@@ -170,7 +171,7 @@ class _OpenVideoButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return DivineIconButton(
       icon: DivineIconName.arrowUpRight,
-      semanticLabel: 'Open video comment',
+      semanticLabel: context.l10n.commentsOpenVideoLabel,
       size: DivineIconButtonSize.small,
       type: DivineIconButtonType.ghostSecondary,
       onPressed: onTap,
@@ -215,7 +216,9 @@ class _MuteButton extends StatelessWidget {
       icon: isMuted
           ? DivineIconName.speakerSimpleX
           : DivineIconName.speakerHigh,
-      semanticLabel: isMuted ? 'Unmute video reply' : 'Mute video reply',
+      semanticLabel: isMuted
+          ? context.l10n.commentsUnmuteVideoReplyLabel
+          : context.l10n.commentsMuteVideoReplyLabel,
       size: DivineIconButtonSize.small,
       type: DivineIconButtonType.ghostSecondary,
       onPressed: onTap,

@@ -522,7 +522,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       proofManifestJson: state.proofManifestJson,
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
-      videoReplyContext: ref.read(activeVideoReplyContextProvider),
+      videoReplyContext: ref.read(videoReplyContextProvider),
       shareReplyToFeed: state.shareReplyToFeed,
     );
   }

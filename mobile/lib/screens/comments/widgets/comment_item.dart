@@ -66,6 +66,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
       context,
     ).clamp(maxScaleFactor: 1.5);
     final commentContent = widget.comment.content.trim();
+    final showCommentText =
+        commentContent.isNotEmpty && commentContent != widget.comment.videoUrl;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: GestureDetector(
@@ -164,7 +166,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                               ),
                             ),
                           ),
-                          if (commentContent.isNotEmpty) ...[
+                          if (showCommentText) ...[
                             const SizedBox(height: 12),
                             _CommentContent(
                               commentId: widget.comment.id,
@@ -269,6 +271,8 @@ VideoEvent _videoFromComment(Comment comment) {
     duration: comment.videoDuration,
     dimensions: comment.videoDimensions,
     blurhash: comment.videoBlurhash,
+    // Synthetic tags for navigation only. Thread semantics still come from
+    // the comment model, not from these placeholder kind values.
     rawTags: {
       'E': comment.rootEventId,
       'K': '34236',

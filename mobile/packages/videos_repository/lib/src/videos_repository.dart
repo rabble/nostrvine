@@ -26,13 +26,6 @@ const int _videoKind = EventKind.videoVertical;
 /// Kept small to stay "a couple videos ahead" in the buffer.
 const int _defaultLimit = 5;
 
-/// Upper bound for paging past pages where every fetched event is filtered out.
-///
-/// Reply-only video events are intentionally hidden from normal feeds. If a
-/// dense run of those events appears in New/Home, a single filtered-empty page
-/// should not make the caller think pagination is exhausted forever.
-const int _maxEmptyFilteredPageSkips = 5;
-
 /// Timeout for relay search queries.
 ///
 /// Set higher than the app-wide 5s default to accommodate slower
@@ -216,9 +209,12 @@ class VideosRepository {
     int? until,
   }) async {
     var cursor = until;
-    var emptyFilteredPageSkips = 0;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
+    var rawPagesFetched = 0;
+    String? rawBody;
 
-    while (true) {
+    while (visible.length < limit) {
       final response = await _funnelcakeApiClient!.getHomeFeed(
         pubkey: userPubkey,
         limit: limit,
@@ -227,25 +223,21 @@ class VideosRepository {
 
       final videos = _transformVideoStats(response.videos);
       final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-      if (hydratedVideos.isNotEmpty ||
-          !_shouldSkipEmptyFilteredStatsPage(
-            response.videos,
-            limit: limit,
-            hasMore: response.hasMore,
-            skippedPages: emptyFilteredPageSkips,
-          )) {
-        return (
-          videos: hydratedVideos,
-          rawBody: emptyFilteredPageSkips == 0 ? response.rawBody : null,
-        );
-      }
+      _appendUniqueVideos(visible, hydratedVideos, seenIds: seenIds);
+      rawBody ??= response.rawBody;
+      if (response.videos.length < limit || !response.hasMore) break;
 
-      cursor = response.nextCursor ?? _cursorBeforeOldestStats(response.videos);
-      if (cursor == null) {
-        return (videos: hydratedVideos, rawBody: null);
-      }
-      emptyFilteredPageSkips++;
+      final nextCursor =
+          response.nextCursor ?? _cursorBeforeOldestStats(response.videos);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
+      rawPagesFetched++;
     }
+
+    return (
+      videos: visible.take(limit).toList(),
+      rawBody: rawPagesFetched == 0 ? rawBody : null,
+    );
   }
 
   Future<({List<VideoEvent> videos, String? rawBody})>
@@ -259,9 +251,10 @@ class VideosRepository {
     if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
 
     var cursor = until;
-    var emptyFilteredPageSkips = 0;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
 
-    while (true) {
+    while (visible.length < limit) {
       final filter = Filter(
         kinds: [_videoKind],
         authors: authors,
@@ -270,22 +263,22 @@ class VideosRepository {
       );
 
       final events = await _nostrClient.queryEvents([filter]);
+      if (events.isEmpty) break;
 
       final videos = _transformAndFilter(events);
-      final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-      if (hydratedVideos.isNotEmpty ||
-          !_shouldSkipEmptyFilteredEventPage(
-            events,
-            limit: limit,
-            skippedPages: emptyFilteredPageSkips,
-          )) {
-        return (videos: hydratedVideos, rawBody: null);
-      }
+      _appendUniqueVideos(
+        visible,
+        await _hydrateVideosWithBulkStats(videos),
+        seenIds: seenIds,
+      );
+      if (events.length < limit) break;
 
-      cursor = _cursorBeforeOldestEvent(events);
-      if (cursor == null) return (videos: hydratedVideos, rawBody: null);
-      emptyFilteredPageSkips++;
+      final nextCursor = _cursorBeforeOldestEvent(events);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
     }
+
+    return (videos: visible.take(limit).toList(), rawBody: null);
   }
 
   Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
@@ -620,28 +613,26 @@ class VideosRepository {
     int? until,
   }) async {
     var cursor = until;
-    var emptyFilteredPageSkips = 0;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
 
-    while (true) {
+    while (visible.length < limit) {
       final videoStats = await _funnelcakeApiClient!.getRecentVideos(
         limit: limit,
         before: cursor,
       );
 
       final videos = _transformVideoStats(videoStats);
-      if (videos.isNotEmpty ||
-          !_shouldSkipEmptyFilteredStatsPage(
-            videoStats,
-            limit: limit,
-            skippedPages: emptyFilteredPageSkips,
-          )) {
-        return videos;
-      }
+      _appendUniqueVideos(visible, videos, seenIds: seenIds);
 
-      cursor = _cursorBeforeOldestStats(videoStats);
-      if (cursor == null) return videos;
-      emptyFilteredPageSkips++;
+      if (videoStats.length < limit) break;
+
+      final nextCursor = _cursorBeforeOldestStats(videoStats);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
     }
+
+    return visible.take(limit).toList();
   }
 
   Future<List<VideoEvent>> _fetchVisibleRecentVideosFromRelays({
@@ -649,26 +640,24 @@ class VideosRepository {
     int? until,
   }) async {
     var cursor = until;
-    var emptyFilteredPageSkips = 0;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
 
-    while (true) {
+    while (visible.length < limit) {
       final filter = Filter(kinds: [_videoKind], limit: limit, until: cursor);
       final events = await _nostrClient.queryEvents([filter]);
+      if (events.isEmpty) break;
 
       final videos = _transformAndFilter(events);
-      if (videos.isNotEmpty ||
-          !_shouldSkipEmptyFilteredEventPage(
-            events,
-            limit: limit,
-            skippedPages: emptyFilteredPageSkips,
-          )) {
-        return videos;
-      }
+      _appendUniqueVideos(visible, videos, seenIds: seenIds);
+      if (events.length < limit) break;
 
-      cursor = _cursorBeforeOldestEvent(events);
-      if (cursor == null) return videos;
-      emptyFilteredPageSkips++;
+      final nextCursor = _cursorBeforeOldestEvent(events);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
     }
+
+    return visible.take(limit).toList();
   }
 
   /// Fetches popular videos sorted by engagement score.
@@ -1137,7 +1126,8 @@ class VideosRepository {
         hasRootTag = true;
       } else if (tagName == 'e' || tagName == 'a') {
         hasParentTag = true;
-      } else if (tagName == 'divine:reply_visibility' && tag[1] == 'feed') {
+      } else if (tagName == videoReplyVisibilityTagName &&
+          tag[1] == videoReplyVisibilityFeedValue) {
         isFeedVisibleReply = true;
       }
     }
@@ -1152,26 +1142,9 @@ class VideosRepository {
         (tags['E']?.isNotEmpty ?? false) || (tags['A']?.isNotEmpty ?? false);
     final hasParentTag =
         (tags['e']?.isNotEmpty ?? false) || (tags['a']?.isNotEmpty ?? false);
-    final isFeedVisibleReply = tags['divine:reply_visibility'] == 'feed';
+    final isFeedVisibleReply =
+        tags[videoReplyVisibilityTagName] == videoReplyVisibilityFeedValue;
     return hasRootTag && hasParentTag && !isFeedVisibleReply;
-  }
-
-  bool _shouldSkipEmptyFilteredEventPage(
-    List<Event> events, {
-    required int limit,
-    required int skippedPages,
-  }) {
-    return events.length >= limit && skippedPages < _maxEmptyFilteredPageSkips;
-  }
-
-  bool _shouldSkipEmptyFilteredStatsPage(
-    List<VideoStats> stats, {
-    required int limit,
-    required int skippedPages,
-    bool hasMore = false,
-  }) {
-    return (hasMore || stats.length >= limit) &&
-        skippedPages < _maxEmptyFilteredPageSkips;
   }
 
   int? _cursorBeforeOldestEvent(List<Event> events) {
@@ -1180,6 +1153,17 @@ class VideosRepository {
         .map((event) => event.createdAt)
         .reduce((a, b) => a < b ? a : b);
     return oldest - 1;
+  }
+
+  void _appendUniqueVideos(
+    List<VideoEvent> target,
+    List<VideoEvent> incoming, {
+    required Set<String> seenIds,
+  }) {
+    for (final video in incoming) {
+      if (!seenIds.add(video.id)) continue;
+      target.add(video);
+    }
   }
 
   int? _cursorBeforeOldestStats(List<VideoStats> stats) {

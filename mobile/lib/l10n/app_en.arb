@@ -3725,6 +3725,14 @@
   "videoMetadataSaveForLaterButton": "Save for Later",
   "videoMetadataPostSemanticLabel": "Post button",
   "videoMetadataPublishVideoHint": "Publish video to feed",
+  "videoMetadataShareReplyToFeedTitle": "Also share to my feed",
+  "@videoMetadataShareReplyToFeedTitle": {
+    "description": "Label for the toggle that also surfaces a video reply in normal feeds."
+  },
+  "videoMetadataShareReplyToFeedSubtitle": "Off keeps this video only in the comment thread.",
+  "@videoMetadataShareReplyToFeedSubtitle": {
+    "description": "Helper text for the video reply feed visibility toggle."
+  },
   "videoMetadataFormNotReadyHint": "Fill out the form to enable",
   "videoMetadataPostButton": "Post",
   "videoMetadataOpenPreviewSemanticLabel": "Open post preview screen",
@@ -3760,5 +3768,21 @@
   "badgesIssuedEmptySubtitle": "Badges you issue will show acceptance status here.",
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
-  "badgesRecipientWaitingStatus": "Waiting for recipient"
+  "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "commentsRecordVideoButtonLabel": "Record video comment",
+  "@commentsRecordVideoButtonLabel": {
+    "description": "Semantics label for the button that opens the recorder to create a video reply in comments."
+  },
+  "commentsOpenVideoLabel": "Open video comment",
+  "@commentsOpenVideoLabel": {
+    "description": "Semantics label for the button that opens an inline video reply in the full video detail route."
+  },
+  "commentsMuteVideoReplyLabel": "Mute video reply",
+  "@commentsMuteVideoReplyLabel": {
+    "description": "Semantics label for the button that mutes inline video comment playback."
+  },
+  "commentsUnmuteVideoReplyLabel": "Unmute video reply",
+  "@commentsUnmuteVideoReplyLabel": {
+    "description": "Semantics label for the button that unmutes inline video comment playback."
+  }
 }

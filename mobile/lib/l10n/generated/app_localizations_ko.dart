@@ -1024,16 +1024,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '영상 편집';
 
   @override
-  String get videoSettingsMenuOpen => '재생 설정 열기';
+  String get videoSettingsMenuOpen => 'Open playback settings';
 
   @override
-  String get videoSettingsMenuClose => '재생 설정 닫기';
+  String get videoSettingsMenuClose => 'Close playback settings';
 
   @override
-  String get videoSettingsCaptionsEnable => '자막 켜기';
+  String get videoSettingsCaptionsEnable => 'Enable captions';
 
   @override
-  String get videoSettingsCaptionsDisable => '자막 끄기';
+  String get videoSettingsCaptionsDisable => 'Disable captions';
 
   @override
   String get contentWarningLabel => '콘텐츠 경고';
@@ -1329,16 +1329,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShareLabel => '공유';
 
   @override
-  String get videoActionReportLabel => '신고';
+  String get videoActionReportLabel => 'Report';
 
   @override
-  String get videoActionReport => '동영상 신고';
+  String get videoActionReport => 'Report video';
 
   @override
-  String get videoActionEditLabel => '편집';
+  String get videoActionEditLabel => 'Edit';
 
   @override
-  String get videoActionEdit => '동영상 편집';
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => '정보';
@@ -4189,55 +4189,61 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
 
   @override
-  String get reportReasonSpamSubtitle => '원치 않거나 반복적인 콘텐츠';
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
 
   @override
   String get reportReasonHarassment => '괴롭힘, 따돌림, 협박';
 
   @override
-  String get reportReasonHarassmentSubtitle => '유해하고 원치 않는 답글 또는 멘션';
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => '폭력적이거나 극단적인 콘텐츠';
 
   @override
-  String get reportReasonViolenceSubtitle => '폭력적, 극단주의적 또는 유해한 콘텐츠';
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent => '성적이거나 성인용 콘텐츠';
 
   @override
-  String get reportReasonSexualContentSubtitle => '노출, 음란물 또는 노골적인 콘텐츠';
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => '저작권 침해';
 
   @override
-  String get reportReasonCopyrightSubtitle => '지식 재산의 무단 사용';
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => '허위 정보';
 
   @override
-  String get reportReasonFalseInfoSubtitle => '오해의 소지가 있거나 거짓된 주장';
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => '아동 안전 위반';
 
   @override
-  String get reportReasonCsamSubtitle => '미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠';
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'AI 생성 콘텐츠';
 
   @override
-  String get reportReasonAiGeneratedSubtitle => 'AI 생성 콘텐츠로 의심됨';
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
 
   @override
   String get reportReasonOther => '기타 정책 위반';
 
   @override
-  String get reportReasonOtherSubtitle => '위에 나열되지 않은 위반';
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4258,7 +4264,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportLearnMore => '더 알아보기';
 
   @override
-  String get reportLearnMoreAt => '자세히 알아보기:';
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6595,6 +6601,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataPublishVideoHint => '피드에 동영상 게시';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Off keeps this video only in the comment thread.';
+
+  @override
   String get videoMetadataFormNotReadyHint => '활성화하려면 양식을 작성하세요';
 
   @override
@@ -6693,4 +6706,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => '수령자를 기다리는 중';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Record video comment';
+
+  @override
+  String get commentsOpenVideoLabel => 'Open video comment';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
 }

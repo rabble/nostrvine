@@ -43,15 +43,6 @@ void main() {
         }
       });
 
-      testWidgets('does not expose a comment-specific camera mode', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pumpAndSettle();
-
-        expect(find.text('Comment'), findsNothing);
-      });
-
       testWidgets('renders with capture mode selected', (tester) async {
         await tester.pumpWidget(buildWidget(mode: VideoRecorderMode.capture));
         await tester.pumpAndSettle();

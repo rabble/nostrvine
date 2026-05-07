@@ -710,6 +710,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// and resumes video when returning only if it was playing before.
   /// Audio sync handled by listener.
   Future<void> _handleDone() async {
+    Log.info(
+      '🎬 Done pressed - navigating to metadata screen',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     final wasPlaying = _videoPlayer?.state.isPlaying ?? false;
     _videoPlayer?.pause();
     // IMPORTANT: Don't start video rendering here. We must await
@@ -717,12 +722,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // rendering! However, we can navigate to the metadata screen immediately
     // since it shows a progress spinner anyway (~200ms task).
     ref.read(videoEditorProvider.notifier).setProcessing(true);
-
-    Log.info(
-      '🎬 Done pressed - navigating to metadata screen',
-      name: 'VideoEditorCanvas',
-      category: LogCategory.video,
-    );
     await context.push(VideoMetadataScreen.path);
     if (mounted && wasPlaying) {
       _videoPlayer?.play();

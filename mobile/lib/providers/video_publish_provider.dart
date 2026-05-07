@@ -148,6 +148,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
     try {
       ref.read(videoRecorderProvider.notifier).reset();
+      ref.read(videoReplyContextProvider.notifier).clear();
       reset();
 
       await Future.wait([
