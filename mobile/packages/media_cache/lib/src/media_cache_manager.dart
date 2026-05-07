@@ -205,10 +205,28 @@ class MediaCacheManager extends CacheManager {
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
     @visibleForTesting CacheInfoRepository? repoOverride,
     @visibleForTesting CancellableDownloader? downloaderOverride,
+  }) : this._(
+         config: config,
+         tempDirectoryProvider: tempDirectoryProvider ?? getTemporaryDirectory,
+         repoOverride: repoOverride,
+         downloader: downloaderOverride ?? _createDefaultDownloader(config),
+         // Built up-front and retained on the instance so close() can
+         // dispose it. Without this the legacy non-cancellable cacheFile
+         // path leaks an HttpClient on every MediaCacheManager.close().
+         fileServiceClient: kIsWeb ? null : _buildFileServiceClient(config),
+       );
+
+  MediaCacheManager._({
+    required MediaCacheConfig config,
+    required DirectoryProvider tempDirectoryProvider,
+    required CacheInfoRepository? repoOverride,
+    required CancellableDownloader downloader,
+    required IOClient? fileServiceClient,
   }) : _config = config,
-       _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
+       _tempDirectoryProvider = tempDirectoryProvider,
        _repoOverride = repoOverride,
-       _downloader = downloaderOverride ?? _createDefaultDownloader(config),
+       _downloader = downloader,
+       _fileServiceClient = fileServiceClient,
        super(
          kIsWeb
              // coverage:ignore-start
@@ -223,7 +241,10 @@ class MediaCacheManager extends CacheManager {
                  stalePeriod: config.stalePeriod,
                  maxNrOfCacheObjects: config.maxNrOfCacheObjects,
                  repo: SafeCacheInfoRepository(databaseName: config.cacheKey),
-                 fileService: _createHttpFileService(config),
+                 // Non-null on the non-web branch (kIsWeb == false here);
+                 // the public ctor only nulls fileServiceClient on web.
+                 // ignore: unnecessary_null_checks
+                 fileService: HttpFileService(httpClient: fileServiceClient!),
                ),
        );
 
@@ -244,6 +265,12 @@ class MediaCacheManager extends CacheManager {
   final DirectoryProvider _tempDirectoryProvider;
   final CacheInfoRepository? _repoOverride;
   final CancellableDownloader _downloader;
+
+  /// HTTP client backing the legacy non-cancellable
+  /// [CacheManager.getFileStream] / [CacheManager.getSingleFile] path.
+  /// Retained so it can be closed symmetrically in [dispose]. `null` on
+  /// web (no `dart:io` HttpClient there).
+  final IOClient? _fileServiceClient;
 
   /// Resolved `<tempDir>/<cacheKey>` path. Populated by [initialize] and
   /// reused by [cacheFileCancellable] to compute target file paths
@@ -292,7 +319,7 @@ class MediaCacheManager extends CacheManager {
   /// The configuration used by this cache manager.
   MediaCacheConfig get mediaConfig => _config;
 
-  static HttpFileService _createHttpFileService(MediaCacheConfig config) {
+  static IOClient _buildFileServiceClient(MediaCacheConfig config) {
     final httpClient = HttpClient()
       ..connectionTimeout = config.connectionTimeout
       ..idleTimeout = config.idleTimeout
@@ -306,7 +333,7 @@ class MediaCacheManager extends CacheManager {
       httpClient.badCertificateCallback = (cert, host, port) => true;
     }
 
-    return HttpFileService(httpClient: IOClient(httpClient));
+    return IOClient(httpClient);
   }
 
   /// Initializes the cache manifest by loading all cached files from database.
@@ -843,6 +870,7 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations.clear();
 
     await _downloader.close();
+    _fileServiceClient?.close();
     await super.dispose();
   }
 }

@@ -115,6 +115,12 @@ void main() {
         registry.registerPrestart(0, []);
         expect(registry.advance(0), isNull);
       });
+
+      test('activeSourceFor returns null in prestart state (no network '
+          'source active yet)', () {
+        registry.registerPrestart(0, ['a', 'b']);
+        expect(registry.activeSourceFor(0), isNull);
+      });
     });
 
     group('canAdvance', () {

@@ -27,11 +27,14 @@ class PlaybackSourceRegistry {
   }
 
   /// Returns the active source URL for [index], or `null` if none recorded.
+  ///
+  /// Returns `null` for prestart entries (active index `-1`) — no network
+  /// source is in use yet, the first frame is coming from a local cache.
   String? activeSourceFor(int index) {
     final list = _sources[index];
     if (list == null) return null;
     final i = _activeIndices[index] ?? 0;
-    return i < list.length ? list[i] : null;
+    return (i >= 0 && i < list.length) ? list[i] : null;
   }
 
   /// Whether this index has any sources registered.

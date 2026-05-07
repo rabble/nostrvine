@@ -481,9 +481,15 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         guard player.rate == 0 else { return }
         if player.status == .readyToPlay {
             player.preroll(atRate: 1.0) { [weak self] prerolled in
-                guard let self, prerolled else { return }
-                self.nudgeOutputQueue()
-                self.textureOutput?.forceRefresh(for: time)
+                guard prerolled else { return }
+                // `preroll(atRate:)` completion runs on an unspecified
+                // internal queue. Hop to main before touching
+                // `currentItem` / `step(byCount:)` / `textureOutput`.
+                DispatchQueue.main.async { [weak self] in
+                    guard let self else { return }
+                    self.nudgeOutputQueue()
+                    self.textureOutput?.forceRefresh(for: time)
+                }
             }
             return
         }
@@ -493,13 +499,22 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             options: [.new]
         ) { [weak self] obsPlayer, _ in
             guard obsPlayer.status == .readyToPlay else { return }
-            self?.pendingPrerollObservation?.invalidate()
-            self?.pendingPrerollObservation = nil
-            guard obsPlayer.rate == 0 else { return }
-            obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
-                guard let self, prerolled else { return }
-                self.nudgeOutputQueue()
-                self.textureOutput?.forceRefresh(for: time)
+            // KVO callbacks fire on whichever queue mutated the
+            // observed key. `pendingPrerollObservation` mutation and
+            // the inner preroll must happen on main.
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.pendingPrerollObservation?.invalidate()
+                self.pendingPrerollObservation = nil
+                guard obsPlayer.rate == 0 else { return }
+                obsPlayer.preroll(atRate: 1.0) { [weak self] prerolled in
+                    guard prerolled else { return }
+                    DispatchQueue.main.async { [weak self] in
+                        guard let self else { return }
+                        self.nudgeOutputQueue()
+                        self.textureOutput?.forceRefresh(for: time)
+                    }
+                }
             }
         }
     }
