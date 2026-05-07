@@ -2269,6 +2269,7 @@ DmRepository dmRepository(Ref ref) {
     nostrClient: nostrService,
     directMessagesDao: db.directMessagesDao,
     conversationsDao: db.conversationsDao,
+    outgoingDmsDao: db.outgoingDmsDao,
     syncState: DmSyncState(prefs),
   );
 
