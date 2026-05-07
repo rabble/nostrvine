@@ -1740,6 +1740,9 @@
     "feedFailedToLoadVideos": "Gagal memuat video",
     "feedRetry": "Coba Lagi",
     "feedNoFollowedUsers": "Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.",
+    "feedModeForYou": "Untukmu",
+    "feedModeNew": "Baru",
+    "feedModeFollowing": "Mengikuti",
     "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
     "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
     "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
@@ -2957,9 +2960,6 @@
     "videoActionAutoLabel": "Otomatis",
     "videoActionEnableAutoAdvance": "Aktifkan lanjut otomatis",
     "videoActionDisableAutoAdvance": "Nonaktifkan lanjut otomatis",
-    "metadataCaptionsLabel": "Teks",
-    "metadataCaptionsEnabledSemantics": "Teks diaktifkan untuk semua video",
-    "metadataCaptionsDisabledSemantics": "Teks dinonaktifkan untuk semua video",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

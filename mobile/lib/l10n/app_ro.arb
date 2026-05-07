@@ -1743,6 +1743,9 @@
     "feedFailedToLoadVideos": "N-am putut încărca videoclipurile",
     "feedRetry": "Reîncearcă",
     "feedNoFollowedUsers": "Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.",
+    "feedModeForYou": "Pentru tine",
+    "feedModeNew": "Nou",
+    "feedModeFollowing": "Urmăresc",
     "feedForYouEmpty": "Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.",
     "feedFollowingEmpty": "Încă nu există videoclipuri de la persoanele pe care le urmărești.\nGăsește creatori care îți plac și urmărește-i.",
     "feedLatestEmpty": "Încă nu există videoclipuri noi.\nRevino curând.",
@@ -2955,9 +2958,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
     "videoMetadataClosePreviewSemanticLabel": "Închide previzualizarea videoclipului",
     "videoMetadataRemoveSemanticLabel": "Elimină",
-    "metadataCaptionsLabel": "Subtitrări",
-    "metadataCaptionsEnabledSemantics": "Subtitrări activate pentru toate videoclipurile",
-    "metadataCaptionsDisabledSemantics": "Subtitrări dezactivate pentru toate videoclipurile",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

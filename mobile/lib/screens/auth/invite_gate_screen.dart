@@ -804,9 +804,16 @@ class _InviteCodeTextInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final normalized = InviteApiClient.normalizeCode(newValue.text);
+    // After the 4th character, show a trailing dash so the user knows
+    // not to type one themselves. Skip when deleting so backspace
+    // isn't trapped by the dash re-appearing.
+    final isDeleting = newValue.text.length < oldValue.text.length;
+    final display = normalized.length == 4 && !isDeleting
+        ? '$normalized-'
+        : normalized;
     return TextEditingValue(
-      text: normalized,
-      selection: TextSelection.collapsed(offset: normalized.length),
+      text: display,
+      selection: TextSelection.collapsed(offset: display.length),
     );
   }
 }

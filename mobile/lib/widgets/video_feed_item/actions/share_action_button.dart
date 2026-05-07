@@ -24,7 +24,6 @@ import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:openvine/widgets/profile/profile_saved_videos_sync_scope.dart';
-import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -179,7 +178,6 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
           isOwnContent: isOwnContent,
           onFindPeople: _handleFindPeople,
           onAddToList: _handleAddToList,
-          onReport: _handleReport,
           onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
           onSaveWithWatermark: _handleSaveWithWatermark,
           onAddClassicVineToClips: canAddClassicVineToClips
@@ -295,15 +293,6 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     });
   }
 
-  void _handleReport() {
-    _presentAfterDismiss<void>((hostContext) {
-      return showDialog<void>(
-        context: hostContext,
-        builder: (context) => ReportContentDialog(video: widget.video),
-      );
-    });
-  }
-
   bool _isUserOwnContent() {
     try {
       final authService = ref.read(authServiceProvider);
@@ -375,7 +364,6 @@ class _UnifiedShareSheetView extends StatelessWidget {
     required this.isOwnContent,
     required this.onFindPeople,
     required this.onAddToList,
-    required this.onReport,
     required this.onSaveWithWatermark,
     this.onAddClassicVineToClips,
     this.onSaveOriginal,
@@ -386,7 +374,6 @@ class _UnifiedShareSheetView extends StatelessWidget {
   final bool isOwnContent;
   final VoidCallback onFindPeople;
   final VoidCallback onAddToList;
-  final VoidCallback onReport;
   final Future<void> Function()? onSaveOriginal;
   final Future<void> Function() onSaveWithWatermark;
   final VoidCallback? onAddClassicVineToClips;
@@ -448,7 +435,6 @@ class _UnifiedShareSheetView extends StatelessWidget {
                             bloc.add(const ShareSheetCopyLinkRequested()),
                         onShareVia: () =>
                             bloc.add(const ShareSheetShareViaRequested()),
-                        onReport: onReport,
                         onCopyEventJson: () =>
                             bloc.add(const ShareSheetCopyEventJsonRequested()),
                         onCopyEventId: () =>

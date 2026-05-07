@@ -1743,6 +1743,9 @@
     "feedFailedToLoadVideos": "Impossibile caricare i video",
     "feedRetry": "Riprova",
     "feedNoFollowedUsers": "Nessun utente seguito.\nSegui qualcuno per vedere i suoi video qui.",
+    "feedModeForYou": "Per te",
+    "feedModeNew": "Nuovo",
+    "feedModeFollowing": "Seguiti",
     "feedForYouEmpty": "Il tuo feed Per te è vuoto.\nEsplora i video e segui i creator per personalizzarlo.",
     "feedFollowingEmpty": "Ancora nessun video dalle persone che segui.\nTrova creator che ti piacciono e seguili.",
     "feedLatestEmpty": "Ancora nessun nuovo video.\nTorna a controllare a breve.",
@@ -2955,9 +2958,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Metti in pausa anteprima",
     "videoMetadataClosePreviewSemanticLabel": "Chiudi anteprima video",
     "videoMetadataRemoveSemanticLabel": "Rimuovi",
-    "metadataCaptionsLabel": "Sottotitoli",
-    "metadataCaptionsEnabledSemantics": "Sottotitoli abilitati per tutti i video",
-    "metadataCaptionsDisabledSemantics": "Sottotitoli disabilitati per tutti i video",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {
@@ -3258,7 +3258,7 @@
     "commonClose": "Chiudi",
     "categoryGalleryNoVideosInCategory": "Nessun video in questa categoria",
     "categoryGallerySortOptionsLabel": "Opzioni di ordinamento categoria",
-    "categoryGallerySortHot": "Hot",
+    "categoryGallerySortHot": "Popolari",
     "categoryGallerySortNew": "Nuovi",
     "categoryGallerySortClassic": "Classici",
     "categoryGallerySortForYou": "Per te",

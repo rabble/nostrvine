@@ -1942,6 +1942,9 @@
     "feedFailedToLoadVideos": "Не успяхме да заредим видеата",
     "feedRetry": "Опитай пак",
     "feedNoFollowedUsers": "Още не следваш никого.\nПоследвай някого, за да виждаш видеата му тук.",
+    "feedModeForYou": "За теб",
+    "feedModeNew": "Ново",
+    "feedModeFollowing": "Следвани",
     "feedForYouEmpty": "Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.",
     "feedFollowingEmpty": "Още няма видеа от хората, които следваш.\nНамери творци, които ти допадат, и ги последвай.",
     "feedLatestEmpty": "Още няма нови видеа.\nПровери пак скоро.",
@@ -3210,18 +3213,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Пауза на прегледа",
     "videoMetadataClosePreviewSemanticLabel": "Затворете визуализацията на видеото",
     "videoMetadataRemoveSemanticLabel": "Премахни",
-    "metadataCaptionsLabel": "Надписи",
-    "@metadataCaptionsLabel": {
-        "description": "Label for the global captions toggle in the video metadata sheet"
-    },
-    "metadataCaptionsEnabledSemantics": "Субтитрите са включени за всички видеа",
-    "@metadataCaptionsEnabledSemantics": {
-        "description": "Screen reader label when the global captions toggle is on"
-    },
-    "metadataCaptionsDisabledSemantics": "Субтитрите са изключени за всички видеа",
-    "@metadataCaptionsDisabledSemantics": {
-        "description": "Screen reader label when the global captions toggle is off"
-    },
     "fullscreenFeedRemovedMessage": "Видеото е премахнато",
     "@fullscreenFeedRemovedMessage": {
         "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."

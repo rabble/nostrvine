@@ -13,7 +13,6 @@ class _MoreActionsSection extends ConsumerWidget {
     required this.onAddToList,
     required this.onCopyLink,
     required this.onShareVia,
-    required this.onReport,
     required this.onCopyEventJson,
     required this.onCopyEventId,
     this.onAddClassicVineToClips,
@@ -28,7 +27,6 @@ class _MoreActionsSection extends ConsumerWidget {
   final VoidCallback onAddToList;
   final VoidCallback onCopyLink;
   final VoidCallback onShareVia;
-  final VoidCallback onReport;
   final VoidCallback onCopyEventJson;
   final VoidCallback onCopyEventId;
   final VoidCallback? onAddClassicVineToClips;
@@ -83,12 +81,6 @@ class _MoreActionsSection extends ConsumerWidget {
         label: context.l10n.shareSheetShareVia,
         onTap: onShareVia,
       ),
-      _ActionData(
-        icon: DivineIconName.flag,
-        label: context.l10n.shareSheetReport,
-        onTap: onReport,
-        isDestructive: true,
-      ),
       if (showDebugTools) ...[
         _ActionData(
           icon: DivineIconName.bracketsAngle,
@@ -133,7 +125,6 @@ class _MoreActionsSection extends ConsumerWidget {
                 return _ActionCircle(
                   icon: action.icon,
                   label: action.label,
-                  isDestructive: action.isDestructive,
                   onTap: action.onTap,
                 );
               },
@@ -150,13 +141,11 @@ class _ActionData {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.isDestructive = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
-  final bool isDestructive;
 }
 
 class _ActionCircle extends StatelessWidget {
@@ -164,27 +153,24 @@ class _ActionCircle extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.isDestructive = false,
   });
 
   final DivineIconName icon;
   final String label;
   final VoidCallback onTap;
-  final bool isDestructive;
 
   static const double _circleSize = 48;
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isDestructive
-        ? VineTheme.error.withValues(alpha: 0.15)
-        : VineTheme.vineGreen.withValues(alpha: 0.15);
-    final iconColor = isDestructive ? VineTheme.error : VineTheme.vineGreen;
+    final bgColor = VineTheme.vineGreen.withValues(alpha: 0.15);
+    const iconColor = VineTheme.vineGreen;
 
     return Semantics(
       button: true,
       label: label,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
           width: 68,
@@ -205,10 +191,8 @@ class _ActionCircle extends StatelessWidget {
               ),
               Text(
                 label,
-                style: TextStyle(
-                  color: isDestructive
-                      ? VineTheme.error
-                      : VineTheme.secondaryText,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
                   fontSize: 11,
                 ),
                 textScaler: TextScaler.noScaling,

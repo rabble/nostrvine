@@ -2,9 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Persists the user's preference for only showing Divine-hosted videos.
+///
+/// Defaults to `true` so new installs only see videos served from
+/// `*.divine.video` hosts that we can moderate. Users opt in to the
+/// wider Nostr media-host space by toggling this off in Safety settings.
 class DivineHostFilterService extends ChangeNotifier {
   DivineHostFilterService(this._prefs)
-    : _showDivineHostedOnly = _prefs.getBool(_prefsKey) ?? false;
+    : _showDivineHostedOnly = _prefs.getBool(_prefsKey) ?? true;
 
   static const String _prefsKey = 'show_divine_hosted_only';
 

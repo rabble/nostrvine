@@ -1115,6 +1115,18 @@ class AppLocalizationsPl extends AppLocalizations {
       'Dotknij, aby odtworzyć lub wstrzymać. Dotknij dwukrotnie, aby polubić.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Ostrzeżenie o treści';
 
   @override
@@ -1421,6 +1433,18 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'Udostępnij';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'O filmie';
@@ -4048,6 +4072,15 @@ class AppLocalizationsPl extends AppLocalizations {
       'Nie obserwujesz nikogo.\nZacznij obserwować, żeby zobaczyć ich filmy tutaj.';
 
   @override
+  String get feedModeForYou => 'Dla ciebie';
+
+  @override
+  String get feedModeNew => 'Nowe';
+
+  @override
+  String get feedModeFollowing => 'Obserwowane';
+
+  @override
   String get feedForYouEmpty =>
       'Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.';
 
@@ -4444,28 +4477,61 @@ class AppLocalizationsPl extends AppLocalizations {
   String get reportReasonSpam => 'Spam lub niechciana treść';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Nagabywanie, zniesławianie lub groźby';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Treści brutalne lub ekstremistyczne';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => 'Treści seksualne lub dla dorosłych';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Naruszenie praw autorskich';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => 'Fałszywe informacje';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Naruszenie bezpieczeństwa dzieci';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'Treść wygenerowana przez AI';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Inne naruszenie regulaminu';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4485,6 +4551,9 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Dowiedz się więcej';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6929,17 +6998,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Usuń';
-
-  @override
-  String get metadataCaptionsLabel => 'Napisy';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Napisy włączone dla wszystkich filmów';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Napisy wyłączone dla wszystkich filmów';
 
   @override
   String get fullscreenFeedRemovedMessage => 'Film usunięty';

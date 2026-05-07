@@ -9,6 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/watermark_image_generator.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -62,6 +63,14 @@ class WatermarkDownloadPermissionDenied extends WatermarkDownloadResult {
   /// Creates a [WatermarkDownloadPermissionDenied].
   const WatermarkDownloadPermissionDenied();
 }
+
+/// File extensions recognised as playable video files when validating a
+/// previously cached download. Anything else (e.g. a `.bin` file from an
+/// interrupted download) is evicted and re-fetched.
+const _videoExtensions = <String>{'.mp4', '.mov', '.webm', '.mkv', '.m4v'};
+
+String _redownloadCacheKey(String videoId) =>
+    '$videoId-redownload-${DateTime.now().microsecondsSinceEpoch}';
 
 /// Service that downloads a video, applies a Divine watermark, and saves
 /// the result to the device gallery.
@@ -231,15 +240,40 @@ class WatermarkDownloadService {
 
   /// Downloads or retrieves the cached video file.
   Future<File?> _getVideoFile(VideoEvent video) async {
-    // Check cache first
+    var cacheKey = video.id;
+
+    // Check cache first — only use it when the file has a recognised video
+    // extension.  Stale entries from older app versions (or interrupted
+    // downloads) can leave a `.bin` file on disk that ProVideoEditor cannot
+    // read.  Evicting the bad entry lets the next cacheFile() call perform a
+    // clean network download.
     final cachedFile = _mediaCache.getCachedFileSync(video.id);
     if (cachedFile != null && cachedFile.existsSync()) {
-      Log.debug(
-        'Using cached video file',
+      final ext = p.extension(cachedFile.path).toLowerCase();
+      if (_videoExtensions.contains(ext)) {
+        Log.debug(
+          'Using cached video file',
+          name: _logName,
+          category: LogCategory.video,
+        );
+        return cachedFile;
+      }
+
+      Log.warning(
+        'Cached file has invalid extension "$ext", evicting and re-downloading',
         name: _logName,
         category: LogCategory.video,
       );
-      return cachedFile;
+      try {
+        await _mediaCache.removeCachedFile(video.id);
+      } catch (e) {
+        Log.warning(
+          'Failed to evict invalid cached video file: $e',
+          name: _logName,
+          category: LogCategory.video,
+        );
+        cacheKey = _redownloadCacheKey(video.id);
+      }
     }
 
     // Resolve the playable URL and download
@@ -253,7 +287,7 @@ class WatermarkDownloadService {
       return null;
     }
 
-    final file = await _mediaCache.cacheFile(videoUrl, key: video.id);
+    final file = await _mediaCache.cacheFile(videoUrl, key: cacheKey);
 
     return file;
   }

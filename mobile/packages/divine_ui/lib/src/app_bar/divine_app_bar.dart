@@ -69,6 +69,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onLeadingPressed,
     this.leadingActionSemanticLabel = 'Leading action',
     this.actions = const [],
+    this.customActions = const [],
     this.backgroundMode = DiVineAppBarBackgroundMode.solid,
     this.gradient,
     this.backgroundColor,
@@ -209,6 +210,16 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Defaults to an empty list.
   final List<DiVineAppBarAction> actions;
 
+  /// Custom widgets rendered to the right of [actions] in the trailing slot.
+  ///
+  /// Use this for trailing controls that don't fit the typed
+  /// [DiVineAppBarAction] shape — popovers, dropdown menus, or bespoke
+  /// stateful widgets that own their own gesture and overlay layers.
+  /// Each widget keeps its natural size and is laid out in the same row
+  /// as the typed actions, separated by
+  /// [DiVineAppBarStyle.actionButtonSpacing].
+  final List<Widget> customActions;
+
   /// The background rendering mode.
   ///
   /// Defaults to [DiVineAppBarBackgroundMode.solid].
@@ -304,13 +315,33 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
         titleSuffix: titleSuffix,
         style: effectiveStyle,
       ),
-      actions: actions.isEmpty
+      actions: (actions.isEmpty && customActions.isEmpty)
           ? null
           : [
-              DiVineAppBarActions(
-                actions: actions,
-                style: effectiveStyle,
-              ),
+              if (actions.isNotEmpty)
+                DiVineAppBarActions(
+                  actions: actions,
+                  style: effectiveStyle,
+                ),
+              if (customActions.isNotEmpty)
+                Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    end: effectiveStyle.horizontalPadding,
+                    start: actions.isEmpty
+                        ? 0
+                        : effectiveStyle.actionButtonSpacing,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (var i = 0; i < customActions.length; i++) ...[
+                        if (i > 0)
+                          SizedBox(width: effectiveStyle.actionButtonSpacing),
+                        customActions[i],
+                      ],
+                    ],
+                  ),
+                ),
             ],
     );
 

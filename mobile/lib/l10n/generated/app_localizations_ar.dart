@@ -1079,6 +1079,18 @@ class AppLocalizationsAr extends AppLocalizations {
       'اضغط للتشغيل أو الإيقاف المؤقت. اضغط مرتين للإعجاب.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'تحذير محتوى';
 
   @override
@@ -1383,6 +1395,18 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'مشاركة';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'حول';
@@ -3899,6 +3923,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد مستخدمون متابَعون.\nتابِع شخصًا ما لترى مقاطع الفيديو هنا.';
 
   @override
+  String get feedModeForYou => 'لك';
+
+  @override
+  String get feedModeNew => 'جديد';
+
+  @override
+  String get feedModeFollowing => 'المتابَعون';
+
+  @override
   String get feedForYouEmpty =>
       'خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.';
 
@@ -4287,28 +4320,61 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportReasonSpam => 'محتوى غير مرغوب فيه أو مزعج';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'تحرُّش أو تنمُّر أو تهديدات';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'محتوى عنيف أو متطرف';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => 'محتوى جنسي أو للبالغين';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'انتهاك حقوق الملكية';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => 'معلومات كاذبة';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'انتهاك سلامة الأطفال';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'محتوى مُولَّد بالذكاء الاصطناعي';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'انتهاك آخر للسياسة';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4328,6 +4394,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'اعرف المزيد';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6708,17 +6777,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'إزالة';
-
-  @override
-  String get metadataCaptionsLabel => 'التسميات التوضيحية';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'التسميات التوضيحية مفعّلة لجميع مقاطع الفيديو';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'التسميات التوضيحية معطّلة لجميع مقاطع الفيديو';
 
   @override
   String get fullscreenFeedRemovedMessage => 'تمت إزالة الفيديو';

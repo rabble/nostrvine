@@ -123,6 +123,7 @@ extension PauseAwareModals on BuildContext {
     bool useRootNavigator = true,
     bool tapOutsideToDismiss = true,
     Widget Function(BuildContext context, Widget child)? contentWrapper,
+    DraggableScrollableController? draggableController,
   }) {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
@@ -172,6 +173,7 @@ extension PauseAwareModals on BuildContext {
       useRootNavigator: useRootNavigator,
       tapOutsideToDismiss: tapOutsideToDismiss,
       contentWrapper: contentWrapper,
+      draggableController: draggableController,
       onShow: () => overlayNotifier.setBottomSheetOpen(true),
       onDismiss: () => overlayNotifier.setBottomSheetOpen(false),
     );

@@ -219,6 +219,21 @@ class VineTheme {
         color: color,
       );
 
+  /// Caption pill: Chivo Mono 300 16/24/0.5 — used by the inline subtitle
+  /// pill above the author row in the home / fullscreen video overlays.
+  /// Intentionally mono per the Figma captions block, distinct from the
+  /// app's Inter / Bricolage Grotesque body families. Callers add the
+  /// `shadow25` drop shadow via `.copyWith(shadows: ...)` when rendering
+  /// over video content.
+  static TextStyle captionPillFont({Color color = whiteText}) =>
+      GoogleFonts.chivoMono(
+        fontSize: 16,
+        fontWeight: FontWeight.w300,
+        height: 24 / 16,
+        letterSpacing: 0.5,
+        color: color,
+      );
+
   /// Status bar style for dark backgrounds: light icons on both platforms.
   ///
   /// [SystemUiOverlayStyle.light] uses `statusBarBrightness: Brightness.light`
@@ -477,6 +492,11 @@ class VineTheme {
 
   /// Pressed-state inner shadow for buttons (24% black).
   static const Color innerShadowPressed = Color(0x3D000000);
+
+  /// Figma `effects/shadow-25` drop-shadow color (25% black). Use as the
+  /// color for [Shadow] / [BoxShadow] drops on elements layered above
+  /// video content (caption pills, floating popups, etc.).
+  static const Color shadow25 = Color(0x40000000);
 
   /// Figma `effects/shadow-10` drop-shadow pair, for use in
   /// [TextStyle.shadows] on text overlaid on video content or other

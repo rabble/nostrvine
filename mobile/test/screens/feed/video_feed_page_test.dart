@@ -20,6 +20,7 @@ import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
@@ -1004,7 +1005,9 @@ void main() {
       );
     }
 
-    testWidgets('shows Auto action in the home feed overlay', (tester) async {
+    testWidgets('exposes the playback-mode toggle in the settings popover', (
+      tester,
+    ) async {
       final videos = createVideos();
 
       await tester.pumpWidget(
@@ -1014,7 +1017,15 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AutoActionButton), findsWidgets);
+      // Settings menu is mounted in the home feed top bar.
+      expect(find.byType(FeedSettingsMenu), findsOneWidget);
+
+      // Open the popover and confirm the playback-mode toggle renders.
+      await _openSettingsMenu(tester);
+      expect(
+        find.bySemanticsLabel('Enable auto advance'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('advances to the next home video after one completed play', (
@@ -1032,9 +1043,8 @@ void main() {
       );
       await tester.pump();
 
-      final autoButton = find.byType(AutoActionButton).last;
-      await tester.ensureVisible(autoButton);
-      await tester.tap(autoButton, warnIfMissed: false);
+      await _openSettingsMenu(tester);
+      await tester.tap(find.bySemanticsLabel('Enable auto advance'));
       await tester.pump();
 
       positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1061,7 +1071,8 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.byType(AutoActionButton).first);
+      await _openSettingsMenu(tester);
+      await tester.tap(find.bySemanticsLabel('Enable auto advance'));
       await tester.pump();
 
       await tester.tap(find.byType(LikeActionButton).first);
@@ -1076,4 +1087,14 @@ void main() {
       verifyNever(() => videoFeedController.onPageChanged(1));
     });
   });
+}
+
+Future<void> _openSettingsMenu(WidgetTester tester) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byType(FeedSettingsMenu),
+      matching: find.bySemanticsLabel('Open playback settings'),
+    ),
+  );
+  await tester.pump();
 }

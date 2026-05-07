@@ -11,24 +11,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
-import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
-import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/utils/pause_aware_modals.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
-import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
-import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
-import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_author_info_section.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
-import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -44,14 +33,10 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     required this.isActive,
     required this.pagePosition,
     required this.index,
-    required this.feedController,
     this.player,
     this.firstFrameFuture,
     this.listSources,
     this.onContentWarningRevealed,
-    this.showAutoButton = false,
-    this.isAutoEnabled = false,
-    this.onAutoPressed,
     this.onInteracted,
     super.key,
   });
@@ -62,7 +47,6 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   /// Fractional page position from [PooledVideoFeed.onScrollOffsetChanged].
   /// Used to compute scroll-driven overlay opacity matching the fullscreen feed.
   final ValueNotifier<double> pagePosition;
-  final VideoFeedController? feedController;
 
   /// The index of this item in the feed, used with [pagePosition] to compute
   /// the scroll distance for opacity.
@@ -73,9 +57,6 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   /// Called when the user reveals a content-warning overlay.
   final VoidCallback? onContentWarningRevealed;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -199,16 +180,9 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
         ),
         if (widget.player != null)
           PausedVideoPlayOverlay(
-            onToggleMuteState: () => widget.feedController?.toggleMuteState(),
             player: widget.player!,
             firstFrameFuture: widget.firstFrameFuture,
             isVisible: widget.isActive,
-          ),
-        // Subtitle overlay — Positioned.fill gives the inner Stack a size
-        // so SubtitleOverlay's Positioned can resolve correctly.
-        if (video.hasSubtitles && widget.player != null)
-          Positioned.fill(
-            child: _SubtitleLayer(video: video, player: widget.player!),
           ),
         // Scroll-faded overlay: author info, badges, and action buttons all
         // fade together as the user swipes to the next video.
@@ -224,26 +198,27 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           },
           child: Stack(
             children: [
-              // Author info and description (bottom-left)
+              // Author info, captions, and description (bottom-left)
               PositionedDirectional(
-                bottom: 16 + safeAreaBottom,
+                bottom: 20 + safeAreaBottom,
                 start: 16,
                 end: 80,
-                child: _AuthorInfoSection(
+                child: VideoAuthorInfoSection(
                   video: video,
                   hasTextContent: hasTextContent,
+                  player: widget.player,
                   onInteracted: widget.onInteracted,
                 ),
               ),
               // Action buttons column (bottom-right)
               PositionedDirectional(
-                bottom: 16 + safeAreaBottom,
-                end: 16,
-                child: _ActionButtons(
+                bottom: 20 + safeAreaBottom,
+                // Right inset matches the trailing inset on the home top
+                // bar's More popover (12 px) so the column lines up with
+                // the popover icon above it.
+                end: 12,
+                child: VideoOverlayActionColumn(
                   video: video,
-                  showAutoButton: widget.showAutoButton,
-                  isAutoEnabled: widget.isAutoEnabled,
-                  onAutoPressed: widget.onAutoPressed,
                   onInteracted: widget.onInteracted,
                 ),
               ),
@@ -251,248 +226,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _AuthorInfoSection extends ConsumerWidget {
-  const _AuthorInfoSection({
-    required this.video,
-    required this.hasTextContent,
-    this.onInteracted,
-  });
-
-  final VideoEvent video;
-  final bool hasTextContent;
-  final VoidCallback? onInteracted;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(userProfileReactiveProvider(video.pubkey)).value;
-    final avatarUrl = profile?.picture ?? video.authorAvatar;
-    final displayName =
-        profile?.bestDisplayName ??
-        video.authorName ??
-        UserProfile.generatedNameFor(video.pubkey);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Avatar and name row
-        Row(
-          children: [
-            _AuthorAvatar(
-              pubkey: video.pubkey,
-              avatarUrl: avatarUrl,
-              onInteracted: onInteracted,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  onInteracted?.call();
-                  final npub = normalizeToNpub(video.pubkey);
-                  if (npub != null) {
-                    context.pushWithVideoPause(
-                      OtherProfileScreen.pathForNpub(npub),
-                    );
-                  }
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Semantics(
-                      identifier: 'video_author_name',
-                      container: true,
-                      explicitChildNodes: true,
-                      label: 'Video author: $displayName',
-                      child: Text(
-                        displayName,
-                        style: VineTheme.titleSmallFont(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text(
-                      context.l10n.videoFeedLoopCountLine(
-                        StringUtils.formatCompactNumber(video.totalLoops),
-                        video.totalLoops,
-                      ),
-                      style: VineTheme.labelSmallFont(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        // Video title and description (caption block)
-        if (hasTextContent) ...[
-          const SizedBox(height: 2),
-          // Title (when present)
-          if (video.title != null && video.title!.trim().isNotEmpty)
-            Semantics(
-              identifier: 'video_title',
-              container: true,
-              explicitChildNodes: true,
-              button: true,
-              label: context.l10n.videoOverlayOpenMetadataFromTitle,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  onInteracted?.call();
-                  MetadataExpandedSheet.show(context, video);
-                },
-                child: Text(
-                  video.displayTitle!.trim(),
-                  style: VineTheme.labelMediumFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-          // 4 px gap between title and description when both are present
-          // (matches the Figma caption block spacing).
-          if (video.title != null &&
-              video.title!.trim().isNotEmpty &&
-              video.content.trim().isNotEmpty)
-            const SizedBox(height: 4),
-          // Description (only when actual content exists — no title fallback,
-          // the title has its own row above).
-          if (video.content.trim().isNotEmpty)
-            Semantics(
-              identifier: 'video_description',
-              container: true,
-              explicitChildNodes: true,
-              button: true,
-              label: context.l10n.videoOverlayOpenMetadataFromDescription,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  onInteracted?.call();
-                  MetadataExpandedSheet.show(context, video);
-                },
-                child: ClickableHashtagText(
-                  text: video.displayContent.trim(),
-                  style: VineTheme.bodySmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
-                  hashtagStyle: VineTheme.bodySmallFont().copyWith(
-                    shadows: VineTheme.buttonShadows,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-        ],
-      ],
-    );
-  }
-}
-
-class _AuthorAvatar extends StatelessWidget {
-  const _AuthorAvatar({
-    required this.pubkey,
-    this.avatarUrl,
-    this.onInteracted,
-  });
-
-  final String pubkey;
-  final String? avatarUrl;
-  final VoidCallback? onInteracted;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: 58,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          UserAvatar(
-            imageUrl: avatarUrl,
-            placeholderSeed: pubkey,
-            size: 48,
-            semanticLabel: 'Author avatar',
-            onTap: () {
-              onInteracted?.call();
-              final npub = normalizeToNpub(pubkey);
-              if (npub != null) {
-                context.pushWithVideoPause(
-                  OtherProfileScreen.pathForNpub(npub),
-                );
-              }
-            },
-          ),
-          PositionedDirectional(
-            start: 31,
-            top: 31,
-            child: VideoFollowButton(pubkey: pubkey),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
-    required this.video,
-    this.showAutoButton = false,
-    this.isAutoEnabled = false,
-    this.onAutoPressed,
-    this.onInteracted,
-  });
-
-  final VideoEvent video;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
-  final VoidCallback? onAutoPressed;
-  final VoidCallback? onInteracted;
-
-  @override
-  Widget build(BuildContext context) => VideoOverlayActionColumn(
-    video: video,
-    showAutoButton: showAutoButton,
-    isAutoEnabled: isAutoEnabled,
-    onAutoPressed: onAutoPressed,
-    onInteracted: onInteracted,
-  );
-}
-
-/// Streams the player position and renders subtitle text.
-///
-/// Uses [Positioned.fill] + inner [Stack] so the [SubtitleOverlay]'s
-/// own [Positioned] resolves against a proper [Stack] ancestor.
-class _SubtitleLayer extends ConsumerWidget {
-  const _SubtitleLayer({required this.video, required this.player});
-
-  final VideoEvent video;
-  final Player player;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
-
-    return StreamBuilder<Duration>(
-      stream: player.stream.position,
-      builder: (context, snapshot) {
-        final positionMs = snapshot.data?.inMilliseconds ?? 0;
-        return Stack(
-          children: [
-            SubtitleOverlay(
-              video: video,
-              positionMs: positionMs,
-              visible: subtitlesVisible,
-              bottomOffset: 180,
-            ),
-          ],
-        );
-      },
     );
   }
 }

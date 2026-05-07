@@ -526,6 +526,22 @@
   "videoPlayerEditVideo": "Edit video",
   "videoPlayerEditVideoTooltip": "Edit video",
   "videoPlayerTapHint": "Tap to play or pause. Double tap to like.",
+  "videoSettingsMenuOpen": "Open playback settings",
+  "@videoSettingsMenuOpen": {
+    "description": "Semantic label for the More button in the home feed top bar that opens the playback-settings popover."
+  },
+  "videoSettingsMenuClose": "Close playback settings",
+  "@videoSettingsMenuClose": {
+    "description": "Semantic label for the More button in the home feed top bar when the playback-settings popover is open."
+  },
+  "videoSettingsCaptionsEnable": "Enable captions",
+  "@videoSettingsCaptionsEnable": {
+    "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off."
+  },
+  "videoSettingsCaptionsDisable": "Disable captions",
+  "@videoSettingsCaptionsDisable": {
+    "description": "Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on."
+  },
   "contentWarningLabel": "Content Warning",
   "contentWarningNudity": "Nudity",
   "contentWarningSexualContent": "Sexual Content",
@@ -667,8 +683,24 @@
   "videoActionAutoLabel": "Compilation",
   "videoActionLikeLabel": "Like",
   "videoActionReplyLabel": "Reply",
-  "videoActionRepostLabel": "Repost",
+  "videoActionRepostLabel": "Revine",
   "videoActionShareLabel": "Share",
+  "videoActionReportLabel": "Report",
+  "@videoActionReportLabel": {
+    "description": "Short caption shown beneath the Report icon in the video overlay action column."
+  },
+  "videoActionReport": "Report video",
+  "@videoActionReport": {
+    "description": "Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog."
+  },
+  "videoActionEditLabel": "Edit",
+  "@videoActionEditLabel": {
+    "description": "Short caption shown beneath the Edit icon in the video overlay action column. Only visible to the owner of the video."
+  },
+  "videoActionEdit": "Edit video",
+  "@videoActionEdit": {
+    "description": "Screen reader label for the Edit action button in the video overlay action column. Tapping opens the video edit dialog."
+  },
   "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",
@@ -2056,6 +2088,9 @@
   "feedFailedToLoadVideos": "Failed to load videos",
   "feedRetry": "Retry",
   "feedNoFollowedUsers": "No followed users.\nFollow someone to see their videos here.",
+  "feedModeForYou": "For You",
+  "feedModeNew": "New",
+  "feedModeFollowing": "Following",
   "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
   "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
   "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
@@ -2222,14 +2257,23 @@
   "reportOtherRequiresDetails": "Please describe the issue when selecting Other",
   "reportDetailsRequired": "Please describe the issue",
   "reportReasonSpam": "Spam or Unwanted Content",
+  "reportReasonSpamSubtitle": "Unwanted or repetitive content",
   "reportReasonHarassment": "Harassment, Bullying, or Threats",
+  "reportReasonHarassmentSubtitle": "Harmful and unwanted replies or mentions",
   "reportReasonViolence": "Violent or Extremist Content",
+  "reportReasonViolenceSubtitle": "Violent, extremist, or harmful content",
   "reportReasonSexualContent": "Sexual or Adult Content",
+  "reportReasonSexualContentSubtitle": "Nudity, porn, or explicit content",
   "reportReasonCopyright": "Copyright Violation",
+  "reportReasonCopyrightSubtitle": "Unauthorized use of intellectual property",
   "reportReasonFalseInfo": "False Information",
+  "reportReasonFalseInfoSubtitle": "Misleading or false claims",
   "reportReasonCsam": "Child Safety Violation",
+  "reportReasonCsamSubtitle": "Content that exploits or endangers minors",
   "reportReasonAiGenerated": "AI-Generated Content",
+  "reportReasonAiGeneratedSubtitle": "Suspected AI-generated content",
   "reportReasonOther": "Other Policy Violation",
+  "reportReasonOtherSubtitle": "Violations not listed above",
   "reportFailed": "Failed to report content: {error}",
   "@reportFailed": {
     "placeholders": {
@@ -2242,6 +2286,7 @@
   "reportReceivedThankYou": "Thank you for helping keep Divine safe.",
   "reportReceivedReviewNotice": "Our team will review your report and take appropriate action. You may receive updates via direct message.",
   "reportLearnMore": "Learn More",
+  "reportLearnMoreAt": "Learn more at",
   "reportSafetyUrl": "divine.video/safety",
   "reportClose": "Close",
   "listAddToList": "Add to List",
@@ -3620,18 +3665,6 @@
   "videoMetadataPausePreviewSemanticLabel": "Pause preview",
   "videoMetadataClosePreviewSemanticLabel": "Close video preview",
   "videoMetadataRemoveSemanticLabel": "Remove",
-  "metadataCaptionsLabel": "Captions",
-  "@metadataCaptionsLabel": {
-    "description": "Label for the global captions toggle in the video metadata sheet"
-  },
-  "metadataCaptionsEnabledSemantics": "Captions enabled for all videos",
-  "@metadataCaptionsEnabledSemantics": {
-    "description": "Screen reader label when the global captions toggle is on"
-  },
-  "metadataCaptionsDisabledSemantics": "Captions disabled for all videos",
-  "@metadataCaptionsDisabledSemantics": {
-    "description": "Screen reader label when the global captions toggle is off"
-  },
   "fullscreenFeedRemovedMessage": "Video removed",
   "@fullscreenFeedRemovedMessage": {
     "description": "Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link)."

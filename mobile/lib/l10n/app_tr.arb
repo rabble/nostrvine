@@ -1740,6 +1740,9 @@
     "feedFailedToLoadVideos": "Videolar yüklenemedi",
     "feedRetry": "Tekrar Dene",
     "feedNoFollowedUsers": "Takip edilen kullanıcı yok.\nVideolarını burada görmek için birini takip et.",
+    "feedModeForYou": "Senin için",
+    "feedModeNew": "Yeni",
+    "feedModeFollowing": "Takip",
     "feedForYouEmpty": "Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.",
     "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.",
     "feedLatestEmpty": "Henüz yeni video yok.\nYakında tekrar kontrol et.",
@@ -2957,9 +2960,6 @@
     "videoActionAutoLabel": "Otomatik",
     "videoActionEnableAutoAdvance": "Otomatik ilerlemeyi etkinleştir",
     "videoActionDisableAutoAdvance": "Otomatik ilerlemeyi devre dışı bırak",
-    "metadataCaptionsLabel": "Altyazılar",
-    "metadataCaptionsEnabledSemantics": "Tüm videolar için altyazılar etkin",
-    "metadataCaptionsDisabledSemantics": "Tüm videolar için altyazılar devre dışı",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

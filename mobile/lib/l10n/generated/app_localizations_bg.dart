@@ -1112,6 +1112,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Докоснете за пускане или пауза. Докоснете два пъти, за да харесате.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
 
   @override
@@ -1422,6 +1434,18 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'Сподели';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'Инфо';
@@ -3986,6 +4010,15 @@ class AppLocalizationsBg extends AppLocalizations {
       'Още не следваш никого.\nПоследвай някого, за да виждаш видеата му тук.';
 
   @override
+  String get feedModeForYou => 'За теб';
+
+  @override
+  String get feedModeNew => 'Ново';
+
+  @override
+  String get feedModeFollowing => 'Следвани';
+
+  @override
   String get feedForYouEmpty =>
       'Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.';
 
@@ -4380,29 +4413,62 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Тормоз, малтретиране или заплахи';
 
   @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
+
+  @override
   String get reportReasonViolence => 'Насилствено или екстремистко съдържание';
+
+  @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
 
   @override
   String get reportReasonSexualContent =>
       'Сексуално съдържание или съдържание за възрастни';
 
   @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
+
+  @override
   String get reportReasonCopyright => 'Нарушаване на авторски права';
+
+  @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
 
   @override
   String get reportReasonFalseInfo => 'Невярна информация';
 
   @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+
+  @override
   String get reportReasonCsam => 'Нарушение на безопасността на детето';
+
+  @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
 
   @override
   String get reportReasonAiGenerated => 'AI-генерирано съдържание';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Друго нарушение на правилата';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4422,6 +4488,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Научи повече';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6857,17 +6926,6 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Премахни';
-
-  @override
-  String get metadataCaptionsLabel => 'Надписи';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Субтитрите са включени за всички видеа';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Субтитрите са изключени за всички видеа';
 
   @override
   String get fullscreenFeedRemovedMessage => 'Видеото е премахнато';

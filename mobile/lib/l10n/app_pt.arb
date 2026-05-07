@@ -1743,6 +1743,9 @@
     "feedFailedToLoadVideos": "Falha ao carregar vídeos",
     "feedRetry": "Tentar novamente",
     "feedNoFollowedUsers": "Nenhum usuário seguido.\nSiga alguém para ver os vídeos dessa pessoa aqui.",
+    "feedModeForYou": "Para você",
+    "feedModeNew": "Novo",
+    "feedModeFollowing": "Seguindo",
     "feedForYouEmpty": "Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.",
     "feedFollowingEmpty": "Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.",
     "feedLatestEmpty": "Ainda não há vídeos novos.\nVolte em breve.",
@@ -2955,9 +2958,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Pausar prévia",
     "videoMetadataClosePreviewSemanticLabel": "Fechar prévia do vídeo",
     "videoMetadataRemoveSemanticLabel": "Remover",
-    "metadataCaptionsLabel": "Legendas",
-    "metadataCaptionsEnabledSemantics": "Legendas ativadas para todos os vídeos",
-    "metadataCaptionsDisabledSemantics": "Legendas desativadas para todos os vídeos",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

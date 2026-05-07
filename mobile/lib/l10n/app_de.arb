@@ -1743,6 +1743,9 @@
     "feedFailedToLoadVideos": "Videos konnten nicht geladen werden",
     "feedRetry": "Erneut versuchen",
     "feedNoFollowedUsers": "Keine abonnierten Nutzer.\nFolge jemandem, um hier seine Videos zu sehen.",
+    "feedModeForYou": "Für dich",
+    "feedModeNew": "Neu",
+    "feedModeFollowing": "Abonniert",
     "feedForYouEmpty": "Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creator:innen, um ihn zu personalisieren.",
     "feedFollowingEmpty": "Noch keine Videos von Personen, denen du folgst.\nFinde Creator:innen, die dir gefallen, und folge ihnen.",
     "feedLatestEmpty": "Noch keine neuen Videos.\nSchau bald wieder vorbei.",
@@ -2955,9 +2958,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Vorschau pausieren",
     "videoMetadataClosePreviewSemanticLabel": "Videovorschau schließen",
     "videoMetadataRemoveSemanticLabel": "Entfernen",
-    "metadataCaptionsLabel": "Untertitel",
-    "metadataCaptionsEnabledSemantics": "Untertitel für alle Videos aktiviert",
-    "metadataCaptionsDisabledSemantics": "Untertitel für alle Videos deaktiviert",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {
@@ -3258,9 +3258,9 @@
     "commonClose": "Schließen",
     "categoryGalleryNoVideosInCategory": "Keine Videos in dieser Kategorie",
     "categoryGallerySortOptionsLabel": "Sortieroptionen für Kategorie",
-    "categoryGallerySortHot": "Hot",
+    "categoryGallerySortHot": "Beliebt",
     "categoryGallerySortNew": "Neu",
-    "categoryGallerySortClassic": "Classic",
+    "categoryGallerySortClassic": "Klassiker",
     "categoryGallerySortForYou": "Für dich",
     "categoriesNoCategoriesAvailable": "Keine Kategorien verfügbar",
     "notificationsEmptyTitle": "Hier ist noch nichts los",

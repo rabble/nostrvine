@@ -1019,6 +1019,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerTapHint => 'タップで再生・一時停止。ダブルタップでいいね。';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'コンテンツ警告';
 
   @override
@@ -1310,6 +1322,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'シェア';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => '詳細';
@@ -3746,6 +3770,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedNoFollowedUsers => 'まだ誰もフォローしてないよ。\n誰かをフォローすると、ここに動画が出るよ。';
 
   @override
+  String get feedModeForYou => 'おすすめ';
+
+  @override
+  String get feedModeNew => '新着';
+
+  @override
+  String get feedModeFollowing => 'フォロー中';
+
+  @override
   String get feedForYouEmpty =>
       'おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。';
 
@@ -4128,28 +4161,61 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportReasonSpam => 'スパムや迷惑なコンテンツ';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => '嫌がらせ、いじめ、脅迫';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => '暴力的・過激なコンテンツ';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => '性的・成人向けコンテンツ';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => '著作権侵害';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => '虚偽の情報';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => '子どもの安全に関する違反';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'AI 生成コンテンツ';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'その他のポリシー違反';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4168,6 +4234,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'もっと詳しく';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6494,15 +6563,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => '削除';
-
-  @override
-  String get metadataCaptionsLabel => '字幕';
-
-  @override
-  String get metadataCaptionsEnabledSemantics => 'すべての動画で字幕が有効になっています';
-
-  @override
-  String get metadataCaptionsDisabledSemantics => 'すべての動画で字幕が無効になっています';
 
   @override
   String get fullscreenFeedRemovedMessage => '動画を削除しました';

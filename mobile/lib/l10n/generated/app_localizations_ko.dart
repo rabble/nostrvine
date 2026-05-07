@@ -1027,6 +1027,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerTapHint => '탭하여 재생하거나 일시정지하세요. 이중 탭으로 좋아요.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => '콘텐츠 경고';
 
   @override
@@ -1318,6 +1330,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => '공유';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => '정보';
@@ -3761,6 +3785,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedNoFollowedUsers => '팔로우한 사용자가 없어요.\n누군가를 팔로우하면 여기에 영상이 표시돼요.';
 
   @override
+  String get feedModeForYou => '추천';
+
+  @override
+  String get feedModeNew => '최신';
+
+  @override
+  String get feedModeFollowing => '팔로잉';
+
+  @override
   String get feedForYouEmpty =>
       '추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.';
 
@@ -4143,28 +4176,61 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => '괴롭힘, 따돌림, 협박';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => '폭력적이거나 극단적인 콘텐츠';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => '성적이거나 성인용 콘텐츠';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => '저작권 침해';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => '허위 정보';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => '아동 안전 위반';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'AI 생성 콘텐츠';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => '기타 정책 위반';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4183,6 +4249,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get reportLearnMore => '더 알아보기';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6518,15 +6587,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => '삭제';
-
-  @override
-  String get metadataCaptionsLabel => '자막';
-
-  @override
-  String get metadataCaptionsEnabledSemantics => '모든 동영상에서 자막이 활성화되었습니다';
-
-  @override
-  String get metadataCaptionsDisabledSemantics => '모든 동영상에서 자막이 비활성화되었습니다';
 
   @override
   String get fullscreenFeedRemovedMessage => '동영상이 삭제됐어요';

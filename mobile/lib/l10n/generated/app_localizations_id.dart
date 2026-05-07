@@ -1072,6 +1072,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Ketuk untuk memutar atau menjeda. Ketuk dua kali untuk menyukai.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Peringatan Konten';
 
   @override
@@ -1376,6 +1388,18 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'Bagikan';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'Tentang';
@@ -3911,6 +3935,15 @@ class AppLocalizationsId extends AppLocalizations {
       'Tidak ada pengguna yang diikuti.\nIkuti seseorang untuk melihat video mereka di sini.';
 
   @override
+  String get feedModeForYou => 'Untukmu';
+
+  @override
+  String get feedModeNew => 'Baru';
+
+  @override
+  String get feedModeFollowing => 'Mengikuti';
+
+  @override
   String get feedForYouEmpty =>
       'Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.';
 
@@ -4306,28 +4339,61 @@ class AppLocalizationsId extends AppLocalizations {
   String get reportReasonSpam => 'Spam atau Konten Tidak Diinginkan';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Pelecehan, Perundungan, atau Ancaman';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Konten Kekerasan atau Ekstremis';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => 'Konten Seksual atau Dewasa';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Pelanggaran Hak Cipta';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => 'Informasi Salah';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Pelanggaran Keamanan Anak';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'Konten Dihasilkan AI';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Pelanggaran Kebijakan Lainnya';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4347,6 +4413,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Pelajari Lebih Lanjut';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6748,17 +6817,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Hapus';
-
-  @override
-  String get metadataCaptionsLabel => 'Teks';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Teks diaktifkan untuk semua video';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Teks dinonaktifkan untuk semua video';
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video dihapus';

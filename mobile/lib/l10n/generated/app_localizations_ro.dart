@@ -1128,6 +1128,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Atinge pentru a reda sau întrerupe. Atinge de două ori pentru a aprecia.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Atenționare de conținut';
 
   @override
@@ -1436,6 +1448,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'Partajează';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'Despre';
@@ -4063,6 +4087,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun utilizator urmărit.\nUrmărește pe cineva ca să-i vezi videoclipurile aici.';
 
   @override
+  String get feedModeForYou => 'Pentru tine';
+
+  @override
+  String get feedModeNew => 'Nou';
+
+  @override
+  String get feedModeFollowing => 'Urmăresc';
+
+  @override
   String get feedForYouEmpty =>
       'Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.';
 
@@ -4461,28 +4494,61 @@ class AppLocalizationsRo extends AppLocalizations {
   String get reportReasonSpam => 'Spam sau conținut nedorit';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Hărțuire, bullying sau amenințări';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Conținut violent sau extremist';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => 'Conținut sexual sau pentru adulți';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Încălcarea dreptului de autor';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => 'Informații false';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Încălcarea siguranței copiilor';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'Conținut generat de AI';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Altă încălcare a politicii';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4502,6 +4568,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Află mai multe';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6951,17 +7020,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Elimină';
-
-  @override
-  String get metadataCaptionsLabel => 'Subtitrări';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Subtitrări activate pentru toate videoclipurile';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Subtitrări dezactivate pentru toate videoclipurile';
 
   @override
   String get fullscreenFeedRemovedMessage => 'Videoclip eliminat';

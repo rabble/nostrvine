@@ -1087,6 +1087,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Tryck för att spela eller pausa. Dubbeltryck för att gilla.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Innehållsvarning';
 
   @override
@@ -1396,6 +1408,18 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'Dela';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'Om';
@@ -3938,6 +3962,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga följda användare.\nFölj någon för att se deras videor här.';
 
   @override
+  String get feedModeForYou => 'För dig';
+
+  @override
+  String get feedModeNew => 'Nytt';
+
+  @override
+  String get feedModeFollowing => 'Följer';
+
+  @override
   String get feedForYouEmpty =>
       'Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.';
 
@@ -4331,28 +4364,61 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reportReasonSpam => 'Skräppost eller ovälkommet innehåll';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Trakasserier, mobbning eller hot';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Våldsamt eller extremistiskt innehåll';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => 'Sexuellt eller vuxeninnehåll';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Upphovsrättsbrott';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => 'Felaktig information';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Brott mot barns säkerhet';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'AI-genererat innehåll';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Annat policybrott';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4372,6 +4438,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Läs mer';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6778,17 +6847,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Ta bort';
-
-  @override
-  String get metadataCaptionsLabel => 'Undertexter';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Undertexter aktiverade för alla videor';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Undertexter inaktiverade för alla videor';
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video borttagen';

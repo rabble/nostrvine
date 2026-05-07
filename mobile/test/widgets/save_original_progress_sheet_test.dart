@@ -31,6 +31,9 @@ VideoEvent _createTestVideo() => VideoEvent(
 );
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('en'));
+  final l10nDe = lookupAppLocalizations(const Locale('de'));
+
   late _MockWatermarkDownloadService mockService;
   late _MockPermissionsService mockPermissions;
 
@@ -106,7 +109,9 @@ void main() {
 
       // Should show progress indicator
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Downloading Video'), findsOneWidget);
+      expect(find.text(l10n.saveOriginalDownloadingVideo), findsOneWidget);
+      // Prove the widget actually reads from l10n
+      expect(find.text(l10nDe.saveOriginalDownloadingVideo), findsNothing);
     });
 
     testWidgets('shows success state with share button', (tester) async {
@@ -130,9 +135,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show success state
-      expect(find.text('Saved to Camera Roll'), findsOneWidget);
-      expect(find.text('Share'), findsOneWidget);
-      expect(find.text('Done'), findsOneWidget);
+      expect(find.text(l10n.saveOriginalSavedToCameraRoll), findsOneWidget);
+      expect(find.text(l10n.saveOriginalShare), findsOneWidget);
+      expect(find.text(l10n.saveOriginalDone), findsOneWidget);
     });
 
     testWidgets('shows permission denied state', (tester) async {
@@ -154,9 +159,9 @@ void main() {
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Photos Access Needed'), findsOneWidget);
-      expect(find.text('Open Settings'), findsOneWidget);
-      expect(find.text('Not Now'), findsOneWidget);
+      expect(find.text(l10n.saveOriginalPhotosAccessNeeded), findsOneWidget);
+      expect(find.text(l10n.saveOriginalOpenSettings), findsOneWidget);
+      expect(find.text(l10n.saveOriginalNotNow), findsOneWidget);
     });
 
     testWidgets('shows failure state with reason', (tester) async {
@@ -174,9 +179,9 @@ void main() {
       await tester.tap(find.text('Show Sheet'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Download Failed'), findsOneWidget);
+      expect(find.text(l10n.saveOriginalDownloadFailed), findsOneWidget);
       expect(find.text('Network timeout'), findsOneWidget);
-      expect(find.text('Dismiss'), findsOneWidget);
+      expect(find.text(l10n.saveOriginalDismiss), findsOneWidget);
     });
 
     testWidgets('dismiss button closes the sheet', (tester) async {
@@ -195,11 +200,131 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap dismiss
-      await tester.tap(find.text('Dismiss'));
+      await tester.tap(find.text(l10n.saveOriginalDismiss));
       await tester.pumpAndSettle();
 
       // Sheet should be closed
-      expect(find.text('Download Failed'), findsNothing);
+      expect(find.text(l10n.saveOriginalDownloadFailed), findsNothing);
     });
+
+    testWidgets(
+      'Open Settings retries download after app resumes from settings',
+      (tester) async {
+        when(
+          () => mockPermissions.openAppSettings(),
+        ).thenAnswer((_) async => true);
+
+        // First call: permission denied. Second call (retry): success.
+        var callCount = 0;
+        when(
+          () => mockService.downloadOriginal(
+            video: any(named: 'video'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          callCount++;
+          final onProgress =
+              invocation.namedArguments[#onProgress]
+                  as void Function(OriginalSaveStage);
+          onProgress(OriginalSaveStage.downloading);
+          if (callCount == 1) {
+            return const WatermarkDownloadPermissionDenied();
+          }
+          onProgress(OriginalSaveStage.saving);
+          return const WatermarkDownloadSuccess('/tmp/video.mp4');
+        });
+
+        await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+        await tester.tap(find.text('Show Sheet'));
+        await tester.pumpAndSettle();
+
+        // Permission denied UI is showing
+        expect(
+          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text(l10n.saveOriginalOpenSettings));
+        await tester.pump();
+
+        // openAppSettings() returns when Settings opens, so the sheet should
+        // wait for the app to resume before retrying.
+        expect(callCount, equals(1));
+        expect(
+          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pumpAndSettle();
+
+        // Should now show success (retry succeeded)
+        expect(
+          find.text(l10n.saveOriginalSavedToCameraRoll),
+          findsOneWidget,
+        );
+        expect(find.text(l10n.saveOriginalPhotosAccessNeeded), findsNothing);
+        expect(callCount, equals(2));
+      },
+    );
+
+    testWidgets(
+      'Open Settings shows loading indicator while resumed retry is in progress',
+      (tester) async {
+        when(
+          () => mockPermissions.openAppSettings(),
+        ).thenAnswer((_) async => true);
+
+        final retryCompleter = Completer<WatermarkDownloadResult>();
+        var callCount = 0;
+
+        when(
+          () => mockService.downloadOriginal(
+            video: any(named: 'video'),
+            onProgress: any(named: 'onProgress'),
+          ),
+        ).thenAnswer((invocation) async {
+          callCount++;
+          final onProgress =
+              invocation.namedArguments[#onProgress]
+                  as void Function(OriginalSaveStage);
+          onProgress(OriginalSaveStage.downloading);
+          if (callCount == 1) {
+            return const WatermarkDownloadPermissionDenied();
+          }
+          return retryCompleter.future;
+        });
+
+        await tester.pumpWidget(buildTestWidget(video: _createTestVideo()));
+        await tester.tap(find.text('Show Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        // Tap Open Settings
+        await tester.tap(find.text(l10n.saveOriginalOpenSettings));
+        await tester.pump();
+
+        expect(callCount, equals(1));
+        expect(
+          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
+        // Sheet should be in loading/processing state during retry
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(callCount, equals(2));
+      },
+    );
   });
 }

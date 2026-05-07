@@ -1976,6 +1976,30 @@ abstract class AppLocalizations {
   /// **'Tap to play or pause. Double tap to like.'**
   String get videoPlayerTapHint;
 
+  /// Semantic label for the More button in the home feed top bar that opens the playback-settings popover.
+  ///
+  /// In en, this message translates to:
+  /// **'Open playback settings'**
+  String get videoSettingsMenuOpen;
+
+  /// Semantic label for the More button in the home feed top bar when the playback-settings popover is open.
+  ///
+  /// In en, this message translates to:
+  /// **'Close playback settings'**
+  String get videoSettingsMenuClose;
+
+  /// Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently off.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable captions'**
+  String get videoSettingsCaptionsEnable;
+
+  /// Semantic label for the closed-captions toggle in the playback-settings popover when captions are currently on.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable captions'**
+  String get videoSettingsCaptionsDisable;
+
   /// No description provided for @contentWarningLabel.
   ///
   /// In en, this message translates to:
@@ -2519,7 +2543,7 @@ abstract class AppLocalizations {
   /// No description provided for @videoActionRepostLabel.
   ///
   /// In en, this message translates to:
-  /// **'Repost'**
+  /// **'Revine'**
   String get videoActionRepostLabel;
 
   /// No description provided for @videoActionShareLabel.
@@ -2527,6 +2551,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share'**
   String get videoActionShareLabel;
+
+  /// Short caption shown beneath the Report icon in the video overlay action column.
+  ///
+  /// In en, this message translates to:
+  /// **'Report'**
+  String get videoActionReportLabel;
+
+  /// Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Report video'**
+  String get videoActionReport;
+
+  /// Short caption shown beneath the Edit icon in the video overlay action column. Only visible to the owner of the video.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get videoActionEditLabel;
+
+  /// Screen reader label for the Edit action button in the video overlay action column. Tapping opens the video edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit video'**
+  String get videoActionEdit;
 
   /// No description provided for @videoActionAboutLabel.
   ///
@@ -6912,6 +6960,24 @@ abstract class AppLocalizations {
   /// **'No followed users.\nFollow someone to see their videos here.'**
   String get feedNoFollowedUsers;
 
+  /// No description provided for @feedModeForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For You'**
+  String get feedModeForYou;
+
+  /// No description provided for @feedModeNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get feedModeNew;
+
+  /// No description provided for @feedModeFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get feedModeFollowing;
+
   /// No description provided for @feedForYouEmpty.
   ///
   /// In en, this message translates to:
@@ -7638,11 +7704,23 @@ abstract class AppLocalizations {
   /// **'Spam or Unwanted Content'**
   String get reportReasonSpam;
 
+  /// No description provided for @reportReasonSpamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unwanted or repetitive content'**
+  String get reportReasonSpamSubtitle;
+
   /// No description provided for @reportReasonHarassment.
   ///
   /// In en, this message translates to:
   /// **'Harassment, Bullying, or Threats'**
   String get reportReasonHarassment;
+
+  /// No description provided for @reportReasonHarassmentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Harmful and unwanted replies or mentions'**
+  String get reportReasonHarassmentSubtitle;
 
   /// No description provided for @reportReasonViolence.
   ///
@@ -7650,11 +7728,23 @@ abstract class AppLocalizations {
   /// **'Violent or Extremist Content'**
   String get reportReasonViolence;
 
+  /// No description provided for @reportReasonViolenceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Violent, extremist, or harmful content'**
+  String get reportReasonViolenceSubtitle;
+
   /// No description provided for @reportReasonSexualContent.
   ///
   /// In en, this message translates to:
   /// **'Sexual or Adult Content'**
   String get reportReasonSexualContent;
+
+  /// No description provided for @reportReasonSexualContentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudity, porn, or explicit content'**
+  String get reportReasonSexualContentSubtitle;
 
   /// No description provided for @reportReasonCopyright.
   ///
@@ -7662,11 +7752,23 @@ abstract class AppLocalizations {
   /// **'Copyright Violation'**
   String get reportReasonCopyright;
 
+  /// No description provided for @reportReasonCopyrightSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unauthorized use of intellectual property'**
+  String get reportReasonCopyrightSubtitle;
+
   /// No description provided for @reportReasonFalseInfo.
   ///
   /// In en, this message translates to:
   /// **'False Information'**
   String get reportReasonFalseInfo;
+
+  /// No description provided for @reportReasonFalseInfoSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Misleading or false claims'**
+  String get reportReasonFalseInfoSubtitle;
 
   /// No description provided for @reportReasonCsam.
   ///
@@ -7674,17 +7776,35 @@ abstract class AppLocalizations {
   /// **'Child Safety Violation'**
   String get reportReasonCsam;
 
+  /// No description provided for @reportReasonCsamSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Content that exploits or endangers minors'**
+  String get reportReasonCsamSubtitle;
+
   /// No description provided for @reportReasonAiGenerated.
   ///
   /// In en, this message translates to:
   /// **'AI-Generated Content'**
   String get reportReasonAiGenerated;
 
+  /// No description provided for @reportReasonAiGeneratedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspected AI-generated content'**
+  String get reportReasonAiGeneratedSubtitle;
+
   /// No description provided for @reportReasonOther.
   ///
   /// In en, this message translates to:
   /// **'Other Policy Violation'**
   String get reportReasonOther;
+
+  /// No description provided for @reportReasonOtherSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Violations not listed above'**
+  String get reportReasonOtherSubtitle;
 
   /// No description provided for @reportFailed.
   ///
@@ -7715,6 +7835,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Learn More'**
   String get reportLearnMore;
+
+  /// No description provided for @reportLearnMoreAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Learn more at'**
+  String get reportLearnMoreAt;
 
   /// No description provided for @reportSafetyUrl.
   ///
@@ -11943,24 +12069,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove'**
   String get videoMetadataRemoveSemanticLabel;
-
-  /// Label for the global captions toggle in the video metadata sheet
-  ///
-  /// In en, this message translates to:
-  /// **'Captions'**
-  String get metadataCaptionsLabel;
-
-  /// Screen reader label when the global captions toggle is on
-  ///
-  /// In en, this message translates to:
-  /// **'Captions enabled for all videos'**
-  String get metadataCaptionsEnabledSemantics;
-
-  /// Screen reader label when the global captions toggle is off
-  ///
-  /// In en, this message translates to:
-  /// **'Captions disabled for all videos'**
-  String get metadataCaptionsDisabledSemantics;
 
   /// Empty-state message shown in the fullscreen feed when the last visible video has just been deleted, blocked, or muted and the route cannot be popped back to a parent (e.g. a cold deep-link).
   ///

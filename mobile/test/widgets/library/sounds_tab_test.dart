@@ -92,16 +92,19 @@ void main() {
       await pumpSoundsTab(
         tester,
         showAudioPicker: (_) async =>
-            _sound(id: 'wednesday', title: 'Wednesday'),
+            _sound(id: 'wednesday', title: 'Wednesday My Dudes'),
       );
 
       await tester.tap(find.text('Add audio'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Wednesday'), findsOneWidget);
+      expect(find.text('Wednesday My Dudes'), findsOneWidget);
 
       final savedSounds = SavedSoundsService(sharedPreferences).loadSounds();
-      expect(savedSounds.map((sound) => sound.title), contains('Wednesday'));
+      expect(
+        savedSounds.map((sound) => sound.title),
+        contains('Wednesday My Dudes'),
+      );
     });
 
     testWidgets('shows empty state when no sounds have been saved', (

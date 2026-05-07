@@ -1743,6 +1743,9 @@
     "feedFailedToLoadVideos": "Kunde inte läsa in videor",
     "feedRetry": "Försök igen",
     "feedNoFollowedUsers": "Inga följda användare.\nFölj någon för att se deras videor här.",
+    "feedModeForYou": "För dig",
+    "feedModeNew": "Nytt",
+    "feedModeFollowing": "Följer",
     "feedForYouEmpty": "Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.",
     "feedFollowingEmpty": "Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.",
     "feedLatestEmpty": "Inga nya videor än.\nTitta in igen snart.",
@@ -2955,9 +2958,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Pausa förhandsvisning",
     "videoMetadataClosePreviewSemanticLabel": "Stäng videoförhandsvisning",
     "videoMetadataRemoveSemanticLabel": "Ta bort",
-    "metadataCaptionsLabel": "Undertexter",
-    "metadataCaptionsEnabledSemantics": "Undertexter aktiverade för alla videor",
-    "metadataCaptionsDisabledSemantics": "Undertexter inaktiverade för alla videor",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

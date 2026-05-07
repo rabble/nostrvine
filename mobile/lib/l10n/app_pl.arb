@@ -1743,6 +1743,9 @@
     "feedFailedToLoadVideos": "Nie udało się wczytać filmów",
     "feedRetry": "Spróbuj ponownie",
     "feedNoFollowedUsers": "Nie obserwujesz nikogo.\nZacznij obserwować, żeby zobaczyć ich filmy tutaj.",
+    "feedModeForYou": "Dla ciebie",
+    "feedModeNew": "Nowe",
+    "feedModeFollowing": "Obserwowane",
     "feedForYouEmpty": "Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.",
     "feedFollowingEmpty": "Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.",
     "feedLatestEmpty": "Brak nowych filmów.\nWróć tu wkrótce.",
@@ -2955,9 +2958,6 @@
     "videoMetadataPausePreviewSemanticLabel": "Wstrzymaj podgląd",
     "videoMetadataClosePreviewSemanticLabel": "Zamknij podgląd wideo",
     "videoMetadataRemoveSemanticLabel": "Usuń",
-    "metadataCaptionsLabel": "Napisy",
-    "metadataCaptionsEnabledSemantics": "Napisy włączone dla wszystkich filmów",
-    "metadataCaptionsDisabledSemantics": "Napisy wyłączone dla wszystkich filmów",
     "@metadataLoopsLabel": {
         "placeholders": {
             "count": {

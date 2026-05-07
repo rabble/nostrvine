@@ -30,6 +30,7 @@ import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart
 import 'package:openvine/screens/feed/feed_auto_advance_coordinator.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_error_listener.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_age_restricted_retry.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -38,7 +39,6 @@ import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/feed_videos.dart';
@@ -46,6 +46,7 @@ import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart'
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_author_info_section.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
@@ -62,6 +63,14 @@ import 'package:video_player/video_player.dart';
 @visibleForTesting
 Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return isPortrait ? Alignment.center : Alignment.topCenter;
+}
+
+@visibleForTesting
+double fullscreenContainedVideoTopInset({
+  required double safeAreaTop,
+  bool isPortrait = false,
+}) {
+  return isPortrait ? 0 : safeAreaTop + DiVineAppBarStyle.defaultStyle.height;
 }
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
@@ -399,32 +408,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = nextVideos;
   }
 
-  /// Whether auto-advance is available on this build. Reduced-motion users
-  /// keep the control and runtime disabled regardless of in-app toggle state.
-  bool _isAutoAdvanceAvailable() {
-    if (!mounted) return false;
-    return !MediaQuery.disableAnimationsOf(context);
-  }
-
   void _handleBack(BuildContext context) {
     if (context.canPop()) {
       context.pop();
       return;
     }
     context.go('/');
-  }
-
-  void _toggleAutoAdvance() {
-    if (!_isAutoAdvanceAvailable()) return;
-
-    _autoAdvanceCubit.toggle();
-    if (!_autoAdvanceCubit.state.isEffectivelyActive) {
-      _autoAdvanceCubit.clearPendingPaginationAdvance();
-    }
-    announceAutoAdvanceToggle(
-      context,
-      enabled: _autoAdvanceCubit.state.enabled,
-    );
   }
 
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
@@ -743,10 +732,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 currentUserPubkey != null &&
                 currentUserPubkey == state.currentVideo?.pubkey;
 
-            final featureFlagService = ref.watch(featureFlagServiceProvider);
-            final isEditorEnabled = featureFlagService.isEnabled(
-              FeatureFlag.enableVideoEditorV1,
-            );
             // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
             final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
@@ -756,23 +741,8 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
               context,
             );
-            final effectiveAutoEnabled =
-                autoAdvanceAvailable && autoState.enabled;
             final effectiveAutoActive =
                 autoAdvanceAvailable && autoState.isEffectivelyActive;
-
-            final currentVideo = state.currentVideo;
-            final editAction =
-                isEditorEnabled && isOwnVideo && currentVideo != null
-                ? DiVineAppBarAction(
-                    icon: SvgIconSource(
-                      DivineIconName.pencilSimpleLine.assetPath,
-                    ),
-                    onPressed: () =>
-                        showEditDialogForVideo(context, currentVideo),
-                    semanticLabel: 'Edit video',
-                  )
-                : null;
 
             // Wire the NIP-98 auth header provider into WebVideoFeed only
             // when running on web AND the HLS auth web player flag is on.
@@ -796,7 +766,20 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
-                actions: [?editAction],
+                // Back button sits 8 px from the left edge of the screen
+                // (4 px tighter than the previous 12). The More popover on
+                // the trailing side keeps its 12 px gap by wrapping the
+                // FeedSettingsMenu in an extra `end: 4` padding inside the
+                // customActions slot.
+                customActions: const [
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(end: 4),
+                    child: FeedSettingsMenu(),
+                  ),
+                ],
+                style: DiVineAppBarStyle.transparentStyle.copyWith(
+                  horizontalPadding: 8,
+                ),
               ),
               body: InfiniteVideoFeed.isSupported
                   ? FeedVideos(
@@ -863,9 +846,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                               isOwnVideo: currentUserPubkey == video.pubkey,
                               controller: controller,
                               contextTitle: widget.contextTitle,
-                              showAutoButton: autoAdvanceAvailable,
-                              isAutoEnabled: effectiveAutoEnabled,
-                              onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
                           },
@@ -930,10 +910,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                               trafficSource: widget.trafficSource,
                               sourceDetail: widget.sourceDetail,
                               isOwnVideo: isOwnVideo,
-                              showAutoButton: autoAdvanceAvailable,
-                              isAutoEnabled: effectiveAutoEnabled,
                               isAutoAdvanceActive: effectiveAutoActive,
-                              onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                               onAutoAdvanceCompleted:
                                   _handleAutoAdvanceCompleted,
@@ -955,13 +932,10 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     required this.isAutoAdvanceActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
-    this.onAutoPressed,
     this.onInteracted,
     this.onAutoAdvanceCompleted,
   });
@@ -971,13 +945,10 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final bool isAutoAdvanceActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
   final VoidCallback? onAutoAdvanceCompleted;
 
@@ -1020,10 +991,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         isOwnVideo: isOwnVideo,
-        showAutoButton: showAutoButton,
-        isAutoEnabled: isAutoEnabled,
         isAutoAdvanceActive: isAutoAdvanceActive,
-        onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
         onAutoAdvanceCompleted: onAutoAdvanceCompleted,
       ),
@@ -1036,22 +1004,16 @@ class _WebFullscreenItem extends ConsumerWidget {
     required this.video,
     required this.isActive,
     required this.isOwnVideo,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     this.controller,
     this.contextTitle,
-    this.onAutoPressed,
     this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isActive;
   final bool isOwnVideo;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final VideoPlayerController? controller;
   final String? contextTitle;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -1094,9 +1056,6 @@ class _WebFullscreenItem extends ConsumerWidget {
             contextTitle: contextTitle,
             isFullscreen: true,
             topOffset: isOwnVideo ? 64 : 8,
-            showAutoButton: showAutoButton,
-            isAutoEnabled: isAutoEnabled,
-            onAutoPressed: onAutoPressed,
             onInteracted: onInteracted,
           ),
         ],
@@ -1112,13 +1071,10 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     required this.isAutoAdvanceActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
-    this.onAutoPressed,
     this.onInteracted,
     this.onAutoAdvanceCompleted,
   });
@@ -1128,13 +1084,10 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final bool isAutoAdvanceActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
   final VoidCallback? onAutoAdvanceCompleted;
 
@@ -1309,8 +1262,9 @@ class _PooledFullscreenItemContentState
                   children: [
                     if (player != null)
                       PausedVideoPlayOverlay(
-                        onToggleMuteState: () =>
-                            feedController?.toggleMuteState(),
+                        // Mute toggle intentionally omitted: the popover in
+                        // the app bar's customActions slot is now the sole
+                        // entry point, matching the home feed.
                         player: player,
                         firstFrameFuture:
                             videoController?.waitUntilFirstFrameRendered,
@@ -1339,12 +1293,36 @@ class _PooledFullscreenItemContentState
                           contextTitle: widget.contextTitle,
                           isFullscreen: true,
                           topOffset: widget.isOwnVideo ? 64 : 8,
-                          showAutoButton: widget.showAutoButton,
-                          isAutoEnabled: widget.isAutoEnabled,
-                          onAutoPressed: widget.onAutoPressed,
                           onInteracted: widget.onInteracted,
+                          // The shared [VideoAuthorInfoSection] below renders
+                          // the author block + inline caption pill, matching
+                          // the home feed overlay exactly. Suppress the
+                          // legacy inline column so they don't double up.
+                          omitAuthorBlock: true,
                         );
                       },
+                    ),
+                    // Bottom-left metadata container — author avatar/name,
+                    // optional inline caption pill, and title/description.
+                    // Positioned to match the home feed overlay's baseline
+                    // (20 px above the safe-area bottom, 16 px from the
+                    // start, 80 px from the end to clear the action column).
+                    PositionedDirectional(
+                      bottom: 20 + MediaQuery.viewPaddingOf(context).bottom,
+                      start: 16,
+                      end: 80,
+                      child: AnimatedOpacity(
+                        opacity: widget.isActive ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: VideoAuthorInfoSection(
+                          video: video,
+                          hasTextContent:
+                              video.content.isNotEmpty ||
+                              (video.title != null && video.title!.isNotEmpty),
+                          player: player,
+                          onInteracted: widget.onInteracted,
+                        ),
+                      ),
                     ),
                     Positioned.fill(
                       child: DoubleTapHeartOverlay(trigger: _heartTrigger),
@@ -1377,11 +1355,15 @@ class _FittedVideoPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
     final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
+    final topInset = fullscreenContainedVideoTopInset(
+      safeAreaTop: MediaQuery.viewPaddingOf(context).top,
+      isPortrait: isPortrait,
+    );
 
     // Do not set filterQuality to high — on Android the bicubic
     // interpolation causes visible blur on the Texture widget when
     // the video resolution doesn't match the display size exactly.
-    return Video(
+    final video = Video(
       controller: videoController,
       fit: boxFit,
       alignment: alignment,
@@ -1389,6 +1371,11 @@ class _FittedVideoPlayer extends StatelessWidget {
       width: videoWidth,
       height: videoHeight,
       fill: const Color(0x00000000),
+    );
+    if (topInset == 0) return video;
+    return Padding(
+      padding: EdgeInsets.only(top: topInset),
+      child: video,
     );
   }
 }
@@ -1403,9 +1390,13 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
     final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
+    final topInset = fullscreenContainedVideoTopInset(
+      safeAreaTop: MediaQuery.viewPaddingOf(context).top,
+      isPortrait: isPortrait,
+    );
     final url = thumbnailUrl;
 
-    return Stack(
+    final placeholder = Stack(
       fit: StackFit.expand,
       children: [
         // Thumbnail background (if available)
@@ -1422,6 +1413,11 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
         // Loading indicator overlay
         const _LoadingIndicator(),
       ],
+    );
+    if (topInset == 0) return placeholder;
+    return Padding(
+      padding: EdgeInsets.only(top: topInset),
+      child: placeholder,
     );
   }
 }

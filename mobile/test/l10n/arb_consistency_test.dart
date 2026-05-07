@@ -238,11 +238,6 @@ const _knownUntranslatedDebt = {
   'curatedListFailedToLoad',
   'curatedListNoVideosAvailable',
   'curatedListVideoNotAvailable',
-  'categoryGallerySortOptionsLabel',
-  'categoryGallerySortHot',
-  'categoryGallerySortNew',
-  'categoryGallerySortClassic',
-  'categoryGallerySortForYou',
   'appsPermissionsTitle',
   'appsPermissionsEmptyTitle',
   'appsPermissionsEmptySubtitle',
@@ -346,7 +341,40 @@ const _knownUntranslatedDebt = {
   'badgesIssuedNoRecipients',
   'badgesRecipientAcceptedStatus',
   'badgesRecipientWaitingStatus',
+  // Added by the home-feed playback-settings popover (auto-advance / mute /
+  // captions toggles). Translators will pick these up in a follow-up pass;
+  // until then non-English locales fall back to the English source.
+  'videoSettingsMenuOpen',
+  'videoSettingsMenuClose',
+  'videoSettingsCaptionsEnable',
+  'videoSettingsCaptionsDisable',
+  // Added by the Report action button on the video overlay (renamed from
+  // Repost → Revine). English ships; other locales fall back until a pass.
+  'videoActionReportLabel',
+  'videoActionReport',
+  // Added by the Edit action button on the fullscreen video overlay
+  // (replaces the per-video Compilation slot when viewing your own video).
+  // English ships; translators will pick these up in a follow-up pass.
+  'videoActionEditLabel',
+  'videoActionEdit',
+  // Added by the Apple-compliance pass on the Report bottom sheet — each
+  // reason now has a one-line subtitle clarifying scope. English ships;
+  // translators will pick these up in a follow-up pass.
+  'reportReasonSpamSubtitle',
+  'reportReasonHarassmentSubtitle',
+  'reportReasonViolenceSubtitle',
+  'reportReasonSexualContentSubtitle',
+  'reportReasonCopyrightSubtitle',
+  'reportReasonFalseInfoSubtitle',
+  'reportReasonCsamSubtitle',
+  'reportReasonAiGeneratedSubtitle',
+  'reportReasonOtherSubtitle',
+  // Added by the in-sheet Report confirmation state ("Learn more at
+  // divine.video/safety" link). Falls back to English in non-English
+  // locales until translated.
+  'reportLearnMoreAt',
 };
+
 Map<String, Object?> _readArb(File file) {
   return (jsonDecode(file.readAsStringSync()) as Map).cast<String, Object?>();
 }

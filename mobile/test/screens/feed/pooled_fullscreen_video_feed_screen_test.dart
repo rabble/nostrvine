@@ -25,6 +25,7 @@ import 'package:openvine/features/feature_flags/services/build_configuration.dar
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_settings_menu.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/media_viewer_auth_service.dart';
@@ -230,6 +231,20 @@ void main() {
         expect(
           fullscreenVideoMediaAlignment(isPortrait: true),
           Alignment.center,
+        );
+      });
+
+      test('places contained videos below the fullscreen app header', () {
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54),
+          54 + DiVineAppBarStyle.defaultStyle.height,
+        );
+      });
+
+      test('does not offset portrait videos that cover the viewport', () {
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54, isPortrait: true),
+          0,
         );
       });
     });
@@ -1381,7 +1396,25 @@ void main() {
         await positionController.close();
       });
 
-      testWidgets('shows Auto action in the fullscreen overlay', (
+      // Auto-advance is triggered through the playback-settings popover
+      // (mounted in the fullscreen app bar's customActions slot) rather
+      // than a per-video AutoActionButton. This helper opens the popover
+      // and taps the playback-mode toggle so behavior tests can enable
+      // auto-advance the same way a user would.
+      Future<void> enableAutoAdvanceViaPopover(WidgetTester tester) async {
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.byType(FeedSettingsMenu));
+        // Single-frame pump rather than pumpAndSettle: the position stream
+        // continually emits in these tests, so pumpAndSettle never sees an
+        // idle frame and times out.
+        await tester.pump();
+        await tester.tap(
+          find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+        );
+        await tester.pump();
+      }
+
+      testWidgets('mounts the playback settings popover trigger', (
         tester,
       ) async {
         final videos = createTestVideos();
@@ -1396,7 +1429,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(AutoActionButton), findsWidgets);
+        expect(find.byType(FeedSettingsMenu), findsOneWidget);
       });
 
       testWidgets('advances to the next video after one completed play', (
@@ -1417,7 +1450,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1451,7 +1484,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1483,7 +1516,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         positionController.add(const Duration(seconds: 4, milliseconds: 500));
@@ -1515,7 +1548,7 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.byType(AutoActionButton).first);
+        await enableAutoAdvanceViaPopover(tester);
         await tester.pump();
 
         await tester.tap(find.byType(LikeActionButton).first);

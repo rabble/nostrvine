@@ -1110,6 +1110,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'Toca para reproducir o pausar. Toca dos veces para dar me gusta.';
 
   @override
+  String get videoSettingsMenuOpen => 'Open playback settings';
+
+  @override
+  String get videoSettingsMenuClose => 'Close playback settings';
+
+  @override
+  String get videoSettingsCaptionsEnable => 'Enable captions';
+
+  @override
+  String get videoSettingsCaptionsDisable => 'Disable captions';
+
+  @override
   String get contentWarningLabel => 'Advertencia de contenido';
 
   @override
@@ -1420,6 +1432,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoActionShareLabel => 'Compartir';
+
+  @override
+  String get videoActionReportLabel => 'Report';
+
+  @override
+  String get videoActionReport => 'Report video';
+
+  @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
 
   @override
   String get videoActionAboutLabel => 'Acerca de';
@@ -3986,6 +4010,15 @@ class AppLocalizationsEs extends AppLocalizations {
       'Todavía no seguís a nadie.\nSeguí a alguien para ver sus videos acá.';
 
   @override
+  String get feedModeForYou => 'Para ti';
+
+  @override
+  String get feedModeNew => 'Nuevo';
+
+  @override
+  String get feedModeFollowing => 'Siguiendo';
+
+  @override
   String get feedForYouEmpty =>
       'Tu feed Para ti está vacío.\nExplora videos y sigue a creadores para personalizarlo.';
 
@@ -4380,28 +4413,61 @@ class AppLocalizationsEs extends AppLocalizations {
   String get reportReasonSpam => 'Spam o contenido no deseado';
 
   @override
+  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+
+  @override
   String get reportReasonHarassment => 'Acoso, bullying o amenazas';
+
+  @override
+  String get reportReasonHarassmentSubtitle =>
+      'Harmful and unwanted replies or mentions';
 
   @override
   String get reportReasonViolence => 'Contenido violento o extremista';
 
   @override
+  String get reportReasonViolenceSubtitle =>
+      'Violent, extremist, or harmful content';
+
+  @override
   String get reportReasonSexualContent => 'Contenido sexual o adulto';
+
+  @override
+  String get reportReasonSexualContentSubtitle =>
+      'Nudity, porn, or explicit content';
 
   @override
   String get reportReasonCopyright => 'Infracción de derechos de autor';
 
   @override
+  String get reportReasonCopyrightSubtitle =>
+      'Unauthorized use of intellectual property';
+
+  @override
   String get reportReasonFalseInfo => 'Información falsa';
+
+  @override
+  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
 
   @override
   String get reportReasonCsam => 'Violación de la seguridad infantil';
 
   @override
+  String get reportReasonCsamSubtitle =>
+      'Content that exploits or endangers minors';
+
+  @override
   String get reportReasonAiGenerated => 'Contenido generado por IA';
 
   @override
+  String get reportReasonAiGeneratedSubtitle =>
+      'Suspected AI-generated content';
+
+  @override
   String get reportReasonOther => 'Otra violación de políticas';
+
+  @override
+  String get reportReasonOtherSubtitle => 'Violations not listed above';
 
   @override
   String reportFailed(Object error) {
@@ -4421,6 +4487,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get reportLearnMore => 'Conocé más';
+
+  @override
+  String get reportLearnMoreAt => 'Learn more at';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -5472,7 +5541,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Opciones de orden de la categoría';
 
   @override
-  String get categoryGallerySortHot => 'Hot';
+  String get categoryGallerySortHot => 'Populares';
 
   @override
   String get categoryGallerySortNew => 'Nuevos';
@@ -6856,17 +6925,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get videoMetadataRemoveSemanticLabel => 'Eliminar';
-
-  @override
-  String get metadataCaptionsLabel => 'Subtítulos';
-
-  @override
-  String get metadataCaptionsEnabledSemantics =>
-      'Subtítulos activados para todos los vídeos';
-
-  @override
-  String get metadataCaptionsDisabledSemantics =>
-      'Subtítulos desactivados para todos los vídeos';
 
   @override
   String get fullscreenFeedRemovedMessage => 'Video eliminado';

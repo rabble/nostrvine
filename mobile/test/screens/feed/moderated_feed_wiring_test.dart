@@ -131,7 +131,6 @@ void main() {
               video: testVideo,
               isActive: true,
               pagePosition: pagePosition,
-              feedController: null,
               index: 0,
               player: mockPlayer,
             ),
