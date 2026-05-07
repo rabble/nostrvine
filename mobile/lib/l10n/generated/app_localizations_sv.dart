@@ -3967,6 +3967,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get feedModeFollowing => 'Följer';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Feed mode: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Video author: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+
+  @override
   String get feedForYouEmpty =>
       'Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.';
 

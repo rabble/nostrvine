@@ -4019,6 +4019,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get feedModeFollowing => 'Abonniert';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Feed mode: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Video author: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+
+  @override
   String get feedForYouEmpty =>
       'Dein Für-dich-Feed ist leer.\nEntdecke Videos und folge Creator:innen, um ihn zu personalisieren.';
 

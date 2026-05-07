@@ -6972,6 +6972,24 @@ abstract class AppLocalizations {
   /// **'Following'**
   String get feedModeFollowing;
 
+  /// No description provided for @feedModeSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed mode: {label}'**
+  String feedModeSemanticLabel(String label);
+
+  /// No description provided for @videoAuthorSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Video author: {displayName}'**
+  String videoAuthorSemanticLabel(String displayName);
+
+  /// No description provided for @videoAuthorAvatarSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Author avatar'**
+  String get videoAuthorAvatarSemanticLabel;
+
   /// No description provided for @feedForYouEmpty.
   ///
   /// In en, this message translates to:

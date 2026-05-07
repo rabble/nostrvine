@@ -4013,6 +4013,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get feedModeFollowing => 'Seguiti';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Feed mode: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Video author: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+
+  @override
   String get feedForYouEmpty =>
       'Il tuo feed Per te è vuoto.\nEsplora i video e segui i creator per personalizzarlo.';
 
