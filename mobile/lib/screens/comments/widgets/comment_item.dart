@@ -64,6 +64,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.5);
+    final commentContent = widget.comment.content.trim();
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: GestureDetector(
@@ -139,25 +140,12 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             parentAuthorPubkey:
                                 widget.comment.replyToAuthorPubkey!,
                           ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top:
-                                widget.depth == 0 &&
-                                    widget.comment.replyToAuthorPubkey != null
-                                ? 4
-                                : 0,
-                          ),
-                          child: _CommentContent(
-                            commentId: widget.comment.id,
-                            content: widget.comment.content,
-                          ),
-                        ),
                         if (widget.comment.hasVideo) ...[
                           const SizedBox(height: 12),
                           Align(
                             alignment: Alignment.centerLeft,
                             child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 180),
+                              constraints: const BoxConstraints(maxWidth: 248),
                               child: VideoCommentPlayer(
                                 videoUrl: widget.comment.videoUrl!,
                                 thumbnailUrl: widget.comment.thumbnailUrl,
@@ -165,7 +153,27 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                               ),
                             ),
                           ),
-                        ],
+                          if (commentContent.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _CommentContent(
+                              commentId: widget.comment.id,
+                              content: commentContent,
+                            ),
+                          ],
+                        ] else
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top:
+                                  widget.depth == 0 &&
+                                      widget.comment.replyToAuthorPubkey != null
+                                  ? 4
+                                  : 0,
+                            ),
+                            child: _CommentContent(
+                              commentId: widget.comment.id,
+                              content: commentContent,
+                            ),
+                          ),
                         const SizedBox(height: 12),
                         _ActionsRow(
                           commentId: widget.comment.id,

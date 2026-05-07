@@ -22,7 +22,9 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/router/navigator_keys.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/collaborator_invite_service.dart';
@@ -410,6 +412,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       final publishmentProcess = publishService.publishVideo(
         draft: publishDraft,
       );
+      final isVideoReply = publishDraft.videoReplyContext != null;
       backgroundPublishBloc.add(
         BackgroundPublishRequested(
           draft: publishDraft,
@@ -417,14 +420,25 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         ),
       );
 
-      // Navigate to current user's profile
-      final authService = ref.read(authServiceProvider);
-      final currentNpub = authService.currentNpub;
-      if (currentNpub != null && context.mounted) {
-        context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+      if (isVideoReply) {
+        ref.read(videoReplyContextProvider.notifier).clear();
+      }
+
+      if (context.mounted && isVideoReply) {
+        context.go(VideoFeedPage.pathForIndex(0));
         // Clear editor state after navigation animation completes (~350ms)
         // Draft is already saved for background upload
         Future.delayed(const Duration(milliseconds: 600), clearAll);
+      } else {
+        // Navigate to current user's profile
+        final authService = ref.read(authServiceProvider);
+        final currentNpub = authService.currentNpub;
+        if (currentNpub != null && context.mounted) {
+          context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+          // Clear editor state after navigation animation completes (~350ms)
+          // Draft is already saved for background upload
+          Future.delayed(const Duration(milliseconds: 600), clearAll);
+        }
       }
 
       final result = await publishmentProcess;

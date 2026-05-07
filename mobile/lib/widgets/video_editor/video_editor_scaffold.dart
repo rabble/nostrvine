@@ -2,14 +2,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_overlay_controls.dart';
@@ -29,14 +26,14 @@ const _switchDuration = Duration(milliseconds: 240);
 /// - A main editor area that displays the video with proper aspect ratio
 /// - Overlay controls positioned on top of the video
 /// - A bottom bar for additional controls (e.g., timeline, tools)
-class VideoEditorScaffold extends ConsumerWidget {
+class VideoEditorScaffold extends StatelessWidget {
   /// Creates a [VideoEditorScaffold].
   const VideoEditorScaffold({required this.isLoading, super.key});
 
   final bool isLoading;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyle,
       child: Scaffold(
@@ -56,42 +53,10 @@ class VideoEditorScaffold extends ConsumerWidget {
                     const VideoEditorCanvas(),
 
                   const _OverlayControls(),
-                  const _VideoReplyProgressOverlay(),
                 ],
               ),
             ),
             const _TimelineSection(),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _VideoReplyProgressOverlay extends ConsumerWidget {
-  const _VideoReplyProgressOverlay();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isVideoReply = ref.watch(videoReplyContextProvider) != null;
-    final isProcessing = ref.watch(
-      videoEditorProvider.select((state) => state.isProcessing),
-    );
-
-    if (!isVideoReply || !isProcessing) return const SizedBox.shrink();
-
-    return ColoredBox(
-      color: VineTheme.scrim80,
-      child: Center(
-        child: Column(
-          mainAxisSize: .min,
-          spacing: 16,
-          children: [
-            const CircularProgressIndicator(color: VineTheme.primary),
-            Text(
-              'Posting reply...',
-              style: VineTheme.titleSmallFont(),
-            ),
           ],
         ),
       ),

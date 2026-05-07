@@ -17,6 +17,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
@@ -67,6 +68,10 @@ const Duration _outerPublishTimeoutCeiling = Duration(seconds: 60);
 /// at N=6) but large enough to absorb realistic dispatch overhead on
 /// cold-start without erosion as the relay count grows.
 const Duration _outerPublishTimeoutBuffer = RelayPool.perRelaySendTimeout;
+
+/// NIP-22 comment kind used for parent reply references when a video event is
+/// published as a comment reply.
+const int _commentKind = 1111;
 
 /// Computes the outer timeout that bounds the call into
 /// [NostrClient.publishEvent] inside `_publishEventToNostr`.
@@ -151,6 +156,44 @@ class VideoEventPublisher {
   /// this getter has no side effects.
   Duration get currentOuterPublishTimeout =>
       outerPublishTimeoutFor(_nostrService.configuredRelayCount);
+
+  void _addReplyTags(List<List<String>> tags, VideoReplyContext context) {
+    tags
+      ..add(['E', context.rootEventId, '', context.rootAuthorPubkey])
+      ..add(['K', context.rootEventKind.toString()])
+      ..add(['P', context.rootAuthorPubkey]);
+
+    final rootAddressableId = context.rootAddressableId;
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      tags.add(['A', rootAddressableId, '']);
+    }
+
+    final parentCommentId = context.parentCommentId;
+    if (parentCommentId != null && parentCommentId.isNotEmpty) {
+      tags
+        ..add([
+          'e',
+          parentCommentId,
+          '',
+          context.parentAuthorPubkey ?? context.rootAuthorPubkey,
+        ])
+        ..add(['k', _commentKind.toString()])
+        ..add([
+          'p',
+          context.parentAuthorPubkey ?? context.rootAuthorPubkey,
+        ]);
+      return;
+    }
+
+    tags
+      ..add(['e', context.rootEventId, '', context.rootAuthorPubkey])
+      ..add(['k', context.rootEventKind.toString()])
+      ..add(['p', context.rootAuthorPubkey]);
+
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      tags.add(['a', rootAddressableId, '']);
+    }
+  }
 
   /// Initialize the publisher
   Future<void> initialize() async {
@@ -419,6 +462,7 @@ class VideoEventPublisher {
     String? selectedAudioRelay,
     String? language,
     String? contentWarning,
+    VideoReplyContext? replyContext,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -439,6 +483,7 @@ class VideoEventPublisher {
       selectedAudioRelay: selectedAudioRelay,
       language: language,
       contentWarning: contentWarning,
+      replyContext: replyContext,
     );
   }
 
@@ -455,6 +500,7 @@ class VideoEventPublisher {
     String? selectedAudioRelay,
     String? language,
     String? contentWarning,
+    VideoReplyContext? replyContext,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -500,6 +546,10 @@ class VideoEventPublisher {
           upload.videoId ??
           '${DateTime.now().millisecondsSinceEpoch}_${upload.id}';
       tags.add(['d', dTag]);
+
+      if (replyContext != null) {
+        _addReplyTags(tags, replyContext);
+      }
 
       // Build imeta tag components
       final imetaComponents = <String>[];

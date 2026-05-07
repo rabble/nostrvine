@@ -1,4 +1,4 @@
-// ABOUTME: Repository for managing comments (Kind 1111 NIP-22) on Nostr.
+// ABOUTME: Repository for managing NIP-22 text comments and video replies.
 // ABOUTME: Provides loading, posting, and streaming of threaded comments.
 // ABOUTME: Uses NostrClient for relay operations and organizes comments
 // chronologically.
@@ -16,13 +16,20 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 /// Kind 1111 is the NIP-22 comment kind for replying to non-Kind-1 events.
 const int _commentKind = EventKind.comment;
 
+/// Comments sheets also include NIP-71 short video events when they carry
+/// NIP-22 root/parent reply tags.
+const List<int> _commentThreadKinds = [
+  _commentKind,
+  EventKind.videoVertical,
+];
+
 /// Kind 5 is the NIP-09 deletion request kind.
 const int _deletionKind = EventKind.eventDeletion;
 
 /// Default limit for comment queries.
 const _defaultLimit = 100;
 
-/// Repository for managing comments (Kind 1111 NIP-22) on Nostr events.
+/// Repository for managing comments and video replies on Nostr events.
 ///
 /// This repository provides a unified interface for:
 /// - Loading comments with thread structure
@@ -130,7 +137,7 @@ class CommentsRepository {
 
       // NIP-22: Filter by Kind 1111 and uppercase E tag for root scope
       final filterByE = Filter(
-        kinds: const [_commentKind],
+        kinds: _commentThreadKinds,
         uppercaseE: [rootEventId],
         limit: limit,
         until: untilTimestamp,
@@ -142,7 +149,7 @@ class CommentsRepository {
       // Some clients may reference addressable events using A instead of E
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
         final filterByA = Filter(
-          kinds: const [_commentKind],
+          kinds: _commentThreadKinds,
           uppercaseA: [rootAddressableId],
           limit: limit,
           until: untilTimestamp,
@@ -325,7 +332,7 @@ class CommentsRepository {
     try {
       // NIP-22: Filter by Kind 1111 and uppercase E tag
       final filterByE = Filter(
-        kinds: const [_commentKind],
+        kinds: _commentThreadKinds,
         uppercaseE: [rootEventId],
       );
 
@@ -334,7 +341,7 @@ class CommentsRepository {
       // If we have an addressable ID, also query by uppercase A tag
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
         final filterByA = Filter(
-          kinds: const [_commentKind],
+          kinds: _commentThreadKinds,
           uppercaseA: [rootAddressableId],
         );
 
@@ -464,13 +471,13 @@ class CommentsRepository {
 
       final filters = <Filter>[
         Filter(
-          kinds: const [_commentKind],
+          kinds: _commentThreadKinds,
           uppercaseE: [rootEventId],
           since: sinceTimestamp,
         ),
         if (rootAddressableId != null && rootAddressableId.isNotEmpty)
           Filter(
-            kinds: const [_commentKind],
+            kinds: _commentThreadKinds,
             uppercaseA: [rootAddressableId],
             since: sinceTimestamp,
           ),
@@ -531,7 +538,7 @@ class CommentsRepository {
           : null;
 
       final filter = Filter(
-        kinds: const [_commentKind],
+        kinds: _commentThreadKinds,
         authors: [authorPubkey],
         limit: limit,
         until: untilTimestamp,

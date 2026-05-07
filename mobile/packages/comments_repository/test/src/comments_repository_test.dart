@@ -154,6 +154,47 @@ void main() {
         verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
 
+      test('loads NIP-71 video reply events in the comments thread', () async {
+        final videoReplyEvent = _createCommentEvent(
+          id: 'video_reply',
+          kind: EventKind.videoVertical,
+          content: 'Reply title',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          extraTags: const [
+            ['imeta', 'url https://media.divine.video/video.mp4'],
+            ['title', 'Reply title'],
+            ['summary', 'Video reply summary'],
+          ],
+        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [videoReplyEvent],
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.id, equals('video_reply'));
+        expect(result.comments.first.hasVideo, isTrue);
+        expect(
+          result.comments.first.videoUrl,
+          equals('https://media.divine.video/video.mp4'),
+        );
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(captureAny()),
+                ).captured.single
+                as List<Filter>;
+        expect(captured.single.kinds, contains(EventKind.comment));
+        expect(captured.single.kinds, contains(EventKind.videoVertical));
+      });
+
       test('returns empty thread when no comments', () async {
         when(
           () => mockNostrClient.queryEvents(any()),
@@ -1898,8 +1939,10 @@ Event _createCommentEvent({
   required String rootEventId,
   required String rootAuthorPubkey,
   required int rootEventKind,
+  int kind = _commentKind,
   String? replyToEventId,
   String? replyToAuthorPubkey,
+  List<List<String>> extraTags = const [],
   int createdAt = 1000,
 }) {
   // NIP-22 tags:
@@ -1922,8 +1965,8 @@ Event _createCommentEvent({
       ['k', rootEventKind.toString()],
       ['p', rootAuthorPubkey],
     ],
+    ...extraTags,
   ];
 
-  return Event(pubkey, _commentKind, tags, content, createdAt: createdAt)
-    ..id = id;
+  return Event(pubkey, kind, tags, content, createdAt: createdAt)..id = id;
 }
