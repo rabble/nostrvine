@@ -8,20 +8,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:models/models.dart' show UserProfile;
+import 'package:nostr_sdk/nip19/nip19.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/search_results/view/search_results_page.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// A widget that displays text with clickable hashtags and nostr: mentions
+/// A widget that displays text with clickable hashtags and Nostr references.
 ///
-/// Parses both hashtags (#something) and nostr: URIs (nostr:npub..., nostr:nprofile...)
-/// and makes them tappable for navigation. Nostr mentions are displayed as @username
-/// if the profile is cached, otherwise as a truncated npub.
+/// Parses hashtags (#something), profile references (npub/nprofile/hex with a
+/// profile-like label), and event references (note/nevent/naddr/hex).
 class ClickableHashtagText extends ConsumerWidget {
   const ClickableHashtagText({
     required this.text,
@@ -32,6 +33,7 @@ class ClickableHashtagText extends ConsumerWidget {
     this.maxLines,
     this.overflow,
     this.onVideoStateChange,
+    this.onUrlTap,
   });
   final String text;
   final TextStyle? style;
@@ -40,20 +42,31 @@ class ClickableHashtagText extends ConsumerWidget {
   final int? maxLines;
   final TextOverflow? overflow;
   final Function()? onVideoStateChange;
+  final Future<void> Function(String rawUrl)? onUrlTap;
 
-  /// Regex to detect bare or `nostr:`-prefixed npub/nprofile mentions.
-  static final _nostrMentionRegex = RegExp(
-    r'(?<![A-Za-z0-9])(?:nostr:)?(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)\b',
+  /// Regex to detect Nostr profile and event references.
+  static final _nostrReferenceRegex = RegExp(
+    r'(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b',
     caseSensitive: false,
+  );
+
+  /// Regex to detect raw 32-byte hex references.
+  static final _hexReferenceRegex = RegExp(
+    '(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])',
   );
 
   /// Regex to detect plain @ mentions (legacy format from Vine)
   /// Matches @username where username is alphanumeric with underscores
   static final _plainMentionRegex = RegExp('@([a-zA-Z][a-zA-Z0-9_]{0,30})');
 
+  static final _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
   /// Regex to detect plain URLs and bare domains.
   static final _urlRegex = RegExp(
-    r'(https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)',
+    r'(?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})'
+    r'|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)',
     caseSensitive: false,
   );
 
@@ -65,12 +78,17 @@ class ClickableHashtagText extends ConsumerWidget {
 
     // Check if text contains any clickable/stylable elements
     final hasHashtags = HashtagExtractor.extractHashtags(text).isNotEmpty;
-    final hasNostrMentions = _nostrMentionRegex.hasMatch(text);
+    final hasNostrMentions = _nostrReferenceRegex.hasMatch(text);
+    final hasHexReferences = _hexReferenceRegex.hasMatch(text);
     final hasPlainMentions = _plainMentionRegex.hasMatch(text);
     final hasUrls = _urlRegex.hasMatch(text);
 
     // If no clickable elements, return simple text
-    if (!hasHashtags && !hasNostrMentions && !hasPlainMentions && !hasUrls) {
+    if (!hasHashtags &&
+        !hasNostrMentions &&
+        !hasHexReferences &&
+        !hasPlainMentions &&
+        !hasUrls) {
       return Text(text, style: style, maxLines: maxLines, overflow: overflow);
     }
 
@@ -99,12 +117,12 @@ class ClickableHashtagText extends ConsumerWidget {
     final profileStyle =
         mentionStyle ?? tagStyle.copyWith(fontWeight: FontWeight.w600);
 
-    // Combined regex to find URLs, hashtags, npub/nprofile mentions,
+    // Combined regex to find URLs, hashtags, Nostr references, hex references,
     // and plain @mentions.
     // Group 1: URL, Group 2: hashtag, Group 3: nostr ID,
-    // Group 4: plain mention username
+    // Group 4: hex reference, Group 5: plain mention username
     final combinedRegex = RegExp(
-      r'(https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)\b|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
+      r'((?:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})|(?:https?:\/\/[^\s]+|www\.[^\s]+|(?<![@\w])(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?))|#(\w+)|(?<![A-Za-z0-9])(?:nostr:)?((?:npub|nprofile|note|nevent|naddr)1[a-z0-9]+)\b|(?<![A-Fa-f0-9])([A-Fa-f0-9]{64})(?![A-Fa-f0-9])|@([a-zA-Z][a-zA-Z0-9_]{0,30})',
       caseSensitive: false,
     );
 
@@ -123,7 +141,8 @@ class ClickableHashtagText extends ConsumerWidget {
       final matchedUrl = match.group(1);
       final hashtag = match.group(2);
       final nostrId = match.group(3);
-      final plainMention = match.group(4);
+      final hexReference = match.group(4);
+      final plainMention = match.group(5);
 
       if (matchedUrl != null) {
         spans.add(_buildUrlSpan(matchedUrl, tagStyle));
@@ -138,8 +157,19 @@ class ClickableHashtagText extends ConsumerWidget {
           ),
         );
       } else if (nostrId != null) {
-        // Handle bare or `nostr:`-prefixed npub/nprofile mention.
-        spans.add(_buildNostrMentionSpan(context, ref, nostrId, profileStyle));
+        spans.add(
+          _buildNostrReferenceSpan(context, ref, nostrId, profileStyle),
+        );
+      } else if (hexReference != null) {
+        spans.add(
+          _buildHexReferenceSpan(
+            context,
+            ref,
+            hexReference,
+            match.start,
+            profileStyle,
+          ),
+        );
       } else if (plainMention != null) {
         // Handle plain @mention (legacy Vine format)
         spans.add(
@@ -165,38 +195,66 @@ class ClickableHashtagText extends ConsumerWidget {
       recognizer: TapGestureRecognizer()
         ..onTap = () {
           onVideoStateChange?.call();
-          _launchUrl(matchedUrl);
+          final customHandler = onUrlTap;
+          if (customHandler != null) {
+            customHandler(matchedUrl);
+          } else {
+            _launchUrl(matchedUrl);
+          }
         },
     );
   }
 
-  /// Build a TextSpan for a nostr mention (npub or nprofile)
-  ///
-  /// Displays @username if profile is cached, otherwise truncated npub
-  TextSpan _buildNostrMentionSpan(
+  TextSpan _buildNostrReferenceSpan(
     BuildContext context,
     WidgetRef ref,
     String nostrId,
     TextStyle style,
   ) {
-    // Convert npub/nprofile to hex pubkey
-    final hexPubkey = npubToHexOrNull(nostrId);
-    if (hexPubkey == null) {
-      // Invalid nostr ID, just show it as-is
-      return TextSpan(text: 'nostr:$nostrId', style: style);
+    final normalized = _stripNostrScheme(nostrId);
+    final lower = normalized.toLowerCase();
+
+    if (lower.startsWith('npub1') || lower.startsWith('nprofile1')) {
+      final hexPubkey = npubToHexOrNull(normalized);
+      if (hexPubkey == null) {
+        return TextSpan(text: nostrId, style: style);
+      }
+      return _buildProfileReferenceSpan(context, ref, hexPubkey, style);
     }
 
+    if (lower.startsWith('note1') ||
+        lower.startsWith('nevent1') ||
+        lower.startsWith('naddr1')) {
+      return _buildVideoReferenceSpan(context, normalized, style);
+    }
+
+    return TextSpan(text: nostrId, style: style);
+  }
+
+  TextSpan _buildHexReferenceSpan(
+    BuildContext context,
+    WidgetRef ref,
+    String hexReference,
+    int start,
+    TextStyle style,
+  ) {
+    if (_hexReferenceLooksLikeProfile(start)) {
+      return _buildProfileReferenceSpan(context, ref, hexReference, style);
+    }
+
+    return _buildVideoReferenceSpan(context, hexReference, style);
+  }
+
+  TextSpan _buildProfileReferenceSpan(
+    BuildContext context,
+    WidgetRef ref,
+    String hexPubkey,
+    TextStyle style,
+  ) {
     // Try to get cached profile (reactive provider handles background fetch)
     final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
 
-    final displayText = switch (profile) {
-      UserProfile(:final displayName?) when displayName.isNotEmpty =>
-        '@$displayName',
-      UserProfile(:final name?) when name.isNotEmpty => '@$name',
-      UserProfile(:final displayNip05?) when displayNip05.isNotEmpty =>
-        displayNip05,
-      _ => '@${NostrKeyUtils.truncateNpub(hexPubkey)}',
-    };
+    final displayText = _profileDisplayText(profile, hexPubkey);
 
     return TextSpan(
       text: displayText,
@@ -204,6 +262,43 @@ class ClickableHashtagText extends ConsumerWidget {
       recognizer: TapGestureRecognizer()
         ..onTap = () => _navigateToProfile(context, hexPubkey),
     );
+  }
+
+  TextSpan _buildVideoReferenceSpan(
+    BuildContext context,
+    String routeReference,
+    TextStyle style,
+  ) {
+    return TextSpan(
+      text: 'View video',
+      style: style,
+      recognizer: TapGestureRecognizer()
+        ..onTap = () => _navigateToVideo(context, routeReference),
+    );
+  }
+
+  String _profileDisplayText(UserProfile? profile, String hexPubkey) {
+    final profileText = switch (profile) {
+      UserProfile(:final displayName?) when displayName.isNotEmpty =>
+        displayName,
+      UserProfile(:final name?) when name.isNotEmpty => name,
+      UserProfile(:final displayNip05?) when displayNip05.isNotEmpty =>
+        displayNip05,
+      _ => UserProfile.defaultDisplayNameFor(hexPubkey),
+    };
+    return profileText.startsWith('@') ? profileText : '@$profileText';
+  }
+
+  bool _hexReferenceLooksLikeProfile(int start) {
+    final prefixStart = start >= 32 ? start - 32 : 0;
+    final prefix = text.substring(prefixStart, start).toLowerCase();
+    return RegExp(
+      r'(profile|pubkey|public key|author|user)\s*:?\s*$',
+    ).hasMatch(prefix);
+  }
+
+  String _stripNostrScheme(String reference) {
+    return reference.replaceFirst(RegExp('^nostr:', caseSensitive: false), '');
   }
 
   /// Build a TextSpan for a plain @mention (legacy Vine format)
@@ -253,6 +348,37 @@ class ClickableHashtagText extends ConsumerWidget {
     context.pushOtherProfile(hexPubkey);
   }
 
+  void _navigateToVideo(BuildContext context, String reference) {
+    Log.debug(
+      'Navigating to video reference',
+      name: 'ClickableHashtagText',
+      category: LogCategory.ui,
+    );
+
+    onVideoStateChange?.call();
+
+    final routeReference = _normalizeVideoRouteReference(reference);
+    context.push(VideoDetailScreen.pathForId(routeReference));
+  }
+
+  String _normalizeVideoRouteReference(String reference) {
+    final normalized = _stripNostrScheme(reference);
+    final lower = normalized.toLowerCase();
+
+    if (lower.startsWith('note1')) {
+      final decoded = Nip19.decode(normalized);
+      if (decoded.length == 64) return decoded;
+    }
+
+    if (lower.startsWith('nevent1')) {
+      final decoded = NIP19Tlv.decodeNevent(normalized);
+      final id = decoded?.id;
+      if (id != null && id.isNotEmpty) return id;
+    }
+
+    return normalized;
+  }
+
   void _navigateToSearch(BuildContext context, String searchTerm) {
     Log.debug(
       '📍 Navigating to search: $searchTerm',
@@ -268,11 +394,16 @@ class ClickableHashtagText extends ConsumerWidget {
   }
 
   Future<void> _launchUrl(String rawUrl) async {
-    final normalizedUrl =
-        rawUrl.startsWith(RegExp('https?://', caseSensitive: false))
-        ? rawUrl
-        : 'https://$rawUrl';
-    final uri = Uri.tryParse(normalizedUrl);
+    final Uri? uri;
+    if (_emailRegex.hasMatch(rawUrl)) {
+      uri = Uri(scheme: 'mailto', path: rawUrl);
+    } else {
+      final normalizedUrl =
+          rawUrl.startsWith(RegExp('https?://', caseSensitive: false))
+          ? rawUrl
+          : 'https://$rawUrl';
+      uri = Uri.tryParse(normalizedUrl);
+    }
     if (uri == null) return;
 
     await launchUrl(uri, mode: LaunchMode.externalApplication);

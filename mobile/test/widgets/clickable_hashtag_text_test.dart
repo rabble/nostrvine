@@ -270,11 +270,39 @@ void main() {
 
       final textSpan = text.textSpan! as TextSpan;
       final spans = textSpan.children!.cast<TextSpan>();
+      final fallbackName = UserProfile.defaultDisplayNameFor(_testHexPubkey);
       final mentionSpan = spans.firstWhere(
-        (span) => span.text != null && span.text!.startsWith('@npub1'),
+        (span) => span.text == '@$fallbackName',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('renders labeled hex event references as video links', (
+      tester,
+    ) async {
+      const eventId =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+      const textWithEvent = 'Content Report\nEvent: $eventId';
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: ClickableHashtagText(text: textWithEvent)),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      final textSpan = text.textSpan! as TextSpan;
+
+      expect(textSpan.toPlainText(), isNot(contains(eventId)));
+      expect(textSpan.toPlainText(), contains('View video'));
+
+      final spans = textSpan.children!.cast<TextSpan>();
+      final videoSpan = spans.firstWhere((span) => span.text == 'View video');
+
+      expect(videoSpan.recognizer, isA<TapGestureRecognizer>());
     });
 
     testWidgets('parses bare nprofile mentions as tappable profile spans', (
@@ -300,8 +328,9 @@ void main() {
 
       final textSpan = text.textSpan! as TextSpan;
       final spans = textSpan.children!.cast<TextSpan>();
+      final fallbackName = UserProfile.defaultDisplayNameFor(_testHexPubkey);
       final mentionSpan = spans.firstWhere(
-        (span) => span.text != null && span.text!.startsWith('@npub1'),
+        (span) => span.text == '@$fallbackName',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
