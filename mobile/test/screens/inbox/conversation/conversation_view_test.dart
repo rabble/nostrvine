@@ -290,6 +290,53 @@ void main() {
       );
 
       testWidgets(
+        'renders untitled fallback instead of raw d-tag when no title tag',
+        (tester) async {
+          final message = DmMessage(
+            id: '9999999999999999999999999999999999999999999999999999999999999999',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: otherPubkey,
+            content: 'You were invited to collaborate.',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId:
+                'aaaaaaaabbbbbbbbccccccccddddddddaaaaaaaabbbbbbbbccccccccdddddddd',
+            tags: const [
+              ['divine', 'collab-invite'],
+              [
+                'a',
+                '34236:1122334411223344112233441122334411223344112233441122334411223344:b25ba0952f63120d35dadcfd704f9017db09c32d10b4074ba51cd6593efbc916',
+                'wss://relay.divine.video',
+              ],
+              ['p', otherPubkey],
+              ['role', 'Collaborator'],
+            ],
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                messages: [message],
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.text(l10n.inboxCollabInviteCardUntitledVideo),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              'b25ba0952f63120d35dadcfd704f9017db09c32d10b4074ba51cd6593efbc916',
+            ),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
         'opens collaborator invite video when card is tapped',
         (tester) async {
           final mockGoRouter = MockGoRouter();

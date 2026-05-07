@@ -95,10 +95,10 @@ class _CardChrome extends StatelessWidget {
   final bool isSent;
   final Widget action;
 
-  String _titleText() {
+  String _titleText(BuildContext context) {
     final title = invite.title?.trim();
     if (title != null && title.isNotEmpty) return title;
-    return invite.videoDTag;
+    return context.l10n.inboxCollabInviteCardUntitledVideo;
   }
 
   @override
@@ -136,7 +136,7 @@ class _CardChrome extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _titleText(),
+                    _titleText(context),
                     style: VineTheme.titleMediumFont(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

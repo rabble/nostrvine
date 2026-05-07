@@ -4979,6 +4979,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+
+  @override
   String get inboxCollabInviteAcceptButton => '수락';
 
   @override

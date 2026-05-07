@@ -2701,6 +2701,10 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Untitled video",
+  "@inboxCollabInviteCardUntitledVideo": {
+    "description": "Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier."
+  },
   "inboxCollabInviteAcceptButton": "Accept",
   "inboxCollabInviteIgnoreButton": "Ignore",
   "inboxCollabInviteAcceptedStatus": "Accepted",

@@ -9182,6 +9182,12 @@ abstract class AppLocalizations {
   /// **'{role} on this post'**
   String inboxCollabInviteCardRoleLabel(String role);
 
+  /// Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled video'**
+  String get inboxCollabInviteCardUntitledVideo;
+
   /// No description provided for @inboxCollabInviteAcceptButton.
   ///
   /// In en, this message translates to:

@@ -5224,6 +5224,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Accetta';
 
   @override
