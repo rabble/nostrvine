@@ -784,8 +784,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       return;
     }
 
-    final attempt = _sources.attemptFor(index);
-    _log('Source failover index $index: attempt=$attempt source=$nextSource');
+    _log('Source failover index $index: source=$nextSource');
 
     // The first failover after a cache load means the cached file was
     // unplayable at runtime. Evict it so future loads hit the network.
@@ -809,7 +808,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         _staleDetector.resetGrace();
       }
     } on Object catch (e, stackTrace) {
-      _log('Source failover failed index $index attempt=$attempt: $e');
+      _log('Source failover failed index $index source=$nextSource: $e');
       developer.log(
         'Source failover failed',
         name: _logName,

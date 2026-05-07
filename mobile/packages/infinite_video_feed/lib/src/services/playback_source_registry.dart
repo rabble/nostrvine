@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// In-memory registry of playback source URLs and the currently active
 /// source per video index.
 ///
@@ -30,6 +32,7 @@ class PlaybackSourceRegistry {
   ///
   /// Returns `null` for prestart entries (active index `-1`) — no network
   /// source is in use yet, the first frame is coming from a local cache.
+  @visibleForTesting
   String? activeSourceFor(int index) {
     final list = _sources[index];
     if (list == null) return null;
@@ -64,6 +67,7 @@ class PlaybackSourceRegistry {
   }
 
   /// The current attempt index for [index] (0-based).
+  @visibleForTesting
   int attemptFor(int index) => _activeIndices[index] ?? 0;
 
   /// Forgets all entries for [index].
