@@ -420,7 +420,9 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
         ),
-      ).thenAnswer((_) async => NIP17SendResult.failure('Relay rejected'));
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.failure('Relay rejected'),
+      );
 
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(

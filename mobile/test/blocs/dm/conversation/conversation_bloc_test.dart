@@ -243,7 +243,8 @@ void main() {
                 content: 'Hello',
               ),
             ).thenAnswer(
-              (_) async => NIP17SendResult.failure('Failed to publish message'),
+              (_) async =>
+                  const NIP17SendResult.failure('Failed to publish message'),
             );
           },
           build: buildBloc,
@@ -409,7 +410,7 @@ void main() {
                   messageEventId: sentEventId,
                   recipientPubkey: recipientPubkey,
                 ),
-                NIP17SendResult.failure('Failed for second recipient'),
+                const NIP17SendResult.failure('Failed for second recipient'),
               ],
             );
           },
@@ -447,8 +448,8 @@ void main() {
               ),
             ).thenAnswer(
               (_) async => [
-                NIP17SendResult.failure('Relay timeout'),
-                NIP17SendResult.failure('Connection refused'),
+                const NIP17SendResult.failure('Relay timeout'),
+                const NIP17SendResult.failure('Connection refused'),
               ],
             );
           },

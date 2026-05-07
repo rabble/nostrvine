@@ -301,8 +301,10 @@ void main() {
           ),
           isTrue,
           reason:
-              'Partial-delivery log line is the contract the outgoing '
-              'queue (#3909) will key off; pin the exact text.',
+              'Diagnostic log copy for production triage of partial '
+              'delivery. Not a load-bearing contract — the durable '
+              'outgoing-DM queue (#3909) keys off '
+              'NIP17SendResult.selfWrapPublished, not this string.',
         );
       });
 
@@ -496,6 +498,11 @@ void main() {
                           '(selfWrapPublished=true)',
             ),
             isTrue,
+            reason:
+                'Diagnostic log copy for production triage. Symmetric '
+                'with the partial-delivery log assertion above; neither '
+                'is a contract the outgoing queue (#3909) keys off — '
+                'the queue keys off NIP17SendResult.selfWrapPublished.',
           );
         });
 

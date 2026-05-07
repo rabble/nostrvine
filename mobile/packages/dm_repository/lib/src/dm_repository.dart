@@ -1224,12 +1224,12 @@ class DmRepository {
     // Reuses NIP17SendResult for simplicity — this is an internal helper.
     final signer = _signer;
     if (signer == null) {
-      return NIP17SendResult.failure('Signer not available');
+      return const NIP17SendResult.failure('Signer not available');
     }
 
     final ciphertext = await signer.encrypt(recipientPubkey, content);
     if (ciphertext == null) {
-      return NIP17SendResult.failure('NIP-04 encrypt returned null');
+      return const NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
     final event = Event(_userPubkey, EventKind.directMessage, [
@@ -1238,7 +1238,7 @@ class DmRepository {
 
     final signed = await signer.signEvent(event);
     if (signed == null) {
-      return NIP17SendResult.failure('NIP-04 sign returned null');
+      return const NIP17SendResult.failure('NIP-04 sign returned null');
     }
 
     final publishResult = await _nostrClient.publishEvent(signed);

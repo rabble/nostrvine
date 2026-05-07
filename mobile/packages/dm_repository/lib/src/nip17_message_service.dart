@@ -108,7 +108,9 @@ class NIP17MessageService {
       );
 
       if (giftWrapEvent == null) {
-        return NIP17SendResult.failure('Failed to create gift wrap event');
+        return const NIP17SendResult.failure(
+          'Failed to create gift wrap event',
+        );
       }
 
       Log.debug(
@@ -123,7 +125,7 @@ class NIP17MessageService {
       if (sentEvent is! PublishSuccess) {
         const errorMsg = 'Message publish failed to relays';
         Log.error(errorMsg, category: LogCategory.system);
-        return NIP17SendResult.failure(errorMsg);
+        return const NIP17SendResult.failure(errorMsg);
       }
 
       // NIP-17: publish a self-addressed gift wrap so our own sent

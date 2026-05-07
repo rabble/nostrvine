@@ -296,7 +296,7 @@ void main() {
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer(
-          (_) async => NIP17SendResult.failure('relay unavailable'),
+          (_) async => const NIP17SendResult.failure('relay unavailable'),
         );
 
         final repository = createRepository();
@@ -462,7 +462,7 @@ void main() {
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer(
-          (_) async => NIP17SendResult.failure('Relay rejected'),
+          (_) async => const NIP17SendResult.failure('Relay rejected'),
         );
 
         final repository = createRepository();
@@ -2989,7 +2989,7 @@ void main() {
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer(
-          (_) async => NIP17SendResult.failure('Relay rejected'),
+          (_) async => const NIP17SendResult.failure('Relay rejected'),
         );
 
         final repository = createRepository();
@@ -6416,7 +6416,7 @@ void main() {
                 recipientPubkey: _validPubkeyB,
               );
             }
-            return NIP17SendResult.failure('relay timeout');
+            return const NIP17SendResult.failure('relay timeout');
           });
           stubDaoInserts();
 
@@ -6457,7 +6457,7 @@ void main() {
               additionalTags: any(named: 'additionalTags'),
             ),
           ).thenAnswer(
-            (_) async => NIP17SendResult.failure('relay timeout'),
+            (_) async => const NIP17SendResult.failure('relay timeout'),
           );
 
           final repo = createRepository();

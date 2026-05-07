@@ -144,10 +144,7 @@ void main() {
             additionalTags: any(named: 'additionalTags'),
           ),
         ).thenAnswer(
-          (_) async => const NIP17SendResult(
-            success: false,
-            error: 'No relays available',
-          ),
+          (_) async => const NIP17SendResult.failure('No relays available'),
         );
 
         final result = await service.sendBugReportToRecipient(
