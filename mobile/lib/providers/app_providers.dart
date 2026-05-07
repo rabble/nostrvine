@@ -2108,7 +2108,10 @@ PeopleListsRepository peopleListsRepository(Ref ref) {
   final cache = LocalPeopleListsCache(
     openBox: () => Hive.openBox<dynamic>(_peopleListsBoxName),
   );
-  return PeopleListsRepositoryImpl(nostrClient: nostrClient, cache: cache);
+  return PeopleListsRepositoryImpl(
+    nostrClient: nostrClient,
+    cache: cache,
+  );
 }
 
 /// Bookmark service for NIP-51 bookmarks
@@ -2371,11 +2374,7 @@ StickerPackRepository stickerPackRepository(Ref ref) {
       ...AppConstants.divineTeamPubkeys,
     ],
     userPubkey: authService.currentPublicKeyHex,
-    discoveryRelays: const [
-      'wss://relay.damus.io',
-      'wss://nos.lol',
-      'wss://relay.nostr.band',
-    ],
+    discoveryRelays: AppConstants.emojiSetDiscoveryRelays,
   );
 }
 

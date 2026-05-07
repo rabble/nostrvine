@@ -729,12 +729,13 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Error posting sticker comment: $e',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
+      addError(e, stackTrace);
 
       emit(
         state.copyWith(error: CommentsError.postCommentFailed),

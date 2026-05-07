@@ -343,6 +343,9 @@ class CommentsRepository {
         );
       }
 
+      final cached = _commentCountCache[rootEventId];
+      if (cached != null) _commentCountCache[rootEventId] = cached + 1;
+
       return Comment(
         id: sentEvent.id,
         content: content,

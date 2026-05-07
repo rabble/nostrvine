@@ -1450,6 +1450,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionViewComments => 'Reacties bekijken';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'Meer opties';
 
   @override

@@ -10,6 +10,7 @@ import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/blocs/sticker_picker/sticker_picker_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
@@ -258,7 +259,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
     final sticker = await VineBottomSheet.show<Sticker>(
       context: context,
       title: Text(
-        'Stickers',
+        context.l10n.videoEditorStickers,
         style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
       body: BlocProvider(

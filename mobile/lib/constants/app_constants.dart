@@ -117,6 +117,14 @@ class AppConstants {
   /// Maximum subscription limit per relay
   static const int maxSubscriptionsPerRelay = 100;
 
+  /// General-purpose Nostr relays used to discover NIP-51 emoji sets
+  /// (Kind 30030) outside the app's primary video relay.
+  static const List<String> emojiSetDiscoveryRelays = [
+    'wss://relay.damus.io',
+    'wss://nos.lol',
+    'wss://relay.nostr.band',
+  ];
+
   // ============================================================================
   // UI CONFIGURATION
   // ============================================================================

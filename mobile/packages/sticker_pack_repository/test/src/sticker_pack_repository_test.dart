@@ -1045,7 +1045,7 @@ void main() {
         expect(packs.first.title, equals('Name Tag'));
       });
 
-      test('filters out emoji tags with non-http(s) URLs', () async {
+      test('filters out emoji tags with non-https URLs', () async {
         final event = Event(
           _testCuratorPubkey1,
           _emojiSetKind,
@@ -1071,13 +1071,38 @@ void main() {
         final packs = await repo.loadStickerPacks();
 
         expect(packs, hasLength(1));
-        expect(packs.first.stickers, hasLength(2));
-        final shortcodes = packs.first.stickers
-            .map((s) => s.shortcode)
-            .toList();
-        expect(shortcodes, containsAll(['safe', 'http']));
-        expect(shortcodes, isNot(contains('xss')));
-        expect(shortcodes, isNot(contains('ftp')));
+        expect(packs.first.stickers, hasLength(1));
+        expect(packs.first.stickers.first.shortcode, equals('safe'));
+      });
+
+      test('filters out emoji tags with invalid shortcodes', () async {
+        final event = Event(
+          _testCuratorPubkey1,
+          _emojiSetKind,
+          <List<String>>[
+            ['d', 'mixed-pack'],
+            ['emoji', 'has-hyphen', 'https://cdn.example.com/h.png'],
+            ['emoji', 'has space', 'https://cdn.example.com/s.png'],
+            ['emoji', 'has:colon', 'https://cdn.example.com/c.png'],
+            ['emoji', 'valid_123', 'https://cdn.example.com/v.png'],
+          ],
+          '',
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = StickerPackRepository(
+          nostrClient: mockNostrClient,
+          curatorPubkeys: [_testCuratorPubkey1],
+        );
+
+        final packs = await repo.loadStickerPacks();
+
+        expect(packs, hasLength(1));
+        expect(packs.first.stickers, hasLength(1));
+        expect(packs.first.stickers.first.shortcode, equals('valid_123'));
       });
 
       test('filters out pack thumbnail with non-https URL', () async {

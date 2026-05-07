@@ -1359,6 +1359,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionViewComments => '댓글 보기';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => '더 많은 옵션';
 
   @override

@@ -1476,6 +1476,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionViewComments => 'Vezi comentariile';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'Mai multe opțiuni';
 
   @override

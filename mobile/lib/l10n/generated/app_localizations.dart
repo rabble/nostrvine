@@ -2606,6 +2606,12 @@ abstract class AppLocalizations {
   /// **'View comments'**
   String get videoActionViewComments;
 
+  /// Screen-reader label for the sticker button next to the comment composer text field. Action-oriented: describes what tapping does (opens the sticker picker bottom sheet).
+  ///
+  /// In en, this message translates to:
+  /// **'Open sticker picker'**
+  String get commentsStickerOpenSemanticLabel;
+
   /// No description provided for @videoActionMoreOptions.
   ///
   /// In en, this message translates to:

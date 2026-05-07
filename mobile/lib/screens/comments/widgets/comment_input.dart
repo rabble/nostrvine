@@ -469,16 +469,15 @@ class _StickerButton extends StatelessWidget {
     return Semantics(
       identifier: 'sticker_button',
       button: true,
-      label: 'Open sticker picker',
+      label: context.l10n.commentsStickerOpenSemanticLabel,
       child: Container(
-        width: 40,
-        height: 40,
         margin: const EdgeInsets.only(left: 4, bottom: 4),
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         child: IconButton(
           onPressed: onTap,
           padding: EdgeInsets.zero,
-          icon: const Icon(
-            Icons.emoji_emotions_outlined,
+          icon: const DivineIcon(
+            icon: DivineIconName.sticker,
             color: VineTheme.onSurfaceMuted,
             size: 22,
           ),

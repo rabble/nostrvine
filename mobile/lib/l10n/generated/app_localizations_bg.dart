@@ -1464,6 +1464,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionViewComments => 'Виж коментарите';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'Още опции';
 
   @override

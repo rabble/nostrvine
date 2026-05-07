@@ -1106,6 +1106,7 @@ void main() {
             stickerImageUrl: testStickerUrl,
           ),
         ),
+        errors: () => [isA<Exception>()],
         expect: () => [
           isA<CommentsState>().having(
             (s) => s.error,

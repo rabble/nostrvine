@@ -1,17 +1,22 @@
 // ABOUTME: Bottom sheet UI for browsing and selecting stickers from curated packs.
 // ABOUTME: Displays a searchable grid of sticker images with BLoC-driven state.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/sticker_picker/sticker_picker_bloc.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:sticker_pack_repository/sticker_pack_repository.dart';
 
-String _stickerErrorToString(StickerPickerErrorType errorType) {
+String _stickerErrorToString(
+  BuildContext context,
+  StickerPickerErrorType errorType,
+) {
   return switch (errorType) {
-    StickerPickerErrorType.loadFailed => 'Failed to load stickers',
+    StickerPickerErrorType.loadFailed =>
+      context.l10n.videoEditorFailedLoadStickers,
   };
 }
 
@@ -33,7 +38,7 @@ class StickerPickerSheet extends StatelessWidget {
             stickers: filteredStickers,
           ),
           StickerPickerError(:final errorType) => _ErrorState(
-            message: _stickerErrorToString(errorType),
+            message: _stickerErrorToString(context, errorType),
           ),
         };
       },
@@ -68,7 +73,11 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              color: VineTheme.error,
+              size: 48,
+            ),
             const SizedBox(height: 16),
             Text(
               message,
@@ -141,13 +150,17 @@ class _SearchBar extends StatelessWidget {
       style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
       cursorColor: VineTheme.tabIndicatorGreen,
       decoration: InputDecoration(
-        hintText: 'Search stickers...',
+        hintText: context.l10n.videoEditorStickerSearchHint,
         hintStyle: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-        prefixIcon: const Icon(
-          Icons.search,
-          color: VineTheme.onSurfaceMuted,
-          size: 20,
+        prefixIcon: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 8),
+          child: DivineIcon(
+            icon: DivineIconName.search,
+            color: VineTheme.onSurfaceMuted,
+            size: 20,
+          ),
         ),
+        prefixIconConstraints: const BoxConstraints(minWidth: 36),
         filled: true,
         fillColor: VineTheme.containerLow,
         border: OutlineInputBorder(
@@ -168,7 +181,7 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        'No stickers found',
+        context.l10n.videoEditorNoStickersFound,
         style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
       ),
     );
@@ -179,6 +192,10 @@ class _StickerTile extends StatelessWidget {
   const _StickerTile({required this.sticker});
 
   final Sticker sticker;
+
+  /// Cap mem-decoded width for grid tiles. Tiles render at ~84-100 px;
+  /// 200 px gives a 2x retina headroom without holding 4K source decodes.
+  static const int _memCacheSizePx = 200;
 
   @override
   Widget build(BuildContext context) {
@@ -195,9 +212,11 @@ class _StickerTile extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(8),
-          child: CachedNetworkImage(
+          child: VineCachedImage(
             imageUrl: sticker.imageUrl,
             fit: BoxFit.contain,
+            memCacheWidth: _memCacheSizePx,
+            memCacheHeight: _memCacheSizePx,
             placeholder: (_, _) => const SizedBox.shrink(),
             errorWidget: (_, _, _) => const Icon(
               Icons.broken_image_outlined,

@@ -1416,6 +1416,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionViewComments => 'Lihat komentar';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'Opsi lainnya';
 
   @override

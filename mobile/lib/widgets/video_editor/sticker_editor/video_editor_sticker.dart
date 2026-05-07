@@ -14,7 +14,10 @@ import 'package:openvine/widgets/vine_cached_image.dart';
 /// `WidgetLayer.fromMap` so sticker layers survive the editor's
 /// export/reopen round-trip. Returns an empty box when [meta] is
 /// `null` (legacy widget layers without sticker metadata).
-Widget videoEditorStickerWidgetLoader(String id, {Map<String, dynamic>? meta}) {
+Widget videoEditorStickerWidgetLoader(
+  String id, {
+  Map<String, dynamic>? meta,
+}) {
   if (meta == null) return const SizedBox.shrink();
 
   return VideoEditorSticker(

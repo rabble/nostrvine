@@ -4,7 +4,6 @@
 
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -25,6 +24,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 
 /// Widget that renders a single comment in a flat list.
 ///
@@ -389,6 +389,13 @@ class _CommentContent extends StatelessWidget {
   /// Size of error icon for failed inline sticker loads.
   static const double _inlineStickerErrorSize = 16;
 
+  /// Memory-cache decode width/height for the 120 px standalone sticker.
+  /// 240 px gives 2x retina headroom over the rendered size.
+  static const int _stickerMemCachePx = 240;
+
+  /// Memory-cache decode width/height for the 24 px inline sticker.
+  static const int _inlineStickerMemCachePx = 64;
+
   /// NIP-30 compliant pattern matching a single `:shortcode:` with nothing
   /// else. Shortcodes contain only alphanumeric characters and underscores.
   static final _stickerOnlyPattern = RegExp(r'^:([a-zA-Z0-9_]+):$');
@@ -414,11 +421,13 @@ class _CommentContent extends StatelessWidget {
           return Semantics(
             label: shortcode,
             image: true,
-            child: CachedNetworkImage(
+            child: VineCachedImage(
               imageUrl: imageUrl,
               width: _stickerSize,
               height: _stickerSize,
               fit: BoxFit.contain,
+              memCacheWidth: _stickerMemCachePx,
+              memCacheHeight: _stickerMemCachePx,
               placeholder: (_, _) =>
                   const SizedBox(width: _stickerSize, height: _stickerSize),
               errorWidget: (_, _, _) => const Icon(
@@ -488,11 +497,13 @@ class _CommentContent extends StatelessWidget {
               child: Semantics(
                 label: shortcode,
                 image: true,
-                child: CachedNetworkImage(
+                child: VineCachedImage(
                   imageUrl: imageUrl,
                   width: _inlineStickerSize,
                   height: _inlineStickerSize,
                   fit: BoxFit.contain,
+                  memCacheWidth: _inlineStickerMemCachePx,
+                  memCacheHeight: _inlineStickerMemCachePx,
                   placeholder: (_, _) => const SizedBox(
                     width: _inlineStickerSize,
                     height: _inlineStickerSize,

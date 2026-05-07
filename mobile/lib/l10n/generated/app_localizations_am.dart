@@ -1404,6 +1404,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionViewComments => 'አስተያየቶችን ይመልከቱ';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'ተጨማሪ አማራጮች';
 
   @override

@@ -1351,6 +1351,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionViewComments => 'コメントを見る';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'その他のオプション';
 
   @override

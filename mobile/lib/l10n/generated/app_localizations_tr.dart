@@ -1423,6 +1423,9 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionViewComments => 'Yorumları görüntüle';
 
   @override
+  String get commentsStickerOpenSemanticLabel => 'Open sticker picker';
+
+  @override
   String get videoActionMoreOptions => 'Daha fazla seçenek';
 
   @override

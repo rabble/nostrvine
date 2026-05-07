@@ -23,6 +23,9 @@ class _ATagReference {
 /// packs without author restrictions.
 const int _discoveryLimit = 50;
 
+/// NIP-30 shortcode validation: alphanumeric and underscores only.
+final _shortcodePattern = RegExp(r'^[a-zA-Z0-9_]+$');
+
 /// Repository for loading Nostr sticker packs from multiple sources.
 ///
 /// Discovers Kind 30030 emoji sets from three sources (in parallel):
@@ -279,19 +282,19 @@ class StickerPackRepository {
             if (imageUrl == null) {
               final url = tag[1] as String;
               final uri = Uri.tryParse(url);
-              if (uri != null &&
-                  (uri.scheme == 'https' || uri.scheme == 'http')) {
+              if (uri != null && uri.scheme == 'https') {
                 imageUrl = url;
               }
             }
           case 'emoji':
             if (tag.length >= 3) {
+              final shortcode = tag[1] as String;
+              if (!_shortcodePattern.hasMatch(shortcode)) continue;
               final url = tag[2] as String;
               final uri = Uri.tryParse(url);
-              if (uri != null &&
-                  (uri.scheme == 'https' || uri.scheme == 'http')) {
+              if (uri != null && uri.scheme == 'https') {
                 stickers.add(
-                  Sticker(shortcode: tag[1] as String, imageUrl: url),
+                  Sticker(shortcode: shortcode, imageUrl: url),
                 );
               }
             }
