@@ -414,15 +414,29 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Guard against provider disposal during the async gap above.
     if (!ref.mounted) return true;
 
-    if (_clips.isEmpty) _clearProviders();
+    // File cleanup is best-effort: the clip is already gone from state and
+    // the autosave above persists that. A failure here (database init
+    // hiccup, missing file, etc.) must not turn this method into a
+    // rejection — callers and tests rely on the state-mutation contract,
+    // not on disk effects.
+    try {
+      if (_clips.isEmpty) _clearProviders();
 
-    // Delete files only if not referenced by drafts or clip library
-    final db = ref.read(databaseProvider);
-    await FileCleanupService.deleteRecordingClipFiles(
-      clip,
-      draftsDao: db.draftsDao,
-      clipsDao: db.clipsDao,
-    );
+      final db = ref.read(databaseProvider);
+      await FileCleanupService.deleteRecordingClipFiles(
+        clip,
+        draftsDao: db.draftsDao,
+        clipsDao: db.clipsDao,
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        '⚠️ Best-effort cleanup after deleting $clipId failed: $e',
+        name: 'ClipManagerNotifier',
+        category: .video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
 
     return true;
   }
