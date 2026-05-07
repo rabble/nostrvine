@@ -1415,6 +1415,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             'pendingActions',
             () => db.pendingActionsDao.clearAll(userPubkey),
           );
+          await safeDelete(
+            'outgoingDms',
+            () => db.outgoingDmsDao.clearAllForUser(userPubkey),
+          );
         }
       };
 
