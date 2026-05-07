@@ -280,7 +280,9 @@ void main() {
         ) async {
           callCount++;
           if (callCount == 1) {
-            return invocation.positionalArguments[0] as Event;
+            return PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            );
           }
           throw Exception('keycast rpc timeout');
         });
@@ -480,7 +482,9 @@ void main() {
           await LogCaptureService().clearAllLogs();
 
           when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-            (invocation) async => invocation.positionalArguments[0] as Event,
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
           );
 
           await realKeyService.sendPrivateMessage(
