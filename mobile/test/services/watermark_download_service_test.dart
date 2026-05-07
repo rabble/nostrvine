@@ -284,6 +284,7 @@ void main() {
       test(
         'fresh download continues when invalid cache eviction fails',
         () async {
+          final video = _createTestVideo();
           final tempDir = await Directory.systemTemp.createTemp(
             'watermark-ext-test',
           );
@@ -303,20 +304,36 @@ void main() {
           ).thenThrow(Exception('eviction failed'));
           when(
             () => mockCache.cacheFile(any(), key: any(named: 'key')),
-          ).thenAnswer((_) async => freshFile);
+          ).thenAnswer((invocation) async {
+            final key = invocation.namedArguments[#key] as String;
+            return key == video.id ? badFile : freshFile;
+          });
           when(
             () => mockGallerySave.saveVideoToGallery(any()),
           ).thenAnswer((_) async => const GallerySaveSuccess());
 
           final result = await service.downloadOriginal(
-            video: _createTestVideo(),
+            video: video,
             onProgress: (_) {},
           );
 
           verify(() => mockCache.removeCachedFile(any())).called(1);
-          verify(
-            () => mockCache.cacheFile(any(), key: any(named: 'key')),
-          ).called(1);
+          final cacheKey =
+              verify(
+                    () => mockCache.cacheFile(
+                      any(),
+                      key: captureAny(named: 'key'),
+                    ),
+                  ).captured.single
+                  as String;
+          expect(cacheKey, isNot(video.id));
+          expect(cacheKey, startsWith('${video.id}-redownload-'));
+          final savedVideo =
+              verify(
+                    () => mockGallerySave.saveVideoToGallery(captureAny()),
+                  ).captured.single
+                  as EditorVideo;
+          expect(savedVideo.file!.path, freshFile.path);
           expect(result, isA<WatermarkDownloadSuccess>());
         },
       );

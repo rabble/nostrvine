@@ -69,6 +69,9 @@ class WatermarkDownloadPermissionDenied extends WatermarkDownloadResult {
 /// interrupted download) is evicted and re-fetched.
 const _videoExtensions = <String>{'.mp4', '.mov', '.webm', '.mkv', '.m4v'};
 
+String _redownloadCacheKey(String videoId) =>
+    '$videoId-redownload-${DateTime.now().microsecondsSinceEpoch}';
+
 /// Service that downloads a video, applies a Divine watermark, and saves
 /// the result to the device gallery.
 class WatermarkDownloadService {
@@ -237,6 +240,8 @@ class WatermarkDownloadService {
 
   /// Downloads or retrieves the cached video file.
   Future<File?> _getVideoFile(VideoEvent video) async {
+    var cacheKey = video.id;
+
     // Check cache first — only use it when the file has a recognised video
     // extension.  Stale entries from older app versions (or interrupted
     // downloads) can leave a `.bin` file on disk that ProVideoEditor cannot
@@ -267,6 +272,7 @@ class WatermarkDownloadService {
           name: _logName,
           category: LogCategory.video,
         );
+        cacheKey = _redownloadCacheKey(video.id);
       }
     }
 
@@ -281,7 +287,7 @@ class WatermarkDownloadService {
       return null;
     }
 
-    final file = await _mediaCache.cacheFile(videoUrl, key: video.id);
+    final file = await _mediaCache.cacheFile(videoUrl, key: cacheKey);
 
     return file;
   }
