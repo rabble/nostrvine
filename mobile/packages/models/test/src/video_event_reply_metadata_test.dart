@@ -83,5 +83,36 @@ void main() {
       expect(video.isVideoReply, isFalse);
       expect(video.replyRootRouteId, isNull);
     });
+
+    test('detects cached rawTags-only video replies', () {
+      const parentEventId =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      final video = VideoEvent(
+        id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        pubkey:
+            'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        createdAt: 1778120201,
+        content: '',
+        timestamp: DateTime.utc(2026, 5, 7),
+        title: 'Reply video',
+        videoUrl: 'https://media.divine.video/reply',
+        rawTags: const {
+          'E': parentEventId,
+          'K': '34236',
+          'A': rootAddressableId,
+          'e': parentEventId,
+          'k': '34236',
+          'a': rootAddressableId,
+        },
+        inspiredByVideo: const InspiredByInfo(addressableId: rootAddressableId),
+      );
+
+      expect(video.isVideoReply, isTrue);
+      expect(video.replyRootEventId, parentEventId);
+      expect(video.replyRootAddressableId, rootAddressableId);
+      expect(video.replyRootRouteId, rootAddressableId);
+      expect(video.hasInspiredBy, isFalse);
+      expect(video.inspiredByCreatorPubkey, isNull);
+    });
   });
 }

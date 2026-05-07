@@ -791,7 +791,12 @@ class VideoEvent {
   bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;
 
   /// Whether this video has any Inspired By attribution.
-  bool get hasInspiredBy => inspiredByVideo != null || inspiredByNpub != null;
+  ///
+  /// NIP-22 video replies also carry lowercase parent tags. Those are reply
+  /// metadata, not creator attribution, so reply videos should render their
+  /// parent context instead of the Inspired By treatment.
+  bool get hasInspiredBy =>
+      !isVideoReply && (inspiredByVideo != null || inspiredByNpub != null);
 
   /// Hex pubkey of the inspiring creator, resolved from either the
   /// [inspiredByVideo] a-tag or the [inspiredByNpub] NIP-27 mention.
@@ -799,6 +804,7 @@ class VideoEvent {
   /// Returns `null` when there is no inspired-by attribution or the npub
   /// cannot be decoded.
   String? get inspiredByCreatorPubkey {
+    if (isVideoReply) return null;
     if (inspiredByVideo != null) return inspiredByVideo!.creatorPubkey;
     if (inspiredByNpub != null) {
       final hex = Nip19.decode(inspiredByNpub!);
@@ -1169,7 +1175,9 @@ class VideoEvent {
       final value = tag[1].trim();
       if (value.isNotEmpty) return value;
     }
-    return null;
+
+    final rawValue = rawTags[tagName]?.trim();
+    return rawValue != null && rawValue.isNotEmpty ? rawValue : null;
   }
 
   int? _kindFromAddressableId(String addressableId) {

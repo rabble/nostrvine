@@ -207,11 +207,15 @@ void main() {
         tester,
       ) async {
         testVideo = testVideo.copyWith(
-          nostrEventTags: const [
-            ['A', _parentAddressableId, ''],
-            ['E', _parentEventId, '', _parentPubkey],
-            ['K', '34236'],
-          ],
+          rawTags: const {
+            'A': _parentAddressableId,
+            'E': _parentEventId,
+            'K': '34236',
+            'a': _parentAddressableId,
+          },
+          inspiredByVideo: const InspiredByInfo(
+            addressableId: _parentAddressableId,
+          ),
         );
         final parentVideo = createTestVideoEvent(
           id: _parentEventId,
@@ -229,6 +233,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Reply to Original cat video'), findsOneWidget);
+        expect(find.textContaining('Inspired by'), findsNothing);
         verify(
           () => mockVideosRepository.fetchVideoWithStatsForRouteId(
             _parentAddressableId,

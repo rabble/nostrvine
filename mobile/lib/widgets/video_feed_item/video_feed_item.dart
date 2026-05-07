@@ -55,6 +55,7 @@ import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
+import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:video_player/video_player.dart';
@@ -1694,6 +1695,14 @@ class VideoOverlayActions extends ConsumerWidget {
                         if (video.hasCollaborators) ...[
                           const SizedBox(height: 4),
                           CollaboratorAvatarRow(video: video),
+                        ],
+                        if (video.isVideoReply) ...[
+                          const SizedBox(height: 4),
+                          VideoReplyParentLink(
+                            video: video,
+                            variant: VideoReplyParentLinkVariant.overlay,
+                            onInteracted: onInteracted,
+                          ),
                         ],
                         // Inspired-by attribution row (if video credits another creator)
                         if (video.hasInspiredBy) ...[

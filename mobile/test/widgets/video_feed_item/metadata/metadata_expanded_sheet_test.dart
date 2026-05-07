@@ -195,11 +195,15 @@ void main() {
     ) async {
       final video = _makeVideo(
         title: 'Comment video',
-        nostrEventTags: const [
-          ['A', _parentAddressableId, ''],
-          ['E', _parentEventId],
-          ['K', '34236'],
-        ],
+        rawTags: const {
+          'A': _parentAddressableId,
+          'E': _parentEventId,
+          'K': '34236',
+          'a': _parentAddressableId,
+        },
+        inspiredByVideo: const InspiredByInfo(
+          addressableId: _parentAddressableId,
+        ),
       );
       final parentVideo = _makeVideo(
         title: 'Original cat video',
@@ -219,6 +223,7 @@ void main() {
 
       expect(find.text('In reply to'), findsOneWidget);
       expect(find.text('Reply to Original cat video'), findsOneWidget);
+      expect(find.textContaining('Inspired by'), findsNothing);
       verify(
         () => mockVideosRepository.fetchVideoWithStatsForRouteId(
           _parentAddressableId,
