@@ -4,6 +4,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,8 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:videos_repository/videos_repository.dart';
+
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
 
 class _MockNotificationFeedBloc
     extends MockBloc<NotificationFeedEvent, NotificationFeedState>
@@ -131,6 +134,23 @@ void main() {
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
+
+      testWidgets('outer container uses surfaceContainerHigh background', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(NotificationFeedState());
+
+        await _pumpView(tester, mockBloc);
+
+        final coloredBoxFinder = find
+            .descendant(
+              of: find.byType(NotificationsView),
+              matching: find.byType(ColoredBox),
+            )
+            .first;
+        final coloredBox = tester.widget<ColoredBox>(coloredBoxFinder);
+        expect(coloredBox.color, equals(VineTheme.surfaceContainerHigh));
+      });
     });
 
     group('loading state', () {
@@ -146,15 +166,17 @@ void main() {
     });
 
     group('failure state', () {
-      testWidgets('renders error message and retry button', (tester) async {
+      testWidgets('renders localized error message and retry button', (
+        tester,
+      ) async {
         when(() => mockBloc.state).thenReturn(
           NotificationFeedState(status: NotificationFeedStatus.failure),
         );
 
         await _pumpView(tester, mockBloc);
 
-        expect(find.text('Failed to load notifications'), findsOneWidget);
-        expect(find.text('Retry'), findsOneWidget);
+        expect(find.text(_l10n.notificationsFailedToLoad), findsOneWidget);
+        expect(find.text(_l10n.notificationsRetry), findsOneWidget);
       });
 
       testWidgets('dispatches refresh on retry tap', (tester) async {
@@ -163,7 +185,7 @@ void main() {
         );
 
         await _pumpView(tester, mockBloc);
-        await tester.tap(find.text('Retry'));
+        await tester.tap(find.text(_l10n.notificationsRetry));
         await tester.pump();
 
         verify(() => mockBloc.add(NotificationFeedRefreshed())).called(1);
@@ -230,6 +252,23 @@ void main() {
 
         // One for the bottom loading indicator.
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('does not inject Divider widgets between rows', (
+        tester,
+      ) async {
+        // The row widget owns its bottom border via outlineDisabled; the
+        // list must not add a separate Divider on top of it.
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: testNotifications,
+          ),
+        );
+
+        await _pumpView(tester, mockBloc);
+
+        expect(find.byType(Divider), findsNothing);
       });
 
       testWidgets('dispatches mark all read on screen open', (tester) async {
