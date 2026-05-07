@@ -357,6 +357,11 @@ const _knownUntranslatedDebt = {
   // Repost → Revine). English ships; other locales fall back until a pass.
   'videoActionReportLabel',
   'videoActionReport',
+  // Added by the Edit action button on the fullscreen video overlay
+  // (replaces the per-video Compilation slot when viewing your own video).
+  // English ships; translators will pick these up in a follow-up pass.
+  'videoActionEditLabel',
+  'videoActionEdit',
   // Added by the Apple-compliance pass on the Report bottom sheet — each
   // reason now has a one-line subtitle clarifying scope. English ships;
   // translators will pick these up in a follow-up pass.

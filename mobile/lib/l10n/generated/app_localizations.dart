@@ -2558,6 +2558,18 @@ abstract class AppLocalizations {
   /// **'Report video'**
   String get videoActionReport;
 
+  /// Short caption shown beneath the Edit icon in the video overlay action column. Only visible to the owner of the video.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get videoActionEditLabel;
+
+  /// Screen reader label for the Edit action button in the video overlay action column. Tapping opens the video edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit video'**
+  String get videoActionEdit;
+
   /// No description provided for @videoActionAboutLabel.
   ///
   /// In en, this message translates to:

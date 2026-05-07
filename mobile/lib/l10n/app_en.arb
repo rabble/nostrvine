@@ -692,6 +692,14 @@
   "@videoActionReport": {
     "description": "Screen reader label for the Report action button in the video overlay action column. Tapping opens the report-content dialog."
   },
+  "videoActionEditLabel": "Edit",
+  "@videoActionEditLabel": {
+    "description": "Short caption shown beneath the Edit icon in the video overlay action column. Only visible to the owner of the video."
+  },
+  "videoActionEdit": "Edit video",
+  "@videoActionEdit": {
+    "description": "Screen reader label for the Edit action button in the video overlay action column. Tapping opens the video edit dialog."
+  },
   "videoActionAboutLabel": "About",
   "videoActionEnableAutoAdvance": "Enable auto advance",
   "videoActionDisableAutoAdvance": "Disable auto advance",

@@ -1436,6 +1436,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoActionReport => 'Report video';
 
   @override
+  String get videoActionEditLabel => 'Edit';
+
+  @override
+  String get videoActionEdit => 'Edit video';
+
+  @override
   String get videoActionAboutLabel => 'Acerca de';
 
   @override

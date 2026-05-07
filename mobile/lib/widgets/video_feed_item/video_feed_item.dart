@@ -39,7 +39,6 @@ import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -1770,13 +1769,11 @@ class VideoOverlayActionColumn extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Gate the edit button at the column level so that when it shouldn't
-    // render, it's not included as a child at all. A `SizedBox.shrink` child
-    // under `Column(spacing: 24)` would still pick up the inter-child gap
-    // and inject 24 px of dead space above whichever button ends up first.
-    //
-    // Mirrors the gates previously inside `_VideoEditButton.build`: the
-    // editor feature flag must be on, and the viewer must own the video.
+    // Owners get an [EditActionButton] at the top of the column (above
+    // Like) and the [ReportActionButton] is suppressed — you can't report
+    // your own video, so the slot is reused for Edit instead. Both gates
+    // resolve to false for non-owners and during preview / when the
+    // editor feature flag is off, leaving the column unchanged.
     final editorEnabled = ref
         .watch(featureFlagServiceProvider)
         .isEnabled(FeatureFlag.enableVideoEditorV1);
@@ -1785,13 +1782,13 @@ class VideoOverlayActionColumn extends ConsumerWidget {
         .currentPublicKeyHex;
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == video.pubkey;
-    final showEditButton =
-        !isFullscreen && !isPreviewMode && editorEnabled && isOwnVideo;
+    final showEditButton = !isPreviewMode && editorEnabled && isOwnVideo;
 
     return Column(
       spacing: 20,
       children: [
-        if (showEditButton) _VideoEditButton(video: video),
+        if (showEditButton)
+          EditActionButton(video: video, onInteracted: onInteracted),
         if (showAutoButton && onAutoPressed != null)
           AutoActionButton(isEnabled: isAutoEnabled, onPressed: onAutoPressed!),
         LikeActionButton(
@@ -1810,48 +1807,10 @@ class VideoOverlayActionColumn extends ConsumerWidget {
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),
-        ReportActionButton(video: video, onInteracted: onInteracted),
+        if (!isOwnVideo)
+          ReportActionButton(video: video, onInteracted: onInteracted),
         MoreActionButton(video: video, onInteracted: onInteracted),
       ],
-    );
-  }
-}
-
-/// Edit button slot for owned videos when the editor feature flag is on.
-///
-/// Visibility is decided by [VideoOverlayActionColumn.build] (feature-flag
-/// + ownership gate) before this widget is ever instantiated, so `build`
-/// assumes the button should render and no longer performs those checks.
-class _VideoEditButton extends StatelessWidget {
-  const _VideoEditButton({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context) {
-    // Outer Semantics carries the test identifier only; DivineIconButton
-    // already emits its own `button: true, label: ...` inner semantics,
-    // which `explicitChildNodes: true` keeps as a sibling node so both
-    // the test identifier and the button role are available to callers.
-    return Semantics(
-      identifier: 'edit_button',
-      container: true,
-      explicitChildNodes: true,
-      child: DivineIconButton(
-        icon: DivineIconName.pencilSimpleLineDuo,
-        type: DivineIconButtonType.ghost,
-        semanticLabel: context.l10n.videoPlayerEditVideo,
-        onPressed: () {
-          Log.info(
-            '✏️ Edit button tapped for ${video.id}',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-
-          // Show edit dialog directly (works on all platforms)
-          showEditDialogForVideo(context, video);
-        },
-      ),
     );
   }
 }
