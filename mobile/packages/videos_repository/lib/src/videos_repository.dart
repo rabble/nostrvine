@@ -1137,6 +1137,8 @@ class VideosRepository {
 
   bool _isReplyOnlyVideoStats(VideoStats stats) {
     if (stats.kind != _videoKind) return false;
+    // rawTags is first-occurrence-only, which is sufficient here because this
+    // filter only needs boolean presence checks for reply/feed-visibility tags.
     final tags = stats.rawTags;
     final hasRootTag =
         (tags['E']?.isNotEmpty ?? false) || (tags['A']?.isNotEmpty ?? false);

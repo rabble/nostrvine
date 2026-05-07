@@ -14,6 +14,7 @@ import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
@@ -68,10 +69,6 @@ const Duration _outerPublishTimeoutCeiling = Duration(seconds: 60);
 /// at N=6) but large enough to absorb realistic dispatch overhead on
 /// cold-start without erosion as the relay count grows.
 const Duration _outerPublishTimeoutBuffer = RelayPool.perRelaySendTimeout;
-
-/// NIP-22 comment kind used for parent reply references when a video event is
-/// published as a comment reply.
-const int _commentKind = 1111;
 
 /// Computes the outer timeout that bounds the call into
 /// [NostrClient.publishEvent] inside `_publishEventToNostr`.
@@ -177,7 +174,7 @@ class VideoEventPublisher {
           '',
           context.parentAuthorPubkey ?? context.rootAuthorPubkey,
         ])
-        ..add(['k', _commentKind.toString()])
+        ..add(['k', EventKind.comment.toString()])
         ..add([
           'p',
           context.parentAuthorPubkey ?? context.rootAuthorPubkey,

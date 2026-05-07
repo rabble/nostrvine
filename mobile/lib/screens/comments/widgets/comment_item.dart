@@ -12,12 +12,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' show UserProfile, VideoEvent;
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/comments/comment_synthetic_video_event.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
 import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -158,9 +159,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                                     widget.comment.id,
                                   ),
                                   extra: VideoDetailRouteExtra(
-                                    initialVideo: _videoFromComment(
-                                      widget.comment,
-                                    ),
+                                    initialVideo:
+                                        widget.comment.toSyntheticVideoEvent(),
                                   ),
                                 ),
                               ),
@@ -254,35 +254,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         );
     }
   }
-}
-
-VideoEvent _videoFromComment(Comment comment) {
-  final title = comment.content.trim();
-  final createdAt = comment.createdAt.millisecondsSinceEpoch ~/ 1000;
-  return VideoEvent(
-    id: comment.id,
-    pubkey: comment.authorPubkey,
-    createdAt: createdAt,
-    content: comment.content,
-    timestamp: comment.createdAt,
-    title: title.isNotEmpty ? title : null,
-    videoUrl: comment.videoUrl,
-    thumbnailUrl: comment.thumbnailUrl,
-    duration: comment.videoDuration,
-    dimensions: comment.videoDimensions,
-    blurhash: comment.videoBlurhash,
-    // Synthetic tags for navigation only. Thread semantics still come from
-    // the comment model, not from these placeholder kind values.
-    rawTags: {
-      'E': comment.rootEventId,
-      'K': '34236',
-      'P': comment.rootAuthorPubkey,
-      if (comment.replyToEventId != null) 'e': comment.replyToEventId!,
-      if (comment.replyToEventId != null) 'k': '34236',
-      if (comment.replyToAuthorPubkey != null)
-        'p': comment.replyToAuthorPubkey!,
-    },
-  );
 }
 
 /// Header for a comment showing avatar, user info, timestamp, and "You" indicator.

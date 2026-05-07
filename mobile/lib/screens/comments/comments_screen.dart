@@ -390,19 +390,17 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
     CommentsState state,
     String? replyToAuthorPubkey,
   ) {
-    ref
-        .read(videoReplyContextProvider.notifier)
-        .set(
-          VideoReplyContext(
-            rootEventId: state.rootEventId,
-            rootEventKind: state.rootEventKind,
-            rootAuthorPubkey: state.rootAuthorPubkey,
-            rootAddressableId: state.rootAddressableId,
-            parentCommentId: state.activeReplyCommentId,
-            parentAuthorPubkey: replyToAuthorPubkey,
-          ),
-        );
     final replyContextNotifier = ref.read(videoReplyContextProvider.notifier);
+    replyContextNotifier.set(
+      VideoReplyContext(
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootAuthorPubkey: state.rootAuthorPubkey,
+        rootAddressableId: state.rootAddressableId,
+        parentCommentId: state.activeReplyCommentId,
+        parentAuthorPubkey: replyToAuthorPubkey,
+      ),
+    );
     unawaited(
       context
           .push(VideoRecorderScreen.path)

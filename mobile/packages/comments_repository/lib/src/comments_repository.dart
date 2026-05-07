@@ -237,7 +237,6 @@ class CommentsRepository {
     String? rootAddressableId,
     String? replyToEventId,
     String? replyToAuthorPubkey,
-    List<String>? imetaTag,
   }) async {
     final trimmedContent = content.trim();
     if (trimmedContent.isEmpty) {
@@ -272,7 +271,6 @@ class CommentsRepository {
         ['k', rootEventKind.toString()],
         ['p', rootEventAuthorPubkey],
       ],
-      if (imetaTag != null && imetaTag.isNotEmpty) ['imeta', ...imetaTag],
     ];
 
     // Create the event
