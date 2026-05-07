@@ -318,7 +318,11 @@ class _NostrAppSandboxScreenState extends ConsumerState<NostrAppSandboxScreen> {
         if (payload is Map) {
           responseId = payload['id']?.toString() ?? 'unknown';
         }
-      } catch (_) {}
+      } on FormatException {
+        // Best-effort id extraction; subframe rejection is unconditional
+        // regardless of payload validity. Real invariant bugs (StateError,
+        // TypeError) are intentionally not swallowed here.
+      }
       unawaited(
         _emitBridgeResponse(
           id: responseId,
