@@ -261,7 +261,7 @@ void main() {
 
       test(
         'returns success with selfWrapPublished=false '
-        'when self-wrap publish returns null',
+        'when self-wrap publish returns PublishFailed',
         () async {
           // Mirrors the silent-failure shape the reviewer flagged on
           // PR #3908: publishEvent returns null with no exception, so
@@ -289,6 +289,41 @@ void main() {
               return const PublishFailed();
             },
           );
+
+          final result = await matchingService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.rumorEventId, isNotNull);
+          expect(result.selfWrapPublished, isFalse);
+        },
+      );
+
+      test(
+        'returns success with selfWrapPublished=false '
+        'when self-wrap publish returns PublishNoRelays',
+        () async {
+          final signer = LocalNostrSigner(_testPrivateKey);
+          final senderPublicKey = (await signer.getPublicKey())!;
+          final matchingService = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: senderPublicKey,
+            nostrService: mockNostrClient,
+          );
+          var callCount = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            invocation,
+          ) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            return const PublishNoRelays();
+          });
 
           final result = await matchingService.sendPrivateMessage(
             recipientPubkey: _recipientPubkey,
