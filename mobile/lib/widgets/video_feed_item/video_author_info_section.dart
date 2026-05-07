@@ -17,6 +17,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
+import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// The bottom-left video metadata block: optional inline caption pill,
@@ -61,6 +62,14 @@ class VideoAuthorInfoSection extends ConsumerWidget {
         if (video.hasSubtitles && player != null) ...[
           _InlineCaptionPill(video: video, player: player!),
           const SizedBox(height: 16),
+        ],
+        if (video.isVideoReply) ...[
+          VideoReplyParentLink(
+            video: video,
+            variant: VideoReplyParentLinkVariant.overlay,
+            onInteracted: onInteracted,
+          ),
+          const SizedBox(height: 8),
         ],
         // Avatar and name row
         Row(

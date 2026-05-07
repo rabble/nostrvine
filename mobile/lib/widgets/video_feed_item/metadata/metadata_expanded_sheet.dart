@@ -19,6 +19,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_tags_section.
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
+import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:time_formatter/time_formatter.dart';
 
 /// Expanded metadata bottom sheet for a video.
@@ -97,6 +98,10 @@ class _MetadataContent extends StatelessWidget {
       ),
       children: [
         _TitleSection(video: video),
+        VideoReplyParentLink(
+          video: video,
+          variant: VideoReplyParentLinkVariant.metadata,
+        ),
         MetadataBadgesRow(video: video),
         MetadataStatsRow(video: video),
         MetadataVerificationSection(video: video),
