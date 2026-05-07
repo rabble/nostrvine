@@ -1102,6 +1102,13 @@ class _PooledFullscreenItemContentState
   int _heartTriggerId = 0;
   bool _contentWarningRevealed = false;
 
+  /// Last error type reported to [VideoPlaybackStatusCubit] for this
+  /// item's video. Dedupes at the call site so `errorBuilder` rebuilds
+  /// (orientation change, parent rebuild) don't schedule a post-frame
+  /// callback every frame. The cubit also dedupes internally, but
+  /// skipping the callback entirely avoids per-frame scheduler churn.
+  VideoErrorType? _lastReportedError;
+
   void _handleDoubleTapLike(TapDownDetails details) {
     final showWarning = shouldShowContentWarningOverlay(
       contentWarningLabels: widget.video.contentWarningLabels,
@@ -1210,12 +1217,18 @@ class _PooledFullscreenItemContentState
             // infinite_video_feed.VideoErrorType used by playbackStatusFromError
             // and PooledVideoErrorOverlay.
             final feedErrorType = _toFeedErrorType(errorType);
-            // Capture the cubit eagerly so the post-frame callback doesn't
-            // walk the ancestor tree on a potentially-deactivated element.
-            final cubit = context.read<VideoPlaybackStatusCubit>();
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              cubit.report(video.id, playbackStatusFromError(feedErrorType));
-            });
+            // Dedupe at the call site so rebuilds don't schedule a
+            // post-frame callback every frame. See _lastReportedError doc.
+            if (_lastReportedError != feedErrorType) {
+              _lastReportedError = feedErrorType;
+              // Capture the cubit eagerly so the post-frame callback doesn't
+              // walk the ancestor tree on a potentially-deactivated element.
+              final cubit = context.read<VideoPlaybackStatusCubit>();
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                cubit.report(video.id, playbackStatusFromError(feedErrorType));
+              });
+            }
             return PooledVideoErrorOverlay(
               video: video,
               onRetry: onRetry,

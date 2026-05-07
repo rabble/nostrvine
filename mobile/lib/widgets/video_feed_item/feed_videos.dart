@@ -93,6 +93,14 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       context.read<FeedAutoAdvanceCubit>();
   final _feedKey = GlobalKey<InfiniteVideoFeedState>();
 
+  /// Last error type reported per video.id to
+  /// [VideoPlaybackStatusCubit]. Used to dedupe at the call site so
+  /// `errorBuilder` rebuilds (orientation change, parent rebuild) don't
+  /// schedule a post-frame callback every frame. The cubit also dedupes
+  /// internally, but skipping the callback entirely avoids the per-frame
+  /// scheduler churn.
+  final Map<String, VideoErrorType> _lastReportedError = {};
+
   /// Animates the underlying feed to [index].
   ///
   /// Used by parent screens that hold a [GlobalKey<FeedVideosState>] to
@@ -238,12 +246,19 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
           }
           final video = widget.videos[index];
 
-          // Capture the cubit eagerly so the post-frame callback doesn't
-          // walk the ancestor tree on a potentially-deactivated element.
-          final cubit = context.read<VideoPlaybackStatusCubit>();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            cubit.report(video.id, playbackStatusFromError(errorType));
-          });
+          // Dedupe at the call site so `errorBuilder` rebuilds don't
+          // schedule a post-frame callback every frame. See
+          // _lastReportedError doc above.
+          if (_lastReportedError[video.id] != errorType) {
+            _lastReportedError[video.id] = errorType;
+            // Capture the cubit eagerly so the post-frame callback doesn't
+            // walk the ancestor tree on a potentially-deactivated element.
+            final cubit = context.read<VideoPlaybackStatusCubit>();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              cubit.report(video.id, playbackStatusFromError(errorType));
+            });
+          }
           // Mirror the BoxFit logic of VideoLoadingPlaceholder /
           // VideoItemWidget so the error thumbnail respects the same
           // square / portrait-expand rules as the live video.
