@@ -111,7 +111,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       state.copyWith(
         sendStatus: SendStatus.sending,
         messages: [optimisticMessage, ...state.messages],
-        // A new attempt always supersedes a prior failure — retry replaces it.
         clearLastFailedSend: true,
       ),
     );
