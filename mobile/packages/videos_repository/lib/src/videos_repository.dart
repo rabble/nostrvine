@@ -26,6 +26,13 @@ const int _videoKind = EventKind.videoVertical;
 /// Kept small to stay "a couple videos ahead" in the buffer.
 const int _defaultLimit = 5;
 
+/// Upper bound for paging past pages where every fetched event is filtered out.
+///
+/// Reply-only video events are intentionally hidden from normal feeds. If a
+/// dense run of those events appears in New/Home, a single filtered-empty page
+/// should not make the caller think pagination is exhausted forever.
+const int _maxEmptyFilteredPageSkips = 5;
+
 /// Timeout for relay search queries.
 ///
 /// Set higher than the app-wide 5s default to accommodate slower
@@ -185,36 +192,100 @@ class VideosRepository {
         _funnelcakeApiClient != null &&
         _funnelcakeApiClient.isAvailable) {
       try {
-        final response = await _funnelcakeApiClient.getHomeFeed(
-          pubkey: effectiveUserPubkey,
+        return await _fetchVisibleHomeVideosFromStatsApi(
+          userPubkey: effectiveUserPubkey,
           limit: limit,
-          before: until,
+          until: until,
         );
-
-        final videos = _transformVideoStats(response.videos);
-        final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-        return (videos: hydratedVideos, rawBody: response.rawBody);
       } on FunnelcakeException {
         // Fall through to Nostr
       }
     }
 
-    // Nostr fallback — skip when authors list is empty (fast-path startup
-    // before follow list is ready).
-    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
-
-    final filter = Filter(
-      kinds: [_videoKind],
+    return _fetchVisibleHomeVideosFromRelays(
       authors: authors,
       limit: limit,
       until: until,
     );
+  }
 
-    final events = await _nostrClient.queryEvents([filter]);
+  Future<({List<VideoEvent> videos, String? rawBody})>
+  _fetchVisibleHomeVideosFromStatsApi({
+    required String userPubkey,
+    required int limit,
+    int? until,
+  }) async {
+    var cursor = until;
+    var emptyFilteredPageSkips = 0;
 
-    final videos = _transformAndFilter(events);
-    final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-    return (videos: hydratedVideos, rawBody: null);
+    while (true) {
+      final response = await _funnelcakeApiClient!.getHomeFeed(
+        pubkey: userPubkey,
+        limit: limit,
+        before: cursor,
+      );
+
+      final videos = _transformVideoStats(response.videos);
+      final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
+      if (hydratedVideos.isNotEmpty ||
+          !_shouldSkipEmptyFilteredStatsPage(
+            response.videos,
+            limit: limit,
+            hasMore: response.hasMore,
+            skippedPages: emptyFilteredPageSkips,
+          )) {
+        return (
+          videos: hydratedVideos,
+          rawBody: emptyFilteredPageSkips == 0 ? response.rawBody : null,
+        );
+      }
+
+      cursor = response.nextCursor ?? _cursorBeforeOldestStats(response.videos);
+      if (cursor == null) {
+        return (videos: hydratedVideos, rawBody: null);
+      }
+      emptyFilteredPageSkips++;
+    }
+  }
+
+  Future<({List<VideoEvent> videos, String? rawBody})>
+  _fetchVisibleHomeVideosFromRelays({
+    required List<String> authors,
+    required int limit,
+    int? until,
+  }) async {
+    // Nostr fallback — skip when authors list is empty (fast-path startup
+    // before follow list is ready).
+    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
+
+    var cursor = until;
+    var emptyFilteredPageSkips = 0;
+
+    while (true) {
+      final filter = Filter(
+        kinds: [_videoKind],
+        authors: authors,
+        limit: limit,
+        until: cursor,
+      );
+
+      final events = await _nostrClient.queryEvents([filter]);
+
+      final videos = _transformAndFilter(events);
+      final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
+      if (hydratedVideos.isNotEmpty ||
+          !_shouldSkipEmptyFilteredEventPage(
+            events,
+            limit: limit,
+            skippedPages: emptyFilteredPageSkips,
+          )) {
+        return (videos: hydratedVideos, rawBody: null);
+      }
+
+      cursor = _cursorBeforeOldestEvent(events);
+      if (cursor == null) return (videos: hydratedVideos, rawBody: null);
+      emptyFilteredPageSkips++;
+    }
   }
 
   Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
@@ -520,12 +591,10 @@ class VideosRepository {
     // 1. Try Funnelcake API first
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
       try {
-        final videoStats = await _funnelcakeApiClient.getRecentVideos(
+        final videos = await _fetchVisibleRecentVideosFromStatsApi(
           limit: limit,
-          before: until,
+          until: until,
         );
-
-        final videos = _transformVideoStats(videoStats);
         if (until == null) {
           _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
         }
@@ -536,15 +605,70 @@ class VideosRepository {
     }
 
     // 2. Nostr fallback
-    final filter = Filter(kinds: [_videoKind], limit: limit, until: until);
-
-    final events = await _nostrClient.queryEvents([filter]);
-
-    final videos = _transformAndFilter(events);
+    final videos = await _fetchVisibleRecentVideosFromRelays(
+      limit: limit,
+      until: until,
+    );
     if (until == null) {
       _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
     }
     return videos;
+  }
+
+  Future<List<VideoEvent>> _fetchVisibleRecentVideosFromStatsApi({
+    required int limit,
+    int? until,
+  }) async {
+    var cursor = until;
+    var emptyFilteredPageSkips = 0;
+
+    while (true) {
+      final videoStats = await _funnelcakeApiClient!.getRecentVideos(
+        limit: limit,
+        before: cursor,
+      );
+
+      final videos = _transformVideoStats(videoStats);
+      if (videos.isNotEmpty ||
+          !_shouldSkipEmptyFilteredStatsPage(
+            videoStats,
+            limit: limit,
+            skippedPages: emptyFilteredPageSkips,
+          )) {
+        return videos;
+      }
+
+      cursor = _cursorBeforeOldestStats(videoStats);
+      if (cursor == null) return videos;
+      emptyFilteredPageSkips++;
+    }
+  }
+
+  Future<List<VideoEvent>> _fetchVisibleRecentVideosFromRelays({
+    required int limit,
+    int? until,
+  }) async {
+    var cursor = until;
+    var emptyFilteredPageSkips = 0;
+
+    while (true) {
+      final filter = Filter(kinds: [_videoKind], limit: limit, until: cursor);
+      final events = await _nostrClient.queryEvents([filter]);
+
+      final videos = _transformAndFilter(events);
+      if (videos.isNotEmpty ||
+          !_shouldSkipEmptyFilteredEventPage(
+            events,
+            limit: limit,
+            skippedPages: emptyFilteredPageSkips,
+          )) {
+        return videos;
+      }
+
+      cursor = _cursorBeforeOldestEvent(events);
+      if (cursor == null) return videos;
+      emptyFilteredPageSkips++;
+    }
   }
 
   /// Fetches popular videos sorted by engagement score.
@@ -929,6 +1053,8 @@ class VideosRepository {
     final videos = <VideoEvent>[];
 
     for (final stats in videoStatsList) {
+      if (_isReplyOnlyVideoStats(stats)) continue;
+
       final video = stats.toVideoEvent();
 
       // Block filter - check pubkey
@@ -1017,6 +1143,51 @@ class VideosRepository {
     }
 
     return hasRootTag && hasParentTag && !isFeedVisibleReply;
+  }
+
+  bool _isReplyOnlyVideoStats(VideoStats stats) {
+    if (stats.kind != _videoKind) return false;
+    final tags = stats.rawTags;
+    final hasRootTag =
+        (tags['E']?.isNotEmpty ?? false) || (tags['A']?.isNotEmpty ?? false);
+    final hasParentTag =
+        (tags['e']?.isNotEmpty ?? false) || (tags['a']?.isNotEmpty ?? false);
+    final isFeedVisibleReply = tags['divine:reply_visibility'] == 'feed';
+    return hasRootTag && hasParentTag && !isFeedVisibleReply;
+  }
+
+  bool _shouldSkipEmptyFilteredEventPage(
+    List<Event> events, {
+    required int limit,
+    required int skippedPages,
+  }) {
+    return events.length >= limit && skippedPages < _maxEmptyFilteredPageSkips;
+  }
+
+  bool _shouldSkipEmptyFilteredStatsPage(
+    List<VideoStats> stats, {
+    required int limit,
+    bool hasMore = false,
+    required int skippedPages,
+  }) {
+    return (hasMore || stats.length >= limit) &&
+        skippedPages < _maxEmptyFilteredPageSkips;
+  }
+
+  int? _cursorBeforeOldestEvent(List<Event> events) {
+    if (events.isEmpty) return null;
+    final oldest = events
+        .map((event) => event.createdAt)
+        .reduce((a, b) => a < b ? a : b);
+    return oldest - 1;
+  }
+
+  int? _cursorBeforeOldestStats(List<VideoStats> stats) {
+    if (stats.isEmpty) return null;
+    final oldest = stats
+        .map((stat) => stat.createdAt.millisecondsSinceEpoch ~/ 1000)
+        .reduce((a, b) => a < b ? a : b);
+    return oldest - 1;
   }
 
   VideoEvent? _applyContentPreferences(VideoEvent video) {

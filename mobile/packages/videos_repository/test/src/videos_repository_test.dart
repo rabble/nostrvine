@@ -348,6 +348,69 @@ void main() {
             equals('https://example.com/allowed.mp4'),
           );
         });
+
+        test(
+          'continues past a full API page of reply-only videos',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getRecentVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer((invocation) async {
+              final before = invocation.namedArguments[#before] as int?;
+              final limit = invocation.namedArguments[#limit] as int? ?? 5;
+
+              if (before != null) {
+                return [
+                  _createVideoStats(
+                    id: 'feed-video',
+                    pubkey: 'test-pubkey',
+                    dTag: 'feed-dtag',
+                    videoUrl: 'https://example.com/feed.mp4',
+                    createdAt: 1704060000,
+                  ),
+                ];
+              }
+
+              return List.generate(
+                limit,
+                (index) => _createVideoStats(
+                  id: 'video-reply-$index',
+                  pubkey: 'test-pubkey',
+                  dTag: 'reply-dtag-$index',
+                  videoUrl: 'https://example.com/reply-$index.mp4',
+                  createdAt: 1704070000 - index,
+                  rawTags: const {
+                    'E': 'root-event-id',
+                    'K': '34236',
+                    'P': 'root-author',
+                    'e': 'root-event-id',
+                    'k': '34236',
+                    'p': 'root-author',
+                  },
+                ),
+              );
+            });
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getNewVideos();
+
+            expect(result.map((video) => video.id), equals(['feed-video']));
+            verify(
+              () => mockFunnelcakeClient.getRecentVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).called(2);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
       });
 
       test('returns empty list when no events found', () async {
@@ -443,6 +506,54 @@ void main() {
 
         expect(result.map((video) => video.id), equals(['feed-video']));
       });
+
+      test(
+        'continues past a full relay page of reply-only videos',
+        () async {
+          final feedVideo = _createVideoEvent(
+            id: 'feed-video',
+            pubkey: 'test-pubkey',
+            videoUrl: 'https://example.com/feed.mp4',
+            createdAt: 1704060000,
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final filter = filters.single;
+            final limit = filter.limit ?? 5;
+
+            if (filter.until != null) {
+              return [feedVideo];
+            }
+
+            return List.generate(
+              limit,
+              (index) => _createVideoEvent(
+                id: 'video-reply-$index',
+                pubkey: 'test-pubkey',
+                videoUrl: 'https://example.com/reply-$index.mp4',
+                createdAt: 1704070000 - index,
+                extraTags: const [
+                  ['E', 'root-event-id', '', 'root-author'],
+                  ['K', '34236'],
+                  ['P', 'root-author'],
+                  ['e', 'root-event-id', '', 'root-author'],
+                  ['k', '34236'],
+                  ['p', 'root-author'],
+                ],
+              ),
+            );
+          });
+
+          final result = await repository.getNewVideos();
+
+          expect(result.map((video) => video.id), equals(['feed-video']));
+          verify(() => mockNostrClient.queryEvents(any())).called(2);
+        },
+      );
 
       test('keeps reply-tagged videos when marked feed-visible', () async {
         final videoReply = _createVideoEvent(
@@ -1388,6 +1499,80 @@ void main() {
             equals('https://example.com/allowed.mp4'),
           );
         });
+
+        test(
+          'continues past a full API home page of reply-only videos',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer((invocation) async {
+              final before = invocation.namedArguments[#before] as int?;
+              final limit = invocation.namedArguments[#limit] as int? ?? 5;
+
+              if (before != null) {
+                return HomeFeedResponse(
+                  videos: [
+                    _createVideoStats(
+                      id: 'feed-video',
+                      pubkey: 'followed-user',
+                      dTag: 'feed-dtag',
+                      videoUrl: 'https://example.com/feed.mp4',
+                      createdAt: 1704060000,
+                    ),
+                  ],
+                );
+              }
+
+              return HomeFeedResponse(
+                videos: List.generate(
+                  limit,
+                  (index) => _createVideoStats(
+                    id: 'video-reply-$index',
+                    pubkey: 'followed-user',
+                    dTag: 'reply-dtag-$index',
+                    videoUrl: 'https://example.com/reply-$index.mp4',
+                    createdAt: 1704070000 - index,
+                    rawTags: const {
+                      'E': 'root-event-id',
+                      'K': '34236',
+                      'P': 'root-author',
+                      'e': 'root-event-id',
+                      'k': '34236',
+                      'p': 'root-author',
+                    },
+                  ),
+                ),
+                hasMore: true,
+                nextCursor: 1704069000,
+              );
+            });
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final result = await repositoryWithApi.getHomeFeedVideos(
+              authors: ['followed-user'],
+              userPubkey: 'my-pubkey',
+            );
+
+            expect(result.videos.map((video) => video.id), ['feed-video']);
+            verify(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).called(2);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
       });
 
       test('returns empty list when authors is empty '
@@ -1538,6 +1723,56 @@ void main() {
         expect(result.videos.first.id, equals('home-video-123'));
         expect(result.videos.first.pubkey, equals('followed-user'));
       });
+
+      test(
+        'continues past a full relay home page of reply-only videos',
+        () async {
+          final feedVideo = _createVideoEvent(
+            id: 'feed-video',
+            pubkey: 'followed-user',
+            videoUrl: 'https://example.com/feed.mp4',
+            createdAt: 1704060000,
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.first as List<Filter>;
+            final filter = filters.single;
+            final limit = filter.limit ?? 5;
+
+            if (filter.until != null) {
+              return [feedVideo];
+            }
+
+            return List.generate(
+              limit,
+              (index) => _createVideoEvent(
+                id: 'video-reply-$index',
+                pubkey: 'followed-user',
+                videoUrl: 'https://example.com/reply-$index.mp4',
+                createdAt: 1704070000 - index,
+                extraTags: const [
+                  ['E', 'root-event-id', '', 'root-author'],
+                  ['K', '34236'],
+                  ['P', 'root-author'],
+                  ['e', 'root-event-id', '', 'root-author'],
+                  ['k', '34236'],
+                  ['p', 'root-author'],
+                ],
+              ),
+            );
+          });
+
+          final result = await repository.getHomeFeedVideos(
+            authors: ['followed-user'],
+          );
+
+          expect(result.videos.map((video) => video.id), ['feed-video']);
+          verify(() => mockNostrClient.queryEvents(any())).called(2);
+        },
+      );
 
       test('sorts videos by creation time (newest first)', () async {
         final olderEvent = _createVideoEvent(
@@ -7717,17 +7952,19 @@ VideoStats _createVideoStats({
   required String pubkey,
   required String dTag,
   required String videoUrl,
+  int createdAt = 1704067200,
   String title = 'Test Video',
   String thumbnail = 'https://example.com/thumb.jpg',
   int? loops,
   int? views,
+  Map<String, String> rawTags = const {},
   List<String> moderationLabels = const [],
   List<String> collaboratorPubkeys = const [],
 }) {
   return VideoStats(
     id: id,
     pubkey: pubkey,
-    createdAt: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+    createdAt: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
     kind: EventKind.videoVertical,
     dTag: dTag,
     title: title,
@@ -7739,6 +7976,7 @@ VideoStats _createVideoStats({
     engagementScore: 0,
     loops: loops,
     views: views,
+    rawTags: rawTags,
     moderationLabels: moderationLabels,
     collaboratorPubkeys: collaboratorPubkeys,
   );
