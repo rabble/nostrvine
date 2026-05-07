@@ -779,13 +779,19 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
-                customActions: const [FeedSettingsMenu()],
-                // Tighten left/right insets from the default 16 to 12 so the
-                // back button and the More popover sit closer to the screen
-                // edges over fullscreen video — matches the profile screen
-                // header's nav-button row.
+                // Back button sits 8 px from the left edge of the screen
+                // (4 px tighter than the previous 12). The More popover on
+                // the trailing side keeps its 12 px gap by wrapping the
+                // FeedSettingsMenu in an extra `end: 4` padding inside the
+                // customActions slot.
+                customActions: const [
+                  Padding(
+                    padding: EdgeInsetsDirectional.only(end: 4),
+                    child: FeedSettingsMenu(),
+                  ),
+                ],
                 style: DiVineAppBarStyle.transparentStyle.copyWith(
-                  horizontalPadding: 12,
+                  horizontalPadding: 8,
                 ),
               ),
               body: kIsWeb
