@@ -430,32 +430,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     _lastPooledVideos = nextVideos;
   }
 
-  /// Whether auto-advance is available on this build. Reduced-motion users
-  /// keep the control and runtime disabled regardless of in-app toggle state.
-  bool _isAutoAdvanceAvailable() {
-    if (!mounted) return false;
-    return !MediaQuery.disableAnimationsOf(context);
-  }
-
   void _handleBack(BuildContext context) {
     if (context.canPop()) {
       context.pop();
       return;
     }
     context.go('/');
-  }
-
-  void _toggleAutoAdvance() {
-    if (!_isAutoAdvanceAvailable()) return;
-
-    _autoAdvanceCubit.toggle();
-    if (!_autoAdvanceCubit.state.isEffectivelyActive) {
-      _autoAdvanceCubit.clearPendingPaginationAdvance();
-    }
-    announceAutoAdvanceToggle(
-      context,
-      enabled: _autoAdvanceCubit.state.enabled,
-    );
   }
 
   void _suppressAutoAdvance() => _autoAdvanceCubit.suppressForInteraction();
@@ -780,8 +760,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             final autoAdvanceAvailable = !MediaQuery.disableAnimationsOf(
               context,
             );
-            final effectiveAutoEnabled =
-                autoAdvanceAvailable && autoState.enabled;
             final effectiveAutoActive =
                 autoAdvanceAvailable && autoState.isEffectivelyActive;
 
@@ -863,9 +841,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                               isOwnVideo: currentUserPubkey == video.pubkey,
                               controller: controller,
                               contextTitle: widget.contextTitle,
-                              showAutoButton: autoAdvanceAvailable,
-                              isAutoEnabled: effectiveAutoEnabled,
-                              onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                             );
                           },
@@ -930,10 +905,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                               trafficSource: widget.trafficSource,
                               sourceDetail: widget.sourceDetail,
                               isOwnVideo: isOwnVideo,
-                              showAutoButton: autoAdvanceAvailable,
-                              isAutoEnabled: effectiveAutoEnabled,
                               isAutoAdvanceActive: effectiveAutoActive,
-                              onAutoPressed: _toggleAutoAdvance,
                               onInteracted: _suppressAutoAdvance,
                               onAutoAdvanceCompleted:
                                   _handleAutoAdvanceCompleted,
@@ -955,13 +927,10 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     required this.isAutoAdvanceActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
-    this.onAutoPressed,
     this.onInteracted,
     this.onAutoAdvanceCompleted,
   });
@@ -971,13 +940,10 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final bool isAutoAdvanceActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
   final VoidCallback? onAutoAdvanceCompleted;
 
@@ -1020,10 +986,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
         isOwnVideo: isOwnVideo,
-        showAutoButton: showAutoButton,
-        isAutoEnabled: isAutoEnabled,
         isAutoAdvanceActive: isAutoAdvanceActive,
-        onAutoPressed: onAutoPressed,
         onInteracted: onInteracted,
         onAutoAdvanceCompleted: onAutoAdvanceCompleted,
       ),
@@ -1036,22 +999,16 @@ class _WebFullscreenItem extends ConsumerWidget {
     required this.video,
     required this.isActive,
     required this.isOwnVideo,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     this.controller,
     this.contextTitle,
-    this.onAutoPressed,
     this.onInteracted,
   });
 
   final VideoEvent video;
   final bool isActive;
   final bool isOwnVideo;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final VideoPlayerController? controller;
   final String? contextTitle;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -1094,9 +1051,6 @@ class _WebFullscreenItem extends ConsumerWidget {
             contextTitle: contextTitle,
             isFullscreen: true,
             topOffset: isOwnVideo ? 64 : 8,
-            showAutoButton: showAutoButton,
-            isAutoEnabled: isAutoEnabled,
-            onAutoPressed: onAutoPressed,
             onInteracted: onInteracted,
           ),
         ],
@@ -1112,13 +1066,10 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
     required this.isActive,
     required this.isOwnVideo,
     required this.pagePosition,
-    required this.showAutoButton,
-    required this.isAutoEnabled,
     required this.isAutoAdvanceActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
-    this.onAutoPressed,
     this.onInteracted,
     this.onAutoAdvanceCompleted,
   });
@@ -1128,13 +1079,10 @@ class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   final bool isActive;
   final bool isOwnVideo;
   final ValueNotifier<double> pagePosition;
-  final bool showAutoButton;
-  final bool isAutoEnabled;
   final bool isAutoAdvanceActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
   final VoidCallback? onAutoAdvanceCompleted;
 
@@ -1335,9 +1283,6 @@ class _PooledFullscreenItemContentState
                           contextTitle: widget.contextTitle,
                           isFullscreen: true,
                           topOffset: widget.isOwnVideo ? 64 : 8,
-                          showAutoButton: widget.showAutoButton,
-                          isAutoEnabled: widget.isAutoEnabled,
-                          onAutoPressed: widget.onAutoPressed,
                           onInteracted: widget.onInteracted,
                         );
                       },
