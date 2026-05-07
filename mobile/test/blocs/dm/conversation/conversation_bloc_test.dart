@@ -332,6 +332,64 @@ void main() {
                 .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
           ],
         );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending with optimistic, sentPartial with lastFailedSend] '
+          'when sendMessage succeeds but the self-wrap was not published',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          // Partial-delivery: the recipient got the message and the local
+          // DB persist already happened inside DmRepository.sendMessage,
+          // so the optimistic stays — stripping it would race with the
+          // watchMessages re-emit and cause a brief disappearance.
+          // lastFailedSend is recorded so the UI can offer retry.
+          expect: () => [
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sentPartial,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'optimistic preserved',
+                  1,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Hello',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
+          ],
+        );
       });
 
       group('group message', () {
@@ -420,6 +478,63 @@ void main() {
                 ),
           ],
           errors: () => [isA<Exception>()],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, sentPartial] when any successful per-recipient '
+          'sendGroupMessage had its self-wrap unpublished',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                content: 'Group hello',
+              ),
+            ).thenAnswer(
+              (_) async => [
+                NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey,
+                ),
+                NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey2,
+                  selfWrapPublished: false,
+                ),
+              ],
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey, recipientPubkey2],
+              content: 'Group hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sentPartial,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Group hello',
+                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    ),
+                  ),
+                ),
+          ],
         );
       });
 

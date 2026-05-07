@@ -5194,6 +5194,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dmSendFailedRetry => 'Försök igen';
 
   @override
+  String get dmSendPartialMessage =>
+      'Skickat, men inte synkat till dina andra enheter';
+
+  @override
   String get reportDialogCancel => 'Avbryt';
 
   @override

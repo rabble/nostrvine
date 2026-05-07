@@ -5095,6 +5095,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmSendFailedRetry => 'እንደገና ይሞክሩ';
 
   @override
+  String get dmSendPartialMessage => 'ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም';
+
+  @override
   String get reportDialogCancel => 'ሰርዝ';
 
   @override

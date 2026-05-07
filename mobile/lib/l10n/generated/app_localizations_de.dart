@@ -5259,6 +5259,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dmSendFailedRetry => 'Erneut versuchen';
 
   @override
+  String get dmSendPartialMessage =>
+      'Gesendet, aber nicht mit deinen anderen Geräten synchronisiert';
+
+  @override
   String get reportDialogCancel => 'Abbrechen';
 
   @override

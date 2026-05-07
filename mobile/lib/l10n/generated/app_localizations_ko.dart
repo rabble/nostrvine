@@ -5000,6 +5000,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dmSendFailedRetry => '다시 시도';
 
   @override
+  String get dmSendPartialMessage => '보냈지만 다른 기기에 동기화되지 않았어요';
+
+  @override
   String get reportDialogCancel => '취소';
 
   @override

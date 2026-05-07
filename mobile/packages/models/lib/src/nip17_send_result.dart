@@ -10,19 +10,28 @@ class NIP17SendResult {
     this.recipientPubkey,
     this.error,
     this.timestamp,
+    this.selfWrapPublished = true,
   });
 
-  /// Create success result
+  /// Create success result.
+  ///
+  /// [selfWrapPublished] indicates whether the sender's self-addressed gift
+  /// wrap (NIP-17) was also delivered to relays. When `false`, the recipient
+  /// got the message but the sender's other devices won't see it on a
+  /// relay-only restore. The send is still considered a success because the
+  /// recipient was reached.
   factory NIP17SendResult.success({
     required String rumorEventId,
     required String messageEventId,
     required String recipientPubkey,
+    bool selfWrapPublished = true,
   }) => NIP17SendResult(
     success: true,
     rumorEventId: rumorEventId,
     messageEventId: messageEventId,
     recipientPubkey: recipientPubkey,
     timestamp: DateTime.now(),
+    selfWrapPublished: selfWrapPublished,
   );
 
   /// Create failure result
@@ -42,12 +51,22 @@ class NIP17SendResult {
   final String? error;
   final DateTime? timestamp;
 
+  /// Whether the sender's self-addressed gift wrap reached relays.
+  ///
+  /// When `success` is `true` and this is `false`, the message was delivered
+  /// to the recipient but cross-device sync for the sender is degraded. UI
+  /// can surface this as a partial-delivery state distinct from a full
+  /// failure. Defaults to `true` for failure results and for callers that
+  /// do not yet track this signal.
+  final bool selfWrapPublished;
+
   @override
   String toString() {
     if (success) {
       return 'NIP17SendResult(success: true, '
           'rumorEventId: $rumorEventId, '
-          'messageEventId: $messageEventId, recipient: $recipientPubkey)';
+          'messageEventId: $messageEventId, recipient: $recipientPubkey, '
+          'selfWrapPublished: $selfWrapPublished)';
     } else {
       return 'NIP17SendResult(success: false, error: $error)';
     }

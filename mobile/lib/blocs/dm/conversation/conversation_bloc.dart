@@ -117,6 +117,19 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     );
 
     try {
+      // Partial-delivery: recipient got the message and DmRepository
+      // persisted it locally, but the self-addressed gift wrap did not
+      // reach relays. The sender's other devices will not see this
+      // message on relay-only restore. Surface as a distinct status so
+      // the UI can offer a retry-sync path without claiming the send
+      // failed (the optimistic stays — the message *was* sent).
+      //
+      // Retrying redispatches the full send via [lastFailedSend], which
+      // double-delivers to the recipient on success. That tradeoff is
+      // accepted here: silent loss of cross-device sync is worse than a
+      // duplicate bubble. The principled fix — a durable outgoing queue
+      // that retries the self-wrap only — is tracked in #3909.
+      var selfWrapPublished = true;
       if (event.recipientPubkeys.length == 1) {
         final result = await _dmRepository.sendMessage(
           recipientPubkey: event.recipientPubkeys.first,
@@ -125,6 +138,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (!result.success) {
           throw Exception(result.error ?? 'Failed to send message');
         }
+        selfWrapPublished = result.selfWrapPublished;
       } else {
         final results = await _dmRepository.sendGroupMessage(
           recipientPubkeys: event.recipientPubkeys,
@@ -135,6 +149,25 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
             results.first.error ?? 'Failed to send group message',
           );
         }
+        // For groups, "self-wrap" is per-recipient. We treat the send as
+        // partial if any successful per-recipient send had its self-wrap
+        // fail, because that recipient's copy will not sync to the
+        // sender's other devices.
+        selfWrapPublished = results
+            .where((r) => r.success)
+            .every((r) => r.selfWrapPublished);
+      }
+      if (!selfWrapPublished) {
+        emit(
+          state.copyWith(
+            sendStatus: SendStatus.sentPartial,
+            lastFailedSend: FailedSend(
+              content: event.content,
+              recipientPubkeys: event.recipientPubkeys,
+            ),
+          ),
+        );
+        return;
       }
       emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {

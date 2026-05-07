@@ -5228,6 +5228,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dmSendFailedRetry => 'Tentar novamente';
 
   @override
+  String get dmSendPartialMessage =>
+      'Enviado, mas não sincronizou com seus outros dispositivos';
+
+  @override
   String get reportDialogCancel => 'Cancelar';
 
   @override

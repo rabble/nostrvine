@@ -2721,6 +2721,10 @@
   "@dmSendFailedRetry": {
     "description": "SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message."
   },
+  "dmSendPartialMessage": "Sent, but didn't sync to your other devices",
+  "@dmSendPartialMessage": {
+    "description": "SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`."
+  },
 
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",

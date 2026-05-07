@@ -106,8 +106,9 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
       body: BlocListener<ConversationBloc, ConversationState>(
         listenWhen: (previous, current) =>
             previous.sendStatus != current.sendStatus &&
-            current.sendStatus == SendStatus.failed,
-        listener: _onSendFailed,
+            (current.sendStatus == SendStatus.failed ||
+                current.sendStatus == SendStatus.sentPartial),
+        listener: _onSendOutcome,
         child: Column(
           children: [
             ConversationAppBar(
@@ -141,14 +142,17 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     );
   }
 
-  void _onSendFailed(BuildContext context, ConversationState state) {
+  void _onSendOutcome(BuildContext context, ConversationState state) {
     final lastFailedSend = state.lastFailedSend;
     if (lastFailedSend == null) return;
     final l10n = context.l10n;
+    final message = state.sendStatus == SendStatus.sentPartial
+        ? l10n.dmSendPartialMessage
+        : l10n.dmSendFailedMessage;
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(
-        content: Text(l10n.dmSendFailedMessage),
+        content: Text(message),
         action: SnackBarAction(
           label: l10n.dmSendFailedRetry,
           onPressed: () {
@@ -167,7 +171,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
     // weaker than the written rule and not guaranteed across platforms.
     SemanticsService.sendAnnouncement(
       View.of(context),
-      l10n.dmSendFailedMessage,
+      message,
       Directionality.of(context),
     );
   }

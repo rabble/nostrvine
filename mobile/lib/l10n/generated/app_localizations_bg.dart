@@ -5247,6 +5247,10 @@ class AppLocalizationsBg extends AppLocalizations {
   String get dmSendFailedRetry => 'Опитай пак';
 
   @override
+  String get dmSendPartialMessage =>
+      'Изпратено, но не се синхронизира с другите ти устройства';
+
+  @override
   String get reportDialogCancel => 'Отказ';
 
   @override

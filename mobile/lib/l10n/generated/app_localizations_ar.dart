@@ -5151,6 +5151,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dmSendFailedRetry => 'إعادة المحاولة';
 
   @override
+  String get dmSendPartialMessage =>
+      'أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى';
+
+  @override
   String get reportDialogCancel => 'إلغاء';
 
   @override

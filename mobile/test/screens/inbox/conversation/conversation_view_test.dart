@@ -715,6 +715,65 @@ void main() {
           );
         },
       );
+
+      // The recipient-only partial-delivery path: NIP17MessageService
+      // returned `success: true, selfWrapPublished: false`, so the bloc
+      // emits SendStatus.sentPartial. The UI must show distinct copy
+      // (the message *was* delivered) while still offering retry, so the
+      // sender can attempt to re-publish their self-wrap and restore
+      // cross-device sync. Pinned per PR #3908 review feedback.
+      testWidgets(
+        'shows the partial-delivery SnackBar copy when sendStatus '
+        'transitions to sentPartial',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sentPartial,
+                lastFailedSend: failedSend,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: const ConversationView(
+                    participantPubkeys: [otherPubkey],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(
+            find.text(l10n.dmSendPartialMessage),
+            findsOneWidget,
+            reason:
+                'partial-delivery copy must come from context.l10n and be '
+                'distinct from the full-failure copy',
+          );
+          expect(find.text(l10n.dmSendFailedMessage), findsNothing);
+          expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+        },
+      );
     });
   });
 }

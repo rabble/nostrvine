@@ -5344,6 +5344,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dmSendFailedRetry => 'Reîncearcă';
 
   @override
+  String get dmSendPartialMessage =>
+      'Trimis, dar nu s-a sincronizat cu celelalte dispozitive';
+
+  @override
   String get reportDialogCancel => 'Anulează';
 
   @override

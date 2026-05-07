@@ -115,6 +115,9 @@ class NIP17MessageService {
       // are recoverable from relays after reinstall or data loss.
       // Wrapped in its own try-catch because the message was already
       // delivered to the recipient — self-wrap failure is non-fatal.
+      // The result is reported as `selfWrapPublished` so callers can
+      // distinguish full success from recipient-only partial success.
+      var selfWrapPublished = false;
       try {
         final selfWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
           nostr,
@@ -122,11 +125,20 @@ class NIP17MessageService {
           _senderPublicKey,
         );
         if (selfWrapEvent != null) {
-          await _nostrService.publishEvent(selfWrapEvent);
+          final selfSent = await _nostrService.publishEvent(selfWrapEvent);
+          selfWrapPublished = selfSent != null;
         }
       } on Object catch (e) {
         Log.error(
           'Self-wrap failed (non-fatal): $e',
+          category: LogCategory.system,
+        );
+      }
+
+      if (!selfWrapPublished) {
+        Log.warning(
+          'NIP-17 self-wrap not published — sender other devices will not '
+          'see this message on relay restore',
           category: LogCategory.system,
         );
       }
@@ -139,6 +151,7 @@ class NIP17MessageService {
         rumorEventId: rumorEvent.id,
         messageEventId: giftWrapEvent.id,
         recipientPubkey: recipientPubkey,
+        selfWrapPublished: selfWrapPublished,
       );
     } on Object catch (e, stackTrace) {
       Log.error(

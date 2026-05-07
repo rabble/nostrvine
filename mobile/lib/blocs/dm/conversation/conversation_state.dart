@@ -4,7 +4,13 @@ part of 'conversation_bloc.dart';
 
 enum ConversationStatus { initial, loading, loaded, error }
 
-enum SendStatus { idle, sending, sent, failed }
+/// Outcome of the most recent send attempt.
+///
+/// [sentPartial] indicates the recipient received the message but the
+/// sender's self-addressed NIP-17 gift wrap did not reach relays, so the
+/// sender's other devices will not see this message on relay-only restore.
+/// Distinct from [sent] (full success) and [failed] (recipient never got it).
+enum SendStatus { idle, sending, sent, sentPartial, failed }
 
 /// Snapshot of the most recent send attempt that did not reach the relay.
 ///

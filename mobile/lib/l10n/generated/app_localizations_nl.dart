@@ -5216,6 +5216,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get dmSendFailedRetry => 'Opnieuw';
 
   @override
+  String get dmSendPartialMessage =>
+      'Verzonden, maar niet gesynchroniseerd met je andere apparaten';
+
+  @override
   String get reportDialogCancel => 'Annuleren';
 
   @override

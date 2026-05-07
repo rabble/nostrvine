@@ -5178,6 +5178,10 @@ class AppLocalizationsTr extends AppLocalizations {
   String get dmSendFailedRetry => 'Tekrar Dene';
 
   @override
+  String get dmSendPartialMessage =>
+      'Gönderildi, ama diğer cihazlarınla eşitlenmedi';
+
+  @override
   String get reportDialogCancel => 'İptal';
 
   @override

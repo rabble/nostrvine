@@ -9222,6 +9222,12 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get dmSendFailedRetry;
 
+  /// SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent, but didn\'t sync to your other devices'**
+  String get dmSendPartialMessage;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:
