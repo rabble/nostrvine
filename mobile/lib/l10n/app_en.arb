@@ -2092,21 +2092,28 @@
   "feedModeFollowing": "Following",
   "feedModeSemanticLabel": "Feed mode: {label}",
   "@feedModeSemanticLabel": {
+    "description": "Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.",
     "placeholders": {
       "label": {
-        "type": "String"
+        "type": "String",
+        "description": "Localized name of the current feed mode (e.g. New, Following)."
       }
     }
   },
   "videoAuthorSemanticLabel": "Video author: {displayName}",
   "@videoAuthorSemanticLabel": {
+    "description": "Semantic label for the video author's display name region. Screen reader only.",
     "placeholders": {
       "displayName": {
-        "type": "String"
+        "type": "String",
+        "description": "Localized or resolved display name of the creator."
       }
     }
   },
   "videoAuthorAvatarSemanticLabel": "Author avatar",
+  "@videoAuthorAvatarSemanticLabel": {
+    "description": "Semantic label for the author's circular profile avatar on feed video metadata. Screen reader only."
+  },
   "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
   "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
   "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
