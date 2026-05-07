@@ -36,7 +36,6 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/pooled_player_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
@@ -746,10 +745,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 currentUserPubkey != null &&
                 currentUserPubkey == state.currentVideo?.pubkey;
 
-            final featureFlagService = ref.watch(featureFlagServiceProvider);
-            final isEditorEnabled = featureFlagService.isEnabled(
-              FeatureFlag.enableVideoEditorV1,
-            );
             // Subscribe to Auto state so items rebuild on toggle/suppress/resume.
             final autoState = context.watch<FeedAutoAdvanceCubit>().state;
 
@@ -761,19 +756,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             );
             final effectiveAutoActive =
                 autoAdvanceAvailable && autoState.isEffectivelyActive;
-
-            final currentVideo = state.currentVideo;
-            final editAction =
-                isEditorEnabled && isOwnVideo && currentVideo != null
-                ? DiVineAppBarAction(
-                    icon: SvgIconSource(
-                      DivineIconName.pencilSimpleLine.assetPath,
-                    ),
-                    onPressed: () =>
-                        showEditDialogForVideo(context, currentVideo),
-                    semanticLabel: 'Edit video',
-                  )
-                : null;
 
             // Wire the NIP-98 auth header provider into WebVideoFeed only
             // when running on web AND the HLS auth web player flag is on.
@@ -797,7 +779,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 onBackPressed: () => _handleBack(context),
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
-                actions: [?editAction],
                 customActions: const [FeedSettingsMenu()],
               ),
               body: kIsWeb
