@@ -387,7 +387,11 @@ void main() {
             rootAuthorPubkey: testRootAuthorPubkey,
             rootEventKind: _testRootEventKind,
             extraTags: const [
-              ['imeta', 'url https://media.divine.video/reply/12345', 'm video/mp4'],
+              [
+                'imeta',
+                'url https://media.divine.video/reply/12345',
+                'm video/mp4',
+              ],
             ],
           );
           when(
