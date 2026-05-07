@@ -5198,6 +5198,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Skickat, men inte synkat till dina andra enheter';
 
   @override
+  String get dmConversationLoadError =>
+      'Det gick inte att läsa in meddelandena';
+
+  @override
   String get reportDialogCancel => 'Avbryt';
 
   @override

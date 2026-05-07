@@ -5220,6 +5220,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Verzonden, maar niet gesynchroniseerd met je andere apparaten';
 
   @override
+  String get dmConversationLoadError => 'Berichten konden niet worden geladen';
+
+  @override
   String get reportDialogCancel => 'Annuleren';
 
   @override

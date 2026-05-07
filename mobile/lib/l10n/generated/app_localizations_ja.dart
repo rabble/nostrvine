@@ -4986,6 +4986,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dmSendPartialMessage => '送信したけど、ほかのデバイスには同期できなかった';
 
   @override
+  String get dmConversationLoadError => 'メッセージを読み込めなかった';
+
+  @override
   String get reportDialogCancel => 'キャンセル';
 
   @override

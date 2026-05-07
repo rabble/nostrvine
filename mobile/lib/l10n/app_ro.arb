@@ -2436,6 +2436,7 @@
     "dmSendFailedMessage": "Mesajul nu a putut fi trimis",
     "dmSendFailedRetry": "Reîncearcă",
     "dmSendPartialMessage": "Trimis, dar nu s-a sincronizat cu celelalte dispozitive",
+    "dmConversationLoadError": "Mesajele nu au putut fi încărcate",
     "reportDialogCancel": "Anulează",
     "reportDialogReport": "Raportează",
     "routerInvalidCreator": "Creator invalid",

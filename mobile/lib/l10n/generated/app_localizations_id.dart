@@ -5173,6 +5173,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Terkirim, tapi tidak tersinkron ke perangkat lainmu';
 
   @override
+  String get dmConversationLoadError => 'Pesan tidak dapat dimuat';
+
+  @override
   String get reportDialogCancel => 'Batal';
 
   @override

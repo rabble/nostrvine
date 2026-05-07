@@ -2725,6 +2725,10 @@
   "@dmSendPartialMessage": {
     "description": "SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`."
   },
+  "dmConversationLoadError": "Could not load messages",
+  "@dmConversationLoadError": {
+    "description": "Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`)."
+  },
 
   "reportDialogCancel": "Cancel",
   "reportDialogReport": "Report",

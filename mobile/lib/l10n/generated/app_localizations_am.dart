@@ -5098,6 +5098,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get dmSendPartialMessage => 'ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም';
 
   @override
+  String get dmConversationLoadError => 'መልዕክቶችን መጫን አልተቻለም';
+
+  @override
   String get reportDialogCancel => 'ሰርዝ';
 
   @override

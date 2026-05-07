@@ -5263,6 +5263,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gesendet, aber nicht mit deinen anderen Geräten synchronisiert';
 
   @override
+  String get dmConversationLoadError =>
+      'Nachrichten konnten nicht geladen werden';
+
+  @override
   String get reportDialogCancel => 'Abbrechen';
 
   @override

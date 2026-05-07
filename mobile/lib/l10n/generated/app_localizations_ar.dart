@@ -5155,6 +5155,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى';
 
   @override
+  String get dmConversationLoadError => 'تعذّر تحميل الرسائل';
+
+  @override
   String get reportDialogCancel => 'إلغاء';
 
   @override

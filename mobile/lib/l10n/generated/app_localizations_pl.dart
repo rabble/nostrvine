@@ -5333,6 +5333,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wysłano, ale nie zsynchronizowano z twoimi innymi urządzeniami';
 
   @override
+  String get dmConversationLoadError => 'Nie udało się wczytać wiadomości';
+
+  @override
   String get reportDialogCancel => 'Anuluj';
 
   @override

@@ -2436,6 +2436,7 @@
     "dmSendFailedMessage": "Bericht kon niet worden verzonden",
     "dmSendFailedRetry": "Opnieuw",
     "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",
+    "dmConversationLoadError": "Berichten konden niet worden geladen",
     "reportDialogCancel": "Annuleren",
     "reportDialogReport": "Rapporteren",
     "routerInvalidCreator": "Ongeldige maker",

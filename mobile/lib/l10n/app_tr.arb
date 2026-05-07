@@ -2435,6 +2435,7 @@
     "dmSendFailedMessage": "Mesaj gönderilemedi",
     "dmSendFailedRetry": "Tekrar Dene",
     "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",
+    "dmConversationLoadError": "Mesajlar yüklenemedi",
     "reportDialogCancel": "İptal",
     "reportDialogReport": "Bildir",
     "routerInvalidCreator": "Geçersiz içerik üretici",

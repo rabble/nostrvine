@@ -5251,6 +5251,9 @@ class AppLocalizationsBg extends AppLocalizations {
       'Изпратено, но не се синхронизира с другите ти устройства';
 
   @override
+  String get dmConversationLoadError => 'Съобщенията не се заредиха';
+
+  @override
   String get reportDialogCancel => 'Отказ';
 
   @override

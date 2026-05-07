@@ -5182,6 +5182,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Gönderildi, ama diğer cihazlarınla eşitlenmedi';
 
   @override
+  String get dmConversationLoadError => 'Mesajlar yüklenemedi';
+
+  @override
   String get reportDialogCancel => 'İptal';
 
   @override

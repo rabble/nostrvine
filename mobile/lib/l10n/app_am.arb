@@ -2610,6 +2610,7 @@
     "dmSendFailedMessage": "መልዕክቱ መላክ አልተሳካም",
     "dmSendFailedRetry": "እንደገና ይሞክሩ",
     "dmSendPartialMessage": "ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም",
+    "dmConversationLoadError": "መልዕክቶችን መጫን አልተቻለም",
     "reportDialogCancel": "ሰርዝ",
     "reportDialogReport": "ሪፖርት አድርግ",
     "exploreVideoId": "ID: {id}",

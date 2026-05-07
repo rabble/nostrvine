@@ -5249,6 +5249,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Enviado, pero no se sincronizó con tus otros dispositivos';
 
   @override
+  String get dmConversationLoadError => 'No se pudieron cargar los mensajes';
+
+  @override
   String get reportDialogCancel => 'Cancelar';
 
   @override

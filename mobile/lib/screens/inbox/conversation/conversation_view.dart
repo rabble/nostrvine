@@ -239,7 +239,7 @@ class _ConversationContent extends StatelessWidget {
           ),
           ConversationStatus.error => Center(
             child: Text(
-              'Could not load messages',
+              context.l10n.dmConversationLoadError,
               style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
             ),
           ),

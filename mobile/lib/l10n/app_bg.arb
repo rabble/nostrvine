@@ -2484,6 +2484,7 @@
     "dmSendFailedMessage": "Съобщението не мина",
     "dmSendFailedRetry": "Опитай пак",
     "dmSendPartialMessage": "Изпратено, но не се синхронизира с другите ти устройства",
+    "dmConversationLoadError": "Съобщенията не се заредиха",
     "reportDialogCancel": "Отказ",
     "reportDialogReport": "Докладвай",
     "exploreVideoId": "ID: {id}",

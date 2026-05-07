@@ -158,7 +158,22 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.text('Could not load messages'), findsOneWidget);
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(ConversationView)),
+        );
+        expect(find.text(l10n.dmConversationLoadError), findsOneWidget);
+        // Cross-check that the widget actually reads from l10n: the German
+        // copy must NOT appear in an en-locale render. Catches a regression
+        // where the migration accidentally hardcodes the English string
+        // alongside the l10n key.
+        expect(
+          find.text(
+            lookupAppLocalizations(
+              const Locale('de'),
+            ).dmConversationLoadError,
+          ),
+          findsNothing,
+        );
       });
 
       testWidgets('renders $EmptyConversation when loaded with no messages', (

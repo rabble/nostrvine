@@ -2436,6 +2436,7 @@
     "dmSendFailedMessage": "Nachricht konnte nicht gesendet werden",
     "dmSendFailedRetry": "Erneut versuchen",
     "dmSendPartialMessage": "Gesendet, aber nicht mit deinen anderen Geräten synchronisiert",
+    "dmConversationLoadError": "Nachrichten konnten nicht geladen werden",
     "reportDialogCancel": "Abbrechen",
     "reportDialogReport": "Melden",
     "routerInvalidCreator": "Ungültiger Ersteller",

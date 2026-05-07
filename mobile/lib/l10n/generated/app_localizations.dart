@@ -9228,6 +9228,12 @@ abstract class AppLocalizations {
   /// **'Sent, but didn\'t sync to your other devices'**
   String get dmSendPartialMessage;
 
+  /// Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`).
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load messages'**
+  String get dmConversationLoadError;
+
   /// No description provided for @reportDialogCancel.
   ///
   /// In en, this message translates to:

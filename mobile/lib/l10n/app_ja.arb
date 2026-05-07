@@ -2428,6 +2428,7 @@
     "dmSendFailedMessage": "メッセージを送信できなかった",
     "dmSendFailedRetry": "もう一回",
     "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",
+    "dmConversationLoadError": "メッセージを読み込めなかった",
     "reportDialogCancel": "キャンセル",
     "reportDialogReport": "報告",
     "routerInvalidCreator": "無効なクリエイター",

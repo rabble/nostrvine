@@ -2428,6 +2428,7 @@
     "dmSendFailedMessage": "تعذّر إرسال الرسالة",
     "dmSendFailedRetry": "إعادة المحاولة",
     "dmSendPartialMessage": "أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى",
+    "dmConversationLoadError": "تعذّر تحميل الرسائل",
     "reportDialogCancel": "إلغاء",
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",

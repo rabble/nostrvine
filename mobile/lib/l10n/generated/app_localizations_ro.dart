@@ -5348,6 +5348,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Trimis, dar nu s-a sincronizat cu celelalte dispozitive';
 
   @override
+  String get dmConversationLoadError => 'Mesajele nu au putut fi încărcate';
+
+  @override
   String get reportDialogCancel => 'Anulează';
 
   @override

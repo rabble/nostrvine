@@ -2436,6 +2436,7 @@
     "dmSendFailedMessage": "Meddelandet kunde inte skickas",
     "dmSendFailedRetry": "Försök igen",
     "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",
+    "dmConversationLoadError": "Det gick inte att läsa in meddelandena",
     "reportDialogCancel": "Avbryt",
     "reportDialogReport": "Rapportera",
     "routerInvalidCreator": "Ogiltig skapare",

@@ -2435,6 +2435,7 @@
     "dmSendFailedMessage": "Pesan gagal dikirim",
     "dmSendFailedRetry": "Coba Lagi",
     "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",
+    "dmConversationLoadError": "Pesan tidak dapat dimuat",
     "reportDialogCancel": "Batal",
     "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",
