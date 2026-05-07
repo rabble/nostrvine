@@ -893,20 +893,11 @@ class DmRepository {
           );
 
           if (outgoingDao != null) {
-            if (result.selfWrapPublished == true) {
-              await outgoingDao.deleteById(rumor.id);
-            } else {
-              await outgoingDao.markRecipientWrapStatus(
-                id: rumor.id,
-                status: OutgoingWrapStatus.sent,
-                eventId: result.messageEventId,
-              );
-              await outgoingDao.markSelfWrapStatus(
-                id: rumor.id,
-                status: OutgoingWrapStatus.failed,
-                lastError: 'Recipient delivered, but self-wrap publish failed',
-              );
-            }
+            await _finalizeAfterRecipientSuccess(
+              outgoingDao: outgoingDao,
+              rumorId: rumor.id,
+              result: result,
+            );
           }
         });
 
@@ -1025,8 +1016,11 @@ class DmRepository {
       );
     }
 
-    // Idempotent re-tap: a concurrent recovery already landed. Return
-    // success so the caller's aggregation treats this rumor as done.
+    // Idempotent re-tap. Reached when a prior recovery attempt's publish
+    // already landed: either a concurrent recovery for this rumor, or
+    // the previous sweep's deleteById threw and the fallback below
+    // marked self_wrap_status=sent. Return success so the caller's
+    // aggregation treats this rumor as done without re-publishing.
     if (row.selfWrapStatus == OutgoingWrapStatus.sent) {
       return NIP17SendResult.success(
         rumorEventId: rumorId,
@@ -1075,16 +1069,30 @@ class DmRepository {
           error: e,
           stackTrace: stackTrace,
         );
-        // The publish succeeded; the bookkeeping failure is degraded
-        // state, not a recovery failure. The retry sweep will re-fire
-        // recoverSelfWrap, which will short-circuit via the
-        // already-sent guard above on the next pass — except we have
-        // no easy way to mark sent without re-deleting. The row
-        // staying in `recipient: sent / self: failed` means the next
-        // sweep republishes the self-wrap again, producing a
-        // duplicate self-wrap on relays. Self-wraps to the sender are
-        // idempotent on receive (NIP-17 dedup keys on the rumor id),
-        // so this degraded path is safe — surface it via the log.
+        // Publish landed but the row is still here. Mark
+        // self_wrap_status=sent with the published event id so the next
+        // recovery sweep short-circuits via the idempotent guard above
+        // instead of republishing the self-wrap.
+        try {
+          await dao.markSelfWrapStatus(
+            id: rumorId,
+            status: OutgoingWrapStatus.sent,
+            eventId: result.messageEventId,
+          );
+        } on Object catch (markError, markStack) {
+          Log.error(
+            'Fallback markSelfWrapStatus(sent) also failed for $rumorId: '
+            '$markError',
+            category: LogCategory.system,
+            error: markError,
+            stackTrace: markStack,
+          );
+          // Both bookkeeping writes failed. The row stays
+          // `recipient: sent / self: failed` and the next sweep
+          // republishes the self-wrap. Self-wraps to the sender are
+          // idempotent on receive (NIP-17 dedup keys on the rumor id),
+          // so the doubly-degraded path is safe — surfaced via logs.
+        }
       }
     } else {
       try {
@@ -1106,6 +1114,32 @@ class DmRepository {
     }
 
     return result;
+  }
+
+  /// Apply the queue-row transition for a successful per-recipient
+  /// rumor publish. Shared between [sendMessage] and [sendGroupMessage]
+  /// so both call sites agree on the partial-vs-full delivery
+  /// bookkeeping. The caller is responsible for invoking this inside
+  /// the same transaction that persists the local message row.
+  Future<void> _finalizeAfterRecipientSuccess({
+    required OutgoingDmsDao outgoingDao,
+    required String rumorId,
+    required NIP17SendResult result,
+  }) async {
+    if (result.selfWrapPublished == true) {
+      await outgoingDao.deleteById(rumorId);
+    } else {
+      await outgoingDao.markRecipientWrapStatus(
+        id: rumorId,
+        status: OutgoingWrapStatus.sent,
+        eventId: result.messageEventId,
+      );
+      await outgoingDao.markSelfWrapStatus(
+        id: rumorId,
+        status: OutgoingWrapStatus.failed,
+        lastError: 'Recipient delivered, but self-wrap publish failed',
+      );
+    }
   }
 
   /// Send a text message to a group conversation.
@@ -1242,23 +1276,13 @@ class DmRepository {
 
         if (outgoingDao != null) {
           for (var i = 0; i < rumors.length; i++) {
-            final rumor = rumors[i];
             final result = results[i];
             if (!result.success) continue;
-            if (result.selfWrapPublished == true) {
-              await outgoingDao.deleteById(rumor.id);
-            } else {
-              await outgoingDao.markRecipientWrapStatus(
-                id: rumor.id,
-                status: OutgoingWrapStatus.sent,
-                eventId: result.messageEventId,
-              );
-              await outgoingDao.markSelfWrapStatus(
-                id: rumor.id,
-                status: OutgoingWrapStatus.failed,
-                lastError: 'Recipient delivered, but self-wrap publish failed',
-              );
-            }
+            await _finalizeAfterRecipientSuccess(
+              outgoingDao: outgoingDao,
+              rumorId: rumors[i].id,
+              result: result,
+            );
           }
         }
       });

@@ -8175,6 +8175,102 @@ void main() {
       );
 
       test(
+        'on successful self-wrap publish: when deleteById throws, '
+        'falls back to markSelfWrapStatus(sent, eventId) and still '
+        'returns success',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: _validPubkeyA,
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).thenThrow(Exception('drift busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
+
+          // Publish landed → recovery is a success even though the
+          // delete failed.
+          expect(result.success, isTrue);
+
+          // Fallback closes the duplicate-publish hole: marks the row
+          // sent with the published event id so the next sweep
+          // short-circuits via the idempotent already-sent guard
+          // instead of republishing the self-wrap.
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: _rumorEventId,
+              status: OutgoingWrapStatus.sent,
+              eventId: _giftWrapEventId2,
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'on successful self-wrap publish: when both deleteById AND '
+        'fallback markSelfWrapStatus throw, surfaces success and does '
+        'not rethrow',
+        () async {
+          when(
+            () => mockOutgoingDmsDao.getById(_rumorEventId),
+          ).thenAnswer((_) async => queuedRow());
+          when(
+            () => mockMessageService.publishSelfWrap(
+              rumorEvent: any(named: 'rumorEvent'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId2,
+              recipientPubkey: _validPubkeyA,
+            ),
+          );
+          when(
+            () => mockOutgoingDmsDao.deleteById(_rumorEventId),
+          ).thenThrow(Exception('drift busy'));
+          when(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: any(named: 'id'),
+              status: any(named: 'status'),
+              eventId: any(named: 'eventId'),
+              lastError: any(named: 'lastError'),
+            ),
+          ).thenThrow(Exception('drift still busy'));
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.recoverSelfWrap(
+            rumorId: _rumorEventId,
+          );
+
+          // Caller still sees success: publish outcome drives the
+          // return value, not the bookkeeping outcome. Self-wraps are
+          // idempotent on receive (NIP-17 dedup keys), so the
+          // doubly-degraded path is safe.
+          expect(result.success, isTrue);
+        },
+      );
+
+      test(
         'on self-wrap publish failure: marks self_wrap_status failed '
         'and leaves the row queued for the next retry',
         () async {
