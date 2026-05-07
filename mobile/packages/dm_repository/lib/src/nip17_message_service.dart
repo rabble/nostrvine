@@ -54,23 +54,48 @@ class NIP17MessageService {
   /// Access to the underlying NostrService for relay management
   NostrClient get nostrService => _nostrService;
 
-  /// Send a private encrypted message to a recipient.
+  /// Build the unsigned NIP-17 rumor event for a 1:1 send.
   ///
-  /// Uses NIP-17 three-layer encryption:
-  /// 1. Rumor (unsigned) — the actual message content
-  /// 2. Kind 13 (seal) — signed and encrypted by sender
-  /// 3. Kind 1059 (gift wrap) — wrapped with random ephemeral key
+  /// Pure construction — does not touch relays or the signer. Exposed
+  /// separately from [sendRumor] so the repository can persist the
+  /// rumor (or its serialized JSON) into the durable outgoing-DM queue
+  /// **before** publishing, keyed by the rumor's id. Without this split
+  /// a publish that succeeds with the recipient relay but the app
+  /// crashes before [sendPrivateMessage] returns leaves no local
+  /// trace of the in-flight send.
   ///
   /// Parameters:
   /// - [recipientPubkey]: Recipient's public key (hex format)
   /// - [content]: Message content (text for kind 14, file URL for kind 15)
   /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
-  Future<NIP17SendResult> sendPrivateMessage({
+  Event buildRumor({
     required String recipientPubkey,
     required String content,
     int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
+  }) {
+    final rumorTags = <List<String>>[
+      ['p', recipientPubkey],
+      ...additionalTags,
+    ];
+
+    return Event(_senderPublicKey, eventKind, rumorTags, content);
+  }
+
+  /// Wrap and publish a pre-built [rumorEvent] to the recipient and to
+  /// ourselves (self-addressed gift wrap for cross-device recovery).
+  ///
+  /// Self-wrap failure is intentionally non-fatal — the message has
+  /// already been delivered to the recipient at that point, and
+  /// blocking the success result on the self-wrap would cause the
+  /// repository to mark a successfully-delivered message as failed and
+  /// retry the recipient publish, double-delivering. A future revision
+  /// (PR #3910) will surface the self-wrap outcome separately so the
+  /// repository can mark each wrap status independently.
+  Future<NIP17SendResult> sendRumor({
+    required Event rumorEvent,
+    required String recipientPubkey,
   }) async {
     try {
       Log.info(
@@ -87,16 +112,8 @@ class NIP17MessageService {
       );
       await nostr.refreshPublicKey();
 
-      // Create kind 14 rumor event (unsigned, will be encrypted)
-      final rumorTags = <List<String>>[
-        ['p', recipientPubkey],
-        ...additionalTags,
-      ];
-
-      final rumorEvent = Event(_senderPublicKey, eventKind, rumorTags, content);
-
       Log.debug(
-        'Created kind $eventKind rumor event',
+        'Wrapping kind ${rumorEvent.kind} rumor event',
         category: LogCategory.system,
       );
 
@@ -191,6 +208,30 @@ class NIP17MessageService {
       );
       return NIP17SendResult.failure('Failed to send message: $e');
     }
+  }
+
+  /// Convenience wrapper that builds a rumor and sends it in one call.
+  ///
+  /// Existing callers (group sends, file sends, NIP-04 fallback wiring)
+  /// keep working unchanged. New callers that need to enqueue a durable
+  /// queue row keyed by the rumor's id should call [buildRumor] +
+  /// [sendRumor] directly so the queue insert happens between the two.
+  Future<NIP17SendResult> sendPrivateMessage({
+    required String recipientPubkey,
+    required String content,
+    int eventKind = EventKind.privateDirectMessage,
+    List<List<String>> additionalTags = const [],
+  }) async {
+    final rumor = buildRumor(
+      recipientPubkey: recipientPubkey,
+      content: content,
+      eventKind: eventKind,
+      additionalTags: additionalTags,
+    );
+    return sendRumor(
+      rumorEvent: rumor,
+      recipientPubkey: recipientPubkey,
+    );
   }
 
   /// Dummy relay generator - we don't use relays in this Nostr instance

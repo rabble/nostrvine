@@ -646,5 +646,117 @@ void main() {
         },
       );
     });
+
+    group('buildRumor + sendRumor split', () {
+      test(
+        'buildRumor returns the unsigned rumor event without touching '
+        'the relay or signer',
+        () async {
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'queue this before publishing',
+          );
+
+          expect(rumor.kind, equals(EventKind.privateDirectMessage));
+          expect(rumor.content, equals('queue this before publishing'));
+          expect(rumor.pubkey, equals(_testPublicKey));
+          expect(
+            rumor.tags.first,
+            equals(['p', _recipientPubkey]),
+            reason: 'p-tag must be the first tag for NIP-17 compliance',
+          );
+          expect(
+            rumor.id,
+            isNotEmpty,
+            reason:
+                'Event constructor computes the rumor id deterministically '
+                'from its fields — DmRepository keys the queue row by it',
+          );
+          // No publish should fire from a pure build call.
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test(
+        'sendRumor wraps and publishes a pre-built rumor with the same '
+        'rumor id as buildRumor returned',
+        () async {
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => invocation.positionalArguments[0] as Event,
+          );
+
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'split-flow message',
+          );
+          final rumorIdBeforeSend = rumor.id;
+
+          final result = await service.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            result.rumorEventId,
+            equals(rumorIdBeforeSend),
+            reason:
+                'sendRumor must surface the same rumor id the caller saw '
+                'from buildRumor — the queue row PK depends on this',
+          );
+          expect(result.recipientPubkey, equals(_recipientPubkey));
+        },
+      );
+
+      test(
+        'buildRumor includes additional tags after the recipient p-tag',
+        () {
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'reply test',
+            additionalTags: [
+              ['e', 'parent-message-id'],
+            ],
+          );
+
+          expect(rumor.tags, [
+            ['p', _recipientPubkey],
+            ['e', 'parent-message-id'],
+          ]);
+        },
+      );
+
+      test(
+        'buildRumor honors a non-default eventKind so kind 15 file '
+        'messages can be enqueued before publishing',
+        () {
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'https://example.com/file.enc',
+            eventKind: EventKind.fileMessage,
+          );
+
+          expect(rumor.kind, equals(EventKind.fileMessage));
+        },
+      );
+
+      test(
+        'sendPrivateMessage convenience wrapper still works (delegates '
+        'to buildRumor + sendRumor)',
+        () async {
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => invocation.positionalArguments[0] as Event,
+          );
+
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'convenience-wrapper smoke test',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.rumorEventId, isNotNull);
+        },
+      );
+    });
   });
 }
