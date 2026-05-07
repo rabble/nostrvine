@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
@@ -93,7 +94,8 @@ void main() {
     await tester.pump();
 
     expect(find.byType(ClickableHashtagText), findsOneWidget);
-    expect(find.textContaining('@npub1'), findsOneWidget);
+    final fallbackName = UserProfile.defaultDisplayNameFor(_testHexPubkey);
+    expect(find.textContaining('@$fallbackName'), findsOneWidget);
   });
 
   testWidgets('renders comment urls with tappable spans', (tester) async {
