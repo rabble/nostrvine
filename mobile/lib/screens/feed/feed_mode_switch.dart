@@ -48,11 +48,13 @@ class FeedModeSwitch extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            // Horizontal padding matches the video metadata container's
-            // start (16 px) and the action column's end (16 px) on the
-            // overlay below, so the top bar's visual edges line up with
-            // the bottom-overlay edges.
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            // Left padding (16) matches the video metadata container's
+            // `start: 16` on the overlay below, so the feed-mode label
+            // lines up with the avatar.
+            // Right padding (12) gives the trailing More popover a hair
+            // more breathing room from the screen edge — matches the
+            // fullscreen app bar and the profile screen's nav-button row.
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 12, 16),
             child: isPreviewMode
                 ? _FeedModeContent(
                     label:

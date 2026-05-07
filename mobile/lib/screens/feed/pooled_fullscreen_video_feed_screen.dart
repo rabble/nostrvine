@@ -780,6 +780,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 forceMaterialTransparency: true,
                 customActions: const [FeedSettingsMenu()],
+                // Tighten left/right insets from the default 16 to 12 so the
+                // back button and the More popover sit closer to the screen
+                // edges over fullscreen video — matches the profile screen
+                // header's nav-button row.
+                style: DiVineAppBarStyle.transparentStyle.copyWith(
+                  horizontalPadding: 12,
+                ),
               ),
               body: kIsWeb
                   ? WebVideoFeed(
