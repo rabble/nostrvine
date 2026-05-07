@@ -119,13 +119,20 @@ class ControllerSubscriptions {
   /// Subscribes to the first dimension report (videoWidth/Height > 0) and
   /// auto-cancels itself once dimensions are known. Calls
   /// [onDimensionsReady] once.
+  ///
+  /// If dimensions are already known on subscribe (e.g. a reused
+  /// controller), [onDimensionsReady] fires synchronously and no
+  /// stream subscription is created.
   void subscribeToDimensions(
     int index,
     DivineVideoPlayerController controller, {
     required void Function() onDimensionsReady,
   }) {
     final s = controller.state;
-    if (s.videoWidth > 0 && s.videoHeight > 0) return;
+    if (s.videoWidth > 0 && s.videoHeight > 0) {
+      onDimensionsReady();
+      return;
+    }
 
     unawaited(_dimensions[index]?.cancel());
     _dimensions[index] = controller.stateStream.listen((state) {

@@ -308,22 +308,39 @@ void main() {
         expect(fired, isTrue);
       });
 
-      test('does not subscribe when dimensions already known', () async {
-        final controller = FakeController()
-          ..pushState(
-            const DivineVideoPlayerState(videoWidth: 1280, videoHeight: 720),
-          );
+      test(
+        'fires onDimensionsReady synchronously when already known',
+        () async {
+          final controller = FakeController()
+            ..pushState(
+              const DivineVideoPlayerState(
+                videoWidth: 1280,
+                videoHeight: 720,
+              ),
+            );
+          var count = 0;
 
-        // Should not throw, returns early.
-        expect(
-          () => subs.subscribeToDimensions(
+          subs.subscribeToDimensions(
             0,
             controller,
-            onDimensionsReady: () {},
-          ),
-          returnsNormally,
-        );
-      });
+            onDimensionsReady: () => count++,
+          );
+
+          // Synchronous fire — no async gap needed.
+          expect(count, equals(1));
+
+          // Further state pushes must not re-fire (no subscription was
+          // created).
+          controller.pushState(
+            const DivineVideoPlayerState(
+              videoWidth: 1920,
+              videoHeight: 1080,
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(count, equals(1));
+        },
+      );
 
       test('fires only once even on further state updates', () async {
         final controller = FakeController();
