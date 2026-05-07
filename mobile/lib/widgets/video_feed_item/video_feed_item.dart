@@ -1390,7 +1390,15 @@ class VideoOverlayActions extends ConsumerWidget {
               : 54.0) // Fallback for Dynamic Island iPhones
         : viewPaddingTop;
 
-    final bottomOffset = 14.0 + MediaQuery.viewPaddingOf(context).bottom;
+    // In fullscreen mode, match the home feed overlay's baseline:
+    // 20 px above the safe-area bottom, with the action column flush to the
+    // author row instead of 6 px below it. Other consumers
+    // (video metadata preview, video editor preview) keep the legacy
+    // 14 px offset and the `-6` action-column adjustment so their layouts
+    // are unaffected.
+    final bottomOffset = isFullscreen
+        ? 20.0 + MediaQuery.viewPaddingOf(context).bottom
+        : 14.0 + MediaQuery.viewPaddingOf(context).bottom;
 
     return Opacity(
       opacity: overlayOpacity,
@@ -1686,7 +1694,7 @@ class VideoOverlayActions extends ConsumerWidget {
             ),
             // Action buttons at bottom right
             PositionedDirectional(
-              bottom: bottomOffset - 6,
+              bottom: isFullscreen ? bottomOffset : bottomOffset - 6,
               end: 16,
               child: AnimatedOpacity(
                 opacity: isActive ? 1.0 : 0.0,

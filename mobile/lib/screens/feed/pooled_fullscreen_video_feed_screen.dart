@@ -1253,8 +1253,9 @@ class _PooledFullscreenItemContentState
                   children: [
                     if (player != null)
                       PausedVideoPlayOverlay(
-                        onToggleMuteState: () =>
-                            feedController?.toggleMuteState(),
+                        // Mute toggle intentionally omitted: the popover in
+                        // the app bar's customActions slot is now the sole
+                        // entry point, matching the home feed.
                         player: player,
                         firstFrameFuture:
                             videoController?.waitUntilFirstFrameRendered,
