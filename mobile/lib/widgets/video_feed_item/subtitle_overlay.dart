@@ -149,24 +149,11 @@ class _SubtitleOverlayState extends ConsumerState<SubtitleOverlay> {
         final displayCue = _lastCue;
         if (displayCue == null) return const SizedBox.shrink();
 
-        final content = Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: VineTheme.scrim50,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Text(
-              displayCue.text,
-              style: const TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 16,
-                shadows: [Shadow(blurRadius: 4)],
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        );
+        // Match the inline caption pill style introduced in PR #4087 so
+        // captions render identically across every surface (home feed
+        // overlay, fullscreen feed, and legacy callers that use this
+        // gap-bridging widget).
+        final content = Center(child: _CaptionPill(text: displayCue.text));
         if (!widget.enablePositioned) return content;
 
         return Positioned(

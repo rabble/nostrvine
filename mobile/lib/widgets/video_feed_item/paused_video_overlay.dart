@@ -1,11 +1,8 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:divine_video_player/divine_video_player.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 
@@ -188,7 +185,6 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
       ({
         bool isBuffering,
         bool isFirstFrameRendered,
-        bool isMuted,
         bool isPaused,
         bool isPlaying,
       })
@@ -200,7 +196,6 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
               isPaused: s.isPaused,
               isPlaying: s.isPlaying,
               isFirstFrameRendered: s.isFirstFrameRendered,
-              isMuted: s.volume == 0,
             ),
           )
           .distinct(),
@@ -210,7 +205,6 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
             snapshot.data?.isFirstFrameRendered ?? false;
         final isPaused = snapshot.data?.isPaused ?? false;
         final isPlaying = snapshot.data?.isPlaying ?? false;
-        final isMuted = snapshot.data?.isMuted ?? false;
 
         final shouldShow =
             widget.isVisible &&
@@ -227,41 +221,11 @@ class _PausedVideoOverlayState extends State<PausedVideoOverlay>
         final Widget child;
         if (shouldShow) {
           child = Center(
-            child: Column(
-              mainAxisSize: .min,
-              spacing: 16,
-              children: [
-                if (!kIsWeb)
-                  DivineIconButton(
-                    icon: isMuted ? .speakerSimpleX : .speakerHigh,
-                    size: .small,
-                    type: .ghost,
-                    semanticLabel: isMuted
-                        ? context.l10n.videoPlayerUnmute
-                        : context.l10n.videoPlayerMute,
-                    onPressed: () {
-                      final newVolume = isMuted ? 1.0 : 0.0;
-                      if (widget.onVolumeToggle != null) {
-                        widget.onVolumeToggle!(newVolume);
-                      } else {
-                        widget.controller.setVolume(newVolume);
-                      }
-                      SemanticsService.sendAnnouncement(
-                        View.of(context),
-                        isMuted
-                            ? context.l10n.videoPlayerUnmute
-                            : context.l10n.videoPlayerMute,
-                        Directionality.of(context),
-                      );
-                    },
-                  ),
-                IgnorePointer(
-                  child: CenterPlaybackControl(
-                    state: CenterPlaybackControlState.play,
-                    semanticsLabel: context.l10n.videoPlayerPlayVideo,
-                  ),
-                ),
-              ],
+            child: IgnorePointer(
+              child: CenterPlaybackControl(
+                state: CenterPlaybackControlState.play,
+                semanticsLabel: context.l10n.videoPlayerPlayVideo,
+              ),
             ),
           );
         } else if (shouldShowUnpauseFeedback) {

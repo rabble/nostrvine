@@ -74,8 +74,6 @@ class VideoOverlayActions extends ConsumerWidget {
     this.topOffset = 8.0,
     this.overlayOpacity = 1.0,
     this.showAutoButton = false,
-    this.isAutoEnabled = false,
-    this.onAutoPressed,
     this.onInteracted,
     this.omitAuthorBlock = false,
   });
@@ -117,8 +115,6 @@ class VideoOverlayActions extends ConsumerWidget {
   /// inside [build]. Defaults to 1.0 (fully visible).
   final double overlayOpacity;
   final bool showAutoButton;
-  final bool isAutoEnabled;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -393,48 +389,78 @@ class VideoOverlayActions extends ConsumerWidget {
                           },
                         ),
                       ],
-                      // Video description with clickable hashtags (only if there's text content)
+                      // Video title and description (caption block).
+                      // Title and description render independently — both are
+                      // shown when both are present, matching the new
+                      // [VideoAuthorInfoSection] used in fullscreen / overlay
+                      // surfaces (PR #4087).
                       if (hasTextContent) ...[
                         const SizedBox(
                           height: 2,
                         ), // 2px + 10px from avatar container = 12px total
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () {
-                            onInteracted?.call();
-                            MetadataExpandedSheet.show(context, video);
-                          },
-                          child: Semantics(
+                        // Title (when present)
+                        if (video.title != null &&
+                            video.title!.trim().isNotEmpty)
+                          Semantics(
+                            identifier: 'video_title',
+                            container: true,
+                            explicitChildNodes: true,
+                            button: true,
+                            label:
+                                context.l10n.videoOverlayOpenMetadataFromTitle,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                onInteracted?.call();
+                                MetadataExpandedSheet.show(context, video);
+                              },
+                              child: Text(
+                                video.displayTitle!.trim(),
+                                style: VineTheme.labelMediumFont().copyWith(
+                                  shadows: VineTheme.buttonShadows,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        // 4 px gap between title and description when both
+                        // are present (matches the Figma caption spacing).
+                        if (video.title != null &&
+                            video.title!.trim().isNotEmpty &&
+                            video.content.trim().isNotEmpty)
+                          const SizedBox(height: 4),
+                        // Description (only when actual content exists — the
+                        // title has its own row above, so no fallback here).
+                        if (video.content.trim().isNotEmpty)
+                          Semantics(
                             identifier: 'video_description',
                             container: true,
                             explicitChildNodes: true,
-                            label:
-                                'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-                            child: ClickableHashtagText(
-                              text:
-                                  (video.content.isNotEmpty
-                                          ? video.content
-                                          : video.title ?? '')
-                                      .trim(),
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                color: VineTheme.whiteText,
-                                fontSize: 14,
-                                height: 20 / 14,
-                                letterSpacing: 0.25,
+                            button: true,
+                            label: context
+                                .l10n
+                                .videoOverlayOpenMetadataFromDescription,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                onInteracted?.call();
+                                MetadataExpandedSheet.show(context, video);
+                              },
+                              child: ClickableHashtagText(
+                                text: video.displayContent.trim(),
+                                style: VineTheme.bodySmallFont().copyWith(
+                                  shadows: VineTheme.buttonShadows,
+                                ),
+                                hashtagStyle: VineTheme.bodySmallFont()
+                                    .copyWith(
+                                      shadows: VineTheme.buttonShadows,
+                                    ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              hashtagStyle: const TextStyle(
-                                fontFamily: 'Inter',
-                                color: VineTheme.vineGreen,
-                                fontSize: 14,
-                                height: 20 / 14,
-                                letterSpacing: 0.25,
-                              ),
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
                         // Collaborator avatar row (if video has collaborators)
                         if (video.hasCollaborators) ...[
                           const SizedBox(height: 4),
@@ -475,8 +501,6 @@ class VideoOverlayActions extends ConsumerWidget {
                     isFullscreen: isFullscreen,
                     isPreviewMode: isPreviewMode,
                     showAutoButton: showAutoButton,
-                    isAutoEnabled: isAutoEnabled,
-                    onAutoPressed: onAutoPressed,
                     onInteracted: onInteracted,
                   ),
                 ),
@@ -507,8 +531,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
     this.isPreviewMode = false,
     this.isFullscreen = false,
     this.showAutoButton = false,
-    this.isAutoEnabled = false,
-    this.onAutoPressed,
     this.onInteracted,
   });
 
@@ -516,8 +538,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
   final bool isPreviewMode;
   final bool isFullscreen;
   final bool showAutoButton;
-  final bool isAutoEnabled;
-  final VoidCallback? onAutoPressed;
   final VoidCallback? onInteracted;
 
   @override
@@ -542,8 +562,6 @@ class VideoOverlayActionColumn extends ConsumerWidget {
       children: [
         if (showEditButton)
           EditActionButton(video: video, onInteracted: onInteracted),
-        if (showAutoButton && onAutoPressed != null)
-          AutoActionButton(isEnabled: isAutoEnabled, onPressed: onAutoPressed!),
         LikeActionButton(
           video: video,
           isPreviewMode: isPreviewMode,

@@ -665,8 +665,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
         isFullscreen: true,
         topOffset: isOwnVideo ? 64 : 8,
         showAutoButton: autoAdvanceAvailable,
-        isAutoEnabled: effectiveAutoEnabled,
-        onAutoPressed: onToggleAutoAdvance,
         onInteracted: onSuppressAutoAdvance,
         subtitleLayer: subtitleLayer,
       );
@@ -682,8 +680,6 @@ class _FeedItemOverlayActions extends StatelessWidget {
       isFullscreen: true,
       topOffset: isOwnVideo ? 64 : 8,
       showAutoButton: autoAdvanceAvailable,
-      isAutoEnabled: effectiveAutoEnabled,
-      onAutoPressed: onToggleAutoAdvance,
       onInteracted: onSuppressAutoAdvance,
       subtitleLayer: subtitleLayer,
     );

@@ -123,9 +123,15 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
     final l10n = context.l10n;
     final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final safeAreaBottom = MediaQuery.viewPaddingOf(context).bottom;
     return SingleChildScrollView(
       controller: _scrollController,
-      padding: EdgeInsetsDirectional.fromSTEB(16, 8, 16, 24 + keyboardInset),
+      padding: EdgeInsetsDirectional.fromSTEB(
+        16,
+        8,
+        16,
+        24 + keyboardInset + safeAreaBottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
