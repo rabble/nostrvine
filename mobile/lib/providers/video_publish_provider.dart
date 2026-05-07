@@ -429,27 +429,30 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           publishmentProcess: publishmentProcess,
         ),
       );
-
-      if (isVideoReply) {
-        ref.read(videoReplyContextProvider.notifier).clear();
-      }
+      var didNavigate = false;
 
       if (context.mounted && videoReplyContext != null) {
         final destination = videoReplyPublishDestinationFor(videoReplyContext);
         context.go(destination.path, extra: destination.extra);
-        // Clear editor state after navigation animation completes (~350ms)
-        // Draft is already saved for background upload
-        Future.delayed(const Duration(milliseconds: 600), clearAll);
+        didNavigate = true;
       } else {
         // Navigate to current user's profile
         final authService = ref.read(authServiceProvider);
         final currentNpub = authService.currentNpub;
         if (currentNpub != null && context.mounted) {
           context.go(ProfileScreenRouter.pathForNpub(currentNpub));
-          // Clear editor state after navigation animation completes (~350ms)
-          // Draft is already saved for background upload
-          Future.delayed(const Duration(milliseconds: 600), clearAll);
+          didNavigate = true;
         }
+      }
+
+      if (isVideoReply) {
+        ref.read(videoReplyContextProvider.notifier).clear();
+      }
+
+      if (didNavigate) {
+        // Clear editor state after navigation animation completes (~350ms).
+        // Draft is already saved for background upload.
+        Future.delayed(const Duration(milliseconds: 600), clearAll);
       }
 
       final result = await publishmentProcess;
