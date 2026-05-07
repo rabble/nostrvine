@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/services/subtitle_service.dart';
@@ -76,15 +75,8 @@ class _CaptionPill extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: GoogleFonts.chivoMono(
-          fontWeight: FontWeight.w300,
-          fontSize: 16,
-          height: 1.5,
-          letterSpacing: 0.5,
-          color: VineTheme.whiteText,
-          shadows: const [
-            Shadow(blurRadius: 4, color: VineTheme.shadow25),
-          ],
+        style: VineTheme.captionPillFont().copyWith(
+          shadows: const [Shadow(blurRadius: 4, color: VineTheme.shadow25)],
         ),
       ),
     );

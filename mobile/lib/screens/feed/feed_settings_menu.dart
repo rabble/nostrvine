@@ -37,19 +37,32 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
 
+  /// Mirrors [_controller.isShowing] so the trigger button can rebuild via a
+  /// [ValueListenableBuilder] without setState on the whole subtree.
+  /// [OverlayPortalController] is not a [Listenable], so we drive this
+  /// notifier from the toggle / close callbacks alongside the controller.
+  final ValueNotifier<bool> _isShowing = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _isShowing.dispose();
+    super.dispose();
+  }
+
   void _toggle() {
     if (_controller.isShowing) {
       _controller.hide();
+      _isShowing.value = false;
     } else {
       _controller.show();
+      _isShowing.value = true;
     }
-    setState(() {});
   }
 
   void _close() {
     if (!_controller.isShowing) return;
     _controller.hide();
-    setState(() {});
+    _isShowing.value = false;
   }
 
   @override
@@ -60,16 +73,17 @@ class _FeedSettingsMenuState extends State<FeedSettingsMenu> {
         controller: _controller,
         overlayChildBuilder: (_) =>
             _FeedSettingsOverlay(link: _link, onClose: _close),
-        child: DivineIconButton(
-          icon: _controller.isShowing
-              ? DivineIconName.x
-              : DivineIconName.dotsThree,
-          size: DivineIconButtonSize.small,
-          type: DivineIconButtonType.ghostSecondary,
-          semanticLabel: _controller.isShowing
-              ? context.l10n.videoSettingsMenuClose
-              : context.l10n.videoSettingsMenuOpen,
-          onPressed: _toggle,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _isShowing,
+          builder: (context, isShowing, _) => DivineIconButton(
+            icon: isShowing ? DivineIconName.x : DivineIconName.dotsThree,
+            size: DivineIconButtonSize.small,
+            type: DivineIconButtonType.ghostSecondary,
+            semanticLabel: isShowing
+                ? context.l10n.videoSettingsMenuClose
+                : context.l10n.videoSettingsMenuOpen,
+            onPressed: _toggle,
+          ),
         ),
       ),
     );

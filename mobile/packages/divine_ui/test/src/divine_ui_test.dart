@@ -181,6 +181,22 @@ void main() {
         expect(style.fontWeight, FontWeight.w600);
       });
 
+      testWidgets('captionPillFont returns Chivo Mono 300 16/24/0.5', (
+        tester,
+      ) async {
+        final style = VineTheme.captionPillFont();
+        expect(style.fontSize, 16);
+        expect(style.fontWeight, FontWeight.w300);
+        expect(style.height, 24 / 16);
+        expect(style.letterSpacing, 0.5);
+        expect(style.color, VineTheme.whiteText);
+      });
+
+      testWidgets('captionPillFont accepts a color override', (tester) async {
+        final style = VineTheme.captionPillFont(color: VineTheme.vineGreen);
+        expect(style.color, VineTheme.vineGreen);
+      });
+
       testWidgets('labelSmallFont returns correct style', (tester) async {
         final style = VineTheme.labelSmallFont();
         expect(style.fontSize, 11);

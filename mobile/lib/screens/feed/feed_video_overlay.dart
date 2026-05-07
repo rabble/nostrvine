@@ -217,7 +217,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                 // bar's More popover (12 px) so the column lines up with
                 // the popover icon above it.
                 end: 12,
-                child: _ActionButtons(
+                child: VideoOverlayActionColumn(
                   video: video,
                   onInteracted: widget.onInteracted,
                 ),
@@ -228,18 +228,4 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
       ],
     );
   }
-}
-
-class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({
-    required this.video,
-    this.onInteracted,
-  });
-
-  final VideoEvent video;
-  final VoidCallback? onInteracted;
-
-  @override
-  Widget build(BuildContext context) =>
-      VideoOverlayActionColumn(video: video, onInteracted: onInteracted);
 }
