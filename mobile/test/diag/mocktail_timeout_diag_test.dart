@@ -73,8 +73,18 @@ void main() {
           // With a non-nullable sealed class the TypeError manifests differently
           // than with Event? — the closure infers its return as PublishFailed,
           // which is not assignable to the inferred non-nullable PublishSuccess
-          // type that mocktail bakes in.  The safe workaround is try/catch.
-          throwsA(isA<TypeError>()),
+          // type that mocktail bakes in. The safe workaround is try/catch.
+          throwsA(
+            isA<TypeError>().having(
+              (error) => error.toString(),
+              'message',
+              allOf(
+                contains('PublishFailed'),
+                contains('PublishSuccess'),
+                contains('subtype of'),
+              ),
+            ),
+          ),
           reason:
               'If this assertion starts failing because no error was thrown, '
               'mocktail or Dart fixed the inference and the try/catch '
@@ -83,27 +93,22 @@ void main() {
       },
     );
 
-    test(
-      'WORKAROUND A: try/catch on TimeoutException avoids the closure-cast '
-      'trap (this is the production-code shape)',
-      () async {
-        final stubResult = PublishSuccess(event: event);
-        when(
-          () => mock.publishEvent(any()),
-        ).thenAnswer((_) async => stubResult);
+    test('WORKAROUND A: try/catch on TimeoutException avoids the closure-cast '
+        'trap (this is the production-code shape)', () async {
+      final stubResult = PublishSuccess(event: event);
+      when(() => mock.publishEvent(any())).thenAnswer((_) async => stubResult);
 
-        PublishResult? result;
-        try {
-          result = await mock
-              .publishEvent(event)
-              .timeout(const Duration(seconds: 30));
-        } on TimeoutException {
-          result = const PublishFailed();
-        }
+      PublishResult? result;
+      try {
+        result = await mock
+            .publishEvent(event)
+            .timeout(const Duration(seconds: 30));
+      } on TimeoutException {
+        result = const PublishFailed();
+      }
 
-        expect(result, equals(stubResult));
-      },
-    );
+      expect(result, equals(stubResult));
+    });
 
     test(
       'WORKAROUND B: stubbing with Future<PublishResult>.value(result) '

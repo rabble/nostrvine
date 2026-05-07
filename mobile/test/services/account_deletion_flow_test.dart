@@ -135,7 +135,7 @@ void main() {
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
       when(() => mockNostrService.hasKeys).thenReturn(true);
 
-      // publishEvent returns null on failure
+      // publishEvent returns PublishFailed on send failure
       when(
         () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => const PublishFailed());

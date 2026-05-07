@@ -175,7 +175,7 @@ void main() {
       () async {
         final signedEvent = createSignedEvent();
         stubSigning(signedEvent);
-        // Relay rejects the event (publishEvent returns null).
+        // Relay rejects the event (publishEvent returns PublishFailed).
         when(
           () => mockNostrClient.publishEvent(any()),
         ).thenAnswer((_) async => const PublishFailed());
@@ -382,10 +382,7 @@ void main() {
 
       expect(result, isTrue);
       expect(
-        containsTag(audioTags, [
-          'url',
-          'https://cdn.example.com/audio.m4a',
-        ]),
+        containsTag(audioTags, ['url', 'https://cdn.example.com/audio.m4a']),
         isTrue,
       );
       expect(containsTag(audioTags, ['m', 'audio/m4a']), isTrue);

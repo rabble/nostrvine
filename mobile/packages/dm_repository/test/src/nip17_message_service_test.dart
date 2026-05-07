@@ -170,19 +170,22 @@ void main() {
         expect(capturedEvent!.createdAt, lessThan(afterSend));
       });
 
-      test('returns failure when publish returns null', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
+      test(
+        'returns failure when publish does not return PublishSuccess',
+        () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
 
-        final result = await service.sendPrivateMessage(
-          recipientPubkey: _recipientPubkey,
-          content: 'Test message',
-        );
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
 
-        expect(result.success, isFalse);
-        expect(result.error, contains('publish failed'));
-      });
+          expect(result.success, isFalse);
+          expect(result.error, contains('publish failed'));
+        },
+      );
 
       test('includes additional tags in the gift wrap', () async {
         Event? capturedEvent;

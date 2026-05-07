@@ -228,7 +228,7 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      // publishEvent returns null on failure
+      // publishEvent returns PublishFailed on send failure
       when(
         () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => const PublishFailed());

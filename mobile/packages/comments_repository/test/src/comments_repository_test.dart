@@ -1302,7 +1302,8 @@ void main() {
       );
 
       test(
-        'throws DeleteCommentFailedException when publish returns null',
+        'throws DeleteCommentFailedException when publish does not return '
+        'PublishSuccess',
         () async {
           when(
             () => mockNostrClient.publishEvent(any()),

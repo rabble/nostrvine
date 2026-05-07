@@ -123,7 +123,9 @@ void main() {
         expect(stored.single.pubkeys, equals(const [_memberA]));
       });
 
-      test('does not write to cache when publishEvent returns null', () async {
+      test(
+        'does not write to cache when publishEvent returns PublishFailed',
+        () async {
         final client = _MockNostrClient();
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(
@@ -141,7 +143,8 @@ void main() {
 
         final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
         expect(stored, isEmpty);
-      });
+        },
+      );
 
       test('returns failed when publishEvent throws', () async {
         final client = _MockNostrClient();
@@ -446,7 +449,10 @@ void main() {
         expect(stored, isEmpty);
       });
 
-      test('does not tombstone locally when publish returns null', () async {
+      test(
+        'does not tombstone locally when publish does not return '
+        'PublishSuccess',
+        () async {
         final client = _MockNostrClient();
         when(() => client.publicKey).thenReturn(_ownerPubkey);
 
@@ -486,7 +492,8 @@ void main() {
         expect(result.status, equals(PeopleListPublishStatus.failed));
         final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
         expect(stored, hasLength(1));
-      });
+        },
+      );
     });
 
     group('syncOwner', () {

@@ -223,19 +223,22 @@ void main() {
         verifyNever(() => mockNostr.publishEvent(any()));
       });
 
-      test('returns false when publishEvent returns null', () async {
-        when(
-          () => mockNostr.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
+      test(
+        'returns false when publishEvent does not return PublishSuccess',
+        () async {
+          when(
+            () => mockNostr.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
 
-        final result = await publisher.publishViewEvent(
-          video: createTestVideoEvent(pubkey: creatorPubkey),
-          startSeconds: 0,
-          endSeconds: 5,
-        );
+          final result = await publisher.publishViewEvent(
+            video: createTestVideoEvent(pubkey: creatorPubkey),
+            startSeconds: 0,
+            endSeconds: 5,
+          );
 
-        expect(result, isFalse);
-      });
+          expect(result, isFalse);
+        },
+      );
 
       test('uses connected relay as relay hint when available', () async {
         when(
