@@ -1533,7 +1533,9 @@ class VideoOverlayActions extends ConsumerWidget {
                                       imageUrl: avatarUrl,
                                       name: displayName,
                                       size: 48,
-                                      semanticLabel: 'Author avatar',
+                                      semanticLabel: context
+                                          .l10n
+                                          .videoAuthorAvatarSemanticLabel,
                                       onTap: navigateToProfile,
                                     ),
                                     // Follow button positioned at bottom-right of avatar
@@ -1564,8 +1566,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                               identifier: 'video_author_name',
                                               container: true,
                                               explicitChildNodes: true,
-                                              label:
-                                                  'Video author: $displayName',
+                                              label: context.l10n
+                                                  .videoAuthorSemanticLabel(
+                                                    displayName,
+                                                  ),
                                               child: Text(
                                                 displayName,
                                                 style:

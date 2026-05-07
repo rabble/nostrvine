@@ -90,7 +90,7 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                       identifier: 'video_author_name',
                       container: true,
                       explicitChildNodes: true,
-                      label: 'Video author: $displayName',
+                      label: context.l10n.videoAuthorSemanticLabel(displayName),
                       child: Text(
                         displayName,
                         style: VineTheme.titleSmallFont(),
@@ -200,7 +200,7 @@ class _AuthorAvatar extends StatelessWidget {
             imageUrl: avatarUrl,
             placeholderSeed: pubkey,
             size: 48,
-            semanticLabel: 'Author avatar',
+            semanticLabel: context.l10n.videoAuthorAvatarSemanticLabel,
             onTap: () {
               onInteracted?.call();
               final npub = normalizeToNpub(pubkey);
