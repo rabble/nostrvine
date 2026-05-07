@@ -12,6 +12,7 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -264,6 +265,47 @@ void main() {
         );
       });
 
+      test('emits info log "Successfully published NIP-17 message '
+          '(selfWrapPublished=false)" when self-wrap publish throws', () async {
+        // Closes the gap from PR #3910's manual-verification checklist:
+        // the reviewer asked for a real-device confirmation that this
+        // exact log line fires on partial delivery (Keycast RPC slow ->
+        // self-wrap second sign throws). Captured deterministically here
+        // so CI guards against future drift in the log copy.
+        await LogCaptureService().clearAllLogs();
+
+        var callCount = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+          invocation,
+        ) async {
+          callCount++;
+          if (callCount == 1) {
+            return invocation.positionalArguments[0] as Event;
+          }
+          throw Exception('keycast rpc timeout');
+        });
+
+        await service.sendPrivateMessage(
+          recipientPubkey: _recipientPubkey,
+          content: 'Test message',
+        );
+
+        final logs = LogCaptureService().getRecentLogs();
+        expect(
+          logs.any(
+            (e) =>
+                e.level == LogLevel.info &&
+                e.message ==
+                    'Successfully published NIP-17 message '
+                        '(selfWrapPublished=false)',
+          ),
+          isTrue,
+          reason:
+              'Partial-delivery log line is the contract the outgoing '
+              'queue (#3909) will key off; pin the exact text.',
+        );
+      });
+
       test(
         'returns success with selfWrapPublished=false '
         'when self-wrap publish returns PublishFailed',
@@ -430,6 +472,32 @@ void main() {
             verify(() => mockNostrClient.publishEvent(any())).called(2);
           },
         );
+
+        test('emits info log "Successfully published NIP-17 message '
+            '(selfWrapPublished=true)" when both publishes succeed', () async {
+          await LogCaptureService().clearAllLogs();
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => invocation.positionalArguments[0] as Event,
+          );
+
+          await realKeyService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          final logs = LogCaptureService().getRecentLogs();
+          expect(
+            logs.any(
+              (e) =>
+                  e.level == LogLevel.info &&
+                  e.message ==
+                      'Successfully published NIP-17 message '
+                          '(selfWrapPublished=true)',
+            ),
+            isTrue,
+          );
+        });
 
         test('returns selfWrapPublished=false when self-wrap publish '
             'returns PublishFailed without throwing', () async {
