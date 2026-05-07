@@ -29,7 +29,7 @@
     "settingsSwitchAccount": "Magpalit ng account",
     "settingsAddAnotherAccount": "Magdagdag ng isa pang account",
     "settingsUnsavedDraftsTitle": "Mga Hindi Naka-save na Draft",
-    "settingsUnsavedDraftsMessage": "Mayroon kang {count} na hindi naka-save na {count, plural, =1{draft} other{draft}}. Kapag nagpalit ka ng account, mananatili ang iyong {count, plural, =1{draft} other{mga draft}}, pero baka gusto mong i-publish o tingnan muna {count, plural, =1{ito} other{sila}}.",
+    "settingsUnsavedDraftsMessage": "Mayroon kang {count} na hindi naka-save na {count, plural, =1{draft} other{mga draft}}. Kapag nagpalit ka ng account, mananatili ang iyong {count, plural, =1{draft} other{mga draft}}, pero baka gusto mong i-publish o tingnan muna ang {count, plural, =1{draft na ito} other{mga ito}}.",
     "settingsCancel": "Cancel",
     "settingsSwitchAnyway": "Magpalit pa rin",
     "settingsAppVersionLabel": "App version",
@@ -998,6 +998,23 @@
     "feedModeForYou": "Para Sa Iyo",
     "feedModeNew": "Bago",
     "feedModeFollowing": "Fino-follow",
+    "feedModeSemanticLabel": "Mode ng feed: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "May-akda ng video: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar ng may-akda",
     "feedForYouEmpty": "Walang laman ang For You feed mo.\nMag-explore ng video at mag-follow ng creators para mahubog ito.",
     "feedFollowingEmpty": "Wala pang video mula sa mga taong fino-follow mo.\nHumanap ng creators na gusto mo at i-follow sila.",
     "feedLatestEmpty": "Wala pang bagong video.\nBumalik mamaya.",
@@ -1328,6 +1345,10 @@
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
     "profileSetupUploadSuccess": "Matagumpay na na-upload ang profile picture!",
+    "dmSendFailedMessage": "Hindi naipadala ang message",
+    "dmSendFailedRetry": "Subukan ulit",
+    "dmSendPartialMessage": "Naipadala, pero hindi nag-sync sa iba mong device",
+    "dmConversationLoadError": "Hindi na-load ang mga message",
     "inboxReportedUser": "Na-report si {displayName}",
     "inboxBlockedUser": "Na-block si {displayName}",
     "inboxUnblockedUser": "Na-unblock si {displayName}",

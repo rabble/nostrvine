@@ -110,7 +110,7 @@ class AppLocalizationsFil extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'draft',
+      other: 'mga draft',
       one: 'draft',
     );
     String _temp1 = intl.Intl.pluralLogic(
@@ -122,10 +122,10 @@ class AppLocalizationsFil extends AppLocalizations {
     String _temp2 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'sila',
-      one: 'ito',
+      other: 'mga ito',
+      one: 'draft na ito',
     );
-    return 'Mayroon kang $count na hindi naka-save na $_temp0. Kapag nagpalit ka ng account, mananatili ang iyong $_temp1, pero baka gusto mong i-publish o tingnan muna $_temp2.';
+    return 'Mayroon kang $count na hindi naka-save na $_temp0. Kapag nagpalit ka ng account, mananatili ang iyong $_temp1, pero baka gusto mong i-publish o tingnan muna ang $_temp2.';
   }
 
   @override
@@ -4021,6 +4021,19 @@ class AppLocalizationsFil extends AppLocalizations {
   String get feedModeFollowing => 'Fino-follow';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Mode ng feed: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'May-akda ng video: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Avatar ng may-akda';
+
+  @override
   String get feedForYouEmpty =>
       'Walang laman ang For You feed mo.\nMag-explore ng video at mag-follow ng creators para mahubog ito.';
 
@@ -5249,6 +5262,19 @@ class AppLocalizationsFil extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'In-imbita ka bilang collaborator sa isang video: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Hindi naipadala ang message';
+
+  @override
+  String get dmSendFailedRetry => 'Subukan ulit';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Naipadala, pero hindi nag-sync sa iba mong device';
+
+  @override
+  String get dmConversationLoadError => 'Hindi na-load ang mga message';
 
   @override
   String get reportDialogCancel => 'Cancel';
