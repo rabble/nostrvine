@@ -236,7 +236,9 @@ void main() {
         );
       });
       when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.single as Event,
+        ),
       );
 
       final result = await publisher.publishDirectUpload(
@@ -276,7 +278,9 @@ void main() {
         );
       });
       when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.single as Event,
+        ),
       );
 
       final result = await publisher.publishDirectUpload(
@@ -366,7 +370,9 @@ void main() {
         return Event(testPubkey, kind, tags, 'video content');
       });
       when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.single as Event,
+        ),
       );
 
       final result = await audioPublisher.publishDirectUpload(

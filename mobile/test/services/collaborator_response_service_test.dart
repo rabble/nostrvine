@@ -130,7 +130,9 @@ void main() {
         );
       });
       when(() => nostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => PublishSuccess(event: invocation.positionalArguments.single as Event),
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.single as Event,
+        ),
       );
 
       final result = await service.acceptInvite(inviteWithoutRelay);

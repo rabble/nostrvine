@@ -270,12 +270,14 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => PublishSuccess(event: createTestEvent(
-          pubkey: testPublicKey,
-          kind: 1984,
-          tags: [],
-          content: 'test',
-        )),
+        (_) async => PublishSuccess(
+          event: createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1984,
+            tags: [],
+            content: 'test',
+          ),
+        ),
       );
 
       for (final reason in ContentFilterReason.values) {
@@ -612,13 +614,15 @@ void main() {
           targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer(
-        (_) async => PublishSuccess(event: Event(
-          testPublicKey,
-          EventKind.report,
-          [],
-          '',
-          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        )),
+        (_) async => PublishSuccess(
+          event: Event(
+            testPublicKey,
+            EventKind.report,
+            [],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        ),
       );
 
       await service.reportContent(
@@ -691,13 +695,15 @@ void main() {
             targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer(
-          (_) async => PublishSuccess(event: Event(
-            testPublicKey,
-            EventKind.report,
-            [],
-            '',
-            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          )),
+          (_) async => PublishSuccess(
+            event: Event(
+              testPublicKey,
+              EventKind.report,
+              [],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ),
         );
 
         await service.reportContent(

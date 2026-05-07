@@ -43,7 +43,9 @@ void main() {
       when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
-        return PublishSuccess(event: invocation.positionalArguments[0] as Event);
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       final result = await service.sendPrivateMessage(

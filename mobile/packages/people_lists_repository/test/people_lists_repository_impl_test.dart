@@ -94,12 +94,14 @@ void main() {
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: signedEvent(
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            createdAt: event.createdAt,
-          ));
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
         });
         final repository = buildRepository(nostrClient: client);
 
@@ -124,7 +126,9 @@ void main() {
       test('does not write to cache when publishEvent returns null', () async {
         final client = _MockNostrClient();
         when(() => client.publicKey).thenReturn(_ownerPubkey);
-        when(() => client.publishEvent(any())).thenAnswer((_) async => const PublishFailed());
+        when(
+          () => client.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
         final repository = buildRepository(nostrClient: client);
 
         final result = await repository.createList(
@@ -161,12 +165,14 @@ void main() {
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: signedEvent(
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            createdAt: event.createdAt,
-          ));
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
         });
         final repository = buildRepository(nostrClient: client);
 
@@ -199,12 +205,14 @@ void main() {
           when(() => client.publicKey).thenReturn(_ownerPubkey);
           when(() => client.publishEvent(any())).thenAnswer((invocation) async {
             final event = invocation.positionalArguments.first as Event;
-            return PublishSuccess(event: signedEvent(
-              kind: event.kind,
-              tags: event.tags,
-              content: event.content,
-              createdAt: event.createdAt,
-          ));
+            return PublishSuccess(
+              event: signedEvent(
+                kind: event.kind,
+                tags: event.tags,
+                content: event.content,
+                createdAt: event.createdAt,
+              ),
+            );
           });
           final repository = buildRepository(nostrClient: client);
 
@@ -253,12 +261,14 @@ void main() {
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: signedEvent(
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            createdAt: event.createdAt,
-          ));
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
         });
         final repository = buildRepository(nostrClient: client);
 
@@ -292,12 +302,14 @@ void main() {
           when(() => client.publicKey).thenReturn(_ownerPubkey);
           when(() => client.publishEvent(any())).thenAnswer((invocation) async {
             final event = invocation.positionalArguments.first as Event;
-            return PublishSuccess(event: signedEvent(
-              kind: event.kind,
-              tags: event.tags,
-              content: event.content,
-              createdAt: event.createdAt,
-          ));
+            return PublishSuccess(
+              event: signedEvent(
+                kind: event.kind,
+                tags: event.tags,
+                content: event.content,
+                createdAt: event.createdAt,
+              ),
+            );
           });
           final repository = buildRepository(nostrClient: client);
 
@@ -328,12 +340,14 @@ void main() {
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: signedEvent(
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            createdAt: event.createdAt,
-          ));
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
         });
         final repository = buildRepository(nostrClient: client);
 
@@ -379,12 +393,14 @@ void main() {
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: signedEvent(
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            createdAt: event.createdAt,
-          ));
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
         });
         final repository = buildRepository(nostrClient: client);
 
@@ -440,12 +456,14 @@ void main() {
           publishCalls++;
           if (publishCalls == 1) {
             final event = invocation.positionalArguments.first as Event;
-            return PublishSuccess(event: signedEvent(
-              kind: event.kind,
-              tags: event.tags,
-              content: event.content,
-              createdAt: event.createdAt,
-          ));
+            return PublishSuccess(
+              event: signedEvent(
+                kind: event.kind,
+                tags: event.tags,
+                content: event.content,
+                createdAt: event.createdAt,
+              ),
+            );
           }
           return const PublishFailed();
         });
@@ -561,12 +579,14 @@ void main() {
           // Local optimistic write will be far in the future.
           when(() => client.publishEvent(any())).thenAnswer((invocation) async {
             final event = invocation.positionalArguments.first as Event;
-            return PublishSuccess(event: signedEvent(
-              kind: event.kind,
-              tags: event.tags,
-              content: event.content,
-              createdAt: event.createdAt,
-          ));
+            return PublishSuccess(
+              event: signedEvent(
+                kind: event.kind,
+                tags: event.tags,
+                content: event.content,
+                createdAt: event.createdAt,
+              ),
+            );
           });
           final repository = buildRepository(nostrClient: client);
 
@@ -954,12 +974,14 @@ void main() {
         when(() => client.publicKey).thenReturn(_ownerPubkey);
         when(() => client.publishEvent(any())).thenAnswer((invocation) async {
           final event = invocation.positionalArguments.first as Event;
-          return PublishSuccess(event: signedEvent(
-            kind: event.kind,
-            tags: event.tags,
-            content: event.content,
-            createdAt: event.createdAt,
-          ));
+          return PublishSuccess(
+            event: signedEvent(
+              kind: event.kind,
+              tags: event.tags,
+              content: event.content,
+              createdAt: event.createdAt,
+            ),
+          );
         });
         final repository = buildRepository(nostrClient: client);
 

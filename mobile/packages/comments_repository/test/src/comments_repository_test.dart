@@ -722,7 +722,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.postComment(
@@ -790,7 +791,8 @@ void main() {
             'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.postComment(
@@ -859,7 +861,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.postComment(
@@ -911,7 +914,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.postComment(
@@ -951,7 +955,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.postComment(
@@ -1026,7 +1031,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.postComment(
@@ -1192,7 +1198,8 @@ void main() {
           (_) async => const CountResult(count: 5),
         );
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => PublishSuccess(event: inv.positionalArguments.first as Event),
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments.first as Event),
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1233,7 +1240,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.deleteComment(commentId: testCommentId);
@@ -1261,7 +1269,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.deleteComment(
@@ -1281,7 +1290,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            capturedEvent = inv.positionalArguments.first as Event; return PublishSuccess(event: capturedEvent!);
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.deleteComment(commentId: testCommentId);
@@ -1338,7 +1348,8 @@ void main() {
           (_) async => const CountResult(count: 10),
         );
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => PublishSuccess(event: inv.positionalArguments.first as Event),
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments.first as Event),
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1357,7 +1368,8 @@ void main() {
           (_) async => const CountResult(count: 10),
         );
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => PublishSuccess(event: inv.positionalArguments.first as Event),
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments.first as Event),
         );
 
         await repository.getCommentsCount(testRootEventId);

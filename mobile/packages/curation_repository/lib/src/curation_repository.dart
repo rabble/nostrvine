@@ -1175,8 +1175,9 @@ class CurationRepository {
         );
       }
 
-      final sentEvent =
-          publishResult is PublishSuccess ? publishResult.event : null;
+      final sentEvent = publishResult is PublishSuccess
+          ? publishResult.event
+          : null;
       final isSuccess = sentEvent != null;
 
       if (isSuccess) {

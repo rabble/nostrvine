@@ -73,7 +73,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => PublishSuccess(event: Event(_testPubkey, 4, <List<String>>[], 'test')),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(pubkey: _recipientPubkey),
@@ -125,7 +127,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => PublishSuccess(event: Event(_testPubkey, 4, <List<String>>[], 'test')),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(
@@ -698,7 +702,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => PublishSuccess(event: Event(_testPubkey, 4, <List<String>>[], 'test')),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(
@@ -734,7 +740,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => PublishSuccess(event: Event(_testPubkey, 4, <List<String>>[], 'test')),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(

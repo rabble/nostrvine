@@ -153,12 +153,14 @@ void main() {
           when(
             () => mockNostrService.publishEvent(any()),
           ).thenAnswer(
-            (_) async => PublishSuccess(event: _testEvent(
-              tags: [
-                ['d', 'test_id'],
-              ],
-              content: 'Test content',
-            )),
+            (_) async => PublishSuccess(
+              event: _testEvent(
+                tags: [
+                  ['d', 'test_id'],
+                ],
+                content: 'Test content',
+              ),
+            ),
           );
 
           final result = await curationRepository.publishCuration(

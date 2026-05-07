@@ -59,7 +59,9 @@ void main() {
       );
 
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return PublishSuccess(event: invocation.positionalArguments[0] as Event);
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       publisher = ViewEventPublisher(
@@ -222,7 +224,9 @@ void main() {
       });
 
       test('returns false when publishEvent returns null', () async {
-        when(() => mockNostr.publishEvent(any())).thenAnswer((_) async => const PublishFailed());
+        when(
+          () => mockNostr.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishFailed());
 
         final result = await publisher.publishViewEvent(
           video: createTestVideoEvent(pubkey: creatorPubkey),
@@ -297,7 +301,9 @@ void main() {
           when(() => mockNostr.publishEvent(any())).thenAnswer((
             invocation,
           ) async {
-            return PublishSuccess(event: invocation.positionalArguments[0] as Event);
+            return PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            );
           });
 
           await publisher.publishViewEvent(
