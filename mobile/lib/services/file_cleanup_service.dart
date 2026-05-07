@@ -44,6 +44,7 @@ class FileCleanupService {
     required ClipsDao clipsDao,
   }) async {
     if (filePath == null || filePath.isEmpty) return;
+    if (!File(filePath).existsSync()) return;
 
     if (await _isFileReferenced(
       filePath,
