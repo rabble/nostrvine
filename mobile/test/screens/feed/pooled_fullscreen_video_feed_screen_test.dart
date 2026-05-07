@@ -230,6 +230,20 @@ void main() {
           Alignment.center,
         );
       });
+
+      test('places contained videos below the fullscreen app header', () {
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54),
+          54 + DiVineAppBarStyle.defaultStyle.height,
+        );
+      });
+
+      test('does not offset portrait videos that cover the viewport', () {
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54, isPortrait: true),
+          0,
+        );
+      });
     });
 
     late MockFullscreenFeedBloc mockBloc;

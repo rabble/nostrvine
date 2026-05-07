@@ -69,6 +69,14 @@ Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
   return isPortrait ? Alignment.center : Alignment.topCenter;
 }
 
+@visibleForTesting
+double fullscreenContainedVideoTopInset({
+  required double safeAreaTop,
+  bool isPortrait = false,
+}) {
+  return isPortrait ? 0 : safeAreaTop + DiVineAppBarStyle.defaultStyle.height;
+}
+
 /// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
 /// opacity using smooth linear interpolation around each threshold.
 double _scrollDrivenOpacity(double distance) {
@@ -1371,11 +1379,15 @@ class _FittedVideoPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
     final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
+    final topInset = fullscreenContainedVideoTopInset(
+      safeAreaTop: MediaQuery.viewPaddingOf(context).top,
+      isPortrait: isPortrait,
+    );
 
     // Do not set filterQuality to high — on Android the bicubic
     // interpolation causes visible blur on the Texture widget when
     // the video resolution doesn't match the display size exactly.
-    return Video(
+    final video = Video(
       controller: videoController,
       fit: boxFit,
       alignment: alignment,
@@ -1383,6 +1395,11 @@ class _FittedVideoPlayer extends StatelessWidget {
       width: videoWidth,
       height: videoHeight,
       fill: const Color(0x00000000),
+    );
+    if (topInset == 0) return video;
+    return Padding(
+      padding: EdgeInsets.only(top: topInset),
+      child: video,
     );
   }
 }
@@ -1397,9 +1414,13 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
     final alignment = fullscreenVideoMediaAlignment(isPortrait: isPortrait);
+    final topInset = fullscreenContainedVideoTopInset(
+      safeAreaTop: MediaQuery.viewPaddingOf(context).top,
+      isPortrait: isPortrait,
+    );
     final url = thumbnailUrl;
 
-    return Stack(
+    final placeholder = Stack(
       fit: StackFit.expand,
       children: [
         // Thumbnail background (if available)
@@ -1416,6 +1437,11 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
         // Loading indicator overlay
         const _LoadingIndicator(),
       ],
+    );
+    if (topInset == 0) return placeholder;
+    return Padding(
+      padding: EdgeInsets.only(top: topInset),
+      child: placeholder,
     );
   }
 }
