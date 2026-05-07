@@ -775,14 +775,18 @@ class DmRepository {
   /// Throws [ArgumentError] if [recipientPubkey] is not a 64-character
   /// hex string or if [content] is empty.
   ///
-  /// When an [OutgoingDmsDao] was injected, the send goes through the
+  /// When an [OutgoingDmsDao] is injected, the send goes through the
   /// durable queue: build the rumor, enqueue a `pending`/`pending` row
-  /// keyed by the rumor's id, publish, then either delete the row in
-  /// the same transaction that inserts the `direct_messages` row (full
-  /// success) or mark both wraps `failed` with the error (publish
-  /// failure). Per-wrap precision lands once #3910 surfaces
-  /// `selfWrapPublished` on `NIP17SendResult` — until then both wrap
-  /// statuses follow `result.success`.
+  /// keyed by the rumor's id, publish, then transition the queue row
+  /// by wrap outcome:
+  ///
+  /// - Full NIP-17 delivery (`selfWrapPublished == true`): delete the
+  ///   queue row in the same transaction that inserts `direct_messages`.
+  /// - Partial delivery (`selfWrapPublished == false`): keep the row,
+  ///   mark the recipient wrap `sent`, and mark the self-wrap `failed`
+  ///   so only the missing self-wrap is retried later.
+  /// - Recipient publish failure: mark both wraps `failed` and leave
+  ///   the row queued for replay.
   Future<NIP17SendResult> sendMessage({
     required String recipientPubkey,
     required String content,
@@ -847,9 +851,9 @@ class DmRepository {
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
         // Persist message + conversation atomically. When the queue is
-        // wired in, the queue-row delete also lives in this transaction
+        // wired in, the queue transition also lives in this transaction
         // so a watcher never observes a window where the message is in
-        // neither table.
+        // neither table and so partial delivery preserves the retry row.
         String? protocol;
         await _conversationsDao.runInTransaction(() async {
           await _directMessagesDao.insertMessage(
@@ -889,7 +893,20 @@ class DmRepository {
           );
 
           if (outgoingDao != null) {
-            await outgoingDao.deleteById(rumor.id);
+            if (result.selfWrapPublished == true) {
+              await outgoingDao.deleteById(rumor.id);
+            } else {
+              await outgoingDao.markRecipientWrapStatus(
+                id: rumor.id,
+                status: OutgoingWrapStatus.sent,
+                eventId: result.messageEventId,
+              );
+              await outgoingDao.markSelfWrapStatus(
+                id: rumor.id,
+                status: OutgoingWrapStatus.failed,
+                lastError: 'Recipient delivered, but self-wrap publish failed',
+              );
+            }
           }
         });
 
@@ -930,10 +947,8 @@ class DmRepository {
         // Local persistence failure is a degraded state, not a send failure.
       }
     } else if (outgoingDao != null) {
-      // Mark both wraps failed with the error so the retry service can
-      // pick this row up. Tying both statuses to result.success is the
-      // pre-#3910 behaviour — once selfWrapPublished is exposed on the
-      // result, the recipient and self transitions split here.
+      // Recipient publish failed before the self-wrap could land, so
+      // both wrap statuses remain retryable on the queue row.
       final errorMessage = result.error ?? 'Unknown publish failure';
       try {
         await outgoingDao.markRecipientWrapStatus(

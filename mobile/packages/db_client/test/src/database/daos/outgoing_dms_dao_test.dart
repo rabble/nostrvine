@@ -296,8 +296,8 @@ void main() {
 
     group('clearAllForUser', () {
       test('removes only rows owned by the given pubkey', () async {
-        await dao.enqueue(makeDm(id: 'a1', owner: ownerA));
-        await dao.enqueue(makeDm(id: 'a2', owner: ownerA));
+        await dao.enqueue(makeDm(id: 'a1'));
+        await dao.enqueue(makeDm(id: 'a2'));
         await dao.enqueue(makeDm(id: 'b1', owner: ownerB));
 
         final cleared = await dao.clearAllForUser(ownerA);

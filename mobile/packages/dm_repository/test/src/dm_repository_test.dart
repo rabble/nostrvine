@@ -7400,7 +7400,7 @@ void main() {
         ).thenAnswer((_) async => null);
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
       });
 
       test(
@@ -7482,7 +7482,7 @@ void main() {
               additionalTags: any(named: 'additionalTags'),
             ),
           ).thenAnswer(
-            (_) async => NIP17SendResult.failure('relay unavailable'),
+            (_) async => const NIP17SendResult.failure('relay unavailable'),
           );
 
           final repository = createRepository(
@@ -7501,11 +7501,8 @@ void main() {
           ).captured;
           final enqueued = captured.single as OutgoingDm;
 
-          // Both wraps must be marked failed with the error so the
-          // retry service can pick them up. Pre-#3910 both transitions
-          // are tied to overall result.success; once #3910 surfaces
-          // selfWrapPublished, the recipient and self transitions
-          // diverge here.
+          // Recipient publish failed before the self-wrap could land,
+          // so both wrap states stay retryable.
           verify(
             () => mockOutgoingDmsDao.markRecipientWrapStatus(
               id: enqueued.id,
@@ -7552,6 +7549,86 @@ void main() {
               tagsJson: any(named: 'tagsJson'),
             ),
           );
+        },
+      );
+
+      test(
+        'on partial delivery: persists locally, keeps the queue row, '
+        'marks recipient sent, and marks self failed',
+        () async {
+          when(
+            () => mockMessageService.sendPrivateMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+              eventKind: any(named: 'eventKind'),
+              additionalTags: any(named: 'additionalTags'),
+            ),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: _validPubkeyB,
+              selfWrapPublished: false,
+            ),
+          );
+
+          final repository = createRepository(
+            outgoingDmsDao: mockOutgoingDmsDao,
+          );
+
+          final result = await repository.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'recipient got it, self-wrap failed',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+
+          final captured = verify(
+            () => mockOutgoingDmsDao.enqueue(captureAny()),
+          ).captured;
+          final enqueued = captured.single as OutgoingDm;
+
+          verify(
+            () => mockOutgoingDmsDao.markRecipientWrapStatus(
+              id: enqueued.id,
+              status: OutgoingWrapStatus.sent,
+              eventId: _giftWrapEventId,
+            ),
+          ).called(1);
+          verify(
+            () => mockOutgoingDmsDao.markSelfWrapStatus(
+              id: enqueued.id,
+              status: OutgoingWrapStatus.failed,
+              lastError: 'Recipient delivered, but self-wrap publish failed',
+            ),
+          ).called(1);
+          verifyNever(() => mockOutgoingDmsDao.deleteById(any()));
+          verify(
+            () => mockDirectMessagesDao.insertMessage(
+              id: _rumorEventId,
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: _validPubkeyA,
+              content: 'recipient got it, self-wrap failed',
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: _giftWrapEventId,
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: _validPubkeyA,
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).called(1);
         },
       );
 

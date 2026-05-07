@@ -682,7 +682,9 @@ void main() {
         'rumor id as buildRumor returned',
         () async {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-            (invocation) async => invocation.positionalArguments[0] as Event,
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
           );
 
           final rumor = service.buildRumor(
@@ -745,7 +747,9 @@ void main() {
         'to buildRumor + sendRumor)',
         () async {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-            (invocation) async => invocation.positionalArguments[0] as Event,
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
           );
 
           final result = await service.sendPrivateMessage(
