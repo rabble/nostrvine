@@ -212,6 +212,30 @@ void main() {
       });
     });
 
+    group('clearAllForUser', () {
+      test('removes only rows owned by the given pubkey', () async {
+        await dao.enqueue(makeDm(id: 'a1', owner: ownerA));
+        await dao.enqueue(makeDm(id: 'a2', owner: ownerA));
+        await dao.enqueue(makeDm(id: 'b1', owner: ownerB));
+
+        final cleared = await dao.clearAllForUser(ownerA);
+
+        expect(cleared, equals(2));
+        expect(await dao.getById('a1'), isNull);
+        expect(await dao.getById('a2'), isNull);
+        expect(await dao.getById('b1'), isNotNull);
+      });
+
+      test('returns 0 when the user has no queued rows', () async {
+        await dao.enqueue(makeDm(id: 'b1', owner: ownerB));
+
+        final cleared = await dao.clearAllForUser(ownerA);
+
+        expect(cleared, equals(0));
+        expect(await dao.getById('b1'), isNotNull);
+      });
+    });
+
     group('watchForConversation', () {
       test('emits initial empty list for an empty conversation', () async {
         final stream = dao.watchForConversation(

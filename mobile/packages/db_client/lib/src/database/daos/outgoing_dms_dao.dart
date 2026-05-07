@@ -325,6 +325,18 @@ class OutgoingDmsDao extends DatabaseAccessor<AppDatabase>
     return (delete(outgoingDms)..where((t) => t.id.equals(id))).go();
   }
 
+  /// Delete every queued outgoing DM owned by [ownerPubkey].
+  ///
+  /// Mirrors [DirectMessagesDao.clearAllForUser]: the repository calls
+  /// this from the signout / account-switch path so a different
+  /// account's retry service never picks up the previous user's
+  /// in-flight rows. Returns the number of rows removed.
+  Future<int> clearAllForUser(String ownerPubkey) {
+    return (delete(
+      outgoingDms,
+    )..where((t) => t.ownerPubkey.equals(ownerPubkey))).go();
+  }
+
   // ---------------------------------------------------------------------
   // Reads
   // ---------------------------------------------------------------------
