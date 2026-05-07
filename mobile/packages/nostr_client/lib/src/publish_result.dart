@@ -3,7 +3,7 @@
 
 import 'package:nostr_sdk/nostr_sdk.dart';
 
-/// The outcome of a [NostrClient.publishEvent] call.
+/// The outcome of a `NostrClient.publishEvent` call.
 ///
 /// Callers can switch exhaustively over the three variants rather than
 /// inferring failure reason from a post-failure relay-list snapshot.
