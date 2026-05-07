@@ -1444,8 +1444,7 @@ class VideosRepository {
   /// Fetches a single video by event ID and enriches it with REST-side stats
   /// (loop counts, view counts) from the Funnelcake bulk-stats endpoint.
   ///
-  /// Delegates to [getVideosByIds], which runs the cache→relay lookup,
-  /// content filtering, and bulk-stats enrichment when the API client is
+  /// Delegates to [getVideosByIds] for cache→relay lookup and content
   /// filtering, then runs bulk-stats enrichment in a second step bounded by
   /// [_statsFetchTimeout] (relay fetch completes first via
   /// `getVideosByIds(..., hydrateBulkStats: false)`).
