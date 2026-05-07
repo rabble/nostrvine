@@ -206,5 +206,7 @@ void main() {
     expect(capturedExtra?.initialVideo?.videoUrl, comment.videoUrl);
     expect(capturedExtra?.initialVideo?.thumbnailUrl, comment.thumbnailUrl);
     expect(capturedExtra?.initialVideo?.title, comment.content);
+    expect(capturedExtra?.initialVideo?.isVideoReply, isTrue);
+    expect(capturedExtra?.initialVideo?.replyRootRouteId, _testRootEventId);
   });
 }

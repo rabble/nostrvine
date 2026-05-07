@@ -1108,16 +1108,18 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Редактиране на видео';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen =>
+      'Отваряне на настройките за възпроизвеждане';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose =>
+      'Затваряне на настройките за възпроизвеждане';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Включване на надписите';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Изключване на надписите';
 
   @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
@@ -1432,16 +1434,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionShareLabel => 'Сподели';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Докладване';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Докладване на видеото';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Редактиране';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Редактиране на видеото';
 
   @override
   String get videoActionAboutLabel => 'Инфо';
@@ -4425,21 +4427,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'Нежелано или повтарящо се съдържание';
 
   @override
   String get reportReasonHarassment => 'Тормоз, малтретиране или заплахи';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Вредни и нежелани отговори или споменавания';
 
   @override
   String get reportReasonViolence => 'Насилствено или екстремистко съдържание';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Насилствено, екстремистко или вредно съдържание';
 
   @override
   String get reportReasonSexualContent =>
@@ -4447,40 +4449,42 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Голота, порнография или явно съдържание';
 
   @override
   String get reportReasonCopyright => 'Нарушаване на авторски права';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Неупълномощено използване на интелектуална собственост';
 
   @override
   String get reportReasonFalseInfo => 'Невярна информация';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle =>
+      'Подвеждащи или неверни твърдения';
 
   @override
   String get reportReasonCsam => 'Нарушение на безопасността на детето';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Съдържание, което експлоатира или застрашава непълнолетни';
 
   @override
   String get reportReasonAiGenerated => 'AI-генерирано съдържание';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Подозирано съдържание, генерирано от ИИ';
 
   @override
   String get reportReasonOther => 'Друго нарушение на правилата';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle =>
+      'Нарушения, които не са изброени по-горе';
 
   @override
   String reportFailed(Object error) {
@@ -4502,7 +4506,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportLearnMore => 'Научи повече';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Научете повече на';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';

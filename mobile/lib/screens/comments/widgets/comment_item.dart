@@ -271,8 +271,10 @@ VideoEvent _videoFromComment(Comment comment) {
     blurhash: comment.videoBlurhash,
     rawTags: {
       'E': comment.rootEventId,
+      'K': '34236',
       'P': comment.rootAuthorPubkey,
       if (comment.replyToEventId != null) 'e': comment.replyToEventId!,
+      if (comment.replyToEventId != null) 'k': '34236',
       if (comment.replyToAuthorPubkey != null)
         'p': comment.replyToAuthorPubkey!,
     },

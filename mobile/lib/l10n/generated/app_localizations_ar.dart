@@ -1075,16 +1075,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'تعديل الفيديو';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'فتح إعدادات التشغيل';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'إغلاق إعدادات التشغيل';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'تشغيل التسميات التوضيحية';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'إيقاف التسميات التوضيحية';
 
   @override
   String get contentWarningLabel => 'تحذير محتوى';
@@ -1393,16 +1393,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionShareLabel => 'مشاركة';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'إبلاغ';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'الإبلاغ عن الفيديو';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'تعديل';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'تعديل الفيديو';
 
   @override
   String get videoActionAboutLabel => 'حول';
@@ -4332,61 +4332,60 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportReasonSpam => 'محتوى غير مرغوب فيه أو مزعج';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'محتوى غير مرغوب فيه أو متكرر';
 
   @override
   String get reportReasonHarassment => 'تحرُّش أو تنمُّر أو تهديدات';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'ردود أو إشارات مؤذية وغير مرغوبة';
 
   @override
   String get reportReasonViolence => 'محتوى عنيف أو متطرف';
 
   @override
-  String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+  String get reportReasonViolenceSubtitle => 'محتوى عنيف أو متطرف أو ضار';
 
   @override
   String get reportReasonSexualContent => 'محتوى جنسي أو للبالغين';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'عُري أو إباحية أو محتوى صريح';
 
   @override
   String get reportReasonCopyright => 'انتهاك حقوق الملكية';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'استخدام غير مصرّح به للملكية الفكرية';
 
   @override
   String get reportReasonFalseInfo => 'معلومات كاذبة';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'ادعاءات مضللة أو كاذبة';
 
   @override
   String get reportReasonCsam => 'انتهاك سلامة الأطفال';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'محتوى يستغل القاصرين أو يعرّضهم للخطر';
 
   @override
   String get reportReasonAiGenerated => 'محتوى مُولَّد بالذكاء الاصطناعي';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'محتوى يُشتبه بأنه مولّد بالذكاء الاصطناعي';
 
   @override
   String get reportReasonOther => 'انتهاك آخر للسياسة';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => 'انتهاكات غير مذكورة أعلاه';
 
   @override
   String reportFailed(Object error) {
@@ -4408,7 +4407,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportLearnMore => 'اعرف المزيد';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'تعرّف على المزيد في';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';

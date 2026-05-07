@@ -1070,16 +1070,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Videoyu düzenle';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Oynatma ayarlarını aç';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Oynatma ayarlarını kapat';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Altyazıları aç';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Altyazıları kapat';
 
   @override
   String get contentWarningLabel => 'İçerik Uyarısı';
@@ -1392,16 +1392,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionShareLabel => 'Paylaş';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Bildir';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Videoyu bildir';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Düzenle';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Videoyu düzenle';
 
   @override
   String get videoActionAboutLabel => 'Hakkında';
@@ -4362,61 +4362,61 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'İstenmeyen veya tekrarlanan içerik';
 
   @override
   String get reportReasonHarassment => 'Taciz, Zorbalık veya Tehdit';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Zararlı ve istenmeyen yanıtlar veya bahsetmeler';
 
   @override
   String get reportReasonViolence => 'Şiddet veya Aşırı İçerik';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Şiddet içeren, aşırılıkçı veya zararlı içerik';
 
   @override
   String get reportReasonSexualContent => 'Cinsel veya Yetişkin İçerik';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Çıplaklık, porno veya açık içerik';
 
   @override
   String get reportReasonCopyright => 'Telif Hakkı İhlali';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Fikri mülkiyetin izinsiz kullanımı';
 
   @override
   String get reportReasonFalseInfo => 'Yanlış Bilgi';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'Yanıltıcı veya yanlış iddialar';
 
   @override
   String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Reşit olmayanları istismar eden veya tehlikeye atan içerik';
 
   @override
   String get reportReasonAiGenerated => 'Yapay Zeka Üretimi İçerik';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Yapay zeka tarafından oluşturulduğundan şüphelenilen içerik';
 
   @override
   String get reportReasonOther => 'Diğer Politika İhlali';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => 'Yukarıda listelenmeyen ihlaller';
 
   @override
   String reportFailed(Object error) {
@@ -4438,7 +4438,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportLearnMore => 'Daha Fazla Bilgi';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Daha fazla bilgi:';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
