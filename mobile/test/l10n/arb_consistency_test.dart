@@ -373,11 +373,6 @@ const _knownUntranslatedDebt = {
   // divine.video/safety" link). Falls back to English in non-English
   // locales until translated.
   'reportLearnMoreAt',
-  // #4063 — feed mode / video author Semantics labels. English ships;
-  // other locales fall back until translators pick these up.
-  'feedModeSemanticLabel',
-  'videoAuthorSemanticLabel',
-  'videoAuthorAvatarSemanticLabel',
 };
 
 Map<String, Object?> _readArb(File file) {

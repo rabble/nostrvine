@@ -3884,16 +3884,16 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String feedModeSemanticLabel(String label) {
-    return 'Feed mode: $label';
+    return 'የፊድ ሁነታ: $label';
   }
 
   @override
   String videoAuthorSemanticLabel(String displayName) {
-    return 'Video author: $displayName';
+    return 'የቪድዮ ፈጣሪ: $displayName';
   }
 
   @override
-  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+  String get videoAuthorAvatarSemanticLabel => 'የፈጣሪ ፎቶ';
 
   @override
   String get feedForYouEmpty =>

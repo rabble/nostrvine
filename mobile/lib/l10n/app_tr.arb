@@ -1742,6 +1742,23 @@
     "feedModeForYou": "Senin için",
     "feedModeNew": "Yeni",
     "feedModeFollowing": "Takip",
+    "feedModeSemanticLabel": "Akış modu: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Video yazarı: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Yazar avatarı",
     "feedForYouEmpty": "Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.",
     "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.",
     "feedLatestEmpty": "Henüz yeni video yok.\nYakında tekrar kontrol et.",

@@ -1745,6 +1745,23 @@
     "feedModeForYou": "Pour toi",
     "feedModeNew": "Nouveau",
     "feedModeFollowing": "Abonnements",
+    "feedModeSemanticLabel": "Fil d'actualité : {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Auteur de la vidéo : {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar de l'auteur",
     "feedForYouEmpty": "Ton fil Pour toi est vide.\nExplore des vidéos et abonne-toi à des créateurs pour le personnaliser.",
     "feedFollowingEmpty": "Aucune vidéo des personnes que tu suis pour le moment.\nTrouve des créateurs que tu aimes et abonne-toi à eux.",
     "feedLatestEmpty": "Aucune nouvelle vidéo pour le moment.\nReviens bientôt.",

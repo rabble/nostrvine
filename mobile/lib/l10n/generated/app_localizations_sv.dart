@@ -3968,16 +3968,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String feedModeSemanticLabel(String label) {
-    return 'Feed mode: $label';
+    return 'Flödesläge: $label';
   }
 
   @override
   String videoAuthorSemanticLabel(String displayName) {
-    return 'Video author: $displayName';
+    return 'Videoförfattare: $displayName';
   }
 
   @override
-  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+  String get videoAuthorAvatarSemanticLabel => 'Skapares avatar';
 
   @override
   String get feedForYouEmpty =>

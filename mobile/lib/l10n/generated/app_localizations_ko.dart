@@ -3792,16 +3792,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String feedModeSemanticLabel(String label) {
-    return 'Feed mode: $label';
+    return '피드 모드: $label';
   }
 
   @override
   String videoAuthorSemanticLabel(String displayName) {
-    return 'Video author: $displayName';
+    return '동영상 작성자: $displayName';
   }
 
   @override
-  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+  String get videoAuthorAvatarSemanticLabel => '작성자 프로필 사진';
 
   @override
   String get feedForYouEmpty =>

@@ -1745,6 +1745,23 @@
     "feedModeForYou": "Voor jou",
     "feedModeNew": "Nieuw",
     "feedModeFollowing": "Volgend",
+    "feedModeSemanticLabel": "Feedmodus: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Video-auteur: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar van maker",
     "feedForYouEmpty": "Je Voor jou-feed is leeg.\nVerken video's en volg makers om hem vorm te geven.",
     "feedFollowingEmpty": "Nog geen video's van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.",
     "feedLatestEmpty": "Nog geen nieuwe video's.\nKom binnenkort terug.",

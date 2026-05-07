@@ -1745,6 +1745,23 @@
     "feedModeForYou": "Dla ciebie",
     "feedModeNew": "Nowe",
     "feedModeFollowing": "Obserwowane",
+    "feedModeSemanticLabel": "Tryb kanału: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Autor filmu: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Awatar autora",
     "feedForYouEmpty": "Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.",
     "feedFollowingEmpty": "Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.",
     "feedLatestEmpty": "Brak nowych filmów.\nWróć tu wkrótce.",

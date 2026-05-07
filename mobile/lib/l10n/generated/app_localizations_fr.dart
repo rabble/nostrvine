@@ -4031,16 +4031,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String feedModeSemanticLabel(String label) {
-    return 'Feed mode: $label';
+    return 'Fil d\'actualité : $label';
   }
 
   @override
   String videoAuthorSemanticLabel(String displayName) {
-    return 'Video author: $displayName';
+    return 'Auteur de la vidéo : $displayName';
   }
 
   @override
-  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+  String get videoAuthorAvatarSemanticLabel => 'Avatar de l\'auteur';
 
   @override
   String get feedForYouEmpty =>

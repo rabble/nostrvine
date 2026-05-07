@@ -1749,6 +1749,23 @@
     "feedModeForYou": "Para ti",
     "feedModeNew": "Nuevo",
     "feedModeFollowing": "Siguiendo",
+    "feedModeSemanticLabel": "Modo del feed: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Autor del video: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar del autor",
     "feedForYouEmpty": "Tu feed Para ti está vacío.\nExplora videos y sigue a creadores para personalizarlo.",
     "feedFollowingEmpty": "Aún no hay videos de personas que sigues.\nEncuentra creadores que te gusten y síguelos.",
     "feedLatestEmpty": "Aún no hay videos nuevos.\nVuelve pronto.",
