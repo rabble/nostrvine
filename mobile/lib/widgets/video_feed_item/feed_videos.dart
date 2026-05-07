@@ -200,6 +200,10 @@ class FeedVideosState extends ConsumerState<FeedVideos> with RouteAware {
       child: InfiniteVideoFeed(
         key: _feedKey,
         videos: widget.videos,
+        // mediaCacheProvider is a keepAlive singleton; identity is stable for
+        // the app lifetime, so ref.read is safe here. See
+        // .claude/rules/state_management.md → "Bridging Riverpod-provided
+        // dependencies into BlocProvider" → exception #1.
         cache: ref.read(mediaCacheProvider),
         urlResolver: (video) => video.getOptimalVideoUrlForPlatform(),
         initialIndex: widget.currentIndex,
@@ -747,8 +751,14 @@ class _FeedLoadingOrRestrictedOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final service = ref.read(videoModerationStatusServiceProvider);
+    // Watch the moderation service so the BlocProvider rebuilds (and the
+    // captured cubit is closed and re-created) if the provider's identity
+    // ever flips. The ValueKey gates the BlocProvider lifecycle on the
+    // service identity. See .claude/rules/state_management.md → "Bridging
+    // Riverpod-provided dependencies into BlocProvider".
+    final service = ref.watch(videoModerationStatusServiceProvider);
     return BlocProvider<FeedLoadingModerationCubit>(
+      key: ValueKey(service),
       create: (_) => FeedLoadingModerationCubit(
         service: service,
         explicitSha256: video.sha256,
