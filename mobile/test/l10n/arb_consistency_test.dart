@@ -40,7 +40,13 @@ void main() {
   });
 }
 
+// Keys grouped by feature. Each entry is awaiting either real translations
+// (small-batch gaps in a few locales) or a fresh full-pass translation
+// across all 16 non-English locales. Tracking issue: #3814.
 const _knownUntranslatedDebt = {
+  // Profile Misc — saved-videos empty/error, "Maybe later", Secure /
+  // Complete CTAs, library / loops / likes / messages labels, user
+  // fallback noun.
   'profileNoSavedVideosTitle',
   'profileSavedOwnEmpty',
   'profileErrorLoadingSaved',
@@ -52,28 +58,16 @@ const _knownUntranslatedDebt = {
   'profileMyLibraryLabel',
   'profileMessageLabel',
   'profileUserFallback',
+  // Video Action Labels — Like / Reply / Repost / Share / About row
+  // under the video.
   'videoActionLikeLabel',
   'videoActionReplyLabel',
   'videoActionRepostLabel',
   'videoActionShareLabel',
   'videoActionAboutLabel',
-  'videoOverlayOpenMetadataFromTitle',
-  'videoOverlayOpenMetadataFromDescription',
-  // Added by the notifications redesign / avatar lightbox a11y pass.
-  // Translators will pick these up in a follow-up pass; until then the
-  // generated l10n APIs fall back to the English source.
-  'profileAvatarLightboxBarrierLabel',
-  'profileAvatarLightboxCloseSemanticLabel',
-  'notificationsViewProfileSemanticLabel',
-  'notificationsViewProfilesSemanticLabel',
-  'notificationRepliedToYourComment',
-  'notificationAndConnector',
-  'notificationOthersCount',
-  // Added while localizing the settings taxonomy and related settings flows
-  // for Amharic. Existing locales fall back to English until the next
-  // full translation pass.
+  // General Settings — section headers + closed-captions / video-shape
+  // options.
   'settingsGeneralTitle',
-  'settingsContentSafetyTitle',
   'generalSettingsSectionIntegrations',
   'generalSettingsSectionViewing',
   'generalSettingsSectionCreating',
@@ -85,6 +79,9 @@ const _knownUntranslatedDebt = {
   'generalSettingsVideoShapeSquareAndPortrait',
   'generalSettingsVideoShapeSquareAndPortraitSubtitle',
   'generalSettingsVideoShapeSquareOnlySubtitle',
+  // Content Safety / Filters — "What you see / publish" toggles and
+  // category filters.
+  'settingsContentSafetyTitle',
   'contentFiltersAdultContent',
   'contentFiltersViolenceGore',
   'contentFiltersSubstances',
@@ -95,12 +92,18 @@ const _knownUntranslatedDebt = {
   'contentFiltersFilterOut',
   'safetySettingsWhatYouSee',
   'safetySettingsWhatYouPublish',
+  // Relay Settings — external relay status, time-ago strings, summaries,
+  // and the #3362 wss:// scheme gate.
   'relaySettingsExternalRelay',
   'relaySettingsNotConnected',
   'relaySettingsDisconnectedAgo',
   'relaySettingsSubscriptionsSummary',
   'relaySettingsEventsSummary',
   'relaySettingsTimeAgo',
+  'relaySettingsInsecureUrl',
+  'keyImportInsecureBunkerRelay',
+  // Nostr Settings — Network / Account / Danger Zone sections of the
+  // Nostr settings screen.
   'nostrSettingsIntro',
   'nostrSettingsSectionNetwork',
   'nostrSettingsSectionAccount',
@@ -122,17 +125,7 @@ const _knownUntranslatedDebt = {
   'nostrSettingsFailedToRemoveKeys',
   'nostrSettingsDeleteAccount',
   'nostrSettingsDeleteAccountSubtitle',
-  'blossomValidServerUrl',
-  'blossomSettingsSaved',
-  'blossomSaveTooltip',
-  'blossomAboutTitle',
-  'blossomAboutDescription',
-  'blossomUseCustomServer',
-  'blossomCustomServerEnabledSubtitle',
-  'blossomCustomServerDisabledSubtitle',
-  'blossomCustomServerUrl',
-  'blossomCustomServerHelper',
-  'blossomPopularServers',
+  // Bluesky Bridge Settings — cross-post status messages.
   'blueskySignInRequired',
   'blueskyPublishVideos',
   'blueskyEnabledSubtitle',
@@ -144,181 +137,20 @@ const _knownUntranslatedDebt = {
   'blueskyStatusFailed',
   'blueskyStatusDisabled',
   'blueskyStatusNotLinked',
-  'invitesNoneAvailable',
-  'invitesShareWithPeople',
-  'invitesUsedInvites',
-  'invitesShareMessage',
-  'invitesCopyInvite',
-  'invitesCopied',
-  'invitesShareInvite',
-  'invitesShareSubject',
-  'invitesClaimed',
-  'invitesCouldNotLoad',
-  'invitesRetry',
-  // Added while sweeping obvious remaining hardcoded UI strings for Amharic.
-  // Existing locales fall back to English until the next full translation pass.
-  'commonBack',
-  'commonClose',
+  // Profile Setup — image-type label + NIP-05 validation messages.
+  'profileSetupImagesTypeGroup',
+  'profileSetupExternalNip05InvalidFormat',
+  'profileSetupExternalNip05DivineDomain',
+  // Explore / Categories Misc — search hint, video count suffix, list
+  // person count, "by author" prefix, no-videos states.
   'categoryGalleryNoVideosInCategory',
   'categoriesNoCategoriesAvailable',
-  'notificationsEmptyTitle',
-  'notificationsEmptySubtitle',
-  'appsPermissionsRevoke',
-  'nostrAppPermissionTitle',
-  'nostrAppPermissionDescription',
-  'nostrAppPermissionOrigin',
-  'nostrAppPermissionMethod',
-  'nostrAppPermissionCapability',
-  'nostrAppPermissionEventKind',
-  'nostrAppPermissionAllow',
-  'bugReportSendReport',
-  'featureRequestSendRequest',
-  'followingTitle',
-  'followingTitleForName',
-  'followersTitle',
-  'followersTitleForName',
-  'followersUpdateFollowFailed',
-  'reportMessageTitle',
-  'reportMessageWhyReporting',
-  'reportMessageSelectReason',
-  'newMessageTitle',
-  'newMessageFindPeople',
-  'newMessageNoContacts',
-  'newMessageNoUsersFound',
-  'hashtagSearchTitle',
-  'hashtagSearchSubtitle',
-  'userNotAvailableTitle',
-  'userNotAvailableBody',
-  // Added after an Explore Amharic QA pass caught hardcoded search and video
-  // count suffixes. Existing locales fall back to English until the next pass.
   'exploreSearchHint',
   'categoryVideoCount',
   'listPersonCount',
   'listByAuthorPrefix',
-  'soundUntitled',
-  'soundStopPreview',
-  'soundPreviewSemanticLabel',
-  'soundViewDetailsSemanticLabel',
-  'soundsSavedToLibrary',
-  'soundsAlreadySavedToLibrary',
-  'soundsSavedLibraryTitle',
-  'soundsSavedEmptyTitle',
-  'soundsSavedEmptyDescription',
-  'soundsAvailabilityPrivate',
-  'soundsAvailabilityCommunity',
-  'soundsRemoveSavedSound',
-  'soundsRemovedFromLibrary',
-  'videoMetadataAudioReuseTitle',
-  'videoMetadataAudioReuseSubtitle',
-  'videoEditorAudioCategoryFeatured',
-  'videoEditorAudioCategoryMySounds',
-  'videoEditorAudioFeaturedEmptyTitle',
-  'videoEditorAudioFeaturedEmptySubtitle',
-  'profileSetupImagesTypeGroup',
-  'profileSetupExternalNip05InvalidFormat',
-  'profileSetupExternalNip05DivineDomain',
-  'contentWarningReportContentTooltip',
-  'contentWarningBlockUserTooltip',
-  'contentWarningBlockedTitle',
-  'contentWarningBlockedPolicy',
-  'contentWarningNoticeTitle',
-  'contentWarningPotentiallyHarmfulTitle',
-  'contentWarningView',
-  'contentWarningReportAction',
-  'discoverListsTitle',
-  'discoverListsFailedToLoad',
-  'discoverListsFailedToLoadWithError',
-  'discoverListsLoading',
-  'discoverListsEmptyTitle',
-  'discoverListsEmptySubtitle',
-  'discoverListsByAuthorPrefix',
-  'curatedListEmptyTitle',
-  'curatedListEmptySubtitle',
-  'curatedListLoadingVideos',
-  'curatedListFailedToLoad',
-  'curatedListNoVideosAvailable',
-  'curatedListVideoNotAvailable',
-  'appsPermissionsTitle',
-  'appsPermissionsEmptyTitle',
-  'appsPermissionsEmptySubtitle',
-  'supportSubjectRequiredLabel',
-  'supportRequiredHelper',
-  'bugReportSubjectHint',
-  'bugReportDescriptionRequiredLabel',
-  'bugReportDescriptionHint',
-  'bugReportStepsLabel',
-  'bugReportStepsHint',
-  'bugReportExpectedBehaviorLabel',
-  'bugReportExpectedBehaviorHint',
-  'bugReportDiagnosticsNotice',
-  'bugReportSuccessMessage',
-  'bugReportSendFailed',
-  'bugReportFailedWithError',
-  'featureRequestSubjectHint',
-  'featureRequestDescriptionRequiredLabel',
-  'featureRequestDescriptionHint',
-  'featureRequestUsefulnessLabel',
-  'featureRequestUsefulnessHint',
-  'featureRequestWhenLabel',
-  'featureRequestWhenHint',
-  'featureRequestSuccessMessage',
-  'featureRequestSendFailed',
-  'featureRequestFailedWithError',
-  'followingEmptyTitle',
-  'followersEmptyTitle',
-  'hashtagSearchNoResults',
-  'hashtagSearchFailed',
-  // Added by people-lists feature (investigate/list-management).
-  // Translators will pick these up in a follow-up pass; until then the
-  // generated l10n APIs fall back to the English source.
-  'peopleListsAddButton',
-  'peopleListsAddButtonWithCount',
-  'peopleListsAddPeopleError',
-  'peopleListsAddPeopleRetry',
-  'peopleListsAddPeopleSearchHint',
-  'peopleListsAddPeopleSemanticLabel',
-  'peopleListsAddPeopleTitle',
-  'peopleListsAddPeopleTooltip',
-  'peopleListsAddToList',
-  'peopleListsAddToListName',
-  'peopleListsAddToListSubtitle',
-  'peopleListsBackToGridTooltip',
-  'peopleListsCreateButton',
-  'peopleListsCreateList',
-  'peopleListsEmptySubtitle',
-  'peopleListsEmptyTitle',
-  'peopleListsErrorLoadingVideos',
-  'peopleListsFailedToLoadVideos',
-  'peopleListsInNLists',
-  'peopleListsListDeletedSubtitle',
-  'peopleListsListNameHint',
-  'peopleListsListNameLabel',
-  'peopleListsListNotFoundSubtitle',
-  'peopleListsListNotFoundTitle',
-  'peopleListsNewListTitle',
-  'peopleListsNoPeopleSubtitle',
-  'peopleListsNoPeopleTitle',
-  'peopleListsNoPeopleToAdd',
-  'peopleListsNoVideosAvailable',
-  'peopleListsNoVideosSubtitle',
-  'peopleListsNoVideosTitle',
-  'peopleListsProfileLongPressHint',
-  'peopleListsRemove',
-  'peopleListsRemoveConfirmBody',
-  'peopleListsRemoveConfirmTitle',
-  'peopleListsRemovedFromList',
-  'peopleListsRouteTitle',
-  'peopleListsSheetTitle',
-  'peopleListsUndo',
-  'peopleListsVideoNotAvailable',
-  'peopleListsViewProfileHint',
-  // Added by the #3362 relay-scheme security gate. English, Spanish, and
-  // Amharic are translated; other locales fall back to English until the
-  // next pass.
-  'relaySettingsInsecureUrl',
-  'keyImportInsecureBunkerRelay',
-  // Added by the badges dashboard in #3825. Translations are tracked in
-  // #3864; until that lands, non-English locales fall back to English.
+  // Badges Dashboard — issuance / acceptance flows (#3825). Translations
+  // tracked in #3864.
   'settingsBadgesTitle',
   'settingsBadgesSubtitle',
   'badgesTitle',
@@ -341,25 +173,42 @@ const _knownUntranslatedDebt = {
   'badgesIssuedNoRecipients',
   'badgesRecipientAcceptedStatus',
   'badgesRecipientWaitingStatus',
-  // Added by the home-feed playback-settings popover (auto-advance / mute /
-  // captions toggles). Translators will pick these up in a follow-up pass;
-  // until then non-English locales fall back to the English source.
+  // Sounds Library — saved sounds, preview, availability, library state.
+  'soundUntitled',
+  'soundStopPreview',
+  'soundPreviewSemanticLabel',
+  'soundViewDetailsSemanticLabel',
+  'soundsSavedToLibrary',
+  'soundsAlreadySavedToLibrary',
+  'soundsSavedLibraryTitle',
+  'soundsSavedEmptyTitle',
+  'soundsSavedEmptyDescription',
+  'soundsAvailabilityPrivate',
+  'soundsAvailabilityCommunity',
+  'soundsRemoveSavedSound',
+  'soundsRemovedFromLibrary',
+  // Video Editor – Audio Picker — fresh feature; audio category tabs and
+  // empty states.
+  'videoMetadataAudioReuseTitle',
+  'videoMetadataAudioReuseSubtitle',
+  'videoEditorAudioCategoryFeatured',
+  'videoEditorAudioCategoryMySounds',
+  'videoEditorAudioFeaturedEmptyTitle',
+  'videoEditorAudioFeaturedEmptySubtitle',
+  // Video Settings Menu — auto-advance / mute / captions popover toggles.
   'videoSettingsMenuOpen',
   'videoSettingsMenuClose',
   'videoSettingsCaptionsEnable',
   'videoSettingsCaptionsDisable',
-  // Added by the Report action button on the video overlay (renamed from
-  // Repost → Revine). English ships; other locales fall back until a pass.
+  // Video Action Report / Edit — Report (renamed from Repost → Revine)
+  // and Edit row buttons on the fullscreen video overlay.
   'videoActionReportLabel',
   'videoActionReport',
-  // Added by the Edit action button on the fullscreen video overlay
-  // (replaces the per-video Compilation slot when viewing your own video).
-  // English ships; translators will pick these up in a follow-up pass.
   'videoActionEditLabel',
   'videoActionEdit',
-  // Added by the Apple-compliance pass on the Report bottom sheet — each
-  // reason now has a one-line subtitle clarifying scope. English ships;
-  // translators will pick these up in a follow-up pass.
+  // Report Reason Subtitles + Learn More — Apple-compliance pass on the
+  // Report bottom sheet (each reason has a one-line scope subtitle, plus
+  // the divine.video/safety learn-more link).
   'reportReasonSpamSubtitle',
   'reportReasonHarassmentSubtitle',
   'reportReasonViolenceSubtitle',
@@ -369,9 +218,6 @@ const _knownUntranslatedDebt = {
   'reportReasonCsamSubtitle',
   'reportReasonAiGeneratedSubtitle',
   'reportReasonOtherSubtitle',
-  // Added by the in-sheet Report confirmation state ("Learn more at
-  // divine.video/safety" link). Falls back to English in non-English
-  // locales until translated.
   'reportLearnMoreAt',
   // Added by the desktop save-to-Downloads log export flow. Other locales
   // fall back to English until the next translation pass.
