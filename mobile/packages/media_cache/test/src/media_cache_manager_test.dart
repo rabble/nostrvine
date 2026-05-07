@@ -1,12 +1,26 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/io_client.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
+
+class _TrackingIOClient extends IOClient {
+  _TrackingIOClient() : super(HttpClient());
+
+  int closeCount = 0;
+
+  @override
+  void close() {
+    closeCount++;
+    super.close();
+  }
+}
 
 void main() {
   group('MediaCacheManager', () {
@@ -450,6 +464,45 @@ void main() {
         // Stats should show empty manifest
         final stats = cacheManager.getCacheStats();
         expect(stats['manifestSize'], 0);
+      });
+    });
+
+    group('close', () {
+      test('closes the legacy file-service HTTP client', () async {
+        final tracker = _TrackingIOClient();
+
+        // Construction kicks off an async open() on the parent
+        // CacheManager's repo store; that pipeline is unrelated to the
+        // leak we're pinning. Swallow any sync/async errors it emits
+        // so the assertion below is what determines pass/fail.
+        await runZonedGuarded(
+          () async {
+            final manager = MediaCacheManager(
+              config: MediaCacheConfig(
+                cacheKey:
+                    'close_test_${DateTime.now().millisecondsSinceEpoch}',
+              ),
+              repoOverride: MockCacheInfoRepository(),
+              fileServiceClientOverride: tracker,
+            );
+
+            expect(tracker.closeCount, 0);
+
+            try {
+              await manager.close();
+            } on Object catch (_) {}
+          },
+          (_, _) {},
+        );
+
+        expect(
+          tracker.closeCount,
+          equals(1),
+          reason:
+              'MediaCacheManager.close() must dispose the IOClient '
+              'backing HttpFileService to avoid leaking the connection '
+              'pool on every close.',
+        );
       });
     });
   });

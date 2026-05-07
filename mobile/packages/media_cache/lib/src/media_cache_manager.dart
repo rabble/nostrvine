@@ -205,6 +205,7 @@ class MediaCacheManager extends CacheManager {
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
     @visibleForTesting CacheInfoRepository? repoOverride,
     @visibleForTesting CancellableDownloader? downloaderOverride,
+    @visibleForTesting IOClient? fileServiceClientOverride,
   }) : this._(
          config: config,
          tempDirectoryProvider: tempDirectoryProvider ?? getTemporaryDirectory,
@@ -213,7 +214,9 @@ class MediaCacheManager extends CacheManager {
          // Built up-front and retained on the instance so close() can
          // dispose it. Without this the legacy non-cancellable cacheFile
          // path leaks an HttpClient on every MediaCacheManager.close().
-         fileServiceClient: kIsWeb ? null : _buildFileServiceClient(config),
+         fileServiceClient: kIsWeb
+             ? null
+             : (fileServiceClientOverride ?? _buildFileServiceClient(config)),
        );
 
   MediaCacheManager._({
