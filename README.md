@@ -29,6 +29,20 @@ Common alternatives:
 - `./run_dev.sh android debug`
 - `./run_dev.sh macos debug`
 
+If a build fails from generated code or pod state, use the targeted scripts first:
+
+- `./build_ios.sh debug --codegen && ./run_dev.sh ios debug`
+- `./build_ios.sh debug --pod-reset && ./run_dev.sh ios debug`
+- `./build_macos.sh debug --codegen && ./run_dev.sh macos debug`
+- `./build_macos.sh debug --pod-reset && ./run_dev.sh macos debug`
+
+For local cache resets:
+
+- `./clear_cache.sh`
+- `./clear_cache.sh --full`
+
+See [docs/BUILD_SPEED_CHECKLIST.md](docs/BUILD_SPEED_CHECKLIST.md) for the decision flow.
+
 ## Canonical Docs
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) - setup, workflow, verification, and PR expectations
