@@ -22,7 +22,13 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
+class _FakeVideoEvent extends Fake implements VideoEvent {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeVideoEvent());
+  });
+
   group(ShareActionButton, () {
     const ownPubkey =
         'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
@@ -222,6 +228,52 @@ void main() {
         expect(find.text('Copy'), findsOneWidget);
         expect(find.text('Share via'), findsOneWidget);
         expect(find.text('Report'), findsOneWidget);
+      });
+
+      testWidgets('copy action responds when tapping the icon-label gap', (
+        tester,
+      ) async {
+        final mockAuth = createMockAuthService();
+        when(
+          () => mockVideoSharingService.generateShareUrl(any()),
+        ).thenReturn('https://divine.video/v/test');
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              videoSharingServiceProvider.overrideWith(
+                (ref) => mockVideoSharingService,
+              ),
+            ],
+            mockAuthService: mockAuth,
+            mockProfileRepository: mockProfileRepository,
+          ),
+        );
+
+        await tester.tap(find.byType(GestureDetector));
+        await tester.pumpAndSettle();
+
+        final copyIcon = find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineIcon && widget.icon == DivineIconName.linkSimple,
+        );
+        final copyLabel = find.text('Copy');
+        expect(copyIcon, findsOneWidget);
+        expect(copyLabel, findsOneWidget);
+
+        final iconRect = tester.getRect(copyIcon);
+        final labelRect = tester.getRect(copyLabel);
+
+        await tester.tapAt(
+          Offset(
+            iconRect.center.dx,
+            (iconRect.bottom + labelRect.top) / 2,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Link to post copied to clipboard'), findsOneWidget);
       });
 
       testWidgets('shows own-video download actions for owned content', (
