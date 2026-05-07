@@ -218,6 +218,7 @@ class VideoPublishService {
               language: languagePreferenceService?.contentLanguage,
               contentWarning: draft.contentWarning,
               replyContext: draft.videoReplyContext,
+              addReplyToFeed: draft.shareReplyToFeed,
             );
 
       if (!published) {

@@ -89,6 +89,9 @@ void main() {
             total: 12,
           ),
         );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         repository = CommentsRepository(
           nostrClient: mockNostrClient,
@@ -111,7 +114,83 @@ void main() {
             offset: any(named: 'offset'),
           ),
         ).called(1);
-        verifyNever(() => mockNostrClient.queryEvents(any()));
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
+      });
+
+      test('merges relay video replies into REST bootstrap comments', () async {
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => VideoCommentsResponse(
+            comments: [
+              VideoComment(
+                id: 'rest_comment',
+                pubkey: testUserPubkey,
+                createdAt: 1000,
+                kind: _commentKind,
+                content: 'REST comment',
+                sig: 'sig',
+                tags: [
+                  ['E', testRootEventId],
+                  ['K', _testRootEventKind.toString()],
+                  ['P', testRootAuthorPubkey],
+                  ['e', testRootEventId],
+                  ['k', _testRootEventKind.toString()],
+                  ['p', testRootAuthorPubkey],
+                ],
+              ),
+            ],
+            total: 1,
+          ),
+        );
+        final videoReplyEvent = _createCommentEvent(
+          id: 'video_reply',
+          kind: EventKind.videoVertical,
+          content: 'Reply title',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          createdAt: 1001,
+          extraTags: const [
+            ['imeta', 'url https://media.divine.video/video.mp4'],
+            ['title', 'Reply title'],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [videoReplyEvent]);
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(result.totalCount, equals(2));
+        expect(result.comments.map((comment) => comment.id), [
+          'video_reply',
+          'rest_comment',
+        ]);
+        expect(result.comments.first.hasVideo, isTrue);
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(captureAny()),
+                ).captured.single
+                as List<Filter>;
+        expect(captured.single.kinds, equals([EventKind.videoVertical]));
+        expect(captured.single.uppercaseE, equals([testRootEventId]));
       });
 
       test('falls back to relay query when REST bootstrap throws', () async {

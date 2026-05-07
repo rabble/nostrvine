@@ -463,6 +463,7 @@ class VideoEventPublisher {
     String? language,
     String? contentWarning,
     VideoReplyContext? replyContext,
+    bool addReplyToFeed = false,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -484,6 +485,7 @@ class VideoEventPublisher {
       language: language,
       contentWarning: contentWarning,
       replyContext: replyContext,
+      addReplyToFeed: addReplyToFeed,
     );
   }
 
@@ -501,6 +503,7 @@ class VideoEventPublisher {
     String? language,
     String? contentWarning,
     VideoReplyContext? replyContext,
+    bool addReplyToFeed = false,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -549,6 +552,9 @@ class VideoEventPublisher {
 
       if (replyContext != null) {
         _addReplyTags(tags, replyContext);
+        if (addReplyToFeed) {
+          tags.add(const ['divine:reply_visibility', 'feed']);
+        }
       }
 
       // Build imeta tag components
@@ -1123,7 +1129,9 @@ class VideoEventPublisher {
       }
 
       if (publishResult) {
-        if (_videoEventService != null) {
+        final shouldAddToDiscoveryCache =
+            replyContext == null || addReplyToFeed;
+        if (_videoEventService != null && shouldAddToDiscoveryCache) {
           try {
             final videoEvent = VideoEvent.fromNostrEvent(event);
             _videoEventService.addVideoEvent(videoEvent);

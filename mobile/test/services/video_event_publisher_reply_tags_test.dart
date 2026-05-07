@@ -4,6 +4,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
@@ -26,6 +27,8 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 class _FakeEvent extends Fake implements Event {}
 
 class _FakeFilter extends Fake implements Filter {}
+
+class _FakeVideoEvent extends Fake implements VideoEvent {}
 
 const _deepEquals = DeepCollectionEquality();
 
@@ -56,6 +59,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(_FakeEvent());
     registerFallbackValue(_FakeFilter());
+    registerFallbackValue(_FakeVideoEvent());
     registerFallbackValue(<Filter>[]);
     registerFallbackValue(UploadStatus.pending);
   });
@@ -189,6 +193,7 @@ void main() {
     );
     expect(_containsTag(capturedTags, const ['k', '34236']), isTrue);
     expect(_containsTag(capturedTags, const ['p', rootAuthorPubkey]), isTrue);
+    verifyNever(() => videoEventService.addVideoEvent(any()));
   });
 
   test('adds NIP-22 parent tags for a nested video reply', () async {
@@ -231,5 +236,27 @@ void main() {
     );
     expect(_containsTag(capturedTags, const ['k', '1111']), isTrue);
     expect(_containsTag(capturedTags, const ['p', parentAuthorPubkey]), isTrue);
+  });
+
+  test('can opt a video reply into normal feed visibility', () async {
+    stubSignAndPublish();
+
+    final result = await publisher.publishDirectUpload(
+      createUpload(),
+      replyContext: const VideoReplyContext(
+        rootEventId: rootEventId,
+        rootEventKind: 34236,
+        rootAuthorPubkey: rootAuthorPubkey,
+        rootAddressableId: rootAddressableId,
+      ),
+      addReplyToFeed: true,
+    );
+
+    expect(result, isTrue);
+    expect(
+      _containsTag(capturedTags, const ['divine:reply_visibility', 'feed']),
+      isTrue,
+    );
+    verify(() => videoEventService.addVideoEvent(any())).called(1);
   });
 }

@@ -114,11 +114,21 @@ class CommentsRepository {
             offset: offset,
           );
           if (response != null) {
-            final thread = _buildThreadFromRestComments(
+            final restThread = _buildThreadFromRestComments(
               response,
               rootEventId,
               rootEventKind,
               rootAddressableId: rootAddressableId,
+            );
+            final relayVideoReplyThread = await _loadRelayVideoReplies(
+              rootEventId: rootEventId,
+              rootEventKind: rootEventKind,
+              rootAddressableId: rootAddressableId,
+              limit: limit,
+            );
+            final thread = _mergeRestThreadWithRelayVideoReplies(
+              restThread: restThread,
+              relayVideoReplyThread: relayVideoReplyThread,
             );
             // Auto-update the count cache with the authoritative REST total.
             if (thread.totalCount > 0) {
@@ -806,6 +816,73 @@ class CommentsRepository {
 
     final thread = _buildThreadFromComments(commentMap, rootEventId);
     return thread.copyWith(totalCount: response.total);
+  }
+
+  Future<CommentThread> _loadRelayVideoReplies({
+    required String rootEventId,
+    required int rootEventKind,
+    required String? rootAddressableId,
+    required int limit,
+  }) async {
+    final filterByE = Filter(
+      kinds: const [EventKind.videoVertical],
+      uppercaseE: [rootEventId],
+      limit: limit,
+    );
+
+    final events = <String, Event>{};
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      final filterByA = Filter(
+        kinds: const [EventKind.videoVertical],
+        uppercaseA: [rootAddressableId],
+        limit: limit,
+      );
+      final results = await Future.wait([
+        _nostrClient.queryEvents([filterByE]),
+        _nostrClient.queryEvents([filterByA]),
+      ]);
+      for (final event in results.expand((result) => result)) {
+        events[event.id] = event;
+      }
+    } else {
+      final results = await _nostrClient.queryEvents([filterByE]);
+      for (final event in results) {
+        events[event.id] = event;
+      }
+    }
+
+    return _buildThreadFromEvents(
+      events.values.toList(),
+      rootEventId,
+      rootEventKind,
+      rootAddressableId: rootAddressableId,
+    );
+  }
+
+  CommentThread _mergeRestThreadWithRelayVideoReplies({
+    required CommentThread restThread,
+    required CommentThread relayVideoReplyThread,
+  }) {
+    if (relayVideoReplyThread.comments.isEmpty) return restThread;
+
+    final commentMap = <String, Comment>{
+      for (final comment in restThread.comments) comment.id: comment,
+    };
+    var addedRelayVideoReplyCount = 0;
+    for (final comment in relayVideoReplyThread.comments) {
+      if (!comment.hasVideo || commentMap.containsKey(comment.id)) continue;
+      commentMap[comment.id] = comment;
+      addedRelayVideoReplyCount++;
+    }
+
+    final merged = _buildThreadFromComments(commentMap, restThread.rootEventId);
+    final restTotal = max(restThread.totalCount, restThread.comments.length);
+    return merged.copyWith(
+      totalCount: max(
+        merged.comments.length,
+        restTotal + addedRelayVideoReplyCount,
+      ),
+    );
   }
 
   Comment? _restCommentToComment(

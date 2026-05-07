@@ -975,6 +975,7 @@ class VideosRepository {
         ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
         : NIP71VideoKinds.isVideoKind(event.kind);
     if (!isSupported) return null;
+    if (_isReplyOnlyVideoEvent(event)) return null;
 
     // Block filter - check pubkey before parsing for efficiency
     if (!ignoreBlockFilter && (_blockFilter?.call(event.pubkey) ?? false)) {
@@ -994,6 +995,28 @@ class VideosRepository {
     if (video.isExpired) return null;
 
     return _applyContentPreferences(video);
+  }
+
+  bool _isReplyOnlyVideoEvent(Event event) {
+    if (event.kind != _videoKind) return false;
+    var hasRootTag = false;
+    var hasParentTag = false;
+    var isFeedVisibleReply = false;
+
+    for (final rawTag in event.tags) {
+      final tag = rawTag as List<dynamic>;
+      if (tag.length < 2) continue;
+      final tagName = tag[0] as String;
+      if (tagName == 'E' || tagName == 'A') {
+        hasRootTag = true;
+      } else if (tagName == 'e' || tagName == 'a') {
+        hasParentTag = true;
+      } else if (tagName == 'divine:reply_visibility' && tag[1] == 'feed') {
+        isFeedVisibleReply = true;
+      }
+    }
+
+    return hasRootTag && hasParentTag && !isFeedVisibleReply;
   }
 
   VideoEvent? _applyContentPreferences(VideoEvent video) {

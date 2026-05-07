@@ -413,6 +413,63 @@ void main() {
         expect(result.first.videoUrl, equals('https://example.com/video.mp4'));
       });
 
+      test('filters reply-tagged video events out of normal feeds', () async {
+        final feedVideo = _createVideoEvent(
+          id: 'feed-video',
+          pubkey: 'test-pubkey',
+          videoUrl: 'https://example.com/feed.mp4',
+          createdAt: 1704067200,
+        );
+        final videoReply = _createVideoEvent(
+          id: 'video-reply',
+          pubkey: 'test-pubkey',
+          videoUrl: 'https://example.com/reply.mp4',
+          createdAt: 1704067201,
+          extraTags: const [
+            ['E', 'root-event-id', '', 'root-author'],
+            ['K', '34236'],
+            ['P', 'root-author'],
+            ['e', 'root-event-id', '', 'root-author'],
+            ['k', '34236'],
+            ['p', 'root-author'],
+          ],
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [feedVideo, videoReply]);
+
+        final result = await repository.getNewVideos();
+
+        expect(result.map((video) => video.id), equals(['feed-video']));
+      });
+
+      test('keeps reply-tagged videos when marked feed-visible', () async {
+        final videoReply = _createVideoEvent(
+          id: 'video-reply',
+          pubkey: 'test-pubkey',
+          videoUrl: 'https://example.com/reply.mp4',
+          createdAt: 1704067201,
+          extraTags: const [
+            ['E', 'root-event-id', '', 'root-author'],
+            ['K', '34236'],
+            ['P', 'root-author'],
+            ['e', 'root-event-id', '', 'root-author'],
+            ['k', '34236'],
+            ['p', 'root-author'],
+            ['divine:reply_visibility', 'feed'],
+          ],
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [videoReply]);
+
+        final result = await repository.getNewVideos();
+
+        expect(result.map((video) => video.id), equals(['video-reply']));
+      });
+
       test('filters out videos without valid URL', () async {
         final validEvent = _createVideoEvent(
           id: 'valid-id',

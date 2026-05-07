@@ -312,6 +312,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Set whether a video reply should also be eligible for normal feed display.
+  void setShareReplyToFeed(bool shareReplyToFeed) {
+    if (state.shareReplyToFeed == shareReplyToFeed) return;
+    state = state.copyWith(shareReplyToFeed: shareReplyToFeed);
+    triggerAutosave();
+  }
+
   // === COLLABORATORS & INSPIRED BY ===
 
   /// Maximum number of collaborators allowed per video.
@@ -516,6 +523,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       originalAudioVolume: state.originalAudioVolume,
       customAudioVolume: state.customAudioVolume,
       videoReplyContext: ref.read(activeVideoReplyContextProvider),
+      shareReplyToFeed: state.shareReplyToFeed,
     );
   }
 
@@ -779,6 +787,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       description: draft.description,
       tags: draft.hashtags,
       allowAudioReuse: draft.allowAudioReuse,
+      shareReplyToFeed: draft.shareReplyToFeed,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,
       editorEditingParameters: CompleteParameters.fromMap(
