@@ -22,7 +22,6 @@ import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_completion_listener.dart';
@@ -43,7 +42,7 @@ import 'package:openvine/widgets/video_feed_item/double_tap_heart_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/pooled_video_error_overlay.dart';
-import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
+import 'package:openvine/widgets/video_feed_item/video_author_info_section.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_player_subtitle_layer.dart';
 import 'package:openvine/widgets/web_video_auth_header_provider.dart';
@@ -1261,11 +1260,6 @@ class _PooledFullscreenItemContentState
                             videoController?.waitUntilFirstFrameRendered,
                         isVisible: widget.isActive,
                       ),
-                    // Subtitle overlay — needs player position stream
-                    if (video.hasSubtitles && player != null)
-                      Positioned.fill(
-                        child: _SubtitleLayer(video: video, player: player),
-                      ),
                     ValueListenableBuilder<double>(
                       valueListenable: widget.pagePosition,
                       builder: (context, page, _) {
@@ -1285,8 +1279,35 @@ class _PooledFullscreenItemContentState
                           isFullscreen: true,
                           topOffset: widget.isOwnVideo ? 64 : 8,
                           onInteracted: widget.onInteracted,
+                          // The shared [VideoAuthorInfoSection] below renders
+                          // the author block + inline caption pill, matching
+                          // the home feed overlay exactly. Suppress the
+                          // legacy inline column so they don't double up.
+                          omitAuthorBlock: true,
                         );
                       },
+                    ),
+                    // Bottom-left metadata container — author avatar/name,
+                    // optional inline caption pill, and title/description.
+                    // Positioned to match the home feed overlay's baseline
+                    // (20 px above the safe-area bottom, 16 px from the
+                    // start, 80 px from the end to clear the action column).
+                    PositionedDirectional(
+                      bottom: 20 + MediaQuery.viewPaddingOf(context).bottom,
+                      start: 16,
+                      end: 80,
+                      child: AnimatedOpacity(
+                        opacity: widget.isActive ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 200),
+                        child: VideoAuthorInfoSection(
+                          video: video,
+                          hasTextContent:
+                              video.content.isNotEmpty ||
+                              (video.title != null && video.title!.isNotEmpty),
+                          player: player,
+                          onInteracted: widget.onInteracted,
+                        ),
+                      ),
                     ),
                     Positioned.fill(
                       child: DoubleTapHeartOverlay(trigger: _heartTrigger),
@@ -1405,45 +1426,6 @@ class _LoadingIndicatorState extends State<_LoadingIndicator> {
       duration: _fadeDuration,
       opacity: _visible ? 1.0 : 0.0,
       child: const Center(child: BrandedLoadingIndicator(size: 60)),
-    );
-  }
-}
-
-/// Streams player position and renders the inline caption pill for the
-/// fullscreen feed.
-///
-/// Mirrors the home feed's [SubtitleCuePill] placement so the same Figma
-/// caption block surfaces wherever a video plays. Positioned 180 px above
-/// the bottom edge with `right: 80` to leave room for the action column.
-class _SubtitleLayer extends ConsumerWidget {
-  const _SubtitleLayer({required this.video, required this.player});
-
-  final VideoEvent video;
-  final Player player;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
-    if (!subtitlesVisible) return const SizedBox.shrink();
-
-    return StreamBuilder<Duration>(
-      stream: player.stream.position,
-      builder: (context, snapshot) {
-        final positionMs = snapshot.data?.inMilliseconds ?? 0;
-        return Stack(
-          children: [
-            Positioned(
-              left: 16,
-              right: 80,
-              bottom: 180,
-              child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: SubtitleCuePill(video: video, positionMs: positionMs),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }
