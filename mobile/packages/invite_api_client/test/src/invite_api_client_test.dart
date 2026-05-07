@@ -257,6 +257,7 @@ void main() {
           expect(jsonDecode(request.body), {
             'contact': 'test@example.com',
             'pubkey': 'pubkey-123',
+            'newsletter_opt_in': false,
           });
           return http.Response(
             jsonEncode({
@@ -286,6 +287,7 @@ void main() {
           expect(jsonDecode(request.body), {
             'contact': 'test@example.com',
             'source_slug': 'lele-pons',
+            'newsletter_opt_in': false,
           });
           return http.Response(
             jsonEncode({
@@ -306,6 +308,7 @@ void main() {
     });
 
     test('returns invite status on 200', () async {
+      final warnings = <String>[];
       final statusClient = InviteApiClient(
         baseUrl: 'https://invites.divine.video',
         client: MockClient((request) async {
@@ -325,12 +328,14 @@ void main() {
         }),
         authHeaderProvider: ({required url, required method, payload}) async =>
             null,
+        warningLogger: warnings.add,
       );
 
       final result = await statusClient.getInviteStatus();
       expect(result.canInvite, isTrue);
       expect(result.remaining, 3);
       expect(result.codes, hasLength(1));
+      expect(warnings, contains('Failed to attach invite auth token'));
     });
 
     test('returns generate invite result on 201', () async {

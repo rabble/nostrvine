@@ -438,10 +438,10 @@ class InviteApiClient {
       rethrow;
     } catch (error) {
       _warningLogger?.call(
-        'Auth header construction failed: ${error.runtimeType}: $error',
+        'Auth header construction failed: ${error.runtimeType}',
       );
       throw InviteApiException(
-        'Failed to authenticate invite request: $error',
+        'Failed to authenticate invite request',
         code: InviteApiErrorCode.clientAuthFailed,
         cause: error,
       );

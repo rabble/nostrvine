@@ -3,6 +3,7 @@
 import 'package:invite_api_client/invite_api_client.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart'
     show EmailVerificationError;
+import 'package:openvine/observability/reportable_error.dart';
 
 /// Classification for an invite activation failure.
 ///
@@ -152,6 +153,18 @@ class InviteErrorUtils {
       case InviteActivationFailureReason.unknown:
         return EmailVerificationError.inviteUnknown;
     }
+  }
+
+  /// Formats invite activation errors for logs without leaking Nostr keys.
+  static String activationFailureLogDetails(InviteApiException error) {
+    final cause = error.cause;
+    final causeDescription = cause == null
+        ? 'null: null'
+        : '${cause.runtimeType}: ${sanitizeForCrashReport(cause.toString())}';
+
+    return '${sanitizeForCrashReport(error.message)} '
+        '[code=${error.code}, status=${error.statusCode}, '
+        'cause=$causeDescription]';
   }
 
   /// Legacy string-based helper retained for pre-existing callers
