@@ -1243,7 +1243,7 @@ class DmRepository {
 
     final publishResult = await _nostrClient.publishEvent(signed);
     if (publishResult is! PublishSuccess) {
-      return NIP17SendResult.failure('NIP-04 publish failed');
+      return const NIP17SendResult.failure('NIP-04 publish failed');
     }
 
     return NIP17SendResult.success(
