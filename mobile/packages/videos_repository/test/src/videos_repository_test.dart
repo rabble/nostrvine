@@ -3203,7 +3203,7 @@ void main() {
             when(
               () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
             ).thenAnswer(
-              (_) async => BulkVideoStatsResponse(
+              (_) async => const BulkVideoStatsResponse(
                 stats: {
                   eventId: BulkVideoStatsEntry(
                     eventId: eventId,
@@ -3501,12 +3501,14 @@ void main() {
         test(
           'fills loop counts from bulk stats when relay event has loops: 0',
           () async {
-            const author = '4bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
+            const author =
+                '4bf0c63fcb93463407af97a5e5ee64fa'
+                '883d107ef9e558472c4eb9aaaefa459d';
             const dTag = 'reposted-vine';
             const eventId =
-                'b695f6b60119d9521934a691347d9f78e8770b56da16bb255ee77ac112b4c1f6';
-            final addressableId =
-                '${EventKind.videoVertical}:$author:$dTag';
+                'b695f6b60119d9521934a691347d9f78'
+                'e8770b56da16bb255ee77ac112b4c1f6';
+            const addressableId = '${EventKind.videoVertical}:$author:$dTag';
             final event = _createVideoEventWithDTag(
               id: eventId,
               pubkey: author,
@@ -3522,7 +3524,7 @@ void main() {
             when(
               () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
             ).thenAnswer(
-              (_) async => BulkVideoStatsResponse(
+              (_) async => const BulkVideoStatsResponse(
                 stats: {
                   eventId: BulkVideoStatsEntry(
                     eventId: eventId,
