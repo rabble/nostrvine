@@ -206,8 +206,7 @@ void main() {
     });
 
     testWidgets(
-      'Open Settings retries download automatically after returning from '
-      'settings',
+      'Open Settings retries download after app resumes from settings',
       (tester) async {
         when(
           () => mockPermissions.openAppSettings(),
@@ -243,6 +242,19 @@ void main() {
         );
 
         await tester.tap(find.text(l10n.watermarkDownloadOpenSettings));
+        await tester.pump();
+
+        // openAppSettings() returns when Settings opens, so the sheet should
+        // wait for the app to resume before retrying.
+        expect(callCount, equals(1));
+        expect(
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
         await tester.pumpAndSettle();
 
         expect(
@@ -258,7 +270,7 @@ void main() {
     );
 
     testWidgets(
-      'Open Settings shows loading state while retry is in progress',
+      'Open Settings shows loading state while resumed retry is in progress',
       (tester) async {
         when(
           () => mockPermissions.openAppSettings(),
@@ -297,7 +309,19 @@ void main() {
         await tester.tap(find.text(l10n.watermarkDownloadOpenSettings));
         await tester.pump();
 
+        expect(callCount, equals(1));
+        expect(
+          find.text(l10n.watermarkDownloadPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
+
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(callCount, equals(2));
       },
     );
 

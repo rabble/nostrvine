@@ -259,7 +259,15 @@ class WatermarkDownloadService {
         name: _logName,
         category: LogCategory.video,
       );
-      await _mediaCache.removeCachedFile(video.id);
+      try {
+        await _mediaCache.removeCachedFile(video.id);
+      } catch (e) {
+        Log.warning(
+          'Failed to evict invalid cached video file: $e',
+          name: _logName,
+          category: LogCategory.video,
+        );
+      }
     }
 
     // Resolve the playable URL and download

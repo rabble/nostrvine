@@ -9,6 +9,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/watermark_download_provider.dart';
 import 'package:openvine/services/watermark_download_service.dart';
+import 'package:openvine/widgets/retry_after_settings_on_resume.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Shows a bottom sheet that tracks watermark download progress.
@@ -54,7 +55,8 @@ class _WatermarkDownloadProgressSheet extends StatefulWidget {
 }
 
 class _WatermarkDownloadProgressSheetState
-    extends State<_WatermarkDownloadProgressSheet> {
+    extends State<_WatermarkDownloadProgressSheet>
+    with RetryAfterSettingsOnResume {
   WatermarkDownloadStage _stage = WatermarkDownloadStage.downloading;
   WatermarkDownloadResult? _result;
   bool _isProcessing = true;
@@ -239,17 +241,18 @@ class _WatermarkDownloadProgressSheetState
 
   Future<void> _openSettings() async {
     final permissionsService = widget.ref.read(permissionsServiceProvider);
-    await permissionsService.openAppSettings();
-    // After returning from Settings, retry the download automatically.
-    // The user may have just granted the permission.
-    if (mounted) {
-      setState(() {
-        _result = null;
-        _stage = WatermarkDownloadStage.downloading;
-        _isProcessing = true;
-      });
-      _startDownload();
-    }
+    await openSettingsAndRetryOnResume(
+      openSettings: permissionsService.openAppSettings,
+      retry: () async {
+        if (!mounted) return;
+        setState(() {
+          _result = null;
+          _stage = WatermarkDownloadStage.downloading;
+          _isProcessing = true;
+        });
+        await _startDownload();
+      },
+    );
   }
 
   Future<void> _shareFile() async {

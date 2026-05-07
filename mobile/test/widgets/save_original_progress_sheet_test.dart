@@ -208,8 +208,7 @@ void main() {
     });
 
     testWidgets(
-      'Open Settings retries download automatically after returning from '
-      'settings',
+      'Open Settings retries download after app resumes from settings',
       (tester) async {
         when(
           () => mockPermissions.openAppSettings(),
@@ -245,8 +244,20 @@ void main() {
           findsOneWidget,
         );
 
-        // Tap Open Settings → opens settings → returns → retries
         await tester.tap(find.text(l10n.saveOriginalOpenSettings));
+        await tester.pump();
+
+        // openAppSettings() returns when Settings opens, so the sheet should
+        // wait for the app to resume before retrying.
+        expect(callCount, equals(1));
+        expect(
+          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
         await tester.pumpAndSettle();
 
         // Should now show success (retry succeeded)
@@ -260,7 +271,7 @@ void main() {
     );
 
     testWidgets(
-      'Open Settings shows loading indicator while retry is in progress',
+      'Open Settings shows loading indicator while resumed retry is in progress',
       (tester) async {
         when(
           () => mockPermissions.openAppSettings(),
@@ -297,10 +308,22 @@ void main() {
 
         // Tap Open Settings
         await tester.tap(find.text(l10n.saveOriginalOpenSettings));
-        await tester.pump(); // process setState
+        await tester.pump();
+
+        expect(callCount, equals(1));
+        expect(
+          find.text(l10n.saveOriginalPhotosAccessNeeded),
+          findsOneWidget,
+        );
+
+        tester.binding.handleAppLifecycleStateChanged(
+          AppLifecycleState.resumed,
+        );
+        await tester.pump();
 
         // Sheet should be in loading/processing state during retry
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(callCount, equals(2));
       },
     );
   });

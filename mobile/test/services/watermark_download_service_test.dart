@@ -281,6 +281,46 @@ void main() {
         expect(result, isA<WatermarkDownloadFailure>());
       });
 
+      test(
+        'fresh download continues when invalid cache eviction fails',
+        () async {
+          final tempDir = await Directory.systemTemp.createTemp(
+            'watermark-ext-test',
+          );
+          final badFile = File('${tempDir.path}/video.bin');
+          await badFile.writeAsBytes(const [0, 0, 0, 0]);
+
+          final freshFile = File('${tempDir.path}/fresh.mp4');
+          await freshFile.writeAsBytes(const [1, 2, 3, 4]);
+
+          addTearDown(() async {
+            if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+          });
+
+          when(() => mockCache.getCachedFileSync(any())).thenReturn(badFile);
+          when(
+            () => mockCache.removeCachedFile(any()),
+          ).thenThrow(Exception('eviction failed'));
+          when(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).thenAnswer((_) async => freshFile);
+          when(
+            () => mockGallerySave.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final result = await service.downloadOriginal(
+            video: _createTestVideo(),
+            onProgress: (_) {},
+          );
+
+          verify(() => mockCache.removeCachedFile(any())).called(1);
+          verify(
+            () => mockCache.cacheFile(any(), key: any(named: 'key')),
+          ).called(1);
+          expect(result, isA<WatermarkDownloadSuccess>());
+        },
+      );
+
       test('accepts .mov cached files without eviction', () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'watermark-ext-test',
