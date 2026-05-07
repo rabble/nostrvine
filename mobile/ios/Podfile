@@ -193,27 +193,60 @@ post_install do |installer|
   # that CocoaPods auto-injects into Pods-Runner.*.xcconfig — without
   # that, the framework is linked twice (once via -framework, once
   # via -force_load) which produces "duplicate symbols" errors.
+  #
+  # Both edits target only the CocoaPods-generated xcconfig files
+  # (`Pods-Runner.{config}.xcconfig`), which CocoaPods regenerates on
+  # every `pod install`. We deliberately avoid mutating
+  # `Pods.xcodeproj` so a future cleanup of this hack reverts cleanly
+  # by just deleting this block — no manual project-file surgery
+  # required.
+  cupertino_http_framework_re =
+    /\s*-framework\s+(?:"cupertino_http"|'cupertino_http'|cupertino_http)\b/
+  cupertino_http_force_load =
+    '-force_load "${BUILT_PRODUCTS_DIR}/cupertino_http/' \
+    'cupertino_http.framework/cupertino_http"'
+  stripped_any = false
+
   installer.aggregate_targets.each do |aggregate_target|
-    aggregate_target.xcconfigs.each do |config_name, xcconfig|
+    next unless aggregate_target.name == 'Pods-Runner'
+
+    aggregate_target.xcconfigs.each do |config_name, _xcconfig|
       xcconfig_path = aggregate_target.xcconfig_path(config_name)
       next unless File.exist?(xcconfig_path)
-      content = File.read(xcconfig_path)
-      stripped = content.gsub(/\s*-framework\s+"cupertino_http"/, '')
-      File.write(xcconfig_path, stripped) if stripped != content
-    end
 
-    aggregate_target.user_project.native_targets.each do |native_target|
-      next unless native_target.name == 'Runner'
-      native_target.build_configurations.each do |config|
-        ldflags = Array(config.build_settings['OTHER_LDFLAGS']).dup
-        ldflags << '$(inherited)' unless ldflags.include?('$(inherited)')
-        force_load_flag =
-          '-force_load "${BUILT_PRODUCTS_DIR}/cupertino_http/' \
-          'cupertino_http.framework/cupertino_http"'
-        ldflags << force_load_flag unless ldflags.include?(force_load_flag)
-        config.build_settings['OTHER_LDFLAGS'] = ldflags
+      content = File.read(xcconfig_path)
+      new_content = content.dup
+
+      # 1. Strip CocoaPods' auto-injected `-framework cupertino_http`.
+      new_content = new_content.gsub(cupertino_http_framework_re, '')
+      stripped_any = true if new_content != content
+
+      # 2. Append `-force_load` to OTHER_LDFLAGS in the same xcconfig,
+      # so we don't have to mutate Pods.xcodeproj.
+      if new_content !~ /-force_load[^\n]*cupertino_http\.framework/
+        if new_content =~ /^OTHER_LDFLAGS\s*=\s*(.*)$/
+          existing = Regexp.last_match(1).strip
+          replacement = "OTHER_LDFLAGS = #{existing} #{cupertino_http_force_load}".strip
+          new_content = new_content.sub(/^OTHER_LDFLAGS\s*=\s*.*$/, replacement)
+        else
+          new_content += "\nOTHER_LDFLAGS = $(inherited) #{cupertino_http_force_load}\n"
+        end
       end
+
+      File.write(xcconfig_path, new_content) if new_content != content
     end
-    aggregate_target.user_project.save
+  end
+
+  unless stripped_any
+    raise <<~MSG
+      Podfile cupertino_http workaround: failed to strip the auto-injected
+      `-framework cupertino_http` entry from any Pods-Runner.*.xcconfig.
+      CocoaPods may have changed how it emits framework link flags, which
+      means the `-force_load` workaround below will produce duplicate-symbol
+      link errors. Update the regex (`cupertino_http_framework_re`) above
+      to match the current format, or remove the workaround entirely if
+      cupertino_http no longer needs it. See the comment block above and
+      dart-lang/http#1417.
+    MSG
   end
 end
