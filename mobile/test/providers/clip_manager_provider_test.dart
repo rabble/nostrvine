@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/clip_library_service.dart';
@@ -98,6 +99,41 @@ void main() {
       final state = container.read(clipManagerProvider);
       expect(state.clips.length, equals(1));
     });
+
+    test(
+      'removeClipById resolves true even when post-mutation cleanup throws',
+      () async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final prefs = await SharedPreferences.getInstance();
+        final failingContainer = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            draftStorageServiceProvider.overrideWithValue(mockDraftStorageService),
+            clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
+            databaseProvider.overrideWith((_) {
+              throw StateError('database unavailable in test');
+            }),
+          ],
+        );
+        addTearDown(failingContainer.dispose);
+
+        final notifier = failingContainer.read(clipManagerProvider.notifier);
+
+        notifier.addClip(
+          limitClipDuration: false,
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        final clipId = failingContainer.read(clipManagerProvider).clips[0].id;
+
+        final result = await notifier.removeClipById(clipId);
+
+        expect(result, isTrue);
+        expect(failingContainer.read(clipManagerProvider).clips, isEmpty);
+      },
+    );
 
     test('selectClip updates selected clip state', () {
       final notifier = container.read(clipManagerProvider.notifier);
