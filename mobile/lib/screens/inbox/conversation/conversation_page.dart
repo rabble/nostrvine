@@ -41,6 +41,10 @@ class ConversationPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
+    final inviteStateStore = ref.watch(collaboratorInviteStateStoreProvider);
+    final inviteResponseService = ref.watch(
+      collaboratorResponseServiceProvider,
+    );
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
@@ -63,10 +67,21 @@ class ConversationPage extends ConsumerWidget {
             currentUserPubkey: currentPubkey,
           )..add(const ConversationStarted()),
         ),
-        BlocProvider(
+        // Same identity-keying as ConversationBloc above: the response
+        // service composes `authServiceProvider` + `nostrServiceProvider`
+        // (`app_providers.dart`), so its identity flips on auth changes.
+        // Without the key, accept-invite would publish through whichever
+        // signer/relay the cubit captured at first build, even after
+        // auth flipped.
+        BlocProvider<CollaboratorInviteActionsCubit>(
+          key: ValueKey((
+            inviteStateStore,
+            inviteResponseService,
+            currentPubkey,
+          )),
           create: (_) => CollaboratorInviteActionsCubit(
-            stateStore: ref.watch(collaboratorInviteStateStoreProvider),
-            responseService: ref.watch(collaboratorResponseServiceProvider),
+            stateStore: inviteStateStore,
+            responseService: inviteResponseService,
             currentUserPubkey: currentPubkey,
           ),
         ),

@@ -19,12 +19,15 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/conversation/collaborator_invite_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_view.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/collaborator_invite_state_store.dart';
+import 'package:openvine/services/collaborator_response_service.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -32,12 +35,23 @@ class _MockDmRepository extends Mock implements DmRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
+class _MockCollaboratorInviteStateStore extends Mock
+    implements CollaboratorInviteStateStore {}
+
+class _MockCollaboratorResponseService extends Mock
+    implements CollaboratorResponseService {}
+
 /// Toggle a `StateProvider<int>` to force `dmRepositoryProvider` to
 /// rebuild and return a different mock — mirrors what happens in
 /// production when auth flips (the real provider rebuilds when
 /// `nostrServiceProvider` rebuilds, which happens via
 /// `_onAuthStateChanged` in `nostr_client_provider.dart`).
 final _dmRepoSwap = StateProvider<int>((ref) => 0);
+
+/// Toggle for [collaboratorResponseServiceProvider] swaps. The real
+/// provider composes `authServiceProvider` + `nostrServiceProvider` in
+/// `app_providers.dart`, so it rebuilds on auth flips.
+final _responseSvcSwap = StateProvider<int>((ref) => 0);
 
 void main() {
   const testPubkey =
@@ -61,9 +75,7 @@ void main() {
       // (ConversationStarted) and marks the conversation as read.
       // Stub both mocks so the bloc can run without throwing.
       for (final repo in [mockRepoA, mockRepoB]) {
-        when(
-          () => repo.markConversationAsRead(any()),
-        ).thenAnswer((_) async {});
+        when(() => repo.markConversationAsRead(any())).thenAnswer((_) async {});
         when(
           () => repo.watchMessages(any()),
         ).thenAnswer((_) => const Stream<List<DmMessage>>.empty());
@@ -251,6 +263,140 @@ void main() {
         // Fresh bloc starts from initial state.
         expect(blocAfter.state.sendStatus, equals(SendStatus.idle));
         expect(blocAfter.state.lastFailedSend, isNull);
+      },
+    );
+  });
+
+  // The sibling BlocProvider in `conversation_page.dart` carries the same
+  // ValueKey treatment for `CollaboratorInviteActionsCubit`. The cubit's
+  // `responseService` composes `authServiceProvider` + `nostrServiceProvider`
+  // (see `app_providers.dart`), so its identity flips on auth changes —
+  // without the key, accept-invite would publish through a stale signer
+  // for the cubit's lifetime.
+  group('ConversationPage — invite cubit repo-swap', () {
+    late _MockDmRepository mockDmRepository;
+    late _MockAuthService mockAuthService;
+    late _MockCollaboratorInviteStateStore mockStateStore;
+    late _MockCollaboratorResponseService mockResponseSvcA;
+    late _MockCollaboratorResponseService mockResponseSvcB;
+
+    setUp(() {
+      mockDmRepository = _MockDmRepository();
+      mockAuthService = _MockAuthService();
+      mockStateStore = _MockCollaboratorInviteStateStore();
+      mockResponseSvcA = _MockCollaboratorResponseService();
+      mockResponseSvcB = _MockCollaboratorResponseService();
+
+      when(
+        () => mockDmRepository.markConversationAsRead(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDmRepository.watchMessages(any()),
+      ).thenAnswer((_) => const Stream<List<DmMessage>>.empty());
+
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => const Stream<AuthState>.empty());
+    });
+
+    testWidgets('recreates CollaboratorInviteActionsCubit when '
+        'collaboratorResponseServiceProvider rebuilds with a new instance', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        testMaterialApp(
+          mockAuthService: mockAuthService,
+          additionalOverrides: [
+            dmRepositoryProvider.overrideWith((ref) => mockDmRepository),
+            collaboratorInviteStateStoreProvider.overrideWith(
+              (ref) => mockStateStore,
+            ),
+            collaboratorResponseServiceProvider.overrideWith((ref) {
+              final v = ref.watch(_responseSvcSwap);
+              return v == 0 ? mockResponseSvcA : mockResponseSvcB;
+            }),
+            fetchUserProfileProvider(
+              otherPubkey,
+            ).overrideWith((ref) async => null),
+          ],
+          home: const ConversationPage(
+            conversationId: testConversationId,
+            participantPubkeys: [otherPubkey],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final cubitA = BlocProvider.of<CollaboratorInviteActionsCubit>(
+        tester.element(find.byType(ConversationView)),
+      );
+      expect(cubitA.isClosed, isFalse);
+
+      final providerScope = ProviderScope.containerOf(
+        tester.element(find.byType(ConversationPage)),
+      );
+      providerScope.read(_responseSvcSwap.notifier).state = 1;
+      await tester.pump();
+
+      final cubitB = BlocProvider.of<CollaboratorInviteActionsCubit>(
+        tester.element(find.byType(ConversationView)),
+      );
+      expect(
+        cubitB,
+        isNot(same(cubitA)),
+        reason:
+            'BlocProvider must recreate the cubit when '
+            'collaboratorResponseServiceProvider identity flips. Without '
+            'the ValueKey, accept-invite publishes would route through a '
+            'stale signer/relay captured at first build.',
+      );
+    });
+
+    testWidgets(
+      'preserves the same CollaboratorInviteActionsCubit when the response '
+      'service identity does not change across rebuilds',
+      (tester) async {
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockAuthService: mockAuthService,
+            additionalOverrides: [
+              dmRepositoryProvider.overrideWith((ref) => mockDmRepository),
+              collaboratorInviteStateStoreProvider.overrideWith(
+                (ref) => mockStateStore,
+              ),
+              collaboratorResponseServiceProvider.overrideWith((ref) {
+                ref.watch(_responseSvcSwap);
+                return mockResponseSvcA; // identity stays the same
+              }),
+              fetchUserProfileProvider(
+                otherPubkey,
+              ).overrideWith((ref) async => null),
+            ],
+            home: const ConversationPage(
+              conversationId: testConversationId,
+              participantPubkeys: [otherPubkey],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final cubitBefore = BlocProvider.of<CollaboratorInviteActionsCubit>(
+          tester.element(find.byType(ConversationView)),
+        );
+
+        final providerScope = ProviderScope.containerOf(
+          tester.element(find.byType(ConversationPage)),
+        );
+        providerScope.read(_responseSvcSwap.notifier).state = 1;
+        await tester.pump();
+
+        final cubitAfter = BlocProvider.of<CollaboratorInviteActionsCubit>(
+          tester.element(find.byType(ConversationView)),
+        );
+        expect(cubitAfter, same(cubitBefore));
       },
     );
   });
