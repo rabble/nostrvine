@@ -690,7 +690,7 @@ void main() {
                   recipientPubkey: recipientPubkey,
                 );
               }
-              return NIP17SendResult.failure('Relay timeout');
+              return const NIP17SendResult.failure('Relay timeout');
             });
           },
           build: () {

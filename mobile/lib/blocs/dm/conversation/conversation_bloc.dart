@@ -137,7 +137,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (!result.success) {
           throw Exception(result.error ?? 'Failed to send message');
         }
-        selfWrapPublished = result.selfWrapPublished;
+        selfWrapPublished = result.selfWrapPublished!;
       } else {
         final results = await _dmRepository.sendGroupMessage(
           recipientPubkeys: event.recipientPubkeys,
@@ -154,7 +154,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         // sender's other devices.
         selfWrapPublished = results
             .where((r) => r.success)
-            .every((r) => r.selfWrapPublished);
+            .every((r) => r.selfWrapPublished!);
       }
       if (!selfWrapPublished) {
         emit(
