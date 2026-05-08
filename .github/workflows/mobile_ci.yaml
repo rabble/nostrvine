@@ -163,18 +163,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 🍎 Setup Xcode
-        # Pinned to 16.4: pro_video_editor 1.15.0 declares
-        # `[String: any Sendable]` for AVVideoCompositing's
-        # sourcePixelBufferAttributes / requiredPixelBufferAttributesForRenderContext,
-        # which only matches the protocol shape in the iOS 18 SDK.
-        # Xcode 15.x's iOS 17.5 SDK declares those as `[String: Any]`,
-        # so the dependency fails to compile and the test build never
-        # starts. macos-14 caps at Xcode 16.2; macos-15 ships 16.4 as
-        # default, so we run there and pin explicitly so the default
-        # can't drift underneath us.
+        # Pinned to 26.3: pro_video_editor 1.15.0's
+        # CompositionBuilder.swift references
+        # `AVVideoCompositionLayerInstruction.Configuration`, an iOS 26
+        # SDK type. The reference is runtime-gated by
+        # `if #available(iOS 26.0, *)`, but Swift still type-checks
+        # both branches at compile time, so the type has to exist in
+        # the SDK. Xcode 16.x ships iOS 17/18 SDKs and the build fails
+        # with "type 'AVVideoCompositionLayerInstruction' has no
+        # member 'Configuration'" before tests can run. The same file
+        # also needs the iOS 18 SDK shape (`[String: any Sendable]`)
+        # for AVVideoCompositing — Xcode 26 satisfies both.
+        # macos-15-arm64 ships 26.3 alongside 26.2 / 26.1.1 / 26.0.1
+        # but defaults to 16.4, so the explicit pin is required and
+        # protects against the runner image's default drifting.
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "16.4"
+          xcode-version: "26.3"
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
