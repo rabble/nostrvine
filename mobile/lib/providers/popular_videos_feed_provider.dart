@@ -158,6 +158,19 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       final videosRepository = ref.read(videosRepositoryProvider);
       final cursor = _cursor;
 
+      // Period changed under us between build() and now — discard the
+      // mismatched cursor. The build-rebuild from the period flip will
+      // have already kicked off a fresh first page; this loadMore call
+      // is stale and should be a no-op.
+      if (period == null && cursor is _OffsetCursor) {
+        state = AsyncData(currentState.copyWith(isLoadingMore: false));
+        return;
+      }
+      if (period != null && cursor is _TimestampCursor) {
+        state = AsyncData(currentState.copyWith(isLoadingMore: false));
+        return;
+      }
+
       final newVideos = await videosRepository.getPopularVideos(
         limit: 50,
         until: switch (cursor) {
