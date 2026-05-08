@@ -163,16 +163,20 @@ void main() {
     test('video reply publish destination opens parent video comments', () {
       const rootEventId =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const rootAddressableId =
+          '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+          ':parent-video';
       const context = VideoReplyContext(
         rootEventId: rootEventId,
         rootEventKind: 34236,
         rootAuthorPubkey:
             'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        rootAddressableId: rootAddressableId,
       );
 
       final destination = videoReplyPublishDestinationFor(context);
 
-      expect(destination.path, VideoDetailScreen.pathForId(rootEventId));
+      expect(destination.path, VideoDetailScreen.pathForId(rootAddressableId));
       expect(destination.extra.autoOpenComments, isTrue);
     });
   });

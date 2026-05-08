@@ -301,6 +301,7 @@ class CommentsRepository {
         createdAt: sentEvent.createdAtDateTime,
         rootEventId: rootEventId,
         rootAuthorPubkey: rootEventAuthorPubkey,
+        rootAddressableId: rootAddressableId,
         replyToEventId: replyToEventId,
         replyToAuthorPubkey: replyToAuthorPubkey,
         videoUrl: videoMetadata.videoUrl,
@@ -340,7 +341,7 @@ class CommentsRepository {
     try {
       // NIP-22: Filter by Kind 1111 and uppercase E tag
       final filterByE = Filter(
-        kinds: _threadKinds(includeVideoReplies: false),
+        kinds: _threadKinds(includeVideoReplies: true),
         uppercaseE: [rootEventId],
       );
 
@@ -349,7 +350,7 @@ class CommentsRepository {
       // If we have an addressable ID, also query by uppercase A tag
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
         final filterByA = Filter(
-          kinds: _threadKinds(includeVideoReplies: false),
+          kinds: _threadKinds(includeVideoReplies: true),
           uppercaseA: [rootAddressableId],
         );
 
@@ -700,6 +701,7 @@ class CommentsRepository {
         // For top-level comments, replyToEventId should be null
         replyToEventId: isTopLevel ? null : replyToEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
+        rootAddressableId: parsedRootAddressableId,
         replyToAuthorPubkey: isTopLevel ? null : replyToAuthorPubkey,
         videoUrl: videoMetadata.videoUrl,
         thumbnailUrl: videoMetadata.thumbnailUrl,
@@ -902,6 +904,7 @@ class CommentsRepository {
         ),
         rootEventId: parsedRootEventId ?? rootEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
+        rootAddressableId: parsedRootAddressableId ?? rootAddressableId,
         replyToEventId: isTopLevel ? null : parsedReplyToEventId,
         replyToAuthorPubkey: isTopLevel ? null : restComment.replyToPubkey,
       );

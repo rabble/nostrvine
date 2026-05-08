@@ -46,7 +46,9 @@ final videoPublishProvider =
 ({String path, VideoDetailRouteExtra extra}) videoReplyPublishDestinationFor(
   VideoReplyContext context,
 ) => (
-  path: VideoDetailScreen.pathForId(context.rootEventId),
+  path: VideoDetailScreen.pathForId(
+    context.rootAddressableId ?? context.rootEventId,
+  ),
   extra: const VideoDetailRouteExtra(autoOpenComments: true),
 );
 

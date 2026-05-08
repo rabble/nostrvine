@@ -294,6 +294,7 @@ void main() {
       });
 
       test('loads NIP-71 video reply events in the comments thread', () async {
+        const rootAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
         final videoReplyEvent = _createCommentEvent(
           id: 'video_reply',
           kind: EventKind.videoVertical,
@@ -303,6 +304,8 @@ void main() {
           rootAuthorPubkey: testRootAuthorPubkey,
           rootEventKind: _testRootEventKind,
           extraTags: const [
+            ['A', rootAddressableId, ''],
+            ['a', rootAddressableId, ''],
             ['imeta', 'url https://media.divine.video/video.mp4'],
             ['title', 'Reply title'],
             ['summary', 'Video reply summary'],
@@ -315,24 +318,51 @@ void main() {
         final result = await repository.loadComments(
           rootEventId: testRootEventId,
           rootEventKind: _testRootEventKind,
+          rootAddressableId: rootAddressableId,
           includeVideoReplies: true,
         );
 
         expect(result.comments, hasLength(1));
         expect(result.comments.first.id, equals('video_reply'));
+        expect(result.comments.first.rootAddressableId, rootAddressableId);
         expect(result.comments.first.hasVideo, isTrue);
         expect(
           result.comments.first.videoUrl,
           equals('https://media.divine.video/video.mp4'),
         );
 
-        final captured =
-            verify(
-                  () => mockNostrClient.queryEvents(captureAny()),
-                ).captured.single
-                as List<Filter>;
-        expect(captured.single.kinds, contains(EventKind.comment));
-        expect(captured.single.kinds, contains(EventKind.videoVertical));
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured
+            .expand((argument) => argument as List<Filter>)
+            .toList();
+        expect(
+          filters,
+          contains(
+            isA<Filter>()
+                .having((filter) => filter.kinds, 'kinds', [
+                  EventKind.comment,
+                  EventKind.videoVertical,
+                ])
+                .having((filter) => filter.uppercaseE, 'uppercaseE', [
+                  testRootEventId,
+                ]),
+          ),
+        );
+        expect(
+          filters,
+          contains(
+            isA<Filter>()
+                .having((filter) => filter.kinds, 'kinds', [
+                  EventKind.comment,
+                  EventKind.videoVertical,
+                ])
+                .having((filter) => filter.uppercaseA, 'uppercaseA', [
+                  rootAddressableId,
+                ]),
+          ),
+        );
       });
 
       test(
@@ -720,6 +750,7 @@ void main() {
           expect(comment.content, equals('A-tag only comment'));
           // rootAuthorPubkey extracted from A tag addressable ID
           expect(comment.rootAuthorPubkey, equals(testRootAuthorPubkey));
+          expect(comment.rootAddressableId, equals(testAddressableId));
           // Top-level comment (parent kind = root kind)
           expect(comment.replyToEventId, isNull);
         },
@@ -1361,6 +1392,7 @@ void main() {
 
         final filters = captured.first as List<Filter>;
         expect(filters.first.kinds, contains(_commentKind));
+        expect(filters.first.kinds, contains(EventKind.videoVertical));
         expect(filters.first.uppercaseE, contains(testRootEventId));
       });
 

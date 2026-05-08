@@ -8,6 +8,8 @@ import 'package:equatable/equatable.dart';
 ///
 /// Comments are threaded using Nostr's NIP-10 reply threading:
 /// - `rootEventId`: The original event being commented on (e.g., a video)
+/// - `rootAddressableId`: Optional addressable root identifier for
+///   parameterized replaceable roots.
 /// - `replyToEventId`: The parent comment ID for nested replies
 ///
 /// The `e` tags in the Nostr event use markers:
@@ -22,6 +24,7 @@ class Comment extends Equatable {
     required this.createdAt,
     required this.rootEventId,
     required this.rootAuthorPubkey,
+    this.rootAddressableId,
     this.replyToEventId,
     this.replyToAuthorPubkey,
     this.videoUrl,
@@ -48,6 +51,9 @@ class Comment extends Equatable {
 
   /// Public key of the root event author.
   final String rootAuthorPubkey;
+
+  /// Addressable identifier of the root event, when the root is parameterized.
+  final String? rootAddressableId;
 
   /// If this is a reply, the ID of the parent comment.
   ///
@@ -83,6 +89,7 @@ class Comment extends Equatable {
     DateTime? createdAt,
     String? rootEventId,
     String? rootAuthorPubkey,
+    String? rootAddressableId,
     String? replyToEventId,
     String? replyToAuthorPubkey,
     String? videoUrl,
@@ -97,6 +104,7 @@ class Comment extends Equatable {
     createdAt: createdAt ?? this.createdAt,
     rootEventId: rootEventId ?? this.rootEventId,
     rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
+    rootAddressableId: rootAddressableId ?? this.rootAddressableId,
     replyToEventId: replyToEventId ?? this.replyToEventId,
     replyToAuthorPubkey: replyToAuthorPubkey ?? this.replyToAuthorPubkey,
     videoUrl: videoUrl ?? this.videoUrl,
@@ -114,6 +122,7 @@ class Comment extends Equatable {
     createdAt,
     rootEventId,
     rootAuthorPubkey,
+    rootAddressableId,
     replyToEventId,
     replyToAuthorPubkey,
     videoUrl,

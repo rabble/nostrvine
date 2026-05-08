@@ -7,6 +7,7 @@ extension CommentSyntheticVideoEventX on Comment {
     final title = content.trim();
     final createdAt = this.createdAt.millisecondsSinceEpoch ~/ 1000;
     final videoKind = EventKind.videoVertical.toString();
+    final rootAddressableId = this.rootAddressableId;
 
     return VideoEvent(
       id: id,
@@ -26,6 +27,10 @@ extension CommentSyntheticVideoEventX on Comment {
         'E': rootEventId,
         'K': videoKind,
         'P': rootAuthorPubkey,
+        if (rootAddressableId case final rootAddressableId?) ...{
+          'A': rootAddressableId,
+          if (replyToEventId == null) 'a': rootAddressableId,
+        },
         if (replyToEventId case final replyToEventId?) ...{
           'e': replyToEventId,
           'k': videoKind,
