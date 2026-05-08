@@ -309,9 +309,7 @@ class RepostsRepository {
       );
 
       if (sentEvent == null) {
-        throw const RepostFailedException(
-          'Failed to publish repost to relays',
-        );
+        throw const RepostFailedException('Failed to publish repost to relays');
       }
 
       final confirmed = RepostRecord(
@@ -506,9 +504,7 @@ class RepostsRepository {
     }
 
     // Publish Kind 5 deletion event via NostrClient
-    final deletionEvent = await _nostrClient.deleteEvent(
-      record.repostEventId,
-    );
+    final deletionEvent = await _nostrClient.deleteEvent(record.repostEventId);
 
     if (deletionEvent == null) {
       throw const UnrepostFailedException(
@@ -742,6 +738,103 @@ class RepostsRepository {
     }
   }
 
+  /// Fetch the list of pubkeys that reposted the given video event.
+  ///
+  /// Queries Nostr relays for NIP-18 repost events (kind 6 and kind 16)
+  /// that reference the target event via the `e` tag and (when
+  /// [addressableId] is provided) the `a` tag. Both filters are queried
+  /// because clients may reference addressable Kind 30000+ events using
+  /// either form, and querying only one would miss reposters tagged with
+  /// the other.
+  ///
+  /// Filters out reposts deleted via Kind 5 deletion events from their
+  /// author. Pubkeys are deduplicated and ordered by repost recency,
+  /// most recent first.
+  ///
+  /// Parameters:
+  /// - [eventId]: Hex event ID of the target event (required).
+  /// - [addressableId]: Optional `kind:pubkey:d-tag` for Kind 30000+
+  ///   events.
+  ///
+  /// Throws [FetchRepostersFailedException] if relay queries fail.
+  Future<List<String>> fetchEventReposters({
+    required String eventId,
+    String? addressableId,
+  }) async {
+    const repostKinds = [EventKind.repost, EventKind.genericRepost];
+
+    try {
+      final eventFilter = Filter(kinds: repostKinds, e: [eventId]);
+      final results = <List<Event>>[];
+      if (addressableId != null && addressableId.isNotEmpty) {
+        final addressableFilter = Filter(
+          kinds: repostKinds,
+          a: [addressableId],
+        );
+        final fetched = await Future.wait([
+          _nostrClient.queryEvents([eventFilter]),
+          _nostrClient.queryEvents([addressableFilter]),
+        ]);
+        results.addAll(fetched);
+      } else {
+        results.add(await _nostrClient.queryEvents([eventFilter]));
+      }
+
+      final repostsById = <String, Event>{};
+      for (final batch in results) {
+        for (final event in batch) {
+          repostsById[event.id] = event;
+        }
+      }
+
+      if (repostsById.isEmpty) {
+        return <String>[];
+      }
+
+      final reposterPubkeys = repostsById.values
+          .map((event) => event.pubkey)
+          .toSet()
+          .toList();
+      final deletionFilter = Filter(
+        kinds: const [EventKind.eventDeletion],
+        authors: reposterPubkeys,
+      );
+      final deletionEvents = await _nostrClient.queryEvents([deletionFilter]);
+
+      final deletedRepostIds = <String>{};
+      for (final deletion in deletionEvents) {
+        for (final tag in deletion.tags) {
+          if (tag.length > 1 && tag[0] == 'e') {
+            final targetId = tag[1];
+            final target = repostsById[targetId];
+            if (target != null && target.pubkey == deletion.pubkey) {
+              deletedRepostIds.add(targetId);
+            }
+          }
+        }
+      }
+
+      final liveReposts =
+          repostsById.values
+              .where((event) => !deletedRepostIds.contains(event.id))
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      final orderedPubkeys = <String>[];
+      final seen = <String>{};
+      for (final event in liveReposts) {
+        if (seen.add(event.pubkey)) {
+          orderedPubkeys.add(event.pubkey);
+        }
+      }
+      return orderedPubkeys;
+    } catch (e) {
+      throw FetchRepostersFailedException(
+        'Failed to fetch reposters for event $eventId: $e',
+      );
+    }
+  }
+
   /// Builds a [RepostsSyncResult] from the current in-memory cache.
   RepostsSyncResult _buildSyncResult() {
     // Sort records by createdAt descending (most recent first)
@@ -802,16 +895,13 @@ class RepostsRepository {
     // Use a deterministic subscription ID so we can unsubscribe later
     _repostSubscriptionId = 'reposts_repo_reposts_$currentUserPubkey';
 
-    final eventStream = _nostrClient.subscribe(
-      [
-        Filter(
-          authors: [currentUserPubkey],
-          kinds: const [EventKind.genericRepost],
-          limit: 1,
-        ),
-      ],
-      subscriptionId: _repostSubscriptionId,
-    );
+    final eventStream = _nostrClient.subscribe([
+      Filter(
+        authors: [currentUserPubkey],
+        kinds: const [EventKind.genericRepost],
+        limit: 1,
+      ),
+    ], subscriptionId: _repostSubscriptionId);
 
     _repostSubscription = eventStream.listen(
       _processIncomingRepost,

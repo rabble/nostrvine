@@ -118,9 +118,7 @@ void main() {
 
     group('constructor', () {
       test('can be instantiated with required parameters', () {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
         expect(repository, isNotNull);
       });
 
@@ -136,16 +134,12 @@ void main() {
 
     group('isRepostedSync', () {
       test('returns false for non-reposted video', () {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
         expect(repository.isRepostedSync(testAddressableId), isFalse);
       });
 
       test('returns true for reposted video in cache', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -158,16 +152,12 @@ void main() {
 
     group('isReposted', () {
       test('returns false for non-reposted video', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
         expect(await repository.isReposted(testAddressableId), isFalse);
       });
 
       test('returns true after reposting', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -200,16 +190,12 @@ void main() {
 
     group('getRepostedAddressableIds', () {
       test('returns empty set when no reposts', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
         expect(await repository.getRepostedAddressableIds(), isEmpty);
       });
 
       test('returns set of reposted IDs', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -224,9 +210,7 @@ void main() {
 
     group('getOrderedRepostedAddressableIds', () {
       test('returns empty list when no reposts', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
         expect(await repository.getOrderedRepostedAddressableIds(), isEmpty);
       });
 
@@ -273,9 +257,7 @@ void main() {
 
     group('repostVideo', () {
       test('creates and publishes Kind 16 event', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final eventId = await repository.repostVideo(
           addressableId: testAddressableId,
@@ -300,12 +282,10 @@ void main() {
         'saves placeholder then confirmed record to local storage',
         () async {
           final captured = <RepostRecord>[];
-          when(
-            () => mockLocalStorage.saveRepostRecord(any()),
-          ).thenAnswer((invocation) async {
-            captured.add(
-              invocation.positionalArguments[0] as RepostRecord,
-            );
+          when(() => mockLocalStorage.saveRepostRecord(any())).thenAnswer((
+            invocation,
+          ) async {
+            captured.add(invocation.positionalArguments[0] as RepostRecord);
           });
 
           final repository = RepostsRepository(
@@ -322,10 +302,7 @@ void main() {
           // record survives an app crash mid-publish; confirmed record swaps
           // the placeholder id for the real reaction id once relays return.
           expect(captured, hasLength(2));
-          expect(
-            captured[0].repostEventId,
-            startsWith('pending_repost_'),
-          );
+          expect(captured[0].repostEventId, startsWith('pending_repost_'));
           expect(captured[1].repostEventId, equals(testRepostEventId));
         },
       );
@@ -347,9 +324,7 @@ void main() {
             ),
           ).thenAnswer((_) => publishCompleter.future);
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
 
           final emitted = <Set<String>>[];
           final subscription = repository.watchRepostedAddressableIds().listen(
@@ -383,9 +358,7 @@ void main() {
       );
 
       test('throws AlreadyRepostedException when already reposted', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -415,9 +388,7 @@ void main() {
             ),
           ).thenAnswer((_) async => null);
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
 
           await expectLater(
             repository.repostVideo(
@@ -434,9 +405,7 @@ void main() {
         () async {
           when(
             () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 4),
-          );
+          ).thenAnswer((_) async => const CountResult(count: 4));
           when(
             () => mockNostrClient.sendGenericRepost(
               addressableId: any(named: 'addressableId'),
@@ -478,44 +447,39 @@ void main() {
         },
       );
 
-      test(
-        'rolls back record + count + stream when publish throws',
-        () async {
-          when(
-            () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 4),
-          );
-          when(
-            () => mockNostrClient.sendGenericRepost(
-              addressableId: any(named: 'addressableId'),
-              targetKind: any(named: 'targetKind'),
-              authorPubkey: any(named: 'authorPubkey'),
-              content: any(named: 'content'),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).thenThrow(Exception('relay unreachable'));
+      test('rolls back record + count + stream when publish throws', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 4));
+        when(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: any(named: 'addressableId'),
+            targetKind: any(named: 'targetKind'),
+            authorPubkey: any(named: 'authorPubkey'),
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenThrow(Exception('relay unreachable'));
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-          );
-          await repository.getRepostCount(testAddressableId);
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.getRepostCount(testAddressableId);
 
-          await expectLater(
-            repository.repostVideo(
-              addressableId: testAddressableId,
-              originalAuthorPubkey: testAuthorPubkey,
-            ),
-            throwsA(isA<Exception>()),
-          );
+        await expectLater(
+          repository.repostVideo(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<Exception>()),
+        );
 
-          expect(repository.isRepostedSync(testAddressableId), isFalse);
-          final count = await repository.getRepostCount(testAddressableId);
-          expect(count, equals(4));
-        },
-      );
+        expect(repository.isRepostedSync(testAddressableId), isFalse);
+        final count = await repository.getRepostCount(testAddressableId);
+        expect(count, equals(4));
+      });
 
       // Defense-in-depth: when the publish fails but the offline-action
       // callback is wired, the optimistic repost must be preserved and
@@ -573,53 +537,48 @@ void main() {
             isTrue,
             reason: 'optimistic state must be preserved across the failure',
           );
-          verifyNever(
-            () => mockLocalStorage.deleteRepostRecord(any()),
-          );
+          verifyNever(() => mockLocalStorage.deleteRepostRecord(any()));
         },
       );
 
-      test(
-        'queues offline action when sendGenericRepost throws and '
-        'queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockNostrClient.sendGenericRepost(
-              addressableId: any(named: 'addressableId'),
-              targetKind: any(named: 'targetKind'),
-              authorPubkey: any(named: 'authorPubkey'),
-              content: any(named: 'content'),
-              tempRelays: any(named: 'tempRelays'),
-              targetRelays: any(named: 'targetRelays'),
-            ),
-          ).thenThrow(Exception('relay closed'));
+      test('queues offline action when sendGenericRepost throws and '
+          'queueOfflineAction is wired', () async {
+        when(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: any(named: 'addressableId'),
+            targetKind: any(named: 'targetKind'),
+            authorPubkey: any(named: 'authorPubkey'),
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenThrow(Exception('relay closed'));
 
-          var queueCalls = 0;
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isRepost,
-                  required addressableId,
-                  required originalAuthorPubkey,
-                  eventId,
-                }) async {
-                  queueCalls++;
-                },
-          );
+        var queueCalls = 0;
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
+              }) async {
+                queueCalls++;
+              },
+        );
 
-          final result = await repository.repostVideo(
-            addressableId: testAddressableId,
-            originalAuthorPubkey: testAuthorPubkey,
-          );
+        final result = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
 
-          expect(result, equals('pending_repost_$testAddressableId'));
-          expect(queueCalls, equals(1));
-          expect(repository.isRepostedSync(testAddressableId), isTrue);
-        },
-      );
+        expect(result, equals('pending_repost_$testAddressableId'));
+        expect(queueCalls, equals(1));
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+      });
     });
 
     group('unrepostVideo', () {
@@ -654,9 +613,7 @@ void main() {
       });
 
       test('throws NotRepostedException when not reposted', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         expect(
           () => repository.unrepostVideo(testAddressableId),
@@ -701,9 +658,7 @@ void main() {
           () => mockNostrClient.deleteEvent(any()),
         ).thenAnswer((_) async => null);
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -720,9 +675,7 @@ void main() {
         'ticks watchRepostedAddressableIds before deleteEvent completes',
         () async {
           // Seed a record by reposting first.
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
           await repository.repostVideo(
             addressableId: testAddressableId,
             originalAuthorPubkey: testAuthorPubkey,
@@ -764,9 +717,7 @@ void main() {
         () async {
           when(
             () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 7),
-          );
+          ).thenAnswer((_) async => const CountResult(count: 7));
           when(
             () => mockNostrClient.deleteEvent(any()),
           ).thenAnswer((_) async => null);
@@ -800,125 +751,110 @@ void main() {
         },
       );
 
-      test(
-        'rolls back record + count + stream when deletion throws',
-        () async {
-          when(
-            () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 7),
-          );
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenThrow(Exception('relay unreachable'));
+      test('rolls back record + count + stream when deletion throws', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 7));
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenThrow(Exception('relay unreachable'));
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
-          await repository.getRepostCount(testAddressableId);
-          await repository.repostVideo(
-            addressableId: testAddressableId,
-            originalAuthorPubkey: testAuthorPubkey,
-          );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
+        await repository.getRepostCount(testAddressableId);
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
 
-          await expectLater(
-            repository.unrepostVideo(testAddressableId),
-            throwsA(isA<Exception>()),
-          );
+        await expectLater(
+          repository.unrepostVideo(testAddressableId),
+          throwsA(isA<Exception>()),
+        );
 
-          expect(repository.isRepostedSync(testAddressableId), isTrue);
-          final count = await repository.getRepostCount(testAddressableId);
-          expect(count, equals(8));
-        },
-      );
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+        final count = await repository.getRepostCount(testAddressableId);
+        expect(count, equals(8));
+      });
 
       // Defense-in-depth (mirror of repostVideo): when the kind-5 deletion
       // fails but the offline-action callback is wired, the optimistic
       // unrepost must be preserved and the action queued for retry.
-      test(
-        'queues offline action and preserves optimistic removal when '
-        'deleteEvent returns null and queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenAnswer((_) async => null);
+      test('queues offline action and preserves optimistic removal when '
+          'deleteEvent returns null and queueOfflineAction is wired', () async {
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => null);
 
-          var queueCalls = 0;
-          bool? queuedIsRepost;
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isRepost,
-                  required addressableId,
-                  required originalAuthorPubkey,
-                  eventId,
-                }) async {
-                  queueCalls++;
-                  queuedIsRepost = isRepost;
-                },
-          );
-          // Establish a real (non-pending) repost record to delete.
-          await repository.repostVideo(
-            addressableId: testAddressableId,
-            originalAuthorPubkey: testAuthorPubkey,
-          );
+        var queueCalls = 0;
+        bool? queuedIsRepost;
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
+              }) async {
+                queueCalls++;
+                queuedIsRepost = isRepost;
+              },
+        );
+        // Establish a real (non-pending) repost record to delete.
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
 
-          await repository.unrepostVideo(testAddressableId);
+        await repository.unrepostVideo(testAddressableId);
 
-          expect(queueCalls, equals(1));
-          expect(queuedIsRepost, isFalse);
-          expect(
-            repository.isRepostedSync(testAddressableId),
-            isFalse,
-            reason: 'optimistic removal must be preserved',
-          );
-        },
-      );
+        expect(queueCalls, equals(1));
+        expect(queuedIsRepost, isFalse);
+        expect(
+          repository.isRepostedSync(testAddressableId),
+          isFalse,
+          reason: 'optimistic removal must be preserved',
+        );
+      });
 
-      test(
-        'queues offline action when deleteEvent throws and '
-        'queueOfflineAction is wired',
-        () async {
-          when(
-            () => mockNostrClient.deleteEvent(any()),
-          ).thenThrow(Exception('relay closed'));
+      test('queues offline action when deleteEvent throws and '
+          'queueOfflineAction is wired', () async {
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenThrow(Exception('relay closed'));
 
-          var queueCalls = 0;
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-            isOnline: () => true,
-            queueOfflineAction:
-                ({
-                  required isRepost,
-                  required addressableId,
-                  required originalAuthorPubkey,
-                  eventId,
-                }) async {
-                  queueCalls++;
-                },
-          );
-          await repository.repostVideo(
-            addressableId: testAddressableId,
-            originalAuthorPubkey: testAuthorPubkey,
-          );
+        var queueCalls = 0;
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => true,
+          queueOfflineAction:
+              ({
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
+              }) async {
+                queueCalls++;
+              },
+        );
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
 
-          await repository.unrepostVideo(testAddressableId);
+        await repository.unrepostVideo(testAddressableId);
 
-          expect(queueCalls, equals(1));
-          expect(repository.isRepostedSync(testAddressableId), isFalse);
-        },
-      );
+        expect(queueCalls, equals(1));
+        expect(repository.isRepostedSync(testAddressableId), isFalse);
+      });
     });
 
     group('toggleRepost', () {
       test('reposts when not reposted and returns true', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final result = await repository.toggleRepost(
           addressableId: testAddressableId,
@@ -938,9 +874,7 @@ void main() {
           ),
         );
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -978,13 +912,9 @@ void main() {
       test('queries relays for repost count', () async {
         when(
           () => mockNostrClient.countEvents(any()),
-        ).thenAnswer(
-          (_) async => const CountResult(count: 42),
-        );
+        ).thenAnswer((_) async => const CountResult(count: 42));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final count = await repository.getRepostCount(testAddressableId);
 
@@ -995,13 +925,9 @@ void main() {
       test('returns zero when no reposts exist', () async {
         when(
           () => mockNostrClient.countEvents(any()),
-        ).thenAnswer(
-          (_) async => const CountResult(count: 0),
-        );
+        ).thenAnswer((_) async => const CountResult(count: 0));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final count = await repository.getRepostCount(testAddressableId);
 
@@ -1013,9 +939,7 @@ void main() {
           () => mockNostrClient.countEvents(any()),
         ).thenAnswer((_) async => const CountResult(count: 6));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         // Seed cache via relay query so the repost can increment it.
         await repository.getRepostCount(testAddressableId);
@@ -1038,9 +962,7 @@ void main() {
         when(
           () => mockNostrClient.countEvents(any()),
         ).thenAnswer((_) async => const CountResult(count: 0));
-        when(
-          () => mockNostrClient.deleteEvent(any()),
-        ).thenAnswer(
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
           (_) async => createMockEvent(
             id: 'deletion_event_id',
             kind: EventKind.eventDeletion,
@@ -1048,9 +970,7 @@ void main() {
           ),
         );
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         // Create a record (cache stays unseeded until getRepostCount runs).
         await repository.repostVideo(
@@ -1070,51 +990,37 @@ void main() {
         expect(count, equals(0));
       });
 
-      test(
-        'caches relay-fetched count and reuses on second call',
-        () async {
-          when(
-            () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 15),
-          );
+      test('caches relay-fetched count and reuses on second call', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 15));
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
-          final first = await repository.getRepostCount(testAddressableId);
-          final second = await repository.getRepostCount(testAddressableId);
+        final first = await repository.getRepostCount(testAddressableId);
+        final second = await repository.getRepostCount(testAddressableId);
 
-          expect(first, equals(15));
-          expect(second, equals(15));
-          verify(() => mockNostrClient.countEvents(any())).called(1);
-        },
-      );
+        expect(first, equals(15));
+        expect(second, equals(15));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
     });
 
     group('getRepostCountByEventId', () {
-      test(
-        'caches relay-fetched count and reuses on second call',
-        () async {
-          when(
-            () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 7),
-          );
+      test('caches relay-fetched count and reuses on second call', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 7));
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
-          final first = await repository.getRepostCountByEventId(testEventId);
-          final second = await repository.getRepostCountByEventId(testEventId);
+        final first = await repository.getRepostCountByEventId(testEventId);
+        final second = await repository.getRepostCountByEventId(testEventId);
 
-          expect(first, equals(7));
-          expect(second, equals(7));
-          verify(() => mockNostrClient.countEvents(any())).called(1);
-        },
-      );
+        expect(first, equals(7));
+        expect(second, equals(7));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
     });
 
     group('count caching via toggleRepost', () {
@@ -1123,13 +1029,9 @@ void main() {
         () async {
           when(
             () => mockNostrClient.countEvents(any()),
-          ).thenAnswer(
-            (_) async => const CountResult(count: 10),
-          );
+          ).thenAnswer((_) async => const CountResult(count: 10));
 
-          final repository = RepostsRepository(
-            nostrClient: mockNostrClient,
-          );
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
 
           // First call hits relay and seeds the cache at 10.
           final relayCount = await repository.getRepostCount(testAddressableId);
@@ -1153,13 +1055,9 @@ void main() {
       test('is cleared by clearCache', () async {
         when(
           () => mockNostrClient.countEvents(any()),
-        ).thenAnswer(
-          (_) async => const CountResult(count: 10),
-        );
+        ).thenAnswer((_) async => const CountResult(count: 10));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         // Seed cache via getRepostCount, then bump it via toggleRepost.
         await repository.getRepostCount(testAddressableId);
@@ -1182,13 +1080,9 @@ void main() {
       test('queries relays for repost count using event ID', () async {
         when(
           () => mockNostrClient.countEvents(any()),
-        ).thenAnswer(
-          (_) async => const CountResult(count: 15),
-        );
+        ).thenAnswer((_) async => const CountResult(count: 15));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final count = await repository.getRepostCountByEventId(testEventId);
 
@@ -1199,13 +1093,9 @@ void main() {
       test('returns zero when no reposts exist', () async {
         when(
           () => mockNostrClient.countEvents(any()),
-        ).thenAnswer(
-          (_) async => const CountResult(count: 0),
-        );
+        ).thenAnswer((_) async => const CountResult(count: 0));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final count = await repository.getRepostCountByEventId(testEventId);
 
@@ -1215,17 +1105,13 @@ void main() {
 
     group('getRepostRecord', () {
       test('returns null when not reposted', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         expect(await repository.getRepostRecord(testAddressableId), isNull);
       });
 
       test('returns record when reposted', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -1415,9 +1301,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => events);
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final reposts = await repository.fetchUserReposts(otherUserPubkey);
 
@@ -1454,9 +1338,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => events);
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final reposts = await repository.fetchUserReposts(otherUserPubkey);
 
@@ -1468,9 +1350,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenThrow(Exception('Network error'));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         expect(
           () => repository.fetchUserReposts('some_pubkey'),
@@ -1499,9 +1379,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenAnswer((_) async => events);
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final records = await repository.fetchUserRepostRecords(
           otherUserPubkey,
@@ -1518,9 +1396,7 @@ void main() {
           () => mockNostrClient.queryEvents(any()),
         ).thenThrow(Exception('Network error'));
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         expect(
           () => repository.fetchUserRepostRecords('some_pubkey'),
@@ -1529,11 +1405,364 @@ void main() {
       });
     });
 
+    group('fetchEventReposters', () {
+      Event createReposterEvent({
+        required String id,
+        required String pubkey,
+        required int kind,
+        required int createdAt,
+        List<List<String>> tags = const [],
+      }) {
+        final event = MockEvent();
+        when(() => event.id).thenReturn(id);
+        when(() => event.kind).thenReturn(kind);
+        when(() => event.createdAt).thenReturn(createdAt);
+        when(() => event.tags).thenReturn(tags);
+        when(() => event.pubkey).thenReturn(pubkey);
+        when(() => event.content).thenReturn('');
+        when(() => event.sig).thenReturn('');
+        return event;
+      }
+
+      // Intercept queryEvents based on the filter shape so e-tag, a-tag
+      // and kind-5 deletion queries can return different fixtures.
+      void wireQueryEvents({
+        List<Event> eFilterEvents = const [],
+        List<Event> aFilterEvents = const [],
+        List<Event> deletionEvents = const [],
+      }) {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          final filter = filters.first;
+          if (filter.kinds?.contains(EventKind.eventDeletion) ?? false) {
+            return deletionEvents;
+          }
+          if (filter.a?.isNotEmpty ?? false) {
+            return aFilterEvents;
+          }
+          return eFilterEvents;
+        });
+      }
+
+      test('returns empty list when no reposts exist', () async {
+        wireQueryEvents();
+
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+        final result = await repository.fetchEventReposters(
+          eventId: testEventId,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('returns reposter pubkeys ordered by recency', () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        wireQueryEvents(
+          eFilterEvents: [
+            createReposterEvent(
+              id: 'repost1',
+              pubkey: 'reposter1',
+              kind: EventKind.genericRepost,
+              createdAt: now - 200,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+            createReposterEvent(
+              id: 'repost2',
+              pubkey: 'reposter2',
+              kind: EventKind.genericRepost,
+              createdAt: now,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+            createReposterEvent(
+              id: 'repost3',
+              pubkey: 'reposter3',
+              kind: EventKind.genericRepost,
+              createdAt: now - 100,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+        final result = await repository.fetchEventReposters(
+          eventId: testEventId,
+        );
+
+        expect(result, equals(['reposter2', 'reposter3', 'reposter1']));
+      });
+
+      test('deduplicates pubkeys across e and a query results when '
+          'addressableId is provided', () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        wireQueryEvents(
+          eFilterEvents: [
+            createReposterEvent(
+              id: 'repost_e',
+              pubkey: 'sharedReposter',
+              kind: EventKind.genericRepost,
+              createdAt: now,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+          ],
+          aFilterEvents: [
+            createReposterEvent(
+              id: 'repost_a',
+              pubkey: 'sharedReposter',
+              kind: EventKind.genericRepost,
+              createdAt: now - 50,
+              tags: [
+                ['a', testAddressableId],
+              ],
+            ),
+            createReposterEvent(
+              id: 'repost_a2',
+              pubkey: 'otherReposter',
+              kind: EventKind.genericRepost,
+              createdAt: now - 100,
+              tags: [
+                ['a', testAddressableId],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+        final result = await repository.fetchEventReposters(
+          eventId: testEventId,
+          addressableId: testAddressableId,
+        );
+
+        expect(result, hasLength(2));
+        expect(result, equals(['sharedReposter', 'otherReposter']));
+      });
+
+      test('excludes reposts deleted via kind 5', () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        wireQueryEvents(
+          eFilterEvents: [
+            createReposterEvent(
+              id: 'live_repost',
+              pubkey: 'liveReposter',
+              kind: EventKind.genericRepost,
+              createdAt: now,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+            createReposterEvent(
+              id: 'deleted_repost',
+              pubkey: 'deletingReposter',
+              kind: EventKind.genericRepost,
+              createdAt: now - 50,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+          ],
+          deletionEvents: [
+            createReposterEvent(
+              id: 'deletion1',
+              pubkey: 'deletingReposter',
+              kind: EventKind.eventDeletion,
+              createdAt: now - 10,
+              tags: [
+                ['e', 'deleted_repost'],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+        final result = await repository.fetchEventReposters(
+          eventId: testEventId,
+        );
+
+        expect(result, equals(['liveReposter']));
+      });
+
+      test(
+        'includes a pubkey with both a deleted and a non-deleted repost',
+        () async {
+          final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          wireQueryEvents(
+            eFilterEvents: [
+              createReposterEvent(
+                id: 'old_deleted',
+                pubkey: 'churningReposter',
+                kind: EventKind.genericRepost,
+                createdAt: now - 200,
+                tags: [
+                  ['e', testEventId],
+                ],
+              ),
+              createReposterEvent(
+                id: 'new_live',
+                pubkey: 'churningReposter',
+                kind: EventKind.genericRepost,
+                createdAt: now,
+                tags: [
+                  ['e', testEventId],
+                ],
+              ),
+            ],
+            deletionEvents: [
+              createReposterEvent(
+                id: 'deletion1',
+                pubkey: 'churningReposter',
+                kind: EventKind.eventDeletion,
+                createdAt: now - 100,
+                tags: [
+                  ['e', 'old_deleted'],
+                ],
+              ),
+            ],
+          );
+
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+          final result = await repository.fetchEventReposters(
+            eventId: testEventId,
+          );
+
+          expect(result, equals(['churningReposter']));
+        },
+      );
+
+      test(
+        'ignores deletions whose author does not own the targeted repost',
+        () async {
+          final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          wireQueryEvents(
+            eFilterEvents: [
+              createReposterEvent(
+                id: 'repost1',
+                pubkey: 'authorA',
+                kind: EventKind.genericRepost,
+                createdAt: now,
+                tags: [
+                  ['e', testEventId],
+                ],
+              ),
+            ],
+            deletionEvents: [
+              // Different author trying to delete authorA's repost.
+              createReposterEvent(
+                id: 'fraud_deletion',
+                pubkey: 'authorA',
+                kind: EventKind.eventDeletion,
+                createdAt: now - 10,
+                // Tag without an event id (malformed) — must be ignored.
+                tags: [
+                  ['e'],
+                ],
+              ),
+            ],
+          );
+
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+          final result = await repository.fetchEventReposters(
+            eventId: testEventId,
+          );
+
+          expect(result, equals(['authorA']));
+        },
+      );
+
+      test('includes both kind 6 and kind 16 reposts', () async {
+        final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        wireQueryEvents(
+          eFilterEvents: [
+            createReposterEvent(
+              id: 'kind6_repost',
+              pubkey: 'kind6Reposter',
+              kind: EventKind.repost,
+              createdAt: now,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+            createReposterEvent(
+              id: 'kind16_repost',
+              pubkey: 'kind16Reposter',
+              kind: EventKind.genericRepost,
+              createdAt: now - 50,
+              tags: [
+                ['e', testEventId],
+              ],
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+        final result = await repository.fetchEventReposters(
+          eventId: testEventId,
+        );
+
+        expect(result, equals(['kind6Reposter', 'kind16Reposter']));
+      });
+
+      test(
+        'throws FetchRepostersFailedException when relay query throws',
+        () async {
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenThrow(Exception('relay unreachable'));
+
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+          await expectLater(
+            repository.fetchEventReposters(eventId: testEventId),
+            throwsA(isA<FetchRepostersFailedException>()),
+          );
+        },
+      );
+
+      test(
+        'treats empty addressableId the same as null (no a-tag query)',
+        () async {
+          var aFilterCalls = 0;
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters = invocation.positionalArguments[0] as List<Filter>;
+            final filter = filters.first;
+            if (filter.a?.isNotEmpty ?? false) {
+              aFilterCalls++;
+            }
+            return <Event>[];
+          });
+
+          final repository = RepostsRepository(nostrClient: mockNostrClient);
+
+          await repository.fetchEventReposters(
+            eventId: testEventId,
+            addressableId: '',
+          );
+
+          expect(aFilterCalls, equals(0));
+        },
+      );
+    });
+
     group('clearCache', () {
       test('clears in-memory cache', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         await repository.repostVideo(
           addressableId: testAddressableId,
@@ -1559,9 +1788,8 @@ void main() {
       });
 
       test('does not throw when called after dispose', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        )..dispose();
+        final repository = RepostsRepository(nostrClient: mockNostrClient)
+          ..dispose();
 
         // clearCache after dispose should not throw "Cannot add new events
         // after calling close" on the BehaviorSubject.
@@ -1571,9 +1799,7 @@ void main() {
 
     group('watchRepostedAddressableIds', () {
       test('returns internal stream when no local storage', () async {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         final stream = repository.watchRepostedAddressableIds();
         expect(stream, isA<Stream<Set<String>>>());
@@ -1616,9 +1842,7 @@ void main() {
     group('initialize', () {
       test('loads records from local storage', () async {
         when(() => mockNostrClient.hasKeys).thenReturn(false);
-        when(
-          () => mockLocalStorage.getAllRepostRecords(),
-        ).thenAnswer(
+        when(() => mockLocalStorage.getAllRepostRecords()).thenAnswer(
           (_) async => [
             RepostRecord(
               addressableId: testAddressableId,
@@ -1636,10 +1860,7 @@ void main() {
 
         await repository.initialize();
 
-        expect(
-          await repository.isReposted(testAddressableId),
-          isTrue,
-        );
+        expect(await repository.isReposted(testAddressableId), isTrue);
       });
 
       test('sets up subscription when client has keys', () async {
@@ -1744,9 +1965,7 @@ void main() {
         ).thenAnswer((_) => streamController.stream);
 
         final now = DateTime.now();
-        when(
-          () => mockLocalStorage.getAllRepostRecords(),
-        ).thenAnswer(
+        when(() => mockLocalStorage.getAllRepostRecords()).thenAnswer(
           (_) async => [
             RepostRecord(
               addressableId: testAddressableId,
@@ -1781,10 +2000,7 @@ void main() {
 
         // The older event should not replace the existing record
         final record = await repository.getRepostRecord(testAddressableId);
-        expect(
-          record!.repostEventId,
-          equals('existing_repost_event_id'),
-        );
+        expect(record!.repostEventId, equals('existing_repost_event_id'));
 
         await streamController.close();
       });
@@ -1829,9 +2045,7 @@ void main() {
             subscriptionId: any(named: 'subscriptionId'),
           ),
         ).thenAnswer((_) => streamController.stream);
-        when(
-          () => mockNostrClient.unsubscribe(any()),
-        ).thenAnswer((_) async {});
+        when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
@@ -1846,18 +2060,14 @@ void main() {
         // Dispose should complete without error
         repository.dispose();
 
-        verify(
-          () => mockNostrClient.unsubscribe(any()),
-        ).called(1);
+        verify(() => mockNostrClient.unsubscribe(any())).called(1);
 
         await subscription.cancel();
         await streamController.close();
       });
 
       test('can be called safely without subscription', () {
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         // Should not throw when no subscription exists
         expect(repository.dispose, returnsNormally);
@@ -2038,9 +2248,7 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-        );
+        final repository = RepostsRepository(nostrClient: mockNostrClient);
 
         expect(
           () => repository.executeRepostAction(

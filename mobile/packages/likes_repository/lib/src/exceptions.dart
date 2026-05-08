@@ -118,6 +118,16 @@ class FetchLikesFailedException extends LikesRepositoryException {
   String toString() => 'FetchLikesFailedException: $message';
 }
 
+/// Exception thrown when fetching the list of pubkeys that liked an event
+/// from relays fails.
+class FetchLikersFailedException extends LikesRepositoryException {
+  /// Creates a new fetch likers failed exception.
+  const FetchLikersFailedException(super.message);
+
+  @override
+  String toString() => 'FetchLikersFailedException: $message';
+}
+
 /// Exception thrown when the action was queued for offline sync.
 ///
 /// This is not an error - it indicates the action was successfully queued
