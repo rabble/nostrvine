@@ -204,7 +204,7 @@ post_install do |installer|
   # by just deleting this block — no manual project-file surgery
   # required.
   cupertino_http_framework_re =
-    /\s*-framework\s+(?:"cupertino_http"|'cupertino_http'|cupertino_http)\b/
+    /\s*-framework\s+(?:"cupertino_http"|'cupertino_http'|cupertino_http\b)/
   cupertino_http_force_load =
     '-force_load "${BUILT_PRODUCTS_DIR}/cupertino_http/' \
     'cupertino_http.framework/cupertino_http"'
