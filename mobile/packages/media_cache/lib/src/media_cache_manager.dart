@@ -622,11 +622,13 @@ class MediaCacheManager extends CacheManager {
       final sharedFuture = _pendingCacheOperations[key]!.future;
       var localCancelled = false;
       final localCompleter = Completer<File?>();
-      sharedFuture.then((file) {
-        if (!localCompleter.isCompleted) {
-          localCompleter.complete(localCancelled ? null : file);
-        }
-      });
+      unawaited(
+        sharedFuture.then((file) {
+          if (!localCompleter.isCompleted) {
+            localCompleter.complete(localCancelled ? null : file);
+          }
+        }),
+      );
       final joinOp = CancellableCacheOperation.fromDownload(
         _DeferredDownload(
           future: localCompleter.future,
