@@ -61,7 +61,7 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           name: callerName,
         );
         if (parsed.rawTags.isNotEmpty) {
-          nostrEventsMap[parsed.id.toLowerCase()] = parsed;
+          nostrEventsMap[parsed.id] = parsed;
         }
       } catch (_) {
         // Skip events that fail to parse

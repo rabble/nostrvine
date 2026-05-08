@@ -53,22 +53,9 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
         (widget.contentType != null
             ? BlurhashService.getBlurhashForContentType(widget.contentType!)
             : BlurhashService.getDefaultVineBlurhash());
-    Log.info(
-      'BlurhashDisplay._decodeBlurhash: '
-      'widget.blurhash=${widget.blurhash} '
-      'contentType=${widget.contentType} '
-      'effectiveHash=$hash',
-      name: 'BlurhashDisplay',
-      category: LogCategory.ui,
-    );
+
     try {
       final data = BlurhashService.decodeBlurhash(hash);
-      Log.info(
-        'BlurhashDisplay._decodeBlurhash: decoded data='
-        '${data == null ? 'NULL' : 'OK pixels=${data.pixels?.length}'}',
-        name: 'BlurhashDisplay',
-        category: LogCategory.ui,
-      );
 
       if (mounted && data != null) {
         setState(() {
