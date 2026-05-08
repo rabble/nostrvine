@@ -361,10 +361,11 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileMoreSemanticLabel => 'Iba pang options';
 
   @override
-  String get profileAvatarLightboxBarrierLabel => 'Close avatar';
+  String get profileAvatarLightboxBarrierLabel => 'Isara ang avatar';
 
   @override
-  String get profileAvatarLightboxCloseSemanticLabel => 'Close avatar preview';
+  String get profileAvatarLightboxCloseSemanticLabel =>
+      'Isara ang avatar preview';
 
   @override
   String get profileFollowingLabel => 'Sinusundan';
@@ -1241,30 +1242,30 @@ class AppLocalizationsFil extends AppLocalizations {
   String get contentWarningViewAnyway => 'Tingnan pa rin';
 
   @override
-  String get contentWarningReportContentTooltip => 'Report Content';
+  String get contentWarningReportContentTooltip => 'I-report ang Content';
 
   @override
-  String get contentWarningBlockUserTooltip => 'Block User';
+  String get contentWarningBlockUserTooltip => 'I-block ang User';
 
   @override
-  String get contentWarningBlockedTitle => 'Content Blocked';
+  String get contentWarningBlockedTitle => 'Naka-block ang Content';
 
   @override
   String get contentWarningBlockedPolicy =>
-      'This content has been blocked due to policy violations.';
+      'Na-block ang content na ito dahil sa policy violations.';
 
   @override
   String get contentWarningNoticeTitle => 'Content Notice';
 
   @override
   String get contentWarningPotentiallyHarmfulTitle =>
-      'Potentially Harmful Content';
+      'Posibleng Nakakapinsalang Content';
 
   @override
-  String get contentWarningView => 'View';
+  String get contentWarningView => 'Tingnan';
 
   @override
-  String get contentWarningReportAction => 'Report';
+  String get contentWarningReportAction => 'I-report';
 
   @override
   String get contentWarningHideAllLikeThis =>
@@ -1475,10 +1476,11 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoActionShowSubtitles => 'Ipakita ang subtitles';
 
   @override
-  String get videoOverlayOpenMetadataFromTitle => 'Open video details';
+  String get videoOverlayOpenMetadataFromTitle => 'Buksan ang video details';
 
   @override
-  String get videoOverlayOpenMetadataFromDescription => 'Open video details';
+  String get videoOverlayOpenMetadataFromDescription =>
+      'Buksan ang video details';
 
   @override
   String videoDescriptionLoops(String count) {
@@ -3370,112 +3372,116 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get peopleListsAddToList => 'Add to list';
+  String get peopleListsAddToList => 'Idagdag sa listahan';
 
   @override
   String get peopleListsAddToListSubtitle =>
-      'Put this creator in one of your lists';
+      'Ilagay ang creator na ito sa isa sa mga listahan mo';
 
   @override
-  String get peopleListsSheetTitle => 'Add to list';
+  String get peopleListsSheetTitle => 'Idagdag sa listahan';
 
   @override
-  String get peopleListsEmptyTitle => 'No lists yet';
+  String get peopleListsEmptyTitle => 'Wala pang listahan';
 
   @override
   String get peopleListsEmptySubtitle =>
-      'Create a list to start grouping people.';
+      'Gumawa ng listahan para simulang igrupo ang mga tao.';
 
   @override
-  String get peopleListsCreateList => 'Create list';
+  String get peopleListsCreateList => 'Gumawa ng listahan';
 
   @override
-  String get peopleListsNewListTitle => 'New list';
+  String get peopleListsNewListTitle => 'Bagong listahan';
 
   @override
-  String get peopleListsRouteTitle => 'People list';
+  String get peopleListsRouteTitle => 'Listahan ng tao';
 
   @override
-  String get peopleListsListNameLabel => 'List name';
+  String get peopleListsListNameLabel => 'Pangalan ng listahan';
 
   @override
-  String get peopleListsListNameHint => 'Close friends';
+  String get peopleListsListNameHint => 'Mga close friend';
 
   @override
-  String get peopleListsCreateButton => 'Create';
+  String get peopleListsCreateButton => 'Gumawa';
 
   @override
-  String get peopleListsAddPeopleTitle => 'Add people';
+  String get peopleListsAddPeopleTitle => 'Magdagdag ng tao';
 
   @override
-  String get peopleListsAddPeopleTooltip => 'Add people';
+  String get peopleListsAddPeopleTooltip => 'Magdagdag ng tao';
 
   @override
-  String get peopleListsAddPeopleSemanticLabel => 'Add people to list';
+  String get peopleListsAddPeopleSemanticLabel =>
+      'Magdagdag ng tao sa listahan';
 
   @override
-  String get peopleListsListNotFoundTitle => 'List not found';
+  String get peopleListsListNotFoundTitle => 'Hindi nakita ang listahan';
 
   @override
   String get peopleListsListNotFoundSubtitle =>
-      'List not found. It may have been deleted.';
+      'Hindi nakita ang listahan. Maaaring nabura na ito.';
 
   @override
   String get peopleListsListDeletedSubtitle =>
-      'This list may have been deleted.';
+      'Maaaring nabura na ang listahang ito.';
 
   @override
-  String get peopleListsNoPeopleTitle => 'No people in this list';
+  String get peopleListsNoPeopleTitle => 'Walang tao sa listahang ito';
 
   @override
-  String get peopleListsNoPeopleSubtitle => 'Add some people to get started';
+  String get peopleListsNoPeopleSubtitle =>
+      'Magdagdag ng mga tao para magsimula';
 
   @override
-  String get peopleListsNoVideosTitle => 'No videos yet';
+  String get peopleListsNoVideosTitle => 'Wala pang video';
 
   @override
   String get peopleListsNoVideosSubtitle =>
-      'Videos from list members will appear here';
+      'Lalabas dito ang mga video mula sa mga miyembro ng listahan';
 
   @override
-  String get peopleListsNoVideosAvailable => 'No videos available';
+  String get peopleListsNoVideosAvailable => 'Walang available na video';
 
   @override
-  String get peopleListsFailedToLoadVideos => 'Failed to load videos';
+  String get peopleListsFailedToLoadVideos => 'Hindi na-load ang mga video';
 
   @override
-  String get peopleListsVideoNotAvailable => 'Video not available';
+  String get peopleListsVideoNotAvailable => 'Hindi available ang video';
 
   @override
-  String get peopleListsBackToGridTooltip => 'Back to grid';
+  String get peopleListsBackToGridTooltip => 'Bumalik sa grid';
 
   @override
-  String get peopleListsErrorLoadingVideos => 'Error loading videos';
+  String get peopleListsErrorLoadingVideos =>
+      'May error sa pag-load ng mga video';
 
   @override
-  String get peopleListsNoPeopleToAdd => 'No people available to add.';
+  String get peopleListsNoPeopleToAdd =>
+      'Walang available na tao na maidadagdag.';
 
   @override
   String peopleListsAddToListName(String name) {
-    return 'Add to $name';
+    return 'Idagdag sa $name';
   }
 
   @override
-  String get peopleListsAddPeopleSearchHint => 'Search people';
+  String get peopleListsAddPeopleSearchHint => 'Maghanap ng tao';
 
   @override
   String get peopleListsAddPeopleError =>
-      'Couldn\'t load people. Please try again.';
+      'Hindi na-load ang mga tao. Subukan ulit.';
 
   @override
-  String get peopleListsAddPeopleRetry => 'Try again';
+  String get peopleListsAddPeopleRetry => 'Subukan ulit';
 
   @override
-  String get peopleListsAddButton => 'Add';
+  String get peopleListsAddButton => 'Idagdag';
 
   @override
   String peopleListsAddButtonWithCount(int count) {
-    return 'Add $count';
+    return 'Idagdag ang $count';
   }
 
   @override
@@ -3483,40 +3489,39 @@ class AppLocalizationsFil extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: 'In $count lists',
-      one: 'In 1 list',
+      other: 'Nasa $count listahan',
+      one: 'Nasa 1 listahan',
     );
     return '$_temp0';
   }
 
   @override
   String peopleListsRemoveConfirmTitle(String name) {
-    return 'Remove $name?';
+    return 'Alisin si $name?';
   }
 
   @override
-  String get peopleListsRemoveConfirmBody =>
-      'They will be removed from this list.';
+  String get peopleListsRemoveConfirmBody => 'Aalisin sila sa listahang ito.';
 
   @override
-  String get peopleListsRemove => 'Remove';
+  String get peopleListsRemove => 'Alisin';
 
   @override
   String peopleListsRemovedFromList(String name) {
-    return 'Removed $name from list';
+    return 'Naalis si $name sa listahan';
   }
 
   @override
-  String get peopleListsUndo => 'Undo';
+  String get peopleListsUndo => 'I-undo';
 
   @override
   String peopleListsProfileLongPressHint(String name) {
-    return 'Profile for $name. Long press to remove.';
+    return 'Profile ni $name. Long press para alisin.';
   }
 
   @override
   String peopleListsViewProfileHint(String name) {
-    return 'View profile for $name';
+    return 'Tingnan ang profile ni $name';
   }
 
   @override
@@ -3972,11 +3977,12 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String notificationsViewProfileSemanticLabel(String displayName) {
-    return 'View $displayName profile';
+    return 'Tingnan ang profile ni $displayName';
   }
 
   @override
-  String get notificationsViewProfilesSemanticLabel => 'View profiles';
+  String get notificationsViewProfilesSemanticLabel =>
+      'Tingnan ang mga profile';
 
   @override
   String notificationsLoadingType(String type) {
@@ -5339,45 +5345,47 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get discoverListsTitle => 'Discover Lists';
+  String get discoverListsTitle => 'Tuklasin ang mga Listahan';
 
   @override
-  String get discoverListsFailedToLoad => 'Failed to load lists';
+  String get discoverListsFailedToLoad => 'Hindi na-load ang mga listahan';
 
   @override
   String discoverListsFailedToLoadWithError(String error) {
-    return 'Failed to load lists: $error';
+    return 'Hindi na-load ang mga listahan: $error';
   }
 
   @override
-  String get discoverListsLoading => 'Discovering public lists...';
+  String get discoverListsLoading => 'Naghahanap ng mga public list...';
 
   @override
-  String get discoverListsEmptyTitle => 'No public lists found';
+  String get discoverListsEmptyTitle => 'Walang nakitang public list';
 
   @override
-  String get discoverListsEmptySubtitle => 'Check back later for new lists';
+  String get discoverListsEmptySubtitle =>
+      'Bumalik mamaya para sa mga bagong listahan';
 
   @override
-  String get discoverListsByAuthorPrefix => 'by';
+  String get discoverListsByAuthorPrefix => 'ni';
 
   @override
-  String get curatedListEmptyTitle => 'No videos in this list';
+  String get curatedListEmptyTitle => 'Walang video sa listahang ito';
 
   @override
-  String get curatedListEmptySubtitle => 'Add some videos to get started';
+  String get curatedListEmptySubtitle =>
+      'Magdagdag ng mga video para magsimula';
 
   @override
-  String get curatedListLoadingVideos => 'Loading videos...';
+  String get curatedListLoadingVideos => 'Naglo-load ng mga video...';
 
   @override
-  String get curatedListFailedToLoad => 'Failed to load list';
+  String get curatedListFailedToLoad => 'Hindi na-load ang listahan';
 
   @override
-  String get curatedListNoVideosAvailable => 'No videos available';
+  String get curatedListNoVideosAvailable => 'Walang available na video';
 
   @override
-  String get curatedListVideoNotAvailable => 'Video not available';
+  String get curatedListVideoNotAvailable => 'Hindi available ang video';
 
   @override
   String get commonRetry => 'Subukan ulit';
@@ -5392,10 +5400,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get commonCancel => 'Cancel';
 
   @override
-  String get commonBack => 'Back';
+  String get commonBack => 'Bumalik';
 
   @override
-  String get commonClose => 'Close';
+  String get commonClose => 'Isara';
 
   @override
   String get videoMetadataTags => 'Mga Tag';
@@ -5616,33 +5624,34 @@ class AppLocalizationsFil extends AppLocalizations {
   String get categoriesNoCategoriesAvailable => 'No categories available';
 
   @override
-  String get notificationsEmptyTitle => 'No activity yet';
+  String get notificationsEmptyTitle => 'Wala pang activity';
 
   @override
   String get notificationsEmptySubtitle =>
-      'When people interact with your content, you\'ll see it here';
+      'Kapag nag-interact ang mga tao sa content mo, makikita mo dito';
 
   @override
-  String get appsPermissionsTitle => 'Integration Permissions';
+  String get appsPermissionsTitle => 'Mga Integration Permission';
 
   @override
-  String get appsPermissionsRevoke => 'Revoke';
+  String get appsPermissionsRevoke => 'I-revoke';
 
   @override
-  String get appsPermissionsEmptyTitle => 'No saved integration permissions';
+  String get appsPermissionsEmptyTitle =>
+      'Walang naka-save na integration permission';
 
   @override
   String get appsPermissionsEmptySubtitle =>
-      'Approved integrations will appear here after you remember an access approval.';
+      'Lalabas dito ang mga approved integration kapag may na-remember kang access approval.';
 
   @override
   String nostrAppPermissionTitle(String appName) {
-    return '$appName wants your approval';
+    return 'Hinihingi ng $appName ang pag-apruba mo';
   }
 
   @override
   String get nostrAppPermissionDescription =>
-      'This app is requesting access through Divine\'s vetted sandbox.';
+      'Humihingi ng access ang app na ito gamit ang vetted sandbox ng Divine.';
 
   @override
   String get nostrAppPermissionOrigin => 'Origin';
@@ -5657,172 +5666,177 @@ class AppLocalizationsFil extends AppLocalizations {
   String get nostrAppPermissionEventKind => 'Event kind';
 
   @override
-  String get nostrAppPermissionAllow => 'Allow';
+  String get nostrAppPermissionAllow => 'Payagan';
 
   @override
-  String get bugReportSendReport => 'Send Report';
+  String get bugReportSendReport => 'Ipadala ang Report';
 
   @override
   String get supportSubjectRequiredLabel => 'Subject *';
 
   @override
-  String get supportRequiredHelper => 'Required';
+  String get supportRequiredHelper => 'Kailangan';
 
   @override
-  String get bugReportSubjectHint => 'Brief summary of the issue';
+  String get bugReportSubjectHint => 'Maikling buod ng problema';
 
   @override
-  String get bugReportDescriptionRequiredLabel => 'What happened? *';
+  String get bugReportDescriptionRequiredLabel => 'Ano\'ng nangyari? *';
 
   @override
-  String get bugReportDescriptionHint => 'Describe the issue you encountered';
+  String get bugReportDescriptionHint =>
+      'I-describe ang problemang naranasan mo';
 
   @override
-  String get bugReportStepsLabel => 'Steps to Reproduce';
+  String get bugReportStepsLabel => 'Mga Hakbang Para Maulit';
 
   @override
-  String get bugReportStepsHint => '1. Go to...\n2. Tap on...\n3. See error';
+  String get bugReportStepsHint =>
+      '1. Pumunta sa...\n2. I-tap ang...\n3. Lalabas ang error';
 
   @override
-  String get bugReportExpectedBehaviorLabel => 'Expected Behavior';
+  String get bugReportExpectedBehaviorLabel => 'Inaasahang Behavior';
 
   @override
-  String get bugReportExpectedBehaviorHint =>
-      'What should have happened instead?';
+  String get bugReportExpectedBehaviorHint => 'Ano sana dapat ang nangyari?';
 
   @override
   String get bugReportDiagnosticsNotice =>
-      'Device info and logs will be included automatically.';
+      'Awtomatikong isasama ang device info at logs.';
 
   @override
   String get bugReportSuccessMessage =>
-      'Thank you! We\'ve received your report and will use it to make Divine better.';
+      'Salamat! Natanggap namin ang report mo at gagamitin namin ito para mas gumanda ang Divine.';
 
   @override
   String get bugReportSendFailed =>
-      'Failed to send bug report. Please try again later.';
+      'Hindi naipadala ang bug report. Subukan ulit mamaya.';
 
   @override
   String bugReportFailedWithError(String error) {
-    return 'Bug report failed to send: $error';
+    return 'Hindi naipadala ang bug report: $error';
   }
 
   @override
-  String get featureRequestSendRequest => 'Send Request';
+  String get featureRequestSendRequest => 'Ipadala ang Request';
 
   @override
-  String get featureRequestSubjectHint => 'Brief summary of your idea';
+  String get featureRequestSubjectHint => 'Maikling buod ng idea mo';
 
   @override
-  String get featureRequestDescriptionRequiredLabel => 'What would you like? *';
+  String get featureRequestDescriptionRequiredLabel => 'Ano ang gusto mo? *';
 
   @override
-  String get featureRequestDescriptionHint => 'Describe the feature you want';
+  String get featureRequestDescriptionHint =>
+      'I-describe ang feature na gusto mo';
 
   @override
-  String get featureRequestUsefulnessLabel => 'How would this be useful?';
+  String get featureRequestUsefulnessLabel =>
+      'Paano ito magiging kapaki-pakinabang?';
 
   @override
   String get featureRequestUsefulnessHint =>
-      'Explain the benefit this feature would provide';
+      'Ipaliwanag kung anong benepisyo ang maibibigay ng feature na ito';
 
   @override
-  String get featureRequestWhenLabel => 'When would you use this?';
+  String get featureRequestWhenLabel => 'Kailan mo ito gagamitin?';
 
   @override
   String get featureRequestWhenHint =>
-      'Describe the situations where this would help';
+      'I-describe ang mga sitwasyon kung saan makakatulong ito';
 
   @override
   String get featureRequestSuccessMessage =>
-      'Thank you! We\'ve received your feature request and will review it.';
+      'Salamat! Natanggap namin ang feature request mo at irereview namin ito.';
 
   @override
   String get featureRequestSendFailed =>
-      'Failed to send feature request. Please try again later.';
+      'Hindi naipadala ang feature request. Subukan ulit mamaya.';
 
   @override
   String featureRequestFailedWithError(String error) {
-    return 'Feature request failed to send: $error';
+    return 'Hindi naipadala ang feature request: $error';
   }
 
   @override
   String get notificationFollowBack => 'I-follow back';
 
   @override
-  String get followingTitle => 'Following';
+  String get followingTitle => 'Fino-follow';
 
   @override
   String followingTitleForName(String displayName) {
-    return '$displayName\'s Following';
+    return 'Fino-follow ni $displayName';
   }
 
   @override
   String get followingFailedToLoadList => 'Hindi na-load ang following list';
 
   @override
-  String get followingEmptyTitle => 'Not following anyone yet';
+  String get followingEmptyTitle => 'Wala ka pang fino-follow';
 
   @override
-  String get followersTitle => 'Followers';
+  String get followersTitle => 'Mga Follower';
 
   @override
   String followersTitleForName(String displayName) {
-    return '$displayName\'s Followers';
+    return 'Mga Follower ni $displayName';
   }
 
   @override
   String get followersFailedToLoadList => 'Hindi na-load ang followers list';
 
   @override
-  String get followersEmptyTitle => 'No followers yet';
+  String get followersEmptyTitle => 'Wala pang follower';
 
   @override
   String get followersUpdateFollowFailed =>
-      'Failed to update follow status. Please try again.';
+      'Hindi na-update ang follow status. Subukan ulit.';
 
   @override
-  String get reportMessageTitle => 'Report Message';
+  String get reportMessageTitle => 'I-report ang Message';
 
   @override
-  String get reportMessageWhyReporting => 'Why are you reporting this message?';
+  String get reportMessageWhyReporting =>
+      'Bakit mo nire-report ang message na ito?';
 
   @override
   String get reportMessageSelectReason =>
-      'Please select a reason for reporting this message';
+      'Pumili ng dahilan para sa pag-report ng message na ito';
 
   @override
-  String get newMessageTitle => 'New message';
+  String get newMessageTitle => 'Bagong message';
 
   @override
-  String get newMessageFindPeople => 'Find people';
+  String get newMessageFindPeople => 'Maghanap ng tao';
 
   @override
   String get newMessageNoContacts =>
-      'No contacts found.\nFollow people to see them here.';
+      'Walang nakitang contact.\nMag-follow ng mga tao para makita sila dito.';
 
   @override
-  String get newMessageNoUsersFound => 'No users found';
+  String get newMessageNoUsersFound => 'Walang nakitang user';
 
   @override
-  String get hashtagSearchTitle => 'Search for hashtags';
+  String get hashtagSearchTitle => 'Maghanap ng hashtag';
 
   @override
-  String get hashtagSearchSubtitle => 'Discover trending topics and content';
+  String get hashtagSearchSubtitle => 'Tuklasin ang trending topics at content';
 
   @override
   String hashtagSearchNoResults(String query) {
-    return 'No hashtags found for \"$query\"';
+    return 'Walang nakitang hashtag para sa \"$query\"';
   }
 
   @override
-  String get hashtagSearchFailed => 'Search failed';
+  String get hashtagSearchFailed => 'Nabigo ang paghahanap';
 
   @override
-  String get userNotAvailableTitle => 'Account not available';
+  String get userNotAvailableTitle => 'Hindi available ang account';
 
   @override
-  String get userNotAvailableBody => 'This account isn\'t available right now.';
+  String get userNotAvailableBody =>
+      'Hindi available ang account na ito ngayon.';
 
   @override
   String get classicVinersTitle => 'OG Viners';
@@ -5834,41 +5848,41 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get blossomValidServerUrl =>
-      'Please enter a valid server URL (e.g., https://blossom.band)';
+      'Maglagay ng valid na server URL (hal., https://blossom.band)';
 
   @override
-  String get blossomSettingsSaved => 'Blossom settings saved';
+  String get blossomSettingsSaved => 'Na-save ang Blossom settings';
 
   @override
-  String get blossomSaveTooltip => 'Save';
+  String get blossomSaveTooltip => 'I-save';
 
   @override
-  String get blossomAboutTitle => 'About Blossom';
+  String get blossomAboutTitle => 'Tungkol sa Blossom';
 
   @override
   String get blossomAboutDescription =>
-      'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. By default, videos are uploaded to Divine\'s Blossom server. Enable the option below to use a custom server instead.';
+      'Ang Blossom ay isang decentralized media storage protocol na nagpapahintulot sa iyong mag-upload ng video sa anumang compatible server. By default, naka-upload ang mga video sa Blossom server ng Divine. I-enable ang option sa baba para gumamit ng custom server.';
 
   @override
-  String get blossomUseCustomServer => 'Use Custom Blossom Server';
+  String get blossomUseCustomServer => 'Gumamit ng Custom Blossom Server';
 
   @override
   String get blossomCustomServerEnabledSubtitle =>
-      'Videos will be uploaded to your custom Blossom server';
+      'Mag-u-upload ang mga video sa custom Blossom server mo';
 
   @override
   String get blossomCustomServerDisabledSubtitle =>
-      'Your videos are currently being uploaded to Divine\'s Blossom server';
+      'Naka-upload ang mga video mo sa Blossom server ng Divine';
 
   @override
   String get blossomCustomServerUrl => 'Custom Blossom Server URL';
 
   @override
   String get blossomCustomServerHelper =>
-      'Enter the URL of your custom Blossom server';
+      'Ilagay ang URL ng custom Blossom server mo';
 
   @override
-  String get blossomPopularServers => 'Popular Blossom Servers';
+  String get blossomPopularServers => 'Mga Popular na Blossom Server';
 
   @override
   String get blossomServerUrlMustUseHttps =>
@@ -5935,39 +5949,39 @@ class AppLocalizationsFil extends AppLocalizations {
   String get invitesGenerateButtonLabel => 'I-generate ang invite';
 
   @override
-  String get invitesNoneAvailable => 'No invites available right now';
+  String get invitesNoneAvailable => 'Walang available na invite ngayon';
 
   @override
-  String get invitesShareWithPeople => 'Share diVine with people you know';
+  String get invitesShareWithPeople => 'I-share ang diVine sa mga kakilala mo';
 
   @override
-  String get invitesUsedInvites => 'Used invites';
+  String get invitesUsedInvites => 'Mga nagamit na invite';
 
   @override
   String invitesShareMessage(String code) {
-    return 'Join me on diVine! Use invite code $code to get started:\nhttps://divine.video/invite/$code';
+    return 'Sumali sa akin sa diVine! Gamitin ang invite code $code para magsimula:\nhttps://divine.video/invite/$code';
   }
 
   @override
-  String get invitesCopyInvite => 'Copy invite';
+  String get invitesCopyInvite => 'I-copy ang invite';
 
   @override
-  String get invitesCopied => 'Invite copied!';
+  String get invitesCopied => 'Na-copy ang invite!';
 
   @override
-  String get invitesShareInvite => 'Share invite';
+  String get invitesShareInvite => 'I-share ang invite';
 
   @override
-  String get invitesShareSubject => 'Join me on diVine';
+  String get invitesShareSubject => 'Sumali sa akin sa diVine';
 
   @override
-  String get invitesClaimed => 'Claimed';
+  String get invitesClaimed => 'Na-claim';
 
   @override
-  String get invitesCouldNotLoad => 'Could not load invites';
+  String get invitesCouldNotLoad => 'Hindi na-load ang mga invite';
 
   @override
-  String get invitesRetry => 'Retry';
+  String get invitesRetry => 'Subukan ulit';
 
   @override
   String get searchSomethingWentWrong => 'May nangyaring problema';
@@ -6193,18 +6207,18 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get notificationRepliedToYourComment => 'replied to your comment';
+  String get notificationRepliedToYourComment => 'nag-reply sa comment mo';
 
   @override
-  String get notificationAndConnector => 'and';
+  String get notificationAndConnector => 'at';
 
   @override
   String notificationOthersCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count others',
-      one: '1 other',
+      other: '$count iba pa',
+      one: '1 iba pa',
     );
     return '$_temp0';
   }
