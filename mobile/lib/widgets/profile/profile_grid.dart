@@ -13,6 +13,8 @@ import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/blocs/profile_saved_videos/profile_saved_videos_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_tab_index_provider.dart';
@@ -127,6 +129,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
   /// Track the userIdHex the BLoCs were created for.
   String? _blocsUserIdHex;
+  bool? _blocsIncludeVideoReplies;
 
   /// Track which tabs have been synced (lazy loading).
   bool _likedTabSynced = false;
@@ -254,6 +257,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final repostsRepository = ref.watch(repostsRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
+    final includeVideoReplies = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.videoReplies),
+    );
     final nostrService = ref.watch(nostrServiceProvider);
     final contentBlocklistRepository = ref.watch(
       contentBlocklistRepositoryProvider,
@@ -262,7 +268,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
     // Create BLoCs if not already created, or recreate if userIdHex changed
     // Store references for refresh capability
-    if (_blocsUserIdHex != widget.userIdHex) {
+    if (_blocsUserIdHex != widget.userIdHex ||
+        _blocsIncludeVideoReplies != includeVideoReplies) {
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
       _collabVideosBloc?.close();
@@ -314,10 +321,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _commentsBloc = ProfileCommentsBloc(
         commentsRepository: commentsRepository,
         targetUserPubkey: widget.userIdHex,
+        includeVideoReplies: includeVideoReplies,
       );
       // Sync deferred until user views Comments tab
 
       _blocsUserIdHex = widget.userIdHex;
+      _blocsIncludeVideoReplies = includeVideoReplies;
 
       // Kick off the lazy sync for the currently selected tab. On a fresh
       // mount this will no-op for tab 0 (videos use [widget.videos] and
