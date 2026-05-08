@@ -679,7 +679,13 @@ class VideosRepository {
   /// Parameters:
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
-  ///   (for pagination)
+  ///   (for pagination, used when [period] is null)
+  /// - [offset]: Pagination offset for the leaderboard path (used when
+  ///   [period] is non-null)
+  /// - [period]: When set, switches to the funnelcake leaderboard endpoint
+  ///   (time-windowed). Returns `[]` if funnelcake is unavailable or throws —
+  ///   no NIP-50 fallback because relays do not expose time-window
+  ///   leaderboards.
   /// - [fetchMultiplier]: How many more videos to fetch for client-side sorting
   ///   fallback (default 4x, so limit=5 fetches 20 videos to sort)
   ///
@@ -689,13 +695,39 @@ class VideosRepository {
   Future<List<VideoEvent>> getPopularVideos({
     int limit = _defaultLimit,
     int? until,
+    int? offset,
+    LeaderboardPeriod? period,
     int fetchMultiplier = 4,
     bool skipCache = false,
   }) async {
+    final cacheKey = period == null ? 'popular' : 'popular:${period.wireValue}';
+
     // Return in-memory cached result when available (initial page only).
-    if (!skipCache && until == null) {
-      final cached = _inMemoryFeedCache?.get('popular');
+    if (!skipCache && until == null && offset == null) {
+      final cached = _inMemoryFeedCache?.get(cacheKey);
       if (cached != null) return cached.videos;
+    }
+
+    // Period-windowed leaderboard path. Funnelcake-only — no NIP-50 fallback,
+    // because no relay exposes server-side time-window leaderboards yet.
+    if (period != null) {
+      if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+        return const [];
+      }
+      try {
+        final stats = await _funnelcakeApiClient.getLeaderboardVideos(
+          period: period,
+          limit: limit,
+          offset: offset,
+        );
+        final videos = _transformVideoStats(stats, sortByCreatedAt: false);
+        if (until == null && offset == null) {
+          _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
+        }
+        return videos;
+      } on FunnelcakeException {
+        return const [];
+      }
     }
 
     // 1. Try Funnelcake API first (best engagement data).
@@ -713,7 +745,7 @@ class VideosRepository {
         // Preserve API order.
         final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
         if (until == null) {
-          _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: videos));
+          _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
         }
         return videos;
       } on FunnelcakeException {
@@ -739,7 +771,7 @@ class VideosRepository {
       // Preserve relay order (don't re-sort by createdAt)
       final videos = _transformAndFilter(nip50Events, sortByCreatedAt: false);
       if (until == null) {
-        _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: videos));
+        _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: videos));
       }
       return videos;
     }
@@ -763,7 +795,7 @@ class VideosRepository {
     // Return only the requested limit
     final result = videos.take(limit).toList();
     if (until == null) {
-      _inMemoryFeedCache?.set('popular', HomeFeedResult(videos: result));
+      _inMemoryFeedCache?.set(cacheKey, HomeFeedResult(videos: result));
     }
     return result;
   }

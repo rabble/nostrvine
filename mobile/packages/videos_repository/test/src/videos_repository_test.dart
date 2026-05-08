@@ -83,6 +83,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(<Filter>[]);
+      registerFallbackValue(LeaderboardPeriod.week);
     });
 
     test('can be instantiated', () {
@@ -3609,6 +3610,230 @@ void main() {
           expect(cached, hasLength(1));
           expect(cached.first.id, equals('pop1'));
         });
+      });
+
+      group('with period (leaderboard path)', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+        });
+
+        test('calls getLeaderboardVideos when period is set', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
+              period: any(named: 'period'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'lb-1',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/leaderboard.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final videos = await repositoryWithApi.getPopularVideos(
+            limit: 10,
+            period: LeaderboardPeriod.week,
+          );
+
+          expect(videos, hasLength(1));
+          expect(videos.first.id, equals('lb-1'));
+          final captured = verify(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
+              period: captureAny(named: 'period'),
+              limit: captureAny(named: 'limit'),
+              offset: captureAny(named: 'offset'),
+            ),
+          ).captured;
+          expect(captured, equals([LeaderboardPeriod.week, 10, null]));
+          verifyNever(
+            () => mockFunnelcakeClient.getWatchingVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+        });
+
+        test('passes offset when provided (period path)', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
+              period: any(named: 'period'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((_) async => <VideoStats>[]);
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getPopularVideos(
+            limit: 25,
+            period: LeaderboardPeriod.month,
+            offset: 100,
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getLeaderboardVideos(
+              period: LeaderboardPeriod.month,
+              limit: 25,
+              offset: 100,
+            ),
+          ).called(1);
+        });
+
+        test(
+          'returns empty list (no NIP-50 fallback) when leaderboard throws',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: any(named: 'period'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenThrow(const FunnelcakeException('down'));
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final videos = await repositoryWithApi.getPopularVideos(
+              limit: 10,
+              period: LeaderboardPeriod.day,
+            );
+
+            expect(videos, isEmpty);
+            verifyNever(
+              () => mockNostrClient.queryEvents(
+                any(),
+                useCache: any(named: 'useCache'),
+              ),
+            );
+          },
+        );
+
+        test(
+          'uses period-specific cache key '
+          '(different periods do not share cache)',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: LeaderboardPeriod.week,
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'week-1',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/week.mp4',
+                ),
+              ],
+            );
+            when(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: LeaderboardPeriod.month,
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'month-1',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/month.mp4',
+                ),
+              ],
+            );
+
+            final feedCache = InMemoryFeedCache();
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+              inMemoryFeedCache: feedCache,
+            );
+
+            await repositoryWithApi.getPopularVideos(
+              period: LeaderboardPeriod.week,
+            );
+            await repositoryWithApi.getPopularVideos(
+              period: LeaderboardPeriod.month,
+            );
+            // Both calls hit the network — cache is keyed by period.
+            verify(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: LeaderboardPeriod.week,
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).called(1);
+            verify(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: LeaderboardPeriod.month,
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'null period preserves existing watching path (no regression)',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getWatchingVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'watching-1',
+                  pubkey: 'p1',
+                  dTag: 'd1',
+                  videoUrl: 'https://example.com/watching.mp4',
+                ),
+              ],
+            );
+
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final videos = await repositoryWithApi.getPopularVideos();
+
+            expect(videos.first.id, equals('watching-1'));
+            verifyNever(
+              () => mockFunnelcakeClient.getLeaderboardVideos(
+                period: any(named: 'period'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            );
+          },
+        );
       });
     });
 
