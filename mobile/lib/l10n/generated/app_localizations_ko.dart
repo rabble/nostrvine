@@ -944,6 +944,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get exploreTabIntegratedApps => '연동된 앱';
 
   @override
+  String get popularFilterLabel => 'Time period';
+
+  @override
+  String get popularFilterRightNow => 'Right Now';
+
+  @override
+  String get popularFilterToday => 'Today';
+
+  @override
+  String get popularFilterWeek => 'This Week';
+
+  @override
+  String get popularFilterMonth => 'This Month';
+
+  @override
+  String get popularFilterAllTime => 'All Time';
+
+  @override
   String get exploreNoVideosAvailable => '이용 가능한 영상이 없어요';
 
   @override

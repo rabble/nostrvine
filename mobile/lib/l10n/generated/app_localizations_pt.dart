@@ -1025,6 +1025,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreTabIntegratedApps => 'Apps integrados';
 
   @override
+  String get popularFilterLabel => 'Time period';
+
+  @override
+  String get popularFilterRightNow => 'Right Now';
+
+  @override
+  String get popularFilterToday => 'Today';
+
+  @override
+  String get popularFilterWeek => 'This Week';
+
+  @override
+  String get popularFilterMonth => 'This Month';
+
+  @override
+  String get popularFilterAllTime => 'All Time';
+
+  @override
   String get exploreNoVideosAvailable => 'Nenhum vídeo disponível';
 
   @override
