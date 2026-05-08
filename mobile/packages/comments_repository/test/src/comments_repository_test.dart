@@ -1391,6 +1391,25 @@ void main() {
         ).captured;
 
         final filters = captured.first as List<Filter>;
+        expect(filters.first.kinds, equals(const [_commentKind]));
+        expect(filters.first.uppercaseE, contains(testRootEventId));
+      });
+
+      test('queries video replies when includeVideoReplies is true', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 0),
+        );
+
+        await repository.getCommentsCount(
+          testRootEventId,
+          includeVideoReplies: true,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.countEvents(captureAny()),
+        ).captured;
+
+        final filters = captured.first as List<Filter>;
         expect(filters.first.kinds, contains(_commentKind));
         expect(filters.first.kinds, contains(EventKind.videoVertical));
         expect(filters.first.uppercaseE, contains(testRootEventId));

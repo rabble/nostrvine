@@ -36,12 +36,14 @@ class VideoInteractionsBloc
     required RepostsRepository repostsRepository,
     String? addressableId,
     int? initialLikeCount,
+    bool includeVideoReplies = false,
   }) : _eventId = eventId,
        _authorPubkey = authorPubkey,
        _likesRepository = likesRepository,
        _commentsRepository = commentsRepository,
        _repostsRepository = repostsRepository,
        _addressableId = addressableId,
+       _includeVideoReplies = includeVideoReplies,
        super(VideoInteractionsState(likeCount: initialLikeCount)) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
     // Toggle handlers fire-and-forget the publish (see _onLikeToggled),
@@ -66,6 +68,7 @@ class VideoInteractionsBloc
   final LikesRepository _likesRepository;
   final CommentsRepository _commentsRepository;
   final RepostsRepository _repostsRepository;
+  final bool _includeVideoReplies;
 
   /// Addressable ID for repost operations (format: `kind:pubkey:d-tag`).
   /// Null if the video doesn't have a d-tag (non-addressable event).
@@ -164,6 +167,7 @@ class VideoInteractionsBloc
         _commentsRepository.getCommentsCount(
           _eventId,
           rootAddressableId: _addressableId,
+          includeVideoReplies: _includeVideoReplies,
         ),
         repostCountFuture,
       ]);

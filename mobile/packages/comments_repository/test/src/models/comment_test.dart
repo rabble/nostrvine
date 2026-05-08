@@ -192,6 +192,7 @@ void main() {
             DateTime(2024),
             'root',
             'rootAuthor',
+            null,
             'replyTo',
             'replyAuthor',
             'https://example.com/video.mp4',

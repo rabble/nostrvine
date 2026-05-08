@@ -334,6 +334,7 @@ class CommentsRepository {
   Future<int> getCommentsCount(
     String rootEventId, {
     String? rootAddressableId,
+    bool includeVideoReplies = false,
   }) async {
     final cached = _commentCountCache[rootEventId];
     if (cached != null) return cached;
@@ -341,7 +342,7 @@ class CommentsRepository {
     try {
       // NIP-22: Filter by Kind 1111 and uppercase E tag
       final filterByE = Filter(
-        kinds: _threadKinds(includeVideoReplies: true),
+        kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
         uppercaseE: [rootEventId],
       );
 
@@ -350,7 +351,7 @@ class CommentsRepository {
       // If we have an addressable ID, also query by uppercase A tag
       if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
         final filterByA = Filter(
-          kinds: _threadKinds(includeVideoReplies: true),
+          kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
           uppercaseA: [rootAddressableId],
         );
 
@@ -541,6 +542,7 @@ class CommentsRepository {
     required String authorPubkey,
     int limit = _authorCommentsLimit,
     DateTime? before,
+    bool includeVideoReplies = true,
   }) async {
     try {
       final untilTimestamp = before != null
@@ -548,7 +550,7 @@ class CommentsRepository {
           : null;
 
       final filter = Filter(
-        kinds: _threadKinds(includeVideoReplies: false),
+        kinds: _threadKinds(includeVideoReplies: includeVideoReplies),
         authors: [authorPubkey],
         limit: limit,
         until: untilTimestamp,

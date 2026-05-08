@@ -63,9 +63,28 @@ void main() {
       final filters = captured.first as List<Filter>;
       expect(filters, hasLength(1));
       expect(filters.first.kinds, contains(_commentKind));
+      expect(filters.first.kinds, contains(EventKind.videoVertical));
       expect(filters.first.authors, contains(testAuthorPubkey));
       expect(filters.first.limit, equals(25));
       expect(filters.first.until, isNull);
+    });
+
+    test('excludes video replies when includeVideoReplies is false', () async {
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => []);
+
+      await repository.loadCommentsByAuthor(
+        authorPubkey: testAuthorPubkey,
+        includeVideoReplies: false,
+      );
+
+      final captured = verify(
+        () => mockNostrClient.queryEvents(captureAny()),
+      ).captured;
+
+      final filters = captured.first as List<Filter>;
+      expect(filters.first.kinds, equals(const [_commentKind]));
     });
 
     test('applies pagination cursor via until parameter', () async {

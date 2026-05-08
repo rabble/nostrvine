@@ -480,6 +480,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
     final repostsRepository = ref.read(repostsRepositoryProvider);
+    final showVideoReplies = ref.read(
+      isFeatureEnabledProvider(FeatureFlag.videoReplies),
+    );
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
     final addressableId = widget.video.addressableId;
@@ -491,6 +494,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
       addressableId: addressableId,
+      includeVideoReplies: showVideoReplies,
       initialLikeCount: widget.video.nostrLikeCount != null
           ? widget.video.totalLikes
           : null,

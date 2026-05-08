@@ -214,6 +214,23 @@
     "profileSetupUseOwnNip05": "Gamitin ang sarili mong NIP-05 address",
     "profileSetupNip05AddressLabel": "NIP-05 Address",
     "profileSetupProfilePicturePreview": "Preview ng profile picture",
+    "videoMetadataShareReplyToFeedTitle": "Ibahagi rin sa feed ko",
+    "videoMetadataShareReplyToFeedSubtitle": "Kapag naka-off, sa thread lang ng komento mananatili ang video na ito.",
+    "commentsRecordVideoButtonLabel": "Mag-record ng video comment",
+    "commentsOpenVideoLabel": "Buksan ang video comment",
+    "commentsMuteVideoReplyLabel": "I-mute ang video reply",
+    "commentsUnmuteVideoReplyLabel": "I-unmute ang video reply",
+    "commentsOpenReplyParentLabel": "Buksan ang video na nire-replyan nito",
+    "commentsReplyParentSectionTitle": "Reply sa video",
+    "commentsReplyParentLabel": "Reply kay {target}",
+    "@commentsReplyParentLabel": {
+        "placeholders": {
+            "target": {
+                "type": "String"
+            }
+        }
+    },
+    "commentsReplyParentFallbackLabel": "Reply sa video",
     "nostrInfoIntroBuiltOn": "Ang DiVine ay binuo sa Nostr,",
     "nostrInfoIntroDescription": " isang censorship-resistant na open protocol na nagbibigay-daan sa mga tao na makipag-usap online nang hindi umaasa sa iisang kompanya o platform. ",
     "nostrInfoIntroIdentity": "Kapag nag-sign up ka sa Divine, makakakuha ka ng bagong Nostr identity.",
