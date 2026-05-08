@@ -955,6 +955,160 @@ void main() {
           ).called(2);
         });
       });
+
+      group('bulk stats hydration', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+        late VideosRepository repositoryWithApi;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+        });
+
+        test(
+          'hydrates Funnelcake videos that lack views with bulk stats',
+          () async {
+            when(
+              () => mockFunnelcakeClient.getRecentVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'author',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+            );
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+            ).thenAnswer(
+              (_) async => const BulkVideoStatsResponse(
+                stats: {
+                  'event-1': BulkVideoStatsEntry(
+                    eventId: 'event-1',
+                    reactions: 6,
+                    comments: 1,
+                    reposts: 0,
+                    views: 14,
+                    loops: 7,
+                  ),
+                },
+              ),
+            );
+
+            final result = await repositoryWithApi.getNewVideos();
+
+            expect(result, hasLength(1));
+            expect(result.first.rawTags['views'], equals('14'));
+            expect(result.first.totalLoops, equals(21));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+            ).called(1);
+          },
+        );
+
+        test(
+          'hydrates relay-fallback videos that lack views with bulk stats',
+          () async {
+            when(
+              () => mockFunnelcakeClient.getRecentVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenThrow(const FunnelcakeException('Network error'));
+
+            final relayEvent = _createVideoEvent(
+              id: 'relay-event',
+              pubkey: 'author',
+              videoUrl: 'https://example.com/relay.mp4',
+              createdAt: 1704067200,
+            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [relayEvent]);
+            when(
+              () => mockFunnelcakeClient.getBulkVideoStats(['relay-event']),
+            ).thenAnswer(
+              (_) async => const BulkVideoStatsResponse(
+                stats: {
+                  'relay-event': BulkVideoStatsEntry(
+                    eventId: 'relay-event',
+                    reactions: 3,
+                    comments: 1,
+                    reposts: 0,
+                    views: 11,
+                  ),
+                },
+              ),
+            );
+
+            final result = await repositoryWithApi.getNewVideos();
+
+            expect(result, hasLength(1));
+            expect(result.first.rawTags['views'], equals('11'));
+            expect(result.first.totalLoops, equals(11));
+            verify(
+              () => mockFunnelcakeClient.getBulkVideoStats(['relay-event']),
+            ).called(1);
+          },
+        );
+
+        test('caches the hydrated videos, not the un-hydrated ones', () async {
+          final feedCache = InMemoryFeedCache();
+          final repoWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            inMemoryFeedCache: feedCache,
+          );
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'event-1',
+                pubkey: 'author',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/video.mp4',
+              ),
+            ],
+          );
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+          ).thenAnswer(
+            (_) async => const BulkVideoStatsResponse(
+              stats: {
+                'event-1': BulkVideoStatsEntry(
+                  eventId: 'event-1',
+                  reactions: 0,
+                  comments: 0,
+                  reposts: 0,
+                  views: 14,
+                ),
+              },
+            ),
+          );
+
+          await repoWithCache.getNewVideos();
+          final cached = await repoWithCache.getNewVideos();
+
+          expect(cached.first.rawTags['views'], equals('14'));
+          expect(cached.first.totalLoops, equals(14));
+          verify(
+            () => mockFunnelcakeClient.getBulkVideoStats(['event-1']),
+          ).called(1);
+        });
+      });
     });
 
     group('getHomeFeedVideos', () {

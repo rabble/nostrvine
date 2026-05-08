@@ -589,10 +589,12 @@ class VideosRepository {
           limit: limit,
           until: until,
         );
+        // Hydrate views/loops — list endpoint omits them for some rows.
+        final hydrated = await _hydrateVideosWithBulkStats(videos);
         if (until == null) {
-          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
         }
-        return videos;
+        return hydrated;
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -603,10 +605,11 @@ class VideosRepository {
       limit: limit,
       until: until,
     );
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
     if (until == null) {
-      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
     }
-    return videos;
+    return hydrated;
   }
 
   Future<List<VideoEvent>> _fetchVisibleRecentVideosFromStatsApi({
