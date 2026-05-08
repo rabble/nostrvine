@@ -60,7 +60,8 @@ enum FeatureFlag {
     'Show Nostr relay configuration and diagnostics in Settings. '
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
-  );
+  )
+  ;
 
   const FeatureFlag(this.displayName, this.description);
 
