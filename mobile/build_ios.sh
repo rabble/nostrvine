@@ -127,14 +127,39 @@ if [[ -f .env ]]; then
     fi
 fi
 
+PUB_HASH_FILE=".dart_tool/.last_pub_get_hash"
+current_pub_hash() {
+    if [[ -f pubspec.yaml ]]; then
+        cat pubspec.yaml pubspec.lock 2>/dev/null | shasum -a 256 | awk '{print $1}'
+    fi
+}
+pub_get_is_fresh() {
+    [[ -f .dart_tool/package_config.json ]] || return 1
+    [[ -f "$PUB_HASH_FILE" ]] || return 1
+    [[ "$(cat "$PUB_HASH_FILE" 2>/dev/null)" == "$(current_pub_hash)" ]] || return 1
+    return 0
+}
+mark_pub_get_fresh() {
+    mkdir -p .dart_tool
+    current_pub_hash > "$PUB_HASH_FILE"
+}
+
 if [[ "$PUB_GET" == "true" ]]; then
-    echo "📦 Getting Flutter dependencies..."
-    flutter pub get
+    if pub_get_is_fresh; then
+        echo "✅ Dependencies up to date (pubspec unchanged) — skipping pub get"
+    elif [[ "$CODEGEN_MODE" == "always" ]]; then
+        echo "⏭️  Skipping standalone pub get — build_runner will resolve once"
+    else
+        echo "📦 Getting Flutter dependencies..."
+        flutter pub get
+        mark_pub_get_fresh
+    fi
 fi
 
 if [[ "$CODEGEN_MODE" == "always" ]]; then
     echo "🔧 Generating code with build_runner..."
     dart run build_runner build --delete-conflicting-outputs
+    mark_pub_get_fresh
 else
     echo "⏭️  Skipping build_runner for $BUILD_MODE (use --codegen if needed)"
 fi

@@ -16,6 +16,21 @@ Run these commands from `mobile/`.
 
 3) If codegen changed, run one explicit rebuild command, then return to `run_dev`.
 
+### Why repeat builds are quick
+
+The build scripts hash `pubspec.yaml` + `pubspec.lock` after a successful
+resolve and store it under `.dart_tool/.last_pub_get_hash`. On the next
+run the script compares hashes and skips `flutter pub get` entirely if
+nothing changed — no re-download, no re-resolve. Editing `pubspec.yaml`
+or pulling a branch with a new `pubspec.lock` invalidates the hash and
+triggers a single `pub get`. `flutter clean` wipes `.dart_tool/`, so the
+first build after a clean will resolve once.
+
+When `--codegen` is in effect, the standalone `flutter pub get` is
+skipped because `dart run build_runner` runs its own resolve — that
+removes the duplicate "Resolving dependencies / Downloading packages"
+pass that older versions of these scripts produced.
+
 ## When You See Build Errors
 
 ### `pod install` or dependency lock issues
