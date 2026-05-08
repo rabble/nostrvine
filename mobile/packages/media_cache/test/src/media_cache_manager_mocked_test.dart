@@ -1317,6 +1317,124 @@ void main() {
         final sourceDir = cachedFile.parent;
         if (sourceDir.existsSync()) sourceDir.deleteSync(recursive: true);
       });
+
+      test(
+        'cacheFile in-flight: cacheFileCancellable joins without '
+        'starting a second download',
+        () async {
+          final mockFile = MockFile();
+          final mockFileInfo = MockFileInfo();
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final downloadCompleter = Completer<FileInfo>();
+          var downloadCallCount = 0;
+
+          when(mockFile.existsSync).thenReturn(true);
+          when(() => mockFile.path).thenReturn('/test/path/shared.mp4');
+          when(() => mockFileInfo.file).thenReturn(mockFile);
+
+          final fakeDownloader = FakeCancellableDownloader();
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: 'cross_dedup_cf_first_$timestamp',
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: fakeDownloader,
+            mockGetFileFromCache: (key) async => null,
+            mockDownloadFile: (url, {key, authHeaders}) {
+              downloadCallCount++;
+              return downloadCompleter.future;
+            },
+          );
+
+          // Start cacheFile first so it registers in _pendingCacheOperations.
+          final cacheFileFuture = cacheManager.cacheFile(
+            'https://example.com/shared.mp4',
+            key: 'shared_key',
+          );
+          // Yield so cacheFile's async getFileFromCache check finishes and
+          // the pending op is registered before cacheFileCancellable runs.
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+
+          // cacheFileCancellable for the same key must join the in-flight
+          // operation rather than starting its own download.
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/shared.mp4',
+            key: 'shared_key',
+          );
+
+          // No separate cancellable download was issued.
+          expect(fakeDownloader.downloads, isEmpty);
+
+          // Resolve the original cacheFile download.
+          downloadCompleter.complete(mockFileInfo);
+
+          final cfFile = await cacheFileFuture;
+          final opFile = await op.file;
+          expect(cfFile, isNotNull);
+          expect(opFile, isNotNull);
+          expect(cfFile!.path, equals(opFile!.path));
+          expect(downloadCallCount, equals(1));
+        },
+      );
+
+      test(
+        'cacheFileCancellable in-flight: cacheFile joins without '
+        'starting a second download',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'cross_dedup_ccf_first_$timestamp';
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          final cachedFile = await createTestFile(cacheDir, 'shared.mp4');
+
+          final fakeDownloader = FakeCancellableDownloader();
+          var downloadFileCallCount = 0;
+
+          cacheManager = TestableMediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            downloaderOverride: fakeDownloader,
+            mockGetFileFromCache: (key) async => null,
+            mockDownloadFile: (url, {key, authHeaders}) async {
+              downloadFileCallCount++;
+              throw Exception('should not be called');
+            },
+          );
+
+          // Start cacheFileCancellable first; it registers the pending op
+          // synchronously before the async download begins.
+          final op = cacheManager.cacheFileCancellable(
+            'https://example.com/shared.mp4',
+            key: 'shared_key',
+          );
+          // Yield so cacheFile's getFileFromCache check resolves and sees
+          // the pending op that cacheFileCancellable registered.
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+
+          // cacheFile for the same key should join the in-flight op.
+          final cacheFileFuture = cacheManager.cacheFile(
+            'https://example.com/shared.mp4',
+            key: 'shared_key',
+          );
+
+          // Complete the single cancellable download.
+          await pumpDownloads(fakeDownloader);
+          fakeDownloader.downloads.single.completeWith(cachedFile);
+          final opFile = await op.file;
+          final cfFile = await cacheFileFuture;
+
+          expect(opFile, isNotNull);
+          expect(cfFile, isNotNull);
+          expect(opFile!.path, equals(cfFile!.path));
+          // downloadFile was never invoked — cacheFile joined the op.
+          expect(downloadFileCallCount, equals(0));
+          expect(fakeDownloader.downloads, hasLength(1));
+
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
     });
   });
 }

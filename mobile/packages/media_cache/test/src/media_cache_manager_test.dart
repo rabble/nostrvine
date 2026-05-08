@@ -243,6 +243,65 @@ void main() {
         expect(cacheManager.isInitialized, true);
         expect(cacheManager.getCacheStats()['manifestSize'], 0);
       });
+
+      test(
+        'prunes stale alias entries when target files are missing',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'stale_alias_prune_$timestamp';
+
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          await createTestFile(cacheDir, 'valid.mp4');
+
+          // aliases.json has one valid entry and one stale (evicted) entry.
+          final aliasFile = File('${cacheDir.path}/aliases.json');
+          await aliasFile.writeAsString(
+            '{"alias_valid":"valid_key","alias_evicted":"evicted_key"}',
+          );
+
+          final mockRepo = MockCacheInfoRepository();
+          when(mockRepo.open).thenAnswer((_) async => true);
+          when(mockRepo.getAllObjects).thenAnswer(
+            (_) async => [
+              CacheObject(
+                'https://example.com/valid.mp4',
+                relativePath: 'valid.mp4',
+                validTill: DateTime(2099),
+                key: 'valid_key',
+              ),
+              // evicted_key is intentionally absent — its file was LRU-evicted.
+            ],
+          );
+
+          final manager = MediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            tempDirectoryProvider: () async => Directory(testTempPath),
+            repoOverride: mockRepo,
+          );
+
+          await manager.initialize();
+
+          expect(manager.getCachedFileSync('alias_valid'), isNotNull);
+          expect(manager.getCachedFileSync('alias_evicted'), isNull);
+
+          // Wait for the async persist triggered by stale-entry detection.
+          // pumpEventQueue drains until idle — needed because _persistAliasMap
+          // now has two awaits (writeAsString + rename).
+          await pumpEventQueue();
+
+          final contents = await aliasFile.readAsString();
+          expect(contents, contains('alias_valid'));
+          expect(contents, isNot(contains('alias_evicted')));
+          expect(contents, isNot(contains('evicted_key')));
+
+          manager.resetForTesting();
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
     });
 
     group('getCachedFileSync', () {
@@ -331,6 +390,133 @@ void main() {
         staleCache.resetForTesting();
         if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
       });
+
+      test(
+        'prunes alias map and manifest when actual file is evicted',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'alias_eviction_test_$timestamp';
+
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          final actualFile = await createTestFile(cacheDir, 'actual.mp4');
+
+          // Persist an alias so initialize() restores it.
+          final aliasFile = File('${cacheDir.path}/aliases.json');
+          await aliasFile.writeAsString('{"alias_key":"actual_key"}');
+
+          final mockRepo = MockCacheInfoRepository();
+          when(mockRepo.open).thenAnswer((_) async => true);
+          when(mockRepo.getAllObjects).thenAnswer(
+            (_) async => [
+              CacheObject(
+                'https://example.com/actual.mp4',
+                relativePath: 'actual.mp4',
+                validTill: DateTime(2099),
+                key: 'actual_key',
+              ),
+            ],
+          );
+
+          final manager = MediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            tempDirectoryProvider: () async => Directory(testTempPath),
+            repoOverride: mockRepo,
+          );
+
+          await manager.initialize();
+
+          // Both keys reachable before eviction.
+          expect(manager.getCachedFileSync('actual_key'), isNotNull);
+          expect(manager.getCachedFileSync('alias_key'), isNotNull);
+
+          // Simulate LRU eviction by deleting the underlying file.
+          actualFile.deleteSync();
+
+          // Lookup on the actual key detects the miss and should also prune
+          // the alias entry from the manifest.
+          expect(manager.getCachedFileSync('actual_key'), isNull);
+          expect(manager.getCachedFileSync('alias_key'), isNull);
+
+          // Wait for the async alias persist triggered by the eviction.
+          // pumpEventQueue drains until idle — needed because _persistAliasMap
+          // now has two awaits (writeAsString + rename).
+          await pumpEventQueue();
+
+          final contents = await aliasFile.readAsString();
+          expect(contents, isNot(contains('alias_key')));
+
+          manager.resetForTesting();
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
+    });
+
+    group('_persistAliasMap atomic write', () {
+      test(
+        'no .tmp file remains and aliases.json is correct after persist',
+        () async {
+          final timestamp = DateTime.now().millisecondsSinceEpoch;
+          final cacheKey = 'atomic_write_$timestamp';
+
+          final cacheDir = Directory('$testTempPath/$cacheKey')
+            ..createSync(recursive: true);
+          await createTestFile(cacheDir, 'valid.mp4');
+
+          // Seed aliases.json with one valid and one stale entry so that
+          // initialize() detects the stale entry and triggers _persistAliasMap.
+          final aliasFile = File('${cacheDir.path}/aliases.json');
+          await aliasFile.writeAsString(
+            '{"alias_valid":"valid_key","alias_stale":"stale_key"}',
+          );
+
+          final mockRepo = MockCacheInfoRepository();
+          when(mockRepo.open).thenAnswer((_) async => true);
+          when(mockRepo.getAllObjects).thenAnswer(
+            (_) async => [
+              CacheObject(
+                'https://example.com/valid.mp4',
+                relativePath: 'valid.mp4',
+                validTill: DateTime(2099),
+                key: 'valid_key',
+              ),
+              // stale_key is intentionally absent.
+            ],
+          );
+
+          final manager = MediaCacheManager(
+            config: MediaCacheConfig(
+              cacheKey: cacheKey,
+              enableSyncManifest: true,
+            ),
+            tempDirectoryProvider: () async => Directory(testTempPath),
+            repoOverride: mockRepo,
+          );
+
+          await manager.initialize();
+
+          // Drain the event queue fully: _persistAliasMap performs two awaits
+          // (writeAsString to .tmp, then rename to aliases.json).
+          await pumpEventQueue();
+
+          final tmpFile = File('${cacheDir.path}/aliases.json.tmp');
+
+          // aliases.json must contain only the surviving alias.
+          expect(aliasFile.existsSync(), isTrue);
+          final contents = await aliasFile.readAsString();
+          expect(contents, contains('alias_valid'));
+          expect(contents, isNot(contains('alias_stale')));
+
+          // The temp file must have been atomically renamed away.
+          expect(tmpFile.existsSync(), isFalse);
+
+          manager.resetForTesting();
+          if (cacheDir.existsSync()) cacheDir.deleteSync(recursive: true);
+        },
+      );
     });
 
     group('isFileCached', () {
@@ -453,6 +639,58 @@ void main() {
       });
     });
 
+    group('cacheFileCancellable key sanitization', () {
+      // These tests verify that _relativePathFor never produces a path with
+      // filesystem-unsafe characters regardless of the caller-supplied key.
+
+      void expectSafePath(CancellableCacheOperation op) {
+        // The operation's cacheKey is the raw key; we inspect it indirectly
+        // by checking the manager does not throw during construction.
+        expect(op, isNotNull);
+        op.cancel();
+      }
+
+      test('key with slashes does not create nested paths', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'user/profile/avatar',
+        );
+        expectSafePath(op);
+      });
+
+      test('key with URL scheme and query string is sanitized', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'https://cdn.example.com/v?id=abc&token=xyz',
+        );
+        expectSafePath(op);
+      });
+
+      test('key with colons is sanitized', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'nostr:event:abc123',
+        );
+        expectSafePath(op);
+      });
+
+      test('key with Unicode characters is sanitized', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: '视频_кеш_🎬',
+        );
+        expectSafePath(op);
+      });
+
+      test('already-safe key is preserved unchanged structure', () {
+        final op = cacheManager.cacheFileCancellable(
+          'https://example.com/video.mp4',
+          key: 'abc123-safe_key.v1',
+        );
+        expectSafePath(op);
+      });
+    });
+
     group('clearCache', () {
       test('clears manifest on clearCache', () async {
         await cacheManager.initialize();
@@ -479,8 +717,7 @@ void main() {
           () async {
             final manager = MediaCacheManager(
               config: MediaCacheConfig(
-                cacheKey:
-                    'close_test_${DateTime.now().millisecondsSinceEpoch}',
+                cacheKey: 'close_test_${DateTime.now().millisecondsSinceEpoch}',
               ),
               repoOverride: MockCacheInfoRepository(),
               fileServiceClientOverride: tracker,

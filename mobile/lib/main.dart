@@ -316,6 +316,12 @@ StartupCoordinator _createStartupCoordinator(ProviderContainer container) {
     optional: true,
   );
 
+  // Intentionally essential (not deferred): the manifest must be ready before
+  // the first frame so getCachedFileSync() can serve already-cached videos
+  // instantly on cold launch without falling through to the slower async path.
+  // The I/O cost (aliases.json read + existsSync per entry) is accepted as
+  // the price for zero-latency cache hits from frame 1. If this ever regresses
+  // cold-start on low-end devices, profile first before moving back to deferred.
   coordinator.registerService(
     name: 'VideoCacheManifest',
     phase: StartupPhase.essential,

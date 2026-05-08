@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -37,12 +38,16 @@ abstract class CancellableDownloader {
 
 /// Default [CancellableDownloader] backed by an [http.Client].
 ///
-/// Cancelling subscribes/unsubscribes from the streamed response, which
-/// `dart:io` interprets as a signal to release the underlying socket back
-/// to the pool. This sidesteps the connection-pool starvation problem that
-/// occurs when stalled `flutter_cache_manager` downloads cannot be torn
+/// Once the response stream has started, cancelling unsubscribes from it,
+/// which `dart:io` interprets as a signal to release the underlying socket
+/// back to the pool. This sidesteps the connection-pool starvation problem
+/// that occurs when stalled `flutter_cache_manager` downloads cannot be torn
 /// down and continue to occupy `maxConnectionsPerHost` slots until their
 /// `connectionTimeout` (often >> our stall window) trips.
+///
+/// Note: if `cancel()` is called while the initial request is still in
+/// flight (before headers arrive), the socket cannot be interrupted and
+/// remains in use until the response headers are received.
 class HttpCancellableDownloader implements CancellableDownloader {
   /// Creates a downloader that issues requests on the given [http.Client].
   HttpCancellableDownloader(this._client);
@@ -90,6 +95,10 @@ class _HttpDownload implements CancellableDownload {
     try {
       final uri = Uri.parse(_url);
       if (uri.scheme.toLowerCase() != 'https') {
+        developer.log(
+          'CancellableDownload: rejecting non-https url $_url',
+          name: 'MediaCache',
+        );
         _safeComplete(null);
         return;
       }
@@ -117,6 +126,7 @@ class _HttpDownload implements CancellableDownload {
       _sink = _file.openWrite();
       _subscription = response.stream.listen(
         (chunk) {
+          if (_isCancelled) return;
           try {
             _sink?.add(chunk);
           } on Object catch (_) {

@@ -391,6 +391,7 @@ class MediaCacheManager extends CacheManager {
         try {
           final decoded = jsonDecode(await aliasFile.readAsString());
           if (decoded is Map<String, dynamic>) {
+            var hadStaleEntries = false;
             for (final entry in decoded.entries) {
               final actualKey = entry.value;
               if (actualKey is! String) continue;
@@ -398,7 +399,15 @@ class MediaCacheManager extends CacheManager {
               if (actualPath != null) {
                 _aliasMap[entry.key] = actualKey;
                 _cacheManifest[entry.key] = actualPath;
+              } else {
+                // Target was evicted by flutter_cache_manager's LRU; drop
+                // the stale entry rather than letting aliases.json grow
+                // unbounded across sessions.
+                hadStaleEntries = true;
               }
+            }
+            if (hadStaleEntries) {
+              unawaited(_persistAliasMap());
             }
           }
         } on Exception catch (_) {
@@ -430,7 +439,9 @@ class MediaCacheManager extends CacheManager {
           baseCacheDir.createSync(recursive: true);
         }
         final aliasFile = File(path.join(baseCacheDir.path, 'aliases.json'));
-        await aliasFile.writeAsString(jsonEncode(snapshot), flush: true);
+        final tmpFile = File('${aliasFile.path}.tmp');
+        await tmpFile.writeAsString(jsonEncode(snapshot), flush: true);
+        await tmpFile.rename(aliasFile.path);
       } on Exception catch (_) {
         // Best-effort; in-memory alias map still works for this session.
       }
@@ -463,8 +474,19 @@ class MediaCacheManager extends CacheManager {
     // Verify file still exists
     final file = File(cachedPath);
     if (!file.existsSync()) {
-      // Remove stale entry from manifest
+      // Remove stale entry from manifest and any aliases pointing at it.
       _cacheManifest.remove(key);
+      final orphanedAliases = _aliasMap.entries
+          .where((e) => e.value == key)
+          .map((e) => e.key)
+          .toList(growable: false);
+      if (orphanedAliases.isNotEmpty) {
+        for (final alias in orphanedAliases) {
+          _aliasMap.remove(alias);
+          _cacheManifest.remove(alias);
+        }
+        unawaited(_persistAliasMap());
+      }
       metrics.misses++;
       return null;
     }
@@ -593,6 +615,41 @@ class MediaCacheManager extends CacheManager {
       if (cached != null) return CancellableCacheOperation.completed(cached);
     }
 
+    // Join an in-flight download for the same key (started by either
+    // cacheFile or a prior cacheFileCancellable call) instead of launching
+    // a second concurrent download that would orphan the first file on disk.
+    if (_pendingCacheOperations.containsKey(key)) {
+      final sharedFuture = _pendingCacheOperations[key]!.future;
+      var localCancelled = false;
+      final localCompleter = Completer<File?>();
+      sharedFuture.then((file) {
+        if (!localCompleter.isCompleted) {
+          localCompleter.complete(localCancelled ? null : file);
+        }
+      });
+      final joinOp = CancellableCacheOperation.fromDownload(
+        _DeferredDownload(
+          future: localCompleter.future,
+          cancel: () {
+            if (localCancelled) return;
+            localCancelled = true;
+            if (!localCompleter.isCompleted) localCompleter.complete();
+          },
+          // coverage:ignore-start
+          isCancelledGetter: () => localCancelled,
+          // coverage:ignore-end
+        ),
+        cacheKey: key,
+      );
+      _activeCancellableOperations.add(joinOp);
+      unawaited(
+        joinOp.file.whenComplete(() {
+          _activeCancellableOperations.remove(joinOp);
+        }),
+      );
+      return joinOp;
+    }
+
     if (trackPrefetchMetrics) {
       _prefetchedKeys.add(key);
       metrics.prefetchedTotal++;
@@ -600,6 +657,10 @@ class MediaCacheManager extends CacheManager {
 
     final relativePath = _relativePathFor(key, url);
     final completer = Completer<File?>();
+    // Register before the async download starts so any concurrent caller
+    // (cacheFile or another cacheFileCancellable) for the same key joins
+    // this operation instead of issuing a second download.
+    _pendingCacheOperations[key] = completer;
     CancellableDownload? activeDownload;
     var cancelledBeforeStart = false;
 
@@ -647,6 +708,8 @@ class MediaCacheManager extends CacheManager {
         if (!completer.isCompleted) completer.complete(file);
       } on Object {
         if (!completer.isCompleted) completer.complete();
+      } finally {
+        _pendingCacheOperations.remove(key);
       }
     }
 
@@ -694,11 +757,16 @@ class MediaCacheManager extends CacheManager {
   /// Generates a unique relative filename for [key]. The filename embeds the
   /// cache key plus a monotonic counter and timestamp so concurrent
   /// downloads of the same key cannot collide on disk.
+  ///
+  /// Non-filesystem-safe characters (slashes, colons, `?`, Unicode, etc.) in
+  /// [key] are replaced with `_` so the path never creates unintended
+  /// sub-directories or fails on `File.openWrite`.
   String _relativePathFor(String key, String url) {
+    final safeKey = key.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
     final ext = _extensionFor(url);
     final seq = ++_downloadSeq;
     final ts = DateTime.now().microsecondsSinceEpoch;
-    return '${key}_${ts}_$seq$ext';
+    return '${safeKey}_${ts}_$seq$ext';
   }
 
   String _extensionFor(String url) {
