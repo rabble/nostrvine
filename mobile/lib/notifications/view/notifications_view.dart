@@ -11,6 +11,8 @@ import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/widgets/widgets.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart'
+    show relayNotificationsProvider;
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/notification_target_resolver.dart';
@@ -51,10 +53,21 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     _scrollController.addListener(_onScroll);
 
     // Mark all notifications as read when the screen is opened.
+    //
+    // Two separate mark-read calls are needed because the inbox uses two
+    // independent systems:
+    //   1. NotificationFeedBloc — drives the list shown in this view.
+    //   2. relayNotificationsProvider — drives the nav-bar dot and the
+    //      "Notifications" badge on the inbox toggle.
+    // The BLoC handles its own read state; the Riverpod provider must be
+    // updated here so the nav dot clears immediately when the user opens
+    // the Notifications tab.
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<NotificationFeedBloc>().add(
         const NotificationFeedMarkAllRead(),
       );
+      ref.read(relayNotificationsProvider.notifier).markAllAsRead();
     });
   }
 

@@ -107,18 +107,21 @@ void main() {
     );
 
     group('NotificationFeedStarted', () {
-      final page = NotificationPage(
-        items: [_videoNotif()],
-        unreadCount: 1,
-        hasMore: true,
-      );
-
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits [loading, loaded] on success',
+        'marks all unread notifications as read immediately on load',
         setUp: () {
           when(
             () => mockNotificationRepo.refresh(),
-          ).thenAnswer((_) async => page);
+          ).thenAnswer(
+            (_) async => NotificationPage(
+              items: [_videoNotif(), _actorNotif()],
+              unreadCount: 2,
+              hasMore: true,
+            ),
+          );
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) async {});
         },
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
@@ -126,10 +129,42 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.loading),
           NotificationFeedState(
             status: NotificationFeedStatus.loaded,
-            notifications: page.items,
-            unreadCount: 1,
+            notifications: [
+              _videoNotif(isRead: true),
+              _actorNotif(isRead: true),
+            ],
           ),
         ],
+        verify: (_) {
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'skips markAllAsRead when all notifications are already read',
+        setUp: () {
+          when(
+            () => mockNotificationRepo.refresh(),
+          ).thenAnswer(
+            (_) async => NotificationPage(
+              items: [_videoNotif(isRead: true)],
+              unreadCount: 0,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_videoNotif(isRead: true)],
+            hasMore: false,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+        },
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
@@ -818,6 +853,9 @@ void main() {
             ),
           );
           when(() => mockFollowRepo.isFollowing(pubkey)).thenReturn(true);
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) async {});
         },
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
@@ -831,9 +869,9 @@ void main() {
                 pubkey: pubkey,
                 displayName: 'Carol',
                 isFollowingBack: true,
+                isRead: true,
               ),
             ],
-            unreadCount: 1,
             hasMore: false,
           ),
         ],
@@ -890,6 +928,9 @@ void main() {
             ),
           );
           when(() => mockFollowRepo.isFollowing(pubkey)).thenReturn(true);
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) async {});
         },
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),

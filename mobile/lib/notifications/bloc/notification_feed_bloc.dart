@@ -78,6 +78,15 @@ class NotificationFeedBloc
   }
 
   /// Handle initial load.
+  ///
+  /// After the page loads, immediately marks all unread notifications as read
+  /// so the "notification not going away" race condition is avoided. The
+  /// [NotificationsView] also dispatches [NotificationFeedMarkAllRead] from
+  /// its `initState`, but that event arrives before the async API call
+  /// completes — meaning the early-exit guard in [_onMarkAllRead] sees an
+  /// empty list and returns without doing anything. Performing the mark-read
+  /// step here, after the data is present, guarantees the unread state is
+  /// cleared regardless of event ordering.
   Future<void> _onStarted(
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
@@ -87,14 +96,31 @@ class NotificationFeedBloc
     try {
       final page = await _notificationRepository.refresh();
 
+      final hasUnread =
+          page.unreadCount > 0 || page.items.any((n) => !n.isRead);
+
+      final readItems = hasUnread
+          ? page.items.map((n) {
+              if (n.isRead) return n;
+              return switch (n) {
+                VideoNotification() => n.copyWith(isRead: true),
+                ActorNotification() => n.copyWith(isRead: true),
+              };
+            }).toList()
+          : page.items;
+
       emit(
         state.copyWith(
           status: NotificationFeedStatus.loaded,
-          notifications: _applyFollowState(page.items),
-          unreadCount: page.unreadCount,
+          notifications: _applyFollowState(readItems),
+          unreadCount: hasUnread ? 0 : page.unreadCount,
           hasMore: page.hasMore,
         ),
       );
+
+      if (hasUnread) {
+        unawaited(_notificationRepository.markAllAsRead());
+      }
     } catch (e, s) {
       addError(e, s);
       emit(state.copyWith(status: NotificationFeedStatus.failure));

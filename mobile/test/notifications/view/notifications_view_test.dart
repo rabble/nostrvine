@@ -19,6 +19,8 @@ import 'package:openvine/notifications/widgets/notification_empty_state.dart';
 import 'package:openvine/notifications/widgets/notification_list_item.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart'
+    as relay_notifications;
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -33,6 +35,17 @@ class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+/// Stub [RelayNotifications] notifier that does nothing — prevents the real
+/// provider (which requires auth + network) from running in widget tests.
+class _StubRelayNotifications extends relay_notifications.RelayNotifications {
+  @override
+  Future<relay_notifications.NotificationFeedState> build() async =>
+      const relay_notifications.NotificationFeedState(notifications: []);
+
+  @override
+  Future<void> markAllAsRead() async {}
+}
+
 /// Pumps [NotificationsView] inside the required providers.
 Future<void> _pumpView(
   WidgetTester tester,
@@ -41,6 +54,11 @@ Future<void> _pumpView(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [
+        relay_notifications.relayNotificationsProvider.overrideWith(
+          _StubRelayNotifications.new,
+        ),
+      ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -85,6 +103,9 @@ Future<List<PooledFullscreenVideoFeedArgs>> _pumpRoutedView(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
+        relay_notifications.relayNotificationsProvider.overrideWith(
+          _StubRelayNotifications.new,
+        ),
         videoEventServiceProvider.overrideWithValue(videoEventService),
         nostrServiceProvider.overrideWithValue(nostrClient),
         videosRepositoryProvider.overrideWithValue(videosRepository),
