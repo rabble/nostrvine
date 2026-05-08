@@ -549,12 +549,12 @@ class ProfileRepository {
     // Switch exhaustively over the typed result — no post-failure
     // connectedRelays snapshot needed.
     switch (result) {
-      case SendProfileSuccess(:final event):
+      case PublishSuccess(:final event):
         final profile = UserProfile.fromNostrEvent(event);
         await _userProfilesDao.upsertProfile(profile);
         return profile;
 
-      case SendProfileNoRelays():
+      case PublishNoRelays():
         Log.error(
           'sendProfile: no connected relays after retry',
           name: 'ProfileRepository.saveProfileEvent',
@@ -564,7 +564,7 @@ class ProfileRepository {
           'No relays connected. Check your connection and try again.',
         );
 
-      case SendProfileFailed():
+      case PublishFailed():
         Log.error(
           'sendProfile: relay rejected the event or send failed',
           name: 'ProfileRepository.saveProfileEvent',

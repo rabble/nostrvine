@@ -101,7 +101,7 @@ void main() {
         () => mockNostrClient.sendProfile(
           profileContent: any(named: 'profileContent'),
         ),
-      ).thenAnswer((_) async => SendProfileSuccess(event: mockProfileEvent));
+      ).thenAnswer((_) async => PublishSuccess(event: mockProfileEvent));
       when(() => mockUserProfilesDao.getProfile(any())).thenAnswer((
         invocation,
       ) async {
@@ -1426,7 +1426,7 @@ void main() {
             () => mockNostrClient.sendProfile(
               profileContent: any(named: 'profileContent'),
             ),
-          ).thenAnswer((_) async => const SendProfileFailed());
+          ).thenAnswer((_) async => const PublishFailed());
 
           await expectLater(
             profileRepository.saveProfileEvent(displayName: 'Test'),
@@ -1443,7 +1443,7 @@ void main() {
             () => mockNostrClient.sendProfile(
               profileContent: any(named: 'profileContent'),
             ),
-          ).thenAnswer((_) async => const SendProfileNoRelays());
+          ).thenAnswer((_) async => const PublishNoRelays());
 
           await expectLater(
             profileRepository.saveProfileEvent(displayName: 'Test'),
