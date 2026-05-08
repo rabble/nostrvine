@@ -1108,7 +1108,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'I-edit ang video';
 
   @override
-  String get videoPlayerTapHint => 'Tap to play or pause. Double tap to like.';
+  String get videoPlayerTapHint =>
+      'I-tap para i-play o i-pause. Mag-double tap para i-like.';
 
   @override
   String get videoSettingsMenuOpen => 'Open playback settings';
