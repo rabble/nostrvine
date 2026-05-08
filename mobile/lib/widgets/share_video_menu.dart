@@ -1517,6 +1517,19 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         tags.add(['l', label.value, 'content-warning']);
       }
 
+      // Preserve engagement count tags (loops, likes, reposts, views).
+      // These are baked into the Nostr event body for Vine-imported videos and
+      // must survive a metadata edit. Without this they are permanently dropped
+      // from the replacement event, zeroing originalLoops/originalLikes forever.
+      const engagementCountTagNames = {'loops', 'likes', 'reposts', 'views'};
+      for (final tag in widget.video.nostrEventTags) {
+        if (tag.isNotEmpty &&
+            engagementCountTagNames.contains(tag[0]) &&
+            tag.length >= 2) {
+          tags.add(tag);
+        }
+      }
+
       // Preserve other original tags that shouldn't be changed
       if (widget.video.publishedAt != null) {
         tags.add(['published_at', widget.video.publishedAt!]);

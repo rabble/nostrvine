@@ -233,4 +233,85 @@ void main() {
       expect(_extractImetaUrls(tags), isEmpty);
     });
   });
+
+  group('engagement count tag preservation (_extractEngagementTags)', () {
+    test('extracts loops tag from Vine-imported event', () {
+      final tags = [
+        ['d', 'abc123'],
+        ['loops', '850000'],
+        ['title', 'My Vine'],
+      ];
+      final result = _extractEngagementTags(tags);
+      expect(result, hasLength(1));
+      expect(result[0], equals(['loops', '850000']));
+    });
+
+    test('extracts all four engagement tag types', () {
+      final tags = [
+        ['loops', '100'],
+        ['likes', '42'],
+        ['reposts', '7'],
+        ['views', '999'],
+        ['title', 'Test'],
+      ];
+      final result = _extractEngagementTags(tags);
+      expect(result, hasLength(4));
+      expect(result.map((t) => t[0]).toSet(), {
+        'loops',
+        'likes',
+        'reposts',
+        'views',
+      });
+    });
+
+    test('ignores tags without a value (malformed)', () {
+      final tags = [
+        ['loops'], // only tag name, no value
+        ['likes', '5'],
+      ];
+      final result = _extractEngagementTags(tags);
+      expect(result, hasLength(1));
+      expect(result[0][0], equals('likes'));
+    });
+
+    test('returns empty list when no engagement tags are present', () {
+      final tags = [
+        ['d', 'abc'],
+        ['title', 'My Video'],
+        ['t', 'hashtag'],
+      ];
+      expect(_extractEngagementTags(tags), isEmpty);
+    });
+
+    test('does not include unrelated tags', () {
+      final tags = [
+        ['loops', '500'],
+        ['client', 'diVine'],
+        ['t', 'funny'],
+      ];
+      final result = _extractEngagementTags(tags);
+      expect(result, hasLength(1));
+      expect(result[0][0], 'loops');
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Engagement count tag preservation logic
+// Mirrors the production code added to _EditVideoDialogState._updateVideo().
+// ---------------------------------------------------------------------------
+
+const _engagementCountTagNames = {'loops', 'likes', 'reposts', 'views'};
+
+/// Extracts engagement count tags from [nostrEventTags], mirroring the
+/// preservation logic in _updateVideo().
+List<List<String>> _extractEngagementTags(List<List<String>> nostrEventTags) {
+  return nostrEventTags
+      .where(
+        (tag) =>
+            tag.isNotEmpty &&
+            _engagementCountTagNames.contains(tag[0]) &&
+            tag.length >= 2,
+      )
+      .toList();
 }
