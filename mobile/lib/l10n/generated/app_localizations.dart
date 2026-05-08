@@ -2674,6 +2674,36 @@ abstract class AppLocalizations {
   /// **'Show subtitles'**
   String get videoActionShowSubtitles;
 
+  /// Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked by'**
+  String get videoEngagementLikersTitle;
+
+  /// Title of the screen shown when the video owner taps the Repost button on their own video — lists the users who reposted it.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposted by'**
+  String get videoEngagementRepostersTitle;
+
+  /// Empty-state message on the likers list screen when no one has liked the video yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No likes yet'**
+  String get videoEngagementLikersEmpty;
+
+  /// Empty-state message on the reposters list screen when no one has reposted the video yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No reposts yet'**
+  String get videoEngagementRepostersEmpty;
+
+  /// Error-state heading on the engagement list screen when the relay query fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load that list'**
+  String get videoEngagementLoadFailed;
+
   /// Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget.
   ///
   /// In en, this message translates to:

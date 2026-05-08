@@ -1486,6 +1486,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionShowSubtitles => 'Ondertiteling tonen';
 
   @override
+  String get videoEngagementLikersTitle => 'Liked by';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Reposted by';
+
+  @override
+  String get videoEngagementLikersEmpty => 'No likes yet';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'No reposts yet';
+
+  @override
+  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Videodetails openen';
 
   @override

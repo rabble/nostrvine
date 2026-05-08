@@ -1395,6 +1395,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShowSubtitles => '자막 표시';
 
   @override
+  String get videoEngagementLikersTitle => 'Liked by';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Reposted by';
+
+  @override
+  String get videoEngagementLikersEmpty => 'No likes yet';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'No reposts yet';
+
+  @override
+  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => '영상 세부 정보 열기';
 
   @override
