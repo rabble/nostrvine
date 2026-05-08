@@ -136,7 +136,7 @@ void main() {
         expect(exploreRect.width, greaterThan(kMinInteractiveDimension));
 
         // Tap inside the home slot, just to the right of the home icon
-        // (i.e. inside the half-gap that was previously dead space).
+        // (i.e. inside the inter-icon half-gap, not on the icon itself).
         final justPastHomeIcon = Offset(
           homeRect.left + kMinInteractiveDimension + 1,
           homeRect.center.dy,
@@ -149,8 +149,8 @@ void main() {
     );
 
     testWidgets(
-      'tab hit targets extend above the icon row so taps in the former '
-      'top padding strip still route to the tab below',
+      'tab hit targets extend above the icon row so taps in the strip '
+      'above the icons still route to the tab below',
       (tester) async {
         final router = MockGoRouter();
         await pumpSubjectWithRouter(tester, router);
@@ -159,14 +159,13 @@ void main() {
           find.bySemanticsIdentifier('home_tab'),
         );
 
-        // The slot is taller than a bare 48 px icon container — the
-        // previously-reserved top-padding strip is now part of the hit
-        // target.
+        // The slot is taller than a bare 48 px icon container — extra
+        // height above the icon is part of the hit target.
         expect(homeRect.height, greaterThan(kMinInteractiveDimension));
 
-        // Tap 2 px below the slot's top edge (well above where the icon
-        // is drawn). Without the absorbed top padding, this tap would
-        // land in dead space.
+        // Tap 2 px below the slot's top edge — well above where the
+        // icon is drawn. The strip above the icon container is part of
+        // the slot, not dead space.
         await tester.tapAt(homeRect.topLeft + const Offset(8, 2));
         await tester.pump();
 
@@ -176,7 +175,7 @@ void main() {
 
     testWidgets(
       'home and profile slots reach the screen edges so taps in the '
-      'former lateral padding strip still route to the adjacent tab',
+      'edge strip still route to the adjacent tab',
       (tester) async {
         final router = MockGoRouter();
         await pumpSubjectWithRouter(tester, router);
@@ -194,8 +193,8 @@ void main() {
         expect(homeRect.left, navRect.left);
         expect(profileRect.right, navRect.right);
 
-        // Tap 2 px in from the screen's left edge — formerly inside the
-        // 16 px Container padding, now part of the home slot.
+        // Tap 2 px in from the screen's left edge — inside the home
+        // slot's outer edge inset, not on the icon itself.
         await tester.tapAt(
           Offset(navRect.left + 2, homeRect.center.dy),
         );
@@ -206,8 +205,8 @@ void main() {
     );
 
     testWidgets(
-      'tab hit targets extend below the icon row so taps in the former '
-      'bottom padding strip still route to the tab above',
+      'tab hit targets extend below the icon row so taps in the strip '
+      'below the icons still route to the tab above',
       (tester) async {
         final router = MockGoRouter();
         await pumpSubjectWithRouter(tester, router);
@@ -217,16 +216,16 @@ void main() {
           find.bySemanticsIdentifier('home_tab'),
         );
 
-        // The slot's bottom edge meets the bottom nav's bottom edge —
-        // no Container padding remains below the row. (No bottom safe
-        // area inset is applied in the test environment, so the two
-        // are exactly equal.)
+        // The slot's bottom edge meets the bottom nav's bottom edge.
+        // (No bottom safe area inset is applied in the test environment,
+        // so the two are exactly equal — on real devices [SafeArea]
+        // separates them by [MediaQuery.viewPadding.bottom].)
         expect(homeRect.bottom, navRect.bottom);
 
         // Tap 2 px above the slot's bottom edge — well below where the
         // icon is drawn (the icon is centred in a 72 px slot, so its
-        // bottom edge sits 12 px above the slot's bottom). Without the
-        // absorbed bottom padding this tap would land in dead space.
+        // bottom edge sits 12 px above the slot's bottom). The strip
+        // below the icon container is part of the slot.
         await tester.tapAt(
           Offset(homeRect.center.dx, homeRect.bottom - 2),
         );

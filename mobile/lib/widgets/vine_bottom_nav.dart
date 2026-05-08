@@ -103,31 +103,25 @@ class VineBottomNav extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ColoredBox(
       color: VineTheme.surfaceBackground,
-      // No Container padding remains — the 12 px strips above and below
-      // the icons and the 16 px strips on each side are now all part of
-      // each adjacent tab's hit target (see [_kTopExtraTapHeight],
-      // [_kBottomExtraTapHeight] and [_kHorizontalEdgePad]). The
-      // [SafeArea] still keeps tap targets clear of the iOS home
-      // indicator and Android navigation bar.
+      // The bottom nav has no Container padding — all four edges of the
+      // breathing room around the icons are folded into adjacent tab hit
+      // targets (see [_kTopExtraTapHeight], [_kBottomExtraTapHeight],
+      // [_kHorizontalEdgePad]). [SafeArea] still keeps tap targets clear
+      // of the iOS home indicator and Android navigation bar.
       child: SafeArea(
         top: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // Each tab claims half of each adjacent inter-icon gap so taps
-            // anywhere closer to a given icon than to its neighbour route
-            // to that tab. Home and Profile additionally absorb the
-            // formerly-reserved [_kHorizontalEdgePad] strip on the screen
-            // edge. Icons stay in the exact visual positions a
-            // `MainAxisAlignment.spaceBetween` row inset by 16 px (the
-            // previous layout) would produce.
+            // Each tab's slot covers its icon plus half of each adjacent
+            // inter-icon gap, so taps closer to a given icon than to its
+            // neighbour route to that tab. Home and Profile additionally
+            // span the [_kHorizontalEdgePad] strip out to the screen edge.
+            // Icons sit at their Figma-specified positions.
             const iconWidth = kMinInteractiveDimension;
             const cameraWidth = _kCameraButtonWidth;
             const totalIconWidth = iconWidth * 4 + cameraWidth;
             const totalEdgePad = _kHorizontalEdgePad * 2;
-            // 8 half-gaps split the space the inter-icon gaps used to
-            // occupy — same numeric formula as before, derived from
-            // `constraints.maxWidth - totalIconWidth - 2 * 16` since
-            // `maxWidth` is now 32 px wider (no Container padding).
+            // 4 inter-icon gaps × 2 halves = 8.
             final halfGap =
                 ((constraints.maxWidth - totalIconWidth - totalEdgePad) / 8)
                     .clamp(0.0, double.infinity);
@@ -197,30 +191,26 @@ class VineBottomNav extends ConsumerWidget {
 /// Visible width of the green camera-button pill in the bottom nav.
 const double _kCameraButtonWidth = 72;
 
-/// Extra hit-target height stacked on top of the [kMinInteractiveDimension]
-/// icon row. Equal to the top padding the bottom nav used to reserve, so
-/// the previously-dead strip above the icons now routes taps to the tab
-/// directly above it without moving any icon visually.
+/// Extra hit-target height stacked above the [kMinInteractiveDimension]
+/// icon row, so taps in the strip immediately above the visible icons
+/// route to the tab below.
 const double _kTopExtraTapHeight = 12;
 
 /// Extra hit-target height stacked below the [kMinInteractiveDimension]
-/// icon row. Equal to the bottom padding the bottom nav used to reserve,
-/// so the previously-dead strip beneath the icons (above the [SafeArea]
-/// inset) now routes taps to the tab directly below it without moving
-/// any icon visually.
+/// icon row (above the [SafeArea] inset), so taps in the strip
+/// immediately beneath the visible icons route to the tab above.
 const double _kBottomExtraTapHeight = 12;
 
 /// Total vertical hit-target height per tab. The icon container sits at
-/// the vertical centre of this slot — the top and bottom extras are
-/// equal — so taps both above and below the visible glyph route to the
-/// correct tab.
+/// the vertical centre of this slot — top and bottom extras are equal —
+/// so taps both above and below the visible glyph route to the right tab.
 const double _kTabSlotHeight =
     kMinInteractiveDimension + _kTopExtraTapHeight + _kBottomExtraTapHeight;
 
 /// Lateral inset between the screen edge and the visible position of the
-/// outermost icons (Home / Profile). Used to be a [Container] padding;
-/// it is now folded into Home's and Profile's hit targets so taps inside
-/// the previously-reserved 16 px strip route to the adjacent tab.
+/// outermost icons (Home / Profile). Folded into Home's and Profile's hit
+/// targets so taps inside the 16 px strip on the screen edge still route
+/// to the adjacent tab.
 const double _kHorizontalEdgePad = 16;
 
 // =============================================================================
@@ -246,8 +236,7 @@ const double _kHorizontalEdgePad = 16;
 /// the bottom nav row — usually larger than the 48 px icon container so
 /// taps in the surrounding gap also route to this tab. The icon itself
 /// stays a [kMinInteractiveDimension]-sized box positioned via
-/// [iconAlignment]; the row computes both so icons stay in the exact same
-/// visual positions a `MainAxisAlignment.spaceBetween` row would produce.
+/// [iconAlignment].
 class _IconTabButton extends StatelessWidget {
   const _IconTabButton({
     required this.semanticIdentifier,
@@ -269,19 +258,18 @@ class _IconTabButton extends StatelessWidget {
   final double tapTargetWidth;
 
   /// Where to place the 48 px icon container inside the slot. Defaults to
-  /// [Alignment.center] so the icon sits at the same vertical position
-  /// it would have had under the previous (smaller) tap target — the
-  /// extra height extends symmetrically above and below the visible
-  /// glyph. Use `centerStart` / `centerEnd` (combined with [edgePadding])
-  /// for the leftmost / rightmost tabs so they hug the row's edge.
+  /// [Alignment.center] so the icon sits at the slot's centre with equal
+  /// hit-target padding above and below it. Use `centerStart` /
+  /// `centerEnd` (combined with [edgePadding]) for the leftmost /
+  /// rightmost tabs so they hug the row's edge.
   final AlignmentGeometry iconAlignment;
 
   /// Horizontal inset between the slot edge and the icon container.
   /// Non-zero only for Home and Profile, where the slot extends all the
   /// way to the screen edge but the icon must still sit
-  /// [_kHorizontalEdgePad] in from that edge to match the previous
-  /// visual position. The edge strip itself stays inside the
-  /// [GestureDetector] so taps there route to the tab.
+  /// [_kHorizontalEdgePad] in from that edge per the Figma spec. The
+  /// edge strip itself stays inside the [GestureDetector] so taps there
+  /// route to the tab.
   final EdgeInsetsGeometry edgePadding;
 
   /// When non-null, wraps the inner icon container in a [NotificationBadge]
@@ -539,11 +527,10 @@ class _CameraButton extends StatelessWidget {
         child: SizedBox(
           width: tapTargetWidth,
           height: _kTabSlotHeight,
-          // Centered so the visible green pill stays at the same Y
-          // position it had under the previous (smaller) tap target —
-          // the extra height extends symmetrically above and below the
-          // pill into the row's previously-dead top and bottom padding.
-          child: Align(
+          // Centered so the visible pill keeps its on-screen position
+          // even though the slot is taller and wider than the pill —
+          // the extra space all goes to hit-target absorption.
+          child: Center(
             child: Container(
               width: _kCameraButtonWidth,
               height: kMinInteractiveDimension,
