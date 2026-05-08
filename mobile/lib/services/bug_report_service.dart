@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
@@ -732,9 +733,21 @@ class BugReportService {
     }
   }
 
-  /// Export logs to a file and share via system share dialog
-  /// Returns true if successful, false otherwise
-  Future<bool> exportLogsToFile({
+  /// Export logs to a file.
+  ///
+  /// Behavior depends on the platform:
+  ///
+  /// * **Web** — triggers a browser download.
+  /// * **iOS / Android** — writes to the temp directory and presents the
+  ///   system share sheet so the user can email or upload the file.
+  /// * **macOS / Windows / Linux** — writes directly to the user's
+  ///   Downloads folder. Desktop share popovers require an anchor frame
+  ///   the support screen can't supply, so a Save-to-Downloads UX matches
+  ///   desktop conventions and avoids share_plus failure modes.
+  ///
+  /// On success, [LogExportResult.filePath] is populated when the caller
+  /// can show the user where the file landed (currently desktop only).
+  Future<LogExportResult> exportLogsToFile({
     String? currentScreen,
     String? userPubkey,
   }) async {
@@ -759,7 +772,7 @@ class BugReportService {
           'No logs available for export',
           category: LogCategory.system,
         );
-        return false;
+        return const LogExportResult(success: false);
       }
 
       // Get package info for metadata
@@ -794,14 +807,13 @@ class BugReportService {
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
       final fileName = 'openvine_full_logs_$timestamp.txt';
 
-      // Platform-specific export
       if (kIsWeb) {
-        // Web: Use browser download API
         return _exportLogsWeb(content, fileName, allLogLines.length);
-      } else {
-        // Native: Use file sharing
-        return _exportLogsNative(content, fileName, allLogLines.length);
       }
+      if (_isDesktop) {
+        return _exportLogsDesktop(content, fileName, allLogLines.length);
+      }
+      return _exportLogsNative(content, fileName, allLogLines.length);
     } catch (e, stackTrace) {
       Log.error(
         'Failed to export logs: $e',
@@ -809,12 +821,46 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return false;
+      return const LogExportResult(success: false);
+    }
+  }
+
+  bool get _isDesktop {
+    if (kIsWeb) return false;
+    return Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+  }
+
+  /// Opens the folder containing the exported log file in the OS file
+  /// browser. Used by the desktop "Show in folder" snackbar action so the
+  /// user can immediately attach the file they just saved.
+  Future<void> revealExportedFile(String filePath) async {
+    if (kIsWeb) return;
+    try {
+      final folder = File(filePath).parent.path;
+      final uri = Uri.file(folder);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    } catch (e, stackTrace) {
+      Log.warning(
+        'Failed to reveal exported log file: $e',
+        category: LogCategory.system,
+      );
+      Log.error(
+        'Reveal exported file stack',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
   /// Export logs on web platform using browser download
-  bool _exportLogsWeb(String content, String fileName, int lineCount) {
+  LogExportResult _exportLogsWeb(
+    String content,
+    String fileName,
+    int lineCount,
+  ) {
     try {
       final bytes = utf8.encode(content);
       final blob = html.Blob([bytes], 'text/plain');
@@ -831,7 +877,7 @@ class BugReportService {
         'Logs downloaded via browser: $fileName ($sizeMB MB, $lineCount lines)',
         category: LogCategory.system,
       );
-      return true;
+      return const LogExportResult(success: true);
     } catch (e, stackTrace) {
       Log.error(
         'Failed to download logs on web: $e',
@@ -839,12 +885,73 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return false;
+      return const LogExportResult(success: false);
     }
   }
 
-  /// Export logs on native platforms using file sharing
-  Future<bool> _exportLogsNative(
+  /// Export logs on desktop (macOS / Windows / Linux) by prompting the user
+  /// for a save location and writing the log file there.
+  ///
+  /// `share_plus` on desktop requires a `sharePositionOrigin` anchor frame
+  /// the support screen can't supply, so the share popover fails silently
+  /// and the user sees "Failed to export logs". A native Save As dialog
+  /// matches desktop conventions and lets the user pick where the file
+  /// goes.
+  ///
+  /// If the user cancels the dialog, returns
+  /// [LogExportResult.cancelled] so the caller can stay silent rather than
+  /// showing a failure toast.
+  Future<LogExportResult> _exportLogsDesktop(
+    String content,
+    String fileName,
+    int lineCount,
+  ) async {
+    try {
+      final downloadsDir = await getDownloadsDirectory();
+      final initialDirectory =
+          downloadsDir?.path ?? (await getApplicationDocumentsDirectory()).path;
+
+      final location = await getSaveLocation(
+        suggestedName: fileName,
+        initialDirectory: initialDirectory,
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'Text', extensions: ['txt']),
+        ],
+      );
+
+      if (location == null) {
+        Log.info(
+          'Log export cancelled by user',
+          category: LogCategory.system,
+        );
+        return const LogExportResult.cancelled();
+      }
+
+      final file = File(location.path);
+      await file.writeAsString(content);
+
+      final fileSizeMB = (await file.length() / (1024 * 1024)).toStringAsFixed(
+        2,
+      );
+      Log.info(
+        'Comprehensive logs saved to desktop: ${location.path} '
+        '($fileSizeMB MB, $lineCount lines)',
+        category: LogCategory.system,
+      );
+      return LogExportResult(success: true, filePath: location.path);
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to save logs on desktop: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return const LogExportResult(success: false);
+    }
+  }
+
+  /// Export logs on mobile platforms using the system share sheet.
+  Future<LogExportResult> _exportLogsNative(
     String content,
     String fileName,
     int lineCount,
@@ -879,13 +986,13 @@ class BugReportService {
 
       if (result.status == ShareResultStatus.success) {
         Log.info('Logs shared successfully', category: LogCategory.system);
-        return true;
+        return const LogExportResult(success: true);
       } else {
         Log.warning(
           'Log sharing was dismissed or failed: ${result.status}',
           category: LogCategory.system,
         );
-        return false;
+        return const LogExportResult(success: false);
       }
     } catch (e, stackTrace) {
       Log.error(
@@ -894,7 +1001,7 @@ class BugReportService {
         error: e,
         stackTrace: stackTrace,
       );
-      return false;
+      return const LogExportResult(success: false);
     }
   }
 
@@ -944,4 +1051,32 @@ class BugReportService {
       }
     }).toList();
   }
+}
+
+/// Outcome of [BugReportService.exportLogsToFile].
+///
+/// On desktop, [filePath] points at the path the user picked in the
+/// Save As dialog so the UI can show them where the file landed. On
+/// mobile and web, [filePath] is null because the platform's share /
+/// download flow already surfaces the file.
+///
+/// [cancelled] is true when the user dismissed a Save As dialog without
+/// picking a location — distinct from [success] = false (which is a real
+/// failure) so the UI can stay silent on cancel rather than flashing a
+/// "Failed to export logs" toast.
+class LogExportResult {
+  const LogExportResult({
+    required this.success,
+    this.filePath,
+    this.cancelled = false,
+  });
+
+  const LogExportResult.cancelled()
+    : success = false,
+      filePath = null,
+      cancelled = true;
+
+  final bool success;
+  final String? filePath;
+  final bool cancelled;
 }

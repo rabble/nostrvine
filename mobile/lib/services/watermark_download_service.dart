@@ -99,6 +99,12 @@ class WatermarkDownloadService {
     required String watermarkText,
     required ValueChanged<WatermarkDownloadStage> onProgress,
   }) async {
+    Log.info(
+      'downloadWithWatermark started: videoId=${video.id}',
+      name: _logName,
+      category: LogCategory.video,
+    );
+
     String? tempOutputPath;
 
     try {
@@ -107,8 +113,20 @@ class WatermarkDownloadService {
 
       final videoFile = await _getVideoFile(video);
       if (videoFile == null) {
+        Log.warning(
+          'downloadWithWatermark failed at stage=downloading: '
+          '_getVideoFile returned null for videoId=${video.id}',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return const WatermarkDownloadFailure('Could not download video file');
       }
+      Log.info(
+        'downloadWithWatermark stage=downloading complete: '
+        'path=${videoFile.path}',
+        name: _logName,
+        category: LogCategory.video,
+      );
 
       // Stage 2: Generate watermark and render onto video
       onProgress(WatermarkDownloadStage.watermarking);
@@ -141,6 +159,12 @@ class WatermarkDownloadService {
       );
 
       if (tempOutputPath == null) {
+        Log.warning(
+          'downloadWithWatermark failed at stage=watermarking: '
+          '_renderWithWatermark returned null for videoId=${video.id}',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return const WatermarkDownloadFailure(
           'Failed to render watermarked video',
         );
@@ -154,9 +178,20 @@ class WatermarkDownloadService {
       );
 
       if (saveResult is GallerySavePermissionDenied) {
+        Log.warning(
+          'downloadWithWatermark stopped at stage=saving: permission denied',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return const WatermarkDownloadPermissionDenied();
       }
       if (saveResult is GallerySaveFailure) {
+        Log.warning(
+          'downloadWithWatermark failed at stage=saving: '
+          'reason=${saveResult.reason}',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return WatermarkDownloadFailure(
           'Gallery save failed: ${saveResult.reason}',
         );
@@ -196,14 +231,31 @@ class WatermarkDownloadService {
     required VideoEvent video,
     required ValueChanged<OriginalSaveStage> onProgress,
   }) async {
+    Log.info(
+      'downloadOriginal started: videoId=${video.id}',
+      name: _logName,
+      category: LogCategory.video,
+    );
+
     try {
       // Stage 1: Download / cache the video file
       onProgress(OriginalSaveStage.downloading);
 
       final videoFile = await _getVideoFile(video);
       if (videoFile == null) {
+        Log.warning(
+          'downloadOriginal failed at stage=downloading: '
+          '_getVideoFile returned null for videoId=${video.id}',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return const WatermarkDownloadFailure('Could not download video file');
       }
+      Log.info(
+        'downloadOriginal stage=downloading complete: path=${videoFile.path}',
+        name: _logName,
+        category: LogCategory.video,
+      );
 
       // Stage 2: Save directly to gallery (no watermark)
       onProgress(OriginalSaveStage.saving);
@@ -213,9 +265,19 @@ class WatermarkDownloadService {
       );
 
       if (saveResult is GallerySavePermissionDenied) {
+        Log.warning(
+          'downloadOriginal stopped at stage=saving: permission denied',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return const WatermarkDownloadPermissionDenied();
       }
       if (saveResult is GallerySaveFailure) {
+        Log.warning(
+          'downloadOriginal failed at stage=saving: reason=${saveResult.reason}',
+          name: _logName,
+          category: LogCategory.video,
+        );
         return WatermarkDownloadFailure(
           'Gallery save failed: ${saveResult.reason}',
         );
@@ -240,6 +302,11 @@ class WatermarkDownloadService {
 
   /// Downloads or retrieves the cached video file.
   Future<File?> _getVideoFile(VideoEvent video) async {
+    Log.info(
+      '_getVideoFile started: videoId=${video.id} videoUrl=${video.videoUrl}',
+      name: _logName,
+      category: LogCategory.video,
+    );
     var cacheKey = video.id;
 
     // Check cache first — only use it when the file has a recognised video
@@ -286,8 +353,21 @@ class WatermarkDownloadService {
       );
       return null;
     }
+    Log.info(
+      '_getVideoFile resolved playable URL: $videoUrl',
+      name: _logName,
+      category: LogCategory.video,
+    );
 
     final file = await _mediaCache.cacheFile(videoUrl, key: cacheKey);
+
+    Log.info(
+      '_getVideoFile cacheFile returned: '
+      '${file == null ? "null" : "${file.path} (exists=${file.existsSync()}, "
+                "size=${file.existsSync() ? file.lengthSync() : -1})"}',
+      name: _logName,
+      category: LogCategory.video,
+    );
 
     return file;
   }

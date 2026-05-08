@@ -71,6 +71,11 @@ class GallerySaveService {
     String albumName = 'Divine',
     VideoMetadata? metadata,
   }) async {
+    Log.info(
+      'saveVideoToGallery started: aspectRatio=$aspectRatio album=$albumName',
+      name: 'GallerySaveService',
+      category: LogCategory.video,
+    );
     // Declare filePath outside try so catch blocks can access it.
     String? resolvedPath;
 
@@ -114,6 +119,14 @@ class GallerySaveService {
       // On iOS, don't use album parameter - it requires full photo library access
       // With album, iOS shows a second permission dialog for full access
       // Without album, it only needs photosAddOnly permission
+      Log.info(
+        'saveVideoToGallery calling Gal.putVideo: '
+        'path=$resolvedPath size=${file.lengthSync()} '
+        'platform=$defaultTargetPlatform',
+        name: 'GallerySaveService',
+        category: LogCategory.video,
+      );
+
       final galFuture = (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS)
           ? Gal.putVideo(resolvedPath)
           : Gal.putVideo(resolvedPath, album: albumName);

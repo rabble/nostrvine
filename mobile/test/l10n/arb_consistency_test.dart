@@ -381,6 +381,10 @@ const _knownUntranslatedDebt = {
   'popularFilterRightNow',
   'popularFilterToday',
   'popularFilterWeek',
+  // Added by the desktop save-to-Downloads log export flow. Other locales
+  // fall back to English until the next translation pass.
+  'supportLogsSavedTo',
+  'supportRevealLogsAction',
 };
 
 Map<String, Object?> _readArb(File file) {
