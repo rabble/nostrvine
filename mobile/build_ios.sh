@@ -156,10 +156,30 @@ if [[ "$PUB_GET" == "true" ]]; then
     fi
 fi
 
+CODEGEN_MARKER=".dart_tool/.last_codegen_marker"
+codegen_inputs_changed() {
+    [[ -f "$CODEGEN_MARKER" ]] || return 0
+    local newer
+    newer=$(find lib pubspec.lock \
+        -type f \
+        \( -name '*.dart' -o -name 'pubspec.lock' \) \
+        ! -name '*.g.dart' \
+        ! -name '*.freezed.dart' \
+        ! -name '*.mocks.dart' \
+        -newer "$CODEGEN_MARKER" \
+        -print -quit 2>/dev/null)
+    [[ -n "$newer" ]]
+}
+
 if [[ "$CODEGEN_MODE" == "always" ]]; then
-    echo "🔧 Generating code with build_runner..."
-    dart run build_runner build --delete-conflicting-outputs
-    mark_pub_get_fresh
+    if codegen_inputs_changed; then
+        echo "🔧 Generating code with build_runner..."
+        dart run build_runner build --delete-conflicting-outputs
+        mkdir -p .dart_tool && touch "$CODEGEN_MARKER"
+        mark_pub_get_fresh
+    else
+        echo "✅ Codegen up to date (no input changes since last build)"
+    fi
 else
     echo "⏭️  Skipping build_runner for $BUILD_MODE (use --codegen if needed)"
 fi

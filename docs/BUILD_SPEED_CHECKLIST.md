@@ -31,6 +31,49 @@ skipped because `dart run build_runner` runs its own resolve — that
 removes the duplicate "Resolving dependencies / Downloading packages"
 pass that older versions of these scripts produced.
 
+Codegen itself is also short-circuited when none of the codegen inputs
+under `lib/` (excluding `*.g.dart`, `*.freezed.dart`, `*.mocks.dart`) and
+`pubspec.lock` have been modified since the last successful run. The
+marker is `.dart_tool/.last_codegen_marker`. Touching any input file —
+or `flutter clean` — re-arms the next codegen pass.
+
+## Active Development: build_runner watch
+
+The biggest local-build cost is `dart run build_runner build` (a few
+hundred seconds on a cold analyzer). For active development on
+`@riverpod` / `@freezed` / `@JsonSerializable` / `drift` inputs, run the
+watcher in a separate terminal once and leave it running:
+
+```bash
+cd mobile && ./watch_codegen.sh
+```
+
+Subsequent edits regenerate in seconds because the analyzer stays
+warm. The build scripts' codegen short-circuit (above) means
+`./build_ios.sh debug --codegen` will see fresh outputs and skip the
+expensive re-run.
+
+## Test Speed
+
+`flutter test` defaults to a single isolate. On a multi-core machine you
+can parallelize:
+
+```bash
+flutter test --concurrency=$(sysctl -n hw.ncpu)
+flutter test --reporter=compact   # less verbose than the default
+```
+
+For TDD-style iteration on a focused area, scope the path:
+
+```bash
+flutter test test/path/to/feature
+./watch_tests.sh test/path/to/feature
+```
+
+Generated mocks (`*.mocks.dart`) are excluded by `dart_test.yaml` —
+don't try to run them as tests. If a test file imports a missing mock,
+you need a codegen pass, not a test fix.
+
 ## When You See Build Errors
 
 ### `pod install` or dependency lock issues
