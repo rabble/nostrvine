@@ -163,13 +163,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 🍎 Setup Xcode
-        # Pinned to 15.4: Flutter 3.41.9 is tested up to Xcode 15.x;
-        # Xcode 16 has surfaced sporadic CocoaPods regressions. The
-        # default Xcode on macos-14 runners floats and would silently
-        # change the toolchain.
+        # Pinned to 16.4: pro_video_editor 1.15.0 declares
+        # `[String: any Sendable]` for AVVideoCompositing's
+        # sourcePixelBufferAttributes / requiredPixelBufferAttributesForRenderContext,
+        # which only matches the protocol shape in the iOS 18 SDK.
+        # Xcode 15.x's iOS 17.5 SDK declares those as `[String: Any]`,
+        # so the dependency fails to compile and the test build never
+        # starts. The default Xcode on macos-14 runners floats and would
+        # silently change the toolchain — pin to a known-good 16.x.
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "15.4"
+          xcode-version: "16.4"
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
