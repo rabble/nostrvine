@@ -1137,7 +1137,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get exploreTabCategories => 'Catégories';
 
   @override
-  String get exploreTabTags => 'Tags';
+  String get exploreTabTags => 'Étiquettes';
 
   @override
   String get exploreTagsSearchHint => 'Rechercher des tags...';
@@ -6272,7 +6272,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get searchResultsCategoryLists => 'Listes';
 
   @override
-  String get searchResultsCategoryTags => 'Tags';
+  String get searchResultsCategoryTags => 'Étiquettes';
 
   @override
   String get searchResultsCategoryVideos => 'Vidéos';

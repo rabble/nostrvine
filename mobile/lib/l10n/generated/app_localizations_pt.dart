@@ -569,7 +569,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get profileSavedFilterVideos => 'Vídeos';
 
   @override
-  String get profileSavedFilterTags => 'Tags';
+  String get profileSavedFilterTags => 'Etiquetas';
 
   @override
   String get hashtagFavoriteSaveTooltip => 'Salvar hashtag';
@@ -1127,7 +1127,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get exploreTabCategories => 'Categorias';
 
   @override
-  String get exploreTabTags => 'Tags';
+  String get exploreTabTags => 'Etiquetas';
 
   @override
   String get exploreTagsSearchHint => 'Buscar tags...';
@@ -6221,7 +6221,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get searchResultsCategoryLists => 'Listas';
 
   @override
-  String get searchResultsCategoryTags => 'Tags';
+  String get searchResultsCategoryTags => 'Etiquetas';
 
   @override
   String get searchResultsCategoryVideos => 'Vídeos';

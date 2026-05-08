@@ -584,8 +584,8 @@ class AppLocalizationsEs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count videos',
-      one: '1 video',
+      other: '$count vídeos',
+      one: '1 vídeo',
     );
     return '$_temp0';
   }

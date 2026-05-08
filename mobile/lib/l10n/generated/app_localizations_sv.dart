@@ -6189,7 +6189,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Filter: $category';
+    return 'Filtrering: $category';
   }
 
   @override

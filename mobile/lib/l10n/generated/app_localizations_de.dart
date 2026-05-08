@@ -567,7 +567,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileSavedFilterVideos => 'Videos';
 
   @override
-  String get profileSavedFilterTags => 'Tags';
+  String get profileSavedFilterTags => 'Schlagwörter';
 
   @override
   String get hashtagFavoriteSaveTooltip => 'Hashtag speichern';
@@ -1129,7 +1129,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get exploreTabCategories => 'Kategorien';
 
   @override
-  String get exploreTabTags => 'Tags';
+  String get exploreTabTags => 'Schlagwörter';
 
   @override
   String get exploreTagsSearchHint => 'Tags suchen...';
@@ -6263,14 +6263,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get searchResultsCategoryLists => 'Listen';
 
   @override
-  String get searchResultsCategoryTags => 'Tags';
+  String get searchResultsCategoryTags => 'Schlagwörter';
 
   @override
   String get searchResultsCategoryVideos => 'Videos';
 
   @override
   String searchResultsFilterSemantic(String category) {
-    return 'Filter: $category';
+    return 'Filter für $category';
   }
 
   @override
