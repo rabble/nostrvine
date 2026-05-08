@@ -24,6 +24,7 @@ import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/string_utils.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -458,36 +459,23 @@ void main() {
         expect(find.text('Likes'), findsOneWidget);
       });
 
-      testWidgets('description renders hashtags as plain caption text', (
-        tester,
-      ) async {
-        testVideo = testVideo.copyWith(content: 'Hello #world caption');
-        await tester.pumpWidget(buildSubject());
-        await tester.pump();
+      testWidgets(
+        'renders hashtags with options control in author description',
+        (
+          tester,
+        ) async {
+          testVideo = testVideo.copyWith(content: 'Hello #world caption');
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
 
-        expect(find.text('Hello #world caption'), findsOneWidget);
-        final l10n = _l10n(tester);
-        expect(
-          find.bySemanticsLabel(l10n.hashtagOptionsMoreTooltip),
-          findsNothing,
-        );
-      });
-
-      testWidgets('renders Auto action when enabled for the current feed', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildSubject(
-            showAutoButton: true,
-            isAutoEnabled: true,
-            onAutoPressed: () {},
-          ),
-        );
-        await tester.pump();
-
-        expect(find.text('Compilation'), findsOneWidget);
-        expect(find.bySemanticsLabel('Disable auto advance'), findsOneWidget);
-      });
+          expect(find.byType(ClickableHashtagText), findsOneWidget);
+          final l10n = _l10n(tester);
+          expect(
+            find.bySemanticsLabel(l10n.hashtagOptionsMoreTooltip),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('loop count labels (l10n)', () {

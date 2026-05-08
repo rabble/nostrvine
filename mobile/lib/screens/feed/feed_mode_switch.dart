@@ -182,7 +182,7 @@ class _FeedModeContent extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     );
   }
