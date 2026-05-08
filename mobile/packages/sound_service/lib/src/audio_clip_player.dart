@@ -4,9 +4,15 @@
 
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:sound_service/src/audio_source_config.dart';
+
+/// Downloads a remote audio URL to a local file, optionally reusing a cache.
+typedef RemoteAudioFileLoader =
+    Future<File> Function(Uri uri, File? cachedFile, Uri? cachedUri);
 
 /// A player that plays a clipped portion of an audio source.
 ///
@@ -20,11 +26,18 @@ class AudioClipPlayer {
   /// An optional [audioPlayer] can be injected for testing within the
   /// `sound_service` package.
   // coverage:ignore-start
-  AudioClipPlayer({AudioPlayer? audioPlayer})
-    : _audioPlayer = audioPlayer ?? AudioPlayer();
+  AudioClipPlayer({
+    AudioPlayer? audioPlayer,
+    RemoteAudioFileLoader? remoteAudioFileLoader,
+  }) : _audioPlayer = audioPlayer ?? AudioPlayer(),
+       _remoteAudioFileLoader =
+           remoteAudioFileLoader ?? _defaultRemoteAudioFileLoader;
   // coverage:ignore-end
 
   final AudioPlayer _audioPlayer;
+  final RemoteAudioFileLoader _remoteAudioFileLoader;
+  File? _cachedRemoteFile;
+  Uri? _cachedRemoteUri;
 
   /// playing (i.e. reaches the end without being stopped manually).
   ///
@@ -45,11 +58,20 @@ class AudioClipPlayer {
   Future<void> setClip(AudioSourceConfig config) async {
     final UriAudioSource child;
     if (config.isAsset) {
+      await _clearCachedRemoteFile();
       child = AudioSource.asset(config.uri);
     } else if (config.isFile) {
+      await _clearCachedRemoteFile();
       child = AudioSource.file(config.uri);
     } else {
-      child = AudioSource.uri(Uri.parse(config.uri));
+      final cachedFile = await _remoteAudioFileLoader(
+        Uri.parse(config.uri),
+        _cachedRemoteFile,
+        _cachedRemoteUri,
+      );
+      _cachedRemoteFile = cachedFile;
+      _cachedRemoteUri = Uri.parse(config.uri);
+      child = AudioSource.file(cachedFile.path);
     }
 
     final source = ClippingAudioSource(
@@ -85,6 +107,7 @@ class AudioClipPlayer {
   Future<void> dispose() async {
     try {
       await _audioPlayer.dispose();
+      await _clearCachedRemoteFile();
     } on Exception catch (e) {
       log(
         'Error disposing AudioClipPlayer: $e',
@@ -92,5 +115,70 @@ class AudioClipPlayer {
         level: 900,
       );
     }
+  }
+
+  Future<void> _clearCachedRemoteFile() async {
+    final file = _cachedRemoteFile;
+    _cachedRemoteFile = null;
+    _cachedRemoteUri = null;
+    if (file == null) return;
+
+    try {
+      if (file.existsSync()) {
+        file.deleteSync();
+        final parent = file.parent;
+        if (parent.existsSync()) {
+          parent.deleteSync();
+        }
+      }
+    } on Exception catch (e) {
+      log(
+        'Failed to delete cached remote audio file: $e',
+        name: 'AudioClipPlayer',
+        level: 900,
+      );
+    }
+  }
+
+  static Future<File> _defaultRemoteAudioFileLoader(
+    Uri uri,
+    File? cachedFile,
+    Uri? cachedUri,
+  ) async {
+    if (cachedFile != null && cachedUri == uri && cachedFile.existsSync()) {
+      return cachedFile;
+    }
+
+    if (cachedFile != null && cachedFile.existsSync()) {
+      cachedFile.deleteSync();
+      final parent = cachedFile.parent;
+      if (parent.existsSync()) {
+        parent.deleteSync();
+      }
+    }
+
+    final request = await HttpClient().getUrl(uri);
+    final response = await request.close();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw HttpException(
+        'Failed to download remote audio (${response.statusCode})',
+        uri: uri,
+      );
+    }
+
+    final bytes = await consolidateHttpClientResponseBytes(response);
+    final tempDir = await Directory.systemTemp.createTemp('sound_clip_');
+    final path = tempDir.uri.resolve(_safeFilenameForUri(uri)).toFilePath();
+    final file = File(path);
+    await file.writeAsBytes(bytes, flush: true);
+    return file;
+  }
+
+  static String _safeFilenameForUri(Uri uri) {
+    final lastSegment = uri.pathSegments.isEmpty
+        ? 'audio_clip'
+        : uri.pathSegments.last;
+    final sanitized = lastSegment.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
+    return sanitized.isEmpty ? 'audio_clip' : sanitized;
   }
 }

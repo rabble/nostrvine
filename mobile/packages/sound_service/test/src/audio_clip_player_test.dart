@@ -2,6 +2,7 @@
 // ABOUTME: Validates setClip, playback controls, completionStream, dispose
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
@@ -108,6 +109,18 @@ void main() {
 
     group('setClip', () {
       test('sets network audio source', () async {
+        var loaderCallCount = 0;
+        player = AudioClipPlayer(
+          audioPlayer: mockAudioPlayer,
+          remoteAudioFileLoader: (uri, cachedFile, cachedUri) async {
+            loaderCallCount++;
+            final dir = Directory.systemTemp.createTempSync('audio_clip_test_');
+            final file = File('${dir.path}/clip.mp3')
+              ..writeAsBytesSync(const [1, 2, 3], flush: true);
+            return file;
+          },
+        );
+
         await player.setClip(
           const AudioSourceConfig.network(
             'https://example.com/audio.mp3',
@@ -116,8 +129,60 @@ void main() {
           ),
         );
 
-        verify(() => mockAudioPlayer.setAudioSource(any())).called(1);
+        final capturedSource =
+            verify(
+                  () => mockAudioPlayer.setAudioSource(captureAny()),
+                ).captured.single
+                as ClippingAudioSource;
+        expect(capturedSource.child.uri.scheme, 'file');
+        expect(loaderCallCount, 1);
       });
+
+      test(
+        'reuses cached file for repeated network clips from same URI',
+        () async {
+          File? cachedFile;
+          var loaderCallCount = 0;
+          player = AudioClipPlayer(
+            audioPlayer: mockAudioPlayer,
+            remoteAudioFileLoader: (uri, existingFile, existingUri) async {
+              loaderCallCount++;
+              if (existingFile != null &&
+                  existingUri == uri &&
+                  existingFile.existsSync()) {
+                return existingFile;
+              }
+
+              final dir = Directory.systemTemp.createTempSync(
+                'audio_clip_test_',
+              );
+              cachedFile = File('${dir.path}/clip.mp3');
+              cachedFile!.writeAsBytesSync(const [1, 2, 3], flush: true);
+              return cachedFile!;
+            },
+          );
+
+          const source = AudioSourceConfig.network(
+            'https://example.com/audio.mp3',
+            start: Duration(seconds: 1),
+            end: Duration(seconds: 5),
+          );
+
+          await player.setClip(source);
+          await player.setClip(
+            const AudioSourceConfig.network(
+              'https://example.com/audio.mp3',
+              start: Duration(seconds: 2),
+              end: Duration(seconds: 6),
+            ),
+          );
+
+          verify(() => mockAudioPlayer.setAudioSource(any())).called(2);
+          expect(loaderCallCount, 2);
+          expect(cachedFile, isNotNull);
+          expect(cachedFile!.existsSync(), isTrue);
+        },
+      );
 
       test('sets asset audio source', () async {
         await player.setClip(
