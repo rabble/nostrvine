@@ -289,9 +289,11 @@ void main() {
           expect(manager.getCachedFileSync('alias_evicted'), isNull);
 
           // Wait for the async persist triggered by stale-entry detection.
-          // pumpEventQueue drains until idle — needed because _persistAliasMap
-          // now has two awaits (writeAsString + rename).
-          await pumpEventQueue();
+          // Awaiting _aliasWriteQueue directly is more reliable than
+          // pumpEventQueue() because real file-IO callbacks (writeAsString +
+          // rename) may not complete within pumpEventQueue's microtask budget
+          // on slower CI machines.
+          await manager.waitForPendingAliasWrites();
 
           final contents = await aliasFile.readAsString();
           expect(contents, contains('alias_valid'));
@@ -442,9 +444,11 @@ void main() {
           expect(manager.getCachedFileSync('alias_key'), isNull);
 
           // Wait for the async alias persist triggered by the eviction.
-          // pumpEventQueue drains until idle — needed because _persistAliasMap
-          // now has two awaits (writeAsString + rename).
-          await pumpEventQueue();
+          // Awaiting _aliasWriteQueue directly is more reliable than
+          // pumpEventQueue() because real file-IO callbacks (writeAsString +
+          // rename) may not complete within pumpEventQueue's microtask budget
+          // on slower CI machines.
+          await manager.waitForPendingAliasWrites();
 
           final contents = await aliasFile.readAsString();
           expect(contents, isNot(contains('alias_key')));
@@ -498,9 +502,12 @@ void main() {
 
           await manager.initialize();
 
-          // Drain the event queue fully: _persistAliasMap performs two awaits
-          // (writeAsString to .tmp, then rename to aliases.json).
-          await pumpEventQueue();
+          // Wait for the async alias persist triggered by initialize().
+          // Awaiting _aliasWriteQueue directly is more reliable than
+          // pumpEventQueue() because real file-IO callbacks (writeAsString +
+          // rename) may not complete within pumpEventQueue's microtask budget
+          // on slower CI machines.
+          await manager.waitForPendingAliasWrites();
 
           final tmpFile = File('${cacheDir.path}/aliases.json.tmp');
 

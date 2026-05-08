@@ -287,6 +287,7 @@
     "videoPlayerUnmute": "I-unmute ang video",
     "videoPlayerEditVideo": "I-edit ang video",
     "videoPlayerEditVideoTooltip": "I-edit ang video",
+    "videoPlayerTapHint": "I-tap para i-play o i-pause. Mag-double tap para i-like.",
     "contentWarningLabel": "Content Warning",
     "contentWarningNudity": "Kahubaran",
     "contentWarningSexualContent": "Sexual Content",
