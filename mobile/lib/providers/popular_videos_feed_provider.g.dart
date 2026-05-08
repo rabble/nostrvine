@@ -18,6 +18,7 @@ part of 'popular_videos_feed_provider.dart';
 /// - Pull to refresh
 /// - appReady gate becomes true
 /// - Content filter preferences change
+/// - Selected popular period changes (Right Now / Week / Month / All-Time)
 
 @ProviderFor(PopularVideosFeed)
 const popularVideosFeedProvider = PopularVideosFeedProvider._();
@@ -32,6 +33,7 @@ const popularVideosFeedProvider = PopularVideosFeedProvider._();
 /// - Pull to refresh
 /// - appReady gate becomes true
 /// - Content filter preferences change
+/// - Selected popular period changes (Right Now / Week / Month / All-Time)
 final class PopularVideosFeedProvider
     extends $AsyncNotifierProvider<PopularVideosFeed, VideoFeedState> {
   /// Popular Videos feed provider - shows trending videos by recent engagement.
@@ -44,6 +46,7 @@ final class PopularVideosFeedProvider
   /// - Pull to refresh
   /// - appReady gate becomes true
   /// - Content filter preferences change
+  /// - Selected popular period changes (Right Now / Week / Month / All-Time)
   const PopularVideosFeedProvider._()
     : super(
         from: null,
@@ -63,7 +66,7 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'722f41829a5d6ba75f3f04a3882686011e1c67d6';
+String _$popularVideosFeedHash() => r'f7c6350218d72d21dbb860f1e9884978666de26b';
 
 /// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
@@ -75,6 +78,7 @@ String _$popularVideosFeedHash() => r'722f41829a5d6ba75f3f04a3882686011e1c67d6';
 /// - Pull to refresh
 /// - appReady gate becomes true
 /// - Content filter preferences change
+/// - Selected popular period changes (Right Now / Week / Month / All-Time)
 
 abstract class _$PopularVideosFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
