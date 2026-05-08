@@ -72,7 +72,16 @@ Alignment fullscreenVideoMediaAlignment({required bool isPortrait}) {
 double fullscreenContainedVideoTopInset({
   required double safeAreaTop,
   bool isPortrait = false,
+  bool hasHeader = false,
 }) {
+  // When the screen has a context header, the Scaffold no longer extends the
+  // body behind the AppBar (see `extendBodyBehindAppBar: !hasHeader` below),
+  // so the body is already laid out beneath the header — applying a
+  // leaf-level Padding here would double-pad. The leaf-level inset only
+  // applies on the headerless fullscreen feed, where the body extends
+  // behind a transparent AppBar and contained videos need to be pushed
+  // down to avoid overlapping with it.
+  if (hasHeader) return 0;
   return isPortrait ? 0 : safeAreaTop + DiVineAppBarStyle.defaultStyle.height;
 }
 
@@ -778,9 +787,22 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   )
                 : null;
 
+            // When this screen is opened with a context header (Popular
+            // Videos, hashtag, search, liked, etc.) the header is meaningful
+            // chrome and the video must sit beneath it. We let the Scaffold
+            // own the layout (`extendBodyBehindAppBar: false`) instead of
+            // applying a leaf-level Padding inside `_FittedVideoPlayer` —
+            // the leaf approach is fragile around the media_kit `Video`
+            // widget and was unreliable for square Vine reposts whose
+            // baked-in letterbox bars made them appear to "slip under" the
+            // header. Headerless usages keep the TikTok-style edge-to-edge
+            // layout.
+            final hasHeader =
+                widget.contextTitle != null && widget.contextTitle!.isNotEmpty;
+
             return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
-              extendBodyBehindAppBar: true,
+              extendBodyBehindAppBar: !hasHeader,
               appBar: DiVineAppBar(
                 title: widget.contextTitle ?? '',
                 showBackButton: true,
@@ -1159,6 +1181,8 @@ class _PooledFullscreenItemContentState
   Widget build(BuildContext context) {
     final video = widget.video;
     final isPortrait = video.dimensions != null && video.isPortrait;
+    final hasHeader =
+        widget.contextTitle != null && widget.contextTitle!.isNotEmpty;
     final overlayLabels = contentWarningOverlayLabels(
       contentWarningLabels: video.contentWarningLabels,
       warnLabels: video.warnLabels,
@@ -1193,6 +1217,7 @@ class _PooledFullscreenItemContentState
                 child: _FittedVideoPlayer(
                   videoController: videoController,
                   isPortrait: isPortrait,
+                  hasHeader: hasHeader,
                   videoWidth: video.width?.toDouble(),
                   videoHeight: video.height?.toDouble(),
                 ),
@@ -1200,6 +1225,7 @@ class _PooledFullscreenItemContentState
           loadingBuilder: (context) => _VideoLoadingPlaceholder(
             thumbnailUrl: video.thumbnailUrl,
             isPortrait: isPortrait,
+            hasHeader: hasHeader,
           ),
           errorBuilder: (context, onRetry, errorType) {
             // Capture the cubit eagerly so the post-frame callback doesn't
@@ -1329,12 +1355,14 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
+    this.hasHeader = false,
     this.videoWidth,
     this.videoHeight,
   });
 
   final VideoController videoController;
   final bool isPortrait;
+  final bool hasHeader;
   final double? videoWidth;
   final double? videoHeight;
 
@@ -1345,6 +1373,7 @@ class _FittedVideoPlayer extends StatelessWidget {
     final topInset = fullscreenContainedVideoTopInset(
       safeAreaTop: MediaQuery.viewPaddingOf(context).top,
       isPortrait: isPortrait,
+      hasHeader: hasHeader,
     );
 
     // Do not set filterQuality to high — on Android the bicubic
@@ -1368,10 +1397,15 @@ class _FittedVideoPlayer extends StatelessWidget {
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
+  const _VideoLoadingPlaceholder({
+    this.thumbnailUrl,
+    this.isPortrait = true,
+    this.hasHeader = false,
+  });
 
   final String? thumbnailUrl;
   final bool isPortrait;
+  final bool hasHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -1380,6 +1414,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
     final topInset = fullscreenContainedVideoTopInset(
       safeAreaTop: MediaQuery.viewPaddingOf(context).top,
       isPortrait: isPortrait,
+      hasHeader: hasHeader,
     );
     final url = thumbnailUrl;
 

@@ -245,6 +245,23 @@ void main() {
           0,
         );
       });
+
+      test('returns 0 when a context header is present — the Scaffold lays out '
+          'the body beneath the AppBar, so the leaf-level Padding would '
+          'double-pad. Applies to both portrait and contained videos.', () {
+        expect(
+          fullscreenContainedVideoTopInset(
+            safeAreaTop: 54,
+            isPortrait: true,
+            hasHeader: true,
+          ),
+          0,
+        );
+        expect(
+          fullscreenContainedVideoTopInset(safeAreaTop: 54, hasHeader: true),
+          0,
+        );
+      });
     });
 
     late MockFullscreenFeedBloc mockBloc;
@@ -575,9 +592,7 @@ void main() {
         );
         await tester.pump();
 
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.paused,
-        );
+        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
         await tester.pump();
         clearInteractions(defaultController);
 
@@ -825,11 +840,7 @@ void main() {
           // would never see the transition.
           final controller = StreamController<FullscreenFeedState>();
           addTearDown(controller.close);
-          whenListen(
-            mockBloc,
-            controller.stream,
-            initialState: initialState,
-          );
+          whenListen(mockBloc, controller.stream, initialState: initialState);
 
           await tester.pumpWidget(
             MaterialApp(
@@ -869,9 +880,7 @@ void main() {
                                   listener: (ctx, _) {
                                     Navigator.of(ctx).maybePop();
                                   },
-                                  child: const Scaffold(
-                                    body: Text('on-feed'),
-                                  ),
+                                  child: const Scaffold(body: Text('on-feed')),
                                 ),
                           ),
                         ),
