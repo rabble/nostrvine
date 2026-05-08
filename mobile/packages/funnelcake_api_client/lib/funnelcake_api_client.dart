@@ -3,4 +3,5 @@ library;
 
 export 'src/exceptions.dart';
 export 'src/funnelcake_api_client.dart';
+export 'src/leaderboard_period.dart';
 export 'src/models/models.dart';
