@@ -130,5 +130,33 @@ void main() {
 
       expect(containerOf(tester).read(popularPeriodProvider), isNull);
     });
+
+    testWidgets('silently no-ops when there is no GoRouter ancestor', (
+      tester,
+    ) async {
+      // Some widget tests pump ExploreScreen (or this harness) under a
+      // plain MaterialApp — no GoRouter. The sync helper must not throw
+      // and must not clobber the provider's existing value.
+      final container = ProviderContainer(
+        overrides: [
+          popularPeriodProvider.overrideWith((_) => LeaderboardPeriod.month),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: _SyncHarness()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        container.read(popularPeriodProvider),
+        equals(LeaderboardPeriod.month),
+      );
+    });
   });
 }

@@ -58,6 +58,13 @@ import 'package:unified_logger/unified_logger.dart';
 /// up-to-date.
 @visibleForTesting
 void syncPopularPeriodFromUrl(BuildContext context, WidgetRef ref) {
+  // GoRouterState.of throws when called outside a GoRouter subtree
+  // (e.g. unit tests that pump ExploreScreen under a plain MaterialApp).
+  // Probe via GoRouter.maybeOf first; if there's no router ancestor,
+  // there's no URL to read — leave the provider alone (clearing it
+  // would clobber test-overridden state).
+  if (GoRouter.maybeOf(context) == null) return;
+
   final slug = GoRouterState.of(context).uri.queryParameters['period'];
   final period = LeaderboardPeriod.fromUrlSlug(slug);
 
