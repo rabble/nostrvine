@@ -173,6 +173,49 @@ class BlurhashService {
     return 'L6Pj0^jE.AyE_3t7t7R**0o#DgR4';
   }
 
+  /// Derive a [VineContentType] from free-form metadata strings.
+  ///
+  /// Returns `null` when no keyword matches; callers can then fall back to
+  /// [getDefaultVineBlurhash]. Comparison is case-insensitive.
+  static VineContentType? deriveContentType({
+    Iterable<String> hashtags = const [],
+    String? group,
+    String? title,
+    String? content,
+  }) {
+    final tokens = <String>[
+      ...hashtags.map((h) => h.toLowerCase()),
+      group?.toLowerCase() ?? '',
+      title?.toLowerCase() ?? '',
+      content?.toLowerCase() ?? '',
+    ].join(' ');
+
+    bool hasAny(List<String> keywords) => keywords.any(tokens.contains);
+
+    if (hasAny(['dance', 'choreo'])) return VineContentType.dance;
+    if (hasAny(['nature', 'outdoor', 'wildlife'])) {
+      return VineContentType.nature;
+    }
+    if (hasAny(['food', 'recipe', 'cooking'])) return VineContentType.food;
+    if (hasAny(['music', 'song', 'beat'])) return VineContentType.music;
+    if (hasAny(['tech', 'coding', 'code', 'dev'])) {
+      return VineContentType.tech;
+    }
+    if (hasAny(['art', 'design', 'drawing'])) return VineContentType.art;
+    if (hasAny(['sport', 'fitness', 'workout', 'soccer', 'football'])) {
+      return VineContentType.sports;
+    }
+    if (hasAny(['lifestyle', 'daily', 'vlog'])) {
+      return VineContentType.lifestyle;
+    }
+    if (hasAny(['meme', 'shitpost', 'funny'])) return VineContentType.meme;
+    if (hasAny(['tutorial', 'howto', 'how-to'])) {
+      return VineContentType.tutorial;
+    }
+
+    return null;
+  }
+
   /// Get common vine blurhashes for different content
   /// types.
   static String getBlurhashForContentType(
@@ -220,10 +263,6 @@ class BlurhashService {
   /// Validate blurhash format.
   static bool _isValidBlurhash(String blurhash) {
     if (blurhash.length < 6) return false;
-
-    // Basic validation - should start with 'L'
-    // and contain valid base83 characters
-    if (!blurhash.startsWith('L')) return false;
 
     final validChars = RegExp(r'^[0-9A-Za-z#$%*+,-.:;=?@\[\]^_{|}~]+$');
     return validChars.hasMatch(blurhash);

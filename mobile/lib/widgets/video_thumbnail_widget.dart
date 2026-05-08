@@ -1,6 +1,7 @@
 // ABOUTME: Smart video thumbnail widget that displays thumbnails or blurhash placeholders
 // ABOUTME: Uses existing thumbnail URLs from video events and falls back to blurhash when missing
 
+import 'package:blurhash_service/blurhash_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'
@@ -35,18 +36,32 @@ class VideoThumbnailWidget extends StatefulWidget {
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   String? _thumbnailUrl;
   double? _resolvedAspectRatio;
+  VineContentType? _derivedContentType;
 
   @override
   void initState() {
     super.initState();
+    _derivedContentType = _deriveContentType(widget.video);
     _loadThumbnail();
   }
+
+  static VineContentType? _deriveContentType(VideoEvent video) =>
+      BlurhashService.deriveContentType(
+        hashtags: video.hashtags,
+        group: video.group,
+        title: video.title,
+        content: video.content,
+      );
 
   @override
   void didUpdateWidget(VideoThumbnailWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.video.id != widget.video.id) {
+    if (oldWidget.video.id != widget.video.id ||
+        oldWidget.video.thumbnailUrl != widget.video.thumbnailUrl ||
+        oldWidget.video.blurhash != widget.video.blurhash ||
+        oldWidget.video.dimensions != widget.video.dimensions) {
       _resolvedAspectRatio = null;
+      _derivedContentType = _deriveContentType(widget.video);
       _loadThumbnail();
     }
   }
@@ -89,26 +104,21 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 
   Widget _buildContent(BoxFit fit) {
-    if (_thumbnailUrl != null) {
-      // Show the thumbnail with flat color as placeholder while loading
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          // Show blurhash or flat color as background while image loads
-          if (widget.video.blurhash != null)
-            BlurhashDisplay(
-              blurhash: widget.video.blurhash!,
-              width: widget.width,
-              height: widget.height,
-              fit: fit,
-            )
-          else
-            Container(
-              width: widget.width,
-              height: widget.height,
-              color: VineTheme.surfaceContainer,
-            ),
-          // Actual thumbnail image with error boundary
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Show blurhash or flat color as background while image loads
+        BlurhashDisplay(
+          blurhash: widget.video.blurhash,
+          contentType: _derivedContentType,
+          width: widget.width,
+          height: widget.height,
+          fit: fit,
+        ),
+
+        // Actual thumbnail image with error boundary, rendered on top of
+        // the blurhash placeholder once it loads.
+        if (_thumbnailUrl != null)
           _SafeNetworkImage(
             url: _thumbnailUrl!,
             width: widget.width,
@@ -117,45 +127,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
             videoId: widget.video.id,
             showPlayIcon: widget.showPlayIcon,
             borderRadius: widget.borderRadius,
-          ),
-          // Play icon overlay if requested
-          if (widget.showPlayIcon)
-            Center(
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: VineTheme.backgroundColor.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: VineTheme.whiteText,
-                  size: 32,
-                ),
-              ),
-            ),
-        ],
-      );
-    }
-
-    // No thumbnail URL - show blurhash or flat placeholder color with
-    // optional play icon
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        if (widget.video.blurhash != null)
-          BlurhashDisplay(
-            blurhash: widget.video.blurhash!,
-            width: widget.width,
-            height: widget.height,
-            fit: fit,
-          )
-        else
-          Container(
-            width: widget.width,
-            height: widget.height,
-            color: VineTheme.surfaceContainer,
           ),
         if (widget.showPlayIcon)
           Center(
