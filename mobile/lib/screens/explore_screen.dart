@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -17,6 +18,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/providers/popular_period_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
@@ -44,6 +46,29 @@ import 'package:openvine/widgets/popular_videos_tab.dart';
 import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:rxdart/rxdart.dart' show StartWithExtension;
 import 'package:unified_logger/unified_logger.dart';
+
+/// Reads `?period=…` from the current `GoRouterState` and writes the
+/// parsed value into [popularPeriodProvider] after the current build
+/// completes.
+///
+/// Writing synchronously during `didChangeDependencies` can throw
+/// "Tried to modify a provider while the widget tree was building" on
+/// first-frame deep links, so the actual provider mutation is deferred
+/// to a post-frame callback. Skips the write when the value is already
+/// up-to-date.
+@visibleForTesting
+void syncPopularPeriodFromUrl(BuildContext context, WidgetRef ref) {
+  final slug = GoRouterState.of(context).uri.queryParameters['period'];
+  final period = LeaderboardPeriod.fromUrlSlug(slug);
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!context.mounted) return;
+    final current = ref.read(popularPeriodProvider);
+    if (current != period) {
+      ref.read(popularPeriodProvider.notifier).state = period;
+    }
+  });
+}
 
 /// Pure ExploreScreen using revolutionary Riverpod architecture
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -236,6 +261,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         }
       });
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    syncPopularPeriodFromUrl(context, ref);
   }
 
   Future<void> _loadHashtags() async {
