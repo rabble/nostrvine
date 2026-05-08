@@ -55,7 +55,7 @@ The current config is a placeholder. Replace these files with real Firebase conf
 
 ### 4. Build for TestFlight
 ```bash
-./build_testflight.sh
+./build_ios.sh release
 ```
 
 ### 5. Monitor Crashes
