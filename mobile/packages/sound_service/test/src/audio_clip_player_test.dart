@@ -2,6 +2,7 @@
 // ABOUTME: Validates setClip, playback controls, completionStream, dispose
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -58,6 +59,66 @@ Future<HttpClientResponse> _okHttpResponse(Invocation _) async =>
 
 Future<HttpClientResponse> _notFoundHttpResponse(Invocation _) async =>
     _FakeHttpClientResponse(HttpStatus.notFound, const []);
+
+/// A `List<int>` that reports an arbitrary [length] without allocating
+/// any backing storage. Used to drive the maxBytes guard in the default
+/// remote audio loader without allocating ~50 MB of real bytes.
+class _FakeOversizedChunk with ListMixin<int> {
+  _FakeOversizedChunk(this._length);
+
+  final int _length;
+
+  @override
+  int get length => _length;
+
+  @override
+  set length(int newLength) => throw UnsupportedError('readonly');
+
+  @override
+  int operator [](int index) => 0;
+
+  @override
+  void operator []=(int index, int value) => throw UnsupportedError('readonly');
+}
+
+/// HTTP response that yields a single fake chunk reporting [byteCount]
+/// bytes. Never materializes the bytes — useful for size-limit tests.
+class _OversizedHttpClientResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _OversizedHttpClientResponse(this.byteCount);
+
+  final int byteCount;
+
+  @override
+  int get statusCode => HttpStatus.ok;
+
+  @override
+  int get contentLength => byteCount;
+
+  @override
+  HttpClientResponseCompressionState get compressionState =>
+      HttpClientResponseCompressionState.notCompressed;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return Stream<List<int>>.fromIterable([
+      _FakeOversizedChunk(byteCount),
+    ]).listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 Future<HttpClientRequest> Function(Invocation) _httpRequestAnswer(
   HttpClientRequest request,
@@ -435,6 +496,41 @@ void main() {
               createHttpClient: _httpClientFactory(mockHttpClient),
             ),
             throwsA(isA<HttpException>()),
+          );
+        },
+      );
+
+      test(
+        'throws when the default network loader exceeds the byte limit',
+        () async {
+          final mockHttpClient = _MockHttpClient();
+          final mockRequest = _MockHttpClientRequest();
+          when(
+            () => mockHttpClient.getUrl(any()),
+          ).thenAnswer(_httpRequestAnswer(mockRequest));
+          // 50 MiB + 1 byte — exceeds the loader's hard cap.
+          when(mockRequest.close).thenAnswer(
+            (_) async => _OversizedHttpClientResponse(50 * 1024 * 1024 + 1),
+          );
+
+          await expectLater(
+            HttpOverrides.runZoned(
+              () => player.setClip(
+                const AudioSourceConfig.network(
+                  'https://example.com/huge.m4a',
+                  start: Duration.zero,
+                  end: Duration(seconds: 2),
+                ),
+              ),
+              createHttpClient: _httpClientFactory(mockHttpClient),
+            ),
+            throwsA(
+              isA<HttpException>().having(
+                (e) => e.message,
+                'message',
+                contains('byte limit'),
+              ),
+            ),
           );
         },
       );
