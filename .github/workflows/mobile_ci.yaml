@@ -181,6 +181,19 @@ jobs:
           flutter-version: "3.41.9"
           channel: "stable"
           cache: true
+      - name: 📦 Enable Swift Package Manager
+        # c2pa_flutter (declared in pubspec.yaml as a git dependency)
+        # ships a CocoaPods stub whose only Swift file is a `#error`
+        # directive demanding SPM — its podspec exists only to satisfy
+        # Flutter's plugin validation. Locally SPM is enabled by
+        # `flutter config --enable-swift-package-manager`, so pub_get
+        # registers the plugin via FlutterGeneratedPluginSwiftPackage
+        # and `pod install` skips it. CI runners start with SPM off,
+        # so without this step pub_get installs c2pa_flutter as a Pod
+        # and `xcodebuild test` compiles the stub → ** TEST FAILED **.
+        # Setting must happen before any flutter command that touches
+        # iOS plugin setup (pub get, precache, build).
+        run: flutter config --enable-swift-package-manager
       - name: 📥 Precache iOS artifacts
         run: flutter precache --ios
       - name: 📦 Install dependencies
