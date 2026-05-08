@@ -4233,6 +4233,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get supportExportLogsFailed => 'ምዝግብ ማስታወሻዎችን ወደ ውጭ መላክ አልተሳካም።';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'የድጋፍ ውይይት አይገኝም';
 
   @override

@@ -4343,6 +4343,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get supportExportLogsFailed => 'Logs exporteren mislukt';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Supportchat niet beschikbaar';
 
   @override

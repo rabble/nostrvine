@@ -4389,6 +4389,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get supportExportLogsFailed => 'Échec de l\'exportation des logs';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Chat du support indisponible';
 
   @override

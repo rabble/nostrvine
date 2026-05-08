@@ -4380,6 +4380,14 @@ class AppLocalizationsFil extends AppLocalizations {
   String get supportExportLogsFailed => 'Hindi na-export ang logs';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Hindi available ang support chat';
 
   @override

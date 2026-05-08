@@ -7634,6 +7634,18 @@ abstract class AppLocalizations {
   /// **'Failed to export logs'**
   String get supportExportLogsFailed;
 
+  /// Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs saved to {path}'**
+  String supportLogsSavedTo(String path);
+
+  /// SnackBar action label that opens the folder containing the just-saved log file. Desktop platforms only.
+  ///
+  /// In en, this message translates to:
+  /// **'Show in folder'**
+  String get supportRevealLogsAction;
+
   /// No description provided for @supportChatNotAvailable.
   ///
   /// In en, this message translates to:

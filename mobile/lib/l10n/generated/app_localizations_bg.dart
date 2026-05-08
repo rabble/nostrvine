@@ -4372,6 +4372,14 @@ class AppLocalizationsBg extends AppLocalizations {
   String get supportExportLogsFailed => 'Не успяхме да експортираме логовете';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Чатът за поддръжка не е наличен';
 
   @override

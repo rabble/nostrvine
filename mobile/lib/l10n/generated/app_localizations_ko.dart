@@ -4138,6 +4138,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportExportLogsFailed => '로그 내보내기에 실패했어요';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => '지원 채팅을 사용할 수 없어요';
 
   @override

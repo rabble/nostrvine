@@ -4310,6 +4310,14 @@ class AppLocalizationsTr extends AppLocalizations {
   String get supportExportLogsFailed => 'Günlükler dışa aktarılamadı';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Destek sohbeti kullanılamıyor';
 
   @override

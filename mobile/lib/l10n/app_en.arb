@@ -2252,6 +2252,19 @@
   "supportLoginRequired": "Log in to contact support",
   "supportExportingLogs": "Exporting logs...",
   "supportExportLogsFailed": "Failed to export logs",
+  "supportLogsSavedTo": "Logs saved to {path}",
+  "@supportLogsSavedTo": {
+    "description": "Snackbar shown after exporting logs to a file on desktop platforms. {path} is the absolute filesystem path of the saved log file.",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "supportRevealLogsAction": "Show in folder",
+  "@supportRevealLogsAction": {
+    "description": "SnackBar action label that opens the folder containing the just-saved log file. Desktop platforms only."
+  },
   "supportChatNotAvailable": "Support chat not available",
   "supportCouldNotOpenMessages": "Could not open support messages",
   "supportCouldNotOpenPage": "Could not open {pageName}",
