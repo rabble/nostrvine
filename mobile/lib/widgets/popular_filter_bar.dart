@@ -42,8 +42,8 @@ class PopularFilterBar extends ConsumerWidget {
     return Semantics(
       label: l10n.popularFilterLabel,
       container: true,
-      child: SizedBox(
-        height: 48,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
