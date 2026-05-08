@@ -327,6 +327,9 @@ class CommentsRepository {
   /// - [rootAddressableId]: Optional addressable identifier for the root event
   ///   (format: `kind:pubkey:d-tag`). When provided, counts comments from both
   ///   E and A tag queries to get an accurate total.
+  /// - [includeVideoReplies]: Whether to include Kind 34236 video replies in
+  ///   the count. Defaults to `false` so flag-off callers do not inflate the
+  ///   comment badge with reply-only videos.
   ///
   /// Returns the number of comments on the event.
   ///
@@ -535,6 +538,10 @@ class CommentsRepository {
   /// Returns a list of comments sorted newest first.
   /// Supports cursor-based pagination via [before].
   ///
+  /// By default this returns text comments only. Callers that render a
+  /// dedicated video-replies surface should opt in with
+  /// [includeVideoReplies].
+  ///
   /// Throws:
   ///
   /// * [LoadCommentsByAuthorFailedException] if the query fails.
@@ -542,7 +549,7 @@ class CommentsRepository {
     required String authorPubkey,
     int limit = _authorCommentsLimit,
     DateTime? before,
-    bool includeVideoReplies = true,
+    bool includeVideoReplies = false,
   }) async {
     try {
       final untilTimestamp = before != null

@@ -211,9 +211,11 @@ class VideosRepository {
     var cursor = until;
     final visible = <VideoEvent>[];
     final seenIds = <String>{};
-    var rawPagesFetched = 0;
     String? rawBody;
 
+    // Intentionally walk until we have enough visible videos or the upstream
+    // feed is exhausted. A hard page cap caused premature EOF on reply-dense
+    // feeds by hiding visible videos behind reply-only raw pages.
     while (visible.length < limit) {
       final response = await _funnelcakeApiClient!.getHomeFeed(
         pubkey: userPubkey,
@@ -231,12 +233,11 @@ class VideosRepository {
           response.nextCursor ?? _cursorBeforeOldestStats(response.videos);
       if (nextCursor == null || nextCursor == cursor) break;
       cursor = nextCursor;
-      rawPagesFetched++;
     }
 
     return (
       videos: visible.take(limit).toList(),
-      rawBody: rawPagesFetched == 0 ? rawBody : null,
+      rawBody: rawBody,
     );
   }
 

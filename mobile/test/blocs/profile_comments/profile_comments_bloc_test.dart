@@ -109,6 +109,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => [
@@ -141,6 +142,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer((_) async => []);
           return createBloc();
@@ -166,6 +168,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenThrow(
             const LoadCommentsByAuthorFailedException('Network error'),
@@ -194,6 +197,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer((_) async => []);
           return createBloc();
@@ -207,6 +211,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           );
         },
@@ -220,6 +225,7 @@ void main() {
             () => mockCommentsRepository.loadCommentsByAuthor(
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => List.generate(
@@ -266,6 +272,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
               before: any(named: 'before'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => [
@@ -303,6 +310,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
               before: any(named: 'before'),
+              includeVideoReplies: true,
             ),
           ).thenAnswer(
             (_) async => [
@@ -378,6 +386,7 @@ void main() {
               authorPubkey: any(named: 'authorPubkey'),
               limit: any(named: 'limit'),
               before: any(named: 'before'),
+              includeVideoReplies: true,
             ),
           ).thenThrow(Exception('Network error'));
           return createBloc();

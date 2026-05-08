@@ -183,6 +183,7 @@ void main() {
           videoBlurhash: 'LEHV6nWB2y',
         );
 
+        expect(comment.props, hasLength(14));
         expect(
           comment.props,
           equals([

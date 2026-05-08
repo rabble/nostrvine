@@ -45,6 +45,7 @@ class ProfileCommentsBloc
     try {
       final comments = await _commentsRepository.loadCommentsByAuthor(
         authorPubkey: _targetUserPubkey,
+        includeVideoReplies: true,
       );
 
       final videoReplies = comments.where((c) => c.hasVideo).toList();
@@ -89,6 +90,7 @@ class ProfileCommentsBloc
       final comments = await _commentsRepository.loadCommentsByAuthor(
         authorPubkey: _targetUserPubkey,
         before: before,
+        includeVideoReplies: true,
       );
 
       final newVideoReplies = comments.where((c) => c.hasVideo).toList();
