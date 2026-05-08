@@ -39,9 +39,11 @@ still be green.
   has no `__divineBridgeNonce` constant; the only available channel is
   `webkit.messageHandlers.divineSandboxBridge.postMessage(...)` raw. That is
   exactly the attack vector PR #3979 closes.
-- **`patrol: ^4.2.0` is the integration-test harness.** Existing tests in
-  `mobile/integration_test/` use `patrolTest($)` regardless of whether they
-  use OS-level automation. The new test follows the same convention.
+- **`patrol: ^4.2.0` is the integration-test harness for tests that need
+  OS-level automation** (`auth/`, `lifecycle/`, etc.). Tests that don't need
+  patrol's native side run as plain `testWidgets` against the
+  `IntegrationTestWidgetsFlutterBinding`, executable directly via
+  `flutter test integration_test/...` — the new test follows that pattern.
 - **Repo rules**: layered architecture, no error strings in BLoC state, no
   hardcoded values without a named constant, l10n for any user-visible
   string. None of these bite hard for a test, but the test fixture should
@@ -219,10 +221,10 @@ installs `FrameAttestingScriptMessageHandler` directly, and asserts the
 
 **Complexity:** Low for the native side; ignores half the surface.
 
-## Recommendation
+## Decision
 
 **Approach A** — in-process HTTP server with two same-origin endpoints
-(`/` main + `/iframe.html` subframe).
+(`/` main + `/iframe.html` subframe). Landed in PR #4134.
 
 Why:
 
@@ -245,29 +247,31 @@ Why:
    reviewers already know this shape from
    `nostr_app_sandbox_screen_test.dart`.
 
-## Open Questions for /plan
+## Resolved Questions
 
-- [ ] Confirm whether `WKWebView` reports the loopback origin as
-      `http://127.0.0.1:<port>` or `http://localhost:<port>` after a
-      `loadRequest`. The fixture `allowedOrigins` must use the form
-      WebKit echoes back; otherwise the navigation delegate's allow-list
-      check refuses the page before a single `WKScriptMessage` flows.
-- [ ] Whether to wire a stub `BridgeService` so the main-frame path can
-      be asserted positively (`success: true`). Recommended: yes — a
-      negative assertion ("not subframe_rejected") is weak.
-- [ ] Polling timeout budget: 15 s on a simulator should be ample, may
-      need bumping under CI load.
-- [ ] App Transport Security on physical-device runs (loopback HTTP).
-
-## Prerequisites
-
-- [ ] None blocking. The plugin, the seam, and the patrol harness are
-      already in place.
-
-## Next Step
-
-`/plan https://github.com/divinevideo/divine-mobile/issues/4120` —
-proceed with implementation planning using Approach A. The plan should
-resolve the loopback-origin question (probe with a one-off
-`debugPrint`-driven simulator run if needed) before finalizing the
-fixture.
+- **Loopback origin form.** WKWebView preserves `http://127.0.0.1:<port>`
+  verbatim through `loadRequest` on iPhone 17 Pro / iOS 26.4. The fixture
+  uses the literal IP form in both `launchUrl` and `allowedOrigins`; no
+  rewrite to `localhost` was observed.
+- **Stub `BridgeService`.** Wired for the main-frame test
+  (`bridgeServiceOverride` + private `_FakeAuthProvider` /
+  `_FakeNostrSigner`). The iframe test omits it because rejection
+  happens before `_handleBridgeMessage` runs.
+- **Polling timeout budget.** 15 s is comfortable headroom. On
+  iPhone 17 Pro / iOS 26.4 / Flutter 3.41.4 the `iframe`
+  response landed in ~1 s and the `main` response in ~1 s across 3
+  consecutive runs. Even with cold caches the slowest tail observed was
+  under 2 s.
+- **App Transport Security.** Simulator allows `http://127.0.0.1`
+  without Info.plist changes; the Runner Info.plist is unchanged. Device
+  runs are not exercised by this PR — if a future device-only CI run
+  trips ATS, a test-only `NSAllowsLocalNetworking` carve-out is the
+  expected mitigation (production Info.plist must not change).
+- **Test harness choice.** `testWidgets` against
+  `IntegrationTestWidgetsFlutterBinding`, not `patrolTest`. This test
+  doesn't need patrol's native automation, and `flutter test
+  integration_test/apps/...` is the simplest invocation. Patrol's
+  `PatrolBinding` and the auto-installed `IntegrationTestWidgetsFlutterBinding`
+  conflict when invoked through `flutter test` (assertion failure on
+  binding init), so adopting plain `testWidgets` was the cleaner path
+  rather than introducing the patrol CLI as a new dependency.

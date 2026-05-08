@@ -14,7 +14,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
-import 'package:patrol/patrol.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Live channel coverage for `NostrBridgeAttestationPlugin`.
@@ -52,10 +51,9 @@ void main() {
       await server.close(force: true);
     });
 
-    patrolTest(
+    testWidgets(
       'iframe-originated bridge traffic is rejected with subframe_rejected',
-      ($) async {
-        final tester = $.tester;
+      (tester) async {
         if (defaultTargetPlatform != TargetPlatform.iOS) return;
 
         final captured = <String>[];
@@ -84,10 +82,9 @@ void main() {
       },
     );
 
-    patrolTest(
+    testWidgets(
       'main-frame bridge traffic reaches the bridge service',
-      ($) async {
-        final tester = $.tester;
+      (tester) async {
         if (defaultTargetPlatform != TargetPlatform.iOS) return;
 
         SharedPreferences.setMockInitialValues({});
