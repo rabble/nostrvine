@@ -27,7 +27,7 @@ class SearchUserTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final claimedNip05 = profile.displayNip05;
+    final claimedNip05 = profile.shortDisplayNip05;
     final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
         ? ref
               .watch(nip05VerificationProvider(profile.pubkey))

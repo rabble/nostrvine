@@ -413,7 +413,7 @@ void main() {
       final textSpan = text.textSpan! as TextSpan;
       final spans = textSpan.children!.cast<TextSpan>();
       final mentionSpan = spans.firstWhere(
-        (span) => span.text == '@alice.divine.video',
+        (span) => span.text == '@alice',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());

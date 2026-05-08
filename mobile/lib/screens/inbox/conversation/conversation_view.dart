@@ -128,7 +128,7 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
                 otherPubkey: otherPubkey,
                 displayName: displayName,
                 imageUrl: profile?.picture,
-                nip05: profile?.displayNip05,
+                nip05: profile?.shortDisplayNip05,
                 onViewProfile: () {
                   final npub = NostrKeyUtils.encodePubKey(otherPubkey);
                   context.push('${OtherProfileScreen.path}/$npub');

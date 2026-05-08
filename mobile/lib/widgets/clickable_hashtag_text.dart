@@ -285,8 +285,9 @@ class ClickableHashtagText extends ConsumerWidget {
       UserProfile(:final displayName?) when displayName.isNotEmpty =>
         displayName,
       UserProfile(:final name?) when name.isNotEmpty => name,
-      UserProfile(:final displayNip05?) when displayNip05.isNotEmpty =>
-        displayNip05,
+      UserProfile(:final shortDisplayNip05?)
+          when shortDisplayNip05.isNotEmpty =>
+        shortDisplayNip05,
       _ => UserProfile.defaultDisplayNameFor(hexPubkey),
     };
     return profileText.startsWith('@') ? profileText : '@$profileText';

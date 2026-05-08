@@ -530,6 +530,30 @@ void main() {
 
         expect(profile.handle, isEmpty);
       });
+
+      test('strips .divine.video suffix for subdomain format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@rabble.divine.video',
+        );
+
+        expect(profile.handle, equals('@rabble'));
+      });
+
+      test('strips divine.video suffix for legacy format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'rabble@divine.video',
+        );
+
+        expect(profile.handle, equals('@rabble'));
+      });
     });
 
     group('computed properties', () {
@@ -948,6 +972,79 @@ void main() {
         );
 
         expect(profile.displayNip05, isNull);
+      });
+    });
+
+    group('shortDisplayNip05', () {
+      test('returns @user (no suffix) for subdomain format', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@alice.divine.video',
+        );
+
+        expect(profile.shortDisplayNip05, equals('@alice'));
+      });
+
+      test('returns @user (no suffix) for legacy user@divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'heybob@divine.video',
+        );
+
+        expect(profile.shortDisplayNip05, equals('@heybob'));
+      });
+
+      test('returns @user (no suffix) for legacy user@openvine.co', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'charlie@openvine.co',
+        );
+
+        expect(profile.shortDisplayNip05, equals('@charlie'));
+      });
+
+      test('preserves external NIP-05 unchanged', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'alice@example.com',
+        );
+
+        expect(profile.shortDisplayNip05, equals('alice@example.com'));
+      });
+
+      test('returns null when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.shortDisplayNip05, isNull);
+      });
+
+      test('returns null when nip05 is empty', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '',
+        );
+
+        expect(profile.shortDisplayNip05, isNull);
       });
     });
 

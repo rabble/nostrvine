@@ -354,9 +354,10 @@ class _UserSearchTile extends StatelessWidget {
                   overflow: .ellipsis,
                   style: VineTheme.titleMediumFont(color: textColor),
                 ),
-                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                if (profile.shortDisplayNip05 != null &&
+                    profile.shortDisplayNip05!.isNotEmpty)
                   Text(
-                    profile.nip05!,
+                    profile.shortDisplayNip05!,
                     maxLines: 1,
                     overflow: .ellipsis,
                     style: VineTheme.bodyMediumFont(color: textColor),

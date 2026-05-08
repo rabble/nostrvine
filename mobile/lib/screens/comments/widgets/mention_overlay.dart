@@ -124,10 +124,7 @@ class _MentionSuggestionItem extends ConsumerWidget {
         ? ref
               .watch(
                 mentionNip05VerificationProvider(
-                  MentionNip05Claim(
-                    pubkey: suggestion.pubkey,
-                    nip05: rawNip05,
-                  ),
+                  MentionNip05Claim(pubkey: suggestion.pubkey, nip05: rawNip05),
                 ),
               )
               .whenOrNull(data: (status) => status)
@@ -185,10 +182,16 @@ class _MentionSuggestionItem extends ConsumerWidget {
 
 String? _displayNip05(String? nip05) {
   if (nip05 == null || nip05.isEmpty) return null;
-  if (nip05.startsWith('_@')) return nip05.substring(1);
+  if (nip05.startsWith('_@')) {
+    final stripped = nip05.substring(1);
+    final match = RegExp(
+      r'^@([a-z0-9\-_.]+)\.divine\.video$',
+    ).firstMatch(stripped);
+    return match != null ? '@${match.group(1)}' : stripped;
+  }
 
   if (nip05.endsWith('@divine.video') || nip05.endsWith('@openvine.co')) {
-    return '@${nip05.split('@')[0]}.divine.video';
+    return '@${nip05.split('@')[0]}';
   }
 
   return nip05;

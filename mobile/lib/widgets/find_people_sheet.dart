@@ -193,7 +193,7 @@ class _ResultsList extends StatelessWidget {
                   );
                   return _UserResultTile(
                     user: user,
-                    nip05: profile.nip05,
+                    nip05: profile.shortDisplayNip05,
                     onTap: () => onSelectUser(user),
                   );
                 },
@@ -213,7 +213,7 @@ class _ResultsList extends StatelessWidget {
                   );
                   return _UserResultTile(
                     user: user,
-                    nip05: profile.nip05,
+                    nip05: profile.shortDisplayNip05,
                     onTap: () => onSelectUser(user),
                   );
                 },

@@ -181,21 +181,26 @@ class UserProfile {
   /// A display handle for the user, prefixed with `@`.
   ///
   /// Prefers NIP-05 identifier, falls back to [name]. Returns an empty
-  /// string when neither is available.
+  /// string when neither is available. Uses [shortDisplayNip05] so
+  /// divine.video users render as `@rabble`, not `@rabble.divine.video`.
   String get handle {
     if (nip05 != null && nip05!.isNotEmpty) {
-      final dn = displayNip05!;
+      final dn = shortDisplayNip05!;
       return dn.startsWith('@') ? dn : '@$dn';
     }
     if (name != null && name!.isNotEmpty) return '@$name';
     return '';
   }
 
-  /// NIP-05 formatted for display.
+  /// NIP-05 formatted for display, full form.
   ///
   /// Normalises all divine.video / openvine.co identifiers to the canonical
   /// `@username.divine.video` form. External identifiers (e.g.
   /// `alice@example.com`) are returned unchanged.
+  ///
+  /// Use this when the domain is meaningful to the user — settings screens,
+  /// the share-video watermark, the NIP-05 editor — so people understand
+  /// what they own. For general UI rendering prefer [shortDisplayNip05].
   String? get displayNip05 {
     if (nip05 == null || nip05!.isEmpty) return null;
     // New subdomain format: _@username.divine.video → @username.divine.video
@@ -204,6 +209,19 @@ class UserProfile {
     final username = divineUsername;
     if (username != null) return '@$username.divine.video';
     // External domain: keep as-is
+    return nip05;
+  }
+
+  /// NIP-05 formatted for display, short form.
+  ///
+  /// Strips the `.divine.video` suffix for divine-owned subdomains so the
+  /// user shows up as `@rabble` instead of `@rabble.divine.video`. External
+  /// identifiers (e.g. `alice@example.com`) are returned unchanged because
+  /// the domain is the user's own and meaningful.
+  String? get shortDisplayNip05 {
+    if (nip05 == null || nip05!.isEmpty) return null;
+    final username = divineUsername;
+    if (username != null) return '@$username';
     return nip05;
   }
 
