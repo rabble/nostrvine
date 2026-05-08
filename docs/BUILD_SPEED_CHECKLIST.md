@@ -4,6 +4,8 @@ Status: Current
 
 Use this checklist when builds slow down before reaching for `flutter clean`.
 
+Run these commands from `mobile/`.
+
 ## Start With Fast Defaults
 
 `./build_ios.sh debug` and `./build_macos.sh debug` are the fast defaults.

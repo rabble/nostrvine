@@ -32,6 +32,8 @@ The iOS and macOS Xcode projects have been modified to automatically run `pod in
 
 ## Usage
 
+Run these commands from `mobile/`.
+
 ### Command Line Builds
 
 ```bash

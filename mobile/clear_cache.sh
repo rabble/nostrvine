@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+cd "$(dirname "$0")"
+
 usage() {
     cat <<'USAGE'
 Usage: ./clear_cache.sh [--full]

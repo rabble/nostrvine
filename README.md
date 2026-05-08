@@ -23,20 +23,20 @@ flutter pub get
 flutter run -d <device>
 ```
 
-Common alternatives:
+From `mobile/`, common alternatives:
 
 - `./run_dev.sh ios debug`
 - `./run_dev.sh android debug`
 - `./run_dev.sh macos debug`
 
-If a build fails from generated code or pod state, use the targeted scripts first:
+If a build fails from generated code or pod state, use the targeted scripts first from `mobile/`:
 
 - `./build_ios.sh debug --codegen && ./run_dev.sh ios debug`
 - `./build_ios.sh debug --pod-reset && ./run_dev.sh ios debug`
 - `./build_macos.sh debug --codegen && ./run_dev.sh macos debug`
 - `./build_macos.sh debug --pod-reset && ./run_dev.sh macos debug`
 
-For local cache resets:
+For local cache resets from `mobile/`:
 
 - `./clear_cache.sh`
 - `./clear_cache.sh --full`

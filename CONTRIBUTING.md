@@ -49,7 +49,7 @@ flutter analyze
 flutter test
 ```
 
-Useful app entry paths:
+From `mobile/`, useful app entry paths:
 
 - `./run_dev.sh ios debug`
 - `./run_dev.sh android debug`
@@ -58,21 +58,21 @@ Useful app entry paths:
 - `./build_ios.sh release`
 - `./build_android.sh release`
 
-If generated code changes, run with a fast reset step:
+If generated code changes, run from `mobile/` with a fast reset step:
 
 ```bash
 ./build_ios.sh debug --codegen
 ./run_dev.sh ios debug
 ```
 
-If pods are out of sync:
+If pods are out of sync, run from `mobile/`:
 
 ```bash
 ./build_ios.sh debug --pod-reset
 ./run_dev.sh ios debug
 ```
 
-For local cache cleanup:
+For local cache cleanup from `mobile/`:
 
 ```bash
 ./clear_cache.sh
