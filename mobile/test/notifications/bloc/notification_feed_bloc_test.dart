@@ -99,6 +99,13 @@ void main() {
       mockFollowRepo = _MockFollowRepository();
       // Default: not following anyone. Individual tests override per-pubkey.
       when(() => mockFollowRepo.isFollowing(any())).thenReturn(false);
+      // _onStarted re-dispatches NotificationFeedMarkAllRead after the
+      // loaded state is emitted (issue #4144). Stub markAllAsRead with a
+      // success default so unrelated `NotificationFeedStarted` tests
+      // don't fail with MissingStubError + rollback when their fixture
+      // page has unread items. Individual mark-all-read-specific tests
+      // override this stub to assert success / failure paths.
+      when(() => mockNotificationRepo.markAllAsRead()).thenAnswer((_) async {});
     });
 
     NotificationFeedBloc createBloc() => NotificationFeedBloc(
@@ -114,11 +121,15 @@ void main() {
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
-        'emits [loading, loaded] on success',
+        'emits [loading, loaded, all-read] and persists mark-all-read '
+        'when loaded page has unread items',
         setUp: () {
           when(
             () => mockNotificationRepo.refresh(),
           ).thenAnswer((_) async => page);
+          when(
+            () => mockNotificationRepo.markAllAsRead(),
+          ).thenAnswer((_) async {});
         },
         build: createBloc,
         act: (bloc) => bloc.add(NotificationFeedStarted()),
@@ -129,7 +140,40 @@ void main() {
             notifications: page.items,
             unreadCount: 1,
           ),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_videoNotif(isRead: true)],
+          ),
         ],
+        verify: (_) {
+          verify(() => mockNotificationRepo.markAllAsRead()).called(1);
+        },
+      );
+
+      blocTest<NotificationFeedBloc, NotificationFeedState>(
+        'emits [loading, loaded] without mark-all-read when '
+        'loaded page is already all read',
+        setUp: () {
+          when(() => mockNotificationRepo.refresh()).thenAnswer(
+            (_) async => NotificationPage(
+              items: [_videoNotif(isRead: true)],
+              unreadCount: 0,
+              hasMore: true,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(NotificationFeedStarted()),
+        expect: () => [
+          NotificationFeedState(status: NotificationFeedStatus.loading),
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [_videoNotif(isRead: true)],
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+        },
       );
 
       blocTest<NotificationFeedBloc, NotificationFeedState>(
@@ -146,6 +190,9 @@ void main() {
           NotificationFeedState(status: NotificationFeedStatus.failure),
         ],
         errors: () => [isA<Exception>()],
+        verify: (_) {
+          verifyNever(() => mockNotificationRepo.markAllAsRead());
+        },
       );
     });
 
@@ -834,6 +881,23 @@ void main() {
               ),
             ],
             unreadCount: 1,
+            hasMore: false,
+          ),
+          // _onStarted re-dispatches MarkAllRead which flips isRead and
+          // zeros the unread count. isFollowingBack stays true because
+          // _applyFollowState re-derives it from the repository on every
+          // state mutation.
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              _actorNotif(
+                id: 'f1',
+                pubkey: pubkey,
+                displayName: 'Carol',
+                isRead: true,
+                isFollowingBack: true,
+              ),
+            ],
             hasMore: false,
           ),
         ],

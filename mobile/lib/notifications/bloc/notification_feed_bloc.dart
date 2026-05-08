@@ -78,6 +78,14 @@ class NotificationFeedBloc
   }
 
   /// Handle initial load.
+  ///
+  /// Re-dispatches [NotificationFeedMarkAllRead] after the loaded state is
+  /// emitted so the existing rollback / `addError` path runs uniformly.
+  /// [NotificationsView]'s `initState` also dispatches mark-all-read, but
+  /// that event arrives before this handler's async fetch completes — the
+  /// guard in [_onMarkAllRead] sees an empty list and returns without
+  /// doing anything. Re-dispatching here, after the data is present,
+  /// guarantees the unread state is cleared regardless of event ordering.
   Future<void> _onStarted(
     NotificationFeedStarted event,
     Emitter<NotificationFeedState> emit,
@@ -95,6 +103,8 @@ class NotificationFeedBloc
           hasMore: page.hasMore,
         ),
       );
+
+      add(const NotificationFeedMarkAllRead());
     } catch (e, s) {
       addError(e, s);
       emit(state.copyWith(status: NotificationFeedStatus.failure));
