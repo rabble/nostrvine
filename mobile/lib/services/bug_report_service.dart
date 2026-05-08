@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dm_repository/dm_repository.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart'
     show BugReportData, BugReportResult, LogEntry;
@@ -888,14 +889,18 @@ class BugReportService {
     }
   }
 
-  /// Export logs on desktop (macOS / Windows / Linux) by writing directly to
-  /// the user's Downloads folder.
+  /// Export logs on desktop (macOS / Windows / Linux) by prompting the user
+  /// for a save location and writing the log file there.
   ///
-  /// `share_plus` on macOS requires a `sharePositionOrigin` anchor frame the
-  /// support screen can't supply, so the share popover fails silently and
-  /// the user sees "Failed to export logs". Writing the file straight to
-  /// Downloads matches desktop conventions and is what the user wanted
-  /// anyway — they can then attach it manually.
+  /// `share_plus` on desktop requires a `sharePositionOrigin` anchor frame
+  /// the support screen can't supply, so the share popover fails silently
+  /// and the user sees "Failed to export logs". A native Save As dialog
+  /// matches desktop conventions and lets the user pick where the file
+  /// goes.
+  ///
+  /// If the user cancels the dialog, returns
+  /// [LogExportResult.cancelled] so the caller can stay silent rather than
+  /// showing a failure toast.
   Future<LogExportResult> _exportLogsDesktop(
     String content,
     String fileName,
@@ -903,24 +908,40 @@ class BugReportService {
   ) async {
     try {
       final downloadsDir = await getDownloadsDirectory();
-      final targetDir =
-          downloadsDir ?? await getApplicationDocumentsDirectory();
-      final filePath = '${targetDir.path}/$fileName';
-      final file = File(filePath);
+      final initialDirectory =
+          downloadsDir?.path ?? (await getApplicationDocumentsDirectory()).path;
+
+      final location = await getSaveLocation(
+        suggestedName: fileName,
+        initialDirectory: initialDirectory,
+        acceptedTypeGroups: const [
+          XTypeGroup(label: 'Text', extensions: ['txt']),
+        ],
+      );
+
+      if (location == null) {
+        Log.info(
+          'Log export cancelled by user',
+          category: LogCategory.system,
+        );
+        return const LogExportResult.cancelled();
+      }
+
+      final file = File(location.path);
       await file.writeAsString(content);
 
       final fileSizeMB = (await file.length() / (1024 * 1024)).toStringAsFixed(
         2,
       );
       Log.info(
-        'Comprehensive logs saved to desktop downloads: $filePath '
+        'Comprehensive logs saved to desktop: ${location.path} '
         '($fileSizeMB MB, $lineCount lines)',
         category: LogCategory.system,
       );
-      return LogExportResult(success: true, filePath: filePath);
+      return LogExportResult(success: true, filePath: location.path);
     } catch (e, stackTrace) {
       Log.error(
-        'Failed to save logs to desktop downloads: $e',
+        'Failed to save logs on desktop: $e',
         category: LogCategory.system,
         error: e,
         stackTrace: stackTrace,
@@ -1034,13 +1055,28 @@ class BugReportService {
 
 /// Outcome of [BugReportService.exportLogsToFile].
 ///
-/// On desktop, [filePath] points at the saved log file in the user's
-/// Downloads folder so the UI can show the user where it landed. On
+/// On desktop, [filePath] points at the path the user picked in the
+/// Save As dialog so the UI can show them where the file landed. On
 /// mobile and web, [filePath] is null because the platform's share /
 /// download flow already surfaces the file.
+///
+/// [cancelled] is true when the user dismissed a Save As dialog without
+/// picking a location — distinct from [success] = false (which is a real
+/// failure) so the UI can stay silent on cancel rather than flashing a
+/// "Failed to export logs" toast.
 class LogExportResult {
-  const LogExportResult({required this.success, this.filePath});
+  const LogExportResult({
+    required this.success,
+    this.filePath,
+    this.cancelled = false,
+  });
+
+  const LogExportResult.cancelled()
+    : success = false,
+      filePath = null,
+      cancelled = true;
 
   final bool success;
   final String? filePath;
+  final bool cancelled;
 }

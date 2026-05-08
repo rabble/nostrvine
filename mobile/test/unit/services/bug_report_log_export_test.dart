@@ -33,6 +33,21 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.filePath, isNull);
+      expect(result.cancelled, isFalse);
+    });
+
+    test('cancelled named constructor sets the cancelled flag', () {
+      const result = LogExportResult.cancelled();
+
+      expect(result.cancelled, isTrue);
+      expect(result.success, isFalse);
+      expect(result.filePath, isNull);
+    });
+
+    test('default cancelled flag is false', () {
+      const result = LogExportResult(success: true, filePath: '/tmp/logs.txt');
+
+      expect(result.cancelled, isFalse);
     });
   });
 }

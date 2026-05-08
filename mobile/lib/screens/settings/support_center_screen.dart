@@ -141,6 +141,12 @@ class SupportCenterScreen extends ConsumerWidget {
     );
     if (!context.mounted) return;
 
+    if (result.cancelled) {
+      // User dismissed the Save As dialog; nothing to report.
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      return;
+    }
+
     if (!result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
