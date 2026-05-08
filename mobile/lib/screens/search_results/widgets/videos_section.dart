@@ -11,7 +11,6 @@ import 'package:openvine/blocs/search_results_filter/search_results_filter.dart'
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/l10n/search_results_filter_l10n.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
