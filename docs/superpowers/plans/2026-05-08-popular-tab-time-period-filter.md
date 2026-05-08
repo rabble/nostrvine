@@ -1698,7 +1698,7 @@ If anything is red, fix it on this branch (no follow-up PRs) — failing tests a
 
 - **Repo style:** every public method gets a doc comment; widget classes — never methods returning `Widget`; uniform spacing via `Row(spacing: …)`/`Column(spacing: …)`; no `Color(0x…)` literals — use `VineTheme.*`.
 - **State management:** the popular provider is Riverpod-legacy. We're not migrating to BLoC in this PR — extending an existing Riverpod feature, per the migration policy's "incremental, test-backed, small" rule.
-- **No technical debt:** if you find a TODO you didn't add, leave it; if your work surfaces a bug elsewhere, file a separate PR.
+- **No technical debt:** if you find an unrelated deferred-work marker you didn't add, leave it; if your work surfaces a bug elsewhere, file a separate PR.
 - **Generated files:** if `dart run build_runner build --delete-conflicting-outputs` is needed for Mockito-generated mocks in `videos_repository`, run it and stage the output.
 - **L10n consistency:** the new keys go into `app_en.arb` only and the allowlist; translations land in a follow-up locale-pass PR.
 - **Verification before completion:** never claim a step is done without running the exact command for that step. Per `superpowers:verification-before-completion` — evidence before assertions.
