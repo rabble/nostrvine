@@ -469,6 +469,9 @@ class FunnelcakeApiClient {
   /// server-side by views/loops within the window. Results are sorted by
   /// rank, not by `created_at` — the caller should not re-sort.
   ///
+  /// Endpoint uses a `{period, entries}` envelope rather than the standard
+  /// `{data, pagination}` shape, so `_unwrapListResponse` does not apply.
+  ///
   /// [period] is the time window: day / week / month / alltime.
   /// [limit] is the maximum number of videos to return (defaults to 50).
   /// [offset] is the optional offset for pagination (in items, not timestamps).

@@ -569,7 +569,10 @@ void main() {
   "period": "week",
   "entries": [
     {"id": "", "pubkey": "$testPubkey", "kind": 34236, "title": "no id",
-     "thumbnail": "x", "video_url": "x", "d_tag": "x"},
+     "thumbnail": "x", "video_url": "https://x", "d_tag": "x"},
+    {"id": "no-url", "pubkey": "$testPubkey", "kind": 34236,
+     "title": "empty url",
+     "thumbnail": "x", "video_url": "", "d_tag": "x"},
     {"id": "good", "pubkey": "$testPubkey", "kind": 34236, "title": "valid",
      "thumbnail": "x", "video_url": "https://x", "d_tag": "x"}
   ]
@@ -600,6 +603,21 @@ void main() {
 
         expect(videos, isEmpty);
       });
+
+      test(
+        'returns empty list when response body is not a JSON object',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response('[]', 200));
+
+          final videos = await client.getLeaderboardVideos(
+            period: LeaderboardPeriod.week,
+          );
+
+          expect(videos, isEmpty);
+        },
+      );
 
       test('throws FunnelcakeNotConfiguredException when not available', () {
         final emptyClient = FunnelcakeApiClient(
