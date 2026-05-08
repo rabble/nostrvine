@@ -40,7 +40,7 @@ class BlurhashService {
   static const int _portraitComponentX = 4;
   static const int _portraitComponentY = 7;
 
-  /// Components for 1:1 square videos (balanced).
+  /// Components for 1:1 square and landscape videos (balanced).
   static const int _squareComponentX = 4;
   static const int _squareComponentY = 4;
 
@@ -51,7 +51,7 @@ class BlurhashService {
   static const double defaultPunch = 1;
 
   /// Returns component counts suited to the image's aspect ratio.
-  /// Supports 9:16 portrait and 1:1 square; falls back to portrait.
+  /// Supports 9:16 portrait, 1:1 square, and landscape; falls back to portrait.
   static (int compX, int compY) _componentsForAspectRatio(
     int width,
     int height,
@@ -60,7 +60,7 @@ class BlurhashService {
       return (_portraitComponentX, _portraitComponentY);
     }
     final ratio = width / height;
-    // Square: ratio ≥ 0.9 (covers 1:1 with rounding tolerance)
+    // Square or landscape: ratio ≥ 0.9 (covers 1:1 and any wider format)
     if (ratio >= 0.9) return (_squareComponentX, _squareComponentY);
     // Portrait 9:16 (and any other tall format)
     return (_portraitComponentX, _portraitComponentY);
