@@ -6,9 +6,14 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:sound_service/src/audio_source_config.dart';
+
+abstract class _RemoteAudioLoaderConfig {
+  static const Duration connectionTimeout = Duration(seconds: 10);
+  static const Duration readTimeout = Duration(seconds: 30);
+  static const int maxBytes = 50 * 1024 * 1024;
+}
 
 /// Downloads a remote audio URL to a local file, optionally reusing a cache.
 typedef RemoteAudioFileLoader =
@@ -107,7 +112,6 @@ class AudioClipPlayer {
   Future<void> dispose() async {
     try {
       await _audioPlayer.dispose();
-      await _clearCachedRemoteFile();
     } on Exception catch (e) {
       log(
         'Error disposing AudioClipPlayer: $e',
@@ -115,6 +119,7 @@ class AudioClipPlayer {
         level: 900,
       );
     }
+    await _clearCachedRemoteFile();
   }
 
   Future<void> _clearCachedRemoteFile() async {
@@ -127,6 +132,9 @@ class AudioClipPlayer {
       if (file.existsSync()) {
         file.deleteSync();
         final parent = file.parent;
+        // Non-recursive on purpose: a custom RemoteAudioFileLoader may place
+        // the cached file in a directory that is shared with unrelated files;
+        // deleteSync() throws (and we swallow) if the parent isn't empty.
         if (parent.existsSync()) {
           parent.deleteSync();
         }
@@ -153,25 +161,51 @@ class AudioClipPlayer {
       cachedFile.deleteSync();
       final parent = cachedFile.parent;
       if (parent.existsSync()) {
-        parent.deleteSync();
+        parent.deleteSync(recursive: true);
       }
     }
 
-    final request = await HttpClient().getUrl(uri);
-    final response = await request.close();
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw HttpException(
-        'Failed to download remote audio (${response.statusCode})',
-        uri: uri,
+    final client = HttpClient()
+      ..connectionTimeout = _RemoteAudioLoaderConfig.connectionTimeout;
+    try {
+      final request = await client.getUrl(uri);
+      final response = await request.close().timeout(
+        _RemoteAudioLoaderConfig.readTimeout,
       );
-    }
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw HttpException(
+          'Failed to download remote audio (${response.statusCode})',
+          uri: uri,
+        );
+      }
 
-    final bytes = await consolidateHttpClientResponseBytes(response);
-    final tempDir = await Directory.systemTemp.createTemp('sound_clip_');
-    final path = tempDir.uri.resolve(_safeFilenameForUri(uri)).toFilePath();
-    final file = File(path);
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
+      final tempDir = await Directory.systemTemp.createTemp('sound_clip_');
+      final path = tempDir.uri.resolve(_safeFilenameForUri(uri)).toFilePath();
+      final file = File(path);
+      final sink = file.openWrite();
+      var written = 0;
+      try {
+        await for (final chunk in response.timeout(
+          _RemoteAudioLoaderConfig.readTimeout,
+        )) {
+          written += chunk.length;
+          if (written > _RemoteAudioLoaderConfig.maxBytes) {
+            throw HttpException(
+              'Remote audio exceeds ${_RemoteAudioLoaderConfig.maxBytes} '
+              'byte limit',
+              uri: uri,
+            );
+          }
+          sink.add(chunk);
+        }
+        await sink.flush();
+      } finally {
+        await sink.close();
+      }
+      return file;
+    } finally {
+      client.close(force: true);
+    }
   }
 
   static String _safeFilenameForUri(Uri uri) {

@@ -307,10 +307,7 @@ void main() {
                   ).captured.single
                   as ClippingAudioSource;
           expect(capturedSource.child.uri.scheme, 'file');
-          expect(
-            capturedSource.child.uri.pathSegments.last,
-            'remote_clip.m4a',
-          );
+          expect(capturedSource.child.uri.pathSegments.last, 'remote_clip.m4a');
         },
       );
 
@@ -515,6 +512,39 @@ void main() {
         // Should not throw — error is caught and logged.
         await expectLater(player.dispose(), completes);
       });
+
+      test(
+        'still deletes cached remote file when audio player dispose throws',
+        () async {
+          late File cachedFile;
+          player = AudioClipPlayer(
+            audioPlayer: mockAudioPlayer,
+            remoteAudioFileLoader: (uri, existingFile, existingUri) async {
+              final dir = Directory.systemTemp.createTempSync(
+                'audio_clip_test_',
+              );
+              return cachedFile = File('${dir.path}/clip.mp3')
+                ..writeAsBytesSync(const [1, 2, 3], flush: true);
+            },
+          );
+
+          await player.setClip(
+            const AudioSourceConfig.network(
+              'https://example.com/audio.mp3',
+              start: Duration.zero,
+              end: Duration(seconds: 2),
+            ),
+          );
+
+          when(
+            () => mockAudioPlayer.dispose(),
+          ).thenThrow(Exception('dispose failed'));
+
+          await player.dispose();
+
+          expect(cachedFile.existsSync(), isFalse);
+        },
+      );
 
       test('deletes cached remote file during dispose', () async {
         late File cachedFile;
