@@ -74,6 +74,15 @@ void main() {
       );
     });
 
+    test('FetchRepostersFailedException has correct format', () {
+      const exception = FetchRepostersFailedException('Relay timeout');
+      expect(exception.message, equals('Relay timeout'));
+      expect(
+        exception.toString(),
+        equals('FetchRepostersFailedException: Relay timeout'),
+      );
+    });
+
     test('MissingDTagException has default message', () {
       const exception = MissingDTagException();
       expect(exception.message, contains('d-tag'));
