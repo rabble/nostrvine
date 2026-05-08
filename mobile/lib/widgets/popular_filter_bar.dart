@@ -8,6 +8,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/popular_period_provider.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 /// Horizontal chip row that filters the Popular tab by time window.
 ///
@@ -24,6 +25,13 @@ class PopularFilterBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(popularPeriodProvider);
     final l10n = context.l10n;
+
+    // Diagnostic logging for #4147 hang RCA — remove once fix verified
+    Log.info(
+      'PopularFilterBar.build: selected=$selected',
+      name: 'PopularFilterBar',
+      category: LogCategory.ui,
+    );
 
     final chips = <_ChipSpec>[
       _ChipSpec(period: null, label: l10n.popularFilterRightNow),

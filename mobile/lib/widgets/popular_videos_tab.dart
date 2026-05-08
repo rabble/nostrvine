@@ -246,87 +246,91 @@ class _PopularVideosTrendingContentState
 
     measureHeaderHeight();
 
-    return Stack(
+    return Column(
       children: [
-        // Grid takes full space
-        Positioned.fill(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: handleScrollNotification,
-            child: ComposableVideoGrid(
-              videos: widget.videos,
-              useMasonryLayout: true,
-              // Explore grids are edge-to-edge; the 4px gap between columns
-              // comes from `crossAxisSpacing` inside ComposableVideoGrid, not
-              // from outer side padding.
-              padding: EdgeInsets.only(
-                bottom: 4,
-                top: headerHeight > 0 ? headerHeight + 4 : 4,
-              ),
-              onVideoTap: (videoList, index) {
-                Log.info(
-                  '🎯 PopularVideosTab TAP: gridIndex=$index, '
-                  'videoId=${videoList[index].id}',
-                  category: LogCategory.video,
-                );
-                context.push(
-                  PooledFullscreenVideoFeedScreen.path,
-                  extra: PooledFullscreenVideoFeedArgs(
-                    // Use startWith to ensure initial videos are delivered
-                    // before FullscreenFeedBloc subscribes to the stream
-                    videosStream: _videosStreamController.stream.startWith(
-                      videoList,
-                    ),
-                    initialIndex: index,
-                    onLoadMore: popularVideosFeedNotifier.loadMore,
-                    hasMoreStream: _hasMoreStreamController.stream.startWith(
-                      widget.hasMoreContent,
-                    ),
-                    removedIdsStream: ref
-                        .read(videoEventServiceProvider)
-                        .removedVideoIds,
-                    contextTitle: 'Popular Videos',
-                    trafficSource: ViewTrafficSource.discoveryPopular,
-                  ),
-                );
-              },
-              onRefresh: () async {
-                Log.info(
-                  '🔄 PopularVideosTab: Refreshing',
-                  category: LogCategory.video,
-                );
-                await popularVideosFeedNotifier.refresh();
-              },
-              onLoadMore: () async {
-                Log.info(
-                  '📜 PopularVideosTab: Loading more',
-                  category: LogCategory.video,
-                );
-                await popularVideosFeedNotifier.loadMore();
-              },
-              isLoadingMore: widget.isLoadingMore,
-              hasMoreContent: widget.hasMoreContent,
-              emptyBuilder: () => const _PopularVideosEmptyState(),
-            ),
-          ),
-        ),
-        // Hashtags + filter bar overlay on top, animated when returning
-        AnimatedPositioned(
-          duration: headerFullyHidden
-              ? const Duration(milliseconds: 250)
-              : Duration.zero,
-          curve: Curves.easeOut,
-          top: headerOffset,
-          left: 0,
-          right: 0,
-          child: Column(
-            key: headerKey,
-            mainAxisSize: MainAxisSize.min,
+        // Filter bar always visible at top — pulled out of the
+        // scroll-hide overlay to avoid a layout interaction between its
+        // SingleChildScrollView and ScrollToHideMixin's headerHeight
+        // measurement that hard-crashed Flutter web (PR #4147).
+        const PopularFilterBar(),
+        Expanded(
+          child: Stack(
             children: [
-              TrendingHashtagsSection(
-                hashtags: hashtags,
-                isLoading: !TopHashtagsService.instance.isLoaded,
+              // Grid takes full space
+              Positioned.fill(
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: handleScrollNotification,
+                  child: ComposableVideoGrid(
+                    videos: widget.videos,
+                    useMasonryLayout: true,
+                    // Explore grids are edge-to-edge; the 4px gap between
+                    // columns comes from `crossAxisSpacing` inside
+                    // ComposableVideoGrid, not from outer side padding.
+                    padding: EdgeInsets.only(
+                      bottom: 4,
+                      top: headerHeight > 0 ? headerHeight + 4 : 4,
+                    ),
+                    onVideoTap: (videoList, index) {
+                      Log.info(
+                        '🎯 PopularVideosTab TAP: gridIndex=$index, '
+                        'videoId=${videoList[index].id}',
+                        category: LogCategory.video,
+                      );
+                      context.push(
+                        PooledFullscreenVideoFeedScreen.path,
+                        extra: PooledFullscreenVideoFeedArgs(
+                          // Use startWith to ensure initial videos are
+                          // delivered before FullscreenFeedBloc subscribes
+                          // to the stream
+                          videosStream: _videosStreamController.stream
+                              .startWith(videoList),
+                          initialIndex: index,
+                          onLoadMore: popularVideosFeedNotifier.loadMore,
+                          hasMoreStream: _hasMoreStreamController.stream
+                              .startWith(widget.hasMoreContent),
+                          removedIdsStream: ref
+                              .read(videoEventServiceProvider)
+                              .removedVideoIds,
+                          contextTitle: 'Popular Videos',
+                          trafficSource: ViewTrafficSource.discoveryPopular,
+                        ),
+                      );
+                    },
+                    onRefresh: () async {
+                      Log.info(
+                        '🔄 PopularVideosTab: Refreshing',
+                        category: LogCategory.video,
+                      );
+                      await popularVideosFeedNotifier.refresh();
+                    },
+                    onLoadMore: () async {
+                      Log.info(
+                        '📜 PopularVideosTab: Loading more',
+                        category: LogCategory.video,
+                      );
+                      await popularVideosFeedNotifier.loadMore();
+                    },
+                    isLoadingMore: widget.isLoadingMore,
+                    hasMoreContent: widget.hasMoreContent,
+                    emptyBuilder: () => const _PopularVideosEmptyState(),
+                  ),
+                ),
               ),
-              const PopularFilterBar(),
+              // Hashtags overlay on top, animated when returning
+              AnimatedPositioned(
+                duration: headerFullyHidden
+                    ? const Duration(milliseconds: 250)
+                    : Duration.zero,
+                curve: Curves.easeOut,
+                top: headerOffset,
+                left: 0,
+                right: 0,
+                child: TrendingHashtagsSection(
+                  key: headerKey,
+                  hashtags: hashtags,
+                  isLoading: !TopHashtagsService.instance.isLoaded,
+                ),
+              ),
             ],
           ),
         ),

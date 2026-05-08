@@ -18,6 +18,9 @@ import 'package:unified_logger/unified_logger.dart';
 
 part 'popular_videos_feed_provider.g.dart';
 
+// Diagnostic logging for #4147 hang RCA — remove once fix verified
+int _popularBuildCount = 0;
+
 /// Pagination cursor for the Popular feed.
 ///
 /// Two distinct semantics depending on the data source:
@@ -77,6 +80,17 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       name: 'PopularVideosFeedProvider',
       category: LogCategory.video,
     );
+
+    // Diagnostic logging for #4147 hang RCA — remove once fix verified
+    _popularBuildCount++;
+    if (_popularBuildCount % 5 == 0) {
+      Log.warning(
+        'PopularVideosFeed: build() called $_popularBuildCount times — '
+        'investigating PR #4147 page-hang regression',
+        name: 'PopularVideosFeedProvider',
+        category: LogCategory.video,
+      );
+    }
 
     if (!isAppReady) {
       // Preserve existing data during background — don't wipe the feed
