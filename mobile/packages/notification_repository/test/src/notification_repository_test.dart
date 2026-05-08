@@ -728,22 +728,39 @@ void main() {
         expect(item.targetEventId, equals('comment_event_xyz'));
       });
 
-      test('reply maps to reply (rendered as $ActorNotification)', () async {
+      test('reply on a video maps to comment ($VideoNotification)', () async {
         stubNotifications([
-          makeNotification(
-            notificationType: 'reply',
-            sourceKind: 1,
-            referencedEventId: null,
-          ),
+          makeNotification(notificationType: 'reply', sourceKind: 1),
         ]);
         stubProfiles({});
 
         final page = await repository.getNotifications();
-        // Reply is not a video kind — it falls through to actor mapping
-        // and is coerced to system in the ActorNotification.
-        final item = page.items.single as ActorNotification;
-        expect(item.type, equals(NotificationKind.system));
+        // A reply directly on a video is indistinguishable from a comment
+        // for the user, so it lands in the comment grouping path.
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.comment));
       });
+
+      test(
+        'reply on a non-video target maps to reply ($ActorNotification) '
+        'with targetEventId',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'reply',
+              sourceKind: 1,
+              isReferencedVideo: false,
+              referencedEventId: 'parent_comment_id',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('parent_comment_id'));
+        },
+      );
 
       test('comment maps to comment', () async {
         stubNotifications([

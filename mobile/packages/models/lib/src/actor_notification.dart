@@ -22,9 +22,10 @@ class ActorNotification extends NotificationItem {
          type == NotificationKind.follow ||
              type == NotificationKind.mention ||
              type == NotificationKind.system ||
-             type == NotificationKind.likeComment,
+             type == NotificationKind.likeComment ||
+             type == NotificationKind.reply,
          'ActorNotification only supports follow, mention, system, '
-         'likeComment',
+         'likeComment, reply',
        );
 
   /// The actor who triggered this notification.

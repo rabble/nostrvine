@@ -180,6 +180,7 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           case NotificationKind.mention:
             _navigateToProfile(context, actor.pubkey);
           case NotificationKind.likeComment:
+          case NotificationKind.reply:
             // targetEventId is the kind 1111 comment; the resolver
             // walks its E tag to the root video.
             if (targetEventId != null && targetEventId.isNotEmpty) {
@@ -195,7 +196,6 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
             break;
           case NotificationKind.like:
           case NotificationKind.comment:
-          case NotificationKind.reply:
           case NotificationKind.repost:
             // Not represented as ActorNotification, but pattern-match
             // exhaustivity requires these.

@@ -42,6 +42,17 @@ void main() {
 
         expect(notification.targetEventId, equals('b' * 64));
       });
+
+      test('accepts reply as an actor-anchored kind', () {
+        // Should not throw the assert.
+        ActorNotification(
+          id: 'n1',
+          type: NotificationKind.reply,
+          actor: actor,
+          timestamp: timestamp,
+          targetEventId: 'd' * 64,
+        );
+      });
     });
 
     group('equality', () {

@@ -337,6 +337,81 @@ void main() {
       });
 
       testWidgets(
+        'reply tap resolves target comment to root video and opens '
+        'comments thread',
+        (tester) async {
+          final videoService = _MockVideoEventService();
+          final nostrClient = _MockNostrClient();
+          final videosRepository = _MockVideosRepository();
+          const parentCommentId = 'parent_comment_id';
+          const rootVideoEventId = 'reply_root_video';
+          final resolvedVideo = _video(rootVideoEventId);
+
+          when(
+            () => videoService.getVideoById(parentCommentId),
+          ).thenReturn(null);
+          when(() => nostrClient.fetchEventById(parentCommentId)).thenAnswer((
+            _,
+          ) async {
+            final event = Event(
+              'a' * 64,
+              1111,
+              const [
+                ['E', rootVideoEventId],
+              ],
+              'parent comment text',
+              createdAt: 1700000000,
+            );
+            event.id = parentCommentId;
+            return event;
+          });
+          when(
+            () => videosRepository.fetchVideoWithStatsForRouteId(
+              rootVideoEventId,
+            ),
+          ).thenAnswer((_) async => resolvedVideo);
+          when(
+            () => videoService.shouldHideVideo(resolvedVideo),
+          ).thenReturn(false);
+
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: [
+                ActorNotification(
+                  id: 'r1',
+                  type: NotificationKind.reply,
+                  actor: ActorInfo(pubkey: 'replier', displayName: 'Bob'),
+                  timestamp: DateTime(2026),
+                  targetEventId: parentCommentId,
+                ),
+              ],
+            ),
+          );
+
+          final capturedArgs = await _pumpRoutedView(
+            tester,
+            mockBloc,
+            videoEventService: videoService,
+            nostrClient: nostrClient,
+            videosRepository: videosRepository,
+          );
+
+          await tester.tap(find.byType(NotificationListItem).first);
+          await tester.pumpAndSettle();
+
+          verify(() => nostrClient.fetchEventById(parentCommentId)).called(1);
+          verify(
+            () => videosRepository.fetchVideoWithStatsForRouteId(
+              rootVideoEventId,
+            ),
+          ).called(1);
+          expect(capturedArgs, hasLength(1));
+          expect(capturedArgs.single.autoOpenComments, isTrue);
+        },
+      );
+
+      testWidgets(
         'comment notification fetches by addressable id and opens comments',
         (tester) async {
           final videoService = _MockVideoEventService();
