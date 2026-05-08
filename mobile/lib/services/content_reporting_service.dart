@@ -183,7 +183,7 @@ class ContentReportingService {
         reportEvent,
         targetRelays: [moderationRelayUrl],
       );
-      if (sentEvent == null) {
+      if (sentEvent is! PublishSuccess) {
         Log.error(
           'Failed to publish report to relays',
           name: 'ContentReportingService',

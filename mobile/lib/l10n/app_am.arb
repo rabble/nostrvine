@@ -2044,6 +2044,23 @@
     "feedModeForYou": "ለእርስዎ",
     "feedModeNew": "አዲስ",
     "feedModeFollowing": "እየተከተሉ",
+    "feedModeSemanticLabel": "የፊድ ሁነታ: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "የቪድዮ ፈጣሪ: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "የፈጣሪ ፎቶ",
     "feedForYouEmpty": "የእርስዎ ለአንተ ምግብ ባዶ ነው።\nቪዲዮዎችን ያስሱ እና ለመቅረጽ ፈጣሪዎችን ይከተሉ።",
     "feedFollowingEmpty": "እስካሁን ከምትከተላቸው ሰዎች ምንም ቪዲዮዎች የሉም።\nየሚወዷቸውን ፈጣሪዎች ያግኙ እና ይከተሉዋቸው።",
     "feedLatestEmpty": "እስካሁን ምንም አዲስ ቪዲዮዎች የሉም።\nበቅርቡ ተመልሰው ይመልከቱ።",
@@ -2161,6 +2178,7 @@
     "routeInvalidCategory": "ልክ ያልሆነ ምድብ",
     "routeNoVideosToDisplay": "ምንም የሚታዩ ቪዲዮዎች የሉም",
     "routeInvalidProfileId": "ልክ ያልሆነ የመገለጫ መታወቂያ",
+    "routeUnknownPath": "ያ ገጽ በመተግበሪያው ውስጥ የለም።",
     "routeDefaultListName": "ዝርዝር",
     "supportTitle": "የድጋፍ ማዕከል",
     "supportContactSupport": "ድጋፍን ያነጋግሩ",
@@ -2593,6 +2611,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "ርዕስ የሌለው ቪዲዮ",
+    "clickableTextViewVideoLink": "ቪዲዮውን ይመልከቱ",
+    "messageExternalLinkDialogTitle": "ውጫዊ ሊንክ ይክፈቱ?",
+    "messageExternalLinkDialogBody": "ይህ ሊንክ ወደ ውጫዊ ድረ-ገጽ ይሄዳል እና ደህንነቱ አልተረጋገጠም:\n\n{url}",
+    "messageExternalLinkDialogOpen": "ክፈት",
     "inboxCollabInviteAcceptButton": "ተቀበል",
     "inboxCollabInviteIgnoreButton": "ችላ በል",
     "inboxCollabInviteAcceptedStatus": "ተቀባይነት አግኝቷል",
@@ -2608,6 +2631,10 @@
     },
     "collaboratorInviteDmBody": "በ{title} ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
     "collaboratorInviteDmBodyUntitled": "በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ {url}\n\nOpen diVine to review and accept.",
+    "dmSendFailedMessage": "መልዕክቱ መላክ አልተሳካም",
+    "dmSendFailedRetry": "እንደገና ይሞክሩ",
+    "dmSendPartialMessage": "ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም",
+    "dmConversationLoadError": "መልዕክቶችን መጫን አልተቻለም",
     "reportDialogCancel": "ሰርዝ",
     "reportDialogReport": "ሪፖርት አድርግ",
     "exploreVideoId": "ID: {id}",
@@ -3581,5 +3608,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "በፊዴ ላይም አጋራ",
+  "videoMetadataShareReplyToFeedSubtitle": "ሲጠፋ ይህ ቪዲዮ በአስተያየት ክር ውስጥ ብቻ ይቀራል።",
+  "commentsRecordVideoButtonLabel": "የቪዲዮ አስተያየት ቅረጽ",
+  "commentsOpenVideoLabel": "የቪዲዮ አስተያየት ክፈት",
+  "commentsMuteVideoReplyLabel": "የቪዲዮ ምላሽን ዝም አድርግ",
+  "commentsUnmuteVideoReplyLabel": "የቪዲዮ ምላሽን ድምጽ አስጀምር",
+  "commentsOpenReplyParentLabel": "ይህ የሚመልስበትን ቪዲዮ ክፈት",
+  "commentsReplyParentSectionTitle": "ምላሽ ለ",
+  "commentsReplyParentLabel": "ምላሽ ለ {target}",
+  "commentsReplyParentFallbackLabel": "ምላሽ ለ ቪዲዮ"
 }

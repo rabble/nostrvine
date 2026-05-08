@@ -121,7 +121,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => _FakeEvent());
+        ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
         when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -181,7 +181,7 @@ void main() {
 
       when(
         () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => _FakeEvent());
+      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -211,7 +211,7 @@ void main() {
 
       when(
         () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => _FakeEvent());
+      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -242,7 +242,7 @@ void main() {
 
       when(
         () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => _FakeEvent());
+      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -312,7 +312,7 @@ void main() {
 
       when(
         () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => _FakeEvent());
+      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -351,7 +351,7 @@ void main() {
 
       when(
         () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => _FakeEvent());
+      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
@@ -385,7 +385,7 @@ void main() {
 
       when(
         () => mockNostrClient.publishEvent(any()),
-      ).thenAnswer((_) async => _FakeEvent());
+      ).thenAnswer((_) async => PublishSuccess(event: _FakeEvent()));
 
       when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 

@@ -179,7 +179,7 @@ class ViewEventPublisher {
       // Publish to relays (fire-and-forget for ephemeral events)
       final sentEvent = await _nostrService.publishEvent(event);
 
-      if (sentEvent != null) {
+      if (sentEvent is PublishSuccess) {
         Log.info(
           'View event published: video=${video.id}, watched=${endSeconds - startSeconds}s',
           name: 'ViewEventPublisher',
@@ -283,7 +283,7 @@ class ViewEventPublisher {
 
       final sentEvent = await _nostrService.publishEvent(event);
 
-      if (sentEvent != null) {
+      if (sentEvent is PublishSuccess) {
         final totalWatched = validSegments.fold<int>(
           0,
           (sum, s) => sum + (s.$2 - s.$1),

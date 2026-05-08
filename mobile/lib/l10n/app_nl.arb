@@ -1746,6 +1746,23 @@
     "feedModeForYou": "Voor jou",
     "feedModeNew": "Nieuw",
     "feedModeFollowing": "Volgend",
+    "feedModeSemanticLabel": "Feedmodus: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Video-auteur: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar van maker",
     "feedForYouEmpty": "Je Voor jou-feed is leeg.\nVerken video's en volg makers om hem vorm te geven.",
     "feedFollowingEmpty": "Nog geen video's van mensen die je volgt.\nVind makers die je leuk vindt en volg ze.",
     "feedLatestEmpty": "Nog geen nieuwe video's.\nKom binnenkort terug.",
@@ -1861,6 +1878,7 @@
     "routeInvalidCategory": "Ongeldige categorie",
     "routeNoVideosToDisplay": "Geen video's om weer te geven",
     "routeInvalidProfileId": "Ongeldige profiel-ID",
+    "routeUnknownPath": "Die pagina zit niet in de app.",
     "routeDefaultListName": "Lijst",
     "supportTitle": "Supportcentrum",
     "supportContactSupport": "Contact met support",
@@ -2276,6 +2294,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video zonder titel",
+    "clickableTextViewVideoLink": "Video bekijken",
+    "messageExternalLinkDialogTitle": "Externe link openen?",
+    "messageExternalLinkDialogBody": "Deze link gaat naar een externe site en is mogelijk niet veilig:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Openen",
     "inboxCollabInviteAcceptButton": "Accepteren",
     "inboxCollabInviteAcceptError": "Accepteren is niet gelukt. Probeer het opnieuw.",
     "inboxCollabInviteAcceptedStatus": "Geaccepteerd",
@@ -2434,6 +2457,10 @@
     "notificationFollowBack": "Terugvolgen",
     "profileSetupUploadSuccess": "Profielfoto succesvol geüpload!",
     "proofmodeCheckAiGenerated": "Controleren of AI-gegenereerd",
+    "dmSendFailedMessage": "Bericht kon niet worden verzonden",
+    "dmSendFailedRetry": "Opnieuw",
+    "dmSendPartialMessage": "Verzonden, maar niet gesynchroniseerd met je andere apparaten",
+    "dmConversationLoadError": "Berichten konden niet worden geladen",
     "reportDialogCancel": "Annuleren",
     "reportDialogReport": "Rapporteren",
     "routerInvalidCreator": "Ongeldige maker",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Ook delen in mijn feed",
+  "videoMetadataShareReplyToFeedSubtitle": "Uit laat deze video alleen in de reactiethread staan.",
+  "commentsRecordVideoButtonLabel": "Videoreactie opnemen",
+  "commentsOpenVideoLabel": "Videoreactie openen",
+  "commentsMuteVideoReplyLabel": "Videoreactie dempen",
+  "commentsUnmuteVideoReplyLabel": "Dempen van videoreactie opheffen",
+  "commentsOpenReplyParentLabel": "Video openen waarop dit reageert",
+  "commentsReplyParentSectionTitle": "Als reactie op",
+  "commentsReplyParentLabel": "Reactie op {target}",
+  "commentsReplyParentFallbackLabel": "Reactie op video"
 }

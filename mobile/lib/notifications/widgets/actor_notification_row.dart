@@ -53,10 +53,11 @@ class ActorNotificationRow extends StatelessWidget {
       NotificationKind.likeComment => l10n.notificationLikedYourComment(
         actorName,
       ),
+      NotificationKind.reply =>
+        '$actorName ${l10n.notificationRepliedToYourComment}',
       NotificationKind.system => l10n.notificationSystemUpdate,
       NotificationKind.like ||
       NotificationKind.comment ||
-      NotificationKind.reply ||
       NotificationKind.repost => actorName,
     };
 

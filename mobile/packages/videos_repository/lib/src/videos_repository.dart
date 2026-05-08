@@ -184,36 +184,101 @@ class VideosRepository {
         _funnelcakeApiClient != null &&
         _funnelcakeApiClient.isAvailable) {
       try {
-        final response = await _funnelcakeApiClient.getHomeFeed(
-          pubkey: effectiveUserPubkey,
+        return await _fetchVisibleHomeVideosFromStatsApi(
+          userPubkey: effectiveUserPubkey,
           limit: limit,
-          before: until,
+          until: until,
         );
-
-        final videos = _transformVideoStats(response.videos);
-        final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-        return (videos: hydratedVideos, rawBody: response.rawBody);
       } on FunnelcakeException {
         // Fall through to Nostr
       }
     }
 
-    // Nostr fallback — skip when authors list is empty (fast-path startup
-    // before follow list is ready).
-    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
-
-    final filter = Filter(
-      kinds: [_videoKind],
+    return _fetchVisibleHomeVideosFromRelays(
       authors: authors,
       limit: limit,
       until: until,
     );
+  }
 
-    final events = await _nostrClient.queryEvents([filter]);
+  Future<({List<VideoEvent> videos, String? rawBody})>
+  _fetchVisibleHomeVideosFromStatsApi({
+    required String userPubkey,
+    required int limit,
+    int? until,
+  }) async {
+    var cursor = until;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
+    String? rawBody;
 
-    final videos = _transformAndFilter(events);
-    final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
-    return (videos: hydratedVideos, rawBody: null);
+    // Intentionally walk until we have enough visible videos or the upstream
+    // feed is exhausted. A hard page cap caused premature EOF on reply-dense
+    // feeds by hiding visible videos behind reply-only raw pages.
+    while (visible.length < limit) {
+      final response = await _funnelcakeApiClient!.getHomeFeed(
+        pubkey: userPubkey,
+        limit: limit,
+        before: cursor,
+      );
+
+      final videos = _transformVideoStats(response.videos);
+      final hydratedVideos = await _hydrateVideosWithBulkStats(videos);
+      _appendUniqueVideos(visible, hydratedVideos, seenIds: seenIds);
+      rawBody ??= response.rawBody;
+      if (response.videos.length < limit || !response.hasMore) break;
+
+      final nextCursor =
+          response.nextCursor ?? _cursorBeforeOldestStats(response.videos);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
+    }
+
+    return (
+      videos: visible.take(limit).toList(),
+      rawBody: rawBody,
+    );
+  }
+
+  Future<({List<VideoEvent> videos, String? rawBody})>
+  _fetchVisibleHomeVideosFromRelays({
+    required List<String> authors,
+    required int limit,
+    int? until,
+  }) async {
+    // Nostr fallback — skip when authors list is empty (fast-path startup
+    // before follow list is ready).
+    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
+
+    var cursor = until;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
+
+    while (visible.length < limit) {
+      final filter = Filter(
+        kinds: [_videoKind],
+        authors: authors,
+        limit: limit,
+        until: cursor,
+      );
+
+      final events = await _nostrClient.queryEvents([filter]);
+      if (events.isEmpty) break;
+
+      final videos = _transformAndFilter(events);
+      _appendUniqueVideos(
+        visible,
+        await _hydrateVideosWithBulkStats(videos),
+        seenIds: seenIds,
+      );
+      if (events.length < limit) break;
+
+      final nextCursor = _cursorBeforeOldestEvent(events);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
+    }
+
+    return (videos: visible.take(limit).toList(), rawBody: null);
   }
 
   Future<List<VideoEvent>> _hydrateVideosWithBulkStats(
@@ -230,6 +295,9 @@ class VideosRepository {
           (video) =>
               video.id.isNotEmpty &&
               (video.originalLoops == null ||
+                  // Relay-sourced zeroes are frequently stale placeholders;
+                  // treat them as missing so Funnelcake can reconcile counts.
+                  video.originalLoops == 0 ||
                   video.rawTags['views'] == null ||
                   video.originalLikes == null ||
                   video.originalComments == null ||
@@ -516,31 +584,83 @@ class VideosRepository {
     // 1. Try Funnelcake API first
     if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
       try {
-        final videoStats = await _funnelcakeApiClient.getRecentVideos(
+        final videos = await _fetchVisibleRecentVideosFromStatsApi(
           limit: limit,
-          before: until,
+          until: until,
         );
-
-        final videos = _transformVideoStats(videoStats);
+        // Hydrate views/loops — list endpoint omits them for some rows.
+        final hydrated = await _hydrateVideosWithBulkStats(videos);
         if (until == null) {
-          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+          _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
         }
-        return videos;
+        return hydrated;
       } on FunnelcakeException {
         // Fall through to Nostr
       }
     }
 
     // 2. Nostr fallback
-    final filter = Filter(kinds: [_videoKind], limit: limit, until: until);
-
-    final events = await _nostrClient.queryEvents([filter]);
-
-    final videos = _transformAndFilter(events);
+    final videos = await _fetchVisibleRecentVideosFromRelays(
+      limit: limit,
+      until: until,
+    );
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
     if (until == null) {
-      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: videos));
+      _inMemoryFeedCache?.set('latest', HomeFeedResult(videos: hydrated));
     }
-    return videos;
+    return hydrated;
+  }
+
+  Future<List<VideoEvent>> _fetchVisibleRecentVideosFromStatsApi({
+    required int limit,
+    int? until,
+  }) async {
+    var cursor = until;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
+
+    while (visible.length < limit) {
+      final videoStats = await _funnelcakeApiClient!.getRecentVideos(
+        limit: limit,
+        before: cursor,
+      );
+
+      final videos = _transformVideoStats(videoStats);
+      _appendUniqueVideos(visible, videos, seenIds: seenIds);
+
+      if (videoStats.length < limit) break;
+
+      final nextCursor = _cursorBeforeOldestStats(videoStats);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
+    }
+
+    return visible.take(limit).toList();
+  }
+
+  Future<List<VideoEvent>> _fetchVisibleRecentVideosFromRelays({
+    required int limit,
+    int? until,
+  }) async {
+    var cursor = until;
+    final visible = <VideoEvent>[];
+    final seenIds = <String>{};
+
+    while (visible.length < limit) {
+      final filter = Filter(kinds: [_videoKind], limit: limit, until: cursor);
+      final events = await _nostrClient.queryEvents([filter]);
+      if (events.isEmpty) break;
+
+      final videos = _transformAndFilter(events);
+      _appendUniqueVideos(visible, videos, seenIds: seenIds);
+      if (events.length < limit) break;
+
+      final nextCursor = _cursorBeforeOldestEvent(events);
+      if (nextCursor == null || nextCursor == cursor) break;
+      cursor = nextCursor;
+    }
+
+    return visible.take(limit).toList();
   }
 
   /// Fetches popular videos sorted by engagement score.
@@ -665,9 +785,20 @@ class VideosRepository {
   ///
   /// Returns a list of [VideoEvent] in the same order as [eventIds].
   /// Videos that couldn't be found or failed to parse are omitted.
+  ///
+  /// When a Funnelcake API client is configured and available, results are
+  /// merged with that client's bulk video stats endpoint so relay-sourced rows
+  /// (e.g. profile Liked / Saved tabs) get loop and engagement totals like the
+  /// home feed — unless [hydrateBulkStats] is false.
+  ///
+  /// Use [hydrateBulkStats] `false` when the caller will run bulk-stats
+  /// hydration under its own timeout or policy ([fetchVideoWithStats] does
+  /// this so a slow Funnelcake call cannot block indefinitely on the relay
+  /// fetch+hydrate path).
   Future<List<VideoEvent>> getVideosByIds(
     List<String> eventIds, {
     bool cacheResults = false,
+    bool hydrateBulkStats = true,
   }) async {
     if (eventIds.isEmpty) return [];
 
@@ -715,7 +846,10 @@ class VideosRepository {
       if (video != null) videos.add(video);
     }
 
-    return videos;
+    if (!hydrateBulkStats) {
+      return videos;
+    }
+    return _hydrateVideosWithBulkStats(videos);
   }
 
   /// Number of filters to batch in a single relay query.
@@ -745,6 +879,11 @@ class VideosRepository {
   ///
   /// Returns a list of [VideoEvent] in the same order as [addressableIds].
   /// Videos that couldn't be found or failed to parse are omitted.
+  ///
+  /// When a Funnelcake API client is configured and available, results are
+  /// merged with that client's bulk video stats endpoint (same as
+  /// [getVideosByIds]) so repost tabs and other addressable lookups show
+  /// accurate loop counts.
   Future<List<VideoEvent>> getVideosByAddressableIds(
     List<String> addressableIds, {
     bool cacheResults = false,
@@ -826,7 +965,7 @@ class VideosRepository {
       }
     }
 
-    return videos;
+    return _hydrateVideosWithBulkStats(videos);
   }
 
   /// Fetches missing videos from Funnelcake API and adds them to [foundVideos].
@@ -906,6 +1045,8 @@ class VideosRepository {
     final videos = <VideoEvent>[];
 
     for (final stats in videoStatsList) {
+      if (_isReplyOnlyVideoStats(stats)) continue;
+
       final video = stats.toVideoEvent();
 
       // Block filter - check pubkey
@@ -952,6 +1093,7 @@ class VideosRepository {
         ? NIP71VideoKinds.isAcceptableVideoKind(event.kind)
         : NIP71VideoKinds.isVideoKind(event.kind);
     if (!isSupported) return null;
+    if (_isReplyOnlyVideoEvent(event)) return null;
 
     // Block filter - check pubkey before parsing for efficiency
     if (!ignoreBlockFilter && (_blockFilter?.call(event.pubkey) ?? false)) {
@@ -971,6 +1113,70 @@ class VideosRepository {
     if (video.isExpired) return null;
 
     return _applyContentPreferences(video);
+  }
+
+  bool _isReplyOnlyVideoEvent(Event event) {
+    if (event.kind != _videoKind) return false;
+    var hasRootTag = false;
+    var hasParentTag = false;
+    var isFeedVisibleReply = false;
+
+    for (final rawTag in event.tags) {
+      final tag = rawTag as List<dynamic>;
+      if (tag.length < 2) continue;
+      final tagName = tag[0] as String;
+      if (tagName == 'E' || tagName == 'A') {
+        hasRootTag = true;
+      } else if (tagName == 'e' || tagName == 'a') {
+        hasParentTag = true;
+      } else if (tagName == videoReplyVisibilityTagName &&
+          tag[1] == videoReplyVisibilityFeedValue) {
+        isFeedVisibleReply = true;
+      }
+    }
+
+    return hasRootTag && hasParentTag && !isFeedVisibleReply;
+  }
+
+  bool _isReplyOnlyVideoStats(VideoStats stats) {
+    if (stats.kind != _videoKind) return false;
+    // rawTags is first-occurrence-only, which is sufficient here because this
+    // filter only needs boolean presence checks for reply/feed-visibility tags.
+    final tags = stats.rawTags;
+    final hasRootTag =
+        (tags['E']?.isNotEmpty ?? false) || (tags['A']?.isNotEmpty ?? false);
+    final hasParentTag =
+        (tags['e']?.isNotEmpty ?? false) || (tags['a']?.isNotEmpty ?? false);
+    final isFeedVisibleReply =
+        tags[videoReplyVisibilityTagName] == videoReplyVisibilityFeedValue;
+    return hasRootTag && hasParentTag && !isFeedVisibleReply;
+  }
+
+  int? _cursorBeforeOldestEvent(List<Event> events) {
+    if (events.isEmpty) return null;
+    final oldest = events
+        .map((event) => event.createdAt)
+        .reduce((a, b) => a < b ? a : b);
+    return oldest - 1;
+  }
+
+  void _appendUniqueVideos(
+    List<VideoEvent> target,
+    List<VideoEvent> incoming, {
+    required Set<String> seenIds,
+  }) {
+    for (final video in incoming) {
+      if (!seenIds.add(video.id)) continue;
+      target.add(video);
+    }
+  }
+
+  int? _cursorBeforeOldestStats(List<VideoStats> stats) {
+    if (stats.isEmpty) return null;
+    final oldest = stats
+        .map((stat) => stat.createdAt.millisecondsSinceEpoch ~/ 1000)
+        .reduce((a, b) => a < b ? a : b);
+    return oldest - 1;
   }
 
   VideoEvent? _applyContentPreferences(VideoEvent video) {
@@ -1421,12 +1627,10 @@ class VideosRepository {
   /// Fetches a single video by event ID and enriches it with REST-side stats
   /// (loop counts, view counts) from the Funnelcake bulk-stats endpoint.
   ///
-  /// Strategy:
-  /// 1. Delegates to [getVideosByIds] for the cache→relay lookup and content
-  ///    filtering (same path used by all feed providers).
-  /// 2. Calls [_hydrateVideosWithBulkStats] on the result so the returned
-  ///    [VideoEvent] carries accurate [VideoEvent.originalLoops] and view
-  ///    counts — identical to what home/profile feeds receive.
+  /// Delegates to [getVideosByIds] for cache→relay lookup and content
+  /// filtering, then runs bulk-stats enrichment in a second step bounded by
+  /// [_statsFetchTimeout] (relay fetch completes first via
+  /// `getVideosByIds(..., hydrateBulkStats: false)`).
   ///
   /// Returns `null` when the event is not found or fails content filtering.
   /// The Funnelcake stats hydration is bounded by [_statsFetchTimeout]: on
@@ -1437,7 +1641,10 @@ class VideosRepository {
   /// feed context: notification taps and `divine.video/video/:id` deep-links.
   Future<VideoEvent?> fetchVideoWithStats(String eventId) async {
     if (eventId.isEmpty) return null;
-    final videos = await getVideosByIds([eventId]);
+    final videos = await getVideosByIds(
+      [eventId],
+      hydrateBulkStats: false,
+    );
     if (videos.isEmpty) return null;
     final hydrated = await _hydrateVideosWithBulkStats(videos).timeout(
       _statsFetchTimeout,
@@ -1463,10 +1670,7 @@ class VideosRepository {
       final videos = await getVideosByAddressableIds([
         candidate.addressableId!,
       ]);
-      if (videos.isNotEmpty) {
-        final hydrated = await _hydrateVideosWithBulkStats(videos);
-        if (hydrated.isNotEmpty) return hydrated.first;
-      }
+      if (videos.isNotEmpty) return videos.first;
     }
 
     if (candidate.stableId != null) {

@@ -418,7 +418,9 @@ void main() {
         additionalTags: any(named: 'additionalTags'),
         skipNip04Fallback: any(named: 'skipNip04Fallback'),
       ),
-    ).thenAnswer((_) async => NIP17SendResult.failure('relay unavailable'));
+    ).thenAnswer(
+      (_) async => const NIP17SendResult.failure('relay unavailable'),
+    );
 
     final result = await service.sendInvite(
       collaboratorPubkey: collaboratorPubkey,

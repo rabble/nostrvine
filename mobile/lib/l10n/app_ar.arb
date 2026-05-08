@@ -1736,6 +1736,23 @@
     "feedModeForYou": "لك",
     "feedModeNew": "جديد",
     "feedModeFollowing": "المتابَعون",
+    "feedModeSemanticLabel": "وضع الموجز: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "صانع الفيديو: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "صورة رمز صانع المحتوى",
     "feedForYouEmpty": "خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.",
     "feedFollowingEmpty": "لا توجد مقاطع بعد من الأشخاص الذين تتابعهم.\nاعثر على صناع محتوى يعجبونك وتابعهم.",
     "feedLatestEmpty": "لا توجد مقاطع جديدة بعد.\nعد لاحقًا.",
@@ -1853,6 +1870,7 @@
     "routeInvalidCategory": "فئة غير صالحة",
     "routeNoVideosToDisplay": "لا توجد مقاطع فيديو لعرضها",
     "routeInvalidProfileId": "مُعرِّف ملف شخصي غير صالح",
+    "routeUnknownPath": "هذه الصفحة غير متوفرة في التطبيق.",
     "routeDefaultListName": "قائمة",
     "supportTitle": "مركز الدعم",
     "supportContactSupport": "التواصل مع الدعم",
@@ -2268,6 +2286,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "فيديو بلا عنوان",
+    "clickableTextViewVideoLink": "عرض الفيديو",
+    "messageExternalLinkDialogTitle": "فتح رابط خارجي؟",
+    "messageExternalLinkDialogBody": "هذا الرابط يذهب إلى موقع خارجي وقد لا يكون آمنًا:\n\n{url}",
+    "messageExternalLinkDialogOpen": "فتح",
     "inboxCollabInviteAcceptButton": "قبول",
     "inboxCollabInviteAcceptError": "تعذر القبول. حاول مرة أخرى.",
     "inboxCollabInviteAcceptedStatus": "تم القبول",
@@ -2426,6 +2449,10 @@
     "notificationFollowBack": "متابعة بالمقابل",
     "profileSetupUploadSuccess": "تم رفع صورة الملف الشخصي بنجاح!",
     "proofmodeCheckAiGenerated": "التحقق إذا كان مُنشأً بالذكاء الاصطناعي",
+    "dmSendFailedMessage": "تعذّر إرسال الرسالة",
+    "dmSendFailedRetry": "إعادة المحاولة",
+    "dmSendPartialMessage": "أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى",
+    "dmConversationLoadError": "تعذّر تحميل الرسائل",
     "reportDialogCancel": "إلغاء",
     "reportDialogReport": "إبلاغ",
     "routerInvalidCreator": "منشئ غير صالح",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "شارك أيضًا في موجزي",
+  "videoMetadataShareReplyToFeedSubtitle": "إيقافه يبقي هذا الفيديو داخل سلسلة التعليقات فقط.",
+  "commentsRecordVideoButtonLabel": "سجّل تعليق فيديو",
+  "commentsOpenVideoLabel": "افتح تعليق الفيديو",
+  "commentsMuteVideoReplyLabel": "اكتم رد الفيديو",
+  "commentsUnmuteVideoReplyLabel": "ألغِ كتم رد الفيديو",
+  "commentsOpenReplyParentLabel": "افتح الفيديو الذي يرد عليه هذا",
+  "commentsReplyParentSectionTitle": "ردًا على",
+  "commentsReplyParentLabel": "رد على {target}",
+  "commentsReplyParentFallbackLabel": "رد على فيديو"
 }

@@ -123,7 +123,7 @@ class _FeedModeContent extends StatelessWidget {
     return Row(
       children: [
         Semantics(
-          label: 'Feed mode: $label',
+          label: context.l10n.feedModeSemanticLabel(label),
           button: true,
           child: GestureDetector(
             behavior: .opaque,

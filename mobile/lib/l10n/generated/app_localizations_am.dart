@@ -3886,6 +3886,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get feedModeFollowing => 'እየተከተሉ';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'የፊድ ሁነታ: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'የቪድዮ ፈጣሪ: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'የፈጣሪ ፎቶ';
+
+  @override
   String get feedForYouEmpty =>
       'የእርስዎ ለአንተ ምግብ ባዶ ነው።\nቪዲዮዎችን ያስሱ እና ለመቅረጽ ፈጣሪዎችን ይከተሉ።';
 
@@ -4167,6 +4180,9 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'ልክ ያልሆነ የመገለጫ መታወቂያ';
+
+  @override
+  String get routeUnknownPath => 'ያ ገጽ በመተግበሪያው ውስጥ የለም።';
 
   @override
   String get routeDefaultListName => 'ዝርዝር';
@@ -5061,6 +5077,23 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'ርዕስ የሌለው ቪዲዮ';
+
+  @override
+  String get clickableTextViewVideoLink => 'ቪዲዮውን ይመልከቱ';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'ውጫዊ ሊንክ ይክፈቱ?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'ይህ ሊንክ ወደ ውጫዊ ድረ-ገጽ ይሄዳል እና ደህንነቱ አልተረጋገጠም:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'ክፈት';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'ተቀበል';
 
   @override
@@ -5090,6 +5123,18 @@ class AppLocalizationsAm extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'በቪዲዮ ላይ እንድትተባበር ተጋብዘሃል፦ $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'መልዕክቱ መላክ አልተሳካም';
+
+  @override
+  String get dmSendFailedRetry => 'እንደገና ይሞክሩ';
+
+  @override
+  String get dmSendPartialMessage => 'ተልኳል፣ ግን ወደ ሌሎች መሣሪያዎች አልተመሳሰለም';
+
+  @override
+  String get dmConversationLoadError => 'መልዕክቶችን መጫን አልተቻለም';
 
   @override
   String get reportDialogCancel => 'ሰርዝ';
@@ -6672,6 +6717,13 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'ለመመገብ ቪዲዮ ያትሙ';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'በፊዴ ላይም አጋራ';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'ሲጠፋ ይህ ቪዲዮ በአስተያየት ክር ውስጥ ብቻ ይቀራል።';
+
+  @override
   String get videoMetadataFormNotReadyHint => 'ለማንቃት ቅጹን ይሙሉ';
 
   @override
@@ -6770,4 +6822,30 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'የቪዲዮ አስተያየት ቅረጽ';
+
+  @override
+  String get commentsOpenVideoLabel => 'የቪዲዮ አስተያየት ክፈት';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'የቪዲዮ ምላሽን ዝም አድርግ';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'የቪዲዮ ምላሽን ድምጽ አስጀምር';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'ይህ የሚመልስበትን ቪዲዮ ክፈት';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'ምላሽ ለ';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'ምላሽ ለ $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'ምላሽ ለ ቪዲዮ';
 }

@@ -28,6 +28,7 @@ class CommentInput extends StatefulWidget {
     this.mentionSuggestions = const [],
     this.onMentionQuery,
     this.onMentionSelected,
+    this.onVideoReplyPressed,
     super.key,
   });
 
@@ -63,6 +64,9 @@ class CommentInput extends StatefulWidget {
 
   /// Callback fired with (npub, displayName) when a mention is selected.
   final void Function(String npub, String displayName)? onMentionSelected;
+
+  /// Callback fired when the user wants to record a video comment.
+  final VoidCallback? onVideoReplyPressed;
 
   @override
   State<CommentInput> createState() => _CommentInputState();
@@ -229,8 +233,18 @@ class _CommentInputState extends State<CommentInput> {
                       ],
                     ),
                   ),
-                  if (showKeyboardDismiss || _hasText) ...[
+                  if (widget.onVideoReplyPressed != null ||
+                      showKeyboardDismiss ||
+                      _hasText) ...[
                     const SizedBox(width: 8),
+                    if (!_hasText && widget.onVideoReplyPressed != null)
+                      _VideoReplyButton(
+                        onPressed: widget.onVideoReplyPressed!,
+                      ),
+                    if (!_hasText &&
+                        widget.onVideoReplyPressed != null &&
+                        showKeyboardDismiss)
+                      const SizedBox(width: 4),
                     // Keep an explicit in-field dismiss affordance visible while
                     // the keyboard is up so the send button does not become the
                     // only actionable control on compact screens.
@@ -245,6 +259,44 @@ class _CommentInputState extends State<CommentInput> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VideoReplyButton extends StatelessWidget {
+  const _VideoReplyButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'record_video_comment_button',
+      button: true,
+      label: context.l10n.commentsRecordVideoButtonLabel,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        child: Center(
+          child: Container(
+            width: 40,
+            height: 40,
+            margin: const EdgeInsets.only(bottom: 4),
+            decoration: BoxDecoration(
+              color: VineTheme.containerLow,
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: IconButton(
+              onPressed: onPressed,
+              padding: EdgeInsets.zero,
+              icon: const DivineIcon(
+                icon: DivineIconName.videoCamera,
+                color: VineTheme.whiteText,
+                size: 22,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -11,15 +11,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/message_bubble.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 import '../../../../helpers/test_provider_overrides.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+const _testHexPubkey =
+    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const _testEventId =
+    'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
 
 GoRouter _messageRouter(String message) {
   return GoRouter(
@@ -91,6 +100,8 @@ TapGestureRecognizer? _findRecognizer(InlineSpan span, String linkText) {
 }
 
 void main() {
+  final strings = AppLocalizationsEn();
+
   group(MessageBubble, () {
     group('renders', () {
       testWidgets('renders message text', (tester) async {
@@ -233,6 +244,82 @@ void main() {
               widget.text.toPlainText().contains('https://divine.video'),
         );
         expect(richTextFinder, findsOneWidget);
+      });
+
+      testWidgets('renders npub references as profile display names', (
+        tester,
+      ) async {
+        final npub = NostrKeyUtils.encodePubKey(_testHexPubkey);
+        final profile = UserProfile(
+          pubkey: _testHexPubkey,
+          displayName: 'Alice Divine',
+          rawData: const {},
+          createdAt: DateTime.utc(2026, 5, 7),
+          eventId: _testEventId,
+        );
+
+        await tester.pumpWidget(
+          _routerTestApp(
+            _messageRouter('Reported profile $npub'),
+            additionalOverrides: [
+              userProfileReactiveProvider(
+                _testHexPubkey,
+              ).overrideWith((ref) => Stream.value(profile)),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final richText = tester.widget<RichText>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText &&
+                widget.text.toPlainText().contains('@Alice Divine'),
+          ),
+        );
+
+        expect(richText.text.toPlainText(), isNot(contains(npub)));
+        expect(_findRecognizer(richText.text, '@Alice Divine'), isNotNull);
+      });
+
+      testWidgets('routes nevent references to decoded event ids', (
+        tester,
+      ) async {
+        final nevent = NIP19Tlv.encodeNevent(Nevent(id: _testEventId));
+
+        await tester.pumpWidget(
+          _routerTestApp(_messageRouter('Watch $nevent')),
+        );
+        await tester.pump();
+
+        final recognizer = _linkRecognizer(
+          tester,
+          strings.clickableTextViewVideoLink,
+        );
+        recognizer.onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('video:$_testEventId'), findsOneWidget);
+      });
+
+      testWidgets('routes naddr references as stable video links', (
+        tester,
+      ) async {
+        final naddr = NIP19Tlv.encodeNaddr(
+          Naddr(id: 'stable-video', author: _testHexPubkey, kind: 34236),
+        );
+
+        await tester.pumpWidget(_routerTestApp(_messageRouter('Watch $naddr')));
+        await tester.pump();
+
+        final recognizer = _linkRecognizer(
+          tester,
+          strings.clickableTextViewVideoLink,
+        );
+        recognizer.onTap!();
+        await tester.pumpAndSettle();
+
+        expect(find.text('video:$naddr'), findsOneWidget);
       });
 
       testWidgets('URL span has $TapGestureRecognizer', (tester) async {

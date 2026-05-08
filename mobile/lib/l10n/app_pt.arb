@@ -1746,6 +1746,23 @@
     "feedModeForYou": "Para você",
     "feedModeNew": "Novo",
     "feedModeFollowing": "Seguindo",
+    "feedModeSemanticLabel": "Modo do feed: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Autor do vídeo: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar do autor",
     "feedForYouEmpty": "Seu feed Para você está vazio.\nExplore vídeos e siga criadores para personalizá-lo.",
     "feedFollowingEmpty": "Ainda não há vídeos das pessoas que você segue.\nEncontre criadores de que goste e siga-os.",
     "feedLatestEmpty": "Ainda não há vídeos novos.\nVolte em breve.",
@@ -1861,6 +1878,7 @@
     "routeInvalidCategory": "Categoria inválida",
     "routeNoVideosToDisplay": "Nenhum vídeo para exibir",
     "routeInvalidProfileId": "ID de perfil inválido",
+    "routeUnknownPath": "Essa página não existe no app.",
     "routeDefaultListName": "Lista",
     "supportTitle": "Central de suporte",
     "supportContactSupport": "Contatar o suporte",
@@ -2276,6 +2294,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Vídeo sem título",
+    "clickableTextViewVideoLink": "Ver vídeo",
+    "messageExternalLinkDialogTitle": "Abrir link externo?",
+    "messageExternalLinkDialogBody": "Este link leva a um site externo e pode não ser seguro:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Abrir",
     "inboxCollabInviteAcceptButton": "Aceitar",
     "inboxCollabInviteAcceptError": "Não foi possível aceitar. Tente novamente.",
     "inboxCollabInviteAcceptedStatus": "Aceito",
@@ -2434,6 +2457,10 @@
     "notificationFollowBack": "Seguir de volta",
     "profileSetupUploadSuccess": "Foto de perfil enviada com sucesso!",
     "proofmodeCheckAiGenerated": "Verificar se gerado por IA",
+    "dmSendFailedMessage": "Falha ao enviar a mensagem",
+    "dmSendFailedRetry": "Tentar novamente",
+    "dmSendPartialMessage": "Enviado, mas não sincronizou com seus outros dispositivos",
+    "dmConversationLoadError": "Não foi possível carregar as mensagens",
     "reportDialogCancel": "Cancelar",
     "reportDialogReport": "Denunciar",
     "routerInvalidCreator": "Criador inválido",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Compartilhar também no meu feed",
+  "videoMetadataShareReplyToFeedSubtitle": "Desligado mantém este vídeo apenas na conversa de comentários.",
+  "commentsRecordVideoButtonLabel": "Gravar comentário em vídeo",
+  "commentsOpenVideoLabel": "Abrir comentário em vídeo",
+  "commentsMuteVideoReplyLabel": "Silenciar resposta em vídeo",
+  "commentsUnmuteVideoReplyLabel": "Ativar som da resposta em vídeo",
+  "commentsOpenReplyParentLabel": "Abrir o vídeo ao qual isto responde",
+  "commentsReplyParentSectionTitle": "Em resposta a",
+  "commentsReplyParentLabel": "Responder a {target}",
+  "commentsReplyParentFallbackLabel": "Responder ao vídeo"
 }

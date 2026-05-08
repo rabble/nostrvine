@@ -46,11 +46,13 @@ void main() {
       mockDmRepository = _MockDmRepository();
     });
 
-    ConversationBloc buildBloc() => ConversationBloc(
-      dmRepository: mockDmRepository,
-      conversationId: conversationId,
-      currentUserPubkey: senderPubkey,
-    );
+    ConversationBloc buildBloc({String Function()? pendingIdFactory}) =>
+        ConversationBloc(
+          dmRepository: mockDmRepository,
+          conversationId: conversationId,
+          currentUserPubkey: senderPubkey,
+          pendingIdFactory: pendingIdFactory,
+        );
 
     test('initial state is correct', () {
       when(
@@ -232,8 +234,8 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
-          'on failed sendMessage',
+          'emits [sending with optimistic message, failed without '
+          'optimistic and with lastFailedSend] on failed sendMessage',
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -241,7 +243,8 @@ void main() {
                 content: 'Hello',
               ),
             ).thenAnswer(
-              (_) async => NIP17SendResult.failure('Failed to publish message'),
+              (_) async =>
+                  const NIP17SendResult.failure('Failed to publish message'),
             );
           },
           build: buildBloc,
@@ -252,16 +255,141 @@ void main() {
             ),
           ),
           expect: () => [
+            // Sending: optimistic added.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend cleared on new attempt',
+                  isNull,
+                ),
+            // Failed: optimistic stripped, lastFailedSend populated so the
+            // UI can offer a retry. Without the strip, the optimistic
+            // would survive in bloc memory until pop, then vanish on
+            // re-entry — the "looks sent, then disappeared" bug.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having(
+                  (s) => s.messages,
+                  'messages',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Hello',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'retry attempt clears prior lastFailedSend and reinserts '
+          'an optimistic row',
+          seed: () => const ConversationState(
+            sendStatus: SendStatus.failed,
+            lastFailedSend: FailedSend(
+              content: 'Hello',
+              recipientPubkeys: [recipientPubkey],
+            ),
+          ),
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            // New attempt: optimistic added, lastFailedSend cleared so a
+            // stale SnackBar can't refire from a previous failure.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1)
+                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+            // Success: status flips, lastFailedSend stays null.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
+          ],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending with optimistic, sentPartial with lastFailedSend] '
+          'when sendMessage succeeds but the self-wrap was not published',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer(
+              (_) async => NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+                selfWrapPublished: false,
+              ),
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          // Partial-delivery: the recipient got the message and the local
+          // DB persist already happened inside DmRepository.sendMessage,
+          // so the optimistic stays — stripping it would race with the
+          // watchMessages re-emit and cause a brief disappearance.
+          // lastFailedSend is recorded so the UI can offer retry.
+          expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having((s) => s.messages.length, 'messages.length', 1),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.failed,
-            ),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sentPartial,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'optimistic preserved',
+                  1,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Hello',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
           ],
-          errors: () => [isA<Exception>()],
         );
       });
 
@@ -282,7 +410,7 @@ void main() {
                   messageEventId: sentEventId,
                   recipientPubkey: recipientPubkey,
                 ),
-                NIP17SendResult.failure('Failed for second recipient'),
+                const NIP17SendResult.failure('Failed for second recipient'),
               ],
             );
           },
@@ -310,8 +438,8 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
-          'when all sendGroupMessage fail',
+          'emits [sending with optimistic message, failed without '
+          'optimistic and with lastFailedSend] when all sendGroupMessage fail',
           setUp: () {
             when(
               () => mockDmRepository.sendGroupMessage(
@@ -320,8 +448,8 @@ void main() {
               ),
             ).thenAnswer(
               (_) async => [
-                NIP17SendResult.failure('Relay timeout'),
-                NIP17SendResult.failure('Connection refused'),
+                const NIP17SendResult.failure('Relay timeout'),
+                const NIP17SendResult.failure('Connection refused'),
               ],
             );
           },
@@ -336,19 +464,84 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having((s) => s.messages.length, 'messages.length', 1),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages', isEmpty)
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Group hello',
+                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    ),
+                  ),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'emits [sending, sentPartial] when any successful per-recipient '
+          'sendGroupMessage had its self-wrap unpublished',
+          setUp: () {
+            when(
+              () => mockDmRepository.sendGroupMessage(
+                recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                content: 'Group hello',
+              ),
+            ).thenAnswer(
+              (_) async => [
+                NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey,
+                ),
+                NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey2,
+                  selfWrapPublished: false,
+                ),
+              ],
+            );
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey, recipientPubkey2],
+              content: 'Group hello',
+            ),
+          ),
+          expect: () => [
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
-              SendStatus.failed,
+              SendStatus.sending,
             ),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sentPartial,
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Group hello',
+                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    ),
+                  ),
+                ),
           ],
-          errors: () => [isA<Exception>()],
         );
       });
 
       group('exception handling', () {
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
+          'strips optimistic and records lastFailedSend '
           'when sendMessage throws an exception',
           setUp: () {
             when(
@@ -369,17 +562,25 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having((s) => s.messages.length, 'messages.length', 1),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.failed,
-            ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages', isEmpty)
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Hello',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
           ],
           errors: () => [isA<Exception>()],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic message, failed] '
+          'strips optimistic and records lastFailedSend '
           'when sendGroupMessage throws an exception',
           setUp: () {
             when(
@@ -400,11 +601,174 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having((s) => s.messages.length, 'messages.length', 1),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages', isEmpty)
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend',
+                  equals(
+                    const FailedSend(
+                      content: 'Group hello',
+                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    ),
+                  ),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+
+        blocTest<ConversationBloc, ConversationState>(
+          'strips only the optimistic for the failed attempt — '
+          'preserves persisted messages already in state',
+          seed: () => const ConversationState(
+            status: ConversationStatus.loaded,
+            messages: [testMessage],
+          ),
+          setUp: () {
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenThrow(Exception('Network error'));
+          },
+          build: buildBloc,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Hello',
+            ),
+          ),
+          expect: () => [
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 2),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having(
+                  (s) => s.messages,
+                  'messages preserves existing testMessage',
+                  equals(const [testMessage]),
+                ),
+          ],
+          errors: () => [isA<Exception>()],
+        );
+      });
+
+      // Regression for #3908 review feedback. The failure cleanup strips by
+      // `m.id != pendingId`, so the contract relies on every optimistic row
+      // having a unique id. The original implementation derived `pendingId`
+      // from a second-resolution timestamp; two sends within the same second
+      // collided, and the second one's failure stripped the first one's row
+      // along with its own. The fix replaces the timestamp with a UUID v4
+      // and exposes a test-only [ConversationBloc.pendingIdFactory] hook so
+      // this regression can be pinned without depending on real wall-clock
+      // timing.
+      group('pendingId uniqueness', () {
+        blocTest<ConversationBloc, ConversationState>(
+          "failure cleanup strips only the failing attempt's optimistic "
+          'when a sibling optimistic from a prior send is still in state',
+          setUp: () {
+            var callCount = 0;
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: any(named: 'content'),
+              ),
+            ).thenAnswer((_) async {
+              callCount++;
+              if (callCount == 1) {
+                // First send resolves successfully but `watchMessages`
+                // stays silent — this models the production window where
+                // the DB write has committed but the stream emission has
+                // not yet reached the bloc, so the optimistic row from
+                // the first send is still present in `state.messages`.
+                return NIP17SendResult.success(
+                  rumorEventId: sentEventId,
+                  messageEventId: sentEventId,
+                  recipientPubkey: recipientPubkey,
+                );
+              }
+              return const NIP17SendResult.failure('Relay timeout');
+            });
+          },
+          build: () {
+            var counter = 0;
+            return buildBloc(
+              pendingIdFactory: () => 'pending-${++counter}',
+            );
+          },
+          act: (bloc) async {
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'First',
+              ),
+            );
+            // Sequential() already serialises the two events; the explicit
+            // wait makes the timeline observable in the captured states.
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Second',
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 30),
+          expect: () => [
+            // First attempt: optimistic added with pending-1.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.messages.first.id,
+                  'first attempt pending id',
+                  'pending-1',
+                ),
             isA<ConversationState>().having(
               (s) => s.sendStatus,
               'sendStatus',
-              SendStatus.failed,
+              SendStatus.sent,
             ),
+            // Second attempt starts before the watch stream has cleared
+            // the first's optimistic — both rows coexist, with distinct
+            // ids so the upcoming strip can target the right one.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.messages.length, 'messages.length', 2)
+                .having(
+                  (s) => s.messages.first.id,
+                  'second attempt pending id',
+                  'pending-2',
+                )
+                .having(
+                  (s) => s.messages.last.id,
+                  'first attempt sibling still present',
+                  'pending-1',
+                ),
+            // Second attempt fails. Cleanup strips pending-2 only; the
+            // sibling pending-1 row remains. Under the old timestamp-
+            // based id this state would be `messages: isEmpty`.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.messages.single.id,
+                  'sibling optimistic preserved',
+                  'pending-1',
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend records the failing attempt only',
+                  equals(
+                    const FailedSend(
+                      content: 'Second',
+                      recipientPubkeys: [recipientPubkey],
+                    ),
+                  ),
+                ),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -729,8 +1093,53 @@ void main() {
     test('props are correct', () {
       expect(
         const ConversationState().props,
-        equals([ConversationStatus.initial, <DmMessage>[], SendStatus.idle]),
+        equals([
+          ConversationStatus.initial,
+          <DmMessage>[],
+          SendStatus.idle,
+          null,
+        ]),
       );
+    });
+
+    test('states with different lastFailedSend are not equal', () {
+      expect(
+        const ConversationState(),
+        isNot(
+          equals(
+            const ConversationState(
+              lastFailedSend: FailedSend(
+                content: 'Hello',
+                recipientPubkeys: [recipientPubkey],
+              ),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('copyWith carries lastFailedSend forward when not overridden', () {
+      const failed = FailedSend(
+        content: 'Hello',
+        recipientPubkeys: [recipientPubkey],
+      );
+      const seeded = ConversationState(lastFailedSend: failed);
+
+      // Copying without specifying lastFailedSend keeps the existing value.
+      expect(
+        seeded.copyWith(sendStatus: SendStatus.sending).lastFailedSend,
+        equals(failed),
+      );
+    });
+
+    test('copyWith(clearLastFailedSend: true) wipes lastFailedSend', () {
+      const failed = FailedSend(
+        content: 'Hello',
+        recipientPubkeys: [recipientPubkey],
+      );
+      const seeded = ConversationState(lastFailedSend: failed);
+
+      expect(seeded.copyWith(clearLastFailedSend: true).lastFailedSend, isNull);
     });
 
     test('states with different status are not equal', () {

@@ -43,7 +43,9 @@ void main() {
       when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       final result = await service.sendPrivateMessage(
@@ -71,7 +73,7 @@ void main() {
         invocation,
       ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return capturedEvent;
+        return PublishSuccess(event: capturedEvent!);
       });
 
       await service.sendPrivateMessage(
@@ -90,7 +92,7 @@ void main() {
         invocation,
       ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return capturedEvent;
+        return PublishSuccess(event: capturedEvent!);
       });
 
       await service.sendPrivateMessage(
@@ -114,7 +116,7 @@ void main() {
       ) async {
         final event = invocation.positionalArguments[0] as Event;
         capturedEvents.add(event);
-        return event;
+        return PublishSuccess(event: event);
       });
 
       await service.sendPrivateMessage(
@@ -142,7 +144,7 @@ void main() {
         invocation,
       ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return capturedEvent;
+        return PublishSuccess(event: capturedEvent!);
       });
 
       final beforeSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -161,7 +163,7 @@ void main() {
     test('should handle publish failure gracefully', () async {
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       final result = await service.sendPrivateMessage(
         recipientPubkey: _recipientPubkey,
@@ -179,7 +181,7 @@ void main() {
         invocation,
       ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
-        return capturedEvent;
+        return PublishSuccess(event: capturedEvent!);
       });
 
       await service.sendPrivateMessage(

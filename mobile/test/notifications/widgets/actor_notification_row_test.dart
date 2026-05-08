@@ -104,6 +104,20 @@ void main() {
         );
       });
 
+      testWidgets('"{actor} replied to your comment" for reply', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          notification: _actor(type: NotificationKind.reply),
+        );
+
+        expect(
+          find.text('Alice ${_l10n.notificationRepliedToYourComment}'),
+          findsOneWidget,
+        );
+      });
+
       testWidgets('Follow back button when not yet following', (tester) async {
         await _pump(tester, notification: _actor());
 

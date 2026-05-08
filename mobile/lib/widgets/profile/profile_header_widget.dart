@@ -159,7 +159,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
         effectiveProfile?.picture?.isNotEmpty == true ||
         effectiveProfile?.about?.isNotEmpty == true ||
         effectiveProfile?.nip05?.isNotEmpty == true;
-    final nip05 = effectiveProfile?.displayNip05;
+    final nip05 = effectiveProfile?.shortDisplayNip05;
     final about = effectiveProfile?.about;
     final profileColor = effectiveProfile?.profileBackgroundColor;
     final authService = ref.watch(authServiceProvider);
@@ -668,10 +668,7 @@ class _BannerImage extends StatelessWidget {
 /// shimmering indefinitely or collapsing the row (which would shift the
 /// surrounding profile layout).
 class _ProfileStatsRow extends StatefulWidget {
-  const _ProfileStatsRow({
-    required this.userIdHex,
-    this.profileStats,
-  });
+  const _ProfileStatsRow({required this.userIdHex, this.profileStats});
 
   final String userIdHex;
   final ProfileStats? profileStats;
@@ -954,10 +951,8 @@ void _showAvatarLightbox(
     barrierColor: VineTheme.transparent,
     barrierDismissible: true,
     barrierLabel: context.l10n.profileAvatarLightboxBarrierLabel,
-    pageBuilder: (context, _, _) => _AvatarLightbox(
-      imageUrl: imageUrl,
-      userIdHex: userIdHex,
-    ),
+    pageBuilder: (context, _, _) =>
+        _AvatarLightbox(imageUrl: imageUrl, userIdHex: userIdHex),
   );
 }
 

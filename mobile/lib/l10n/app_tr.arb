@@ -1743,6 +1743,23 @@
     "feedModeForYou": "Senin için",
     "feedModeNew": "Yeni",
     "feedModeFollowing": "Takip",
+    "feedModeSemanticLabel": "Akış modu: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Video yazarı: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Yazar avatarı",
     "feedForYouEmpty": "Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.",
     "feedFollowingEmpty": "Takip ettiğin kişilerden henüz video yok.\nBeğendiğin içerik üreticilerini bulup takip et.",
     "feedLatestEmpty": "Henüz yeni video yok.\nYakında tekrar kontrol et.",
@@ -1860,6 +1877,7 @@
     "routeInvalidCategory": "Geçersiz kategori",
     "routeNoVideosToDisplay": "Gösterilecek video yok",
     "routeInvalidProfileId": "Geçersiz profil kimliği",
+    "routeUnknownPath": "Bu sayfa uygulamada yok.",
     "routeDefaultListName": "Liste",
     "supportTitle": "Destek Merkezi",
     "supportContactSupport": "Destekle İletişime Geç",
@@ -2275,6 +2293,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Başlıksız video",
+    "clickableTextViewVideoLink": "Videoyu görüntüle",
+    "messageExternalLinkDialogTitle": "Harici bağlantı açılsın mı?",
+    "messageExternalLinkDialogBody": "Bu bağlantı harici bir siteye gidiyor ve güvenli olmayabilir:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Aç",
     "inboxCollabInviteAcceptButton": "Kabul et",
     "inboxCollabInviteAcceptError": "Kabul edilemedi. Tekrar dene.",
     "inboxCollabInviteAcceptedStatus": "Kabul edildi",
@@ -2433,6 +2456,10 @@
     "notificationFollowBack": "Geri takip et",
     "profileSetupUploadSuccess": "Profil fotoğrafı başarıyla yüklendi!",
     "proofmodeCheckAiGenerated": "Yapay zeka ile oluşturulup oluşturulmadığını kontrol et",
+    "dmSendFailedMessage": "Mesaj gönderilemedi",
+    "dmSendFailedRetry": "Tekrar Dene",
+    "dmSendPartialMessage": "Gönderildi, ama diğer cihazlarınla eşitlenmedi",
+    "dmConversationLoadError": "Mesajlar yüklenemedi",
     "reportDialogCancel": "İptal",
     "reportDialogReport": "Bildir",
     "routerInvalidCreator": "Geçersiz içerik üretici",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Akışımda da paylaş",
+  "videoMetadataShareReplyToFeedSubtitle": "Kapalı olduğunda bu video yalnızca yorum dizisinde kalır.",
+  "commentsRecordVideoButtonLabel": "Video yorum kaydet",
+  "commentsOpenVideoLabel": "Video yorumu aç",
+  "commentsMuteVideoReplyLabel": "Video yanıtını sessize al",
+  "commentsUnmuteVideoReplyLabel": "Video yanıtının sesini aç",
+  "commentsOpenReplyParentLabel": "Bunun yanıt verdiği videoyu aç",
+  "commentsReplyParentSectionTitle": "Yanıt olarak",
+  "commentsReplyParentLabel": "{target} için yanıt",
+  "commentsReplyParentFallbackLabel": "Videoya yanıt"
 }

@@ -73,17 +73,11 @@ class NotificationRepository {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
       final requestUrl = _funnelcakeApiClient
-          .notificationsUri(
-            pubkey: _userPubkey,
-            cursor: effectiveCursor,
-          )
+          .notificationsUri(pubkey: _userPubkey, cursor: effectiveCursor)
           .toString();
 
       final authHeaders = _authHeadersProvider != null
-          ? await _authHeadersProvider(
-              requestUrl,
-              'GET',
-            )
+          ? await _authHeadersProvider(requestUrl, 'GET')
           : <String, String>{};
 
       final response = await _funnelcakeApiClient.getNotifications(
@@ -178,10 +172,7 @@ class NotificationRepository {
       pubkeys: pubkeys,
     );
     final videosFuture = _fetchVideoMetadata(eventIds);
-    final (profiles, videosById) = await (
-      profilesFuture,
-      videosFuture,
-    ).wait;
+    final (profiles, videosById) = await (profilesFuture, videosFuture).wait;
 
     final consolidated = _consolidateFollows(raw);
     final videos = _groupVideoAnchored(consolidated, profiles, videosById);
@@ -210,10 +201,7 @@ class NotificationRepository {
                   .toList();
               if (filtered.isEmpty) return null;
               if (filtered.length == n.actors.length) return n;
-              return n.copyWith(
-                actors: filtered,
-                totalCount: filtered.length,
-              );
+              return n.copyWith(actors: filtered, totalCount: filtered.length);
             }(),
             ActorNotification() => filter(n.actor.pubkey) ? null : n,
           },
@@ -239,15 +227,13 @@ class NotificationRepository {
     List<String> eventIds,
   ) async {
     if (eventIds.isEmpty) return const <String, VideoStats>{};
-    final futures = eventIds.map(
-      (id) async {
-        try {
-          return await _funnelcakeApiClient.getVideoStats(id);
-        } on Object {
-          return null;
-        }
-      },
-    );
+    final futures = eventIds.map((id) async {
+      try {
+        return await _funnelcakeApiClient.getVideoStats(id);
+      } on Object {
+        return null;
+      }
+    });
     final results = await Future.wait(futures);
     final map = <String, VideoStats>{};
     for (var i = 0; i < eventIds.length; i++) {
@@ -348,15 +334,19 @@ class NotificationRepository {
           kind == NotificationKind.repost) {
         continue;
       }
-      // ActorNotification supports follow/mention/system/likeComment;
-      // coerce other kinds (e.g. reply) to system.
+      // ActorNotification supports follow/mention/system/likeComment/reply;
+      // coerce any other kind to system.
       final mapped =
           (kind == NotificationKind.follow ||
               kind == NotificationKind.mention ||
               kind == NotificationKind.system ||
-              kind == NotificationKind.likeComment)
+              kind == NotificationKind.likeComment ||
+              kind == NotificationKind.reply)
           ? kind
           : NotificationKind.system;
+      final isCommentTargeted =
+          mapped == NotificationKind.likeComment ||
+          mapped == NotificationKind.reply;
       result.add(
         ActorNotification(
           id: n.dedupeKey,
@@ -365,6 +355,7 @@ class NotificationRepository {
           timestamp: n.createdAt,
           isRead: n.read,
           commentText: _truncateComment(n.content, kind),
+          targetEventId: isCommentTargeted ? n.referencedEventId : null,
         ),
       );
     }
@@ -392,10 +383,7 @@ class NotificationRepository {
         ? _fetchVideoMetadata([referenced])
         : Future<Map<String, VideoStats>>.value(const {});
 
-    final (profiles, videosById) = await (
-      profilesFuture,
-      videoFuture,
-    ).wait;
+    final (profiles, videosById) = await (profilesFuture, videoFuture).wait;
 
     final actor = _buildActor(raw.sourcePubkey, profiles);
 
@@ -427,9 +415,13 @@ class NotificationRepository {
         (kind == NotificationKind.follow ||
             kind == NotificationKind.mention ||
             kind == NotificationKind.system ||
-            kind == NotificationKind.likeComment)
+            kind == NotificationKind.likeComment ||
+            kind == NotificationKind.reply)
         ? kind
         : NotificationKind.system;
+    final isCommentTargeted =
+        mapped == NotificationKind.likeComment ||
+        mapped == NotificationKind.reply;
     return ActorNotification(
       id: raw.dedupeKey,
       type: mapped,
@@ -437,6 +429,7 @@ class NotificationRepository {
       timestamp: raw.createdAt,
       isRead: raw.read,
       commentText: _truncateComment(raw.content, kind),
+      targetEventId: isCommentTargeted ? raw.referencedEventId : null,
     );
   }
 
@@ -465,10 +458,7 @@ class NotificationRepository {
   }
 
   /// Builds an [ActorInfo] from a pubkey and the profile lookup map.
-  ActorInfo _buildActor(
-    String pubkey,
-    Map<String, UserProfile> profiles,
-  ) {
+  ActorInfo _buildActor(String pubkey, Map<String, UserProfile> profiles) {
     final profile = profiles[pubkey];
     return ActorInfo(
       pubkey: pubkey,
@@ -483,6 +473,11 @@ class NotificationRepository {
   /// Likes (and zaps) on a non-video target — typically a kind 1111
   /// comment — map to [NotificationKind.likeComment] so the UI can
   /// render "liked your comment" instead of "liked your video".
+  ///
+  /// Replies (kind 1111) split the same way: a reply directly on a video
+  /// is indistinguishable from a comment for the user, so we map it to
+  /// [NotificationKind.comment]. A reply on a non-video (i.e. on one of
+  /// the user's own comments) maps to [NotificationKind.reply].
   static NotificationKind _mapNotificationKind(RelayNotification n) {
     final isReaction = switch (n.notificationType) {
       'reaction' || 'zap' => true,
@@ -494,7 +489,8 @@ class NotificationRepository {
           : NotificationKind.likeComment;
     }
     return switch (n.notificationType) {
-      'reply' => NotificationKind.reply,
+      'reply' =>
+        n.isReferencedVideo ? NotificationKind.comment : NotificationKind.reply,
       'comment' => NotificationKind.comment,
       'repost' => NotificationKind.repost,
       'mention' => NotificationKind.mention,

@@ -1415,6 +1415,10 @@ UserDataCleanupService userDataCleanupService(Ref ref) {
             'pendingActions',
             () => db.pendingActionsDao.clearAll(userPubkey),
           );
+          await safeDelete(
+            'outgoingDms',
+            () => db.outgoingDmsDao.clearAllForUser(userPubkey),
+          );
         }
       };
 
@@ -2269,6 +2273,7 @@ DmRepository dmRepository(Ref ref) {
     nostrClient: nostrService,
     directMessagesDao: db.directMessagesDao,
     conversationsDao: db.conversationsDao,
+    outgoingDmsDao: db.outgoingDmsDao,
     syncState: DmSyncState(prefs),
   );
 

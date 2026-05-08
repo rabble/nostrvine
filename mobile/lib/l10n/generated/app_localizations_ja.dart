@@ -3779,6 +3779,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get feedModeFollowing => 'フォロー中';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'フィードモード: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return '動画の作者: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => '作者のアバター';
+
+  @override
   String get feedForYouEmpty =>
       'おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。';
 
@@ -4057,6 +4070,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => '無効なプロフィール ID';
+
+  @override
+  String get routeUnknownPath => 'このページはアプリ内にありません。';
 
   @override
   String get routeDefaultListName => 'リスト';
@@ -4949,6 +4965,23 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => '無題の動画';
+
+  @override
+  String get clickableTextViewVideoLink => '動画を見る';
+
+  @override
+  String get messageExternalLinkDialogTitle => '外部リンクを開きますか？';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'このリンクは外部サイトに移動します。安全ではない可能性があります:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => '開く';
+
+  @override
   String get inboxCollabInviteAcceptButton => '承認';
 
   @override
@@ -4978,6 +5011,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return '動画のコラボに招待されたよ：$url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'メッセージを送信できなかった';
+
+  @override
+  String get dmSendFailedRetry => 'もう一回';
+
+  @override
+  String get dmSendPartialMessage => '送信したけど、ほかのデバイスには同期できなかった';
+
+  @override
+  String get dmConversationLoadError => 'メッセージを読み込めなかった';
 
   @override
   String get reportDialogCancel => 'キャンセル';
@@ -6535,6 +6580,13 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'フィードに動画を公開';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => '自分のフィードにも共有';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'オフにすると、この動画はコメントスレッド内にのみ表示されます。';
+
+  @override
   String get videoMetadataFormNotReadyHint => '有効にするにはフォームを入力してください';
 
   @override
@@ -6633,4 +6685,30 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => '受信者の承認待ち';
+
+  @override
+  String get commentsRecordVideoButtonLabel => '動画コメントを録画';
+
+  @override
+  String get commentsOpenVideoLabel => '動画コメントを開く';
+
+  @override
+  String get commentsMuteVideoReplyLabel => '動画返信をミュート';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => '動画返信のミュートを解除';
+
+  @override
+  String get commentsOpenReplyParentLabel => '返信先の動画を開く';
+
+  @override
+  String get commentsReplyParentSectionTitle => '返信先';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return '$target への返信';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => '動画への返信';
 }

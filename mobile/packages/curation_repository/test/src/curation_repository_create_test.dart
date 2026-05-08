@@ -84,7 +84,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
         when(
           () => mockNostrService.connectedRelays,
         ).thenReturn(['wss://relay']);
@@ -119,7 +119,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         await curationRepository.createCurationSet(
@@ -150,7 +150,7 @@ void main() {
       ).thenAnswer((_) async => signedEvent);
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => signedEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
       when(() => mockNostrService.connectedRelays).thenReturn([]);
 
       await curationRepository.createCurationSet(
@@ -210,7 +210,7 @@ void main() {
       ).thenAnswer((_) async => signedEvent);
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       final result = await curationRepository.createCurationSet(
         id: 'test_list',
@@ -284,7 +284,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         final result = await curationRepository.createCurationSet(
@@ -321,7 +321,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         final result = await curationRepository.createCurationSet(
@@ -360,7 +360,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
         when(
           () => mockNostrService.connectedRelays,
         ).thenReturn(['wss://relay']);
@@ -398,7 +398,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         await curationRepository.createCurationSet(
           id: 'fail_status',
@@ -430,7 +430,7 @@ void main() {
         ).thenAnswer((_) async => signedEvent);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => signedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
         when(() => mockNostrService.connectedRelays).thenReturn([]);
 
         // With description

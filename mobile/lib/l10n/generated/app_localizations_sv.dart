@@ -3971,6 +3971,19 @@ class AppLocalizationsSv extends AppLocalizations {
   String get feedModeFollowing => 'Följer';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Flödesläge: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Videoförfattare: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Skapares avatar';
+
+  @override
   String get feedForYouEmpty =>
       'Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.';
 
@@ -4255,6 +4268,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'Ogiltigt profil-ID';
+
+  @override
+  String get routeUnknownPath => 'Den sidan finns inte i appen.';
 
   @override
   String get routeDefaultListName => 'Lista';
@@ -5160,6 +5176,23 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Video utan titel';
+
+  @override
+  String get clickableTextViewVideoLink => 'Visa video';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Öppna extern länk?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Den här länken går till en extern webbplats och kanske inte är säker:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Öppna';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Acceptera';
 
   @override
@@ -5190,6 +5223,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'Du har bjudits in att samarbeta på en video: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Meddelandet kunde inte skickas';
+
+  @override
+  String get dmSendFailedRetry => 'Försök igen';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Skickat, men inte synkat till dina andra enheter';
+
+  @override
+  String get dmConversationLoadError =>
+      'Det gick inte att läsa in meddelandena';
 
   @override
   String get reportDialogCancel => 'Avbryt';
@@ -6816,6 +6863,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publicera video i flödet';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Dela också i mitt flöde';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Av betyder att den här videon bara stannar i kommentarstråden.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Fyll i formuläret för att aktivera';
 
@@ -6921,4 +6975,30 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Väntar på mottagare';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Spela in videokommentar';
+
+  @override
+  String get commentsOpenVideoLabel => 'Öppna videokommentar';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Tysta videosvar';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Slå på ljud för videosvar';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'Öppna videon som detta svarar på';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'Som svar på';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Svar på $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Svar på video';
 }

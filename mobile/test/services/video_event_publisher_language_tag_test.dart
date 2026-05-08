@@ -129,7 +129,7 @@ void main() {
 
     when(
       () => mockNostrClient.publishEvent(any()),
-    ).thenAnswer((_) async => publishedEvent);
+    ).thenAnswer((_) async => PublishSuccess(event: publishedEvent));
     when(
       () => mockNostrClient.queryEvents(
         any(),

@@ -14,9 +14,11 @@ import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/relay/relay_pool.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/c2pa_signing_service.dart';
@@ -151,6 +153,44 @@ class VideoEventPublisher {
   /// this getter has no side effects.
   Duration get currentOuterPublishTimeout =>
       outerPublishTimeoutFor(_nostrService.configuredRelayCount);
+
+  void _addReplyTags(List<List<String>> tags, VideoReplyContext context) {
+    tags
+      ..add(['E', context.rootEventId, '', context.rootAuthorPubkey])
+      ..add(['K', context.rootEventKind.toString()])
+      ..add(['P', context.rootAuthorPubkey]);
+
+    final rootAddressableId = context.rootAddressableId;
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      tags.add(['A', rootAddressableId, '']);
+    }
+
+    final parentCommentId = context.parentCommentId;
+    if (parentCommentId != null && parentCommentId.isNotEmpty) {
+      tags
+        ..add([
+          'e',
+          parentCommentId,
+          '',
+          context.parentAuthorPubkey ?? context.rootAuthorPubkey,
+        ])
+        ..add(['k', EventKind.comment.toString()])
+        ..add([
+          'p',
+          context.parentAuthorPubkey ?? context.rootAuthorPubkey,
+        ]);
+      return;
+    }
+
+    tags
+      ..add(['e', context.rootEventId, '', context.rootAuthorPubkey])
+      ..add(['k', context.rootEventKind.toString()])
+      ..add(['p', context.rootAuthorPubkey]);
+
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+      tags.add(['a', rootAddressableId, '']);
+    }
+  }
 
   /// Initialize the publisher
   Future<void> initialize() async {
@@ -316,9 +356,9 @@ class VideoEventPublisher {
       // shape sidesteps the closure-cast entirely; behaviour against a
       // real `NostrClient` is identical.
       final outerTimeout = currentOuterPublishTimeout;
-      Event? sentEvent;
+      PublishResult? publishResult;
       try {
-        sentEvent = await _nostrService
+        publishResult = await _nostrService
             .publishEvent(event)
             .timeout(outerTimeout);
       } on TimeoutException {
@@ -329,11 +369,11 @@ class VideoEventPublisher {
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
-        sentEvent = null;
+        publishResult = null;
       }
 
       // Check if publish was successful
-      if (sentEvent != null) {
+      if (publishResult is PublishSuccess) {
         Log.info(
           '📡 Event sent to relays, awaiting visibility confirmation: '
           '${event.id}',
@@ -419,6 +459,8 @@ class VideoEventPublisher {
     String? selectedAudioRelay,
     String? language,
     String? contentWarning,
+    VideoReplyContext? replyContext,
+    bool addReplyToFeed = false,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -439,6 +481,8 @@ class VideoEventPublisher {
       selectedAudioRelay: selectedAudioRelay,
       language: language,
       contentWarning: contentWarning,
+      replyContext: replyContext,
+      addReplyToFeed: addReplyToFeed,
     );
   }
 
@@ -455,6 +499,8 @@ class VideoEventPublisher {
     String? selectedAudioRelay,
     String? language,
     String? contentWarning,
+    VideoReplyContext? replyContext,
+    bool addReplyToFeed = false,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -500,6 +546,18 @@ class VideoEventPublisher {
           upload.videoId ??
           '${DateTime.now().millisecondsSinceEpoch}_${upload.id}';
       tags.add(['d', dTag]);
+
+      if (replyContext != null) {
+        _addReplyTags(tags, replyContext);
+        if (addReplyToFeed) {
+          tags.add(
+            const [
+              videoReplyVisibilityTagName,
+              videoReplyVisibilityFeedValue,
+            ],
+          );
+        }
+      }
 
       // Build imeta tag components
       final imetaComponents = <String>[];
@@ -1073,7 +1131,9 @@ class VideoEventPublisher {
       }
 
       if (publishResult) {
-        if (_videoEventService != null) {
+        final shouldAddToDiscoveryCache =
+            replyContext == null || addReplyToFeed;
+        if (_videoEventService != null && shouldAddToDiscoveryCache) {
           try {
             final videoEvent = VideoEvent.fromNostrEvent(event);
             _videoEventService.addVideoEvent(videoEvent);

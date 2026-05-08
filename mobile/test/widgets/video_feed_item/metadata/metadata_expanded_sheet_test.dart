@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -26,6 +27,7 @@ import 'package:openvine/widgets/video_feed_item/metadata/metadata_user_chips.da
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_verification_section.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/video_reposters_cubit.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -33,6 +35,8 @@ class _MockVideoInteractionsBloc extends Mock
     implements VideoInteractionsBloc {}
 
 class _MockVideoRepostersCubit extends Mock implements VideoRepostersCubit {}
+
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 // Stable 64-char hex pubkeys for deterministic tests.
 const _creatorPubkey =
@@ -49,6 +53,10 @@ const _audioPubkey =
     'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 const _audioEventId =
     '1111111111111111111111111111111111111111111111111111111111111111';
+const _parentEventId =
+    '32e8069cb2f468548236bf743563bfd930b96fe2e5731a4b2f58e38d24df82b2';
+const _parentAddressableId =
+    '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb:parent-d-tag';
 
 AppLocalizations _l10n(WidgetTester tester) =>
     AppLocalizations.of(tester.element(find.byType(Scaffold).first));
@@ -75,6 +83,7 @@ VideoEvent _makeVideo({
   int originalLoops = 1500,
   int createdAt = 1700000000,
   String? publishedAt,
+  List<List<String>> nostrEventTags = const [],
 }) => VideoEvent(
   id: 'test_video_id_00000000000000000000000000000000000000000000000000',
   pubkey: _creatorPubkey,
@@ -92,6 +101,7 @@ VideoEvent _makeVideo({
   originalLoops: originalLoops,
   rawTags: rawTags,
   publishedAt: publishedAt,
+  nostrEventTags: nostrEventTags,
 );
 
 const _testAudio = AudioEvent(
@@ -106,8 +116,10 @@ const _testAudio = AudioEvent(
 void main() {
   late _MockVideoInteractionsBloc mockInteractionsBloc;
   late _MockVideoRepostersCubit mockRepostersCubit;
+  late _MockVideosRepository mockVideosRepository;
 
   setUp(() {
+    mockVideosRepository = _MockVideosRepository();
     mockInteractionsBloc = _MockVideoInteractionsBloc();
     when(
       () => mockInteractionsBloc.stream,
@@ -129,6 +141,9 @@ void main() {
       () => mockRepostersCubit.state,
     ).thenReturn(const VideoRepostersState(isLoading: false));
     when(() => mockRepostersCubit.close()).thenAnswer((_) async {});
+    when(
+      () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+    ).thenAnswer((_) async => null);
   });
 
   /// Pumps a metadata widget inside the required provider tree.
@@ -147,6 +162,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(
             createMockSharedPreferences(),
           ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           ...providerOverrides,
         ],
       ),
@@ -174,6 +190,47 @@ void main() {
   // Title section
   // ---------------------------------------------------------------------------
   group('_TitleSection (via $MetadataExpandedSheet)', () {
+    testWidgets('renders fetched parent context for a video reply', (
+      tester,
+    ) async {
+      final video = _makeVideo(
+        title: 'Comment video',
+        rawTags: const {
+          'A': _parentAddressableId,
+          'E': _parentEventId,
+          'K': '34236',
+          'a': _parentAddressableId,
+        },
+        inspiredByVideo: const InspiredByInfo(
+          addressableId: _parentAddressableId,
+        ),
+      );
+      final parentVideo = _makeVideo(
+        title: 'Original cat video',
+        content: 'where the reply belongs',
+      );
+      when(
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          _parentAddressableId,
+        ),
+      ).thenAnswer((_) async => parentVideo);
+
+      await tester.pumpWidget(
+        buildSubject(child: MetadataExpandedSheet(video: video)),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('In reply to'), findsOneWidget);
+      expect(find.text('Reply to Original cat video'), findsOneWidget);
+      expect(find.textContaining('Inspired by'), findsNothing);
+      verify(
+        () => mockVideosRepository.fetchVideoWithStatsForRouteId(
+          _parentAddressableId,
+        ),
+      ).called(1);
+    });
+
     testWidgets('renders title and description when present', (tester) async {
       final video = _makeVideo(title: 'Who knew?', content: 'A description');
 

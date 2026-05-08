@@ -233,14 +233,13 @@ void main() {
       // Helper: finds the Semantics widget that wraps the feed-mode
       // GestureDetector by walking up from the visible label text.
       Semantics findFeedModeSemanticsWidget(WidgetTester tester, String label) {
+        final expectedLabel = l10n.feedModeSemanticLabel(label);
         return tester.widget<Semantics>(
           find
               .ancestor(
                 of: find.text(label),
                 matching: find.byWidgetPredicate(
-                  (w) =>
-                      w is Semantics &&
-                      w.properties.label?.startsWith('Feed mode') == true,
+                  (w) => w is Semantics && w.properties.label == expectedLabel,
                 ),
               )
               .first,
@@ -258,10 +257,13 @@ void main() {
           );
           await tester.pumpWidget(createTestWidget());
 
-          final semanticsWidget = findFeedModeSemanticsWidget(tester, 'New');
+          final semanticsWidget = findFeedModeSemanticsWidget(
+            tester,
+            l10n.feedModeNew,
+          );
           expect(
             semanticsWidget.properties.label,
-            equals('Feed mode: ${l10n.feedModeNew}'),
+            equals(l10n.feedModeSemanticLabel(l10n.feedModeNew)),
           );
           expect(semanticsWidget.properties.button, isTrue);
         },
@@ -292,7 +294,9 @@ void main() {
           );
           expect(
             semanticsWidget.properties.label,
-            equals('Feed mode: ${l10n.feedModeFollowing}'),
+            equals(
+              l10n.feedModeSemanticLabel(l10n.feedModeFollowing),
+            ),
           );
         },
       );
@@ -315,7 +319,8 @@ void main() {
                   matching: find.byWidgetPredicate(
                     (w) =>
                         w is Semantics &&
-                        w.properties.label?.startsWith('Feed mode') == true,
+                        w.properties.label ==
+                            l10n.feedModeSemanticLabel(l10n.feedModeNew),
                   ),
                 )
                 .first,

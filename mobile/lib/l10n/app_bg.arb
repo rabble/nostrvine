@@ -1945,6 +1945,23 @@
     "feedModeForYou": "За теб",
     "feedModeNew": "Ново",
     "feedModeFollowing": "Следвани",
+    "feedModeSemanticLabel": "Режим на емисията: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Автор на видеото: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Аватар на автора",
     "feedForYouEmpty": "Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.",
     "feedFollowingEmpty": "Още няма видеа от хората, които следваш.\nНамери творци, които ти допадат, и ги последвай.",
     "feedLatestEmpty": "Още няма нови видеа.\nПровери пак скоро.",
@@ -2062,6 +2079,7 @@
     "routeInvalidCategory": "Невалидна категория",
     "routeNoVideosToDisplay": "Няма видеа за показване",
     "routeInvalidProfileId": "Невалиден ID на потребителския профил",
+    "routeUnknownPath": "Тази страница не е налична в приложението.",
     "routeDefaultListName": "Списък",
     "supportTitle": "Център за поддръжка",
     "supportContactSupport": "Свържи се с поддръжката",
@@ -2467,6 +2485,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Видео без заглавие",
+    "clickableTextViewVideoLink": "Виж видеото",
+    "messageExternalLinkDialogTitle": "Да се отвори ли външен линк?",
+    "messageExternalLinkDialogBody": "Този линк води към външен сайт и може да не е безопасен:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Отвори",
     "inboxCollabInviteAcceptButton": "Приеми",
     "inboxCollabInviteIgnoreButton": "Игнорирайте",
     "inboxCollabInviteAcceptedStatus": "Прието",
@@ -2482,6 +2505,10 @@
     },
     "collaboratorInviteDmBody": "Поканени сте да си сътрудничите по {title}: {url}\n\nOpen diVine to review and accept.",
     "collaboratorInviteDmBodyUntitled": "Поканени сте да си сътрудничите по видеоклип: {url}\n\nOpen diVine to review and accept.",
+    "dmSendFailedMessage": "Съобщението не мина",
+    "dmSendFailedRetry": "Опитай пак",
+    "dmSendPartialMessage": "Изпратено, но не се синхронизира с другите ти устройства",
+    "dmConversationLoadError": "Съобщенията не се заредиха",
     "reportDialogCancel": "Отказ",
     "reportDialogReport": "Докладвай",
     "exploreVideoId": "ID: {id}",
@@ -3587,5 +3614,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Сподели и в моя поток",
+  "videoMetadataShareReplyToFeedSubtitle": "Изключено означава, че това видео остава само в нишката с коментари.",
+  "commentsRecordVideoButtonLabel": "Запис на видео коментар",
+  "commentsOpenVideoLabel": "Отвори видео коментара",
+  "commentsMuteVideoReplyLabel": "Заглуши видео отговора",
+  "commentsUnmuteVideoReplyLabel": "Пусни звука на видео отговора",
+  "commentsOpenReplyParentLabel": "Отвори видеото, към което е този отговор",
+  "commentsReplyParentSectionTitle": "В отговор на",
+  "commentsReplyParentLabel": "Отговор на {target}",
+  "commentsReplyParentFallbackLabel": "Отговор на видео"
 }

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/l10n/generated/app_localizations_en.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -53,6 +54,8 @@ void main() {
     tearDown(() {
       UrlLauncherPlatform.instance = originalUrlLauncherPlatform;
     });
+
+    final strings = AppLocalizationsEn();
 
     testWidgets('displays plain text without hashtags correctly', (
       tester,
@@ -270,11 +273,77 @@ void main() {
 
       final textSpan = text.textSpan! as TextSpan;
       final spans = textSpan.children!.cast<TextSpan>();
+      final fallbackName = UserProfile.defaultDisplayNameFor(_testHexPubkey);
       final mentionSpan = spans.firstWhere(
-        (span) => span.text != null && span.text!.startsWith('@npub1'),
+        (span) => span.text == '@$fallbackName',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('renders labeled hex event references as video links', (
+      tester,
+    ) async {
+      const eventId =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+      const textWithEvent = 'Content Report\nEvent: $eventId';
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: ClickableHashtagText(text: textWithEvent)),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      final textSpan = text.textSpan! as TextSpan;
+
+      expect(textSpan.toPlainText(), isNot(contains(eventId)));
+      expect(
+        textSpan.toPlainText(),
+        contains(strings.clickableTextViewVideoLink),
+      );
+
+      final spans = textSpan.children!.cast<TextSpan>();
+      final videoSpan = spans.firstWhere(
+        (span) => span.text == strings.clickableTextViewVideoLink,
+      );
+
+      expect(videoSpan.recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('prefers onUrlTap over launching directly when provided', (
+      tester,
+    ) async {
+      final tappedUrls = <String>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: ClickableHashtagText(
+              text: 'Visit https://example.com',
+              onUrlTap: (url) async => tappedUrls.add(url),
+            ),
+          ),
+        ),
+      );
+
+      final text = tester.widget<Text>(find.byType(Text));
+      final textSpan = text.textSpan! as TextSpan;
+      final spans = textSpan.children!.cast<TextSpan>();
+      final urlSpan = spans.firstWhere(
+        (span) => span.text == 'https://example.com',
+      );
+
+      final recognizer = urlSpan.recognizer! as TapGestureRecognizer;
+      recognizer.onTap!();
+      await tester.pump();
+
+      expect(tappedUrls, ['https://example.com']);
+      expect(fakeUrlLauncherPlatform.launchedUrl, isNull);
     });
 
     testWidgets('parses bare nprofile mentions as tappable profile spans', (
@@ -300,8 +369,9 @@ void main() {
 
       final textSpan = text.textSpan! as TextSpan;
       final spans = textSpan.children!.cast<TextSpan>();
+      final fallbackName = UserProfile.defaultDisplayNameFor(_testHexPubkey);
       final mentionSpan = spans.firstWhere(
-        (span) => span.text != null && span.text!.startsWith('@npub1'),
+        (span) => span.text == '@$fallbackName',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());
@@ -343,7 +413,7 @@ void main() {
       final textSpan = text.textSpan! as TextSpan;
       final spans = textSpan.children!.cast<TextSpan>();
       final mentionSpan = spans.firstWhere(
-        (span) => span.text == '@alice.divine.video',
+        (span) => span.text == '@alice',
       );
 
       expect(mentionSpan.recognizer, isA<TapGestureRecognizer>());

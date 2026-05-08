@@ -311,7 +311,7 @@ void main() {
             // status
             when(
               () => mockNostrService.publishEvent(any()),
-            ).thenAnswer((_) async => null);
+            ).thenAnswer((_) async => const PublishFailed());
 
             await curationRepository.publishCuration(
               id: CurationSetType.editorsPicks.id,
@@ -334,7 +334,7 @@ void main() {
 
             when(
               () => mockNostrService.publishEvent(any()),
-            ).thenAnswer((_) async => signedEvent);
+            ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
 
             // The lastAttemptAt is set to DateTime.now()
             // during the failed publish, and getRetryDelay

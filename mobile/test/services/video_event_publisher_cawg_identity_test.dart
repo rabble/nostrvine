@@ -98,7 +98,9 @@ void main() {
       when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
       when(
         () => mockNostrService.queryEvents(

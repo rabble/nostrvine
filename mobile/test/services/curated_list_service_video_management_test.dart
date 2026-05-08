@@ -40,7 +40,9 @@ void main() {
     // Helper to stub common mocks - call after reset(mockNostr)
     void stubMocks() {
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       when(
@@ -62,7 +64,9 @@ void main() {
 
       // Mock successful event publishing
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       // Mock subscribeToEvents for relay sync

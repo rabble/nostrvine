@@ -101,60 +101,117 @@ class VineBottomNav extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
+    return ColoredBox(
       color: VineTheme.surfaceBackground,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      // The bottom nav has no Container padding — all four edges of the
+      // breathing room around the icons are folded into adjacent tab hit
+      // targets (see [_kTopExtraTapHeight], [_kBottomExtraTapHeight],
+      // [_kHorizontalEdgePad]). [SafeArea] still keeps tap targets clear
+      // of the iOS home indicator and Android navigation bar.
       child: SafeArea(
         top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _IconTabButton(
-              semanticIdentifier: 'home_tab',
-              semanticLabel: context.l10n.navHome,
-              icon: DivineIconName.houseSimple,
-              isSelected: currentIndex == 0,
-              onTap: () => _handleTabTap(context, ref, 0),
-            ),
-            _IconTabButton(
-              semanticIdentifier: 'explore_tab',
-              semanticLabel: context.l10n.navExplore,
-              icon: DivineIconName.search,
-              isSelected: currentIndex == 1,
-              onTap: () => _handleTabTap(context, ref, 1),
-            ),
-            // Camera button in center of bottom nav
-            _CameraButton(
-              onTap: () {
-                Log.info(
-                  '👆 User tapped camera button',
-                  name: 'Navigation',
-                  category: LogCategory.ui,
-                );
-                context.pushToCameraWithPermission();
-              },
-            ),
-            NotificationBadge(
-              count: _inboxUnreadCount(context, ref),
-              child: _IconTabButton(
-                semanticIdentifier: 'inbox_tab',
-                semanticLabel: context.l10n.navInbox,
-                icon: DivineIconName.chat,
-                isSelected: currentIndex == 2,
-                onTap: () => _handleTabTap(context, ref, 2),
-              ),
-            ),
-            _ProfileTabButton(
-              semanticLabel: context.l10n.navProfile,
-              isSelected: currentIndex == 3,
-              onTap: () => _handleTabTap(context, ref, 3),
-            ),
-          ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Each tab's slot covers its icon plus half of each adjacent
+            // inter-icon gap, so taps closer to a given icon than to its
+            // neighbour route to that tab. Home and Profile additionally
+            // span the [_kHorizontalEdgePad] strip out to the screen edge.
+            // Icons sit at their Figma-specified positions.
+            const iconWidth = kMinInteractiveDimension;
+            const cameraWidth = _kCameraButtonWidth;
+            const totalIconWidth = iconWidth * 4 + cameraWidth;
+            const totalEdgePad = _kHorizontalEdgePad * 2;
+            // 4 inter-icon gaps × 2 halves = 8.
+            final halfGap =
+                ((constraints.maxWidth - totalIconWidth - totalEdgePad) / 8)
+                    .clamp(0.0, double.infinity);
+
+            return Row(
+              children: [
+                _IconTabButton(
+                  semanticIdentifier: 'home_tab',
+                  semanticLabel: context.l10n.navHome,
+                  icon: DivineIconName.houseSimple,
+                  isSelected: currentIndex == 0,
+                  onTap: () => _handleTabTap(context, ref, 0),
+                  tapTargetWidth: _kHorizontalEdgePad + iconWidth + halfGap,
+                  iconAlignment: AlignmentDirectional.centerStart,
+                  edgePadding: const EdgeInsetsDirectional.only(
+                    start: _kHorizontalEdgePad,
+                  ),
+                ),
+                _IconTabButton(
+                  semanticIdentifier: 'explore_tab',
+                  semanticLabel: context.l10n.navExplore,
+                  icon: DivineIconName.search,
+                  isSelected: currentIndex == 1,
+                  onTap: () => _handleTabTap(context, ref, 1),
+                  tapTargetWidth: iconWidth + halfGap * 2,
+                ),
+                // Camera button in center of bottom nav
+                _CameraButton(
+                  tapTargetWidth: cameraWidth + halfGap * 2,
+                  onTap: () {
+                    Log.info(
+                      '👆 User tapped camera button',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.pushToCameraWithPermission();
+                  },
+                ),
+                _IconTabButton(
+                  semanticIdentifier: 'inbox_tab',
+                  semanticLabel: context.l10n.navInbox,
+                  icon: DivineIconName.chat,
+                  isSelected: currentIndex == 2,
+                  onTap: () => _handleTabTap(context, ref, 2),
+                  tapTargetWidth: iconWidth + halfGap * 2,
+                  badgeCount: _inboxUnreadCount(context, ref),
+                ),
+                _ProfileTabButton(
+                  semanticLabel: context.l10n.navProfile,
+                  isSelected: currentIndex == 3,
+                  onTap: () => _handleTabTap(context, ref, 3),
+                  tapTargetWidth: iconWidth + halfGap + _kHorizontalEdgePad,
+                  iconAlignment: AlignmentDirectional.centerEnd,
+                  edgePadding: const EdgeInsetsDirectional.only(
+                    end: _kHorizontalEdgePad,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
+
+/// Visible width of the green camera-button pill in the bottom nav.
+const double _kCameraButtonWidth = 72;
+
+/// Extra hit-target height stacked above the [kMinInteractiveDimension]
+/// icon row, so taps in the strip immediately above the visible icons
+/// route to the tab below.
+const double _kTopExtraTapHeight = 12;
+
+/// Extra hit-target height stacked below the [kMinInteractiveDimension]
+/// icon row (above the [SafeArea] inset), so taps in the strip
+/// immediately beneath the visible icons route to the tab above.
+const double _kBottomExtraTapHeight = 12;
+
+/// Total vertical hit-target height per tab. The icon container sits at
+/// the vertical centre of this slot — top and bottom extras are equal —
+/// so taps both above and below the visible glyph route to the right tab.
+const double _kTabSlotHeight =
+    kMinInteractiveDimension + _kTopExtraTapHeight + _kBottomExtraTapHeight;
+
+/// Lateral inset between the screen edge and the visible position of the
+/// outermost icons (Home / Profile). Folded into Home's and Profile's hit
+/// targets so taps inside the 16 px strip on the screen edge still route
+/// to the adjacent tab.
+const double _kHorizontalEdgePad = 16;
 
 // =============================================================================
 // Tab buttons
@@ -174,6 +231,12 @@ class VineBottomNav extends ConsumerWidget {
 ///
 /// The child gets the 32 %-opacity dim in the unselected state and the
 /// glyph-shaped shadow pair in the selected state. See [_ShadowedNavIcon].
+///
+/// [tapTargetWidth] is the full width the GestureDetector occupies inside
+/// the bottom nav row — usually larger than the 48 px icon container so
+/// taps in the surrounding gap also route to this tab. The icon itself
+/// stays a [kMinInteractiveDimension]-sized box positioned via
+/// [iconAlignment].
 class _IconTabButton extends StatelessWidget {
   const _IconTabButton({
     required this.semanticIdentifier,
@@ -181,6 +244,10 @@ class _IconTabButton extends StatelessWidget {
     required this.icon,
     required this.isSelected,
     required this.onTap,
+    required this.tapTargetWidth,
+    this.iconAlignment = Alignment.center,
+    this.edgePadding = EdgeInsets.zero,
+    this.badgeCount,
   });
 
   final String semanticIdentifier;
@@ -188,9 +255,49 @@ class _IconTabButton extends StatelessWidget {
   final DivineIconName icon;
   final bool isSelected;
   final VoidCallback onTap;
+  final double tapTargetWidth;
+
+  /// Where to place the 48 px icon container inside the slot. Defaults to
+  /// [Alignment.center] so the icon sits at the slot's centre with equal
+  /// hit-target padding above and below it. Use `centerStart` /
+  /// `centerEnd` (combined with [edgePadding]) for the leftmost /
+  /// rightmost tabs so they hug the row's edge.
+  final AlignmentGeometry iconAlignment;
+
+  /// Horizontal inset between the slot edge and the icon container.
+  /// Non-zero only for Home and Profile, where the slot extends all the
+  /// way to the screen edge but the icon must still sit
+  /// [_kHorizontalEdgePad] in from that edge per the Figma spec. The
+  /// edge strip itself stays inside the [GestureDetector] so taps there
+  /// route to the tab.
+  final EdgeInsetsGeometry edgePadding;
+
+  /// When non-null, wraps the inner icon container in a [NotificationBadge]
+  /// so the badge stays anchored to the icon's top-right corner rather
+  /// than to the (potentially much wider) tap target. Pass `null` on tabs
+  /// that never show a badge — that keeps `NotificationBadge` out of the
+  /// widget tree entirely so finders downstream still match exactly one
+  /// instance.
+  final int? badgeCount;
 
   @override
   Widget build(BuildContext context) {
+    Widget iconBox = SizedBox.square(
+      dimension: kMinInteractiveDimension,
+      child: Center(
+        child: Opacity(
+          // Figma: unselected tabs render at 32 % opacity; selected stays
+          // at 100 %. No color tint — just dim + shadow toggle.
+          opacity: isSelected ? 1.0 : 0.32,
+          child: _ShadowedNavIcon(icon: icon, showShadow: isSelected),
+        ),
+      ),
+    );
+
+    if (badgeCount != null) {
+      iconBox = NotificationBadge(count: badgeCount!, child: iconBox);
+    }
+
     return Semantics(
       identifier: semanticIdentifier,
       button: true,
@@ -198,15 +305,12 @@ class _IconTabButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: .opaque,
-        child: SizedBox.square(
-          dimension: kMinInteractiveDimension,
-          child: Center(
-            child: Opacity(
-              // Figma: unselected tabs render at 32 % opacity; selected stays
-              // at 100 %. No color tint — just dim + shadow toggle.
-              opacity: isSelected ? 1.0 : 0.32,
-              child: _ShadowedNavIcon(icon: icon, showShadow: isSelected),
-            ),
+        child: SizedBox(
+          width: tapTargetWidth,
+          height: _kTabSlotHeight,
+          child: Padding(
+            padding: edgePadding,
+            child: Align(alignment: iconAlignment, child: iconBox),
           ),
         ),
       ),
@@ -287,11 +391,19 @@ class _ProfileTabButton extends ConsumerWidget {
     required this.semanticLabel,
     required this.isSelected,
     required this.onTap,
+    required this.tapTargetWidth,
+    this.iconAlignment = Alignment.center,
+    this.edgePadding = EdgeInsets.zero,
   });
 
   final String semanticLabel;
   final bool isSelected;
   final VoidCallback onTap;
+  final double tapTargetWidth;
+  final AlignmentGeometry iconAlignment;
+
+  /// See [_IconTabButton.edgePadding].
+  final EdgeInsetsGeometry edgePadding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -303,6 +415,24 @@ class _ProfileTabButton extends ConsumerWidget {
     final imageUrl = profile?.picture;
     final hasAvatar = imageUrl != null && imageUrl.isNotEmpty;
 
+    final iconBox = SizedBox.square(
+      dimension: kMinInteractiveDimension,
+      child: Center(
+        child: hasAvatar
+            ? _ProfileAvatarBox(imageUrl: imageUrl, isSelected: isSelected)
+            // No signed-in avatar: render the same icon-tab treatment
+            // (opacity dim / shadow) as Home / Search / Inbox so the
+            // nav bar still feels uniform until the profile loads.
+            : Opacity(
+                opacity: isSelected ? 1.0 : 0.32,
+                child: _ShadowedNavIcon(
+                  icon: DivineIconName.userCircle,
+                  showShadow: isSelected,
+                ),
+              ),
+      ),
+    );
+
     return Semantics(
       identifier: 'profile_tab',
       button: true,
@@ -310,21 +440,12 @@ class _ProfileTabButton extends ConsumerWidget {
       child: GestureDetector(
         onTap: onTap,
         behavior: .opaque,
-        child: SizedBox.square(
-          dimension: kMinInteractiveDimension,
-          child: Center(
-            child: hasAvatar
-                ? _ProfileAvatarBox(imageUrl: imageUrl, isSelected: isSelected)
-                // No signed-in avatar: render the same icon-tab treatment
-                // (opacity dim / shadow) as Home / Search / Inbox so the
-                // nav bar still feels uniform until the profile loads.
-                : Opacity(
-                    opacity: isSelected ? 1.0 : 0.32,
-                    child: _ShadowedNavIcon(
-                      icon: DivineIconName.userCircle,
-                      showShadow: isSelected,
-                    ),
-                  ),
+        child: SizedBox(
+          width: tapTargetWidth,
+          height: _kTabSlotHeight,
+          child: Padding(
+            padding: edgePadding,
+            child: Align(alignment: iconAlignment, child: iconBox),
           ),
         ),
       ),
@@ -389,9 +510,10 @@ class _ProfileAvatarBox extends StatelessWidget {
 
 /// Camera button in the center of the bottom navigation bar.
 class _CameraButton extends StatelessWidget {
-  const _CameraButton({required this.onTap});
+  const _CameraButton({required this.onTap, required this.tapTargetWidth});
 
   final VoidCallback onTap;
+  final double tapTargetWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -401,15 +523,25 @@ class _CameraButton extends StatelessWidget {
       label: context.l10n.navOpenCamera,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          width: 72,
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            color: VineTheme.cameraButtonGreen,
-            borderRadius: BorderRadius.circular(20),
+        behavior: .opaque,
+        child: SizedBox(
+          width: tapTargetWidth,
+          height: _kTabSlotHeight,
+          // Centered so the visible pill keeps its on-screen position
+          // even though the slot is taller and wider than the pill —
+          // the extra space all goes to hit-target absorption.
+          child: Center(
+            child: Container(
+              width: _kCameraButtonWidth,
+              height: kMinInteractiveDimension,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: VineTheme.cameraButtonGreen,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const DivineIcon(icon: .cameraRetro, size: 32),
+            ),
           ),
-          child: const DivineIcon(icon: .cameraRetro, size: 32),
         ),
       ),
     );

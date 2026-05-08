@@ -4019,6 +4019,19 @@ class AppLocalizationsBg extends AppLocalizations {
   String get feedModeFollowing => 'Следвани';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Режим на емисията: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Автор на видеото: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Аватар на автора';
+
+  @override
   String get feedForYouEmpty =>
       'Твоят фийд „За теб“ е празен.\nРазгледай видеа и последвай творци, за да го оформиш.';
 
@@ -4304,6 +4317,9 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'Невалиден ID на потребителския профил';
+
+  @override
+  String get routeUnknownPath => 'Тази страница не е налична в приложението.';
 
   @override
   String get routeDefaultListName => 'Списък';
@@ -5213,6 +5229,23 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Видео без заглавие';
+
+  @override
+  String get clickableTextViewVideoLink => 'Виж видеото';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Да се отвори ли външен линк?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Този линк води към външен сайт и може да не е безопасен:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Отвори';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Приеми';
 
   @override
@@ -5243,6 +5276,19 @@ class AppLocalizationsBg extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'Поканени сте да си сътрудничите по видеоклип: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Съобщението не мина';
+
+  @override
+  String get dmSendFailedRetry => 'Опитай пак';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Изпратено, но не се синхронизира с другите ти устройства';
+
+  @override
+  String get dmConversationLoadError => 'Съобщенията не се заредиха';
 
   @override
   String get reportDialogCancel => 'Отказ';
@@ -6894,6 +6940,13 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Публикувай видео във фийда';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Сподели и в моя поток';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Изключено означава, че това видео остава само в нишката с коментари.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Попълни формата, за да продължиш';
 
@@ -7000,4 +7053,31 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Очаква получателя';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Запис на видео коментар';
+
+  @override
+  String get commentsOpenVideoLabel => 'Отвори видео коментара';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Заглуши видео отговора';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Пусни звука на видео отговора';
+
+  @override
+  String get commentsOpenReplyParentLabel =>
+      'Отвори видеото, към което е този отговор';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'В отговор на';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Отговор на $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Отговор на видео';
 }

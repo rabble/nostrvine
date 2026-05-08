@@ -17,6 +17,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
+import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// The bottom-left video metadata block: optional inline caption pill,
@@ -62,6 +63,14 @@ class VideoAuthorInfoSection extends ConsumerWidget {
           _InlineCaptionPill(video: video, player: player!),
           const SizedBox(height: 16),
         ],
+        if (video.isVideoReply) ...[
+          VideoReplyParentLink(
+            video: video,
+            variant: VideoReplyParentLinkVariant.overlay,
+            onInteracted: onInteracted,
+          ),
+          const SizedBox(height: 8),
+        ],
         // Avatar and name row
         Row(
           children: [
@@ -90,7 +99,7 @@ class VideoAuthorInfoSection extends ConsumerWidget {
                       identifier: 'video_author_name',
                       container: true,
                       explicitChildNodes: true,
-                      label: 'Video author: $displayName',
+                      label: context.l10n.videoAuthorSemanticLabel(displayName),
                       child: Text(
                         displayName,
                         style: VineTheme.titleSmallFont(),
@@ -200,7 +209,7 @@ class _AuthorAvatar extends StatelessWidget {
             imageUrl: avatarUrl,
             placeholderSeed: pubkey,
             size: 48,
-            semanticLabel: 'Author avatar',
+            semanticLabel: context.l10n.videoAuthorAvatarSemanticLabel,
             onTap: () {
               onInteracted?.call();
               final npub = normalizeToNpub(pubkey);

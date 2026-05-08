@@ -1746,6 +1746,23 @@
     "feedModeForYou": "Dla ciebie",
     "feedModeNew": "Nowe",
     "feedModeFollowing": "Obserwowane",
+    "feedModeSemanticLabel": "Tryb kanału: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Autor filmu: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Awatar autora",
     "feedForYouEmpty": "Twój kanał Dla Ciebie jest pusty.\nOdkrywaj filmy i obserwuj twórców, aby go ukształtować.",
     "feedFollowingEmpty": "Brak filmów od osób, które obserwujesz.\nZnajdź twórców, których lubisz i zacznij ich obserwować.",
     "feedLatestEmpty": "Brak nowych filmów.\nWróć tu wkrótce.",
@@ -1861,6 +1878,7 @@
     "routeInvalidCategory": "Nieprawidłowa kategoria",
     "routeNoVideosToDisplay": "Brak filmów do wyświetlenia",
     "routeInvalidProfileId": "Nieprawidłowy ID profilu",
+    "routeUnknownPath": "Tej strony nie ma w aplikacji.",
     "routeDefaultListName": "Lista",
     "supportTitle": "Centrum pomocy",
     "supportContactSupport": "Skontaktuj się z pomocą",
@@ -2276,6 +2294,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Film bez tytułu",
+    "clickableTextViewVideoLink": "Zobacz wideo",
+    "messageExternalLinkDialogTitle": "Otworzyć link zewnętrzny?",
+    "messageExternalLinkDialogBody": "Ten link prowadzi do zewnętrznej strony i może nie być bezpieczny:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Otwórz",
     "inboxCollabInviteAcceptButton": "Akceptuj",
     "inboxCollabInviteAcceptError": "Nie udało się zaakceptować. Spróbuj ponownie.",
     "inboxCollabInviteAcceptedStatus": "Zaakceptowano",
@@ -2434,6 +2457,10 @@
     "notificationFollowBack": "Zaobserwuj",
     "profileSetupUploadSuccess": "Zdjęcie profilowe przesłane pomyślnie!",
     "proofmodeCheckAiGenerated": "Sprawdź, czy wygenerowane przez AI",
+    "dmSendFailedMessage": "Nie udało się wysłać wiadomości",
+    "dmSendFailedRetry": "Spróbuj ponownie",
+    "dmSendPartialMessage": "Wysłano, ale nie zsynchronizowano z twoimi innymi urządzeniami",
+    "dmConversationLoadError": "Nie udało się wczytać wiadomości",
     "reportDialogCancel": "Anuluj",
     "reportDialogReport": "Zgłoś",
     "routerInvalidCreator": "Nieprawidłowy twórca",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Udostępnij też w moim feedzie",
+  "videoMetadataShareReplyToFeedSubtitle": "Wyłączenie sprawia, że ten film zostaje tylko w wątku komentarzy.",
+  "commentsRecordVideoButtonLabel": "Nagraj komentarz wideo",
+  "commentsOpenVideoLabel": "Otwórz komentarz wideo",
+  "commentsMuteVideoReplyLabel": "Wycisz odpowiedź wideo",
+  "commentsUnmuteVideoReplyLabel": "Włącz dźwięk odpowiedzi wideo",
+  "commentsOpenReplyParentLabel": "Otwórz film, na który to odpowiada",
+  "commentsReplyParentSectionTitle": "W odpowiedzi na",
+  "commentsReplyParentLabel": "Odpowiedź na {target}",
+  "commentsReplyParentFallbackLabel": "Odpowiedź na film"
 }

@@ -109,7 +109,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(fakeEvent),
-        ).thenAnswer((_) async => fakeEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
 
         final service = buildService();
         await service.register(testPubkey);
@@ -156,7 +156,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => fakeEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
 
         final service = buildService();
         await service.register(testPubkey);
@@ -283,7 +283,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(fakeEvent),
-        ).thenAnswer((_) async => fakeEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
 
         final service = buildService();
         await service.deregister(testPubkey);
@@ -343,7 +343,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(fakeEvent),
-        ).thenAnswer((_) async => fakeEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
 
         final service = buildService();
         await service.updatePreferences(prefs);
@@ -484,7 +484,7 @@ void main() {
 
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => fakeEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: fakeEvent));
 
         final service = buildService();
 

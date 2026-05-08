@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
@@ -67,9 +68,7 @@ Future<List<PooledFullscreenVideoFeedArgs>> _pumpRoutedView(
     routes: [
       GoRoute(
         path: '/',
-        builder: (context, state) => Scaffold(
-          body: NotificationsView(),
-        ),
+        builder: (context, state) => Scaffold(body: NotificationsView()),
       ),
       GoRoute(
         path: PooledFullscreenVideoFeedScreen.path,
@@ -167,9 +166,7 @@ void main() {
         await tester.tap(find.text('Retry'));
         await tester.pump();
 
-        verify(
-          () => mockBloc.add(NotificationFeedRefreshed()),
-        ).called(1);
+        verify(() => mockBloc.add(NotificationFeedRefreshed())).called(1);
       });
     });
 
@@ -247,9 +244,7 @@ void main() {
         // addPostFrameCallback fires after first frame.
         await tester.pump();
 
-        verify(
-          () => mockBloc.add(NotificationFeedMarkAllRead()),
-        ).called(1);
+        verify(() => mockBloc.add(NotificationFeedMarkAllRead())).called(1);
       });
 
       testWidgets('dispatches item tapped on notification tap', (tester) async {
@@ -265,10 +260,156 @@ void main() {
         await tester.tap(find.byType(NotificationListItem).first);
         await tester.pump();
 
-        verify(
-          () => mockBloc.add(NotificationFeedItemTapped('n1')),
-        ).called(1);
+        verify(() => mockBloc.add(NotificationFeedItemTapped('n1'))).called(1);
       });
+
+      testWidgets('likeComment tap resolves comment to root video and opens '
+          'comments thread', (tester) async {
+        final videoService = _MockVideoEventService();
+        final nostrClient = _MockNostrClient();
+        final videosRepository = _MockVideosRepository();
+        const commentEventId = 'comment_1111_event';
+        const rootVideoEventId = 'root_video_event';
+        final resolvedVideo = _video(rootVideoEventId);
+
+        // The comment is not a video — resolver fetches it from relay
+        // and follows its uppercase E tag to the root video.
+        when(() => videoService.getVideoById(commentEventId)).thenReturn(null);
+        when(() => nostrClient.fetchEventById(commentEventId)).thenAnswer((
+          _,
+        ) async {
+          final event = Event(
+            'a' * 64,
+            1111,
+            const [
+              ['E', rootVideoEventId],
+            ],
+            'liked comment text',
+            createdAt: 1700000000,
+          );
+          event.id = commentEventId;
+          return event;
+        });
+        when(
+          () =>
+              videosRepository.fetchVideoWithStatsForRouteId(rootVideoEventId),
+        ).thenAnswer((_) async => resolvedVideo);
+        when(
+          () => videoService.shouldHideVideo(resolvedVideo),
+        ).thenReturn(false);
+
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: [
+              ActorNotification(
+                id: 'lc1',
+                type: NotificationKind.likeComment,
+                actor: ActorInfo(pubkey: 'liker', displayName: 'Liz'),
+                timestamp: DateTime(2026),
+                targetEventId: commentEventId,
+              ),
+            ],
+          ),
+        );
+
+        final capturedArgs = await _pumpRoutedView(
+          tester,
+          mockBloc,
+          videoEventService: videoService,
+          nostrClient: nostrClient,
+          videosRepository: videosRepository,
+        );
+
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
+
+        verify(() => nostrClient.fetchEventById(commentEventId)).called(1);
+        verify(
+          () =>
+              videosRepository.fetchVideoWithStatsForRouteId(rootVideoEventId),
+        ).called(1);
+        expect(capturedArgs, hasLength(1));
+        final args = capturedArgs.single;
+        expect(args.autoOpenComments, isTrue);
+        final videos = await args.videosStream.first;
+        expect(videos.single.id, resolvedVideo.id);
+      });
+
+      testWidgets(
+        'reply tap resolves target comment to root video and opens '
+        'comments thread',
+        (tester) async {
+          final videoService = _MockVideoEventService();
+          final nostrClient = _MockNostrClient();
+          final videosRepository = _MockVideosRepository();
+          const parentCommentId = 'parent_comment_id';
+          const rootVideoEventId = 'reply_root_video';
+          final resolvedVideo = _video(rootVideoEventId);
+
+          when(
+            () => videoService.getVideoById(parentCommentId),
+          ).thenReturn(null);
+          when(() => nostrClient.fetchEventById(parentCommentId)).thenAnswer((
+            _,
+          ) async {
+            final event = Event(
+              'a' * 64,
+              1111,
+              const [
+                ['E', rootVideoEventId],
+              ],
+              'parent comment text',
+              createdAt: 1700000000,
+            );
+            event.id = parentCommentId;
+            return event;
+          });
+          when(
+            () => videosRepository.fetchVideoWithStatsForRouteId(
+              rootVideoEventId,
+            ),
+          ).thenAnswer((_) async => resolvedVideo);
+          when(
+            () => videoService.shouldHideVideo(resolvedVideo),
+          ).thenReturn(false);
+
+          when(() => mockBloc.state).thenReturn(
+            NotificationFeedState(
+              status: NotificationFeedStatus.loaded,
+              notifications: [
+                ActorNotification(
+                  id: 'r1',
+                  type: NotificationKind.reply,
+                  actor: ActorInfo(pubkey: 'replier', displayName: 'Bob'),
+                  timestamp: DateTime(2026),
+                  targetEventId: parentCommentId,
+                ),
+              ],
+            ),
+          );
+
+          final capturedArgs = await _pumpRoutedView(
+            tester,
+            mockBloc,
+            videoEventService: videoService,
+            nostrClient: nostrClient,
+            videosRepository: videosRepository,
+          );
+
+          await tester.tap(find.byType(NotificationListItem).first);
+          await tester.pumpAndSettle();
+
+          verify(() => nostrClient.fetchEventById(parentCommentId)).called(1);
+          verify(
+            () => videosRepository.fetchVideoWithStatsForRouteId(
+              rootVideoEventId,
+            ),
+          ).called(1);
+          expect(capturedArgs, hasLength(1));
+          expect(capturedArgs.single.autoOpenComments, isTrue);
+        },
+      );
 
       testWidgets(
         'comment notification fetches by addressable id and opens comments',
@@ -389,25 +530,20 @@ void main() {
         expect(find.byType(NotificationListItem), findsNWidgets(5));
       });
 
-      testWidgets(
-        'follow filter renders only follow notifications',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            NotificationFeedState(
-              status: NotificationFeedStatus.loaded,
-              notifications: mixed,
-            ),
-          );
+      testWidgets('follow filter renders only follow notifications', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          NotificationFeedState(
+            status: NotificationFeedStatus.loaded,
+            notifications: mixed,
+          ),
+        );
 
-          await _pumpView(
-            tester,
-            mockBloc,
-            kindFilter: NotificationKind.follow,
-          );
+        await _pumpView(tester, mockBloc, kindFilter: NotificationKind.follow);
 
-          expect(find.byType(NotificationListItem), findsOneWidget);
-        },
-      );
+        expect(find.byType(NotificationListItem), findsOneWidget);
+      });
 
       testWidgets(
         'like filter also matches likeComment so likes-on-comments appear',
@@ -419,11 +555,7 @@ void main() {
             ),
           );
 
-          await _pumpView(
-            tester,
-            mockBloc,
-            kindFilter: NotificationKind.like,
-          );
+          await _pumpView(tester, mockBloc, kindFilter: NotificationKind.like);
 
           // VideoNotification(like) + ActorNotification(likeComment) = 2.
           expect(find.byType(NotificationListItem), findsNWidgets(2));

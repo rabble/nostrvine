@@ -2091,6 +2091,30 @@
   "feedModeForYou": "For You",
   "feedModeNew": "New",
   "feedModeFollowing": "Following",
+  "feedModeSemanticLabel": "Feed mode: {label}",
+  "@feedModeSemanticLabel": {
+    "description": "Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.",
+    "placeholders": {
+      "label": {
+        "type": "String",
+        "description": "Localized name of the current feed mode (e.g. New, Following)."
+      }
+    }
+  },
+  "videoAuthorSemanticLabel": "Video author: {displayName}",
+  "@videoAuthorSemanticLabel": {
+    "description": "Semantic label for the video author's display name region. Screen reader only.",
+    "placeholders": {
+      "displayName": {
+        "type": "String",
+        "description": "Localized or resolved display name of the creator."
+      }
+    }
+  },
+  "videoAuthorAvatarSemanticLabel": "Author avatar",
+  "@videoAuthorAvatarSemanticLabel": {
+    "description": "Semantic label for the author's circular profile avatar on feed video metadata. Screen reader only."
+  },
   "feedForYouEmpty": "Your For You feed is empty.\nExplore videos and follow creators to shape it.",
   "feedFollowingEmpty": "No videos from people you follow yet.\nFind creators you like and follow them.",
   "feedLatestEmpty": "No new videos yet.\nCheck back soon.",
@@ -2208,6 +2232,10 @@
   "routeInvalidCategory": "Invalid category",
   "routeNoVideosToDisplay": "No videos to display",
   "routeInvalidProfileId": "Invalid profile ID",
+  "routeUnknownPath": "That page isn’t in the app.",
+  "@routeUnknownPath": {
+    "description": "Body text when navigation hits an unknown route (GoRouter.errorBuilder)."
+  },
   "routeDefaultListName": "List",
   "supportTitle": "Support Center",
   "supportContactSupport": "Contact Support",
@@ -2674,6 +2702,32 @@
       }
     }
   },
+  "inboxCollabInviteCardUntitledVideo": "Untitled video",
+  "@inboxCollabInviteCardUntitledVideo": {
+    "description": "Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier."
+  },
+  "clickableTextViewVideoLink": "View video",
+  "@clickableTextViewVideoLink": {
+    "description": "Tappable label rendered in rich text in place of a Nostr video/event reference. Opens the linked video."
+  },
+  "messageExternalLinkDialogTitle": "Open external link?",
+  "@messageExternalLinkDialogTitle": {
+    "description": "Confirmation dialog title shown before opening an untrusted external URL from a DM."
+  },
+  "messageExternalLinkDialogBody": "This link goes to an external site and may not be safe:\n\n{url}",
+  "@messageExternalLinkDialogBody": {
+    "description": "Confirmation dialog body shown before opening an untrusted external URL from a DM.",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "messageExternalLinkDialogOpen": "Open",
+  "@messageExternalLinkDialogOpen": {
+    "description": "Confirmation button that opens an untrusted external URL from a DM."
+  },
   "inboxCollabInviteAcceptButton": "Accept",
   "inboxCollabInviteIgnoreButton": "Ignore",
   "inboxCollabInviteAcceptedStatus": "Accepted",
@@ -2712,6 +2766,23 @@
         "example": "https://divine.video/video/abc123"
       }
     }
+  },
+
+  "dmSendFailedMessage": "Message couldn't be sent",
+  "@dmSendFailedMessage": {
+    "description": "SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`."
+  },
+  "dmSendFailedRetry": "Retry",
+  "@dmSendFailedRetry": {
+    "description": "SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message."
+  },
+  "dmSendPartialMessage": "Sent, but didn't sync to your other devices",
+  "@dmSendPartialMessage": {
+    "description": "SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`."
+  },
+  "dmConversationLoadError": "Could not load messages",
+  "@dmConversationLoadError": {
+    "description": "Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`)."
   },
 
   "reportDialogCancel": "Cancel",
@@ -3655,6 +3726,14 @@
   "videoMetadataSaveForLaterButton": "Save for Later",
   "videoMetadataPostSemanticLabel": "Post button",
   "videoMetadataPublishVideoHint": "Publish video to feed",
+  "videoMetadataShareReplyToFeedTitle": "Also share to my feed",
+  "@videoMetadataShareReplyToFeedTitle": {
+    "description": "Label for the toggle that also surfaces a video reply in normal feeds."
+  },
+  "videoMetadataShareReplyToFeedSubtitle": "Off keeps this video only in the comment thread.",
+  "@videoMetadataShareReplyToFeedSubtitle": {
+    "description": "Helper text for the video reply feed visibility toggle."
+  },
   "videoMetadataFormNotReadyHint": "Fill out the form to enable",
   "videoMetadataPostButton": "Post",
   "videoMetadataOpenPreviewSemanticLabel": "Open post preview screen",
@@ -3690,5 +3769,42 @@
   "badgesIssuedEmptySubtitle": "Badges you issue will show acceptance status here.",
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
-  "badgesRecipientWaitingStatus": "Waiting for recipient"
+  "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "commentsRecordVideoButtonLabel": "Record video comment",
+  "@commentsRecordVideoButtonLabel": {
+    "description": "Semantics label for the button that opens the recorder to create a video reply in comments."
+  },
+  "commentsOpenVideoLabel": "Open video comment",
+  "@commentsOpenVideoLabel": {
+    "description": "Semantics label for the button that opens an inline video reply in the full video detail route."
+  },
+  "commentsMuteVideoReplyLabel": "Mute video reply",
+  "@commentsMuteVideoReplyLabel": {
+    "description": "Semantics label for the button that mutes inline video comment playback."
+  },
+  "commentsUnmuteVideoReplyLabel": "Unmute video reply",
+  "@commentsUnmuteVideoReplyLabel": {
+    "description": "Semantics label for the button that unmutes inline video comment playback."
+  },
+  "commentsOpenReplyParentLabel": "Open video this replies to",
+  "@commentsOpenReplyParentLabel": {
+    "description": "Semantics label for the UI that opens the parent video for a video reply."
+  },
+  "commentsReplyParentSectionTitle": "In reply to",
+  "@commentsReplyParentSectionTitle": {
+    "description": "Section title shown above the parent video label for a video reply."
+  },
+  "commentsReplyParentLabel": "Reply to {target}",
+  "@commentsReplyParentLabel": {
+    "description": "Label describing the parent video a reply points to.",
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "commentsReplyParentFallbackLabel": "Reply to video",
+  "@commentsReplyParentFallbackLabel": {
+    "description": "Fallback label when the parent video has no title, author name, or usable content."
+  }
 }

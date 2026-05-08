@@ -83,12 +83,13 @@ final ProviderFamily<String?, String> checkEmptyFollowingRedirectProvider =
       );
 
       if (!hasFollowing) {
+        final target = ExploreScreen.pathForTab('popular');
         Log.debug(
-          'Redirecting to /explore because no following list found',
+          'Redirecting to $target because no following list found',
           name: 'AppRouter',
           category: LogCategory.ui,
         );
-        return ExploreScreen.path;
+        return target;
       }
 
       return null;

@@ -1746,6 +1746,23 @@
     "feedModeForYou": "För dig",
     "feedModeNew": "Nytt",
     "feedModeFollowing": "Följer",
+    "feedModeSemanticLabel": "Flödesläge: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Videoförfattare: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Skapares avatar",
     "feedForYouEmpty": "Ditt För dig-flöde är tomt.\nUtforska videor och följ kreatörer för att forma det.",
     "feedFollowingEmpty": "Inga videor från personer du följer än.\nHitta kreatörer du gillar och följ dem.",
     "feedLatestEmpty": "Inga nya videor än.\nTitta in igen snart.",
@@ -1861,6 +1878,7 @@
     "routeInvalidCategory": "Ogiltig kategori",
     "routeNoVideosToDisplay": "Inga videor att visa",
     "routeInvalidProfileId": "Ogiltigt profil-ID",
+    "routeUnknownPath": "Den sidan finns inte i appen.",
     "routeDefaultListName": "Lista",
     "supportTitle": "Supportcenter",
     "supportContactSupport": "Kontakta support",
@@ -2276,6 +2294,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video utan titel",
+    "clickableTextViewVideoLink": "Visa video",
+    "messageExternalLinkDialogTitle": "Öppna extern länk?",
+    "messageExternalLinkDialogBody": "Den här länken går till en extern webbplats och kanske inte är säker:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Öppna",
     "inboxCollabInviteAcceptButton": "Acceptera",
     "inboxCollabInviteAcceptError": "Det gick inte att acceptera. Försök igen.",
     "inboxCollabInviteAcceptedStatus": "Accepterad",
@@ -2434,6 +2457,10 @@
     "notificationFollowBack": "Följ tillbaka",
     "profileSetupUploadSuccess": "Profilbilden laddades upp!",
     "proofmodeCheckAiGenerated": "Kontrollera om AI-genererat",
+    "dmSendFailedMessage": "Meddelandet kunde inte skickas",
+    "dmSendFailedRetry": "Försök igen",
+    "dmSendPartialMessage": "Skickat, men inte synkat till dina andra enheter",
+    "dmConversationLoadError": "Det gick inte att läsa in meddelandena",
     "reportDialogCancel": "Avbryt",
     "reportDialogReport": "Rapportera",
     "routerInvalidCreator": "Ogiltig skapare",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Dela också i mitt flöde",
+  "videoMetadataShareReplyToFeedSubtitle": "Av betyder att den här videon bara stannar i kommentarstråden.",
+  "commentsRecordVideoButtonLabel": "Spela in videokommentar",
+  "commentsOpenVideoLabel": "Öppna videokommentar",
+  "commentsMuteVideoReplyLabel": "Tysta videosvar",
+  "commentsUnmuteVideoReplyLabel": "Slå på ljud för videosvar",
+  "commentsOpenReplyParentLabel": "Öppna videon som detta svarar på",
+  "commentsReplyParentSectionTitle": "Som svar på",
+  "commentsReplyParentLabel": "Svar på {target}",
+  "commentsReplyParentFallbackLabel": "Svar på video"
 }

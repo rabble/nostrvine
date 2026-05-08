@@ -4096,6 +4096,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get feedModeFollowing => 'Urmăresc';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Mod flux: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Autor videoclip: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Avatar autor';
+
+  @override
   String get feedForYouEmpty =>
       'Feedul tău Pentru tine este gol.\nExplorează videoclipuri și urmărește creatori pentru a-l modela.';
 
@@ -4383,6 +4396,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'ID de profil invalid';
+
+  @override
+  String get routeUnknownPath => 'Această pagină nu e în aplicație.';
 
   @override
   String get routeDefaultListName => 'Listă';
@@ -5310,6 +5326,23 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Videoclip fără titlu';
+
+  @override
+  String get clickableTextViewVideoLink => 'Vezi videoclipul';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Deschizi linkul extern?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Acest link duce la un site extern și s-ar putea să nu fie sigur:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Deschide';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Acceptă';
 
   @override
@@ -5340,6 +5373,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'Ai fost invitat(ă) să colaborezi la un videoclip: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Mesajul nu a putut fi trimis';
+
+  @override
+  String get dmSendFailedRetry => 'Reîncearcă';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Trimis, dar nu s-a sincronizat cu celelalte dispozitive';
+
+  @override
+  String get dmConversationLoadError => 'Mesajele nu au putut fi încărcate';
 
   @override
   String get reportDialogCancel => 'Anulează';
@@ -6988,6 +7034,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publică videoclipul în feed';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle =>
+      'Distribuie și în feedul meu';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Oprit păstrează acest videoclip doar în firul de comentarii.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Completează formularul pentru a activa';
 
@@ -7094,4 +7148,33 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Se așteaptă destinatarul';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Înregistrează comentariu video';
+
+  @override
+  String get commentsOpenVideoLabel => 'Deschide comentariul video';
+
+  @override
+  String get commentsMuteVideoReplyLabel =>
+      'Dezactivează sunetul răspunsului video';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel =>
+      'Activează sunetul răspunsului video';
+
+  @override
+  String get commentsOpenReplyParentLabel =>
+      'Deschide videoclipul la care răspunde';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'Ca răspuns la';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Răspuns la $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Răspuns la videoclip';
 }

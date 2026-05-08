@@ -234,7 +234,7 @@ class NostrService extends _$NostrService {
         event,
         targetRelays: targetRelays,
       );
-      return published != null;
+      return published is PublishSuccess;
     };
   }
 }

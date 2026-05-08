@@ -13,6 +13,7 @@ dependencies:
     path: ../db_client
   flutter:
     sdk: flutter
+  meta: ^1.17.0
   models:
     path: ../models
   nostr_client:

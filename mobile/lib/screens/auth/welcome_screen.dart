@@ -51,10 +51,7 @@ class WelcomeScreen extends ConsumerWidget {
   ).toString();
 
   /// Build a login-options path with optional recovery context prefilled.
-  static String loginOptionsPathWithRecovery({
-    String? email,
-    String? error,
-  }) {
+  static String loginOptionsPathWithRecovery({String? email, String? error}) {
     final queryParameters = <String, String>{};
 
     if (email != null && email.isNotEmpty) {
@@ -361,7 +358,7 @@ class _ReturningUserProfile extends StatelessWidget {
         UserProfile.defaultDisplayNameFor(pubkeyHex);
 
     final identifier =
-        profile?.displayNip05 ?? NostrKeyUtils.truncateNpub(pubkeyHex);
+        profile?.shortDisplayNip05 ?? NostrKeyUtils.truncateNpub(pubkeyHex);
 
     return Column(
       mainAxisSize: MainAxisSize.min,

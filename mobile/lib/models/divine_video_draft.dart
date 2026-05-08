@@ -9,6 +9,7 @@ import 'package:models/models.dart'
     show AspectRatio, AudioEvent, InspiredByInfo, NativeProofData;
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -40,6 +41,8 @@ class DivineVideoDraft {
     this.inspiredByNpub,
     this.selectedSound,
     this.contentWarning,
+    this.videoReplyContext,
+    this.shareReplyToFeed = false,
     this.originalAudioVolume = 1.0,
     this.customAudioVolume = 1.0,
   });
@@ -62,6 +65,8 @@ class DivineVideoDraft {
     String? inspiredByNpub,
     AudioEvent? selectedSound,
     String? contentWarning,
+    VideoReplyContext? videoReplyContext,
+    bool shareReplyToFeed = false,
     double originalAudioVolume = 1.0,
     double customAudioVolume = 1.0,
   }) {
@@ -88,6 +93,8 @@ class DivineVideoDraft {
       inspiredByNpub: inspiredByNpub,
       selectedSound: selectedSound,
       contentWarning: contentWarning,
+      videoReplyContext: videoReplyContext,
+      shareReplyToFeed: shareReplyToFeed,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,
     );
@@ -184,6 +191,12 @@ class DivineVideoDraft {
           ? AudioEvent.fromJson(json['selectedSound'] as Map<String, dynamic>)
           : null,
       contentWarning: json['contentWarning'] as String?,
+      videoReplyContext: json['videoReplyContext'] != null
+          ? VideoReplyContext.fromJson(
+              json['videoReplyContext'] as Map<String, dynamic>,
+            )
+          : null,
+      shareReplyToFeed: json['shareReplyToFeed'] as bool? ?? false,
       originalAudioVolume:
           (json['originalAudioVolume'] as num?)?.toDouble() ?? 1.0,
       customAudioVolume: (json['customAudioVolume'] as num?)?.toDouble() ?? 1.0,
@@ -246,6 +259,11 @@ class DivineVideoDraft {
   /// Comma-separated NIP-32 content warning labels for this video.
   final String? contentWarning;
 
+  /// Optional NIP-22/NIP-71 reply target for publishing this video into a
+  /// comment thread.
+  final VideoReplyContext? videoReplyContext;
+  final bool shareReplyToFeed;
+
   /// Volume level for the original video audio track (0.0 to 1.0).
   final double originalAudioVolume;
 
@@ -300,6 +318,8 @@ class DivineVideoDraft {
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
     Object? contentWarning = _sentinel,
+    Object? videoReplyContext = _sentinel,
+    bool? shareReplyToFeed,
     double? originalAudioVolume,
     double? customAudioVolume,
     bool skipUpdateLastModified = false,
@@ -337,6 +357,10 @@ class DivineVideoDraft {
     contentWarning: contentWarning == _sentinel
         ? this.contentWarning
         : contentWarning as String?,
+    videoReplyContext: videoReplyContext == _sentinel
+        ? this.videoReplyContext
+        : videoReplyContext as VideoReplyContext?,
+    shareReplyToFeed: shareReplyToFeed ?? this.shareReplyToFeed,
     originalAudioVolume: originalAudioVolume ?? this.originalAudioVolume,
     customAudioVolume: customAudioVolume ?? this.customAudioVolume,
   );
@@ -369,6 +393,9 @@ class DivineVideoDraft {
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
     if (contentWarning != null) 'contentWarning': contentWarning,
+    if (videoReplyContext != null)
+      'videoReplyContext': videoReplyContext!.toJson(),
+    if (shareReplyToFeed) 'shareReplyToFeed': shareReplyToFeed,
     if (originalAudioVolume != 1.0) 'originalAudioVolume': originalAudioVolume,
     if (customAudioVolume != 1.0) 'customAudioVolume': customAudioVolume,
   };
@@ -428,6 +455,7 @@ class DivineVideoDraft {
           finalRenderedClip != null ||
           selectedSound != null ||
           contentWarning != null ||
+          videoReplyContext != null ||
           collaboratorPubkeys.isNotEmpty ||
           inspiredByVideo != null ||
           inspiredByNpub != null ||

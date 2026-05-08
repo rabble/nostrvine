@@ -948,6 +948,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final likesRepository = ref.watch(likesRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final showVideoReplies = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.videoReplies),
+    );
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
     final addressableId = video.addressableId;
@@ -962,6 +965,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
+              includeVideoReplies: showVideoReplies,
               initialLikeCount: video.nostrLikeCount != null
                   ? video.totalLikes
                   : null,

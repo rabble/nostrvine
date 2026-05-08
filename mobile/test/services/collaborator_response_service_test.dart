@@ -70,7 +70,7 @@ void main() {
       return signedEvent;
     });
     when(() => nostrClient.publishEvent(any())).thenAnswer(
-      (_) async => signedEvent,
+      (_) async => PublishSuccess(event: signedEvent),
     );
 
     final result = await service.acceptInvite(invite);
@@ -130,7 +130,9 @@ void main() {
         );
       });
       when(() => nostrClient.publishEvent(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.single as Event,
+        (invocation) async => PublishSuccess(
+          event: invocation.positionalArguments.single as Event,
+        ),
       );
 
       final result = await service.acceptInvite(inviteWithoutRelay);

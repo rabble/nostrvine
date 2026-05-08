@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -142,6 +144,77 @@ void main() {
 
         // Should not crash, and should return false since JSON is invalid
         expect(hasFollowing, isFalse);
+      });
+    });
+
+    group('checkEmptyFollowingRedirectProvider', () {
+      test(
+        'returns /explore/tab/popular for empty-following users on /welcome',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'age_verified_16_plus': true,
+            'current_user_pubkey_hex': testUserPubkey,
+            // No following_list cache for this user → empty.
+          });
+
+          final prefs = await SharedPreferences.getInstance();
+          final container = ProviderContainer(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          );
+          addTearDown(container.dispose);
+
+          final redirect = container.read(
+            checkEmptyFollowingRedirectProvider(WelcomeScreen.path),
+          );
+
+          expect(
+            redirect,
+            equals(ExploreScreen.pathForTab('popular')),
+            reason:
+                'Empty-following users coming from /welcome should land '
+                'on the Popular tab, not the explore root.',
+          );
+        },
+      );
+
+      test('returns null when user has a non-empty following list', () async {
+        SharedPreferences.setMockInitialValues({
+          'age_verified_16_plus': true,
+          'current_user_pubkey_hex': testUserPubkey,
+          'following_list_$testUserPubkey': '["pubkey1"]',
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+        addTearDown(container.dispose);
+
+        final redirect = container.read(
+          checkEmptyFollowingRedirectProvider(WelcomeScreen.path),
+        );
+
+        expect(redirect, isNull);
+      });
+
+      test('returns null when location is not /welcome', () async {
+        SharedPreferences.setMockInitialValues({
+          'age_verified_16_plus': true,
+          'current_user_pubkey_hex': testUserPubkey,
+          // Empty follows, but caller is not coming from /welcome.
+        });
+
+        final prefs = await SharedPreferences.getInstance();
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+        addTearDown(container.dispose);
+
+        final redirect = container.read(
+          checkEmptyFollowingRedirectProvider('/some-other-route'),
+        );
+
+        expect(redirect, isNull);
       });
     });
   });

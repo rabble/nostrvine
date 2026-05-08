@@ -18,8 +18,11 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/comments/comment_synthetic_video_event.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
+import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -63,6 +66,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     final textScaler = MediaQuery.textScalerOf(
       context,
     ).clamp(maxScaleFactor: 1.5);
+    final commentContent = widget.comment.content.trim();
+    final showCommentText =
+        commentContent.isNotEmpty && commentContent != widget.comment.videoUrl;
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: textScaler),
       child: GestureDetector(
@@ -138,19 +144,49 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                             parentAuthorPubkey:
                                 widget.comment.replyToAuthorPubkey!,
                           ),
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top:
-                                widget.depth == 0 &&
-                                    widget.comment.replyToAuthorPubkey != null
-                                ? 4
-                                : 0,
+                        if (widget.comment.hasVideo) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 248),
+                              child: VideoCommentPlayer(
+                                videoUrl: widget.comment.videoUrl!,
+                                thumbnailUrl: widget.comment.thumbnailUrl,
+                                blurhash: widget.comment.videoBlurhash,
+                                onOpenVideo: () => context.push(
+                                  VideoDetailScreen.pathForId(
+                                    widget.comment.id,
+                                  ),
+                                  extra: VideoDetailRouteExtra(
+                                    initialVideo: widget.comment
+                                        .toSyntheticVideoEvent(),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                          child: _CommentContent(
-                            commentId: widget.comment.id,
-                            content: widget.comment.content,
+                          if (showCommentText) ...[
+                            const SizedBox(height: 12),
+                            _CommentContent(
+                              commentId: widget.comment.id,
+                              content: commentContent,
+                            ),
+                          ],
+                        ] else
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top:
+                                  widget.depth == 0 &&
+                                      widget.comment.replyToAuthorPubkey != null
+                                  ? 4
+                                  : 0,
+                            ),
+                            child: _CommentContent(
+                              commentId: widget.comment.id,
+                              content: commentContent,
+                            ),
                           ),
-                        ),
                         const SizedBox(height: 12),
                         _ActionsRow(
                           commentId: widget.comment.id,

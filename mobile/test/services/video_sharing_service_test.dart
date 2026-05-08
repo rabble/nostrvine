@@ -73,7 +73,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(pubkey: _recipientPubkey),
@@ -125,7 +127,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(
@@ -286,7 +290,7 @@ void main() {
       ).thenAnswer((_) async => signedEvent);
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => signedEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: signedEvent));
       when(
         () => mockProfileRepository.fetchFreshProfile(
           pubkey: any(named: 'pubkey'),
@@ -322,7 +326,7 @@ void main() {
       );
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       final now = DateTime.now();
       final result = await service.shareVideoWithUser(
@@ -416,7 +420,9 @@ void main() {
           recipientPubkey: any(named: 'recipientPubkey'),
           content: any(named: 'content'),
         ),
-      ).thenAnswer((_) async => NIP17SendResult.failure('Relay rejected'));
+      ).thenAnswer(
+        (_) async => const NIP17SendResult.failure('Relay rejected'),
+      );
 
       final now = DateTime.now();
       final result = await nip17Service.shareVideoWithUser(
@@ -698,7 +704,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(
@@ -734,7 +742,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(() => mockNostrService.publishEvent(any())).thenAnswer(
-        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+        (_) async => PublishSuccess(
+          event: Event(_testPubkey, 4, <List<String>>[], 'test'),
+        ),
       );
       when(
         () => mockProfileRepository.fetchFreshProfile(

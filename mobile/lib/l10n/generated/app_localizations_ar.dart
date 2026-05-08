@@ -3932,6 +3932,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get feedModeFollowing => 'المتابَعون';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'وضع الموجز: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'صانع الفيديو: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'صورة رمز صانع المحتوى';
+
+  @override
   String get feedForYouEmpty =>
       'خلاصة لك فارغة.\nاستكشف المقاطع واتبع صناع المحتوى لتخصيصها.';
 
@@ -4215,6 +4228,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'مُعرِّف ملف شخصي غير صالح';
+
+  @override
+  String get routeUnknownPath => 'هذه الصفحة غير متوفرة في التطبيق.';
 
   @override
   String get routeDefaultListName => 'قائمة';
@@ -5118,6 +5134,23 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'فيديو بلا عنوان';
+
+  @override
+  String get clickableTextViewVideoLink => 'عرض الفيديو';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'فتح رابط خارجي؟';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'هذا الرابط يذهب إلى موقع خارجي وقد لا يكون آمنًا:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'فتح';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'قبول';
 
   @override
@@ -5147,6 +5180,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'تمت دعوتك للتعاون على فيديو: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'تعذّر إرسال الرسالة';
+
+  @override
+  String get dmSendFailedRetry => 'إعادة المحاولة';
+
+  @override
+  String get dmSendPartialMessage =>
+      'أُرسلت، لكنّها لم تُزامَن مع أجهزتك الأخرى';
+
+  @override
+  String get dmConversationLoadError => 'تعذّر تحميل الرسائل';
 
   @override
   String get reportDialogCancel => 'إلغاء';
@@ -6749,6 +6795,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'نشر الفيديو في الخلاصة';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'شارك أيضًا في موجزي';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'إيقافه يبقي هذا الفيديو داخل سلسلة التعليقات فقط.';
+
+  @override
   String get videoMetadataFormNotReadyHint => 'أكمل النموذج للتفعيل';
 
   @override
@@ -6850,4 +6903,30 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'بانتظار المستلم';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'سجّل تعليق فيديو';
+
+  @override
+  String get commentsOpenVideoLabel => 'افتح تعليق الفيديو';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'اكتم رد الفيديو';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'ألغِ كتم رد الفيديو';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'افتح الفيديو الذي يرد عليه هذا';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'ردًا على';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'رد على $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'رد على فيديو';
 }

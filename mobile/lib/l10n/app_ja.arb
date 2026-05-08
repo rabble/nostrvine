@@ -1736,6 +1736,23 @@
     "feedModeForYou": "おすすめ",
     "feedModeNew": "新着",
     "feedModeFollowing": "フォロー中",
+    "feedModeSemanticLabel": "フィードモード: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "動画の作者: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "作者のアバター",
     "feedForYouEmpty": "おすすめフィードはまだ空です。\n動画を見つけてクリエイターをフォローし、あなた向けに育てましょう。",
     "feedFollowingEmpty": "フォロー中の人の動画はまだありません。\n気に入ったクリエイターを見つけてフォローしましょう。",
     "feedLatestEmpty": "新しい動画はまだありません。\nしばらくしてからもう一度確認してください。",
@@ -1853,6 +1870,7 @@
     "routeInvalidCategory": "無効なカテゴリ",
     "routeNoVideosToDisplay": "表示する動画がないよ",
     "routeInvalidProfileId": "無効なプロフィール ID",
+    "routeUnknownPath": "このページはアプリ内にありません。",
     "routeDefaultListName": "リスト",
     "supportTitle": "サポート",
     "supportContactSupport": "サポートに連絡",
@@ -2268,6 +2286,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "無題の動画",
+    "clickableTextViewVideoLink": "動画を見る",
+    "messageExternalLinkDialogTitle": "外部リンクを開きますか？",
+    "messageExternalLinkDialogBody": "このリンクは外部サイトに移動します。安全ではない可能性があります:\n\n{url}",
+    "messageExternalLinkDialogOpen": "開く",
     "inboxCollabInviteAcceptButton": "承認",
     "inboxCollabInviteAcceptError": "承認できなかったよ。もう一度試してね。",
     "inboxCollabInviteAcceptedStatus": "承認済み",
@@ -2426,6 +2449,10 @@
     "notificationFollowBack": "フォローバック",
     "profileSetupUploadSuccess": "プロフィール写真をアップロードしたよ！",
     "proofmodeCheckAiGenerated": "AI生成かチェック",
+    "dmSendFailedMessage": "メッセージを送信できなかった",
+    "dmSendFailedRetry": "もう一回",
+    "dmSendPartialMessage": "送信したけど、ほかのデバイスには同期できなかった",
+    "dmConversationLoadError": "メッセージを読み込めなかった",
     "reportDialogCancel": "キャンセル",
     "reportDialogReport": "報告",
     "routerInvalidCreator": "無効なクリエイター",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "自分のフィードにも共有",
+  "videoMetadataShareReplyToFeedSubtitle": "オフにすると、この動画はコメントスレッド内にのみ表示されます。",
+  "commentsRecordVideoButtonLabel": "動画コメントを録画",
+  "commentsOpenVideoLabel": "動画コメントを開く",
+  "commentsMuteVideoReplyLabel": "動画返信をミュート",
+  "commentsUnmuteVideoReplyLabel": "動画返信のミュートを解除",
+  "commentsOpenReplyParentLabel": "返信先の動画を開く",
+  "commentsReplyParentSectionTitle": "返信先",
+  "commentsReplyParentLabel": "{target} への返信",
+  "commentsReplyParentFallbackLabel": "動画への返信"
 }

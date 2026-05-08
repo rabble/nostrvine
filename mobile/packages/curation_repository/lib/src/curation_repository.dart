@@ -295,9 +295,7 @@ class CurationRepository {
     // Return videos from the dedicated cache
     final picks = List<VideoEvent>.from(_editorPicksVideoCache)
       // Sort by creation time (newest first)
-      ..sort(
-        (a, b) => b.createdAt.compareTo(a.createdAt),
-      );
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     // Only log on changes to avoid spam
     final currentCount = picks.length;
@@ -489,9 +487,7 @@ class CurationRepository {
     }
   }
 
-  Future<void> _processTrendingVines(
-    List<dynamic> vinesData,
-  ) async {
+  Future<void> _processTrendingVines(List<dynamic> vinesData) async {
     final trending = <VideoEvent>[];
     final allVideos = _videoEventCache.discoveryVideos;
     final missingEventIds = <String>[];
@@ -563,10 +559,7 @@ class CurationRepository {
 
     // Fetch missing videos from Nostr relays
     if (missingEventIds.isNotEmpty) {
-      await _fetchMissingTrendingVideos(
-        missingEventIds,
-        trending,
-      );
+      await _fetchMissingTrendingVideos(missingEventIds, trending);
     }
 
     if (trending.isNotEmpty) {
@@ -692,9 +685,7 @@ class CurationRepository {
       // Track videos that we failed to fetch
       final fetchedIds = fetchedVideos.map((v) => v.id.toLowerCase()).toSet();
       final actuallyMissingIds = missingEventIds
-          .where(
-            (id) => !fetchedIds.contains(id.toLowerCase()),
-          )
+          .where((id) => !fetchedIds.contains(id.toLowerCase()))
           .toSet();
 
       if (actuallyMissingIds.isNotEmpty) {
@@ -771,22 +762,18 @@ class CurationRepository {
   List<VideoEvent> getVideosForSet(String setId) => _setVideoCache[setId] ?? [];
 
   /// Get videos for a curation set type
-  List<VideoEvent> getVideosForSetType(
-    CurationSetType setType,
-  ) => getVideosForSet(setType.id);
+  List<VideoEvent> getVideosForSetType(CurationSetType setType) =>
+      getVideosForSet(setType.id);
 
   /// Get a specific curation set
   CurationSet? getCurationSet(String setId) => _curationSets[setId];
 
   /// Get curation set by type
-  CurationSet? getCurationSetByType(
-    CurationSetType setType,
-  ) => getCurationSet(setType.id);
+  CurationSet? getCurationSetByType(CurationSetType setType) =>
+      getCurationSet(setType.id);
 
   /// Refresh curation sets from Nostr
-  Future<void> refreshCurationSets({
-    List<String>? curatorPubkeys,
-  }) async {
+  Future<void> refreshCurationSets({List<String>? curatorPubkeys}) async {
     _isLoading = true;
     _error = null;
 
@@ -910,9 +897,7 @@ class CurationRepository {
   }
 
   /// Subscribe to curation set updates
-  Future<void> subscribeToCurationSets({
-    List<String>? curatorPubkeys,
-  }) async {
+  Future<void> subscribeToCurationSets({List<String>? curatorPubkeys}) async {
     try {
       Log.debug(
         'Subscribing to kind 30005 curation sets...',
@@ -923,11 +908,7 @@ class CurationRepository {
       // Subscribe to receive curation set events
       _nostrService
           .subscribe([
-            Filter(
-              kinds: [30005],
-              authors: curatorPubkeys,
-              limit: 500,
-            ),
+            Filter(kinds: [30005], authors: curatorPubkeys, limit: 500),
           ])
           .listen(
             (event) {
@@ -1135,9 +1116,7 @@ class CurationRepository {
           success: false,
           successCount: 0,
           totalRelays: 0,
-          errors: {
-            'signing': 'Failed to create and sign event',
-          },
+          errors: {'signing': 'Failed to create and sign event'},
         );
       }
 
@@ -1145,10 +1124,10 @@ class CurationRepository {
       final publishFuture = _nostrService.publishEvent(event);
       const timeoutDuration = Duration(seconds: 5);
 
-      Event? sentEvent;
+      late final PublishResult publishResult;
 
       try {
-        sentEvent = await publishFuture.timeout(timeoutDuration);
+        publishResult = await publishFuture.timeout(timeoutDuration);
       } on TimeoutException {
         Log.warning(
           'Curation publish timed out after 5s: $id',
@@ -1169,58 +1148,61 @@ class CurationRepository {
           success: false,
           successCount: 0,
           totalRelays: 0,
-          errors: {
-            'timeout': 'Publish timed out after 5 seconds',
-          },
+          errors: {'timeout': 'Publish timed out after 5 seconds'},
         );
       }
 
-      final isSuccess = sentEvent != null;
+      return switch (publishResult) {
+        PublishSuccess(:final event) => () {
+          _publishStatuses[id] = CurationPublishStatus(
+            curationId: id,
+            isPublishing: false,
+            isPublished: true,
+            lastPublishedAt: DateTime.now(),
+            publishedEventId: event.id,
+            successfulRelays: _nostrService.connectedRelays,
+            lastAttemptAt: DateTime.now(),
+          );
 
-      if (isSuccess) {
-        // Mark as successfully published
-        _publishStatuses[id] = CurationPublishStatus(
-          curationId: id,
-          isPublishing: false,
-          isPublished: true,
-          lastPublishedAt: DateTime.now(),
-          publishedEventId: sentEvent.id,
-          successfulRelays: _nostrService.connectedRelays,
-          lastAttemptAt: DateTime.now(),
-        );
+          Log.info(
+            '✅ Published curation "$title" to relays',
+            name: 'CurationRepository',
+            category: LogCategory.system,
+          );
 
-        Log.info(
-          '✅ Published curation "$title" to relays',
-          name: 'CurationRepository',
-          category: LogCategory.system,
-        );
-      } else {
-        // Mark as failed
-        _publishStatuses[id] = CurationPublishStatus(
-          curationId: id,
-          isPublishing: false,
-          isPublished: false,
-          failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
-          lastAttemptAt: DateTime.now(),
-          lastFailureReason: 'Failed to publish to relays',
-        );
+          return CurationPublishResult(
+            success: true,
+            successCount: 1,
+            totalRelays: 1,
+            eventId: event.id,
+          );
+        }(),
+        PublishNoRelays() || PublishFailed() => () {
+          _publishStatuses[id] = CurationPublishStatus(
+            curationId: id,
+            isPublishing: false,
+            isPublished: false,
+            failedAttempts: (_publishStatuses[id]?.failedAttempts ?? 0) + 1,
+            lastAttemptAt: DateTime.now(),
+            lastFailureReason: 'Failed to publish to relays',
+          );
 
-        Log.warning(
-          '❌ Failed to publish curation "$title" '
-          'to relays',
-          name: 'CurationRepository',
-          category: LogCategory.system,
-        );
-      }
+          Log.warning(
+            '❌ Failed to publish curation "$title" '
+            'to relays',
+            name: 'CurationRepository',
+            category: LogCategory.system,
+          );
 
-      return CurationPublishResult(
-        success: isSuccess,
-        successCount: isSuccess ? 1 : 0,
-        totalRelays: 1,
-        eventId: isSuccess ? sentEvent.id : null,
-        errors: isSuccess ? {} : {'publish': 'Failed to publish to relays'},
-        failedRelays: isSuccess ? [] : ['relays'],
-      );
+          return const CurationPublishResult(
+            success: false,
+            successCount: 0,
+            totalRelays: 1,
+            errors: {'publish': 'Failed to publish to relays'},
+            failedRelays: ['relays'],
+          );
+        }(),
+      };
     } on Exception catch (e) {
       Log.error(
         'Error publishing curation: $e',
@@ -1249,9 +1231,7 @@ class CurationRepository {
   }
 
   /// Get publish status for a curation
-  CurationPublishStatus getCurationPublishStatus(
-    String curationId,
-  ) {
+  CurationPublishStatus getCurationPublishStatus(String curationId) {
     return _publishStatuses[curationId] ??
         CurationPublishStatus(
           curationId: curationId,

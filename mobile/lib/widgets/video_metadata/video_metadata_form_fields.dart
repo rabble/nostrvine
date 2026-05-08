@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_content_warning_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -119,6 +120,8 @@ class _VideoMetadataFormFieldsState
           const _VideoMetadataAudioReuseToggle(),
         ],
 
+        const _VideoReplyVisibilityToggle(),
+
         if (widget.enableCollaborators) ...[
           const _Divider(),
           const VideoMetadataCollaboratorsInput(),
@@ -131,6 +134,47 @@ class _VideoMetadataFormFieldsState
 
         const _Divider(),
         const SizedBox(height: 48),
+      ],
+    );
+  }
+}
+
+class _VideoReplyVisibilityToggle extends ConsumerWidget {
+  const _VideoReplyVisibilityToggle();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final replyContext = ref.watch(videoReplyContextProvider);
+    if (replyContext == null) return const SizedBox.shrink();
+
+    final shareReplyToFeed = ref.watch(
+      videoEditorProvider.select((state) => state.shareReplyToFeed),
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _Divider(),
+        Padding(
+          padding: const .symmetric(horizontal: 4),
+          child: SwitchListTile(
+            value: shareReplyToFeed,
+            title: Text(
+              context.l10n.videoMetadataShareReplyToFeedTitle,
+              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            ),
+            subtitle: Text(
+              context.l10n.videoMetadataShareReplyToFeedSubtitle,
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+            ),
+            contentPadding: const .symmetric(horizontal: 12, vertical: 4),
+            activeThumbColor: VineTheme.vineGreen,
+            inactiveThumbColor: VineTheme.lightText,
+            onChanged: (value) {
+              ref.read(videoEditorProvider.notifier).setShareReplyToFeed(value);
+            },
+          ),
+        ),
       ],
     );
   }

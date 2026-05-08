@@ -108,7 +108,7 @@ void main() {
           // Publish a curation successfully first
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => _testEvent());
+          ).thenAnswer((_) async => PublishSuccess(event: _testEvent()));
 
           await curationRepository.publishCuration(
             id: 'published_one',
@@ -140,7 +140,7 @@ void main() {
           // Fail a publish to create a failed status
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           await curationRepository.publishCuration(
             id: 'failed_one',
@@ -171,7 +171,7 @@ void main() {
         () async {
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           await curationRepository.publishCuration(
             id: 'failed_once',

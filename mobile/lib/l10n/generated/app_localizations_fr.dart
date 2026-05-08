@@ -4034,6 +4034,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get feedModeFollowing => 'Abonnements';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Fil d\'actualité : $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Auteur de la vidéo : $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Avatar de l\'auteur';
+
+  @override
   String get feedForYouEmpty =>
       'Ton fil Pour toi est vide.\nExplore des vidéos et abonne-toi à des créateurs pour le personnaliser.';
 
@@ -4320,6 +4333,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'ID de profil invalide';
+
+  @override
+  String get routeUnknownPath => 'Cette page n’est pas dans l’app.';
 
   @override
   String get routeDefaultListName => 'Liste';
@@ -5233,6 +5249,23 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Vidéo sans titre';
+
+  @override
+  String get clickableTextViewVideoLink => 'Voir la vidéo';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Ouvrir le lien externe ?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Ce lien mène vers un site externe et peut ne pas être sûr :\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Ouvrir';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Accepter';
 
   @override
@@ -5263,6 +5296,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'Tu as été invité(e) à collaborer sur une vidéo : $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Impossible d\'envoyer le message';
+
+  @override
+  String get dmSendFailedRetry => 'Réessayer';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Envoyé, mais pas synchronisé avec tes autres appareils';
+
+  @override
+  String get dmConversationLoadError => 'Impossible de charger les messages';
 
   @override
   String get reportDialogCancel => 'Annuler';
@@ -6920,6 +6966,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publier la vidéo dans le fil';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle =>
+      'Partager aussi dans mon fil';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Désactivé, cette vidéo reste seulement dans le fil de commentaires.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Remplissez le formulaire pour activer';
 
@@ -7026,4 +7080,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'En attente du destinataire';
+
+  @override
+  String get commentsRecordVideoButtonLabel =>
+      'Enregistrer un commentaire vidéo';
+
+  @override
+  String get commentsOpenVideoLabel => 'Ouvrir le commentaire vidéo';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Couper le son de la réponse vidéo';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel =>
+      'Remettre le son de la réponse vidéo';
+
+  @override
+  String get commentsOpenReplyParentLabel =>
+      'Ouvrir la vidéo à laquelle ceci répond';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'En réponse à';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Réponse à $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Réponse à la vidéo';
 }

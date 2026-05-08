@@ -118,7 +118,7 @@ class CorruptedVideoRepairService {
       }
 
       final sent = await _nostrClient.publishEvent(signedEvent);
-      if (sent != null) {
+      if (sent case PublishSuccess(:final event)) {
         repairedCount++;
         Log.info(
           'Repaired event ${event.id} '
@@ -128,7 +128,7 @@ class CorruptedVideoRepairService {
         );
 
         // Update local cache so the fix is visible immediately
-        _videoEventService?.updateVideoEvent(VideoEvent.fromNostrEvent(sent));
+        _videoEventService?.updateVideoEvent(VideoEvent.fromNostrEvent(event));
       } else {
         Log.warning(
           'Failed to publish repaired event for ${event.id}',

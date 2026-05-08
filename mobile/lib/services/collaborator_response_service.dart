@@ -64,13 +64,12 @@ class CollaboratorResponseService {
       }
 
       final published = await _nostrClient.publishEvent(event);
-      if (published == null) {
-        return const CollaboratorResponseResult.failure(
-          'Could not publish collaborator acceptance',
-        );
+      if (published case PublishSuccess(:final event)) {
+        return CollaboratorResponseResult.success(event.id);
       }
-
-      return CollaboratorResponseResult.success(published.id);
+      return const CollaboratorResponseResult.failure(
+        'Could not publish collaborator acceptance',
+      );
     } on Object catch (error) {
       return CollaboratorResponseResult.failure(error.toString());
     }

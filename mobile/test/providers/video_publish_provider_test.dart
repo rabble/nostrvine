@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/video_publish/video_publish_state.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 
 void main() {
@@ -157,5 +159,25 @@ void main() {
         );
       },
     );
+
+    test('video reply publish destination opens parent video comments', () {
+      const rootEventId =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const rootAddressableId =
+          '34236:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'
+          ':parent-video';
+      const context = VideoReplyContext(
+        rootEventId: rootEventId,
+        rootEventKind: 34236,
+        rootAuthorPubkey:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        rootAddressableId: rootAddressableId,
+      );
+
+      final destination = videoReplyPublishDestinationFor(context);
+
+      expect(destination.path, VideoDetailScreen.pathForId(rootAddressableId));
+      expect(destination.extra.autoOpenComments, isTrue);
+    });
   });
 }

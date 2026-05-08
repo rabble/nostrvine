@@ -3954,6 +3954,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String get feedModeFollowing => 'Takip';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Akış modu: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Video yazarı: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Yazar avatarı';
+
+  @override
   String get feedForYouEmpty =>
       'Sana Özel akışın boş.\nVideolar keşfet ve içerik üreticileri takip ederek akışını şekillendir.';
 
@@ -4241,6 +4254,9 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'Geçersiz profil kimliği';
+
+  @override
+  String get routeUnknownPath => 'Bu sayfa uygulamada yok.';
 
   @override
   String get routeDefaultListName => 'Liste';
@@ -5145,6 +5161,23 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Başlıksız video';
+
+  @override
+  String get clickableTextViewVideoLink => 'Videoyu görüntüle';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Harici bağlantı açılsın mı?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Bu bağlantı harici bir siteye gidiyor ve güvenli olmayabilir:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Aç';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Kabul et';
 
   @override
@@ -5174,6 +5207,19 @@ class AppLocalizationsTr extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'Bir videoda işbirliği yapmaya davet edildin: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Mesaj gönderilemedi';
+
+  @override
+  String get dmSendFailedRetry => 'Tekrar Dene';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Gönderildi, ama diğer cihazlarınla eşitlenmedi';
+
+  @override
+  String get dmConversationLoadError => 'Mesajlar yüklenemedi';
 
   @override
   String get reportDialogCancel => 'İptal';
@@ -6790,6 +6836,13 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Videoyu akışa yayınla';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Akışımda da paylaş';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Kapalı olduğunda bu video yalnızca yorum dizisinde kalır.';
+
+  @override
   String get videoMetadataFormNotReadyHint =>
       'Etkinleştirmek için formu doldurun';
 
@@ -6894,4 +6947,30 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Alıcı bekleniyor';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Video yorum kaydet';
+
+  @override
+  String get commentsOpenVideoLabel => 'Video yorumu aç';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Video yanıtını sessize al';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Video yanıtının sesini aç';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'Bunun yanıt verdiği videoyu aç';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'Yanıt olarak';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return '$target için yanıt';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Videoya yanıt';
 }

@@ -41,22 +41,47 @@ class ConversationPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
+    final inviteStateStore = ref.watch(collaboratorInviteStateStoreProvider);
+    final inviteResponseService = ref.watch(
+      collaboratorResponseServiceProvider,
+    );
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
+        // Key tracks the captured Riverpod-provided dependencies so the
+        // bloc is recreated when their identity flips (auth flip, account
+        // switch, sign-out). Without this key, a stale `dmRepository`
+        // captured during a brief unauthenticated window would scope all
+        // reads/writes by an empty/wrong `_userPubkey` for the lifetime of
+        // the bloc, causing sent messages to "disappear" on re-entry.
+        // See `state_management.md` → "Bridging Riverpod-provided
+        // dependencies into BlocProvider" and the canonical four sites in
+        // `video_feed_page.dart` / `pooled_fullscreen_video_feed_screen.dart`.
+        BlocProvider<ConversationBloc>(
+          key: ValueKey((dmRepository, currentPubkey)),
           create: (_) => ConversationBloc(
             dmRepository: dmRepository,
             conversationId: conversationId,
             currentUserPubkey: currentPubkey,
           )..add(const ConversationStarted()),
         ),
-        BlocProvider(
+        // Same identity-keying as ConversationBloc above: the response
+        // service composes `authServiceProvider` + `nostrServiceProvider`
+        // (`app_providers.dart`), so its identity flips on auth changes.
+        // Without the key, accept-invite would publish through whichever
+        // signer/relay the cubit captured at first build, even after
+        // auth flipped.
+        BlocProvider<CollaboratorInviteActionsCubit>(
+          key: ValueKey((
+            inviteStateStore,
+            inviteResponseService,
+            currentPubkey,
+          )),
           create: (_) => CollaboratorInviteActionsCubit(
-            stateStore: ref.watch(collaboratorInviteStateStoreProvider),
-            responseService: ref.watch(collaboratorResponseServiceProvider),
+            stateStore: inviteStateStore,
+            responseService: inviteResponseService,
             currentUserPubkey: currentPubkey,
           ),
         ),

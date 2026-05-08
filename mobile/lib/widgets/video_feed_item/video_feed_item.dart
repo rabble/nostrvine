@@ -35,6 +35,7 @@ import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dar
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/metadata/metadata_expanded_sheet.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
+import 'package:openvine/widgets/video_reply_parent_link.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 VideoControllerParams videoControllerParamsFor(
@@ -278,7 +279,9 @@ class VideoOverlayActions extends ConsumerWidget {
                                       imageUrl: avatarUrl,
                                       name: displayName,
                                       size: 48,
-                                      semanticLabel: 'Author avatar',
+                                      semanticLabel: context
+                                          .l10n
+                                          .videoAuthorAvatarSemanticLabel,
                                       onTap: navigateToProfile,
                                     ),
                                     // Follow button positioned at bottom-right of avatar
@@ -309,8 +312,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                               identifier: 'video_author_name',
                                               container: true,
                                               explicitChildNodes: true,
-                                              label:
-                                                  'Video author: $displayName',
+                                              label: context.l10n
+                                                  .videoAuthorSemanticLabel(
+                                                    displayName,
+                                                  ),
                                               child: Text(
                                                 displayName,
                                                 style:
@@ -465,6 +470,14 @@ class VideoOverlayActions extends ConsumerWidget {
                         if (video.hasCollaborators) ...[
                           const SizedBox(height: 4),
                           CollaboratorAvatarRow(video: video),
+                        ],
+                        if (video.isVideoReply) ...[
+                          const SizedBox(height: 4),
+                          VideoReplyParentLink(
+                            video: video,
+                            variant: VideoReplyParentLinkVariant.overlay,
+                            onInteracted: onInteracted,
+                          ),
                         ],
                         // Inspired-by attribution row (if video credits another creator)
                         if (video.hasInspiredBy) ...[

@@ -10194,6 +10194,1171 @@ class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
   }
 }
 
+class $OutgoingDmsTable extends OutgoingDms
+    with TableInfo<$OutgoingDmsTable, OutgoingDmRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $OutgoingDmsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipientPubkeyMeta = const VerificationMeta(
+    'recipientPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> recipientPubkey = GeneratedColumn<String>(
+    'recipient_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rumorEventJsonMeta = const VerificationMeta(
+    'rumorEventJson',
+  );
+  @override
+  late final GeneratedColumn<String> rumorEventJson = GeneratedColumn<String>(
+    'rumor_event_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageKindMeta = const VerificationMeta(
+    'messageKind',
+  );
+  @override
+  late final GeneratedColumn<int> messageKind = GeneratedColumn<int>(
+    'message_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(14),
+  );
+  static const VerificationMeta _replyToIdMeta = const VerificationMeta(
+    'replyToId',
+  );
+  @override
+  late final GeneratedColumn<String> replyToId = GeneratedColumn<String>(
+    'reply_to_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _recipientWrapStatusMeta =
+      const VerificationMeta('recipientWrapStatus');
+  @override
+  late final GeneratedColumn<String> recipientWrapStatus =
+      GeneratedColumn<String>(
+        'recipient_wrap_status',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _selfWrapStatusMeta = const VerificationMeta(
+    'selfWrapStatus',
+  );
+  @override
+  late final GeneratedColumn<String> selfWrapStatus = GeneratedColumn<String>(
+    'self_wrap_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recipientWrapEventIdMeta =
+      const VerificationMeta('recipientWrapEventId');
+  @override
+  late final GeneratedColumn<String> recipientWrapEventId =
+      GeneratedColumn<String>(
+        'recipient_wrap_event_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _selfWrapEventIdMeta = const VerificationMeta(
+    'selfWrapEventId',
+  );
+  @override
+  late final GeneratedColumn<String> selfWrapEventId = GeneratedColumn<String>(
+    'self_wrap_event_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _recipientWrapLastErrorMeta =
+      const VerificationMeta('recipientWrapLastError');
+  @override
+  late final GeneratedColumn<String> recipientWrapLastError =
+      GeneratedColumn<String>(
+        'recipient_wrap_last_error',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _selfWrapLastErrorMeta = const VerificationMeta(
+    'selfWrapLastError',
+  );
+  @override
+  late final GeneratedColumn<String> selfWrapLastError =
+      GeneratedColumn<String>(
+        'self_wrap_last_error',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
+    'lastAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptAt =
+      GeneratedColumn<DateTime>(
+        'last_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _queuedAtMeta = const VerificationMeta(
+    'queuedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> queuedAt = GeneratedColumn<DateTime>(
+    'queued_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    conversationId,
+    recipientPubkey,
+    content,
+    createdAt,
+    rumorEventJson,
+    messageKind,
+    replyToId,
+    recipientWrapStatus,
+    selfWrapStatus,
+    recipientWrapEventId,
+    selfWrapEventId,
+    retryCount,
+    recipientWrapLastError,
+    selfWrapLastError,
+    lastAttemptAt,
+    queuedAt,
+    ownerPubkey,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'outgoing_dms';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<OutgoingDmRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('recipient_pubkey')) {
+      context.handle(
+        _recipientPubkeyMeta,
+        recipientPubkey.isAcceptableOrUnknown(
+          data['recipient_pubkey']!,
+          _recipientPubkeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientPubkeyMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('rumor_event_json')) {
+      context.handle(
+        _rumorEventJsonMeta,
+        rumorEventJson.isAcceptableOrUnknown(
+          data['rumor_event_json']!,
+          _rumorEventJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_rumorEventJsonMeta);
+    }
+    if (data.containsKey('message_kind')) {
+      context.handle(
+        _messageKindMeta,
+        messageKind.isAcceptableOrUnknown(
+          data['message_kind']!,
+          _messageKindMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reply_to_id')) {
+      context.handle(
+        _replyToIdMeta,
+        replyToId.isAcceptableOrUnknown(data['reply_to_id']!, _replyToIdMeta),
+      );
+    }
+    if (data.containsKey('recipient_wrap_status')) {
+      context.handle(
+        _recipientWrapStatusMeta,
+        recipientWrapStatus.isAcceptableOrUnknown(
+          data['recipient_wrap_status']!,
+          _recipientWrapStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recipientWrapStatusMeta);
+    }
+    if (data.containsKey('self_wrap_status')) {
+      context.handle(
+        _selfWrapStatusMeta,
+        selfWrapStatus.isAcceptableOrUnknown(
+          data['self_wrap_status']!,
+          _selfWrapStatusMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_selfWrapStatusMeta);
+    }
+    if (data.containsKey('recipient_wrap_event_id')) {
+      context.handle(
+        _recipientWrapEventIdMeta,
+        recipientWrapEventId.isAcceptableOrUnknown(
+          data['recipient_wrap_event_id']!,
+          _recipientWrapEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('self_wrap_event_id')) {
+      context.handle(
+        _selfWrapEventIdMeta,
+        selfWrapEventId.isAcceptableOrUnknown(
+          data['self_wrap_event_id']!,
+          _selfWrapEventIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('recipient_wrap_last_error')) {
+      context.handle(
+        _recipientWrapLastErrorMeta,
+        recipientWrapLastError.isAcceptableOrUnknown(
+          data['recipient_wrap_last_error']!,
+          _recipientWrapLastErrorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('self_wrap_last_error')) {
+      context.handle(
+        _selfWrapLastErrorMeta,
+        selfWrapLastError.isAcceptableOrUnknown(
+          data['self_wrap_last_error']!,
+          _selfWrapLastErrorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_attempt_at')) {
+      context.handle(
+        _lastAttemptAtMeta,
+        lastAttemptAt.isAcceptableOrUnknown(
+          data['last_attempt_at']!,
+          _lastAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('queued_at')) {
+      context.handle(
+        _queuedAtMeta,
+        queuedAt.isAcceptableOrUnknown(data['queued_at']!, _queuedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_queuedAtMeta);
+    }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerPubkeyMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  OutgoingDmRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return OutgoingDmRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      recipientPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_pubkey'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      rumorEventJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rumor_event_json'],
+      )!,
+      messageKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}message_kind'],
+      )!,
+      replyToId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reply_to_id'],
+      ),
+      recipientWrapStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_wrap_status'],
+      )!,
+      selfWrapStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}self_wrap_status'],
+      )!,
+      recipientWrapEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_wrap_event_id'],
+      ),
+      selfWrapEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}self_wrap_event_id'],
+      ),
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      recipientWrapLastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recipient_wrap_last_error'],
+      ),
+      selfWrapLastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}self_wrap_last_error'],
+      ),
+      lastAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt_at'],
+      ),
+      queuedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}queued_at'],
+      )!,
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      )!,
+    );
+  }
+
+  @override
+  $OutgoingDmsTable createAlias(String alias) {
+    return $OutgoingDmsTable(attachedDatabase, alias);
+  }
+}
+
+class OutgoingDmRow extends DataClass implements Insertable<OutgoingDmRow> {
+  /// Primary key. Equal to the rumor's event id (`rumor_event_json` →
+  /// `id`), so a single logical message has exactly one queue row even
+  /// across retries.
+  final String id;
+
+  /// Deterministic conversation identifier (SHA-256 of sorted
+  /// participant pubkeys). Same shape as `direct_messages.conversation_id`
+  /// so the BLoC can `Rx.combineLatest2(watchMessages, watchOutgoing)`
+  /// for a conversation view.
+  final String conversationId;
+
+  /// Recipient's hex pubkey for the 1:1 path. (Group sends file one row
+  /// per participant — `conversation_id` is the group conversation, but
+  /// each row is targeted at one recipient.)
+  final String recipientPubkey;
+
+  /// Plaintext message content. Stored alongside `rumor_event_json` so
+  /// the UI can render the bubble without re-parsing the rumor on every
+  /// rebuild. Authoritative source for retries is `rumor_event_json`.
+  final String content;
+
+  /// Unix timestamp from the rumor event's `created_at`. Stable across
+  /// retries because the rumor itself is reused.
+  final int createdAt;
+
+  /// Serialized JSON of the unsigned NIP-17 rumor (kind 14 or 15). Used
+  /// on retry so we re-wrap the same rumor — preserving `rumor.id`,
+  /// which is what the receiver's gift-wrap dedup keys on.
+  final String rumorEventJson;
+
+  /// The rumor event kind (14 = text, 15 = file). Defaults to 14.
+  final int messageKind;
+
+  /// Optional reply target rumor id.
+  final String? replyToId;
+
+  /// Status of the recipient gift-wrap publish: `pending` | `sent` |
+  /// `failed`. Stored as a string (rather than an int-coded enum) so a
+  /// dump of the table is human-readable. Adding a new state requires a
+  /// matching update to `OutgoingWrapStatus` in the DAO — the read
+  /// path throws on unknown values rather than silently coercing them
+  /// back to `pending` (which would put corrupt or future-schema rows
+  /// back into the retry service's active set and risk double-delivery).
+  final String recipientWrapStatus;
+
+  /// Status of the self-addressed gift-wrap publish: same enum as
+  /// `recipient_wrap_status`. The `false` value of
+  /// `NIP17SendResult.selfWrapPublished` flips this to `failed`; a row
+  /// with `recipient: sent, self: failed` is the partial-delivery state
+  /// from #3909 / #3902.
+  final String selfWrapStatus;
+
+  /// Recipient gift-wrap event id (kind 1059) once published. Null while
+  /// `recipient_wrap_status` is `pending` or `failed`.
+  final String? recipientWrapEventId;
+
+  /// Self gift-wrap event id (kind 1059) once published. Null while
+  /// `self_wrap_status` is `pending` or `failed`.
+  final String? selfWrapEventId;
+
+  /// How many publish attempts this row has survived. Caps growth at the
+  /// retry policy's max; once exhausted the UI surfaces a manual retry
+  /// affordance.
+  final int retryCount;
+
+  /// Last error message from the most recent failed **recipient** wrap
+  /// publish. `null` when the recipient wrap has never failed or when the
+  /// most recent recipient transition was a success.
+  ///
+  /// Stored independently of [selfWrapLastError] because the two wraps
+  /// fail for different reasons (e.g. recipient relay rejected the
+  /// kind-1059 vs ephemeral self-relay timeout) — collapsing both into a
+  /// single column would silently overwrite one cause with the other on
+  /// the second failure and starve the retry service of useful diagnostics.
+  final String? recipientWrapLastError;
+
+  /// Last error message from the most recent failed **self** wrap
+  /// publish. Same lifecycle and rationale as [recipientWrapLastError];
+  /// kept in its own column so a recipient failure followed by a self
+  /// failure preserves both reasons.
+  final String? selfWrapLastError;
+
+  /// Wall-clock timestamp of the most recent publish attempt. Drives
+  /// the retry service's backoff scheduling.
+  final DateTime? lastAttemptAt;
+
+  /// Wall-clock timestamp of the row's creation. Used to order the queue
+  /// when retrying.
+  final DateTime queuedAt;
+
+  /// Hex pubkey of the account that queued this send. Mirrors
+  /// `direct_messages.owner_pubkey` for multi-account isolation.
+  final String ownerPubkey;
+  const OutgoingDmRow({
+    required this.id,
+    required this.conversationId,
+    required this.recipientPubkey,
+    required this.content,
+    required this.createdAt,
+    required this.rumorEventJson,
+    required this.messageKind,
+    this.replyToId,
+    required this.recipientWrapStatus,
+    required this.selfWrapStatus,
+    this.recipientWrapEventId,
+    this.selfWrapEventId,
+    required this.retryCount,
+    this.recipientWrapLastError,
+    this.selfWrapLastError,
+    this.lastAttemptAt,
+    required this.queuedAt,
+    required this.ownerPubkey,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['recipient_pubkey'] = Variable<String>(recipientPubkey);
+    map['content'] = Variable<String>(content);
+    map['created_at'] = Variable<int>(createdAt);
+    map['rumor_event_json'] = Variable<String>(rumorEventJson);
+    map['message_kind'] = Variable<int>(messageKind);
+    if (!nullToAbsent || replyToId != null) {
+      map['reply_to_id'] = Variable<String>(replyToId);
+    }
+    map['recipient_wrap_status'] = Variable<String>(recipientWrapStatus);
+    map['self_wrap_status'] = Variable<String>(selfWrapStatus);
+    if (!nullToAbsent || recipientWrapEventId != null) {
+      map['recipient_wrap_event_id'] = Variable<String>(recipientWrapEventId);
+    }
+    if (!nullToAbsent || selfWrapEventId != null) {
+      map['self_wrap_event_id'] = Variable<String>(selfWrapEventId);
+    }
+    map['retry_count'] = Variable<int>(retryCount);
+    if (!nullToAbsent || recipientWrapLastError != null) {
+      map['recipient_wrap_last_error'] = Variable<String>(
+        recipientWrapLastError,
+      );
+    }
+    if (!nullToAbsent || selfWrapLastError != null) {
+      map['self_wrap_last_error'] = Variable<String>(selfWrapLastError);
+    }
+    if (!nullToAbsent || lastAttemptAt != null) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt);
+    }
+    map['queued_at'] = Variable<DateTime>(queuedAt);
+    map['owner_pubkey'] = Variable<String>(ownerPubkey);
+    return map;
+  }
+
+  OutgoingDmsCompanion toCompanion(bool nullToAbsent) {
+    return OutgoingDmsCompanion(
+      id: Value(id),
+      conversationId: Value(conversationId),
+      recipientPubkey: Value(recipientPubkey),
+      content: Value(content),
+      createdAt: Value(createdAt),
+      rumorEventJson: Value(rumorEventJson),
+      messageKind: Value(messageKind),
+      replyToId: replyToId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToId),
+      recipientWrapStatus: Value(recipientWrapStatus),
+      selfWrapStatus: Value(selfWrapStatus),
+      recipientWrapEventId: recipientWrapEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipientWrapEventId),
+      selfWrapEventId: selfWrapEventId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selfWrapEventId),
+      retryCount: Value(retryCount),
+      recipientWrapLastError: recipientWrapLastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recipientWrapLastError),
+      selfWrapLastError: selfWrapLastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(selfWrapLastError),
+      lastAttemptAt: lastAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptAt),
+      queuedAt: Value(queuedAt),
+      ownerPubkey: Value(ownerPubkey),
+    );
+  }
+
+  factory OutgoingDmRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return OutgoingDmRow(
+      id: serializer.fromJson<String>(json['id']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      recipientPubkey: serializer.fromJson<String>(json['recipientPubkey']),
+      content: serializer.fromJson<String>(json['content']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      rumorEventJson: serializer.fromJson<String>(json['rumorEventJson']),
+      messageKind: serializer.fromJson<int>(json['messageKind']),
+      replyToId: serializer.fromJson<String?>(json['replyToId']),
+      recipientWrapStatus: serializer.fromJson<String>(
+        json['recipientWrapStatus'],
+      ),
+      selfWrapStatus: serializer.fromJson<String>(json['selfWrapStatus']),
+      recipientWrapEventId: serializer.fromJson<String?>(
+        json['recipientWrapEventId'],
+      ),
+      selfWrapEventId: serializer.fromJson<String?>(json['selfWrapEventId']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      recipientWrapLastError: serializer.fromJson<String?>(
+        json['recipientWrapLastError'],
+      ),
+      selfWrapLastError: serializer.fromJson<String?>(
+        json['selfWrapLastError'],
+      ),
+      lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
+      queuedAt: serializer.fromJson<DateTime>(json['queuedAt']),
+      ownerPubkey: serializer.fromJson<String>(json['ownerPubkey']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'conversationId': serializer.toJson<String>(conversationId),
+      'recipientPubkey': serializer.toJson<String>(recipientPubkey),
+      'content': serializer.toJson<String>(content),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'rumorEventJson': serializer.toJson<String>(rumorEventJson),
+      'messageKind': serializer.toJson<int>(messageKind),
+      'replyToId': serializer.toJson<String?>(replyToId),
+      'recipientWrapStatus': serializer.toJson<String>(recipientWrapStatus),
+      'selfWrapStatus': serializer.toJson<String>(selfWrapStatus),
+      'recipientWrapEventId': serializer.toJson<String?>(recipientWrapEventId),
+      'selfWrapEventId': serializer.toJson<String?>(selfWrapEventId),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'recipientWrapLastError': serializer.toJson<String?>(
+        recipientWrapLastError,
+      ),
+      'selfWrapLastError': serializer.toJson<String?>(selfWrapLastError),
+      'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
+      'queuedAt': serializer.toJson<DateTime>(queuedAt),
+      'ownerPubkey': serializer.toJson<String>(ownerPubkey),
+    };
+  }
+
+  OutgoingDmRow copyWith({
+    String? id,
+    String? conversationId,
+    String? recipientPubkey,
+    String? content,
+    int? createdAt,
+    String? rumorEventJson,
+    int? messageKind,
+    Value<String?> replyToId = const Value.absent(),
+    String? recipientWrapStatus,
+    String? selfWrapStatus,
+    Value<String?> recipientWrapEventId = const Value.absent(),
+    Value<String?> selfWrapEventId = const Value.absent(),
+    int? retryCount,
+    Value<String?> recipientWrapLastError = const Value.absent(),
+    Value<String?> selfWrapLastError = const Value.absent(),
+    Value<DateTime?> lastAttemptAt = const Value.absent(),
+    DateTime? queuedAt,
+    String? ownerPubkey,
+  }) => OutgoingDmRow(
+    id: id ?? this.id,
+    conversationId: conversationId ?? this.conversationId,
+    recipientPubkey: recipientPubkey ?? this.recipientPubkey,
+    content: content ?? this.content,
+    createdAt: createdAt ?? this.createdAt,
+    rumorEventJson: rumorEventJson ?? this.rumorEventJson,
+    messageKind: messageKind ?? this.messageKind,
+    replyToId: replyToId.present ? replyToId.value : this.replyToId,
+    recipientWrapStatus: recipientWrapStatus ?? this.recipientWrapStatus,
+    selfWrapStatus: selfWrapStatus ?? this.selfWrapStatus,
+    recipientWrapEventId: recipientWrapEventId.present
+        ? recipientWrapEventId.value
+        : this.recipientWrapEventId,
+    selfWrapEventId: selfWrapEventId.present
+        ? selfWrapEventId.value
+        : this.selfWrapEventId,
+    retryCount: retryCount ?? this.retryCount,
+    recipientWrapLastError: recipientWrapLastError.present
+        ? recipientWrapLastError.value
+        : this.recipientWrapLastError,
+    selfWrapLastError: selfWrapLastError.present
+        ? selfWrapLastError.value
+        : this.selfWrapLastError,
+    lastAttemptAt: lastAttemptAt.present
+        ? lastAttemptAt.value
+        : this.lastAttemptAt,
+    queuedAt: queuedAt ?? this.queuedAt,
+    ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+  );
+  OutgoingDmRow copyWithCompanion(OutgoingDmsCompanion data) {
+    return OutgoingDmRow(
+      id: data.id.present ? data.id.value : this.id,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      recipientPubkey: data.recipientPubkey.present
+          ? data.recipientPubkey.value
+          : this.recipientPubkey,
+      content: data.content.present ? data.content.value : this.content,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      rumorEventJson: data.rumorEventJson.present
+          ? data.rumorEventJson.value
+          : this.rumorEventJson,
+      messageKind: data.messageKind.present
+          ? data.messageKind.value
+          : this.messageKind,
+      replyToId: data.replyToId.present ? data.replyToId.value : this.replyToId,
+      recipientWrapStatus: data.recipientWrapStatus.present
+          ? data.recipientWrapStatus.value
+          : this.recipientWrapStatus,
+      selfWrapStatus: data.selfWrapStatus.present
+          ? data.selfWrapStatus.value
+          : this.selfWrapStatus,
+      recipientWrapEventId: data.recipientWrapEventId.present
+          ? data.recipientWrapEventId.value
+          : this.recipientWrapEventId,
+      selfWrapEventId: data.selfWrapEventId.present
+          ? data.selfWrapEventId.value
+          : this.selfWrapEventId,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      recipientWrapLastError: data.recipientWrapLastError.present
+          ? data.recipientWrapLastError.value
+          : this.recipientWrapLastError,
+      selfWrapLastError: data.selfWrapLastError.present
+          ? data.selfWrapLastError.value
+          : this.selfWrapLastError,
+      lastAttemptAt: data.lastAttemptAt.present
+          ? data.lastAttemptAt.value
+          : this.lastAttemptAt,
+      queuedAt: data.queuedAt.present ? data.queuedAt.value : this.queuedAt,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutgoingDmRow(')
+          ..write('id: $id, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('recipientPubkey: $recipientPubkey, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rumorEventJson: $rumorEventJson, ')
+          ..write('messageKind: $messageKind, ')
+          ..write('replyToId: $replyToId, ')
+          ..write('recipientWrapStatus: $recipientWrapStatus, ')
+          ..write('selfWrapStatus: $selfWrapStatus, ')
+          ..write('recipientWrapEventId: $recipientWrapEventId, ')
+          ..write('selfWrapEventId: $selfWrapEventId, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('recipientWrapLastError: $recipientWrapLastError, ')
+          ..write('selfWrapLastError: $selfWrapLastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('ownerPubkey: $ownerPubkey')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    conversationId,
+    recipientPubkey,
+    content,
+    createdAt,
+    rumorEventJson,
+    messageKind,
+    replyToId,
+    recipientWrapStatus,
+    selfWrapStatus,
+    recipientWrapEventId,
+    selfWrapEventId,
+    retryCount,
+    recipientWrapLastError,
+    selfWrapLastError,
+    lastAttemptAt,
+    queuedAt,
+    ownerPubkey,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is OutgoingDmRow &&
+          other.id == this.id &&
+          other.conversationId == this.conversationId &&
+          other.recipientPubkey == this.recipientPubkey &&
+          other.content == this.content &&
+          other.createdAt == this.createdAt &&
+          other.rumorEventJson == this.rumorEventJson &&
+          other.messageKind == this.messageKind &&
+          other.replyToId == this.replyToId &&
+          other.recipientWrapStatus == this.recipientWrapStatus &&
+          other.selfWrapStatus == this.selfWrapStatus &&
+          other.recipientWrapEventId == this.recipientWrapEventId &&
+          other.selfWrapEventId == this.selfWrapEventId &&
+          other.retryCount == this.retryCount &&
+          other.recipientWrapLastError == this.recipientWrapLastError &&
+          other.selfWrapLastError == this.selfWrapLastError &&
+          other.lastAttemptAt == this.lastAttemptAt &&
+          other.queuedAt == this.queuedAt &&
+          other.ownerPubkey == this.ownerPubkey);
+}
+
+class OutgoingDmsCompanion extends UpdateCompanion<OutgoingDmRow> {
+  final Value<String> id;
+  final Value<String> conversationId;
+  final Value<String> recipientPubkey;
+  final Value<String> content;
+  final Value<int> createdAt;
+  final Value<String> rumorEventJson;
+  final Value<int> messageKind;
+  final Value<String?> replyToId;
+  final Value<String> recipientWrapStatus;
+  final Value<String> selfWrapStatus;
+  final Value<String?> recipientWrapEventId;
+  final Value<String?> selfWrapEventId;
+  final Value<int> retryCount;
+  final Value<String?> recipientWrapLastError;
+  final Value<String?> selfWrapLastError;
+  final Value<DateTime?> lastAttemptAt;
+  final Value<DateTime> queuedAt;
+  final Value<String> ownerPubkey;
+  final Value<int> rowid;
+  const OutgoingDmsCompanion({
+    this.id = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.recipientPubkey = const Value.absent(),
+    this.content = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rumorEventJson = const Value.absent(),
+    this.messageKind = const Value.absent(),
+    this.replyToId = const Value.absent(),
+    this.recipientWrapStatus = const Value.absent(),
+    this.selfWrapStatus = const Value.absent(),
+    this.recipientWrapEventId = const Value.absent(),
+    this.selfWrapEventId = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.recipientWrapLastError = const Value.absent(),
+    this.selfWrapLastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    this.queuedAt = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  OutgoingDmsCompanion.insert({
+    required String id,
+    required String conversationId,
+    required String recipientPubkey,
+    required String content,
+    required int createdAt,
+    required String rumorEventJson,
+    this.messageKind = const Value.absent(),
+    this.replyToId = const Value.absent(),
+    required String recipientWrapStatus,
+    required String selfWrapStatus,
+    this.recipientWrapEventId = const Value.absent(),
+    this.selfWrapEventId = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.recipientWrapLastError = const Value.absent(),
+    this.selfWrapLastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    required DateTime queuedAt,
+    required String ownerPubkey,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       conversationId = Value(conversationId),
+       recipientPubkey = Value(recipientPubkey),
+       content = Value(content),
+       createdAt = Value(createdAt),
+       rumorEventJson = Value(rumorEventJson),
+       recipientWrapStatus = Value(recipientWrapStatus),
+       selfWrapStatus = Value(selfWrapStatus),
+       queuedAt = Value(queuedAt),
+       ownerPubkey = Value(ownerPubkey);
+  static Insertable<OutgoingDmRow> custom({
+    Expression<String>? id,
+    Expression<String>? conversationId,
+    Expression<String>? recipientPubkey,
+    Expression<String>? content,
+    Expression<int>? createdAt,
+    Expression<String>? rumorEventJson,
+    Expression<int>? messageKind,
+    Expression<String>? replyToId,
+    Expression<String>? recipientWrapStatus,
+    Expression<String>? selfWrapStatus,
+    Expression<String>? recipientWrapEventId,
+    Expression<String>? selfWrapEventId,
+    Expression<int>? retryCount,
+    Expression<String>? recipientWrapLastError,
+    Expression<String>? selfWrapLastError,
+    Expression<DateTime>? lastAttemptAt,
+    Expression<DateTime>? queuedAt,
+    Expression<String>? ownerPubkey,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (recipientPubkey != null) 'recipient_pubkey': recipientPubkey,
+      if (content != null) 'content': content,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rumorEventJson != null) 'rumor_event_json': rumorEventJson,
+      if (messageKind != null) 'message_kind': messageKind,
+      if (replyToId != null) 'reply_to_id': replyToId,
+      if (recipientWrapStatus != null)
+        'recipient_wrap_status': recipientWrapStatus,
+      if (selfWrapStatus != null) 'self_wrap_status': selfWrapStatus,
+      if (recipientWrapEventId != null)
+        'recipient_wrap_event_id': recipientWrapEventId,
+      if (selfWrapEventId != null) 'self_wrap_event_id': selfWrapEventId,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (recipientWrapLastError != null)
+        'recipient_wrap_last_error': recipientWrapLastError,
+      if (selfWrapLastError != null) 'self_wrap_last_error': selfWrapLastError,
+      if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
+      if (queuedAt != null) 'queued_at': queuedAt,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  OutgoingDmsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? conversationId,
+    Value<String>? recipientPubkey,
+    Value<String>? content,
+    Value<int>? createdAt,
+    Value<String>? rumorEventJson,
+    Value<int>? messageKind,
+    Value<String?>? replyToId,
+    Value<String>? recipientWrapStatus,
+    Value<String>? selfWrapStatus,
+    Value<String?>? recipientWrapEventId,
+    Value<String?>? selfWrapEventId,
+    Value<int>? retryCount,
+    Value<String?>? recipientWrapLastError,
+    Value<String?>? selfWrapLastError,
+    Value<DateTime?>? lastAttemptAt,
+    Value<DateTime>? queuedAt,
+    Value<String>? ownerPubkey,
+    Value<int>? rowid,
+  }) {
+    return OutgoingDmsCompanion(
+      id: id ?? this.id,
+      conversationId: conversationId ?? this.conversationId,
+      recipientPubkey: recipientPubkey ?? this.recipientPubkey,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      rumorEventJson: rumorEventJson ?? this.rumorEventJson,
+      messageKind: messageKind ?? this.messageKind,
+      replyToId: replyToId ?? this.replyToId,
+      recipientWrapStatus: recipientWrapStatus ?? this.recipientWrapStatus,
+      selfWrapStatus: selfWrapStatus ?? this.selfWrapStatus,
+      recipientWrapEventId: recipientWrapEventId ?? this.recipientWrapEventId,
+      selfWrapEventId: selfWrapEventId ?? this.selfWrapEventId,
+      retryCount: retryCount ?? this.retryCount,
+      recipientWrapLastError:
+          recipientWrapLastError ?? this.recipientWrapLastError,
+      selfWrapLastError: selfWrapLastError ?? this.selfWrapLastError,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      queuedAt: queuedAt ?? this.queuedAt,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (recipientPubkey.present) {
+      map['recipient_pubkey'] = Variable<String>(recipientPubkey.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rumorEventJson.present) {
+      map['rumor_event_json'] = Variable<String>(rumorEventJson.value);
+    }
+    if (messageKind.present) {
+      map['message_kind'] = Variable<int>(messageKind.value);
+    }
+    if (replyToId.present) {
+      map['reply_to_id'] = Variable<String>(replyToId.value);
+    }
+    if (recipientWrapStatus.present) {
+      map['recipient_wrap_status'] = Variable<String>(
+        recipientWrapStatus.value,
+      );
+    }
+    if (selfWrapStatus.present) {
+      map['self_wrap_status'] = Variable<String>(selfWrapStatus.value);
+    }
+    if (recipientWrapEventId.present) {
+      map['recipient_wrap_event_id'] = Variable<String>(
+        recipientWrapEventId.value,
+      );
+    }
+    if (selfWrapEventId.present) {
+      map['self_wrap_event_id'] = Variable<String>(selfWrapEventId.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (recipientWrapLastError.present) {
+      map['recipient_wrap_last_error'] = Variable<String>(
+        recipientWrapLastError.value,
+      );
+    }
+    if (selfWrapLastError.present) {
+      map['self_wrap_last_error'] = Variable<String>(selfWrapLastError.value);
+    }
+    if (lastAttemptAt.present) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt.value);
+    }
+    if (queuedAt.present) {
+      map['queued_at'] = Variable<DateTime>(queuedAt.value);
+    }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('OutgoingDmsCompanion(')
+          ..write('id: $id, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('recipientPubkey: $recipientPubkey, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rumorEventJson: $rumorEventJson, ')
+          ..write('messageKind: $messageKind, ')
+          ..write('replyToId: $replyToId, ')
+          ..write('recipientWrapStatus: $recipientWrapStatus, ')
+          ..write('selfWrapStatus: $selfWrapStatus, ')
+          ..write('recipientWrapEventId: $recipientWrapEventId, ')
+          ..write('selfWrapEventId: $selfWrapEventId, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('recipientWrapLastError: $recipientWrapLastError, ')
+          ..write('selfWrapLastError: $selfWrapLastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('queuedAt: $queuedAt, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -10216,6 +11381,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ClipsTable clips = $ClipsTable(this);
   late final $DirectMessagesTable directMessages = $DirectMessagesTable(this);
   late final $ConversationsTable conversations = $ConversationsTable(this);
+  late final $OutgoingDmsTable outgoingDms = $OutgoingDmsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -10256,6 +11422,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ConversationsDao conversationsDao = ConversationsDao(
     this as AppDatabase,
   );
+  late final OutgoingDmsDao outgoingDmsDao = OutgoingDmsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10276,6 +11445,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     clips,
     directMessages,
     conversations,
+    outgoingDms,
   ];
 }
 
@@ -15070,6 +16240,479 @@ typedef $$ConversationsTableProcessedTableManager =
       ConversationRow,
       PrefetchHooks Function()
     >;
+typedef $$OutgoingDmsTableCreateCompanionBuilder =
+    OutgoingDmsCompanion Function({
+      required String id,
+      required String conversationId,
+      required String recipientPubkey,
+      required String content,
+      required int createdAt,
+      required String rumorEventJson,
+      Value<int> messageKind,
+      Value<String?> replyToId,
+      required String recipientWrapStatus,
+      required String selfWrapStatus,
+      Value<String?> recipientWrapEventId,
+      Value<String?> selfWrapEventId,
+      Value<int> retryCount,
+      Value<String?> recipientWrapLastError,
+      Value<String?> selfWrapLastError,
+      Value<DateTime?> lastAttemptAt,
+      required DateTime queuedAt,
+      required String ownerPubkey,
+      Value<int> rowid,
+    });
+typedef $$OutgoingDmsTableUpdateCompanionBuilder =
+    OutgoingDmsCompanion Function({
+      Value<String> id,
+      Value<String> conversationId,
+      Value<String> recipientPubkey,
+      Value<String> content,
+      Value<int> createdAt,
+      Value<String> rumorEventJson,
+      Value<int> messageKind,
+      Value<String?> replyToId,
+      Value<String> recipientWrapStatus,
+      Value<String> selfWrapStatus,
+      Value<String?> recipientWrapEventId,
+      Value<String?> selfWrapEventId,
+      Value<int> retryCount,
+      Value<String?> recipientWrapLastError,
+      Value<String?> selfWrapLastError,
+      Value<DateTime?> lastAttemptAt,
+      Value<DateTime> queuedAt,
+      Value<String> ownerPubkey,
+      Value<int> rowid,
+    });
+
+class $$OutgoingDmsTableFilterComposer
+    extends Composer<_$AppDatabase, $OutgoingDmsTable> {
+  $$OutgoingDmsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientPubkey => $composableBuilder(
+    column: $table.recipientPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rumorEventJson => $composableBuilder(
+    column: $table.rumorEventJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get messageKind => $composableBuilder(
+    column: $table.messageKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get replyToId => $composableBuilder(
+    column: $table.replyToId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientWrapStatus => $composableBuilder(
+    column: $table.recipientWrapStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selfWrapStatus => $composableBuilder(
+    column: $table.selfWrapStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientWrapEventId => $composableBuilder(
+    column: $table.recipientWrapEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selfWrapEventId => $composableBuilder(
+    column: $table.selfWrapEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recipientWrapLastError => $composableBuilder(
+    column: $table.recipientWrapLastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get selfWrapLastError => $composableBuilder(
+    column: $table.selfWrapLastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$OutgoingDmsTableOrderingComposer
+    extends Composer<_$AppDatabase, $OutgoingDmsTable> {
+  $$OutgoingDmsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientPubkey => $composableBuilder(
+    column: $table.recipientPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rumorEventJson => $composableBuilder(
+    column: $table.rumorEventJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get messageKind => $composableBuilder(
+    column: $table.messageKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get replyToId => $composableBuilder(
+    column: $table.replyToId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientWrapStatus => $composableBuilder(
+    column: $table.recipientWrapStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selfWrapStatus => $composableBuilder(
+    column: $table.selfWrapStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientWrapEventId => $composableBuilder(
+    column: $table.recipientWrapEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selfWrapEventId => $composableBuilder(
+    column: $table.selfWrapEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get recipientWrapLastError => $composableBuilder(
+    column: $table.recipientWrapLastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get selfWrapLastError => $composableBuilder(
+    column: $table.selfWrapLastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get queuedAt => $composableBuilder(
+    column: $table.queuedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$OutgoingDmsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $OutgoingDmsTable> {
+  $$OutgoingDmsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientPubkey => $composableBuilder(
+    column: $table.recipientPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get rumorEventJson => $composableBuilder(
+    column: $table.rumorEventJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get messageKind => $composableBuilder(
+    column: $table.messageKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get replyToId =>
+      $composableBuilder(column: $table.replyToId, builder: (column) => column);
+
+  GeneratedColumn<String> get recipientWrapStatus => $composableBuilder(
+    column: $table.recipientWrapStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get selfWrapStatus => $composableBuilder(
+    column: $table.selfWrapStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientWrapEventId => $composableBuilder(
+    column: $table.recipientWrapEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get selfWrapEventId => $composableBuilder(
+    column: $table.selfWrapEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recipientWrapLastError => $composableBuilder(
+    column: $table.recipientWrapLastError,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get selfWrapLastError => $composableBuilder(
+    column: $table.selfWrapLastError,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get queuedAt =>
+      $composableBuilder(column: $table.queuedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
+}
+
+class $$OutgoingDmsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $OutgoingDmsTable,
+          OutgoingDmRow,
+          $$OutgoingDmsTableFilterComposer,
+          $$OutgoingDmsTableOrderingComposer,
+          $$OutgoingDmsTableAnnotationComposer,
+          $$OutgoingDmsTableCreateCompanionBuilder,
+          $$OutgoingDmsTableUpdateCompanionBuilder,
+          (
+            OutgoingDmRow,
+            BaseReferences<_$AppDatabase, $OutgoingDmsTable, OutgoingDmRow>,
+          ),
+          OutgoingDmRow,
+          PrefetchHooks Function()
+        > {
+  $$OutgoingDmsTableTableManager(_$AppDatabase db, $OutgoingDmsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$OutgoingDmsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$OutgoingDmsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$OutgoingDmsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
+                Value<String> recipientPubkey = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<String> rumorEventJson = const Value.absent(),
+                Value<int> messageKind = const Value.absent(),
+                Value<String?> replyToId = const Value.absent(),
+                Value<String> recipientWrapStatus = const Value.absent(),
+                Value<String> selfWrapStatus = const Value.absent(),
+                Value<String?> recipientWrapEventId = const Value.absent(),
+                Value<String?> selfWrapEventId = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<String?> recipientWrapLastError = const Value.absent(),
+                Value<String?> selfWrapLastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                Value<DateTime> queuedAt = const Value.absent(),
+                Value<String> ownerPubkey = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => OutgoingDmsCompanion(
+                id: id,
+                conversationId: conversationId,
+                recipientPubkey: recipientPubkey,
+                content: content,
+                createdAt: createdAt,
+                rumorEventJson: rumorEventJson,
+                messageKind: messageKind,
+                replyToId: replyToId,
+                recipientWrapStatus: recipientWrapStatus,
+                selfWrapStatus: selfWrapStatus,
+                recipientWrapEventId: recipientWrapEventId,
+                selfWrapEventId: selfWrapEventId,
+                retryCount: retryCount,
+                recipientWrapLastError: recipientWrapLastError,
+                selfWrapLastError: selfWrapLastError,
+                lastAttemptAt: lastAttemptAt,
+                queuedAt: queuedAt,
+                ownerPubkey: ownerPubkey,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String conversationId,
+                required String recipientPubkey,
+                required String content,
+                required int createdAt,
+                required String rumorEventJson,
+                Value<int> messageKind = const Value.absent(),
+                Value<String?> replyToId = const Value.absent(),
+                required String recipientWrapStatus,
+                required String selfWrapStatus,
+                Value<String?> recipientWrapEventId = const Value.absent(),
+                Value<String?> selfWrapEventId = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<String?> recipientWrapLastError = const Value.absent(),
+                Value<String?> selfWrapLastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                required DateTime queuedAt,
+                required String ownerPubkey,
+                Value<int> rowid = const Value.absent(),
+              }) => OutgoingDmsCompanion.insert(
+                id: id,
+                conversationId: conversationId,
+                recipientPubkey: recipientPubkey,
+                content: content,
+                createdAt: createdAt,
+                rumorEventJson: rumorEventJson,
+                messageKind: messageKind,
+                replyToId: replyToId,
+                recipientWrapStatus: recipientWrapStatus,
+                selfWrapStatus: selfWrapStatus,
+                recipientWrapEventId: recipientWrapEventId,
+                selfWrapEventId: selfWrapEventId,
+                retryCount: retryCount,
+                recipientWrapLastError: recipientWrapLastError,
+                selfWrapLastError: selfWrapLastError,
+                lastAttemptAt: lastAttemptAt,
+                queuedAt: queuedAt,
+                ownerPubkey: ownerPubkey,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$OutgoingDmsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $OutgoingDmsTable,
+      OutgoingDmRow,
+      $$OutgoingDmsTableFilterComposer,
+      $$OutgoingDmsTableOrderingComposer,
+      $$OutgoingDmsTableAnnotationComposer,
+      $$OutgoingDmsTableCreateCompanionBuilder,
+      $$OutgoingDmsTableUpdateCompanionBuilder,
+      (
+        OutgoingDmRow,
+        BaseReferences<_$AppDatabase, $OutgoingDmsTable, OutgoingDmRow>,
+      ),
+      OutgoingDmRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15104,4 +16747,6 @@ class $AppDatabaseManager {
       $$DirectMessagesTableTableManager(_db, _db.directMessages);
   $$ConversationsTableTableManager get conversations =>
       $$ConversationsTableTableManager(_db, _db.conversations);
+  $$OutgoingDmsTableTableManager get outgoingDms =>
+      $$OutgoingDmsTableTableManager(_db, _db.outgoingDms);
 }

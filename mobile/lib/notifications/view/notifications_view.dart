@@ -174,17 +174,28 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
           videoAddressableId: videoAddressableId,
           notificationKind: type,
         );
-      case ActorNotification(:final actor, :final type):
+      case ActorNotification(:final actor, :final type, :final targetEventId):
         switch (type) {
           case NotificationKind.follow:
           case NotificationKind.mention:
             _navigateToProfile(context, actor.pubkey);
+          case NotificationKind.likeComment:
+          case NotificationKind.reply:
+            // targetEventId is the kind 1111 comment; the resolver
+            // walks its E tag to the root video.
+            if (targetEventId != null && targetEventId.isNotEmpty) {
+              await _navigateToVideo(
+                context,
+                targetEventId,
+                notificationKind: type,
+              );
+            } else {
+              _navigateToProfile(context, actor.pubkey);
+            }
           case NotificationKind.system:
             break;
           case NotificationKind.like:
-          case NotificationKind.likeComment:
           case NotificationKind.comment:
-          case NotificationKind.reply:
           case NotificationKind.repost:
             // Not represented as ActorNotification, but pattern-match
             // exhaustivity requires these.
@@ -214,7 +225,8 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
     // (kind:pubkey:d-tag) rather than the mutable event hash.
     final isComment =
         notificationKind == NotificationKind.comment ||
-        notificationKind == NotificationKind.reply;
+        notificationKind == NotificationKind.reply ||
+        notificationKind == NotificationKind.likeComment;
 
     // Resolve the navigation target.
     String routeId;

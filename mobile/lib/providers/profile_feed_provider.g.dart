@@ -16,6 +16,18 @@ part of 'profile_feed_provider.dart';
 /// Strategy: Try Funnelcake REST API first for better performance,
 /// fall back to Nostr subscription if unavailable.
 ///
+/// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+/// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+/// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+/// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+/// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+/// or stale figures while the API reflects current aggregates. When only Nostr
+/// data exists (no REST row, no cache backfill), relay values remain the sole
+/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// Nostr enrichment) must stay aligned with this policy whenever merge logic
+/// changes.
+///
 /// Usage:
 /// ```dart
 /// final feed = ref.watch(profileFeedProvider(userId));
@@ -33,6 +45,18 @@ const profileFeedProvider = ProfileFeedFamily._();
 /// Strategy: Try Funnelcake REST API first for better performance,
 /// fall back to Nostr subscription if unavailable.
 ///
+/// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+/// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+/// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+/// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+/// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+/// or stale figures while the API reflects current aggregates. When only Nostr
+/// data exists (no REST row, no cache backfill), relay values remain the sole
+/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// Nostr enrichment) must stay aligned with this policy whenever merge logic
+/// changes.
+///
 /// Usage:
 /// ```dart
 /// final feed = ref.watch(profileFeedProvider(userId));
@@ -47,6 +71,18 @@ final class ProfileFeedProvider
   ///
   /// Strategy: Try Funnelcake REST API first for better performance,
   /// fall back to Nostr subscription if unavailable.
+  ///
+  /// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+  /// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+  /// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+  /// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+  /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+  /// or stale figures while the API reflects current aggregates. When only Nostr
+  /// data exists (no REST row, no cache backfill), relay values remain the sole
+  /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+  /// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+  /// Nostr enrichment) must stay aligned with this policy whenever merge logic
+  /// changes.
   ///
   /// Usage:
   /// ```dart
@@ -89,7 +125,7 @@ final class ProfileFeedProvider
   }
 }
 
-String _$profileFeedHash() => r'ef9ed4aacd68248181a5032042c7bd964dba5c9b';
+String _$profileFeedHash() => r'bfa1e8e2540ce5e41e1a61484f769a2cf5291322';
 
 /// Profile feed provider - shows videos for a specific user with pagination
 ///
@@ -98,6 +134,18 @@ String _$profileFeedHash() => r'ef9ed4aacd68248181a5032042c7bd964dba5c9b';
 ///
 /// Strategy: Try Funnelcake REST API first for better performance,
 /// fall back to Nostr subscription if unavailable.
+///
+/// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+/// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+/// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+/// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+/// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+/// or stale figures while the API reflects current aggregates. When only Nostr
+/// data exists (no REST row, no cache backfill), relay values remain the sole
+/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// Nostr enrichment) must stay aligned with this policy whenever merge logic
+/// changes.
 ///
 /// Usage:
 /// ```dart
@@ -131,6 +179,18 @@ final class ProfileFeedFamily extends $Family
   /// Strategy: Try Funnelcake REST API first for better performance,
   /// fall back to Nostr subscription if unavailable.
   ///
+  /// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+  /// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+  /// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+  /// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+  /// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+  /// or stale figures while the API reflects current aggregates. When only Nostr
+  /// data exists (no REST row, no cache backfill), relay values remain the sole
+  /// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+  /// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+  /// Nostr enrichment) must stay aligned with this policy whenever merge logic
+  /// changes.
+  ///
   /// Usage:
   /// ```dart
   /// final feed = ref.watch(profileFeedProvider(userId));
@@ -151,6 +211,18 @@ final class ProfileFeedFamily extends $Family
 ///
 /// Strategy: Try Funnelcake REST API first for better performance,
 /// fall back to Nostr subscription if unavailable.
+///
+/// **Engagement merge policy (#3384):** Lists merge relay snapshots with
+/// Funnelcake REST rows for the same `(pubkey, stableId)`. For counts that
+/// drive the same UX as the home feed ([VideoEvent.totalLoops] and related
+/// engagement fields), **prefer Funnelcake and bulk-stat hydration** over
+/// conflicting static Nostr tag values: relay copies may carry `loops` / zero
+/// or stale figures while the API reflects current aggregates. When only Nostr
+/// data exists (no REST row, no cache backfill), relay values remain the sole
+/// source. [_mergeVideo], [mergeTwoProfileVideos], [mergeProfileEngagementCount],
+/// [mergeRawTagsForVideoMerge], and shared `video_event_merge_utils` (used from
+/// Nostr enrichment) must stay aligned with this policy whenever merge logic
+/// changes.
 ///
 /// Usage:
 /// ```dart

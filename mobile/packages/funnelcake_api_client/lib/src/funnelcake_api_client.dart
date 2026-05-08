@@ -227,8 +227,10 @@ class FunnelcakeApiClient {
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
-        // X-Total-Count header is the primary source; fall back to envelope
-        // pagination when the header is absent (post-#238 envelope shape).
+        // totalCount comes solely from the X-Total-Count response header.
+        // It is null when the header is absent — the envelope pagination object
+        // does not carry a total count. hasMore and nextOffset (via nextCursor)
+        // do come from the envelope when the v2 shape is used.
         final totalCountHeader = response.headers['x-total-count'];
         final totalCount = totalCountHeader != null
             ? int.tryParse(totalCountHeader)

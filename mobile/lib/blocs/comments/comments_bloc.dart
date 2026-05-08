@@ -46,6 +46,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     int? initialTotalCount,
     ProfileRepository? profileRepository,
     FollowRepository? followRepository,
+    bool includeVideoReplies = false,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
        _likesRepository = likesRepository,
@@ -54,6 +55,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
        _initialTotalCount = initialTotalCount,
        _profileRepository = profileRepository,
        _followRepository = followRepository,
+       _includeVideoReplies = includeVideoReplies,
        super(
          CommentsState(
            rootEventId: rootEventId,
@@ -109,6 +111,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final ContentBlocklistRepository _contentBlocklistRepository;
   final ProfileRepository? _profileRepository;
   final FollowRepository? _followRepository;
+  final bool _includeVideoReplies;
   bool _isInitialBackfillComplete = true;
 
   Future<void> _onLoadRequested(
@@ -127,6 +130,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         rootEventKind: state.rootEventKind,
         rootAddressableId: state.rootAddressableId,
         limit: _pageSize,
+        includeVideoReplies: _includeVideoReplies,
       );
 
       final commentsById = {
@@ -203,6 +207,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         rootAddressableId: state.rootAddressableId,
         limit: _pageSize,
         before: cursor,
+        includeVideoReplies: _includeVideoReplies,
       );
 
       // Merge new comments into the Map - duplicates are automatically replaced
@@ -980,6 +985,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         rootEventId: state.rootEventId,
         rootEventKind: state.rootEventKind,
         rootAddressableId: state.rootAddressableId,
+        includeVideoReplies: _includeVideoReplies,
         onEose: () {
           if (!isClosed) {
             add(const CommentsInitialBackfillCompleted());

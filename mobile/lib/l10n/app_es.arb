@@ -1750,6 +1750,23 @@
     "feedModeForYou": "Para ti",
     "feedModeNew": "Nuevo",
     "feedModeFollowing": "Siguiendo",
+    "feedModeSemanticLabel": "Modo del feed: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Autor del video: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar del autor",
     "feedForYouEmpty": "Tu feed Para ti está vacío.\nExplora videos y sigue a creadores para personalizarlo.",
     "feedFollowingEmpty": "Aún no hay videos de personas que sigues.\nEncuentra creadores que te gusten y síguelos.",
     "feedLatestEmpty": "Aún no hay videos nuevos.\nVuelve pronto.",
@@ -1865,6 +1882,7 @@
     "routeInvalidCategory": "Categoría inválida",
     "routeNoVideosToDisplay": "No hay videos para mostrar",
     "routeInvalidProfileId": "ID de perfil inválido",
+    "routeUnknownPath": "Esa página no está en la app.",
     "routeDefaultListName": "Lista",
     "supportTitle": "Centro de soporte",
     "supportContactSupport": "Contactar a soporte",
@@ -2280,6 +2298,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video sin título",
+    "clickableTextViewVideoLink": "Ver video",
+    "messageExternalLinkDialogTitle": "¿Abrir enlace externo?",
+    "messageExternalLinkDialogBody": "Este enlace lleva a un sitio externo y puede no ser seguro:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Abrir",
     "inboxCollabInviteAcceptButton": "Aceptar",
     "inboxCollabInviteAcceptError": "No se pudo aceptar. Inténtalo de nuevo.",
     "inboxCollabInviteAcceptedStatus": "Aceptada",
@@ -2442,6 +2465,10 @@
     "notificationFollowBack": "Seguir de vuelta",
     "profileSetupUploadSuccess": "¡Foto de perfil subida con éxito!",
     "proofmodeCheckAiGenerated": "Verificar si fue generado por IA",
+    "dmSendFailedMessage": "No se pudo enviar el mensaje",
+    "dmSendFailedRetry": "Reintentar",
+    "dmSendPartialMessage": "Enviado, pero no se sincronizó con tus otros dispositivos",
+    "dmConversationLoadError": "No se pudieron cargar los mensajes",
     "reportDialogCancel": "Cancelar",
     "reportDialogReport": "Reportar",
     "routerInvalidCreator": "Creador no válido",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Compartir también en mi feed",
+  "videoMetadataShareReplyToFeedSubtitle": "Desactivado mantiene este video solo en el hilo de comentarios.",
+  "commentsRecordVideoButtonLabel": "Grabar comentario en video",
+  "commentsOpenVideoLabel": "Abrir comentario en video",
+  "commentsMuteVideoReplyLabel": "Silenciar respuesta en video",
+  "commentsUnmuteVideoReplyLabel": "Activar sonido de la respuesta en video",
+  "commentsOpenReplyParentLabel": "Abrir el video al que responde esto",
+  "commentsReplyParentSectionTitle": "En respuesta a",
+  "commentsReplyParentLabel": "Responder a {target}",
+  "commentsReplyParentFallbackLabel": "Responder al video"
 }

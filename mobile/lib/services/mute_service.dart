@@ -528,7 +528,7 @@ class MuteService {
 
       if (event != null) {
         final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent != null) {
+        if (sentEvent is PublishSuccess) {
           Log.debug(
             'Published mute list to Nostr: ${event.id}',
             name: 'MuteService',

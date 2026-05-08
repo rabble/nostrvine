@@ -34,6 +34,7 @@ void main() {
       expect(FeatureFlag.values, contains(FeatureFlag.livestreamingBeta));
       expect(FeatureFlag.values, contains(FeatureFlag.debugTools));
       expect(FeatureFlag.values, contains(FeatureFlag.integratedApps));
+      expect(FeatureFlag.values, contains(FeatureFlag.videoReplies));
     });
 
     test('integratedApps flag should have correct metadata', () {

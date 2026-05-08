@@ -1032,6 +1032,23 @@
     "feedModeForYou": "추천",
     "feedModeNew": "최신",
     "feedModeFollowing": "팔로잉",
+    "feedModeSemanticLabel": "피드 모드: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "동영상 작성자: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "작성자 프로필 사진",
     "feedForYouEmpty": "추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.",
     "feedFollowingEmpty": "아직 팔로우한 사람들의 동영상이 없어요.\n마음에 드는 크리에이터를 찾아 팔로우해 보세요.",
     "feedLatestEmpty": "아직 새로운 동영상이 없어요.\n잠시 후 다시 확인해 주세요.",
@@ -1149,6 +1166,7 @@
     "routeInvalidCategory": "잘못된 카테고리예요",
     "routeNoVideosToDisplay": "표시할 영상이 없어요",
     "routeInvalidProfileId": "잘못된 프로필 ID예요",
+    "routeUnknownPath": "앱에 없는 화면이에요.",
     "routeDefaultListName": "목록",
     "supportTitle": "지원 센터",
     "supportContactSupport": "지원팀 문의",
@@ -1564,6 +1582,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "제목 없는 동영상",
+    "clickableTextViewVideoLink": "동영상 보기",
+    "messageExternalLinkDialogTitle": "외부 링크를 열까요?",
+    "messageExternalLinkDialogBody": "이 링크는 외부 사이트로 이동하며 안전하지 않을 수 있어요:\n\n{url}",
+    "messageExternalLinkDialogOpen": "열기",
     "inboxCollabInviteAcceptButton": "수락",
     "inboxCollabInviteAcceptError": "수락하지 못했어요. 다시 시도해 주세요.",
     "inboxCollabInviteAcceptedStatus": "수락됨",
@@ -1722,6 +1745,10 @@
     "notificationFollowBack": "맞팔로우",
     "profileSetupUploadSuccess": "프로필 사진이 성공적으로 업로드되었어요!",
     "proofmodeCheckAiGenerated": "AI 생성 여부 확인",
+    "dmSendFailedMessage": "메시지를 보내지 못했어요",
+    "dmSendFailedRetry": "다시 시도",
+    "dmSendPartialMessage": "보냈지만 다른 기기에 동기화되지 않았어요",
+    "dmConversationLoadError": "메시지를 불러오지 못했어요",
     "reportDialogCancel": "취소",
     "reportDialogReport": "신고",
     "routerInvalidCreator": "유효하지 않은 크리에이터",
@@ -2748,5 +2775,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "내 피드에도 공유",
+  "videoMetadataShareReplyToFeedSubtitle": "끔으로 두면 이 동영상은 댓글 스레드에만 남습니다.",
+  "commentsRecordVideoButtonLabel": "영상 댓글 녹화",
+  "commentsOpenVideoLabel": "영상 댓글 열기",
+  "commentsMuteVideoReplyLabel": "영상 답글 음소거",
+  "commentsUnmuteVideoReplyLabel": "영상 답글 음소거 해제",
+  "commentsOpenReplyParentLabel": "답글 대상 영상 열기",
+  "commentsReplyParentSectionTitle": "답글 대상",
+  "commentsReplyParentLabel": "{target}에 답글",
+  "commentsReplyParentFallbackLabel": "영상에 답글"
 }

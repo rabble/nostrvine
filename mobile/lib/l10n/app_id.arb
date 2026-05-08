@@ -1743,6 +1743,23 @@
     "feedModeForYou": "Untukmu",
     "feedModeNew": "Baru",
     "feedModeFollowing": "Mengikuti",
+    "feedModeSemanticLabel": "Mode feed: {label}",
+    "@feedModeSemanticLabel": {
+        "placeholders": {
+            "label": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorSemanticLabel": "Pembuat video: {displayName}",
+    "@videoAuthorSemanticLabel": {
+        "placeholders": {
+            "displayName": {
+                "type": "String"
+            }
+        }
+    },
+    "videoAuthorAvatarSemanticLabel": "Avatar pembuat",
     "feedForYouEmpty": "Feed Untuk Anda kamu kosong.\nJelajahi video dan ikuti kreator untuk membentuknya.",
     "feedFollowingEmpty": "Belum ada video dari orang yang kamu ikuti.\nTemukan kreator yang kamu suka dan ikuti mereka.",
     "feedLatestEmpty": "Belum ada video baru.\nCek lagi sebentar lagi.",
@@ -1860,6 +1877,7 @@
     "routeInvalidCategory": "Kategori tidak valid",
     "routeNoVideosToDisplay": "Tidak ada video untuk ditampilkan",
     "routeInvalidProfileId": "ID profil tidak valid",
+    "routeUnknownPath": "Halaman itu tidak ada di aplikasi.",
     "routeDefaultListName": "Daftar",
     "supportTitle": "Pusat Bantuan",
     "supportContactSupport": "Hubungi Dukungan",
@@ -2275,6 +2293,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video tanpa judul",
+    "clickableTextViewVideoLink": "Lihat video",
+    "messageExternalLinkDialogTitle": "Buka tautan eksternal?",
+    "messageExternalLinkDialogBody": "Tautan ini menuju situs eksternal dan mungkin tidak aman:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Buka",
     "inboxCollabInviteAcceptButton": "Terima",
     "inboxCollabInviteAcceptError": "Tidak bisa menerima. Coba lagi.",
     "inboxCollabInviteAcceptedStatus": "Diterima",
@@ -2433,6 +2456,10 @@
     "notificationFollowBack": "Ikuti balik",
     "profileSetupUploadSuccess": "Foto profil berhasil diunggah!",
     "proofmodeCheckAiGenerated": "Periksa apakah dibuat oleh AI",
+    "dmSendFailedMessage": "Pesan gagal dikirim",
+    "dmSendFailedRetry": "Coba Lagi",
+    "dmSendPartialMessage": "Terkirim, tapi tidak tersinkron ke perangkat lainmu",
+    "dmConversationLoadError": "Pesan tidak dapat dimuat",
     "reportDialogCancel": "Batal",
     "reportDialogReport": "Laporkan",
     "routerInvalidCreator": "Kreator tidak valid",
@@ -3452,5 +3479,15 @@
   "videoEditorAudioFeaturedEmptySubtitle": "We’ll drop featured sounds here once they’re ready.",
   "videoEditorAudioFeaturedEmptyTitle": "Featured sounds coming soon",
   "videoMetadataAudioReuseSubtitle": "Let others save and reuse this video's audio.",
-  "videoMetadataAudioReuseTitle": "Publish this sound"
+  "videoMetadataAudioReuseTitle": "Publish this sound",
+  "videoMetadataShareReplyToFeedTitle": "Bagikan juga ke feed saya",
+  "videoMetadataShareReplyToFeedSubtitle": "Jika dimatikan, video ini hanya tetap di utas komentar.",
+  "commentsRecordVideoButtonLabel": "Rekam komentar video",
+  "commentsOpenVideoLabel": "Buka komentar video",
+  "commentsMuteVideoReplyLabel": "Bisukan balasan video",
+  "commentsUnmuteVideoReplyLabel": "Aktifkan suara balasan video",
+  "commentsOpenReplyParentLabel": "Buka video yang dibalas ini",
+  "commentsReplyParentSectionTitle": "Menanggapi",
+  "commentsReplyParentLabel": "Balas {target}",
+  "commentsReplyParentFallbackLabel": "Balas video"
 }

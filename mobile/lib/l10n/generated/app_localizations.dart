@@ -11,6 +11,7 @@ import 'app_localizations_bg.dart';
 import 'app_localizations_de.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
+import 'app_localizations_fil.dart';
 import 'app_localizations_fr.dart';
 import 'app_localizations_id.dart';
 import 'app_localizations_it.dart';
@@ -115,6 +116,7 @@ abstract class AppLocalizations {
     Locale('bg'),
     Locale('de'),
     Locale('es'),
+    Locale('fil'),
     Locale('fr'),
     Locale('id'),
     Locale('it'),
@@ -6978,6 +6980,24 @@ abstract class AppLocalizations {
   /// **'Following'**
   String get feedModeFollowing;
 
+  /// Semantic label for the feed mode row (current mode plus affordance hint). Screen reader only.
+  ///
+  /// In en, this message translates to:
+  /// **'Feed mode: {label}'**
+  String feedModeSemanticLabel(String label);
+
+  /// Semantic label for the video author's display name region. Screen reader only.
+  ///
+  /// In en, this message translates to:
+  /// **'Video author: {displayName}'**
+  String videoAuthorSemanticLabel(String displayName);
+
+  /// Semantic label for the author's circular profile avatar on feed video metadata. Screen reader only.
+  ///
+  /// In en, this message translates to:
+  /// **'Author avatar'**
+  String get videoAuthorAvatarSemanticLabel;
+
   /// No description provided for @feedForYouEmpty.
   ///
   /// In en, this message translates to:
@@ -7511,6 +7531,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid profile ID'**
   String get routeInvalidProfileId;
+
+  /// Body text when navigation hits an unknown route (GoRouter.errorBuilder).
+  ///
+  /// In en, this message translates to:
+  /// **'That page isn’t in the app.'**
+  String get routeUnknownPath;
 
   /// No description provided for @routeDefaultListName.
   ///
@@ -9162,6 +9188,36 @@ abstract class AppLocalizations {
   /// **'{role} on this post'**
   String inboxCollabInviteCardRoleLabel(String role);
 
+  /// Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled video'**
+  String get inboxCollabInviteCardUntitledVideo;
+
+  /// Tappable label rendered in rich text in place of a Nostr video/event reference. Opens the linked video.
+  ///
+  /// In en, this message translates to:
+  /// **'View video'**
+  String get clickableTextViewVideoLink;
+
+  /// Confirmation dialog title shown before opening an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Open external link?'**
+  String get messageExternalLinkDialogTitle;
+
+  /// Confirmation dialog body shown before opening an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'This link goes to an external site and may not be safe:\n\n{url}'**
+  String messageExternalLinkDialogBody(String url);
+
+  /// Confirmation button that opens an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get messageExternalLinkDialogOpen;
+
   /// No description provided for @inboxCollabInviteAcceptButton.
   ///
   /// In en, this message translates to:
@@ -9215,6 +9271,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You were invited to collaborate on a video: {url}\n\nOpen diVine to review and accept.'**
   String collaboratorInviteDmBodyUntitled(String url);
+
+  /// SnackBar text shown in a DM conversation when a send fails (relay error, signer error, network error). Paired with the retry action `dmSendFailedRetry`.
+  ///
+  /// In en, this message translates to:
+  /// **'Message couldn\'t be sent'**
+  String get dmSendFailedMessage;
+
+  /// SnackBarAction button label that retries the failed DM send. Keep short — fits next to the SnackBar message.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get dmSendFailedRetry;
+
+  /// SnackBar text shown in a DM conversation after a send where the recipient received the message but the sender's self-addressed gift wrap failed to publish. The sender's other devices won't see this message on relay-only restore. Paired with the retry action `dmSendFailedRetry`.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent, but didn\'t sync to your other devices'**
+  String get dmSendPartialMessage;
+
+  /// Error text shown in place of the message list when DmRepository.watchMessages emits an error (e.g. local DB read failure). Distinct from send failures (which use `dmSendFailedMessage`).
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load messages'**
+  String get dmConversationLoadError;
 
   /// No description provided for @reportDialogCancel.
   ///
@@ -12010,6 +12090,18 @@ abstract class AppLocalizations {
   /// **'Publish video to feed'**
   String get videoMetadataPublishVideoHint;
 
+  /// Label for the toggle that also surfaces a video reply in normal feeds.
+  ///
+  /// In en, this message translates to:
+  /// **'Also share to my feed'**
+  String get videoMetadataShareReplyToFeedTitle;
+
+  /// Helper text for the video reply feed visibility toggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Off keeps this video only in the comment thread.'**
+  String get videoMetadataShareReplyToFeedSubtitle;
+
   /// No description provided for @videoMetadataFormNotReadyHint.
   ///
   /// In en, this message translates to:
@@ -12207,6 +12299,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
+
+  /// Semantics label for the button that opens the recorder to create a video reply in comments.
+  ///
+  /// In en, this message translates to:
+  /// **'Record video comment'**
+  String get commentsRecordVideoButtonLabel;
+
+  /// Semantics label for the button that opens an inline video reply in the full video detail route.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video comment'**
+  String get commentsOpenVideoLabel;
+
+  /// Semantics label for the button that mutes inline video comment playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute video reply'**
+  String get commentsMuteVideoReplyLabel;
+
+  /// Semantics label for the button that unmutes inline video comment playback.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute video reply'**
+  String get commentsUnmuteVideoReplyLabel;
+
+  /// Semantics label for the UI that opens the parent video for a video reply.
+  ///
+  /// In en, this message translates to:
+  /// **'Open video this replies to'**
+  String get commentsOpenReplyParentLabel;
+
+  /// Section title shown above the parent video label for a video reply.
+  ///
+  /// In en, this message translates to:
+  /// **'In reply to'**
+  String get commentsReplyParentSectionTitle;
+
+  /// Label describing the parent video a reply points to.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to {target}'**
+  String commentsReplyParentLabel(String target);
+
+  /// Fallback label when the parent video has no title, author name, or usable content.
+  ///
+  /// In en, this message translates to:
+  /// **'Reply to video'**
+  String get commentsReplyParentFallbackLabel;
 }
 
 class _AppLocalizationsDelegate
@@ -12226,6 +12366,7 @@ class _AppLocalizationsDelegate
     'de',
     'en',
     'es',
+    'fil',
     'fr',
     'id',
     'it',
@@ -12258,6 +12399,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'es':
       return AppLocalizationsEs();
+    case 'fil':
+      return AppLocalizationsFil();
     case 'fr':
       return AppLocalizationsFr();
     case 'id':

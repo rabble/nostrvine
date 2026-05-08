@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_form_fields.dart';
 
 void main() {
@@ -16,11 +18,15 @@ void main() {
       bool enableContentWarning = true,
       bool enableCollaborators = true,
       bool enableInspiredBy = true,
+      VideoReplyContext? replyContext,
     }) {
       return ProviderScope(
         overrides: [
           videoEditorProvider.overrideWith(
             () => _MockVideoEditorNotifier(state ?? VideoEditorProviderState()),
+          ),
+          videoReplyContextProvider.overrideWith(
+            () => _TestVideoReplyContextNotifier(replyContext),
           ),
         ],
         child: MaterialApp(
@@ -164,6 +170,53 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets('reply visibility toggle updates shareReplyToFeed', (
+      tester,
+    ) async {
+      final mockNotifier = _MockVideoEditorNotifier(VideoEditorProviderState());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            videoReplyContextProvider.overrideWith(
+              () => _TestVideoReplyContextNotifier(
+                const VideoReplyContext(
+                  rootEventId: 'root-id',
+                  rootEventKind: 34236,
+                  rootAuthorPubkey: 'author-pubkey',
+                ),
+              ),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: SingleChildScrollView(child: VideoMetadataFormFields()),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(VideoMetadataFormFields)),
+      );
+      final tile = find.widgetWithText(
+        SwitchListTile,
+        l10n.videoMetadataShareReplyToFeedTitle,
+      );
+      expect(tile, findsOneWidget);
+      expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+
+      await tester.tap(tile);
+      await tester.pumpAndSettle();
+
+      expect(mockNotifier.lastShareReplyToFeed, isTrue);
+      expect(tester.widget<SwitchListTile>(tile).value, isTrue);
+    });
   });
 }
 
@@ -174,6 +227,7 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
 
   String? lastTitle;
   String? lastDescription;
+  bool? lastShareReplyToFeed;
 
   @override
   VideoEditorProviderState build() => _state;
@@ -183,4 +237,19 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
     if (title != null) lastTitle = title;
     if (description != null) lastDescription = description;
   }
+
+  @override
+  void setShareReplyToFeed(bool shareReplyToFeed) {
+    lastShareReplyToFeed = shareReplyToFeed;
+    state = state.copyWith(shareReplyToFeed: shareReplyToFeed);
+  }
+}
+
+class _TestVideoReplyContextNotifier extends VideoReplyContextNotifier {
+  _TestVideoReplyContextNotifier(this._initialState);
+
+  final VideoReplyContext? _initialState;
+
+  @override
+  VideoReplyContext? build() => _initialState;
 }

@@ -6,10 +6,13 @@ import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
+import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:nostr_sdk/signer/nostr_signer.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -51,7 +54,8 @@ void main() {
     group('sendPrivateMessage', () {
       test('returns success with gift wrap event details', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Event,
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
         );
 
         final result = await service.sendPrivateMessage(
@@ -77,7 +81,8 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event;
+            return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -95,7 +100,8 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event;
+            return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -119,7 +125,7 @@ void main() {
           (invocation) async {
             final event = invocation.positionalArguments[0] as Event;
             capturedEvents.add(event);
-            return event;
+            return PublishSuccess(event: event);
           },
         );
 
@@ -149,7 +155,8 @@ void main() {
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event;
+            return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -166,26 +173,30 @@ void main() {
         expect(capturedEvent!.createdAt, lessThan(afterSend));
       });
 
-      test('returns failure when publish returns null', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+      test(
+        'returns failure when publish does not return PublishSuccess',
+        () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
 
-        final result = await service.sendPrivateMessage(
-          recipientPubkey: _recipientPubkey,
-          content: 'Test message',
-        );
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
 
-        expect(result.success, isFalse);
-        expect(result.error, contains('publish failed'));
-      });
+          expect(result.success, isFalse);
+          expect(result.error, contains('publish failed'));
+        },
+      );
 
       test('includes additional tags in the gift wrap', () async {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
           (invocation) async {
-            return capturedEvent = invocation.positionalArguments[0] as Event;
+            capturedEvent = invocation.positionalArguments[0] as Event;
+            return PublishSuccess(event: capturedEvent!);
           },
         );
 
@@ -203,7 +214,8 @@ void main() {
 
       test('uses provided eventKind for the rumor', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Event,
+          (invocation) async =>
+              PublishSuccess(event: invocation.positionalArguments[0] as Event),
         );
 
         final result = await service.sendPrivateMessage(
@@ -219,19 +231,169 @@ void main() {
         expect(result.rumorEventId, isNotNull);
       });
 
+      test('returns success with selfWrapPublished=false when self-wrap '
+          'publish throws (recipient delivered, sender will not see this '
+          'message on other devices)', () async {
+        var callCount = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+          (invocation) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            throw Exception('self-wrap relay error');
+          },
+        );
+
+        final result = await service.sendPrivateMessage(
+          recipientPubkey: _recipientPubkey,
+          content: 'Test message',
+        );
+
+        expect(result.success, isTrue);
+        expect(result.rumorEventId, isNotNull);
+        expect(
+          result.selfWrapPublished,
+          isFalse,
+          reason:
+              'Self-wrap throws were silently swallowed before; the '
+              'result must now reflect that the sender will not see '
+              'this message on other devices until the self-wrap is '
+              're-published (#3909 tracks the future retry path).',
+        );
+      });
+
+      test('emits info log "Successfully published NIP-17 message '
+          '(selfWrapPublished=false)" when self-wrap publish throws', () async {
+        // Closes the gap from PR #3910's manual-verification checklist:
+        // the reviewer asked for a real-device confirmation that this
+        // exact log line fires on partial delivery (Keycast RPC slow ->
+        // self-wrap second sign throws). Captured deterministically here
+        // so CI guards against future drift in the log copy.
+        await LogCaptureService().clearAllLogs();
+
+        var callCount = 0;
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+          invocation,
+        ) async {
+          callCount++;
+          if (callCount == 1) {
+            return PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            );
+          }
+          throw Exception('keycast rpc timeout');
+        });
+
+        await service.sendPrivateMessage(
+          recipientPubkey: _recipientPubkey,
+          content: 'Test message',
+        );
+
+        final logs = LogCaptureService().getRecentLogs();
+        expect(
+          logs.any(
+            (e) =>
+                e.level == LogLevel.info &&
+                e.message ==
+                    'Successfully published NIP-17 message '
+                        '(selfWrapPublished=false)',
+          ),
+          isTrue,
+          reason:
+              'Diagnostic log copy for production triage of partial '
+              'delivery. Not a load-bearing contract — the durable '
+              'outgoing-DM queue (#3909) keys off '
+              'NIP17SendResult.selfWrapPublished, not this string.',
+        );
+      });
+
       test(
-        'returns success even when self-wrap publish throws',
+        'returns success with selfWrapPublished=false '
+        'when self-wrap publish returns PublishFailed',
+        () async {
+          final signer = LocalNostrSigner(_testPrivateKey);
+          final senderPublicKey = (await signer.getPublicKey())!;
+          final matchingService = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: senderPublicKey,
+            nostrService: mockNostrClient,
+          );
+          var callCount = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async {
+              callCount++;
+              if (callCount == 1) {
+                return PublishSuccess(
+                  event: invocation.positionalArguments[0] as Event,
+                );
+              }
+              return const PublishFailed();
+            },
+          );
+
+          final result = await matchingService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.rumorEventId, isNotNull);
+          expect(result.selfWrapPublished, isFalse);
+        },
+      );
+
+      test(
+        'returns success with selfWrapPublished=false '
+        'when self-wrap publish returns PublishNoRelays',
+        () async {
+          final signer = LocalNostrSigner(_testPrivateKey);
+          final senderPublicKey = (await signer.getPublicKey())!;
+          final matchingService = NIP17MessageService(
+            signer: signer,
+            senderPublicKey: senderPublicKey,
+            nostrService: mockNostrClient,
+          );
+          var callCount = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            invocation,
+          ) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            return const PublishNoRelays();
+          });
+
+          final result = await matchingService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.rumorEventId, isNotNull);
+          expect(result.selfWrapPublished, isFalse);
+        },
+      );
+
+      test(
+        'returns success with selfWrapPublished=false when self-wrap '
+        'publish returns PublishFailed (relay rejected with no exception)',
         () async {
           var callCount = 0;
           when(() => mockNostrClient.publishEvent(any())).thenAnswer(
             (invocation) async {
               callCount++;
               if (callCount == 1) {
-                // Recipient publish succeeds.
-                return invocation.positionalArguments[0] as Event;
+                return PublishSuccess(
+                  event: invocation.positionalArguments[0] as Event,
+                );
               }
-              // Self-wrap publish throws — should be non-fatal.
-              throw Exception('self-wrap relay error');
+              return const PublishFailed();
             },
           );
 
@@ -241,12 +403,13 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          expect(result.rumorEventId, isNotNull);
+          expect(result.selfWrapPublished, isFalse);
         },
       );
 
       test(
-        'publishes a self-wrap when sender pubkey matches the signer',
+        'publishes a self-wrap with selfWrapPublished=true '
+        'when sender pubkey matches the signer and publish succeeds',
         () async {
           final signer = LocalNostrSigner(_testPrivateKey);
           final senderPublicKey = (await signer.getPublicKey())!;
@@ -262,7 +425,7 @@ void main() {
             (invocation) async {
               final event = invocation.positionalArguments[0] as Event;
               capturedEvents.add(event);
-              return event;
+              return PublishSuccess(event: event);
             },
           );
 
@@ -272,11 +435,192 @@ void main() {
           );
 
           expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isTrue);
           expect(capturedEvents, hasLength(2));
           expect(capturedEvents[0].kind, EventKind.giftWrap);
           expect(capturedEvents[1].kind, EventKind.giftWrap);
         },
       );
+
+      group('with sender pubkey derived from signer key', () {
+        // Existing tests use a synthetic _testPublicKey that is not a
+        // valid secp256k1 point, so the self-wrap's NIP-44 ECDH throws
+        // before reaching the publish call. These tests pair the signer
+        // with a sender pubkey actually derived from its private key, so
+        // the self-wrap path runs end-to-end and the publish/build-side
+        // branches are exercised.
+        late NIP17MessageService realKeyService;
+
+        setUp(() {
+          realKeyService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+          );
+        });
+
+        test(
+          'returns selfWrapPublished=true when both publishes succeed',
+          () async {
+            when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+              (invocation) async => PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              ),
+            );
+
+            final result = await realKeyService.sendPrivateMessage(
+              recipientPubkey: _recipientPubkey,
+              content: 'Test message',
+            );
+
+            expect(result.success, isTrue);
+            expect(result.selfWrapPublished, isTrue);
+            verify(() => mockNostrClient.publishEvent(any())).called(2);
+          },
+        );
+
+        test('emits info log "Successfully published NIP-17 message '
+            '(selfWrapPublished=true)" when both publishes succeed', () async {
+          await LogCaptureService().clearAllLogs();
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          await realKeyService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          final logs = LogCaptureService().getRecentLogs();
+          expect(
+            logs.any(
+              (e) =>
+                  e.level == LogLevel.info &&
+                  e.message ==
+                      'Successfully published NIP-17 message '
+                          '(selfWrapPublished=true)',
+            ),
+            isTrue,
+            reason:
+                'Diagnostic log copy for production triage. Symmetric '
+                'with the partial-delivery log assertion above; neither '
+                'is a contract the outgoing queue (#3909) keys off — '
+                'the queue keys off NIP17SendResult.selfWrapPublished.',
+          );
+        });
+
+        test('returns selfWrapPublished=false when self-wrap publish '
+            'returns PublishFailed without throwing', () async {
+          var callCount = 0;
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            invocation,
+          ) async {
+            callCount++;
+            if (callCount == 1) {
+              return PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              );
+            }
+            return const PublishFailed();
+          });
+
+          final result = await realKeyService.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+          verify(() => mockNostrClient.publishEvent(any())).called(2);
+        });
+
+        test('returns selfWrapPublished=false when self-wrap event '
+            'creation returns null (defensive null-event branch)', () async {
+          var builderCalls = 0;
+          final service = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (nostr, rumor, recipientPubkey) async {
+              builderCalls++;
+              if (builderCalls == 1) {
+                return GiftWrapUtil.getGiftWrapEvent(
+                  nostr,
+                  rumor,
+                  recipientPubkey,
+                );
+              }
+              return null;
+            },
+          );
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'Test message',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isFalse);
+          expect(
+            builderCalls,
+            equals(2),
+            reason:
+                'Both the recipient wrap and the self-wrap go through '
+                'the injected builder; the second call returning null '
+                'is what we are exercising here.',
+          );
+          verify(() => mockNostrClient.publishEvent(any())).called(1);
+        });
+
+        test(
+          'returns selfWrapPublished=false when self-wrap builder '
+          'throws (decoupled from SDK internals via injection seam)',
+          () async {
+            var builderCalls = 0;
+            final service = NIP17MessageService(
+              signer: LocalNostrSigner(_testPrivateKey),
+              senderPublicKey: getPublicKey(_testPrivateKey),
+              nostrService: mockNostrClient,
+              giftWrapBuilder: (nostr, rumor, recipientPubkey) async {
+                builderCalls++;
+                if (builderCalls == 1) {
+                  return GiftWrapUtil.getGiftWrapEvent(
+                    nostr,
+                    rumor,
+                    recipientPubkey,
+                  );
+                }
+                throw Exception('builder boom');
+              },
+            );
+
+            when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+              (invocation) async => PublishSuccess(
+                event: invocation.positionalArguments[0] as Event,
+              ),
+            );
+
+            final result = await service.sendPrivateMessage(
+              recipientPubkey: _recipientPubkey,
+              content: 'Test message',
+            );
+
+            expect(result.success, isTrue);
+            expect(result.selfWrapPublished, isFalse);
+            expect(builderCalls, equals(2));
+            verify(() => mockNostrClient.publishEvent(any())).called(1);
+          },
+        );
+      });
 
       test(
         'returns failure when signer throws during key refresh',
@@ -299,6 +643,122 @@ void main() {
 
           expect(result.success, isFalse);
           expect(result.error, isNotNull);
+        },
+      );
+    });
+
+    group('buildRumor + sendRumor split', () {
+      test(
+        'buildRumor returns the unsigned rumor event without touching '
+        'the relay or signer',
+        () async {
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'queue this before publishing',
+          );
+
+          expect(rumor.kind, equals(EventKind.privateDirectMessage));
+          expect(rumor.content, equals('queue this before publishing'));
+          expect(rumor.pubkey, equals(_testPublicKey));
+          expect(
+            rumor.tags.first,
+            equals(['p', _recipientPubkey]),
+            reason: 'p-tag must be the first tag for NIP-17 compliance',
+          );
+          expect(
+            rumor.id,
+            isNotEmpty,
+            reason:
+                'Event constructor computes the rumor id deterministically '
+                'from its fields — DmRepository keys the queue row by it',
+          );
+          // No publish should fire from a pure build call.
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test(
+        'sendRumor wraps and publishes a pre-built rumor with the same '
+        'rumor id as buildRumor returned',
+        () async {
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'split-flow message',
+          );
+          final rumorIdBeforeSend = rumor.id;
+
+          final result = await service.sendRumor(
+            rumorEvent: rumor,
+            recipientPubkey: _recipientPubkey,
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            result.rumorEventId,
+            equals(rumorIdBeforeSend),
+            reason:
+                'sendRumor must surface the same rumor id the caller saw '
+                'from buildRumor — the queue row PK depends on this',
+          );
+          expect(result.recipientPubkey, equals(_recipientPubkey));
+        },
+      );
+
+      test(
+        'buildRumor includes additional tags after the recipient p-tag',
+        () {
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'reply test',
+            additionalTags: [
+              ['e', 'parent-message-id'],
+            ],
+          );
+
+          expect(rumor.tags, [
+            ['p', _recipientPubkey],
+            ['e', 'parent-message-id'],
+          ]);
+        },
+      );
+
+      test(
+        'buildRumor honors a non-default eventKind so kind 15 file '
+        'messages can be enqueued before publishing',
+        () {
+          final rumor = service.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'https://example.com/file.enc',
+            eventKind: EventKind.fileMessage,
+          );
+
+          expect(rumor.kind, equals(EventKind.fileMessage));
+        },
+      );
+
+      test(
+        'sendPrivateMessage convenience wrapper still works (delegates '
+        'to buildRumor + sendRumor)',
+        () async {
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async => PublishSuccess(
+              event: invocation.positionalArguments[0] as Event,
+            ),
+          );
+
+          final result = await service.sendPrivateMessage(
+            recipientPubkey: _recipientPubkey,
+            content: 'convenience-wrapper smoke test',
+          );
+
+          expect(result.success, isTrue);
+          expect(result.rumorEventId, isNotNull);
         },
       );
     });

@@ -89,6 +89,9 @@ void main() {
             total: 12,
           ),
         );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         repository = CommentsRepository(
           nostrClient: mockNostrClient,
@@ -112,6 +115,141 @@ void main() {
           ),
         ).called(1);
         verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test(
+        'does not merge relay video replies into REST bootstrap comments '
+        'when video replies are disabled',
+        () async {
+          when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeApiClient.getVideoComments(
+              videoId: any(named: 'videoId'),
+              sort: any(named: 'sort'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => VideoCommentsResponse(
+              comments: [
+                VideoComment(
+                  id: 'rest_comment',
+                  pubkey: testUserPubkey,
+                  createdAt: 1000,
+                  kind: _commentKind,
+                  content: 'REST comment',
+                  sig: 'sig',
+                  tags: [
+                    ['E', testRootEventId],
+                    ['K', _testRootEventKind.toString()],
+                    ['P', testRootAuthorPubkey],
+                    ['e', testRootEventId],
+                    ['k', _testRootEventKind.toString()],
+                    ['p', testRootAuthorPubkey],
+                  ],
+                ),
+              ],
+              total: 1,
+            ),
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          repository = CommentsRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeApiClient,
+          );
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.totalCount, equals(1));
+          expect(
+            result.comments.map((comment) => comment.id),
+            ['rest_comment'],
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test('merges relay video replies into REST bootstrap comments', () async {
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => VideoCommentsResponse(
+            comments: [
+              VideoComment(
+                id: 'rest_comment',
+                pubkey: testUserPubkey,
+                createdAt: 1000,
+                kind: _commentKind,
+                content: 'REST comment',
+                sig: 'sig',
+                tags: [
+                  ['E', testRootEventId],
+                  ['K', _testRootEventKind.toString()],
+                  ['P', testRootAuthorPubkey],
+                  ['e', testRootEventId],
+                  ['k', _testRootEventKind.toString()],
+                  ['p', testRootAuthorPubkey],
+                ],
+              ),
+            ],
+            total: 1,
+          ),
+        );
+        final videoReplyEvent = _createCommentEvent(
+          id: 'video_reply',
+          kind: EventKind.videoVertical,
+          content: 'Reply title',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          createdAt: 1001,
+          extraTags: const [
+            ['imeta', 'url https://media.divine.video/video.mp4'],
+            ['title', 'Reply title'],
+          ],
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [videoReplyEvent]);
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
+        );
+
+        expect(result.totalCount, equals(2));
+        expect(result.comments.map((comment) => comment.id), [
+          'video_reply',
+          'rest_comment',
+        ]);
+        expect(result.comments.first.hasVideo, isTrue);
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(captureAny()),
+                ).captured.single
+                as List<Filter>;
+        expect(captured.single.kinds, equals([EventKind.videoVertical]));
+        expect(captured.single.uppercaseE, equals([testRootEventId]));
       });
 
       test('falls back to relay query when REST bootstrap throws', () async {
@@ -147,12 +285,163 @@ void main() {
         final result = await repository.loadComments(
           rootEventId: testRootEventId,
           rootEventKind: _testRootEventKind,
+          includeVideoReplies: true,
         );
 
         expect(result.comments, hasLength(1));
         expect(result.comments.first.content, equals('Relay fallback comment'));
         verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
+
+      test('loads NIP-71 video reply events in the comments thread', () async {
+        const rootAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
+        final videoReplyEvent = _createCommentEvent(
+          id: 'video_reply',
+          kind: EventKind.videoVertical,
+          content: 'Reply title',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          extraTags: const [
+            ['A', rootAddressableId, ''],
+            ['a', rootAddressableId, ''],
+            ['imeta', 'url https://media.divine.video/video.mp4'],
+            ['title', 'Reply title'],
+            ['summary', 'Video reply summary'],
+          ],
+        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [videoReplyEvent],
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootAddressableId: rootAddressableId,
+          includeVideoReplies: true,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.id, equals('video_reply'));
+        expect(result.comments.first.rootAddressableId, rootAddressableId);
+        expect(result.comments.first.hasVideo, isTrue);
+        expect(
+          result.comments.first.videoUrl,
+          equals('https://media.divine.video/video.mp4'),
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured
+            .expand((argument) => argument as List<Filter>)
+            .toList();
+        expect(
+          filters,
+          contains(
+            isA<Filter>()
+                .having((filter) => filter.kinds, 'kinds', [
+                  EventKind.comment,
+                  EventKind.videoVertical,
+                ])
+                .having((filter) => filter.uppercaseE, 'uppercaseE', [
+                  testRootEventId,
+                ]),
+          ),
+        );
+        expect(
+          filters,
+          contains(
+            isA<Filter>()
+                .having((filter) => filter.kinds, 'kinds', [
+                  EventKind.comment,
+                  EventKind.videoVertical,
+                ])
+                .having((filter) => filter.uppercaseA, 'uppercaseA', [
+                  rootAddressableId,
+                ]),
+          ),
+        );
+      });
+
+      test(
+        'does not treat video hosts as playable comment videos without video '
+        'mime or extension',
+        () async {
+          final imageOnlyEvent = _createCommentEvent(
+            id: 'image_only',
+            kind: EventKind.videoVertical,
+            content: 'Image only',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            extraTags: const [
+              [
+                'imeta',
+                'url https://media.divine.video/thumb',
+                'image https://media.divine.video/thumb.jpg',
+              ],
+            ],
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [imageOnlyEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            includeVideoReplies: true,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.hasVideo, isFalse);
+          expect(
+            result.comments.first.videoUrl,
+            isNull,
+          );
+        },
+      );
+
+      test(
+        'treats extensionless imeta urls as videos when the imeta mime type '
+        'is video',
+        () async {
+          final videoReplyEvent = _createCommentEvent(
+            id: 'video_reply',
+            kind: EventKind.videoVertical,
+            content: 'Reply title',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            extraTags: const [
+              [
+                'imeta',
+                'url https://media.divine.video/reply/12345',
+                'm video/mp4',
+              ],
+            ],
+          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [videoReplyEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            includeVideoReplies: true,
+          );
+
+          expect(result.comments, hasLength(1));
+          expect(result.comments.first.hasVideo, isTrue);
+          expect(
+            result.comments.first.videoUrl,
+            equals('https://media.divine.video/reply/12345'),
+          );
+        },
+      );
 
       test('returns empty thread when no comments', () async {
         when(
@@ -461,6 +750,7 @@ void main() {
           expect(comment.content, equals('A-tag only comment'));
           // rootAuthorPubkey extracted from A tag addressable ID
           expect(comment.rootAuthorPubkey, equals(testRootAuthorPubkey));
+          expect(comment.rootAddressableId, equals(testAddressableId));
           // Top-level comment (parent kind = root kind)
           expect(comment.replyToEventId, isNull);
         },
@@ -722,7 +1012,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.postComment(
@@ -790,7 +1081,8 @@ void main() {
             'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.postComment(
@@ -859,7 +1151,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.postComment(
@@ -911,7 +1204,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.postComment(
@@ -951,7 +1245,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.postComment(
@@ -977,8 +1272,9 @@ void main() {
 
       test('returns created Comment', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return inv.positionalArguments.first as Event
+          final event = inv.positionalArguments.first as Event
             ..id = 'created_event_id';
+          return PublishSuccess(event: event);
         });
 
         final result = await repository.postComment(
@@ -1025,7 +1321,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.postComment(
@@ -1041,7 +1338,7 @@ void main() {
       test('throws PostCommentFailedException when publish fails', () async {
         when(
           () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => const PublishFailed());
 
         expect(
           () => repository.postComment(
@@ -1094,7 +1391,27 @@ void main() {
         ).captured;
 
         final filters = captured.first as List<Filter>;
+        expect(filters.first.kinds, equals(const [_commentKind]));
+        expect(filters.first.uppercaseE, contains(testRootEventId));
+      });
+
+      test('queries video replies when includeVideoReplies is true', () async {
+        when(() => mockNostrClient.countEvents(any())).thenAnswer(
+          (_) async => const CountResult(count: 0),
+        );
+
+        await repository.getCommentsCount(
+          testRootEventId,
+          includeVideoReplies: true,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.countEvents(captureAny()),
+        ).captured;
+
+        final filters = captured.first as List<Filter>;
         expect(filters.first.kinds, contains(_commentKind));
+        expect(filters.first.kinds, contains(EventKind.videoVertical));
         expect(filters.first.uppercaseE, contains(testRootEventId));
       });
 
@@ -1191,7 +1508,8 @@ void main() {
           (_) async => const CountResult(count: 5),
         );
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => inv.positionalArguments.first as Event,
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments.first as Event),
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1232,7 +1550,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.deleteComment(commentId: testCommentId);
@@ -1260,7 +1579,8 @@ void main() {
         Event? capturedEvent;
 
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
-          return capturedEvent = inv.positionalArguments.first as Event;
+          capturedEvent = inv.positionalArguments.first as Event;
+          return PublishSuccess(event: capturedEvent!);
         });
 
         await repository.deleteComment(
@@ -1280,7 +1600,8 @@ void main() {
           when(() => mockNostrClient.publishEvent(any())).thenAnswer((
             inv,
           ) async {
-            return capturedEvent = inv.positionalArguments.first as Event;
+            capturedEvent = inv.positionalArguments.first as Event;
+            return PublishSuccess(event: capturedEvent!);
           });
 
           await repository.deleteComment(commentId: testCommentId);
@@ -1291,11 +1612,12 @@ void main() {
       );
 
       test(
-        'throws DeleteCommentFailedException when publish returns null',
+        'throws DeleteCommentFailedException when publish does not return '
+        'PublishSuccess',
         () async {
           when(
             () => mockNostrClient.publishEvent(any()),
-          ).thenAnswer((_) async => null);
+          ).thenAnswer((_) async => const PublishFailed());
 
           expect(
             () => repository.deleteComment(commentId: testCommentId),
@@ -1337,7 +1659,8 @@ void main() {
           (_) async => const CountResult(count: 10),
         );
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => inv.positionalArguments.first as Event,
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments.first as Event),
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1356,7 +1679,8 @@ void main() {
           (_) async => const CountResult(count: 10),
         );
         when(() => mockNostrClient.publishEvent(any())).thenAnswer(
-          (inv) async => inv.positionalArguments.first as Event,
+          (inv) async =>
+              PublishSuccess(event: inv.positionalArguments.first as Event),
         );
 
         await repository.getCommentsCount(testRootEventId);
@@ -1834,8 +2158,10 @@ Event _createCommentEvent({
   required String rootEventId,
   required String rootAuthorPubkey,
   required int rootEventKind,
+  int kind = _commentKind,
   String? replyToEventId,
   String? replyToAuthorPubkey,
+  List<List<String>> extraTags = const [],
   int createdAt = 1000,
 }) {
   // NIP-22 tags:
@@ -1858,8 +2184,8 @@ Event _createCommentEvent({
       ['k', rootEventKind.toString()],
       ['p', rootAuthorPubkey],
     ],
+    ...extraTags,
   ];
 
-  return Event(pubkey, _commentKind, tags, content, createdAt: createdAt)
-    ..id = id;
+  return Event(pubkey, kind, tags, content, createdAt: createdAt)..id = id;
 }

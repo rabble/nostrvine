@@ -68,6 +68,7 @@ class DmRepository {
     required NostrClient nostrClient,
     required DirectMessagesDao directMessagesDao,
     required ConversationsDao conversationsDao,
+    OutgoingDmsDao? outgoingDmsDao,
     DmSyncState? syncState,
     NIP17MessageService? messageService,
     String? userPubkey,
@@ -77,6 +78,7 @@ class DmRepository {
   }) : _nostrClient = nostrClient,
        _directMessagesDao = directMessagesDao,
        _conversationsDao = conversationsDao,
+       _outgoingDmsDao = outgoingDmsDao,
        _syncState = syncState,
        _messageService = messageService,
        _userPubkey = userPubkey ?? '',
@@ -87,6 +89,15 @@ class DmRepository {
   final NostrClient _nostrClient;
   final DirectMessagesDao _directMessagesDao;
   final ConversationsDao _conversationsDao;
+
+  /// Optional DAO for the durable outgoing-DM queue. When provided,
+  /// [sendMessage] enqueues a row before publishing so a crash mid-send
+  /// leaves a recoverable trace; the retry service introduced later in
+  /// the #3909 stack uses this same queue. Nullable to keep older test
+  /// fixtures working without rewiring — when `null`, [sendMessage]
+  /// keeps its previous direct-write behaviour.
+  final OutgoingDmsDao? _outgoingDmsDao;
+
   final DmSyncState? _syncState;
   NIP17MessageService? _messageService;
   String _userPubkey;
@@ -763,6 +774,19 @@ class DmRepository {
   /// Throws [StateError] if the repository has not been initialized.
   /// Throws [ArgumentError] if [recipientPubkey] is not a 64-character
   /// hex string or if [content] is empty.
+  ///
+  /// When an [OutgoingDmsDao] is injected, the send goes through the
+  /// durable queue: build the rumor, enqueue a `pending`/`pending` row
+  /// keyed by the rumor's id, publish, then transition the queue row
+  /// by wrap outcome:
+  ///
+  /// - Full NIP-17 delivery (`selfWrapPublished == true`): delete the
+  ///   queue row in the same transaction that inserts `direct_messages`.
+  /// - Partial delivery (`selfWrapPublished == false`): keep the row,
+  ///   mark the recipient wrap `sent`, and mark the self-wrap `failed`
+  ///   so only the missing self-wrap is retried later.
+  /// - Recipient publish failure: mark both wraps `failed` and leave
+  ///   the row queued for replay.
   Future<NIP17SendResult> sendMessage({
     required String recipientPubkey,
     required String content,
@@ -780,22 +804,56 @@ class DmRepository {
       ...additionalTags,
       if (replyToId != null) ['e', replyToId],
     ];
+    final participants = [_userPubkey, recipientPubkey]..sort();
+    final conversationId = computeConversationId(participants);
 
-    final result = await _messageService!.sendPrivateMessage(
+    // Build the rumor up front so the queue row PK matches the rumor id
+    // the relay will see — receiver-side gift-wrap dedup keys on this id
+    // and a re-mint between enqueue and publish would defeat it.
+    final rumor = _messageService!.buildRumor(
       recipientPubkey: recipientPubkey,
       content: content,
       additionalTags: rumorTags,
+    );
+
+    // Enqueue before publish so an app crash mid-send leaves a
+    // recoverable trace. No-op when the queue dao isn't wired in
+    // (older test fixtures, NIP-04-only callers).
+    final outgoingDao = _outgoingDmsDao;
+    if (outgoingDao != null) {
+      await outgoingDao.enqueue(
+        OutgoingDm(
+          id: rumor.id,
+          conversationId: conversationId,
+          recipientPubkey: recipientPubkey,
+          content: content,
+          createdAt: rumor.createdAt,
+          rumorEventJson: jsonEncode(rumor.toJson()),
+          messageKind: rumor.kind,
+          replyToId: replyToId,
+          recipientWrapStatus: OutgoingWrapStatus.pending,
+          selfWrapStatus: OutgoingWrapStatus.pending,
+          queuedAt: DateTime.now(),
+          ownerPubkey: _userPubkey,
+        ),
+      );
+    }
+
+    final result = await _messageService!.sendRumor(
+      rumorEvent: rumor,
+      recipientPubkey: recipientPubkey,
     );
 
     if (result.success) {
       // Persist our own sent message locally so it appears immediately
       // without waiting for a relay round-trip.
       try {
-        final participants = [_userPubkey, recipientPubkey]..sort();
-        final conversationId = computeConversationId(participants);
         final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-        // Persist message + conversation atomically.
+        // Persist message + conversation atomically. When the queue is
+        // wired in, the queue transition also lives in this transaction
+        // so a watcher never observes a window where the message is in
+        // neither table and so partial delivery preserves the retry row.
         String? protocol;
         await _conversationsDao.runInTransaction(() async {
           await _directMessagesDao.insertMessage(
@@ -833,6 +891,23 @@ class DmRepository {
             ownerPubkey: _userPubkey,
             dmProtocol: nextProtocol,
           );
+
+          if (outgoingDao != null) {
+            if (result.selfWrapPublished == true) {
+              await outgoingDao.deleteById(rumor.id);
+            } else {
+              await outgoingDao.markRecipientWrapStatus(
+                id: rumor.id,
+                status: OutgoingWrapStatus.sent,
+                eventId: result.messageEventId,
+              );
+              await outgoingDao.markSelfWrapStatus(
+                id: rumor.id,
+                status: OutgoingWrapStatus.failed,
+                lastError: 'Recipient delivered, but self-wrap publish failed',
+              );
+            }
+          }
         });
 
         Log.debug(
@@ -870,6 +945,32 @@ class DmRepository {
         );
         // Don't rethrow — the message was published successfully.
         // Local persistence failure is a degraded state, not a send failure.
+      }
+    } else if (outgoingDao != null) {
+      // Recipient publish failed before the self-wrap could land, so
+      // both wrap statuses remain retryable on the queue row.
+      final errorMessage = result.error ?? 'Unknown publish failure';
+      try {
+        await outgoingDao.markRecipientWrapStatus(
+          id: rumor.id,
+          status: OutgoingWrapStatus.failed,
+          lastError: errorMessage,
+        );
+        await outgoingDao.markSelfWrapStatus(
+          id: rumor.id,
+          status: OutgoingWrapStatus.failed,
+          lastError: errorMessage,
+        );
+      } on Object catch (e, stackTrace) {
+        Log.error(
+          'Failed to mark outgoing_dms row failed for ${rumor.id}: $e',
+          category: LogCategory.system,
+          error: e,
+          stackTrace: stackTrace,
+        );
+        // Don't rethrow — caller already gets the failure result. The
+        // queue row stays in pending/pending; getStillPendingForOwner
+        // will surface it on the next retry sweep.
       }
     }
 
@@ -1224,12 +1325,12 @@ class DmRepository {
     // Reuses NIP17SendResult for simplicity — this is an internal helper.
     final signer = _signer;
     if (signer == null) {
-      return NIP17SendResult.failure('Signer not available');
+      return const NIP17SendResult.failure('Signer not available');
     }
 
     final ciphertext = await signer.encrypt(recipientPubkey, content);
     if (ciphertext == null) {
-      return NIP17SendResult.failure('NIP-04 encrypt returned null');
+      return const NIP17SendResult.failure('NIP-04 encrypt returned null');
     }
 
     final event = Event(_userPubkey, EventKind.directMessage, [
@@ -1238,17 +1339,17 @@ class DmRepository {
 
     final signed = await signer.signEvent(event);
     if (signed == null) {
-      return NIP17SendResult.failure('NIP-04 sign returned null');
+      return const NIP17SendResult.failure('NIP-04 sign returned null');
     }
 
-    final published = await _nostrClient.publishEvent(signed);
-    if (published == null) {
-      return NIP17SendResult.failure('NIP-04 publish returned null');
+    final publishResult = await _nostrClient.publishEvent(signed);
+    if (publishResult is! PublishSuccess) {
+      return const NIP17SendResult.failure('NIP-04 publish failed');
     }
 
     return NIP17SendResult.success(
-      rumorEventId: published.id,
-      messageEventId: published.id,
+      rumorEventId: publishResult.event.id,
+      messageEventId: publishResult.event.id,
       recipientPubkey: recipientPubkey,
     );
   }

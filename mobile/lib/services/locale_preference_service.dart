@@ -88,6 +88,7 @@ class LocalePreferenceService {
     'bg': 'Български',
     'de': 'Deutsch',
     'es': 'Español',
+    'fil': 'Filipino',
     'fr': 'Français',
     'id': 'Bahasa Indonesia',
     'it': 'Italiano',

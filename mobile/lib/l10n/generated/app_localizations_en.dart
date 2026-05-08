@@ -3974,6 +3974,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get feedModeFollowing => 'Following';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return 'Feed mode: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return 'Video author: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => 'Author avatar';
+
+  @override
   String get feedForYouEmpty =>
       'Your For You feed is empty.\nExplore videos and follow creators to shape it.';
 
@@ -4259,6 +4272,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => 'Invalid profile ID';
+
+  @override
+  String get routeUnknownPath => 'That page isn’t in the app.';
 
   @override
   String get routeDefaultListName => 'List';
@@ -5166,6 +5182,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+
+  @override
+  String get clickableTextViewVideoLink => 'View video';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Open external link?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'This link goes to an external site and may not be safe:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Open';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Accept';
 
   @override
@@ -5195,6 +5228,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return 'You were invited to collaborate on a video: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => 'Message couldn\'t be sent';
+
+  @override
+  String get dmSendFailedRetry => 'Retry';
+
+  @override
+  String get dmSendPartialMessage =>
+      'Sent, but didn\'t sync to your other devices';
+
+  @override
+  String get dmConversationLoadError => 'Could not load messages';
 
   @override
   String get reportDialogCancel => 'Cancel';
@@ -6807,6 +6853,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get videoMetadataPublishVideoHint => 'Publish video to feed';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => 'Also share to my feed';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      'Off keeps this video only in the comment thread.';
+
+  @override
   String get videoMetadataFormNotReadyHint => 'Fill out the form to enable';
 
   @override
@@ -6909,4 +6962,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => 'Waiting for recipient';
+
+  @override
+  String get commentsRecordVideoButtonLabel => 'Record video comment';
+
+  @override
+  String get commentsOpenVideoLabel => 'Open video comment';
+
+  @override
+  String get commentsMuteVideoReplyLabel => 'Mute video reply';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => 'Unmute video reply';
+
+  @override
+  String get commentsOpenReplyParentLabel => 'Open video this replies to';
+
+  @override
+  String get commentsReplyParentSectionTitle => 'In reply to';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return 'Reply to $target';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => 'Reply to video';
 }

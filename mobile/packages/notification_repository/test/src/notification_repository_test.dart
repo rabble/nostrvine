@@ -103,9 +103,8 @@ void main() {
 
   void stubProfiles(Map<String, UserProfile> profiles) {
     when(
-      () => profileRepository.fetchBatchProfiles(
-        pubkeys: any(named: 'pubkeys'),
-      ),
+      () =>
+          profileRepository.fetchBatchProfiles(pubkeys: any(named: 'pubkeys')),
     ).thenAnswer((_) async => profiles);
   }
 
@@ -201,16 +200,11 @@ void main() {
         final signedUri = Uri.parse(signedUrl);
         expect(
           '${signedUri.scheme}://${signedUri.host}${signedUri.path}',
-          equals(
-            'https://api.example.com/api/users/$userPubkey/notifications',
-          ),
+          equals('https://api.example.com/api/users/$userPubkey/notifications'),
         );
         expect(signedUri.queryParameters['limit'], equals('50'));
         expect(signedUri.queryParameters['before'], isNotNull);
-        expect(
-          int.tryParse(signedUri.queryParameters['before']!),
-          isNotNull,
-        );
+        expect(int.tryParse(signedUri.queryParameters['before']!), isNotNull);
         expect(signedMethod, equals('GET'));
       });
 
@@ -280,9 +274,7 @@ void main() {
       });
 
       test('falls back to "Unknown user" for missing profiles', () async {
-        stubNotifications([
-          makeNotification(sourcePubkey: 'unknown_pub'),
-        ]);
+        stubNotifications([makeNotification(sourcePubkey: 'unknown_pub')]);
         stubProfiles({});
 
         final page = await repository.getNotifications();
@@ -412,104 +404,95 @@ void main() {
     });
 
     group('video-anchored grouping', () {
-      test(
-        '5 likes on same video become 1 $VideoNotification '
-        'with totalCount 5 and 3 actors',
-        () async {
-          stubNotifications([
-            for (var i = 0; i < 5; i++)
-              makeNotification(
-                id: 'l$i',
-                sourcePubkey: 'pub_$i',
-                referencedEventId: 'video_x',
-                createdAt: DateTime(2025, 1, 5 - i),
-              ),
-          ]);
-          stubProfiles({
-            for (var i = 0; i < 5; i++)
-              'pub_$i': makeProfile('pub_$i', displayName: 'Actor$i'),
-          });
-
-          final page = await repository.getNotifications();
-
-          expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(item.type, equals(NotificationKind.like));
-          expect(item.totalCount, equals(5));
-          // Cap is 3 actors for the stack.
-          expect(item.actors, hasLength(3));
-          // Newest first — pub_0 had the latest createdAt.
-          expect(item.actors.first.displayName, equals('Actor0'));
-          expect(item.videoEventId, equals('video_x'));
-        },
-      );
-
-      test(
-        'grouped video notifications build addressable id from '
-        'user pubkey and d-tag',
-        () async {
-          stubNotifications([
+      test('5 likes on same video become 1 $VideoNotification '
+          'with totalCount 5 and 3 actors', () async {
+        stubNotifications([
+          for (var i = 0; i < 5; i++)
             makeNotification(
-              id: 'l1',
-              sourcePubkey: 'pub_a',
+              id: 'l$i',
+              sourcePubkey: 'pub_$i',
               referencedEventId: 'video_x',
-              referencedDTag: 'vine-id',
+              createdAt: DateTime(2025, 1, 5 - i),
             ),
-            makeNotification(
-              id: 'l2',
-              sourcePubkey: 'pub_b',
-              referencedEventId: 'video_x',
-              referencedDTag: 'vine-id',
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+        ]);
+        stubProfiles({
+          for (var i = 0; i < 5; i++)
+            'pub_$i': makeProfile('pub_$i', displayName: 'Actor$i'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(
-            item.videoAddressableId,
-            equals(
-              '${NIP71VideoKinds.addressableShortVideo}:'
-              '$userPubkey:vine-id',
-            ),
-          );
-        },
-      );
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.like));
+        expect(item.totalCount, equals(5));
+        // Cap is 3 actors for the stack.
+        expect(item.actors, hasLength(3));
+        // Newest first — pub_0 had the latest createdAt.
+        expect(item.actors.first.displayName, equals('Actor0'));
+        expect(item.videoEventId, equals('video_x'));
+      });
 
-      test(
-        'grouped video notifications leave addressable id null when d-tag '
-        'is null or empty',
-        () async {
-          stubNotifications([
-            makeNotification(
-              id: 'l1',
-              sourcePubkey: 'pub_a',
-              referencedEventId: 'video_x',
-              referencedDTag: '',
-            ),
-            makeNotification(
-              id: 'l2',
-              sourcePubkey: 'pub_b',
-              referencedEventId: 'video_x',
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+      test('grouped video notifications build addressable id from '
+          'user pubkey and d-tag', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+            referencedDTag: 'vine-id',
+          ),
+          makeNotification(
+            id: 'l2',
+            sourcePubkey: 'pub_b',
+            referencedEventId: 'video_x',
+            referencedDTag: 'vine-id',
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(1));
-          final item = page.items.single as VideoNotification;
-          expect(item.videoAddressableId, isNull);
-        },
-      );
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(
+          item.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:vine-id',
+          ),
+        );
+      });
+
+      test('grouped video notifications leave addressable id null when d-tag '
+          'is null or empty', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+            referencedDTag: '',
+          ),
+          makeNotification(
+            id: 'l2',
+            sourcePubkey: 'pub_b',
+            referencedEventId: 'video_x',
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
+
+        final page = await repository.getNotifications();
+
+        expect(page.items, hasLength(1));
+        final item = page.items.single as VideoNotification;
+        expect(item.videoAddressableId, isNull);
+      });
 
       test(
         '5 likes on 5 different videos produce 5 ${VideoNotification}s',
@@ -538,56 +521,48 @@ void main() {
         },
       );
 
-      test(
-        'likes + comments on same video become 2 ${VideoNotification}s '
-        'differing by kind',
-        () async {
-          stubNotifications([
-            makeNotification(
-              id: 'l1',
-              sourcePubkey: 'pub_a',
-              referencedEventId: 'video_x',
-            ),
-            makeNotification(
-              id: 'c1',
-              sourcePubkey: 'pub_b',
-              notificationType: 'comment',
-              sourceKind: 1,
-              referencedEventId: 'video_x',
-              content: 'Cool',
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+      test('likes + comments on same video become 2 ${VideoNotification}s '
+          'differing by kind', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'l1',
+            sourcePubkey: 'pub_a',
+            referencedEventId: 'video_x',
+          ),
+          makeNotification(
+            id: 'c1',
+            sourcePubkey: 'pub_b',
+            notificationType: 'comment',
+            sourceKind: 1,
+            referencedEventId: 'video_x',
+            content: 'Cool',
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(2));
-          final kinds = page.items
-              .whereType<VideoNotification>()
-              .map((v) => v.type)
-              .toSet();
-          expect(
-            kinds,
-            equals({NotificationKind.like, NotificationKind.comment}),
-          );
-        },
-      );
+        expect(page.items, hasLength(2));
+        final kinds = page.items
+            .whereType<VideoNotification>()
+            .map((v) => v.type)
+            .toSet();
+        expect(
+          kinds,
+          equals({NotificationKind.like, NotificationKind.comment}),
+        );
+      });
 
       test(
         'video-anchored notification with null referencedEventId is dropped',
         () async {
           stubNotifications([
-            makeNotification(
-              sourcePubkey: 'pub_a',
-              referencedEventId: null,
-            ),
+            makeNotification(sourcePubkey: 'pub_a', referencedEventId: null),
           ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
           final page = await repository.getNotifications();
 
@@ -604,9 +579,7 @@ void main() {
               referencedEventId: 'video_x',
             ),
           ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
           when(
             () => funnelcakeApiClient.getVideoStats('video_x'),
           ).thenThrow(const FunnelcakeException('boom'));
@@ -622,75 +595,66 @@ void main() {
     });
 
     group('follow consolidation', () {
-      test(
-        '2 follows from same pubkey become 1 $ActorNotification '
-        'with earliest timestamp',
-        () async {
-          final earlier = DateTime(2025);
-          final later = DateTime(2025, 1, 5);
-          stubNotifications([
-            makeNotification(
-              id: 'f1',
-              sourcePubkey: 'follower_pub',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              createdAt: later,
-            ),
-            makeNotification(
-              id: 'f2',
-              sourcePubkey: 'follower_pub',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-              createdAt: earlier,
-            ),
-          ]);
-          stubProfiles({
-            'follower_pub': makeProfile(
-              'follower_pub',
-              displayName: 'Follower',
-            ),
-          });
+      test('2 follows from same pubkey become 1 $ActorNotification '
+          'with earliest timestamp', () async {
+        final earlier = DateTime(2025);
+        final later = DateTime(2025, 1, 5);
+        stubNotifications([
+          makeNotification(
+            id: 'f1',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            createdAt: later,
+          ),
+          makeNotification(
+            id: 'f2',
+            sourcePubkey: 'follower_pub',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+            createdAt: earlier,
+          ),
+        ]);
+        stubProfiles({
+          'follower_pub': makeProfile('follower_pub', displayName: 'Follower'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(1));
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.follow));
-          expect(item.timestamp, equals(earlier));
-        },
-      );
+        expect(page.items, hasLength(1));
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.follow));
+        expect(item.timestamp, equals(earlier));
+      });
 
-      test(
-        'follows from different pubkeys are not consolidated',
-        () async {
-          stubNotifications([
-            makeNotification(
-              id: 'f1',
-              sourcePubkey: 'pub_a',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-            ),
-            makeNotification(
-              id: 'f2',
-              sourcePubkey: 'pub_b',
-              notificationType: 'follow',
-              sourceKind: 3,
-              referencedEventId: null,
-            ),
-          ]);
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-            'pub_b': makeProfile('pub_b', displayName: 'Bob'),
-          });
+      test('follows from different pubkeys are not consolidated', () async {
+        stubNotifications([
+          makeNotification(
+            id: 'f1',
+            sourcePubkey: 'pub_a',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+          ),
+          makeNotification(
+            id: 'f2',
+            sourcePubkey: 'pub_b',
+            notificationType: 'follow',
+            sourceKind: 3,
+            referencedEventId: null,
+          ),
+        ]);
+        stubProfiles({
+          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
+          'pub_b': makeProfile('pub_b', displayName: 'Bob'),
+        });
 
-          final page = await repository.getNotifications();
+        final page = await repository.getNotifications();
 
-          expect(page.items, hasLength(2));
-        },
-      );
+        expect(page.items, hasLength(2));
+      });
     });
 
     group('comments stay individual when on different videos', () {
@@ -739,37 +703,64 @@ void main() {
         expect(item.type, equals(NotificationKind.like));
       });
 
-      test(
-        'reaction on a non-video target maps to likeComment '
-        '($ActorNotification)',
-        () async {
-          stubNotifications([
-            makeNotification(isReferencedVideo: false),
-          ]);
-          stubProfiles({});
+      test('reaction on a non-video target maps to likeComment '
+          '($ActorNotification)', () async {
+        stubNotifications([makeNotification(isReferencedVideo: false)]);
+        stubProfiles({});
 
-          final page = await repository.getNotifications();
-          final item = page.items.single as ActorNotification;
-          expect(item.type, equals(NotificationKind.likeComment));
-        },
-      );
+        final page = await repository.getNotifications();
+        final item = page.items.single as ActorNotification;
+        expect(item.type, equals(NotificationKind.likeComment));
+      });
 
-      test('reply maps to reply (rendered as $ActorNotification)', () async {
+      test('likeComment carries referencedEventId as targetEventId', () async {
         stubNotifications([
           makeNotification(
-            notificationType: 'reply',
-            sourceKind: 1,
-            referencedEventId: null,
+            isReferencedVideo: false,
+            referencedEventId: 'comment_event_xyz',
           ),
         ]);
         stubProfiles({});
 
         final page = await repository.getNotifications();
-        // Reply is not a video kind — it falls through to actor mapping
-        // and is coerced to system in the ActorNotification.
         final item = page.items.single as ActorNotification;
-        expect(item.type, equals(NotificationKind.system));
+        expect(item.type, equals(NotificationKind.likeComment));
+        expect(item.targetEventId, equals('comment_event_xyz'));
       });
+
+      test('reply on a video maps to comment ($VideoNotification)', () async {
+        stubNotifications([
+          makeNotification(notificationType: 'reply', sourceKind: 1),
+        ]);
+        stubProfiles({});
+
+        final page = await repository.getNotifications();
+        // A reply directly on a video is indistinguishable from a comment
+        // for the user, so it lands in the comment grouping path.
+        final item = page.items.single as VideoNotification;
+        expect(item.type, equals(NotificationKind.comment));
+      });
+
+      test(
+        'reply on a non-video target maps to reply ($ActorNotification) '
+        'with targetEventId',
+        () async {
+          stubNotifications([
+            makeNotification(
+              notificationType: 'reply',
+              sourceKind: 1,
+              isReferencedVideo: false,
+              referencedEventId: 'parent_comment_id',
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as ActorNotification;
+          expect(item.type, equals(NotificationKind.reply));
+          expect(item.targetEventId, equals('parent_comment_id'));
+        },
+      );
 
       test('comment maps to comment', () async {
         stubNotifications([
@@ -1083,9 +1074,7 @@ void main() {
       test(
         'returns $VideoNotification for like with non-null referencedEventId',
         () async {
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
+          stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
           stubVideoStats(
             'video_x',
             makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
@@ -1102,38 +1091,31 @@ void main() {
         },
       );
 
-      test(
-        'builds addressable id from user pubkey and d-tag for realtime '
-        'video notifications',
-        () async {
-          stubProfiles({
-            'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-          });
-          stubVideoStats(
-            'video_x',
-            makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
-          );
+      test('builds addressable id from user pubkey and d-tag for realtime '
+          'video notifications', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+        stubVideoStats(
+          'video_x',
+          makeVideoStats(id: 'video_x', thumbnail: 'thumb', title: 'T'),
+        );
 
-          final result = await repository.enrichOne(
-            raw(referencedDTag: 'vine-id'),
-          );
+        final result = await repository.enrichOne(
+          raw(referencedDTag: 'vine-id'),
+        );
 
-          expect(result, isA<VideoNotification>());
-          final video = result! as VideoNotification;
-          expect(
-            video.videoAddressableId,
-            equals(
-              '${NIP71VideoKinds.addressableShortVideo}:'
-              '$userPubkey:vine-id',
-            ),
-          );
-        },
-      );
+        expect(result, isA<VideoNotification>());
+        final video = result! as VideoNotification;
+        expect(
+          video.videoAddressableId,
+          equals(
+            '${NIP71VideoKinds.addressableShortVideo}:'
+            '$userPubkey:vine-id',
+          ),
+        );
+      });
 
       test('leaves addressable id null when realtime d-tag is empty', () async {
-        stubProfiles({
-          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-        });
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
         final result = await repository.enrichOne(raw(referencedDTag: ''));
 
@@ -1143,21 +1125,15 @@ void main() {
       });
 
       test('returns null for like with null referencedEventId', () async {
-        stubProfiles({
-          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-        });
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
-        final result = await repository.enrichOne(
-          raw(referencedEventId: null),
-        );
+        final result = await repository.enrichOne(raw(referencedEventId: null));
 
         expect(result, isNull);
       });
 
       test('returns $ActorNotification for follow', () async {
-        stubProfiles({
-          'pub_a': makeProfile('pub_a', displayName: 'Alice'),
-        });
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
 
         final result = await repository.enrichOne(
           raw(
@@ -1171,6 +1147,20 @@ void main() {
         final actor = result! as ActorNotification;
         expect(actor.type, equals(NotificationKind.follow));
         expect(actor.actor.displayName, equals('Alice'));
+      });
+
+      test('returns likeComment with targetEventId when reaction targets a '
+          'non-video event', () async {
+        stubProfiles({'pub_a': makeProfile('pub_a', displayName: 'Alice')});
+
+        final result = await repository.enrichOne(
+          raw(referencedEventId: 'comment_evt_id', isReferencedVideo: false),
+        );
+
+        expect(result, isA<ActorNotification>());
+        final actor = result! as ActorNotification;
+        expect(actor.type, equals(NotificationKind.likeComment));
+        expect(actor.targetEventId, equals('comment_evt_id'));
       });
     });
   });

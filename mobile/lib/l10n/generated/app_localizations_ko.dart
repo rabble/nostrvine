@@ -3794,6 +3794,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get feedModeFollowing => '팔로잉';
 
   @override
+  String feedModeSemanticLabel(String label) {
+    return '피드 모드: $label';
+  }
+
+  @override
+  String videoAuthorSemanticLabel(String displayName) {
+    return '동영상 작성자: $displayName';
+  }
+
+  @override
+  String get videoAuthorAvatarSemanticLabel => '작성자 프로필 사진';
+
+  @override
   String get feedForYouEmpty =>
       '추천 피드가 비어 있어요.\n동영상을 탐색하고 크리에이터를 팔로우해 피드를 만들어보세요.';
 
@@ -4072,6 +4085,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get routeInvalidProfileId => '잘못된 프로필 ID예요';
+
+  @override
+  String get routeUnknownPath => '앱에 없는 화면이에요.';
 
   @override
   String get routeDefaultListName => '목록';
@@ -4966,6 +4982,23 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => '제목 없는 동영상';
+
+  @override
+  String get clickableTextViewVideoLink => '동영상 보기';
+
+  @override
+  String get messageExternalLinkDialogTitle => '외부 링크를 열까요?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return '이 링크는 외부 사이트로 이동하며 안전하지 않을 수 있어요:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => '열기';
+
+  @override
   String get inboxCollabInviteAcceptButton => '수락';
 
   @override
@@ -4995,6 +5028,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String collaboratorInviteDmBodyUntitled(String url) {
     return '동영상 콜라보에 초대받았어요: $url\n\nOpen diVine to review and accept.';
   }
+
+  @override
+  String get dmSendFailedMessage => '메시지를 보내지 못했어요';
+
+  @override
+  String get dmSendFailedRetry => '다시 시도';
+
+  @override
+  String get dmSendPartialMessage => '보냈지만 다른 기기에 동기화되지 않았어요';
+
+  @override
+  String get dmConversationLoadError => '메시지를 불러오지 못했어요';
 
   @override
   String get reportDialogCancel => '취소';
@@ -6559,6 +6604,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataPublishVideoHint => '피드에 동영상 게시';
 
   @override
+  String get videoMetadataShareReplyToFeedTitle => '내 피드에도 공유';
+
+  @override
+  String get videoMetadataShareReplyToFeedSubtitle =>
+      '끔으로 두면 이 동영상은 댓글 스레드에만 남습니다.';
+
+  @override
   String get videoMetadataFormNotReadyHint => '활성화하려면 양식을 작성하세요';
 
   @override
@@ -6657,4 +6709,30 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get badgesRecipientWaitingStatus => '수령자를 기다리는 중';
+
+  @override
+  String get commentsRecordVideoButtonLabel => '영상 댓글 녹화';
+
+  @override
+  String get commentsOpenVideoLabel => '영상 댓글 열기';
+
+  @override
+  String get commentsMuteVideoReplyLabel => '영상 답글 음소거';
+
+  @override
+  String get commentsUnmuteVideoReplyLabel => '영상 답글 음소거 해제';
+
+  @override
+  String get commentsOpenReplyParentLabel => '답글 대상 영상 열기';
+
+  @override
+  String get commentsReplyParentSectionTitle => '답글 대상';
+
+  @override
+  String commentsReplyParentLabel(String target) {
+    return '$target에 답글';
+  }
+
+  @override
+  String get commentsReplyParentFallbackLabel => '영상에 답글';
 }

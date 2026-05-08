@@ -51,7 +51,9 @@ void main() {
       ).thenReturn('test_pubkey_123456789abcdef');
 
       when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
+        return PublishSuccess(
+          event: invocation.positionalArguments[0] as Event,
+        );
       });
 
       when(

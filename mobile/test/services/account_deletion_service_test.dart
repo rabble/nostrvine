@@ -166,7 +166,7 @@ void main() {
 
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => expectedEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: expectedEvent));
 
       // Act
       await expectLater(service.deleteAccount(), completes);
@@ -198,7 +198,7 @@ void main() {
 
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => expectedEvent);
+        ).thenAnswer((_) async => PublishSuccess(event: expectedEvent));
 
         // Act
         final result = await service.deleteAccount();
@@ -228,10 +228,10 @@ void main() {
         ),
       ).thenAnswer((_) async => expectedEvent);
 
-      // publishEvent returns null on failure
+      // publishEvent returns PublishFailed on send failure
       when(
         () => mockNostrService.publishEvent(any()),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => const PublishFailed());
 
       // Act
       final result = await service.deleteAccount();
@@ -305,7 +305,7 @@ void main() {
         ).thenAnswer((_) async => nip62Event);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
 
         // Act
         await service.deleteAccount();
@@ -364,7 +364,7 @@ void main() {
 
           when(
             () => mockNostrService.publishEvent(any()),
-          ).thenAnswer((_) async => nip62Event);
+          ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
 
           // Act
           final result = await service.deleteAccount();
@@ -447,7 +447,7 @@ void main() {
 
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
 
         // Act
         final result = await service.deleteAccount();
@@ -505,7 +505,7 @@ void main() {
 
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
 
         // Act
         final result = await service.deleteAccount();
@@ -538,7 +538,7 @@ void main() {
         ).thenAnswer((_) async => nip62Event);
         when(
           () => mockNostrService.publishEvent(any()),
-        ).thenAnswer((_) async => nip62Event);
+        ).thenAnswer((_) async => PublishSuccess(event: nip62Event));
 
         // Act
         final result = await service.deleteAccount();

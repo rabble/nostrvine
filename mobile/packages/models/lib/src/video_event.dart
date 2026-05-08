@@ -791,7 +791,12 @@ class VideoEvent {
   bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;
 
   /// Whether this video has any Inspired By attribution.
-  bool get hasInspiredBy => inspiredByVideo != null || inspiredByNpub != null;
+  ///
+  /// NIP-22 video replies also carry lowercase parent tags. Those are reply
+  /// metadata, not creator attribution, so reply videos should render their
+  /// parent context instead of the Inspired By treatment.
+  bool get hasInspiredBy =>
+      !isVideoReply && (inspiredByVideo != null || inspiredByNpub != null);
 
   /// Hex pubkey of the inspiring creator, resolved from either the
   /// [inspiredByVideo] a-tag or the [inspiredByNpub] NIP-27 mention.
@@ -799,6 +804,7 @@ class VideoEvent {
   /// Returns `null` when there is no inspired-by attribution or the npub
   /// cannot be decoded.
   String? get inspiredByCreatorPubkey {
+    if (isVideoReply) return null;
     if (inspiredByVideo != null) return inspiredByVideo!.creatorPubkey;
     if (inspiredByNpub != null) {
       final hex = Nip19.decode(inspiredByNpub!);
@@ -825,6 +831,61 @@ class VideoEvent {
 
   /// Zalgo-safe video title for display. Returns `null` when no title is set.
   String? get displayTitle => title != null ? stripZalgo(title!) : null;
+
+  /// Root event id from an uppercase NIP-22 reply tag.
+  ///
+  /// Lowercase reply tags describe nearest-parent threading and mentions.
+  /// Uppercase tags are the root reference, which is what the app needs for
+  /// showing video replies in feeds and linking back to the original video.
+  String? get replyRootEventId => _firstNostrTagValue('E');
+
+  /// Root addressable id from an uppercase NIP-22 reply tag.
+  ///
+  /// Returns only NIP-71 video address tags so arbitrary non-video replies do
+  /// not get treated as video replies by feed or comment UI.
+  String? get replyRootAddressableId {
+    final addressableId = _firstNostrTagValue('A');
+    if (addressableId == null) return null;
+
+    final kind = _kindFromAddressableId(addressableId);
+    if (kind == null || !NIP71VideoKinds.isAcceptableVideoKind(kind)) {
+      return null;
+    }
+
+    return addressableId;
+  }
+
+  /// Root Nostr kind from an uppercase NIP-22 reply tag.
+  int? get replyRootKind {
+    final explicitKind = int.tryParse(_firstNostrTagValue('K') ?? '');
+    if (explicitKind != null) {
+      return NIP71VideoKinds.isAcceptableVideoKind(explicitKind)
+          ? explicitKind
+          : null;
+    }
+
+    final addressableId = replyRootAddressableId;
+    return addressableId == null ? null : _kindFromAddressableId(addressableId);
+  }
+
+  /// Whether this NIP-71 video is a reply to another NIP-71 video.
+  bool get isVideoReply {
+    final hasRootReference =
+        replyRootEventId != null || replyRootAddressableId != null;
+    if (!hasRootReference) return false;
+
+    final kind = replyRootKind;
+    return kind != null && NIP71VideoKinds.isAcceptableVideoKind(kind);
+  }
+
+  /// Best route id for opening the root video this event replies to.
+  ///
+  /// Addressable ids are preferred because kind 34236 videos are addressable
+  /// events and the route can fetch them even after replacement.
+  String? get replyRootRouteId {
+    if (!isVideoReply) return null;
+    return replyRootAddressableId ?? replyRootEventId;
+  }
 
   /// Total likes combining original Vine likes and live Nostr reactions.
   int get totalLikes => (originalLikes ?? 0) + (nostrLikeCount ?? 0);
@@ -1109,6 +1170,26 @@ class VideoEvent {
   bool get isPortrait {
     if (width == null || height == null) return false;
     return height! > width!;
+  }
+
+  String? _firstNostrTagValue(String tagName) {
+    for (final tag in nostrEventTags) {
+      if (tag.length < 2 || tag.first != tagName) continue;
+
+      final value = tag[1].trim();
+      if (value.isNotEmpty) return value;
+    }
+
+    final rawValue = rawTags[tagName]?.trim();
+    return rawValue != null && rawValue.isNotEmpty ? rawValue : null;
+  }
+
+  int? _kindFromAddressableId(String addressableId) {
+    final separatorIndex = addressableId.indexOf(':');
+    final kindText = separatorIndex == -1
+        ? addressableId
+        : addressableId.substring(0, separatorIndex);
+    return int.tryParse(kindText);
   }
 
   /// Get file size in MB

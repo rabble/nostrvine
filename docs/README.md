@@ -26,6 +26,7 @@ This directory is the index for current repository documentation. Use it to find
 - [docs/STATE_MANAGEMENT.md](STATE_MANAGEMENT.md)
 - [docs/BLOC_UI_MIGRATION_PRD.md](BLOC_UI_MIGRATION_PRD.md)
 - [docs/BUILD_SCRIPTS_README.md](BUILD_SCRIPTS_README.md)
+- [docs/BUILD_SPEED_CHECKLIST.md](BUILD_SPEED_CHECKLIST.md)
 - [mobile/docs/settings_screen_structure.md](../mobile/docs/settings_screen_structure.md)
 - [mobile/docs/ZENDESK_INTEGRATION.md](../mobile/docs/ZENDESK_INTEGRATION.md)
 - [mobile/docs/NOSTR_VIDEO_EVENTS.md](../mobile/docs/NOSTR_VIDEO_EVENTS.md)
