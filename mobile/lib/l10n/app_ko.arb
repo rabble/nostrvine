@@ -1581,6 +1581,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "제목 없는 동영상",
+    "clickableTextViewVideoLink": "동영상 보기",
+    "messageExternalLinkDialogTitle": "외부 링크를 열까요?",
+    "messageExternalLinkDialogBody": "이 링크는 외부 사이트로 이동하며 안전하지 않을 수 있어요:\n\n{url}",
+    "messageExternalLinkDialogOpen": "열기",
     "inboxCollabInviteAcceptButton": "수락",
     "inboxCollabInviteAcceptError": "수락하지 못했어요. 다시 시도해 주세요.",
     "inboxCollabInviteAcceptedStatus": "수락됨",

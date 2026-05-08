@@ -5235,6 +5235,23 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
+  String get inboxCollabInviteCardUntitledVideo => 'Video na walang pamagat';
+
+  @override
+  String get clickableTextViewVideoLink => 'Tingnan ang video';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Buksan ang external na link?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Papunta ang link na ito sa isang external na site at baka hindi ito ligtas:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Buksan';
+
+  @override
   String get inboxCollabInviteAcceptButton => 'Tanggapin';
 
   @override

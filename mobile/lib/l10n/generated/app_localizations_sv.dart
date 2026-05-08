@@ -5172,7 +5172,21 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => 'Video utan titel';
+
+  @override
+  String get clickableTextViewVideoLink => 'Visa video';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Öppna extern länk?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Den här länken går till en extern webbplats och kanske inte är säker:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Öppna';
 
   @override
   String get inboxCollabInviteAcceptButton => 'Acceptera';

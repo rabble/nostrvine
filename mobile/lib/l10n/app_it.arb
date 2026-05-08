@@ -2293,6 +2293,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video senza titolo",
+    "clickableTextViewVideoLink": "Guarda il video",
+    "messageExternalLinkDialogTitle": "Aprire il link esterno?",
+    "messageExternalLinkDialogBody": "Questo link porta a un sito esterno e potrebbe non essere sicuro:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Apri",
     "inboxCollabInviteAcceptButton": "Accetta",
     "inboxCollabInviteAcceptError": "Impossibile accettare. Riprova.",
     "inboxCollabInviteAcceptedStatus": "Accettato",

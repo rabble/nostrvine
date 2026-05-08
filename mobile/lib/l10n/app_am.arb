@@ -2610,6 +2610,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "ርዕስ የሌለው ቪዲዮ",
+    "clickableTextViewVideoLink": "ቪዲዮውን ይመልከቱ",
+    "messageExternalLinkDialogTitle": "ውጫዊ ሊንክ ይክፈቱ?",
+    "messageExternalLinkDialogBody": "ይህ ሊንክ ወደ ውጫዊ ድረ-ገጽ ይሄዳል እና ደህንነቱ አልተረጋገጠም:\n\n{url}",
+    "messageExternalLinkDialogOpen": "ክፈት",
     "inboxCollabInviteAcceptButton": "ተቀበል",
     "inboxCollabInviteIgnoreButton": "ችላ በል",
     "inboxCollabInviteAcceptedStatus": "ተቀባይነት አግኝቷል",

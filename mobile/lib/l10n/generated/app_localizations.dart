@@ -9188,6 +9188,30 @@ abstract class AppLocalizations {
   /// **'Untitled video'**
   String get inboxCollabInviteCardUntitledVideo;
 
+  /// Tappable label rendered in rich text in place of a Nostr video/event reference. Opens the linked video.
+  ///
+  /// In en, this message translates to:
+  /// **'View video'**
+  String get clickableTextViewVideoLink;
+
+  /// Confirmation dialog title shown before opening an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Open external link?'**
+  String get messageExternalLinkDialogTitle;
+
+  /// Confirmation dialog body shown before opening an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'This link goes to an external site and may not be safe:\n\n{url}'**
+  String messageExternalLinkDialogBody(String url);
+
+  /// Confirmation button that opens an untrusted external URL from a DM.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get messageExternalLinkDialogOpen;
+
   /// No description provided for @inboxCollabInviteAcceptButton.
   ///
   /// In en, this message translates to:

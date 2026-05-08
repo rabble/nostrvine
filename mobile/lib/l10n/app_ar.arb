@@ -2285,6 +2285,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "فيديو بلا عنوان",
+    "clickableTextViewVideoLink": "عرض الفيديو",
+    "messageExternalLinkDialogTitle": "فتح رابط خارجي؟",
+    "messageExternalLinkDialogBody": "هذا الرابط يذهب إلى موقع خارجي وقد لا يكون آمنًا:\n\n{url}",
+    "messageExternalLinkDialogOpen": "فتح",
     "inboxCollabInviteAcceptButton": "قبول",
     "inboxCollabInviteAcceptError": "تعذر القبول. حاول مرة أخرى.",
     "inboxCollabInviteAcceptedStatus": "تم القبول",

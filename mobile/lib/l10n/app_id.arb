@@ -2292,6 +2292,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video tanpa judul",
+    "clickableTextViewVideoLink": "Lihat video",
+    "messageExternalLinkDialogTitle": "Buka tautan eksternal?",
+    "messageExternalLinkDialogBody": "Tautan ini menuju situs eksternal dan mungkin tidak aman:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Buka",
     "inboxCollabInviteAcceptButton": "Terima",
     "inboxCollabInviteAcceptError": "Tidak bisa menerima. Coba lagi.",
     "inboxCollabInviteAcceptedStatus": "Diterima",

@@ -5157,7 +5157,21 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => 'Başlıksız video';
+
+  @override
+  String get clickableTextViewVideoLink => 'Videoyu görüntüle';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Harici bağlantı açılsın mı?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Bu bağlantı harici bir siteye gidiyor ve güvenli olmayabilir:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Aç';
 
   @override
   String get inboxCollabInviteAcceptButton => 'Kabul et';

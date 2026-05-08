@@ -1,6 +1,8 @@
 // ABOUTME: Widget that renders text with clickable hashtags, nostr: mentions, and @mentions
 // ABOUTME: Parses hashtags, nostr: URIs, and plain @mentions - makes them tappable for navigation
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +12,7 @@ import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:models/models.dart' show UserProfile;
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -197,7 +200,7 @@ class ClickableHashtagText extends ConsumerWidget {
           onVideoStateChange?.call();
           final customHandler = onUrlTap;
           if (customHandler != null) {
-            customHandler(matchedUrl);
+            unawaited(customHandler(matchedUrl));
           } else {
             _launchUrl(matchedUrl);
           }
@@ -270,7 +273,7 @@ class ClickableHashtagText extends ConsumerWidget {
     TextStyle style,
   ) {
     return TextSpan(
-      text: 'View video',
+      text: context.l10n.clickableTextViewVideoLink,
       style: style,
       recognizer: TapGestureRecognizer()
         ..onTap = () => _navigateToVideo(context, routeReference),

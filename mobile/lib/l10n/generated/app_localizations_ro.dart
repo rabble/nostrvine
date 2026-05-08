@@ -5322,7 +5322,21 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => 'Videoclip fără titlu';
+
+  @override
+  String get clickableTextViewVideoLink => 'Vezi videoclipul';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Deschizi linkul extern?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Acest link duce la un site extern și s-ar putea să nu fie sigur:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Deschide';
 
   @override
   String get inboxCollabInviteAcceptButton => 'Acceptă';

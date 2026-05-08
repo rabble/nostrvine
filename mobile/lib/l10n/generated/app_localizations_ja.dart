@@ -4962,7 +4962,21 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => '無題の動画';
+
+  @override
+  String get clickableTextViewVideoLink => '動画を見る';
+
+  @override
+  String get messageExternalLinkDialogTitle => '外部リンクを開きますか？';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'このリンクは外部サイトに移動します。安全ではない可能性があります:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => '開く';
 
   @override
   String get inboxCollabInviteAcceptButton => '承認';

@@ -5130,7 +5130,21 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => 'فيديو بلا عنوان';
+
+  @override
+  String get clickableTextViewVideoLink => 'عرض الفيديو';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'فتح رابط خارجي؟';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'هذا الرابط يذهب إلى موقع خارجي وقد لا يكون آمنًا:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'فتح';
 
   @override
   String get inboxCollabInviteAcceptButton => 'قبول';

@@ -2293,6 +2293,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Video zonder titel",
+    "clickableTextViewVideoLink": "Video bekijken",
+    "messageExternalLinkDialogTitle": "Externe link openen?",
+    "messageExternalLinkDialogBody": "Deze link gaat naar een externe site en is mogelijk niet veilig:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Openen",
     "inboxCollabInviteAcceptButton": "Accepteren",
     "inboxCollabInviteAcceptError": "Accepteren is niet gelukt. Probeer het opnieuw.",
     "inboxCollabInviteAcceptedStatus": "Geaccepteerd",

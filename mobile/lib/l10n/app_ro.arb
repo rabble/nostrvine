@@ -2293,6 +2293,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Videoclip fără titlu",
+    "clickableTextViewVideoLink": "Vezi videoclipul",
+    "messageExternalLinkDialogTitle": "Deschizi linkul extern?",
+    "messageExternalLinkDialogBody": "Acest link duce la un site extern și s-ar putea să nu fie sigur:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Deschide",
     "inboxCollabInviteAcceptButton": "Acceptă",
     "inboxCollabInviteAcceptError": "Nu s-a putut accepta. Încearcă din nou.",
     "inboxCollabInviteAcceptedStatus": "Acceptată",

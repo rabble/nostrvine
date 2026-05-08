@@ -2292,6 +2292,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Başlıksız video",
+    "clickableTextViewVideoLink": "Videoyu görüntüle",
+    "messageExternalLinkDialogTitle": "Harici bağlantı açılsın mı?",
+    "messageExternalLinkDialogBody": "Bu bağlantı harici bir siteye gidiyor ve güvenli olmayabilir:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Aç",
     "inboxCollabInviteAcceptButton": "Kabul et",
     "inboxCollabInviteAcceptError": "Kabul edilemedi. Tekrar dene.",
     "inboxCollabInviteAcceptedStatus": "Kabul edildi",

@@ -2705,6 +2705,28 @@
   "@inboxCollabInviteCardUntitledVideo": {
     "description": "Fallback shown as the collaborator invite card title when the invited video has no title. Avoids exposing the raw d-tag identifier."
   },
+  "clickableTextViewVideoLink": "View video",
+  "@clickableTextViewVideoLink": {
+    "description": "Tappable label rendered in rich text in place of a Nostr video/event reference. Opens the linked video."
+  },
+  "messageExternalLinkDialogTitle": "Open external link?",
+  "@messageExternalLinkDialogTitle": {
+    "description": "Confirmation dialog title shown before opening an untrusted external URL from a DM."
+  },
+  "messageExternalLinkDialogBody": "This link goes to an external site and may not be safe:\n\n{url}",
+  "@messageExternalLinkDialogBody": {
+    "description": "Confirmation dialog body shown before opening an untrusted external URL from a DM.",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "example": "https://example.com"
+      }
+    }
+  },
+  "messageExternalLinkDialogOpen": "Open",
+  "@messageExternalLinkDialogOpen": {
+    "description": "Confirmation button that opens an untrusted external URL from a DM."
+  },
   "inboxCollabInviteAcceptButton": "Accept",
   "inboxCollabInviteIgnoreButton": "Ignore",
   "inboxCollabInviteAcceptedStatus": "Accepted",

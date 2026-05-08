@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio, LogCategory;
+import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/universal_link_resolver.dart';
@@ -234,26 +235,25 @@ class _MessageText extends StatelessWidget {
         builder: (ctx) => AlertDialog(
           backgroundColor: VineTheme.cardBackground,
           title: Text(
-            'Open external link?',
+            ctx.l10n.messageExternalLinkDialogTitle,
             style: VineTheme.titleMediumFont(),
           ),
           content: Text(
-            'This link goes to an external site and may not be safe:\n\n'
-            '$uri',
+            ctx.l10n.messageExternalLinkDialogBody(uri.toString()),
             style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: Text(
-                'Cancel',
+                ctx.l10n.commonCancel,
                 style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
               ),
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: Text(
-                'Open',
+                ctx.l10n.messageExternalLinkDialogOpen,
                 style: VineTheme.bodyMediumFont(color: VineTheme.primary),
               ),
             ),

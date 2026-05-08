@@ -52,7 +52,6 @@ const _knownUntranslatedDebt = {
   'profileMyLibraryLabel',
   'profileMessageLabel',
   'profileUserFallback',
-  'inboxCollabInviteCardUntitledVideo',
   'videoActionLikeLabel',
   'videoActionReplyLabel',
   'videoActionRepostLabel',

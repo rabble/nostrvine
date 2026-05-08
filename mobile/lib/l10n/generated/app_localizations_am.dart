@@ -5074,7 +5074,21 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => 'ርዕስ የሌለው ቪዲዮ';
+
+  @override
+  String get clickableTextViewVideoLink => 'ቪዲዮውን ይመልከቱ';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'ውጫዊ ሊንክ ይክፈቱ?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'ይህ ሊንክ ወደ ውጫዊ ድረ-ገጽ ይሄዳል እና ደህንነቱ አልተረጋገጠም:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'ክፈት';
 
   @override
   String get inboxCollabInviteAcceptButton => 'ተቀበል';

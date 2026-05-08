@@ -4979,7 +4979,21 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => '제목 없는 동영상';
+
+  @override
+  String get clickableTextViewVideoLink => '동영상 보기';
+
+  @override
+  String get messageExternalLinkDialogTitle => '외부 링크를 열까요?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return '이 링크는 외부 사이트로 이동하며 안전하지 않을 수 있어요:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => '열기';
 
   @override
   String get inboxCollabInviteAcceptButton => '수락';

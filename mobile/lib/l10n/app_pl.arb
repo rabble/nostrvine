@@ -2293,6 +2293,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Film bez tytułu",
+    "clickableTextViewVideoLink": "Zobacz wideo",
+    "messageExternalLinkDialogTitle": "Otworzyć link zewnętrzny?",
+    "messageExternalLinkDialogBody": "Ten link prowadzi do zewnętrznej strony i może nie być bezpieczny:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Otwórz",
     "inboxCollabInviteAcceptButton": "Akceptuj",
     "inboxCollabInviteAcceptError": "Nie udało się zaakceptować. Spróbuj ponownie.",
     "inboxCollabInviteAcceptedStatus": "Zaakceptowano",

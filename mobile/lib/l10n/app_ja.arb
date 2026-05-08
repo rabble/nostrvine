@@ -2285,6 +2285,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "無題の動画",
+    "clickableTextViewVideoLink": "動画を見る",
+    "messageExternalLinkDialogTitle": "外部リンクを開きますか？",
+    "messageExternalLinkDialogBody": "このリンクは外部サイトに移動します。安全ではない可能性があります:\n\n{url}",
+    "messageExternalLinkDialogOpen": "開く",
     "inboxCollabInviteAcceptButton": "承認",
     "inboxCollabInviteAcceptError": "承認できなかったよ。もう一度試してね。",
     "inboxCollabInviteAcceptedStatus": "承認済み",

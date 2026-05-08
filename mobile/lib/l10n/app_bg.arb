@@ -2484,6 +2484,11 @@
             }
         }
     },
+    "inboxCollabInviteCardUntitledVideo": "Видео без заглавие",
+    "clickableTextViewVideoLink": "Виж видеото",
+    "messageExternalLinkDialogTitle": "Да се отвори ли външен линк?",
+    "messageExternalLinkDialogBody": "Този линк води към външен сайт и може да не е безопасен:\n\n{url}",
+    "messageExternalLinkDialogOpen": "Отвори",
     "inboxCollabInviteAcceptButton": "Приеми",
     "inboxCollabInviteIgnoreButton": "Игнорирайте",
     "inboxCollabInviteAcceptedStatus": "Прието",

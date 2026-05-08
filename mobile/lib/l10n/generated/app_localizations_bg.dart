@@ -5225,7 +5225,21 @@ class AppLocalizationsBg extends AppLocalizations {
   }
 
   @override
-  String get inboxCollabInviteCardUntitledVideo => 'Untitled video';
+  String get inboxCollabInviteCardUntitledVideo => 'Видео без заглавие';
+
+  @override
+  String get clickableTextViewVideoLink => 'Виж видеото';
+
+  @override
+  String get messageExternalLinkDialogTitle => 'Да се отвори ли външен линк?';
+
+  @override
+  String messageExternalLinkDialogBody(String url) {
+    return 'Този линк води към външен сайт и може да не е безопасен:\n\n$url';
+  }
+
+  @override
+  String get messageExternalLinkDialogOpen => 'Отвори';
 
   @override
   String get inboxCollabInviteAcceptButton => 'Приеми';
