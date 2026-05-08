@@ -300,5 +300,45 @@ void main() {
         expect(find.text('likers-stub'), findsOneWidget);
       });
     });
+
+    group('long-press opens likers list on any video', () {
+      late _MockVideoInteractionsBloc mockBloc;
+
+      setUp(() {
+        mockBloc = _MockVideoInteractionsBloc();
+        when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+        when(() => mockBloc.state).thenReturn(
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 1,
+          ),
+        );
+      });
+
+      testWidgets(
+        'long-press navigates to likers route even when not own video',
+        (tester) async {
+          final visited = <String>[];
+          final router = buildRouterCapturingNav(
+            video: testVideo,
+            isOwnVideo: false,
+            bloc: mockBloc,
+            visited: visited,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(video: testVideo, router: router),
+          );
+          await tester.longPress(find.byType(GestureDetector));
+          await tester.pumpAndSettle();
+
+          expect(visited, hasLength(1));
+          expect(visited.single, equals('/video/${testVideo.id}/likers'));
+          verifyNever(
+            () => mockBloc.add(const VideoInteractionsLikeToggled()),
+          );
+        },
+      );
+    });
   });
 }

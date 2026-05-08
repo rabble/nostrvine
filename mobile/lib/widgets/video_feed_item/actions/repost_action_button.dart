@@ -98,20 +98,28 @@ class _ActionButton extends StatelessWidget {
         onInteracted?.call();
         final video = this.video;
         if (isOwnVideo && video != null) {
-          final addressableId = video.addressableId;
-          context.goNamed(
-            VideoEngagementListScreen.repostersRouteName,
-            pathParameters: {'eventId': video.id},
-            queryParameters: addressableId == null
-                ? const {}
-                : {'a': addressableId},
-          );
+          _openRepostersList(context, video);
           return;
         }
         context.read<VideoInteractionsBloc>().add(
           const VideoInteractionsRepostToggled(),
         );
       },
+      onLongPress: video == null
+          ? null
+          : () {
+              onInteracted?.call();
+              _openRepostersList(context, video!);
+            },
+    );
+  }
+
+  static void _openRepostersList(BuildContext context, VideoEvent video) {
+    final addressableId = video.addressableId;
+    context.pushNamed(
+      VideoEngagementListScreen.repostersRouteName,
+      pathParameters: {'eventId': video.id},
+      queryParameters: addressableId == null ? const {} : {'a': addressableId},
     );
   }
 }

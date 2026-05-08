@@ -79,6 +79,7 @@ void main() {
     required VideoEvent video,
     required VideoInteractionsBloc bloc,
     required List<String> visited,
+    bool isOwnVideo = true,
   }) {
     return GoRouter(
       initialLocation: '/',
@@ -90,7 +91,7 @@ void main() {
               value: bloc,
               child: RepostActionButton(
                 video: video,
-                isOwnVideo: true,
+                isOwnVideo: isOwnVideo,
               ),
             ),
           ),
@@ -257,6 +258,43 @@ void main() {
         expect(visited.single, equals('/video/${testVideo.id}/reposters'));
         expect(find.text('reposters-stub'), findsOneWidget);
       });
+    });
+
+    group('long-press opens reposters list on any video', () {
+      late _MockVideoInteractionsBloc mockBloc;
+
+      setUp(() {
+        mockBloc = _MockVideoInteractionsBloc();
+        when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoInteractionsState(repostCount: 1));
+      });
+
+      testWidgets(
+        'long-press navigates to reposters route even when not own video',
+        (tester) async {
+          final visited = <String>[];
+          final router = buildRouterCapturingNav(
+            video: testVideo,
+            bloc: mockBloc,
+            visited: visited,
+            isOwnVideo: false,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(video: testVideo, router: router),
+          );
+          await tester.longPress(find.byType(GestureDetector));
+          await tester.pumpAndSettle();
+
+          expect(visited, hasLength(1));
+          expect(visited.single, equals('/video/${testVideo.id}/reposters'));
+          verifyNever(
+            () => mockBloc.add(const VideoInteractionsRepostToggled()),
+          );
+        },
+      );
     });
   });
 }
