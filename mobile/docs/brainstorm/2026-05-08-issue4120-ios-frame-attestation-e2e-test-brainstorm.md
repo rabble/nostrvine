@@ -262,11 +262,17 @@ Why:
   response landed in ~1 s and the `main` response in ~1 s across 3
   consecutive runs. Even with cold caches the slowest tail observed was
   under 2 s.
-- **App Transport Security.** Simulator allows `http://127.0.0.1`
-  without Info.plist changes; the Runner Info.plist is unchanged. Device
-  runs are not exercised by this PR — if a future device-only CI run
-  trips ATS, a test-only `NSAllowsLocalNetworking` carve-out is the
-  expected mitigation (production Info.plist must not change).
+- **App Transport Security.** No Info.plist change is needed for this
+  PR. `mobile/ios/Runner/Info.plist` already declares
+  `NSAllowsLocalNetworking=true` under `NSAppTransportSecurity`, which
+  permits cleartext HTTP/WS to `localhost`, `127.0.0.1`, `::1`,
+  single-label hostnames, and the `.local` TLD on both simulator and
+  device (remote cleartext stays rejected). The fixture's
+  `http://127.0.0.1:<port>` loopback URL is covered by that exemption
+  verbatim, so the test runs identically on simulator and physical-device
+  targets without any test-specific carve-out. The exemption mirrors the
+  loopback domain-config in
+  `android/app/src/main/res/xml/network_security_config.xml`.
 - **Test harness choice.** `testWidgets` against
   `IntegrationTestWidgetsFlutterBinding`, not `patrolTest`. This test
   doesn't need patrol's native automation, and `flutter test
