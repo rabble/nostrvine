@@ -13,6 +13,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_category_bar.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_editor_selection_overlay.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -172,15 +173,24 @@ class _AudioSelectionBottomSheetState
 
     try {
       await _audioService.seek(.zero);
+      var resolvedSound = sound;
       if (shouldReload) {
         await _audioService.stop();
-        await _audioService.loadAudio(sound.url!);
+        final loadedDuration = await _audioService.loadAudio(sound.url!);
         _loadedSoundId = sound.id;
+        // Backfill missing duration so the selection overlay and list
+        // tile can show a correct timestamp for Nostr sounds that don't
+        // carry a duration tag.
+        if (sound.duration == null && loadedDuration != null) {
+          resolvedSound = sound.copyWith(
+            duration: loadedDuration.inMilliseconds / 1000.0,
+          );
+        }
       }
 
       if (mounted) {
         setState(() {
-          _selectedItem = sound;
+          _selectedItem = resolvedSound;
         });
       }
       // Blocks here for the entire duration of playback — only
@@ -222,9 +232,19 @@ class _AudioSelectionBottomSheetState
       return;
     }
 
-    if (_selectedItem!.duration == null ||
-        _selectedItem!.duration! >
-            (VideoEditorConstants.maxDuration.inMilliseconds / 1000)) {
+    var sound = _selectedItem!;
+    if (sound.duration == null) {
+      final resolvedDuration = await _resolveDurationSecs(sound);
+      if (!mounted) return;
+      if (resolvedDuration != null) {
+        sound = sound.copyWith(duration: resolvedDuration);
+        setState(() => _selectedItem = sound);
+      }
+    }
+
+    if (sound.duration == null ||
+        sound.duration! >
+            (VideoEditorConstants.maxDuration.inMilliseconds / 1000.0)) {
       final timingResult = await Navigator.of(context).push<AudioTimingResult>(
         PageRouteBuilder(
           opaque: false,
@@ -232,7 +252,7 @@ class _AudioSelectionBottomSheetState
           transitionsBuilder: (_, animation, _, child) =>
               FadeTransition(opacity: animation, child: child),
           pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
-            sound: _selectedItem!,
+            sound: sound,
             enableDeleteButton: false,
           ),
         ),
@@ -247,7 +267,34 @@ class _AudioSelectionBottomSheetState
         }
       }
     } else {
-      context.pop(_selectedItem);
+      context.pop(sound);
+    }
+  }
+
+  /// Resolves the audio duration in seconds via [ProVideoEditor.getMetadata].
+  /// Returns `null` if no source is available or metadata extraction fails.
+  Future<double?> _resolveDurationSecs(AudioEvent sound) async {
+    final assetPath = sound.assetPath;
+    final url = sound.url;
+    if ((assetPath == null || assetPath.isEmpty) &&
+        (url == null || url.isEmpty)) {
+      return null;
+    }
+    try {
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.autoSource(assetPath: assetPath, networkUrl: url),
+      );
+      final secs = metadata.duration.inMilliseconds / 1000.0;
+      return secs > 0 ? secs : null;
+    } catch (e, s) {
+      Log.error(
+        'Failed to resolve duration for sound ${sound.id}: $e',
+        name: 'AudioSelectionBottomSheet',
+        category: LogCategory.ui,
+        error: e,
+        stackTrace: s,
+      );
+      return null;
     }
   }
 
@@ -447,15 +494,19 @@ class _SoundsContent extends StatelessWidget {
                 onTap: () => onSelect(audio),
               );
             }
+            // Use selectedSound for the selected entry so any duration
+            // backfilled after loading the preview shows up in the
+            // subtitle.
+            final displayAudio = selectedSound ?? audio;
             return StreamBuilder<bool>(
               stream: audioService.playingStream,
               initialData: audioService.isPlaying,
               builder: (context, snapshot) {
                 return AudioListTile(
-                  audio: audio,
+                  audio: displayAudio,
                   isSelected: true,
                   isPlaying: snapshot.data ?? false,
-                  onTap: () => onSelect(audio),
+                  onTap: () => onSelect(displayAudio),
                 );
               },
             );

@@ -56,7 +56,7 @@ class VideoAudioEditorTimingScreen extends StatefulWidget {
   const VideoAudioEditorTimingScreen({
     required this.sound,
     this.enableDeleteButton = true,
-    this.clipPlayer,
+    @visibleForTesting this.clipPlayer,
     super.key,
   });
 
@@ -67,6 +67,7 @@ class VideoAudioEditorTimingScreen extends StatefulWidget {
   final bool enableDeleteButton;
 
   /// Optional audio clip player override for tests.
+  @visibleForTesting
   final AudioClipPlayer? clipPlayer;
 
   /// Route name for navigation.
@@ -193,7 +194,14 @@ class _VideoAudioEditorTimingScreenState
   Future<void> _confirmSelection() async {
     await _audioTimingCubit.stopPlayback();
     final startOffset = _audioTimingCubit.calculateStartOffset();
-    final updatedSound = widget.sound.copyWith(startOffset: startOffset);
+    // Persist the resolved duration when the source AudioEvent did not
+    // carry one (common for sounds coming from Nostr).
+    final resolvedDuration =
+        widget.sound.duration ?? _audioTimingCubit.state.audioDuration;
+    final updatedSound = widget.sound.copyWith(
+      startOffset: startOffset,
+      duration: resolvedDuration,
+    );
     if (mounted) {
       context.pop<AudioTimingResult>(AudioTimingConfirmed(updatedSound));
     }
