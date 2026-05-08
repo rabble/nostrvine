@@ -12,10 +12,6 @@ enum FeatureFlag {
     'Detailed usage tracking and insights',
   ),
   newProfileLayout('New Profile Layout', 'Redesigned user profile screen'),
-  livestreamingBeta(
-    'Livestreaming Beta',
-    'Live video streaming feature (beta)',
-  ),
   debugTools('Debug Tools', 'Developer debugging utilities and diagnostics'),
   routerDrivenHome(
     'Router-Driven Home Screen',
@@ -64,8 +60,7 @@ enum FeatureFlag {
     'Show Nostr relay configuration and diagnostics in Settings. '
         'Changing relays can break publishing and discovery — only turn '
         'this on if you know what you are doing.',
-  )
-  ;
+  );
 
   const FeatureFlag(this.displayName, this.description);
 
