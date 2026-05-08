@@ -42,21 +42,20 @@ class PopularFilterBar extends ConsumerWidget {
     return Semantics(
       label: l10n.popularFilterLabel,
       container: true,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48),
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          itemCount: chips.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final spec = chips[index];
-            return _PeriodChip(
-              spec: spec,
-              isSelected: selected == spec.period,
-              onTap: () => _onChipTap(context, spec.period),
-            );
-          },
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 8,
+          children: [
+            for (final spec in chips)
+              _PeriodChip(
+                spec: spec,
+                isSelected: selected == spec.period,
+                onTap: () => _onChipTap(context, spec.period),
+              ),
+          ],
         ),
       ),
     );

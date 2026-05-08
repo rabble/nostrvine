@@ -326,7 +326,7 @@ class _PopularVideosTrendingContentState
                 hashtags: hashtags,
                 isLoading: !TopHashtagsService.instance.isLoaded,
               ),
-              const SizedBox(height: 48, child: PopularFilterBar()),
+              const PopularFilterBar(),
             ],
           ),
         ),
