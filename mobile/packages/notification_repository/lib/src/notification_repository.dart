@@ -73,17 +73,11 @@ class NotificationRepository {
     try {
       final effectiveCursor = cursor ?? _lastCursor;
       final requestUrl = _funnelcakeApiClient
-          .notificationsUri(
-            pubkey: _userPubkey,
-            cursor: effectiveCursor,
-          )
+          .notificationsUri(pubkey: _userPubkey, cursor: effectiveCursor)
           .toString();
 
       final authHeaders = _authHeadersProvider != null
-          ? await _authHeadersProvider(
-              requestUrl,
-              'GET',
-            )
+          ? await _authHeadersProvider(requestUrl, 'GET')
           : <String, String>{};
 
       final response = await _funnelcakeApiClient.getNotifications(
@@ -178,10 +172,7 @@ class NotificationRepository {
       pubkeys: pubkeys,
     );
     final videosFuture = _fetchVideoMetadata(eventIds);
-    final (profiles, videosById) = await (
-      profilesFuture,
-      videosFuture,
-    ).wait;
+    final (profiles, videosById) = await (profilesFuture, videosFuture).wait;
 
     final consolidated = _consolidateFollows(raw);
     final videos = _groupVideoAnchored(consolidated, profiles, videosById);
@@ -210,10 +201,7 @@ class NotificationRepository {
                   .toList();
               if (filtered.isEmpty) return null;
               if (filtered.length == n.actors.length) return n;
-              return n.copyWith(
-                actors: filtered,
-                totalCount: filtered.length,
-              );
+              return n.copyWith(actors: filtered, totalCount: filtered.length);
             }(),
             ActorNotification() => filter(n.actor.pubkey) ? null : n,
           },
@@ -239,15 +227,13 @@ class NotificationRepository {
     List<String> eventIds,
   ) async {
     if (eventIds.isEmpty) return const <String, VideoStats>{};
-    final futures = eventIds.map(
-      (id) async {
-        try {
-          return await _funnelcakeApiClient.getVideoStats(id);
-        } on Object {
-          return null;
-        }
-      },
-    );
+    final futures = eventIds.map((id) async {
+      try {
+        return await _funnelcakeApiClient.getVideoStats(id);
+      } on Object {
+        return null;
+      }
+    });
     final results = await Future.wait(futures);
     final map = <String, VideoStats>{};
     for (var i = 0; i < eventIds.length; i++) {
@@ -365,6 +351,9 @@ class NotificationRepository {
           timestamp: n.createdAt,
           isRead: n.read,
           commentText: _truncateComment(n.content, kind),
+          targetEventId: mapped == NotificationKind.likeComment
+              ? n.referencedEventId
+              : null,
         ),
       );
     }
@@ -392,10 +381,7 @@ class NotificationRepository {
         ? _fetchVideoMetadata([referenced])
         : Future<Map<String, VideoStats>>.value(const {});
 
-    final (profiles, videosById) = await (
-      profilesFuture,
-      videoFuture,
-    ).wait;
+    final (profiles, videosById) = await (profilesFuture, videoFuture).wait;
 
     final actor = _buildActor(raw.sourcePubkey, profiles);
 
@@ -437,6 +423,9 @@ class NotificationRepository {
       timestamp: raw.createdAt,
       isRead: raw.read,
       commentText: _truncateComment(raw.content, kind),
+      targetEventId: mapped == NotificationKind.likeComment
+          ? raw.referencedEventId
+          : null,
     );
   }
 
@@ -465,10 +454,7 @@ class NotificationRepository {
   }
 
   /// Builds an [ActorInfo] from a pubkey and the profile lookup map.
-  ActorInfo _buildActor(
-    String pubkey,
-    Map<String, UserProfile> profiles,
-  ) {
+  ActorInfo _buildActor(String pubkey, Map<String, UserProfile> profiles) {
     final profile = profiles[pubkey];
     return ActorInfo(
       pubkey: pubkey,
