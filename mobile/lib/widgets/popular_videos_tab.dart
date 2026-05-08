@@ -19,6 +19,7 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/feed_refresh_control.dart';
+import 'package:openvine/widgets/popular_filter_bar.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:rxdart/rxdart.dart';
@@ -308,7 +309,7 @@ class _PopularVideosTrendingContentState
             ),
           ),
         ),
-        // Hashtags overlay on top, animated when returning
+        // Hashtags + filter bar overlay on top, animated when returning
         AnimatedPositioned(
           duration: headerFullyHidden
               ? const Duration(milliseconds: 250)
@@ -317,10 +318,16 @@ class _PopularVideosTrendingContentState
           top: headerOffset,
           left: 0,
           right: 0,
-          child: TrendingHashtagsSection(
+          child: Column(
             key: headerKey,
-            hashtags: hashtags,
-            isLoading: !TopHashtagsService.instance.isLoaded,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TrendingHashtagsSection(
+                hashtags: hashtags,
+                isLoading: !TopHashtagsService.instance.isLoaded,
+              ),
+              const SizedBox(height: 48, child: PopularFilterBar()),
+            ],
           ),
         ),
       ],
