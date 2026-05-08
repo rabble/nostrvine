@@ -11,12 +11,69 @@ import 'package:sound_service/sound_service.dart';
 
 class _MockAudioPlayer extends Mock implements AudioPlayer {}
 
+class _MockHttpClient extends Mock implements HttpClient {}
+
+class _MockHttpClientRequest extends Mock implements HttpClientRequest {}
+
 class _FakeAudioSource extends Fake implements AudioSource {}
+
+class _FakeHttpClientResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _FakeHttpClientResponse(this.statusCode, List<int> bytes)
+    : _bytes = List<int>.unmodifiable(bytes);
+
+  @override
+  final int statusCode;
+
+  final List<int> _bytes;
+
+  @override
+  int get contentLength => _bytes.length;
+
+  @override
+  HttpClientResponseCompressionState get compressionState =>
+      HttpClientResponseCompressionState.notCompressed;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return Stream<List<int>>.fromIterable([_bytes]).listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Future<HttpClientResponse> _okHttpResponse(Invocation _) async =>
+    _FakeHttpClientResponse(HttpStatus.ok, const [1, 2, 3, 4]);
+
+Future<HttpClientResponse> _notFoundHttpResponse(Invocation _) async =>
+    _FakeHttpClientResponse(HttpStatus.notFound, const []);
+
+Future<HttpClientRequest> Function(Invocation) _httpRequestAnswer(
+  HttpClientRequest request,
+) {
+  return (_) async => request;
+}
+
+HttpClient Function(SecurityContext?) _httpClientFactory(HttpClient client) {
+  return (_) => client;
+}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeAudioSource());
     registerFallbackValue(Duration.zero);
+    registerFallbackValue(Uri.parse('https://example.com'));
   });
 
   group(AudioClipPlayer, () {
@@ -184,6 +241,207 @@ void main() {
         },
       );
 
+      test(
+        'clears cached remote file when switching away from network audio',
+        () async {
+          late File cachedFile;
+          late File siblingFile;
+          player = AudioClipPlayer(
+            audioPlayer: mockAudioPlayer,
+            remoteAudioFileLoader: (uri, existingFile, existingUri) async {
+              final dir = Directory.systemTemp.createTempSync(
+                'audio_clip_test_',
+              );
+              siblingFile = File('${dir.path}/keep.txt')
+                ..writeAsStringSync('keep', flush: true);
+              return cachedFile = File('${dir.path}/clip.mp3')
+                ..writeAsBytesSync(const [1, 2, 3], flush: true);
+            },
+          );
+
+          await player.setClip(
+            const AudioSourceConfig.network(
+              'https://example.com/audio.mp3',
+              start: Duration(seconds: 1),
+              end: Duration(seconds: 5),
+            ),
+          );
+
+          await player.setClip(
+            const AudioSourceConfig.asset(
+              'assets/sounds/clip.mp3',
+              start: Duration.zero,
+              end: Duration(seconds: 3),
+            ),
+          );
+
+          expect(cachedFile.existsSync(), isFalse);
+          expect(siblingFile.existsSync(), isTrue);
+        },
+      );
+
+      test(
+        'downloads and caches network audio with the default loader',
+        () async {
+          final mockHttpClient = _MockHttpClient();
+          final mockRequest = _MockHttpClientRequest();
+          when(
+            () => mockHttpClient.getUrl(any()),
+          ).thenAnswer(_httpRequestAnswer(mockRequest));
+          when(mockRequest.close).thenAnswer(_okHttpResponse);
+
+          await HttpOverrides.runZoned(
+            () => player.setClip(
+              const AudioSourceConfig.network(
+                'https://example.com/remote clip.m4a',
+                start: Duration.zero,
+                end: Duration(seconds: 2),
+              ),
+            ),
+            createHttpClient: _httpClientFactory(mockHttpClient),
+          );
+
+          final capturedSource =
+              verify(
+                    () => mockAudioPlayer.setAudioSource(captureAny()),
+                  ).captured.single
+                  as ClippingAudioSource;
+          expect(capturedSource.child.uri.scheme, 'file');
+          expect(
+            capturedSource.child.uri.pathSegments.last,
+            'remote_clip.m4a',
+          );
+        },
+      );
+
+      test(
+        'reuses the default cached file for repeated network clips',
+        () async {
+          final mockHttpClient = _MockHttpClient();
+          final mockRequest = _MockHttpClientRequest();
+          when(
+            () => mockHttpClient.getUrl(any()),
+          ).thenAnswer(_httpRequestAnswer(mockRequest));
+          when(mockRequest.close).thenAnswer(_okHttpResponse);
+
+          const uri = 'https://example.com';
+
+          await HttpOverrides.runZoned(
+            () => player.setClip(
+              const AudioSourceConfig.network(
+                uri,
+                start: Duration.zero,
+                end: Duration(seconds: 2),
+              ),
+            ),
+            createHttpClient: _httpClientFactory(mockHttpClient),
+          );
+          await HttpOverrides.runZoned(
+            () => player.setClip(
+              const AudioSourceConfig.network(
+                uri,
+                start: Duration(seconds: 1),
+                end: Duration(seconds: 3),
+              ),
+            ),
+            createHttpClient: _httpClientFactory(mockHttpClient),
+          );
+
+          final capturedSources = verify(
+            () => mockAudioPlayer.setAudioSource(captureAny()),
+          ).captured.cast<ClippingAudioSource>();
+          expect(capturedSources, hasLength(2));
+          expect(
+            capturedSources.first.child.uri.path,
+            capturedSources.last.child.uri.path,
+          );
+          expect(
+            capturedSources.last.child.uri.pathSegments.last,
+            'audio_clip',
+          );
+          verify(() => mockHttpClient.getUrl(any())).called(1);
+        },
+      );
+
+      test(
+        'replaces the default cached file when the network URI changes',
+        () async {
+          final mockHttpClient = _MockHttpClient();
+          final mockRequest = _MockHttpClientRequest();
+          when(
+            () => mockHttpClient.getUrl(any()),
+          ).thenAnswer(_httpRequestAnswer(mockRequest));
+          when(mockRequest.close).thenAnswer(_okHttpResponse);
+
+          await HttpOverrides.runZoned(
+            () => player.setClip(
+              const AudioSourceConfig.network(
+                'https://example.com/first.m4a',
+                start: Duration.zero,
+                end: Duration(seconds: 2),
+              ),
+            ),
+            createHttpClient: _httpClientFactory(mockHttpClient),
+          );
+
+          final firstSource =
+              verify(
+                    () => mockAudioPlayer.setAudioSource(captureAny()),
+                  ).captured.single
+                  as ClippingAudioSource;
+          final firstFile = File(firstSource.child.uri.toFilePath());
+          expect(firstFile.existsSync(), isTrue);
+
+          await HttpOverrides.runZoned(
+            () => player.setClip(
+              const AudioSourceConfig.network(
+                'https://example.com/second.m4a',
+                start: Duration.zero,
+                end: Duration(seconds: 2),
+              ),
+            ),
+            createHttpClient: _httpClientFactory(mockHttpClient),
+          );
+
+          final secondSource =
+              verify(
+                    () => mockAudioPlayer.setAudioSource(captureAny()),
+                  ).captured.last
+                  as ClippingAudioSource;
+          expect(
+            secondSource.child.uri.path,
+            isNot(firstSource.child.uri.path),
+          );
+          expect(firstFile.existsSync(), isFalse);
+        },
+      );
+
+      test(
+        'throws when the default network loader gets a non-success response',
+        () async {
+          final mockHttpClient = _MockHttpClient();
+          final mockRequest = _MockHttpClientRequest();
+          when(
+            () => mockHttpClient.getUrl(any()),
+          ).thenAnswer(_httpRequestAnswer(mockRequest));
+          when(mockRequest.close).thenAnswer(_notFoundHttpResponse);
+
+          await expectLater(
+            HttpOverrides.runZoned(
+              () => player.setClip(
+                const AudioSourceConfig.network(
+                  'https://example.com/missing.m4a',
+                  start: Duration.zero,
+                  end: Duration(seconds: 2),
+                ),
+              ),
+              createHttpClient: _httpClientFactory(mockHttpClient),
+            ),
+            throwsA(isA<HttpException>()),
+          );
+        },
+      );
+
       test('sets asset audio source', () async {
         await player.setClip(
           const AudioSourceConfig.asset(
@@ -256,6 +514,30 @@ void main() {
 
         // Should not throw — error is caught and logged.
         await expectLater(player.dispose(), completes);
+      });
+
+      test('deletes cached remote file during dispose', () async {
+        late File cachedFile;
+        player = AudioClipPlayer(
+          audioPlayer: mockAudioPlayer,
+          remoteAudioFileLoader: (uri, existingFile, existingUri) async {
+            final dir = Directory.systemTemp.createTempSync('audio_clip_test_');
+            return cachedFile = File('${dir.path}/clip.mp3')
+              ..writeAsBytesSync(const [1, 2, 3], flush: true);
+          },
+        );
+
+        await player.setClip(
+          const AudioSourceConfig.network(
+            'https://example.com/audio.mp3',
+            start: Duration.zero,
+            end: Duration(seconds: 2),
+          ),
+        );
+
+        await player.dispose();
+
+        expect(cachedFile.existsSync(), isFalse);
       });
     });
   });

@@ -195,6 +195,30 @@ void main() {
       },
     );
 
+    test('setAudioSource creates clipped source from file path', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 5));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.file(
+          '/path/to/local.mp3',
+          start: Duration(seconds: 1),
+          end: Duration(seconds: 4),
+        ),
+      );
+
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as ClippingAudioSource;
+      expect(capturedSource.child.uri.scheme, 'file');
+      expect(duration, const Duration(seconds: 5));
+    });
+
     test('setAudioSource sets audio source from file path', () async {
       when(
         () => mockPlayer.setAudioSource(any()),
@@ -210,6 +234,51 @@ void main() {
 
       verify(() => mockPlayer.setAudioSource(any())).called(1);
       expect(duration, const Duration(seconds: 12));
+    });
+
+    test('setAudioSource keeps non-http URIs as direct URI sources', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 7));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.network('ftp://example.com/audio.mp3'),
+      );
+
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as UriAudioSource;
+      expect(capturedSource, isNot(isA<LockCachingAudioSource>()));
+      expect(capturedSource.uri.scheme, 'ftp');
+      expect(duration, const Duration(seconds: 7));
+    });
+
+    test('setAudioSource creates clipped source from network URI', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 6));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.network(
+          'https://example.com/audio.mp3',
+          start: Duration(seconds: 1),
+          end: Duration(seconds: 4),
+        ),
+      );
+
+      final capturedSource =
+          verify(() => mockPlayer.setAudioSource(captureAny())).captured.single
+              as ClippingAudioSource;
+      expect(capturedSource.child.uri.scheme, 'https');
+      expect(duration, const Duration(seconds: 6));
     });
 
     test('play starts playback', () async {
