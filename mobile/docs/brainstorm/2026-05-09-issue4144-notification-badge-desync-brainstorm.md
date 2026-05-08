@@ -2,6 +2,9 @@
 
 Date: 2026-05-09
 
+Status: Resolved — Approach A shipped in PR #4165. Approach C tracked in
+issue #3596 (Delete dual notification system).
+
 ## Problem Statement
 
 The unread badge on the bottom-nav Inbox icon and the inbox segmented toggle
@@ -217,80 +220,56 @@ add a dedicated WebSocket channel for unread-count deltas.
 
 ---
 
-## Recommendation
+## Decision
 
-**Ship Approach A as the hotfix** for #4144 — adopt PR #4149's branch and
-address the three reviewer blockers:
+**Approach A shipped as the hotfix** in PR #4165, addressing the three
+reviewer blockers from PR #4149:
 
-1. Centralize Riverpod call at the inbox scaffold (one fire per inbox
-   open, not five per tab view).
-2. Re-dispatch `NotificationFeedMarkAllRead` from `_onStarted` instead of
-   inlining a weaker variant — preserves rollback / `addError`.
-3. Add coverage that proves the side effect fires once and doesn't fan
-   out across tabs.
+1. Centralized the Riverpod sync at the inbox scaffold (one fire per
+   inbox open, not five per tab view).
+2. Re-dispatched `NotificationFeedMarkAllRead` from `_onStarted` instead
+   of inlining a weaker variant — preserves the rollback / `addError`
+   path added by #4034.
+3. Added coverage that proves the side effect fires once per inbox open
+   and does not fan out across the five filter tabs.
 
-This closes the user-facing bug today without committing to a larger
-refactor.
+This closed the user-facing bug without committing to a larger refactor.
 
-**Open a follow-up issue for Approach C** — repository-as-source-of-truth
-via `NotificationRepository.watchUnreadCount()` + `NotificationBadgeCubit`.
-This is the architecturally correct destination because:
+**Approach C is tracked in issue #3596** (Delete dual notification
+system) as the architecturally correct destination —
+repository-as-source-of-truth via `NotificationRepository.watchUnreadCount()`
+plus a `NotificationBadgeCubit` mirroring `DmUnreadCountCubit`. Reasons
+it is the right destination:
 
 - The DMs side already does exactly this against `DmRepository`. The
   notifications side should be symmetric.
-- It closes the `notifications-refactor` migration debt.
-- It eliminates the *class* of bug (BLoC writes invisible to badge), not
-  just this instance. Issue #4034 (BLoC-side rollback) and issue #4144 /
-  #4048 (badge desync) are two faces of the same dual-cache problem;
-  patching them one at a time will keep producing similar tickets.
+- It closes the dual-stack migration debt described in #3596 — the
+  legacy `screens/notifications_screen.dart` and
+  `providers/relay_notifications_provider.dart` retire together with
+  the badge bridge.
+- It eliminates the *class* of bug (BLoC writes invisible to badge),
+  not just this instance. Issue #4034 (BLoC-side rollback) and issue
+  #4144 / #4048 (badge desync) are two faces of the same dual-cache
+  problem; patching them one at a time keeps producing similar tickets.
 
-**Reject Approach B** — promoting a feature BLoC to the app shell mixes
-lifecycle concerns and would still leave a screen-scoped BLoC alongside
-it, putting us back into a dual-state shape.
+**Approach B was rejected** — promoting a feature BLoC to the app shell
+mixes lifecycle concerns and would still leave a screen-scoped BLoC
+alongside it, putting the codebase back into a dual-state shape.
 
-**Defer Approach D** — blocked on `funnelcake#234` server-side dedup.
-Revisit once that ships, possibly in combination with C.
+**Approach D was deferred** — blocked on `funnelcake#234` server-side
+dedup. Worth revisiting once that ships, possibly in combination with C.
 
-## Open Questions for /plan
+## Outcome
 
-For **Approach A** (hotfix):
-- [ ] Does any in-app callsite mount `NotificationsView` outside
-      `InboxNotificationsPage`? Greppable. If yes, the centralized
-      Riverpod call at the scaffold misses it.
-- [ ] How to assert in widget test that `markAllAsRead` is called
-      *exactly once* and not five times? Likely a mock notifier with a
-      counter, overridden via `ProviderScope`.
-- [ ] Does the re-dispatched `add(const NotificationFeedMarkAllRead())`
-      from inside `_onStarted` cause any existing `bloc_test` to gain
-      an extra emission that needs the expected list updated?
-
-For **Approach C** (follow-up issue):
-- [ ] Reactive surface shape on `NotificationRepository` —
-      `Stream<int>` for the count plus
-      `Stream<List<NotificationItem>>` for the list, or a single
-      `Stream<NotificationFeedSnapshot>` with both? Mirror
-      `DmRepository`'s shape.
-- [ ] Where does the realtime accept path live —
-      `NotificationRepository.acceptRealtime(RelayNotification)` invoked
-      by a background subscription, or a constructor-injected
-      `Stream<RelayNotification>` that the repository merges into its
-      in-memory state?
-- [ ] Migration sequencing — ship A first then C (no Riverpod removal in
-      the same PR), or skip A and go straight to C? Skipping A means
-      users wait longer; doing both means double review effort.
-      Recommend A → C as separate PRs.
-
-## Prerequisites
-
-- **Approach A:** None. PR #4149's branch already exists; rebase onto
-  fresh `origin/main` and address the three CR items.
-- **Approach C:** Open a tracking issue with `funnelcake#234` context and
-  the existing `notifications-refactor` migration marker. Worth checking
-  `git blame mobile/lib/providers/relay_notifications_provider.dart` for
-  the original migration author to validate scope.
-
-## Next Step
-
-`/plan https://github.com/divinevideo/divine-mobile/issues/4144` targeting
-**Approach A** for the hotfix. Open Approach C as a separate techdebt
-issue rather than rolling into the same plan.
+- **Shipped:** Approach A in PR #4165 — closes #4144 / #4048. Lives in
+  `mobile/lib/notifications/bloc/notification_feed_bloc.dart`,
+  `mobile/lib/notifications/view/inbox_notifications_page.dart`,
+  `mobile/lib/notifications/view/notifications_page.dart`, and
+  `mobile/lib/notifications/view/notifications_view.dart`, with coverage
+  in the matching test files under `mobile/test/notifications/`.
+- **Follow-up:** issue #3596 (Delete dual notification system) tracks
+  the Approach C migration — reactive
+  `NotificationRepository.watchUnreadCount()` plus
+  `NotificationBadgeCubit`, retiring
+  `mobile/lib/providers/relay_notifications_provider.dart` and
+  `mobile/lib/screens/notifications_screen.dart`.
