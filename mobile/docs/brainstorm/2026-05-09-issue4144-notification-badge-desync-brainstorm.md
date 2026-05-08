@@ -26,8 +26,9 @@ its 5-minute auto-refresh.
   Riverpod is legacy; the project has an open migration target.
 - **No BLoC-to-BLoC dependencies** — coordination goes through `BlocListener`
   in the UI or shared repository state.
-- **Migration TODO already on file**: `relay_notifications_provider.dart:1` —
-  `// TODO(notifications-refactor): Remove after migration is verified`.
+- **Migration marker already on file**: `relay_notifications_provider.dart:1`
+  carries a `notifications-refactor` deferred-removal comment flagging the
+  provider for retirement after the migration completes.
 - **Server-side limitation** documented in
   `relay_notifications_provider.dart:1064-1080`: server `unreadCount` is
   unreliable until `funnelcake#234` ships Kind 3 dedup.
@@ -91,7 +92,7 @@ across the 5 tab views.
   regress the badge unless each new write site remembers to bridge.
 - Riverpod's 5-min auto-refresh keeps racing with BLoC mutations (stale
   fetch can re-introduce `isRead: false`).
-- Doesn't address the `notifications-refactor` TODO.
+- Doesn't address the `notifications-refactor` deferred-removal marker.
 
 **Risks / Unknowns:**
 - Are there callsites that mount `NotificationsView` outside
@@ -118,7 +119,7 @@ into the BLoC's lifecycle.
 WebSocket subscription).
 
 **Pros:**
-- Removes dual-stack debt and the migration TODO.
+- Removes dual-stack debt and the migration marker.
 - Aligns with BLoC-first mandate.
 - Single source of truth.
 
@@ -164,7 +165,7 @@ Client (no changes).
   `.claude/rules/architecture.md`.
 - Mirrors `DmUnreadCountCubit` + `dmRepository.watchUnreadAcceptedCount()`.
   The inbox becomes consistent across DMs and notifications.
-- Closes the migration TODO and removes Riverpod from notifications.
+- Closes the migration marker and removes Riverpod from notifications.
 - Mark-read writes from anywhere (per-row tap, mark-all on inbox open,
   future per-type bulk actions) propagate to the badge automatically —
   no per-call-site bridging needed.
@@ -237,7 +238,7 @@ This is the architecturally correct destination because:
 
 - The DMs side already does exactly this against `DmRepository`. The
   notifications side should be symmetric.
-- It closes the `// TODO(notifications-refactor)` debt.
+- It closes the `notifications-refactor` migration debt.
 - It eliminates the *class* of bug (BLoC writes invisible to badge), not
   just this instance. Issue #4034 (BLoC-side rollback) and issue #4144 /
   #4048 (badge desync) are two faces of the same dual-cache problem;
@@ -284,7 +285,7 @@ For **Approach C** (follow-up issue):
 - **Approach A:** None. PR #4149's branch already exists; rebase onto
   fresh `origin/main` and address the three CR items.
 - **Approach C:** Open a tracking issue with `funnelcake#234` context and
-  the existing `notifications-refactor` TODO. Worth checking
+  the existing `notifications-refactor` migration marker. Worth checking
   `git blame mobile/lib/providers/relay_notifications_provider.dart` for
   the original migration author to validate scope.
 
