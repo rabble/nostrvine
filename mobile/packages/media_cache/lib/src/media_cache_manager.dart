@@ -924,7 +924,7 @@ class MediaCacheManager extends CacheManager {
 
   /// Waits for all pending alias-map writes to complete.
   ///
-  /// Use this in tests instead of [pumpEventQueue] whenever a
+  /// Use this in tests instead of `pumpEventQueue` whenever a
   /// [getCachedFileSync] eviction or an [initialize] stale-entry prune
   /// triggers [_persistAliasMap] and you need the file on disk to reflect
   /// the updated map before making assertions.
