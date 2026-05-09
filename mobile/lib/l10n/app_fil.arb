@@ -1921,5 +1921,11 @@
     "safetySettingsWhatYouPublish": "ANG PINO-POST MO",
     "profileSetupImagesTypeGroup": "mga larawan",
     "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (hal., name@domain.com)",
-    "profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video"
+    "profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video",
+    "categoryGalleryNoVideosInCategory": "Walang video sa category na ito",
+    "categoriesNoCategoriesAvailable": "Walang available na category",
+    "exploreSearchHint": "Maghanap...",
+    "categoryVideoCount": "{count} na video",
+    "listPersonCount": "{count, plural, =1{1 tao} other{{count} tao}}",
+    "listByAuthorPrefix": "Ni "
 }

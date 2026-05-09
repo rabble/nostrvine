@@ -4544,14 +4544,14 @@ class AppLocalizationsFil extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count people',
-      one: '1 person',
+      other: '$count tao',
+      one: '1 tao',
     );
     return '$_temp0';
   }
 
   @override
-  String get listByAuthorPrefix => 'By ';
+  String get listByAuthorPrefix => 'Ni ';
 
   @override
   String get listNewList => 'Bagong Listahan';
@@ -5332,11 +5332,11 @@ class AppLocalizationsFil extends AppLocalizations {
   }
 
   @override
-  String get exploreSearchHint => 'Search...';
+  String get exploreSearchHint => 'Maghanap...';
 
   @override
   String categoryVideoCount(String count) {
-    return '$count videos';
+    return '$count na video';
   }
 
   @override
@@ -5599,7 +5599,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get categoryGalleryCouldNotLoadVideos => 'Hindi na-load ang mga video';
 
   @override
-  String get categoryGalleryNoVideosInCategory => 'No videos in this category';
+  String get categoryGalleryNoVideosInCategory =>
+      'Walang video sa category na ito';
 
   @override
   String get categoryGallerySortOptionsLabel => 'Mga sort option ng category';
@@ -5621,7 +5622,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi na-load ang mga category';
 
   @override
-  String get categoriesNoCategoriesAvailable => 'No categories available';
+  String get categoriesNoCategoriesAvailable => 'Walang available na category';
 
   @override
   String get notificationsEmptyTitle => 'Wala pang activity';

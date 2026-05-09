@@ -124,14 +124,6 @@ const _knownUntranslatedDebt = {
   'blueskyStatusFailed',
   'blueskyStatusDisabled',
   'blueskyStatusNotLinked',
-  // Explore / Categories Misc — search hint, video count suffix, list
-  // person count, "by author" prefix, no-videos states.
-  'categoryGalleryNoVideosInCategory',
-  'categoriesNoCategoriesAvailable',
-  'exploreSearchHint',
-  'categoryVideoCount',
-  'listPersonCount',
-  'listByAuthorPrefix',
   // Badges Dashboard — issuance / acceptance flows (#3825). Translations
   // tracked in #3864.
   'settingsBadgesTitle',
