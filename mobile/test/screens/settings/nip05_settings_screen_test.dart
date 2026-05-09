@@ -140,22 +140,25 @@ void main() {
       expect(find.text(l10n.profileSetupNip05AddressLabel), findsOneWidget);
     });
 
-    testWidgets('toggle off switches from external NIP-05 back to divine mode', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildSubject(profile: createProfile(nip05: 'alice@example.com')),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'toggle off switches from external NIP-05 back to divine mode',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(profile: createProfile(nip05: 'alice@example.com')),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.profileSetupNip05AddressLabel), findsOneWidget);
+        expect(find.text(l10n.profileSetupNip05AddressLabel), findsOneWidget);
 
-      await tester.tap(find.text(l10n.profileSetupUseOwnNip05));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileSetupUseOwnNip05));
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.profileSetupNip05ConfirmTitle), findsNothing);
-      expect(find.text(l10n.profileSetupNip05AddressLabel), findsNothing);
-    });
+        expect(find.text(l10n.profileSetupNip05ConfirmTitle), findsNothing);
+        expect(find.text(l10n.profileSetupNip05AddressLabel), findsNothing);
+      },
+    );
 
     testWidgets('shows validation error for invalid external NIP-05', (
       tester,
@@ -197,7 +200,10 @@ void main() {
       await tester.pumpWidget(buildSubject(profile: profile));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextFormField).last, 'bob@example.com');
+      await tester.enterText(
+        find.byType(TextFormField).last,
+        'bob@example.com',
+      );
       await tester.pump();
 
       await tester.tap(find.text(l10n.nostrSettingsNip05SaveAction));

@@ -356,7 +356,9 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
             onChanged: (value) {
-              context.read<ProfileEditorBloc>().add(ExternalNip05Changed(value));
+              context.read<ProfileEditorBloc>().add(
+                ExternalNip05Changed(value),
+              );
             },
           ),
         ],
@@ -513,10 +515,10 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
     return switch (editorState.nip05Mode) {
       Nip05Mode.divine =>
         normalizedUsername != initialUsername ||
-        editorState.initialExternalNip05 != null,
+            editorState.initialExternalNip05 != null,
       Nip05Mode.external_ =>
         normalizedExternal != initialExternal ||
-        editorState.initialUsername != null,
+            editorState.initialUsername != null,
     };
   }
 }

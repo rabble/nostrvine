@@ -611,12 +611,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
             DivineUsernameValid(:final normalized) => normalized,
             DivineUsernameInvalid() => trimmedUsername,
           };
-    final externalSource =
-        (event.externalNip05?.trim().isEmpty ?? true)
+    final externalSource = (event.externalNip05?.trim().isEmpty ?? true)
         ? state.externalNip05
         : event.externalNip05!;
-    final externalNip05 =
-        !isExternal || externalSource.trim().isEmpty
+    final externalNip05 = !isExternal || externalSource.trim().isEmpty
         ? null
         : externalSource.trim().toLowerCase();
 
