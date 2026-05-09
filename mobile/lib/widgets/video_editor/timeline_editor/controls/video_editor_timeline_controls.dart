@@ -139,7 +139,7 @@ class _ControlButton extends StatelessWidget {
           const SizedBox.square(
             dimension: 52,
             child: Center(
-              child: BrandedLoadingIndicator(size: 24),
+              child: BrandedLoadingIndicator(size: 32),
             ),
           )
         else
