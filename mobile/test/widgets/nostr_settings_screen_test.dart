@@ -104,14 +104,10 @@ void main() {
       expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
     });
 
-    testWidgets('opens NIP-05 settings via named route', (tester) async {
+    testWidgets('opens NIP-05 settings via path route', (tester) async {
       final goRouter = MockGoRouter();
       when(
-        () => goRouter.pushNamed(
-          any(),
-          pathParameters: any(named: 'pathParameters'),
-          extra: any(named: 'extra'),
-        ),
+        () => goRouter.push(any()),
       ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(buildSubject(goRouter: goRouter));
@@ -121,11 +117,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        () => goRouter.pushNamed(
-          Nip05SettingsScreen.routeName,
-          pathParameters: any(named: 'pathParameters'),
-          extra: any(named: 'extra'),
-        ),
+        () => goRouter.push(Nip05SettingsScreen.path),
       ).called(1);
     });
   });

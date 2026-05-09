@@ -117,7 +117,7 @@ class NostrSettingsScreen extends ConsumerWidget {
                   icon: Icons.alternate_email,
                   title: context.l10n.nostrSettingsNip05Address,
                   subtitle: context.l10n.nostrSettingsNip05AddressSubtitle,
-                  onTap: () => context.pushNamed(Nip05SettingsScreen.routeName),
+                  onTap: () => context.push(Nip05SettingsScreen.path),
                 ),
                 _RemoveKeysTile(ref: ref),
                 _SectionHeader(

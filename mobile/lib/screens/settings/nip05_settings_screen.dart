@@ -13,7 +13,6 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
 const _divineVideoDomainSuffix = '.divine.video';
@@ -32,7 +31,7 @@ class Nip05SettingsScreen extends ConsumerWidget {
     final pubkey = authService.currentPublicKeyHex;
 
     if (profileRepository == null || pubkey == null) {
-      return const BrandedLoadingScaffold();
+      return const _Nip05SettingsLoadingScreen();
     }
 
     return MultiBlocProvider(
@@ -54,6 +53,25 @@ class Nip05SettingsScreen extends ConsumerWidget {
         ),
       ],
       child: const Nip05SettingsView(),
+    );
+  }
+}
+
+class _Nip05SettingsLoadingScreen extends StatelessWidget {
+  const _Nip05SettingsLoadingScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: context.l10n.nostrSettingsNip05Address,
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      backgroundColor: VineTheme.backgroundColor,
+      body: const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      ),
     );
   }
 }
