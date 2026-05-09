@@ -2,8 +2,6 @@
 // ABOUTME: Verifies all valid HTTP URLs are extracted from original Nostr event imeta tags
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/share_video_menu.dart'
-    show extractEngagementCountTags;
 
 // ---------------------------------------------------------------------------
 // Pure-logic helpers that mirror the production code in
@@ -233,69 +231,6 @@ void main() {
         ['imeta', 'm video/mp4', 'dim 720x1280'],
       ];
       expect(_extractImetaUrls(tags), isEmpty);
-    });
-  });
-
-  group('engagement count tag preservation (extractEngagementCountTags)', () {
-    test('extracts loops tag from Vine-imported event', () {
-      final tags = [
-        ['d', 'abc123'],
-        ['loops', '850000'],
-        ['title', 'My Vine'],
-      ];
-      final result = extractEngagementCountTags(tags);
-      expect(result, hasLength(1));
-      expect(result[0], equals(['loops', '850000']));
-    });
-
-    test('extracts all five engagement tag types', () {
-      final tags = [
-        ['loops', '100'],
-        ['likes', '42'],
-        ['reposts', '7'],
-        ['views', '999'],
-        ['comments', '13'],
-        ['title', 'Test'],
-      ];
-      final result = extractEngagementCountTags(tags);
-      expect(result, hasLength(5));
-      expect(result.map((t) => t[0]).toSet(), {
-        'loops',
-        'likes',
-        'reposts',
-        'views',
-        'comments',
-      });
-    });
-
-    test('ignores tags without a value (malformed)', () {
-      final tags = [
-        ['loops'], // only tag name, no value
-        ['likes', '5'],
-      ];
-      final result = extractEngagementCountTags(tags);
-      expect(result, hasLength(1));
-      expect(result[0][0], equals('likes'));
-    });
-
-    test('returns empty list when no engagement tags are present', () {
-      final tags = [
-        ['d', 'abc'],
-        ['title', 'My Video'],
-        ['t', 'hashtag'],
-      ];
-      expect(extractEngagementCountTags(tags), isEmpty);
-    });
-
-    test('does not include unrelated tags', () {
-      final tags = [
-        ['loops', '500'],
-        ['client', 'diVine'],
-        ['t', 'funny'],
-      ];
-      final result = extractEngagementCountTags(tags);
-      expect(result, hasLength(1));
-      expect(result[0][0], 'loops');
     });
   });
 }

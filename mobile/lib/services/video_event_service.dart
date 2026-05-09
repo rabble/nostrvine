@@ -4109,13 +4109,6 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
           )
         : updatedVideo;
 
-    // Preserve the live like count fetched from the relay.
-    // VideoEvent.fromNostrEvent() always produces nostrLikeCount: null because
-    // this field is runtime-injected and never stored in Nostr event tags.
-    // Without this carry-forward, a metadata edit (e.g. hashtag change) causes
-    // the displayed like count to drop to zero until the next batch re-fetch.
-    // The relay-fetched count will overwrite this value once the batch fires,
-    // so there is no risk of a stale count persisting indefinitely.
     if (merged.nostrLikeCount == null && existingVideo.nostrLikeCount != null) {
       merged = merged.copyWith(nostrLikeCount: existingVideo.nostrLikeCount);
     }
@@ -5339,10 +5332,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
 
         // Merge updated video: preserve original timestamps and live counts.
         // See _mergeUpdatedVideo for details.
-        final mergedVideo = _mergeUpdatedVideo(
-          existingVideo,
-          updatedVideo,
-        );
+        final mergedVideo = _mergeUpdatedVideo(existingVideo, updatedVideo);
 
         eventList[existingIndex] = mergedVideo;
         foundAny = true;
@@ -5368,10 +5358,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
       if (bucketIndex != -1) {
         final existingVideo = authorBucket[bucketIndex];
-        final mergedVideo = _mergeUpdatedVideo(
-          existingVideo,
-          updatedVideo,
-        );
+        final mergedVideo = _mergeUpdatedVideo(existingVideo, updatedVideo);
         authorBucket[bucketIndex] = mergedVideo;
         foundAny = true;
       }

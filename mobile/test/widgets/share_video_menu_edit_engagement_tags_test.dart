@@ -1,9 +1,7 @@
-// ABOUTME: End-to-end regression test for engagement count tag preservation
-// ABOUTME: in the edit-video flow. Verifies that loops/likes/reposts/views/
-// ABOUTME: comments tags from a Vine-imported event are re-emitted verbatim
-// ABOUTME: in the tags passed to createAndSignEvent() when the user edits
-// ABOUTME: metadata (e.g. changes hashtags). If _updateVideo() ever stops
-// ABOUTME: calling extractEngagementCountTags(), these tests will fail.
+// ABOUTME: Regression coverage for engagement count tag preservation in the
+// ABOUTME: edit-video flow. Verifies both the extraction helper contract and
+// ABOUTME: the publish path that re-emits loops/likes/reposts/views/comments
+// ABOUTME: tags when metadata is edited.
 
 import 'package:dm_repository/dm_repository.dart';
 import 'package:flutter/material.dart';
@@ -165,10 +163,6 @@ void main() {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Unit tests on the public helper (guards the extraction contract)
-  // ---------------------------------------------------------------------------
-
   group('extractEngagementCountTags()', () {
     test('extracts all five engagement tag types', () {
       final tags = [
@@ -182,10 +176,13 @@ void main() {
       ];
       final result = extractEngagementCountTags(tags);
       expect(result, hasLength(5));
-      expect(
-        result.map((t) => t[0]).toSet(),
-        {'loops', 'likes', 'reposts', 'views', 'comments'},
-      );
+      expect(result.map((t) => t[0]).toSet(), {
+        'loops',
+        'likes',
+        'reposts',
+        'views',
+        'comments',
+      });
     });
 
     test('preserves tag values exactly', () {
@@ -214,10 +211,6 @@ void main() {
       expect(extractEngagementCountTags(tags), isEmpty);
     });
   });
-
-  // ---------------------------------------------------------------------------
-  // End-to-end widget test: verifies the actual _updateVideo() publish path
-  // ---------------------------------------------------------------------------
 
   testWidgets(
     'edit-video flow re-emits all engagement count tags in createAndSignEvent',
