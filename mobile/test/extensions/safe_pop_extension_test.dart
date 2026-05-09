@@ -58,14 +58,18 @@ void main() {
       },
     );
 
+    test('default fallback is /home/0', () {
+      expect(defaultSafePopFallback, equals('/home/0'));
+    });
+
     testWidgets(
-      'navigates to default fallback when canPop is false',
+      'navigates to defaultSafePopFallback when canPop is false',
       (tester) async {
         final router = GoRouter(
           initialLocation: '/key-management',
           routes: [
             GoRoute(
-              path: '/home/0',
+              path: defaultSafePopFallback,
               builder: (_, _) => homeScreen(),
             ),
             GoRoute(
@@ -85,6 +89,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('home'), findsOneWidget);
+        expect(
+          router.routerDelegate.currentConfiguration.uri.toString(),
+          equals(defaultSafePopFallback),
+        );
       },
     );
 
