@@ -387,7 +387,6 @@ class _ProfileSetupScreenViewState
         BlocListener<ProfileEditorBloc, ProfileEditorState>(
           listenWhen: (prev, curr) =>
               prev.pendingAvatarStatus != curr.pendingAvatarStatus,
-              prev.pendingAvatarStatus != curr.pendingAvatarStatus,
           listener: (context, state) {
             switch (state.pendingAvatarStatus) {
               case PendingAvatarStatus.staged:

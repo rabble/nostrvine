@@ -2428,6 +2428,7 @@ void main() {
         'flips verifierStatus to launchRequested on VerifierLaunchRequested',
         build: () => ProfileEditorBloc(
           profileRepository: mockProfileRepository,
+          blossomUploadService: mockBlossomUploadService,
           hasExistingProfile: true,
           currentUserPubkey: testPubkey,
         ),
@@ -2445,6 +2446,7 @@ void main() {
         'flips verifierStatus to dismissed on VerifierWebViewDismissed',
         build: () => ProfileEditorBloc(
           profileRepository: mockProfileRepository,
+          blossomUploadService: mockBlossomUploadService,
           hasExistingProfile: true,
           currentUserPubkey: testPubkey,
         ),
