@@ -1070,16 +1070,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Videoyu düzenle';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Oynatma ayarlarını aç';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Oynatma ayarlarını kapat';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Altyazıyı etkinleştir';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Altyazıyı devre dışı bırak';
 
   @override
   String get contentWarningLabel => 'İçerik Uyarısı';
@@ -1392,16 +1392,16 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionShareLabel => 'Paylaş';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Bildir';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Videoyu bildir';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Düzenle';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Videoyu düzenle';
 
   @override
   String get videoActionAboutLabel => 'Hakkında';
@@ -3792,32 +3792,32 @@ class AppLocalizationsTr extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Farklı bir arama terimi dene';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Seslere kaydedildi';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Zaten Seslerde';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Seslerim';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Henüz kaydedilmiş ses yok';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Bir videoda Sesi Kullan\'a dokunarak burada kaydedin.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Özel';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'Topluluk';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Sesi kaldır';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Seslerden kaldırıldı';
 
   @override
   String get soundsFailedToLoad => 'Sesler yüklenemedi';
@@ -4311,11 +4311,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Günlükler $path konumuna kaydedildi';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Klasörde göster';
 
   @override
   String get supportChatNotAvailable => 'Destek sohbeti kullanılamıyor';
@@ -4370,61 +4370,61 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportReasonSpam => 'Spam veya İstenmeyen İçerik';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'İstenmeyen veya tekrarlayan içerik';
 
   @override
   String get reportReasonHarassment => 'Taciz, Zorbalık veya Tehdit';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Zararlı ve istenmeyen yanıtlar veya bahsetmeler';
 
   @override
   String get reportReasonViolence => 'Şiddet veya Aşırı İçerik';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Şiddet, aşırılıkçı veya zararlı içerik';
 
   @override
   String get reportReasonSexualContent => 'Cinsel veya Yetişkin İçerik';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Çıplaklık, porno veya müstehcen içerik';
 
   @override
   String get reportReasonCopyright => 'Telif Hakkı İhlali';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Fikri mülkiyetin izinsiz kullanımı';
 
   @override
   String get reportReasonFalseInfo => 'Yanlış Bilgi';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'Yanıltıcı veya yanlış iddialar';
 
   @override
   String get reportReasonCsam => 'Çocuk Güvenliği İhlali';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Reşit olmayanları sömüren veya tehlikeye atan içerik';
 
   @override
   String get reportReasonAiGenerated => 'Yapay Zeka Üretimi İçerik';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Yapay zeka tarafından oluşturulduğundan şüphelenilen içerik';
 
   @override
   String get reportReasonOther => 'Diğer Politika İhlali';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => 'Yukarıda listelenmeyen ihlaller';
 
   @override
   String reportFailed(Object error) {
@@ -4446,7 +4446,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get reportLearnMore => 'Daha Fazla Bilgi';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Daha fazla bilgi:';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6538,18 +6538,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Topluluk';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Öne çıkanlar';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Seslerim';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'Öne çıkan sesler yakında';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Hazır olur olmaz öne çıkan sesleri buraya bırakacağız.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Ok aracı';
@@ -6741,11 +6740,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Bitti';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Bu sesi yayınla';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Başkalarının bu videonun sesini kaydedip yeniden kullanmasına izin ver.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Ortak çalışanlar';

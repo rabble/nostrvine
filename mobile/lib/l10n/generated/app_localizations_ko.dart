@@ -1024,16 +1024,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '영상 편집';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => '재생 설정 열기';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => '재생 설정 닫기';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => '자막 사용';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => '자막 사용 안 함';
 
   @override
   String get contentWarningLabel => '콘텐츠 경고';
@@ -1329,16 +1329,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShareLabel => '공유';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => '신고';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => '동영상 신고';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => '편집';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => '동영상 편집';
 
   @override
   String get videoActionAboutLabel => '정보';
@@ -3636,32 +3636,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => '다른 검색어로 시도해 보세요';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => '사운드에 저장됨';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => '이미 사운드에 있음';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => '내 사운드';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => '저장된 사운드가 아직 없음';
 
   @override
-  String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+  String get soundsSavedEmptyDescription => '동영상에서 사운드 사용을 탭하여 여기에 저장하세요.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => '비공개';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => '커뮤니티';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => '사운드 제거';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => '사운드에서 제거됨';
 
   @override
   String get soundsFailedToLoad => '사운드를 불러오지 못했어요';
@@ -4139,11 +4138,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return '$path에 로그 저장됨';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => '폴더에서 보기';
 
   @override
   String get supportChatNotAvailable => '지원 채팅을 사용할 수 없어요';
@@ -4197,61 +4196,55 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportReasonSpam => '스팸 또는 원치 않는 콘텐츠';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => '원치 않거나 반복되는 콘텐츠';
 
   @override
   String get reportReasonHarassment => '괴롭힘, 따돌림, 협박';
 
   @override
-  String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+  String get reportReasonHarassmentSubtitle => '유해하고 원치 않는 답글 또는 멘션';
 
   @override
   String get reportReasonViolence => '폭력적이거나 극단적인 콘텐츠';
 
   @override
-  String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+  String get reportReasonViolenceSubtitle => '폭력적, 극단적 또는 유해한 콘텐츠';
 
   @override
   String get reportReasonSexualContent => '성적이거나 성인용 콘텐츠';
 
   @override
-  String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+  String get reportReasonSexualContentSubtitle => '노출, 포르노 또는 노골적인 콘텐츠';
 
   @override
   String get reportReasonCopyright => '저작권 침해';
 
   @override
-  String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+  String get reportReasonCopyrightSubtitle => '지적 재산권의 무단 사용';
 
   @override
   String get reportReasonFalseInfo => '허위 정보';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => '오해의 소지가 있거나 허위 주장';
 
   @override
   String get reportReasonCsam => '아동 안전 위반';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+  String get reportReasonCsamSubtitle => '미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠';
 
   @override
   String get reportReasonAiGenerated => 'AI 생성 콘텐츠';
 
   @override
-  String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+  String get reportReasonAiGeneratedSubtitle => 'AI 생성으로 의심되는 콘텐츠';
 
   @override
   String get reportReasonOther => '기타 정책 위반';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => '위에 나열되지 않은 위반';
 
   @override
   String reportFailed(Object error) {
@@ -4272,7 +4265,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get reportLearnMore => '더 알아보기';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => '자세한 내용은';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6320,18 +6313,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => '커뮤니티';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => '추천';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => '내 사운드';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => '추천 사운드 곧 출시';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      '준비되는 대로 여기에 추천 사운드를 게시하겠습니다.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '화살표 도구';
@@ -6515,11 +6507,11 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => '완료';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => '이 사운드 게시';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      '다른 사람들이 이 동영상의 오디오를 저장하고 재사용할 수 있도록 합니다.';
 
   @override
   String get videoMetadataCollaboratorsLabel => '협업자';

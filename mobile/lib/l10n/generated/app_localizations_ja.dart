@@ -1016,16 +1016,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => '動画を編集';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => '再生設定を開く';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => '再生設定を閉じる';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => '字幕を有効にする';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => '字幕を無効にする';
 
   @override
   String get contentWarningLabel => 'コンテンツ警告';
@@ -1321,16 +1321,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionShareLabel => 'シェア';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => '報告';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => '動画を報告';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => '編集';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => '動画を編集';
 
   @override
   String get videoActionAboutLabel => '詳細';
@@ -3621,32 +3621,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => '別のキーワードで検索してみて';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'サウンドに保存しました';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'すでにサウンドにあります';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'マイサウンド';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => '保存されたサウンドはまだありません';
 
   @override
-  String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+  String get soundsSavedEmptyDescription => '動画でサウンドを使用をタップして、ここに保存します。';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'プライベート';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'コミュニティ';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'サウンドを削除';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'サウンドから削除しました';
 
   @override
   String get soundsFailedToLoad => 'サウンドの読み込みがうまくいかなかった';
@@ -4124,11 +4123,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'ログを$pathに保存しました';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'フォルダで表示';
 
   @override
   String get supportChatNotAvailable => 'サポートチャットは今使えないよ';
@@ -4182,61 +4181,55 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportReasonSpam => 'スパムや迷惑なコンテンツ';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => '迷惑または繰り返しのコンテンツ';
 
   @override
   String get reportReasonHarassment => '嫌がらせ、いじめ、脅迫';
 
   @override
-  String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+  String get reportReasonHarassmentSubtitle => '有害で望まない返信やメンション';
 
   @override
   String get reportReasonViolence => '暴力的・過激なコンテンツ';
 
   @override
-  String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+  String get reportReasonViolenceSubtitle => '暴力的、過激、または有害なコンテンツ';
 
   @override
   String get reportReasonSexualContent => '性的・成人向けコンテンツ';
 
   @override
-  String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+  String get reportReasonSexualContentSubtitle => 'ヌード、ポルノ、または露骨なコンテンツ';
 
   @override
   String get reportReasonCopyright => '著作権侵害';
 
   @override
-  String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+  String get reportReasonCopyrightSubtitle => '知的財産の無許可使用';
 
   @override
   String get reportReasonFalseInfo => '虚偽の情報';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => '誤解を招くまたは虚偽の主張';
 
   @override
   String get reportReasonCsam => '子どもの安全に関する違反';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+  String get reportReasonCsamSubtitle => '未成年者を搾取または危険にさらすコンテンツ';
 
   @override
   String get reportReasonAiGenerated => 'AI 生成コンテンツ';
 
   @override
-  String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+  String get reportReasonAiGeneratedSubtitle => 'AI生成と疑われるコンテンツ';
 
   @override
   String get reportReasonOther => 'その他のポリシー違反';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => '上記に記載されていない違反';
 
   @override
   String reportFailed(Object error) {
@@ -4257,7 +4250,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get reportLearnMore => 'もっと詳しく';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => '詳しくはこちら';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6297,18 +6290,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'コミュニティ';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'おすすめ';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'マイサウンド';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'おすすめサウンドは近日公開';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      '準備ができ次第、おすすめサウンドをここに掲載します。';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => '矢印ツール';
@@ -6491,11 +6483,11 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => '完了';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'このサウンドを公開';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      '他のユーザーがこの動画の音声を保存して再利用できるようにします。';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'コラボレーター';

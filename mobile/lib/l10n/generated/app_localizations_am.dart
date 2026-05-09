@@ -1063,16 +1063,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'ቪዲዮን ያርትዑ';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'የመልሶ ማጫወቻ ቅንብሮችን ክፈት';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'የመልሶ ማጫወቻ ቅንብሮችን ዝጋ';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'መግለጫ ጽሑፎችን አንቃ';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'መግለጫ ጽሑፎችን አሰናክል';
 
   @override
   String get contentWarningLabel => 'የይዘት ማስጠንቀቂያ';
@@ -1374,16 +1374,16 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionShareLabel => 'አጋራ';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'ሪፖርት';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'ቪዲዮውን ሪፖርት አድርግ';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'አርትዕ';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'ቪዲዮውን አርትዕ';
 
   @override
   String get videoActionAboutLabel => 'ስለ';
@@ -3727,32 +3727,32 @@ class AppLocalizationsAm extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'የተለየ የፍለጋ ቃል ይሞክሩ';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'ወደ ድምፆች ተቀመጠ';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'ቀድሞውኑ በድምፆች ውስጥ';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'የእኔ ድምፆች';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'ገና የተቀመጠ ድምፅ የለም';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'ድምፅን እዚህ ለማስቀመጥ በቪዲዮ ላይ ድምፅ ተጠቀም የሚለውን ይንኩ።';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'የግል';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'ማህበረሰብ';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'ድምፁን አስወግድ';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'ከድምፆች ተወገደ';
 
   @override
   String get soundsFailedToLoad => 'ድምጾችን መጫን አልተሳካም።';
@@ -4234,11 +4234,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'ምዝግቦች ተቀምጠዋል በ $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'በአቃፊ ውስጥ አሳይ';
 
   @override
   String get supportChatNotAvailable => 'የድጋፍ ውይይት አይገኝም';
@@ -4291,61 +4291,55 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportReasonSpam => 'አይፈለጌ መልእክት ወይም የማይፈለግ ይዘት';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'ያልተፈለገ ወይም ተደጋጋሚ ይዘት';
 
   @override
   String get reportReasonHarassment => 'ማስፈራራት፣ ማስፈራራት ወይም ማስፈራራት';
 
   @override
-  String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+  String get reportReasonHarassmentSubtitle => 'ጎጂ እና ያልተፈለጉ መልሶች ወይም ጥቅሶች';
 
   @override
   String get reportReasonViolence => 'የጥቃት ወይም ጽንፈኛ ይዘት';
 
   @override
-  String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+  String get reportReasonViolenceSubtitle => 'ጥቃት፣ ጽንፈኛ፣ ወይም ጎጂ ይዘት';
 
   @override
   String get reportReasonSexualContent => 'ወሲባዊ ወይም የአዋቂ ይዘት';
 
   @override
-  String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+  String get reportReasonSexualContentSubtitle => 'እርቃንነት፣ ወሲባዊ፣ ወይም ግልጽ ይዘት';
 
   @override
   String get reportReasonCopyright => 'የቅጂ መብት ጥሰት';
 
   @override
-  String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+  String get reportReasonCopyrightSubtitle => 'የአዕምሯዊ ንብረትን ሳይፈቀድ መጠቀም';
 
   @override
   String get reportReasonFalseInfo => 'የውሸት መረጃ';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'አሳሳች ወይም የውሸት ማስታወቂያዎች';
 
   @override
   String get reportReasonCsam => 'የልጅ ደህንነት ጥሰት';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+  String get reportReasonCsamSubtitle => 'ህፃናትን የሚበዘብዝ ወይም አደጋ ላይ የሚጥል ይዘት';
 
   @override
   String get reportReasonAiGenerated => 'በAI የተፈጠረ ይዘት';
 
   @override
-  String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+  String get reportReasonAiGeneratedSubtitle => 'AI የመነጨ ሊሆን የሚችል ይዘት';
 
   @override
   String get reportReasonOther => 'ሌላ የፖሊሲ ጥሰት';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => 'ከላይ ያልተዘረዘሩ ጥሰቶች';
 
   @override
   String reportFailed(Object error) {
@@ -4366,7 +4360,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get reportLearnMore => 'የበለጠ ተማር';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'የበለጠ ይወቁ በ';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6431,18 +6425,17 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'ማህበረሰብ';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'ተለይቶ የቀረበ';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'የእኔ ድምፆች';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'ተለይተው የቀረቡ ድምፆች በቅርቡ';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'ዝግጁ ሲሆኑ ተለይተው የቀረቡ ድምፆችን እዚህ እናስቀምጣለን።';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'የቀስት መሣሪያ';
@@ -6628,11 +6621,11 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'ተከናውኗል';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'ይህን ድምፅ አሳትም';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'ሌሎች የዚህን ቪዲዮ ድምፅ እንዲያስቀምጡ እና እንደገና እንዲጠቀሙ ፍቀድ።';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'ተባባሪዎች';

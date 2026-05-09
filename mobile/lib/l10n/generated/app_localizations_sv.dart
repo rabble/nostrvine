@@ -1083,16 +1083,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Redigera video';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Öppna uppspelningsinställningar';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Stäng uppspelningsinställningar';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Aktivera textning';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Avaktivera textning';
 
   @override
   String get contentWarningLabel => 'Innehållsvarning';
@@ -1406,16 +1406,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionShareLabel => 'Dela';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Anmäl';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Anmäl video';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Redigera';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Redigera video';
 
   @override
   String get videoActionAboutLabel => 'Om';
@@ -3809,32 +3809,32 @@ class AppLocalizationsSv extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Testa en annan sökterm';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Sparat i Ljud';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Finns redan i Ljud';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Mina ljud';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Inga sparade ljud ännu';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Tryck på Använd ljud i en video för att spara det här.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Privat';
 
   @override
   String get soundsAvailabilityCommunity => 'Community';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Ta bort ljud';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Borttaget från Ljud';
 
   @override
   String get soundsFailedToLoad => 'Kunde inte läsa in ljud';
@@ -4324,11 +4324,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Loggar sparade i $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Visa i mapp';
 
   @override
   String get supportChatNotAvailable => 'Supportchatten är inte tillgänglig';
@@ -4384,61 +4384,62 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reportReasonSpam => 'Skräppost eller ovälkommet innehåll';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'Oönskat eller repetitivt innehåll';
 
   @override
   String get reportReasonHarassment => 'Trakasserier, mobbning eller hot';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Skadliga och oönskade svar eller omnämnanden';
 
   @override
   String get reportReasonViolence => 'Våldsamt eller extremistiskt innehåll';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Våldsamt, extremistiskt eller skadligt innehåll';
 
   @override
   String get reportReasonSexualContent => 'Sexuellt eller vuxeninnehåll';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Nakenhet, porr eller explicit innehåll';
 
   @override
   String get reportReasonCopyright => 'Upphovsrättsbrott';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Otillåten användning av immateriella rättigheter';
 
   @override
   String get reportReasonFalseInfo => 'Felaktig information';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle =>
+      'Vilseledande eller falska påståenden';
 
   @override
   String get reportReasonCsam => 'Brott mot barns säkerhet';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Innehåll som utnyttjar eller utsätter minderåriga för fara';
 
   @override
   String get reportReasonAiGenerated => 'AI-genererat innehåll';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Misstänkt AI-genererat innehåll';
 
   @override
   String get reportReasonOther => 'Annat policybrott';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => 'Överträdelser som inte listas ovan';
 
   @override
   String reportFailed(Object error) {
@@ -4460,7 +4461,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get reportLearnMore => 'Läs mer';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Läs mer på';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6568,18 +6569,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Gemenskap';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Utvalda';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Mina ljud';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'Utvalda ljud kommer snart';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Vi släpper utvalda ljud här när de är klara.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pilverktyg';
@@ -6767,11 +6767,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Klar';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Publicera detta ljud';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Låt andra spara och återanvända videons ljud.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Samarbetspartners';

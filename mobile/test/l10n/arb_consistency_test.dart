@@ -31,7 +31,7 @@ void main() {
           reason: '${file.path} has keys missing from app_en.arb',
         );
         expect(
-          templateKeys.difference(keys).difference(_knownUntranslatedDebt),
+          templateKeys.difference(keys),
           isEmpty,
           reason: '${file.path} is missing keys from app_en.arb',
         );
@@ -39,61 +39,6 @@ void main() {
     });
   });
 }
-
-// Keys grouped by feature. Each entry is awaiting a fresh full-pass
-// translation across all 17 non-English locales. Tracking issue: #3814.
-const _knownUntranslatedDebt = {
-  // Sounds Library — saved sounds, preview, availability, library state.
-  'soundUntitled',
-  'soundStopPreview',
-  'soundPreviewSemanticLabel',
-  'soundViewDetailsSemanticLabel',
-  'soundsSavedToLibrary',
-  'soundsAlreadySavedToLibrary',
-  'soundsSavedLibraryTitle',
-  'soundsSavedEmptyTitle',
-  'soundsSavedEmptyDescription',
-  'soundsAvailabilityPrivate',
-  'soundsAvailabilityCommunity',
-  'soundsRemoveSavedSound',
-  'soundsRemovedFromLibrary',
-  // Video Editor – Audio Picker — fresh feature; audio category tabs and
-  // empty states.
-  'videoMetadataAudioReuseTitle',
-  'videoMetadataAudioReuseSubtitle',
-  'videoEditorAudioCategoryFeatured',
-  'videoEditorAudioCategoryMySounds',
-  'videoEditorAudioFeaturedEmptyTitle',
-  'videoEditorAudioFeaturedEmptySubtitle',
-  // Video Settings Menu — auto-advance / mute / captions popover toggles.
-  'videoSettingsMenuOpen',
-  'videoSettingsMenuClose',
-  'videoSettingsCaptionsEnable',
-  'videoSettingsCaptionsDisable',
-  // Video Action Report / Edit — Report (renamed from Repost → Revine)
-  // and Edit row buttons on the fullscreen video overlay.
-  'videoActionReportLabel',
-  'videoActionReport',
-  'videoActionEditLabel',
-  'videoActionEdit',
-  // Report Reason Subtitles + Learn More — Apple-compliance pass on the
-  // Report bottom sheet (each reason has a one-line scope subtitle, plus
-  // the divine.video/safety learn-more link).
-  'reportReasonSpamSubtitle',
-  'reportReasonHarassmentSubtitle',
-  'reportReasonViolenceSubtitle',
-  'reportReasonSexualContentSubtitle',
-  'reportReasonCopyrightSubtitle',
-  'reportReasonFalseInfoSubtitle',
-  'reportReasonCsamSubtitle',
-  'reportReasonAiGeneratedSubtitle',
-  'reportReasonOtherSubtitle',
-  'reportLearnMoreAt',
-  // Added by the desktop save-to-Downloads log export flow. Other locales
-  // fall back to English until the next translation pass.
-  'supportLogsSavedTo',
-  'supportRevealLogsAction',
-};
 
 Map<String, Object?> _readArb(File file) {
   return (jsonDecode(file.readAsStringSync()) as Map).cast<String, Object?>();

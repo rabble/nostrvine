@@ -1075,16 +1075,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'تعديل الفيديو';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'افتح إعدادات التشغيل';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'أغلق إعدادات التشغيل';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'تفعيل الترجمة';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'إيقاف الترجمة';
 
   @override
   String get contentWarningLabel => 'تحذير محتوى';
@@ -1393,16 +1393,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionShareLabel => 'مشاركة';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'إبلاغ';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'أبلِغ عن الفيديو';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'تعديل';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'عدّل الفيديو';
 
   @override
   String get videoActionAboutLabel => 'حول';
@@ -3770,32 +3770,32 @@ class AppLocalizationsAr extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'جرِّب كلمة بحث مختلفة';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'حُفظ في الأصوات';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'موجود بالفعل في الأصوات';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'أصواتي';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'لا توجد أصوات محفوظة بعد';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'اضغط على استخدام الصوت في فيديو لحفظه هنا.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'خاص';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'المجتمع';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'إزالة الصوت';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'أُزيل من الأصوات';
 
   @override
   String get soundsFailedToLoad => 'تعذر تحميل الأصوات';
@@ -4282,11 +4282,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'حُفظت السجلات في $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'إظهار في المجلد';
 
   @override
   String get supportChatNotAvailable => 'محادثة الدعم غير متاحة';
@@ -4340,61 +4340,58 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportReasonSpam => 'محتوى غير مرغوب فيه أو مزعج';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'محتوى غير مرغوب فيه أو متكرر';
 
   @override
   String get reportReasonHarassment => 'تحرُّش أو تنمُّر أو تهديدات';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'ردود أو إشارات ضارة وغير مرغوب فيها';
 
   @override
   String get reportReasonViolence => 'محتوى عنيف أو متطرف';
 
   @override
-  String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+  String get reportReasonViolenceSubtitle => 'محتوى عنيف أو متطرف أو ضار';
 
   @override
   String get reportReasonSexualContent => 'محتوى جنسي أو للبالغين';
 
   @override
-  String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+  String get reportReasonSexualContentSubtitle => 'عُري أو محتوى إباحي أو صريح';
 
   @override
   String get reportReasonCopyright => 'انتهاك حقوق الملكية';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'استخدام غير مصرح به للملكية الفكرية';
 
   @override
   String get reportReasonFalseInfo => 'معلومات كاذبة';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'ادعاءات مضللة أو كاذبة';
 
   @override
   String get reportReasonCsam => 'انتهاك سلامة الأطفال';
 
   @override
-  String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+  String get reportReasonCsamSubtitle => 'محتوى يستغل القاصرين أو يعرضهم للخطر';
 
   @override
   String get reportReasonAiGenerated => 'محتوى مُولَّد بالذكاء الاصطناعي';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'محتوى يُشتبه أنه من إنشاء الذكاء الاصطناعي';
 
   @override
   String get reportReasonOther => 'انتهاك آخر للسياسة';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle => 'انتهاكات غير مدرجة أعلاه';
 
   @override
   String reportFailed(Object error) {
@@ -4416,7 +4413,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get reportLearnMore => 'اعرف المزيد';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'اعرف المزيد على';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6506,18 +6503,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'المجتمع';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'مميز';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'أصواتي';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'الأصوات المميزة قريبًا';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'سنضع أصواتًا مميزة هنا فور جاهزيتها.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'أداة السهم';
@@ -6705,11 +6701,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'تم';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'انشر هذا الصوت';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'اسمح للآخرين بحفظ صوت هذا الفيديو وإعادة استخدامه.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'المتعاونون';

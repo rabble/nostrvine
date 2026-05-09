@@ -1109,16 +1109,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'I-edit ang video';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Buksan ang playback settings';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Isara ang playback settings';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'I-enable ang captions';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'I-disable ang captions';
 
   @override
   String get contentWarningLabel => 'Content Warning';
@@ -1437,16 +1437,16 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoActionShareLabel => 'I-share';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'I-report';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'I-report ang video';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'I-edit';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'I-edit ang video';
 
   @override
   String get videoActionAboutLabel => 'Tungkol';
@@ -3868,32 +3868,32 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Subukan ang ibang search term';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Na-save sa Sounds';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Nasa Sounds na';
 
   @override
   String get soundsSavedLibraryTitle => 'My Sounds';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Wala pang naka-save na sound';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'I-tap ang Use Sound sa isang video para i-save ito dito.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Pribado';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'Komunidad';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Alisin ang sound';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Naalis sa Sounds';
 
   @override
   String get soundsFailedToLoad => 'Hindi na-load ang sounds';
@@ -4388,11 +4388,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Na-save ang logs sa $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Ipakita sa folder';
 
   @override
   String get supportChatNotAvailable => 'Hindi available ang support chat';
@@ -4448,61 +4448,63 @@ class AppLocalizationsFil extends AppLocalizations {
   String get reportReasonSpam => 'Spam o Hindi Gustong Content';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle =>
+      'Hindi gustong o paulit-ulit na content';
 
   @override
   String get reportReasonHarassment => 'Harassment, Bullying, o Pagbabanta';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Nakakapinsala at hindi gustong reply o mention';
 
   @override
   String get reportReasonViolence => 'Marahas o Extremist na Content';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Marahas, extremist, o nakakapinsalang content';
 
   @override
   String get reportReasonSexualContent => 'Sekswal o Adult na Content';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Hubad, porn, o explicit na content';
 
   @override
   String get reportReasonCopyright => 'Paglabag sa Copyright';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Hindi awtorisadong paggamit ng intellectual property';
 
   @override
   String get reportReasonFalseInfo => 'Maling Impormasyon';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'Mapanlinlang o maling claim';
 
   @override
   String get reportReasonCsam => 'Paglabag sa Kaligtasan ng Bata';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Content na nag-eexploit o naglalagay sa panganib ng mga menor de edad';
 
   @override
   String get reportReasonAiGenerated => 'AI-Generated na Content';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Pinaghihinalaang AI-generated content';
 
   @override
   String get reportReasonOther => 'Iba pang Paglabag sa Patakaran';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle =>
+      'Mga paglabag na hindi nakalista sa itaas';
 
   @override
   String reportFailed(Object error) {
@@ -4524,7 +4526,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get reportLearnMore => 'Alamin Pa';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Alamin pa sa';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -4779,19 +4781,19 @@ class AppLocalizationsFil extends AppLocalizations {
   String get soundUseSound => 'Gamitin ang Sound';
 
   @override
-  String get soundUntitled => 'Untitled sound';
+  String get soundUntitled => 'Sound na walang pamagat';
 
   @override
-  String get soundStopPreview => 'Stop preview';
+  String get soundStopPreview => 'Itigil ang preview';
 
   @override
   String soundPreviewSemanticLabel(String title) {
-    return 'Preview $title';
+    return 'I-preview ang $title';
   }
 
   @override
   String soundViewDetailsSemanticLabel(String title) {
-    return 'View details for $title';
+    return 'Tingnan ang details para sa $title';
   }
 
   @override
@@ -6656,12 +6658,11 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoEditorAudioCategoryMySounds => 'My Sounds';
 
   @override
-  String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+  String get videoEditorAudioFeaturedEmptyTitle => 'Featured sounds malapit na';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Maglalagay kami ng featured sounds dito kapag handa na sila.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Arrow tool';
@@ -6855,11 +6856,11 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Tapos na';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'I-publish ang sound na ito';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Hayaan ang iba na i-save at gamitin ulit ang audio ng video na ito.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Mga Collaborator';
