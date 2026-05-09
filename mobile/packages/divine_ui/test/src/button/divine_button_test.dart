@@ -345,7 +345,7 @@ void main() {
       });
 
       testWidgets(
-        'tiny visible chip is 32px tall (8px outer × 2 + 32 = 48 tap target)',
+        'tiny outer == inner == 32px (no tap-padding inflation)',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -354,14 +354,15 @@ void main() {
             ),
           );
 
-          // The outermost Padding inside the button widget tree owns the
-          // tap-target inflation. For tiny, that's 8px on every side, so
-          // the visible chip's painted box (the AnimatedOpacity that wraps
-          // the Material decoration) is exactly 16px shorter than the
-          // outer DivineButton's painted size.
+          // Tiny intentionally skips the outer tap-padding wrap so its
+          // painted bounds match the 32px module of the avatar / type
+          // icon it usually sits next to. A row that swaps the button in
+          // and out (e.g. a Follow back affordance) keeps the same
+          // intrinsic height because the button never adds height
+          // beyond what the avatar already contributes.
           final outerSize = tester.getSize(find.byType(DivineButton));
           final innerSize = tester.getSize(find.byType(AnimatedOpacity));
-          expect(outerSize.height - innerSize.height, equals(16));
+          expect(outerSize.height, equals(32));
           expect(innerSize.height, equals(32));
         },
       );

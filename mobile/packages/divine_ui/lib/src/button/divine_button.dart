@@ -37,16 +37,21 @@ enum DivineButtonType {
 
 /// The size of a [DivineButton].
 ///
-/// All sizes have the same 48px total outer height for consistent touch
-/// targets. The [tiny] and [small] variants wrap the visible button in
-/// extra outer padding so the visible chip is shorter while the tap area
-/// stays 48px.
+/// [base] (48px) and [small] (40px visible / 48px tap target) keep a
+/// 48px minimum tap target — small wraps the visible chip in 4px of
+/// outer padding so the tap area stays at 48 even though the chip
+/// renders shorter. [tiny] (32px) explicitly does NOT — its outer
+/// bounds equal its visible bounds so it can sit on the same baseline
+/// as a 32px avatar / type icon without inflating the surrounding row
+/// height. Use [tiny] only where the layout's grid module is the
+/// constraint and the surrounding context can absorb the smaller tap
+/// area.
 enum DivineButtonSize {
-  /// Tiny button: 8px outer padding, 12px horizontal / 6px vertical
+  /// Tiny button: no outer tap-padding, 12px horizontal / 6px vertical
   /// inner padding, 16px border radius, 14px `labelLargeFont` text,
-  /// 20px icon. Visual height 32px, tap target 48px. Use when the
-  /// surrounding layout is built on a 32px module (e.g. a notification
-  /// row aligned with 32px avatars and type icons).
+  /// 20px icon. Visual height and tap target both 32px (deliberately
+  /// flush with the avatar / type-icon module so the row's intrinsic
+  /// height matches whether the button is present or not).
   tiny,
 
   /// Small button: 4px outer padding, 16px horizontal / 8px vertical
@@ -357,15 +362,12 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    // Tiny / small variants: wrap in extra outer padding so the visible
-    // chip is shorter than 48px while the tap target stays 48px.
-    final outerPad = switch (size) {
-      DivineButtonSize.tiny => 8.0, // 32 + 8 + 8 = 48 tap target.
-      DivineButtonSize.small => 4.0, // 40 + 4 + 4 = 48 tap target.
-      DivineButtonSize.base => null,
-    };
-    if (outerPad != null) {
-      button = Padding(padding: EdgeInsets.all(outerPad), child: button);
+    // Small variant only: wrap in extra outer padding so the visible
+    // chip is 40px while the tap target stays at 48px. Tiny deliberately
+    // skips this — its outer == inner == 32px so it can sit flush with a
+    // 32px avatar / type icon without inflating the row's height.
+    if (size == DivineButtonSize.small) {
+      button = Padding(padding: const EdgeInsets.all(4), child: button);
     }
 
     return button;
