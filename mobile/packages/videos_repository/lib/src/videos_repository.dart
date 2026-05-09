@@ -1662,12 +1662,18 @@ class VideosRepository {
   /// `note1...`, `nevent1...`, and `naddr1...` references.
   ///
   /// Lookup order is tuned for `divine.video/video/<id>` deep-links: local
-  /// cache → Funnelcake REST → relay queries (each capped by
-  /// [_routeRelayTimeout]). REST runs before the WebSocket fallback because
-  /// it answers in <1s without waiting on relay connection state, and the
-  /// hash in a divine.video share URL is the canonical d-tag/sha256 served
-  /// by Funnelcake. Relay queries are kept as a fallback for events that
-  /// only exist on user-configured personal relays.
+  /// cache → Funnelcake REST → relay queries. REST runs before the WebSocket
+  /// fallback because it answers in <1s without waiting on relay connection
+  /// state, and the hash in a divine.video share URL is the canonical
+  /// d-tag/sha256 served by Funnelcake. Relay queries are kept as a fallback
+  /// for events that only exist on user-configured personal relays.
+  ///
+  /// Each relay branch caps its own `queryEvents` call at [_routeRelayTimeout]
+  /// (the only thing that can block on cold-start EOSE) and bounds bulk-stats
+  /// hydration with [_statsFetchTimeout] (degrades to the unhydrated video
+  /// rather than restalling the spinner). The orchestrator deliberately does
+  /// not wrap the helpers themselves — a successful relay result followed by
+  /// slow stats enrichment must not be killed as if the relay had hung.
   Future<VideoEvent?> fetchVideoWithStatsForRouteId(String routeId) async {
     final candidate = _VideoRouteCandidate.parse(routeId);
     if (candidate == null) return null;
@@ -1696,21 +1702,21 @@ class VideosRepository {
     if (candidate.eventId != null) {
       final byEventId = await _fetchRouteVideoByEventIdFromRelay(
         candidate.eventId!,
-      ).timeout(_routeRelayTimeout, onTimeout: () => null);
+      );
       if (byEventId != null) return byEventId;
     }
 
     if (candidate.addressableId != null) {
-      final videos = await getVideosByAddressableIds([
+      final byAddressable = await _fetchAddressableVideoFromRelay(
         candidate.addressableId!,
-      ]).timeout(_routeRelayTimeout, onTimeout: () => const <VideoEvent>[]);
-      if (videos.isNotEmpty) return videos.first;
+      );
+      if (byAddressable != null) return byAddressable;
     }
 
     if (candidate.stableId != null) {
       final byStableId = await _fetchVideoByStableIdFromRelay(
         candidate.stableId!,
-      ).timeout(_routeRelayTimeout, onTimeout: () => null);
+      );
       if (byStableId != null) return byStableId;
     }
 
@@ -1819,19 +1825,23 @@ class VideosRepository {
     }
     if (videos.isEmpty) return null;
 
-    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    final hydrated = await _hydrateVideosWithBulkStats(
+      videos,
+    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
     return hydrated.firstOrNull;
   }
 
   Future<VideoEvent?> _fetchRouteVideoByEventIdFromRelay(String eventId) async {
     if (eventId.isEmpty) return null;
 
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        ids: [eventId],
-        kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
-      ),
-    ]);
+    final events = await _nostrClient
+        .queryEvents([
+          Filter(
+            ids: [eventId],
+            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+          ),
+        ])
+        .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
     if (events.isEmpty) return null;
 
     final videos = <VideoEvent>[];
@@ -1847,20 +1857,24 @@ class VideosRepository {
     }
     if (videos.isEmpty) return null;
 
-    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    final hydrated = await _hydrateVideosWithBulkStats(
+      videos,
+    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
     return hydrated.firstOrNull;
   }
 
   Future<VideoEvent?> _fetchVideoByStableIdFromRelay(String stableId) async {
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        // Route-specific lookups accept all supported NIP-71 video kinds so
-        // older shared links still resolve instead of failing as not found.
-        kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
-        d: [stableId],
-        limit: 10,
-      ),
-    ]);
+    final events = await _nostrClient
+        .queryEvents([
+          Filter(
+            // Route-specific lookups accept all supported NIP-71 video kinds so
+            // older shared links still resolve instead of failing as not found.
+            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+            d: [stableId],
+            limit: 10,
+          ),
+        ])
+        .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
     if (events.isEmpty) return null;
 
     events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -1877,7 +1891,56 @@ class VideosRepository {
     }
     if (videos.isEmpty) return null;
 
-    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    final hydrated = await _hydrateVideosWithBulkStats(
+      videos,
+    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
+    return hydrated.firstOrNull;
+  }
+
+  /// Fetches a video by addressable id (`kind:pubkey:d-tag`) from relay only.
+  ///
+  /// Distinct from [getVideosByAddressableIds] which also runs Funnelcake
+  /// fallback and bulk-stats hydration in the same pipeline. The route
+  /// orchestrator caps relay I/O via [_routeRelayTimeout]; that cap belongs
+  /// around the relay query specifically, not around enrichment that has its
+  /// own timeout. Stats hydration here is bounded by [_statsFetchTimeout]
+  /// so a stalled stats endpoint cannot re-stall deep-link UX.
+  Future<VideoEvent?> _fetchAddressableVideoFromRelay(
+    String addressableId,
+  ) async {
+    final parsed = AId.fromString(addressableId);
+    if (parsed == null || !NIP71VideoKinds.isVideoKind(parsed.kind)) {
+      return null;
+    }
+
+    final events = await _nostrClient
+        .queryEvents([
+          Filter(
+            kinds: [parsed.kind],
+            authors: [parsed.pubkey],
+            d: [parsed.dTag],
+          ),
+        ])
+        .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
+    if (events.isEmpty) return null;
+
+    events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final videos = <VideoEvent>[];
+    for (final event in events) {
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+    if (videos.isEmpty) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats(
+      videos,
+    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
     return hydrated.firstOrNull;
   }
 
@@ -1899,7 +1962,10 @@ class VideosRepository {
     );
     if (video == null) return null;
 
-    final hydrated = await _hydrateVideosWithBulkStats([video]);
+    final videos = [video];
+    final hydrated = await _hydrateVideosWithBulkStats(
+      videos,
+    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
     return hydrated.firstOrNull;
   }
 }
