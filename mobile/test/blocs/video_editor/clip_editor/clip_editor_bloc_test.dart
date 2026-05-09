@@ -1135,11 +1135,7 @@ void main() {
               .having(
                 (s) => s.lastAudioExtraction,
                 'lastAudioExtraction',
-                isA<ClipAudioExtractionFailure>().having(
-                  (f) => f.errorMessage,
-                  'errorMessage',
-                  'Extraction failed',
-                ),
+                isA<ClipAudioExtractionFailure>(),
               ),
         ],
         errors: () => [isA<AudioExtractionException>()],

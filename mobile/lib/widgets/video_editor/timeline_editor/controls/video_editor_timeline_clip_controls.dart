@@ -73,9 +73,11 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
         );
       case ClipAudioExtractionSuccess(:final audioEvent):
         _writeAudioExtractionHistory(context, state, audioEvent);
-      case ClipAudioExtractionFailure(:final errorMessage):
+      case ClipAudioExtractionFailure():
         ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(errorMessage),
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorExtractAudioFailed,
+          ),
         );
     }
   }

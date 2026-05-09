@@ -988,8 +988,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
             duration: Duration(seconds: track.duration?.toInt() ?? 0),
             audio: track.isBundled
                 ? EditorAudio.asset(track.assetPath!)
-                : (track.url!.startsWith('/') ||
-                      track.url!.startsWith('file://'))
+                : track.url!.startsWith('/')
                 ? EditorAudio.file(File(track.url!))
                 : EditorAudio.network(track.url!),
             startTime: track.startTime,

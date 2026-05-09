@@ -493,9 +493,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       emit(
         state.copyWith(
           isExtractingAudio: false,
-          lastAudioExtraction: ClipAudioExtractionFailure(
-            errorMessage: e.message,
-          ),
+          lastAudioExtraction: ClipAudioExtractionFailure(),
         ),
       );
     } catch (e, stackTrace) {
@@ -510,9 +508,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       emit(
         state.copyWith(
           isExtractingAudio: false,
-          lastAudioExtraction: ClipAudioExtractionFailure(
-            errorMessage: e.toString(),
-          ),
+          lastAudioExtraction: ClipAudioExtractionFailure(),
         ),
       );
     }

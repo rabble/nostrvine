@@ -466,7 +466,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     try {
       final video = audio.isBundled
           ? EditorVideo.asset(path)
-          : (path.startsWith('/') || path.startsWith('file://'))
+          : path.startsWith('/')
           ? EditorVideo.file(path)
           : EditorVideo.network(path);
       final data = await ProVideoEditor.instance.getWaveform(

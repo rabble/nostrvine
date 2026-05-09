@@ -167,9 +167,5 @@ final class ClipAudioExtractionSuccess extends ClipAudioExtractionResult {
 /// Extraction was attempted but the clip has no locally available file.
 final class ClipAudioExtractionNoLocalFile extends ClipAudioExtractionResult {}
 
-/// Extraction failed with an error; widget should show a snackbar.
-final class ClipAudioExtractionFailure extends ClipAudioExtractionResult {
-  ClipAudioExtractionFailure({required this.errorMessage});
-
-  final String errorMessage;
-}
+/// Extraction failed; widget should show a snackbar.
+final class ClipAudioExtractionFailure extends ClipAudioExtractionResult {}
