@@ -1,37 +1,29 @@
 // ABOUTME: Time-window chip row for the Explore → Popular tab.
-// ABOUTME: Tap routes through ?period=… so the URL is the source of truth.
+// ABOUTME: Chip taps update popularPeriodProvider directly. Cold-start
+// ABOUTME: deep-linking via ?period= is handled by ExploreScreen.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/popular_period_provider.dart';
-import 'package:unified_logger/unified_logger.dart';
 
 /// Horizontal chip row that filters the Popular tab by time window.
 ///
-/// Tapping a chip drives a URL change rather than mutating the provider
-/// directly — `ExploreScreen` listens for the route's `?period=` param
-/// and updates [popularPeriodProvider] from there. This keeps the URL
-/// authoritative and deep-linkable.
+/// Chip taps mutate [popularPeriodProvider] directly. The route URL is
+/// not changed on tap — driving navigation from chip taps caused a web
+/// page-rebuild hang when transitioning between sibling explore routes
+/// (`/explore` → `/explore/tab/popular?period=…`). Deep-link cold-start
+/// is still supported: `ExploreScreen.didChangeDependencies` reads
+/// `?period=` from the URL and seeds the provider on first build.
 class PopularFilterBar extends ConsumerWidget {
   const PopularFilterBar({super.key});
-
-  static const _explorePopularPath = '/explore/tab/popular';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(popularPeriodProvider);
     final l10n = context.l10n;
-
-    // Diagnostic logging for #4147 hang RCA — remove once fix verified
-    Log.info(
-      'PopularFilterBar.build: selected=$selected',
-      name: 'PopularFilterBar',
-      category: LogCategory.ui,
-    );
 
     final chips = <_ChipSpec>[
       _ChipSpec(period: null, label: l10n.popularFilterRightNow),
@@ -61,20 +53,13 @@ class PopularFilterBar extends ConsumerWidget {
               _PeriodChip(
                 spec: spec,
                 isSelected: selected == spec.period,
-                onTap: () => _onChipTap(context, spec.period),
+                onTap: () => ref.read(popularPeriodProvider.notifier).state =
+                    spec.period,
               ),
           ],
         ),
       ),
     );
-  }
-
-  void _onChipTap(BuildContext context, LeaderboardPeriod? period) {
-    if (period == null) {
-      context.go(_explorePopularPath);
-    } else {
-      context.go('$_explorePopularPath?period=${period.urlSlug}');
-    }
   }
 }
 

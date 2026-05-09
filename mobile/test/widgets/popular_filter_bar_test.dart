@@ -1,11 +1,10 @@
 // ABOUTME: Widget tests for the Popular tab time-window chip row.
-// ABOUTME: Verifies labels, selected state, and URL-driven tap behavior.
+// ABOUTME: Verifies labels, selected state, and provider-driven tap behavior.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/popular_period_provider.dart';
 import 'package:openvine/widgets/popular_filter_bar.dart';
@@ -13,29 +12,17 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 void main() {
   group(PopularFilterBar, () {
-    Widget buildSubject({
-      List<Override> overrides = const [],
-      String initialLocation = '/explore/tab/popular',
-      GoRouter? router,
-    }) {
-      final config =
-          router ??
-          GoRouter(
-            initialLocation: initialLocation,
-            routes: [
-              GoRoute(
-                path: '/explore/tab/popular',
-                builder: (_, _) => const Scaffold(body: PopularFilterBar()),
-              ),
-            ],
-          );
+    Widget buildSubject({List<Override> overrides = const []}) {
       return ProviderScope(
         overrides: overrides,
-        child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: config,
-        ),
+        child: const _FilterBarHost(),
+      );
+    }
+
+    Widget buildSubjectWithContainer(ProviderContainer container) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: const _FilterBarHost(),
       );
     }
 
@@ -55,13 +42,7 @@ void main() {
     testWidgets(
       'Right Now chip is selected when popularPeriodProvider is null',
       (tester) async {
-        await tester.pumpWidget(
-          buildSubject(
-            overrides: [
-              popularPeriodProvider.overrideWith((_) => null),
-            ],
-          ),
-        );
+        await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
         final rightNow = tester.widget<ChoiceChip>(
@@ -110,18 +91,12 @@ void main() {
     );
 
     testWidgets(
-      'tapping the Month chip pushes /explore/tab/popular?period=month',
+      'tapping the Month chip sets popularPeriodProvider to month',
       (tester) async {
-        final router = GoRouter(
-          initialLocation: '/explore/tab/popular',
-          routes: [
-            GoRoute(
-              path: '/explore/tab/popular',
-              builder: (_, _) => const Scaffold(body: PopularFilterBar()),
-            ),
-          ],
-        );
-        await tester.pumpWidget(buildSubject(router: router));
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(buildSubjectWithContainer(container));
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
@@ -129,25 +104,19 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          router.routerDelegate.currentConfiguration.uri.toString(),
-          equals('/explore/tab/popular?period=month'),
+          container.read(popularPeriodProvider),
+          equals(LeaderboardPeriod.month),
         );
       },
     );
 
     testWidgets(
-      'tapping the Today chip uses urlSlug "today" not wireValue "day"',
+      'tapping the Today chip sets popularPeriodProvider to day',
       (tester) async {
-        final router = GoRouter(
-          initialLocation: '/explore/tab/popular',
-          routes: [
-            GoRoute(
-              path: '/explore/tab/popular',
-              builder: (_, _) => const Scaffold(body: PopularFilterBar()),
-            ),
-          ],
-        );
-        await tester.pumpWidget(buildSubject(router: router));
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(buildSubjectWithContainer(container));
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
@@ -155,36 +124,46 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(
-          router.routerDelegate.currentConfiguration.uri.toString(),
-          equals('/explore/tab/popular?period=today'),
+          container.read(popularPeriodProvider),
+          equals(LeaderboardPeriod.day),
         );
       },
     );
 
     testWidgets(
-      'tapping the Right Now chip removes the period query param',
+      'tapping the Right Now chip clears popularPeriodProvider to null',
       (tester) async {
-        final router = GoRouter(
-          initialLocation: '/explore/tab/popular?period=week',
-          routes: [
-            GoRoute(
-              path: '/explore/tab/popular',
-              builder: (_, _) => const Scaffold(body: PopularFilterBar()),
+        final container = ProviderContainer(
+          overrides: [
+            popularPeriodProvider.overrideWith(
+              (_) => LeaderboardPeriod.week,
             ),
           ],
         );
-        await tester.pumpWidget(buildSubject(router: router));
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(buildSubjectWithContainer(container));
         await tester.pumpAndSettle();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
         await tester.tap(find.text(l10n.popularFilterRightNow));
         await tester.pumpAndSettle();
 
-        expect(
-          router.routerDelegate.currentConfiguration.uri.toString(),
-          equals('/explore/tab/popular'),
-        );
+        expect(container.read(popularPeriodProvider), isNull);
       },
     );
   });
+}
+
+class _FilterBarHost extends StatelessWidget {
+  const _FilterBarHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: PopularFilterBar()),
+    );
+  }
 }

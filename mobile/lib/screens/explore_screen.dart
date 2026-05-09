@@ -68,23 +68,10 @@ void syncPopularPeriodFromUrl(BuildContext context, WidgetRef ref) {
   final slug = GoRouterState.of(context).uri.queryParameters['period'];
   final period = LeaderboardPeriod.fromUrlSlug(slug);
 
-  // Diagnostic logging for #4147 hang RCA — remove once fix verified
-  Log.info(
-    'syncPopularPeriodFromUrl: slug=$slug period=$period',
-    name: 'ExploreScreen',
-    category: LogCategory.ui,
-  );
-
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!context.mounted) return;
     final current = ref.read(popularPeriodProvider);
     if (current != period) {
-      // Diagnostic logging for #4147 hang RCA — remove once fix verified
-      Log.warning(
-        'syncPopularPeriodFromUrl: WRITING period $current → $period',
-        name: 'ExploreScreen',
-        category: LogCategory.ui,
-      );
       ref.read(popularPeriodProvider.notifier).state = period;
     }
   });
