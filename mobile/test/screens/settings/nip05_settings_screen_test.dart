@@ -12,6 +12,7 @@ import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
