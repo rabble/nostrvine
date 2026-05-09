@@ -8,10 +8,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/services/web_auth_service.dart';
-import 'package:openvine/services/web_iframe_nostr_bridge_binding_stub.dart'
-    if (dart.library.js_interop)
-        'package:openvine/services/web_iframe_nostr_bridge_binding_web.dart'
-    as bridge_binding;
+import 'package:openvine/services/web_iframe_nostr_bridge_binding.dart';
+import 'package:openvine/services/web_iframe_nostr_bridge_binding_factory.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 /// postMessage envelope sent from a Divine integrated-app iframe to the host.
@@ -44,11 +42,11 @@ class WebIframeNostrBridge {
     required WebAuthService authService,
   }) : _app = app,
        _auth = authService,
-       _binding = bridge_binding.createWebIframeNostrBridgeBinding();
+       _binding = createWebIframeNostrBridgeBinding();
 
   final NostrAppDirectoryEntry _app;
   final WebAuthService _auth;
-  final bridge_binding.WebIframeNostrBridgeBinding _binding;
+  final WebIframeNostrBridgeBinding _binding;
   bool _started = false;
 
   /// Hook for tests to drive the bridge with synthesized messages without
@@ -68,13 +66,19 @@ class WebIframeNostrBridge {
     if (!kIsWeb || _started) return;
     _started = true;
     _binding.start(
-      onMessage: ({
-        required String origin,
-        required dynamic data,
-        required void Function(dynamic message, String targetOrigin) postReply,
-      }) async {
-        await _handleMessage(origin: origin, data: data, postReply: postReply);
-      },
+      onMessage:
+          ({
+            required String origin,
+            required dynamic data,
+            required void Function(dynamic message, String targetOrigin)
+            postReply,
+          }) async {
+            await _handleMessage(
+              origin: origin,
+              data: data,
+              postReply: postReply,
+            );
+          },
       getPostReplyOverride: () => postReplyOverride,
     );
   }
@@ -159,7 +163,8 @@ class WebIframeNostrBridge {
         }
         final unsigned = event.map((k, v) => MapEntry(k.toString(), v));
         final kind = unsigned['kind'];
-        if (kind is! num || !_app.allowedSignEventKinds.contains(kind.toInt())) {
+        if (kind is! num ||
+            !_app.allowedSignEventKinds.contains(kind.toInt())) {
           throw ArgumentError(
             'Blocked signEvent kind: ${unsigned['kind']}',
           );

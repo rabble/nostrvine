@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:js_interop';
 
-import 'package:openvine/services/web_iframe_nostr_bridge_binding_stub.dart';
+import 'package:openvine/services/web_iframe_nostr_bridge_binding.dart';
 import 'package:web/web.dart' as web;
 
-WebIframeNostrBridgeBinding createWebIframeNostrBridgeBinding() =>
+WebIframeNostrBridgeBinding createWebIframeNostrBridgeBindingImpl() =>
     _WebWebIframeNostrBridgeBinding();
 
 class _WebWebIframeNostrBridgeBinding implements WebIframeNostrBridgeBinding {
@@ -13,9 +13,8 @@ class _WebWebIframeNostrBridgeBinding implements WebIframeNostrBridgeBinding {
   @override
   void start({
     required WebIframeBridgeMessageHandler onMessage,
-    required void Function(dynamic message, String targetOrigin)?
-        Function()
-        getPostReplyOverride,
+    required void Function(dynamic message, String targetOrigin)? Function()
+    getPostReplyOverride,
   }) {
     final listener = ((web.Event event) {
       final messageEvent = event as web.MessageEvent;
