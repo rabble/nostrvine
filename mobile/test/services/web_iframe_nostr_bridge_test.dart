@@ -217,24 +217,27 @@ void main() {
         expect(message['error'], contains('user rejected or failed'));
       });
 
-      test('replies with error when signEvent kind is outside allowlist', () async {
-        when(() => auth.signer).thenReturn(signer);
+      test(
+        'replies with error when signEvent kind is outside allowlist',
+        () async {
+          when(() => auth.signer).thenReturn(signer);
 
-        await dispatch(allowedOrigin, {
-          'type': 'divine:nostr.request',
-          'id': 13,
-          'method': 'signEvent',
-          'params': {
-            'event': <String, dynamic>{'kind': 1, 'content': ''},
-          },
-        });
+          await dispatch(allowedOrigin, {
+            'type': 'divine:nostr.request',
+            'id': 13,
+            'method': 'signEvent',
+            'params': {
+              'event': <String, dynamic>{'kind': 1, 'content': ''},
+            },
+          });
 
-        expect(replies, hasLength(1));
-        final message = replies.single.message! as Map<String, dynamic>;
-        expect(message['id'], equals(13));
-        expect(message['error'], contains('Blocked signEvent kind'));
-        verifyNever(() => signer.signEvent(any()));
-      });
+          expect(replies, hasLength(1));
+          final message = replies.single.message! as Map<String, dynamic>;
+          expect(message['id'], equals(13));
+          expect(message['error'], contains('Blocked signEvent kind'));
+          verifyNever(() => signer.signEvent(any()));
+        },
+      );
 
       test('surfaces signer exceptions to the iframe', () async {
         when(() => auth.signer).thenReturn(signer);
@@ -331,7 +334,9 @@ void main() {
         expect(message['id'], equals(41));
         expect(
           message['error'],
-          contains('Prompt-required bridge capabilities are not supported on web'),
+          contains(
+            'Prompt-required bridge capabilities are not supported on web',
+          ),
         );
         verifyNever(() => signer.signEvent(any()));
       });

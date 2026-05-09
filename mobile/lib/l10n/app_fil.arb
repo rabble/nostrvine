@@ -1754,5 +1754,29 @@
     "videoMetadataPausePreviewSemanticLabel": "I-pause ang preview",
     "videoMetadataClosePreviewSemanticLabel": "Isara ang video preview",
     "videoMetadataRemoveSemanticLabel": "Alisin",
-    "fullscreenFeedRemovedMessage": "Naalis ang video"
+    "fullscreenFeedRemovedMessage": "Naalis ang video",
+    "verifiedAccountChipSemanticLabel": "Na-verify na {platform} account: {identity}",
+    "@verifiedAccountChipSemanticLabel": {
+        "description": "Semantic label for a verified account chip",
+        "placeholders": {
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
+        }
+    },
+    "profileEditVerifiedAccountsTitle": "Mga na-verify na account",
+    "@profileEditVerifiedAccountsTitle": {
+        "description": "Section title for verified accounts in the profile editor"
+    },
+    "profileEditGetVerifiedCta": "Magpa-verify",
+    "@profileEditGetVerifiedCta": {
+        "description": "Call to action button text for starting verified account linking"
+    },
+    "profileEditGetVerifiedSubtitle": "I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.",
+    "@profileEditGetVerifiedSubtitle": {
+        "description": "Subtitle explaining the verified accounts call to action in the profile editor"
+    }
 }

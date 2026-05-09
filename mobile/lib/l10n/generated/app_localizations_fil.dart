@@ -7078,16 +7078,16 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String verifiedAccountChipSemanticLabel(String platform, String identity) {
-    return 'Verified $platform account: $identity';
+    return 'Na-verify na $platform account: $identity';
   }
 
   @override
-  String get profileEditVerifiedAccountsTitle => 'Verified accounts';
+  String get profileEditVerifiedAccountsTitle => 'Mga na-verify na account';
 
   @override
-  String get profileEditGetVerifiedCta => 'Get verified';
+  String get profileEditGetVerifiedCta => 'Magpa-verify';
 
   @override
   String get profileEditGetVerifiedSubtitle =>
-      'Link your social media accounts so people know it\'s really you.';
+      'I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.';
 }
