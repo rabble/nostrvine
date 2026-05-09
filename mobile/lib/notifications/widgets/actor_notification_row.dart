@@ -9,8 +9,7 @@ import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
-import 'package:openvine/notifications/widgets/notification_type_icon_spec.dart';
-import 'package:openvine/widgets/notification_type_icon.dart';
+import 'package:openvine/notifications/widgets/notification_leading_type_icon.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Displays a single actor-anchored notification row (follow / mention /
@@ -62,7 +61,7 @@ class ActorNotificationRow extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _LeadingTypeIcon(
+                  NotificationLeadingTypeIcon(
                     type: notification.type,
                     isRead: notification.isRead,
                   ),
@@ -80,24 +79,6 @@ class ActorNotificationRow extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _LeadingTypeIcon extends StatelessWidget {
-  const _LeadingTypeIcon({required this.type, required this.isRead});
-
-  final NotificationKind type;
-  final bool isRead;
-
-  @override
-  Widget build(BuildContext context) {
-    final spec = notificationTypeIconSpec(type);
-    return NotificationTypeIcon(
-      icon: spec.icon,
-      backgroundColor: spec.background,
-      foregroundColor: spec.foreground,
-      showUnreadDot: !isRead,
     );
   }
 }
