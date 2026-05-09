@@ -3,10 +3,11 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 
 /// Default fallback when there is nothing to pop. The home feed root is
 /// always present in the route tree, so it is always safe to land on.
-const String _defaultSafePopFallback = '/home/0';
+final String _defaultSafePopFallback = VideoFeedPage.pathForIndex(0);
 
 /// Adds [safePop] to [BuildContext] for crash-safe back navigation.
 extension SafePopExtension on BuildContext {
@@ -18,11 +19,11 @@ extension SafePopExtension on BuildContext {
   /// the stack) or via a deep link / push notification. Calling [safePop]
   /// from AppBar back buttons and similar affordances degrades gracefully
   /// to [fallback] instead of crashing.
-  void safePop({String fallback = _defaultSafePopFallback}) {
+  void safePop({String? fallback}) {
     if (canPop()) {
       pop();
     } else {
-      go(fallback);
+      go(fallback ?? _defaultSafePopFallback);
     }
   }
 }

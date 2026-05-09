@@ -447,7 +447,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           ),
         );
 
-        // Pop back to settings after successful import
         context.safePop();
       }
     } catch (e) {

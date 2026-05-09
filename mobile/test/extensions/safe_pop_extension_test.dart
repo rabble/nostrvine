@@ -13,7 +13,7 @@ class _BackButtonScreen extends StatelessWidget {
       body: TextButton(
         onPressed: fallback == null
             ? context.safePop
-            : () => context.safePop(fallback: fallback!),
+            : () => context.safePop(fallback: fallback),
         child: const Text('back'),
       ),
     );
@@ -113,6 +113,39 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tearoff is assignable to VoidCallback (e.g. onBackPressed)',
+      (tester) async {
+        final router = GoRouter(
+          initialLocation: '/key-management',
+          routes: [
+            GoRoute(
+              path: '/home/0',
+              builder: (_, _) => homeScreen(),
+            ),
+            GoRoute(
+              path: '/key-management',
+              builder: (context, _) => Scaffold(
+                appBar: AppBar(
+                  leading: BackButton(onPressed: context.safePop),
+                ),
+                body: const Text('key-management'),
+              ),
+            ),
+          ],
+        );
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(BackButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('home'), findsOneWidget);
       },
     );
 
