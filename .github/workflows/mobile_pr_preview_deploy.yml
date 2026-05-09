@@ -50,6 +50,9 @@ jobs:
               output.write(f"head_ref={metadata['head_ref']}\n")
               output.write(f"head_sha={metadata['head_sha']}\n")
               output.write(f"preview_branch=pr-{metadata['pr_number']}\n")
+              output.write(
+                  f"deploy_commit_message=PR #{metadata['pr_number']} preview deploy for {metadata['head_sha']}\n"
+              )
           PY
 
       - name: Check artifact freshness against current PR head
@@ -174,10 +177,14 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
           command: >-
             pages deploy artifact/web
             --project-name=openvine-app
             --branch=${{ steps.metadata.outputs.preview_branch }}
+            --commit-hash=${{ steps.metadata.outputs.head_sha }}
+            --commit-message="${{ steps.metadata.outputs.deploy_commit_message }}"
+            --commit-dirty=true
 
       - name: Render deployed preview comment
         if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
