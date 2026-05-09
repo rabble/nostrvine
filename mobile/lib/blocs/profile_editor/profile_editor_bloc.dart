@@ -311,20 +311,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
-    await _saveProfile(
-      ProfileSaved(
-        pubkey: event.currentProfile.pubkey,
-        displayName: displayName,
-        about: event.currentProfile.about,
-        username: state.nip05Mode == Nip05Mode.divine ? state.username : null,
-        externalNip05: state.nip05Mode == Nip05Mode.external_
-            ? state.externalNip05
-            : null,
-        picture: event.currentProfile.picture,
-        banner: event.currentProfile.banner,
-      ),
-      emit,
+    final saveEvent = ProfileSaved(
+      pubkey: event.currentProfile.pubkey,
+      displayName: displayName,
+      about: event.currentProfile.about,
+      username: state.nip05Mode == Nip05Mode.divine ? state.username : null,
+      externalNip05: state.nip05Mode == Nip05Mode.external_
+          ? state.externalNip05
+          : null,
+      picture: event.currentProfile.picture,
+      banner: event.currentProfile.banner,
     );
+
+    await _saveProfile(saveEvent, _resolveEffectivePicture(saveEvent), emit);
   }
 
   Future<void> _onProfileSaveConfirmed(

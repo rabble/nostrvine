@@ -27,6 +27,7 @@ class Nip05SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
+    final blossomUploadService = ref.watch(blossomUploadServiceProvider);
     final authService = ref.watch(authServiceProvider);
     final pubkey = authService.currentPublicKeyHex;
 
@@ -35,11 +36,12 @@ class Nip05SettingsScreen extends ConsumerWidget {
     }
 
     return MultiBlocProvider(
-      key: ValueKey((profileRepository, pubkey)),
+      key: ValueKey((profileRepository, blossomUploadService, pubkey)),
       providers: [
         BlocProvider<ProfileEditorBloc>(
           create: (_) => ProfileEditorBloc(
             profileRepository: profileRepository,
+            blossomUploadService: blossomUploadService,
             hasExistingProfile: authService.hasExistingProfile,
             currentUserPubkey: pubkey,
           ),

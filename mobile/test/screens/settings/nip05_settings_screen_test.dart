@@ -1,3 +1,4 @@
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,10 +12,12 @@ import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
   group(Nip05SettingsView, () {
     late _MockProfileRepository mockProfileRepository;
+    late _MockBlossomUploadService mockBlossomUploadService;
     final l10n = lookupAppLocalizations(const Locale('en'));
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
@@ -51,6 +54,7 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
+      mockBlossomUploadService = _MockBlossomUploadService();
       when(
         () => mockProfileRepository.checkUsernameAvailability(
           username: any(named: 'username'),
@@ -87,6 +91,7 @@ void main() {
             BlocProvider(
               create: (_) => ProfileEditorBloc(
                 profileRepository: mockProfileRepository,
+                blossomUploadService: mockBlossomUploadService,
                 hasExistingProfile: hasExistingProfile,
                 currentUserPubkey: testPubkey,
               ),
