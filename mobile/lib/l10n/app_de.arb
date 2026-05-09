@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "Videos, die du repostest, erscheinen hier",
     "profileRepostsOtherEmpty": "Videos, die er repostest, erscheinen hier",
     "profileErrorLoadingReposts": "Fehler beim Laden der Reposts",
-    "profileLoadingTitle": "Profil wird geladen...",
-    "profileLoadingSubtitle": "Das kann einen Moment dauern",
     "profileLoadingVideos": "Videos werden geladen...",
     "profileNoVideosTitle": "Noch keine Videos",
     "profileNoVideosOwnSubtitle": "Teile dein erstes Video, um es hier zu sehen",

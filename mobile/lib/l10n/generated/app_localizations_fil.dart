@@ -572,16 +572,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'May error sa pag-load ng mga reposted video';
 
   @override
-  String get profileLoadingTitle => 'Naglo-load ang profile...';
-
-  @override
-  String get profileLoadingSubtitle => 'Maaaring tumagal nang ilang sandali';
-
-  @override
   String get profileLoadingVideos => 'Naglo-load ang mga video...';
-
-  @override
-  String get userNameSkeletonPlaceholder => 'Loading display name';
 
   @override
   String get profileNoVideosTitle => 'Wala pang video';

@@ -24,7 +24,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/widgets/user_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -415,11 +414,17 @@ void main() {
         expect(find.text('Loops'), findsOneWidget);
         expect(find.text('—'), findsNWidgets(4));
 
-        // Skeleton must be disabled after timeout — data is shown as-is.
+        // Stats Skeletonizer (the closest one above a stat label) must
+        // be disabled after timeout — data is shown as-is.
         // bySubtype is required because Skeletonizer is abstract; the
         // concrete widget in the tree is the private _Skeletonizer subclass.
         final s = tester.widget<Skeletonizer>(
-          find.bySubtype<Skeletonizer>(),
+          find
+              .ancestor(
+                of: find.text('Followers'),
+                matching: find.bySubtype<Skeletonizer>(),
+              )
+              .first,
         );
         expect(s.enabled, isFalse);
       },
@@ -448,11 +453,17 @@ void main() {
           expect(find.text('Likes'), findsOneWidget);
           expect(find.text('Loops'), findsOneWidget);
 
-          // Skeleton must be active — not just present in the tree.
+          // Stats Skeletonizer (the closest one above a stat label) must
+          // be active — not just present in the tree.
           // bySubtype is required because Skeletonizer is abstract; the
           // concrete widget in the tree is the private _Skeletonizer subclass.
           final s = tester.widget<Skeletonizer>(
-            find.bySubtype<Skeletonizer>(),
+            find
+                .ancestor(
+                  of: find.text('Followers'),
+                  matching: find.bySubtype<Skeletonizer>(),
+                )
+                .first,
           );
           expect(s.enabled, isTrue);
         },
@@ -1034,91 +1045,38 @@ void main() {
       );
     });
 
-    group('Profile content fade-in', () {
-      // The fade-in AnimatedOpacity wraps the avatar/name/bio/stats column
-      // and uses an 80ms duration. Other AnimatedOpacity widgets in the
-      // subtree (e.g. action label pill at 150ms) are filtered out by
-      // matching on duration.
-      AnimatedOpacity readFadeOpacity(WidgetTester tester) {
+    group('Identity skeleton (#4163)', () {
+      // Asserts the wiring contract from `_ProfileHeaderWidgetState.build`:
+      // when the profile is still loading and there is no cached fallback,
+      // the identity-content subtree is wrapped in an enabled Skeletonizer.
+      // Static chrome below (stats row, action buttons) sits inside the
+      // same Skeletonizer but is opted out via `Skeleton.keep` so it
+      // remains interactive — covered separately at the end of this group.
+      //
+      // The header subtree always contains 2 Skeletonizers at runtime: the
+      // identity one (top-level) and the stats one (inside _ProfileStatsRow,
+      // gated on profileStats == null). The identity Skeletonizer is the
+      // first one encountered in widget order.
+
+      Skeletonizer findIdentitySkeletonizer(WidgetTester tester) {
         final matches = tester
-            .widgetList<AnimatedOpacity>(
+            .widgetList<Skeletonizer>(
               find.descendant(
                 of: find.byType(ProfileHeaderWidget),
-                matching: find.byType(AnimatedOpacity),
+                matching: find.bySubtype<Skeletonizer>(),
               ),
             )
-            .where((w) => w.duration == const Duration(milliseconds: 80))
             .toList();
         expect(
           matches,
-          hasLength(1),
-          reason: 'Expected exactly one fade-in AnimatedOpacity (80ms)',
+          isNotEmpty,
+          reason: 'Expected at least one Skeletonizer in the header subtree',
         );
-        return matches.single;
+        return matches.first;
       }
 
-      testWidgets('opens immediately when profile is already available', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Fade Target');
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-          ),
-        );
-
-        // First frame — _profileVisible is still false, but profile is
-        // non-null so the AnimatedOpacity opens at full opacity.
-        final opacity = readFadeOpacity(tester);
-        expect(opacity.opacity, equals(1.0));
-        expect(opacity.duration, equals(const Duration(milliseconds: 80)));
-
-        await tester.pumpAndSettle();
-        expect(find.text('Fade Target'), findsOneWidget);
-      });
-
       testWidgets(
-        'stays visible once the post-frame callback flips _profileVisible',
-        (tester) async {
-          // Start without profile data — the post-frame callback should
-          // still flip _profileVisible to true so the header reveals even
-          // when the upstream state never carries a profile.
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: const MyProfileInitial(),
-            ),
-          );
-
-          // Pump enough frames for the post-frame callback to run.
-          await tester.pump();
-          await tester.pump();
-
-          final opacity = readFadeOpacity(tester);
-          expect(opacity.opacity, equals(1.0));
-        },
-      );
-    });
-
-    group('Identity skeleton (#4163)', () {
-      // Asserts the wiring contract from `_ProfileHeaderWidgetState.build`
-      // to its `_ProfileAvatarWithColor` and `_ProfileNameAndBio` children:
-      // when the profile is still loading and there is no cached fallback,
-      // the username and avatar must render as a skeleton — never as the
-      // real-looking generated identity.
-      //
-      // Verified by reading `UserAvatar.isLoading` and `UserName.isLoading`
-      // from the rendered widgets — those are the boundary the parent has
-      // to set correctly. The Skeletonizer behavior itself is covered by
-      // `user_name_skeleton_test.dart` and `comprehensive_user_avatar_test.dart`.
-
-      testWidgets(
-        'own profile + MyProfileInitial → routes isLoading: true to '
-        'avatar and username',
+        'own profile + MyProfileInitial → Skeletonizer.enabled = true',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -1129,17 +1087,13 @@ void main() {
           );
           await tester.pump();
 
-          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isTrue);
-
-          final userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isTrue);
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
         },
       );
 
       testWidgets(
-        'own profile + MyProfileLoading(profile: null) → routes '
-        'isLoading: true',
+        'own profile + MyProfileLoading(profile: null) → '
+        'Skeletonizer.enabled = true',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -1150,17 +1104,13 @@ void main() {
           );
           await tester.pump();
 
-          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isTrue);
-
-          final userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isTrue);
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
         },
       );
 
       testWidgets(
-        'own profile + MyProfileLoading(profile: cached) → routes '
-        'isLoading: false (we have data to show, do not skeleton)',
+        'own profile + MyProfileLoading(profile: cached) → '
+        'Skeletonizer.enabled = false (we have data to show, do not skeleton)',
         (tester) async {
           final cached = createTestProfile(displayName: 'Cached Display Name');
 
@@ -1173,16 +1123,12 @@ void main() {
           );
           await tester.pump();
 
-          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isFalse);
-
-          final userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isFalse);
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
         },
       );
 
       testWidgets(
-        'own profile + MyProfileError(notFound) → routes isLoading: false '
+        'own profile + MyProfileError(notFound) → Skeletonizer.enabled = false '
         '(steady-state generated fallback path is preserved)',
         (tester) async {
           await tester.pumpWidget(
@@ -1196,16 +1142,12 @@ void main() {
           );
           await tester.pump();
 
-          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isFalse);
-
-          final userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isFalse);
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
         },
       );
 
       testWidgets(
-        'own profile + MyProfileLoaded(profile) → routes isLoading: false',
+        'own profile + MyProfileLoaded(profile) → Skeletonizer.enabled = false',
         (tester) async {
           final loaded = createTestProfile(displayName: 'Loaded Display Name');
 
@@ -1218,17 +1160,13 @@ void main() {
           );
           await tester.pump();
 
-          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isFalse);
-
-          final userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isFalse);
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
         },
       );
 
       testWidgets(
-        'other profile + suppliedProfile non-null → routes isLoading: false '
-        '(caller already has data)',
+        'other profile + suppliedProfile non-null → '
+        'Skeletonizer.enabled = false (caller already has data)',
         (tester) async {
           final supplied = createTestProfile(displayName: 'Bob');
 
@@ -1241,11 +1179,7 @@ void main() {
           );
           await tester.pump();
 
-          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isFalse);
-
-          final userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isFalse);
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
         },
       );
 
@@ -1262,25 +1196,53 @@ void main() {
           );
           await tester.pump();
 
-          // Before timeout — children request skeleton.
-          var avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isTrue);
-          var userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isTrue);
+          // Before timeout — Skeletonizer is enabled.
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
 
           // Advance past the 7-second skeleton timeout (mirrors the
           // pattern used by _ProfileStatsRow's existing test).
           await tester.pump(const Duration(seconds: 8));
           await tester.pumpAndSettle();
 
-          // After timeout — children flip back to non-skeleton even
+          // After timeout — Skeletonizer flips back to disabled even
           // though the bloc is still in an initial state. This is what
           // lets users who genuinely have no Kind 0 still see the
           // generated-name fallback rather than an infinite shimmer.
-          avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
-          expect(avatar.isLoading, isFalse);
-          userName = tester.widget<UserName>(find.byType(UserName));
-          expect(userName.isLoading, isFalse);
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        },
+      );
+
+      testWidgets(
+        'wraps action buttons and stats row in Skeleton.keep so the '
+        'static chrome opts out of the parent shimmer',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileInitial(),
+            ),
+          );
+          await tester.pump();
+
+          // At least two Skeleton.keep nodes: stats row + action buttons.
+          // (PeopleListMembershipIndicator adds a third on other profiles.)
+          final keepNodes = tester
+              .widgetList<Skeleton>(
+                find.descendant(
+                  of: find.byType(ProfileHeaderWidget),
+                  matching: find.bySubtype<Skeleton>(),
+                ),
+              )
+              .toList();
+          expect(
+            keepNodes.length,
+            greaterThanOrEqualTo(2),
+            reason:
+                'Expected Skeleton.keep wrappers around stats row and action '
+                'buttons so static chrome stays interactive during the '
+                'identity skeleton (#4163 review).',
+          );
         },
       );
     });

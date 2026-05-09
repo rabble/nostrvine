@@ -306,8 +306,6 @@
     "profileRepostsOwnEmpty": "ማጋራት የሚገባ ነገር አየህ? እንደገና ይለጥፉት እና እዚህ ይታያል።",
     "profileRepostsOtherEmpty": "እስካሁን ምንም አላለፉም። ሲያደርጉ፣ እዚህ ይታያል።",
     "profileErrorLoadingReposts": "እንደገና የተለጠፉ ቪዲዮዎችን መጫን ላይ ስህተት",
-    "profileLoadingTitle": "መገለጫን በመጫን ላይ...",
-    "profileLoadingSubtitle": "ይሄ ጥቂት ጊዜ ሊወስድ ይችላል።",
     "profileLoadingVideos": "ቪዲዮዎችን በመጫን ላይ...",
     "profileNoVideosTitle": "እስካሁን ምንም ቪዲዮዎች የሉም",
     "profileNoVideosOwnSubtitle": "መድረክህ ተዘጋጅቷል። መለጠፍ ይጀምሩ እና ቪዲዮዎችዎ እዚህ ይኖራሉ።",

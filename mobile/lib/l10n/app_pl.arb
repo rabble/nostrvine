@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "Twoje reposty pojawią się tutaj",
     "profileRepostsOtherEmpty": "Jego reposty pojawią się tutaj",
     "profileErrorLoadingReposts": "Błąd wczytywania repostowanych filmów",
-    "profileLoadingTitle": "Wczytywanie profilu...",
-    "profileLoadingSubtitle": "To może chwilę potrwać",
     "profileLoadingVideos": "Wczytywanie filmów...",
     "profileNoVideosTitle": "Brak filmów",
     "profileNoVideosOwnSubtitle": "Udostępnij swój pierwszy film, żeby go tu zobaczyć",

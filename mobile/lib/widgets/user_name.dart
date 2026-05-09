@@ -2,12 +2,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/og_viner_cache_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/og_viner_badge.dart';
 import 'package:openvine/widgets/special_profile_checkmark.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class UserName extends ConsumerWidget {
   const UserName._({
@@ -20,7 +18,6 @@ class UserName extends ConsumerWidget {
     this.overflow,
     this.selectable = false,
     this.anonymousName,
-    this.isLoading = false,
   });
 
   /// Create a UserName widget from a pubkey.
@@ -29,11 +26,6 @@ class UserName extends ConsumerWidget {
   /// author_name), it will be used as a fallback when the profile isn't
   /// cached yet. This avoids unnecessary WebSocket profile fetches for
   /// videos that already have author data embedded.
-  ///
-  /// When [isLoading] is true, the widget renders a [Skeletonizer]
-  /// shimmer over a fixed-width placeholder string instead of the
-  /// real-looking generated fallback (#4163). Callers gate this on
-  /// their own "we're still fetching the profile" signal.
   factory UserName.fromPubKey(
     String pubkey, {
     String? embeddedName,
@@ -43,7 +35,6 @@ class UserName extends ConsumerWidget {
     bool? selectable,
     String? anonymousName,
     TextOverflow? overflow,
-    bool isLoading = false,
   }) => UserName._(
     pubkey: pubkey,
     embeddedName: embeddedName,
@@ -53,7 +44,6 @@ class UserName extends ConsumerWidget {
     overflow: overflow,
     selectable: selectable,
     anonymousName: anonymousName,
-    isLoading: isLoading,
   );
 
   factory UserName.fromUserProfile(
@@ -64,7 +54,6 @@ class UserName extends ConsumerWidget {
     bool? selectable,
     String? anonymousName,
     TextOverflow? overflow,
-    bool isLoading = false,
   }) => UserName._(
     userProfile: userProfile,
     key: key,
@@ -73,7 +62,6 @@ class UserName extends ConsumerWidget {
     overflow: overflow,
     selectable: selectable,
     anonymousName: anonymousName,
-    isLoading: isLoading,
   );
 
   final String? pubkey;
@@ -88,33 +76,8 @@ class UserName extends ConsumerWidget {
   final bool? selectable;
   final String? anonymousName;
 
-  /// When true, render a skeleton shimmer instead of resolving the
-  /// profile or falling back to a generated name. See [UserName.fromPubKey]
-  /// for context (#4163).
-  final bool isLoading;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textStyle =
-        style ??
-        const TextStyle(
-          color: VineTheme.secondaryText,
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-        );
-
-    if (isLoading) {
-      return Skeletonizer(
-        effect: vineSkeletonEffect,
-        child: Text(
-          context.l10n.userNameSkeletonPlaceholder,
-          style: textStyle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      );
-    }
-
     late String displayName;
     late String effectivePubkey;
     UserProfile? resolvedProfile;
@@ -144,6 +107,13 @@ class UserName extends ConsumerWidget {
     // NIP-05 identifier itself (in _UniqueIdentifier), not on the display name.
     // The display name is the user's chosen name and should not be crossed out.
 
+    final textStyle =
+        style ??
+        const TextStyle(
+          color: VineTheme.secondaryText,
+          fontSize: 10,
+          fontWeight: FontWeight.w400,
+        );
     final isOgViner = ref.watch(
       ogVinerCacheServiceProvider.select(
         (service) => service.isOgViner(effectivePubkey),

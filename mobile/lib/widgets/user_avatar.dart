@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 enum UserAvatarPlaceholderTone {
@@ -32,7 +31,6 @@ class UserAvatar extends StatelessWidget {
     this.placeholderTone = UserAvatarPlaceholderTone.auto,
     this.placeholderSeed,
     this.cornerRadius,
-    this.isLoading = false,
   });
 
   final String? imageUrl;
@@ -54,13 +52,6 @@ class UserAvatar extends StatelessWidget {
   /// profile avatar lightbox to render the maximized avatar at 112px
   /// instead of the size-derived default.
   final double? cornerRadius;
-
-  /// When true, the avatar is wrapped in a [Skeletonizer] shimmer so a
-  /// brief loading window does not surface as a real-looking
-  /// deterministic identicon (#4163). Callers gate this on their own
-  /// "we're still fetching the profile" signal — typically the parent's
-  /// own profile-load state machine plus a local timeout fallthrough.
-  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -86,19 +77,12 @@ class UserAvatar extends StatelessWidget {
       ),
     );
 
-    final wrapped = isLoading
-        ? Skeletonizer(
-            effect: vineSkeletonEffect,
-            child: avatar,
-          )
-        : avatar;
-
     return Semantics(
       label: semanticLabel ?? (name != null ? '$name avatar' : 'User avatar'),
       button: onTap != null,
       child: onTap == null
-          ? wrapped
-          : GestureDetector(onTap: onTap, child: wrapped),
+          ? avatar
+          : GestureDetector(onTap: onTap, child: avatar),
     );
   }
 

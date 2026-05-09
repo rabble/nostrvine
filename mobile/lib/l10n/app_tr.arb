@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "Yeniden paylaştığın videolar burada görünecek",
     "profileRepostsOtherEmpty": "Yeniden paylaştıkları videolar burada görünecek",
     "profileErrorLoadingReposts": "Yeniden paylaşılan videolar yüklenirken hata",
-    "profileLoadingTitle": "Profil yükleniyor...",
-    "profileLoadingSubtitle": "Bu birkaç saniye sürebilir",
     "profileLoadingVideos": "Videolar yükleniyor...",
     "profileNoVideosTitle": "Henüz Video Yok",
     "profileNoVideosOwnSubtitle": "İlk videonu paylaş ki burada görelim",

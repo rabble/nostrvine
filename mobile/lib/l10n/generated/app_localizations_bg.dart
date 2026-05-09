@@ -571,16 +571,7 @@ class AppLocalizationsBg extends AppLocalizations {
       'Грешка при зареждане на репостнатите видеа';
 
   @override
-  String get profileLoadingTitle => 'Профилът се зарежда...';
-
-  @override
-  String get profileLoadingSubtitle => 'Това може да отнеме няколко минути';
-
-  @override
   String get profileLoadingVideos => 'Видеата се зареждат...';
-
-  @override
-  String get userNameSkeletonPlaceholder => 'Loading display name';
 
   @override
   String get profileNoVideosTitle => 'Още няма видеа';

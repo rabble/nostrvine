@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "I video che ripubblichi appariranno qui",
     "profileRepostsOtherEmpty": "I video che ripubblica appariranno qui",
     "profileErrorLoadingReposts": "Errore nel caricamento dei video ripubblicati",
-    "profileLoadingTitle": "Caricamento profilo...",
-    "profileLoadingSubtitle": "Potrebbe volerci qualche secondo",
     "profileLoadingVideos": "Caricamento video...",
     "profileNoVideosTitle": "Ancora nessun video",
     "profileNoVideosOwnSubtitle": "Condividi il tuo primo video per vederlo qui",

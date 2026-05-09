@@ -568,16 +568,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get profileErrorLoadingReposts => 'Fehler beim Laden der Reposts';
 
   @override
-  String get profileLoadingTitle => 'Profil wird geladen...';
-
-  @override
-  String get profileLoadingSubtitle => 'Das kann einen Moment dauern';
-
-  @override
   String get profileLoadingVideos => 'Videos werden geladen...';
-
-  @override
-  String get userNameSkeletonPlaceholder => 'Loading display name';
 
   @override
   String get profileNoVideosTitle => 'Noch keine Videos';

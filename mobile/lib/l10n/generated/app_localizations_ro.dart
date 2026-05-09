@@ -590,16 +590,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eroare la încărcarea videoclipurilor redistribuite';
 
   @override
-  String get profileLoadingTitle => 'Se încarcă profilul...';
-
-  @override
-  String get profileLoadingSubtitle => 'Poate dura câteva momente';
-
-  @override
   String get profileLoadingVideos => 'Se încarcă videoclipurile...';
-
-  @override
-  String get userNameSkeletonPlaceholder => 'Loading display name';
 
   @override
   String get profileNoVideosTitle => 'Încă niciun videoclip';

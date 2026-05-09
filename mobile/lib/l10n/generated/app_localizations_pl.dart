@@ -573,16 +573,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Błąd wczytywania repostowanych filmów';
 
   @override
-  String get profileLoadingTitle => 'Wczytywanie profilu...';
-
-  @override
-  String get profileLoadingSubtitle => 'To może chwilę potrwać';
-
-  @override
   String get profileLoadingVideos => 'Wczytywanie filmów...';
-
-  @override
-  String get userNameSkeletonPlaceholder => 'Loading display name';
 
   @override
   String get profileNoVideosTitle => 'Brak filmów';

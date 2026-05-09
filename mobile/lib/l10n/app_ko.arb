@@ -128,8 +128,6 @@
     "profileRepostsOwnEmpty": "리포스트한 영상이 여기에 나타나요",
     "profileRepostsOtherEmpty": "이 사람이 리포스트한 영상이 여기에 나타나요",
     "profileErrorLoadingReposts": "리포스트 영상을 불러오지 못했어요",
-    "profileLoadingTitle": "프로필을 불러오는 중...",
-    "profileLoadingSubtitle": "잠시 걸릴 수 있어요",
     "profileLoadingVideos": "영상을 불러오는 중...",
     "profileNoVideosTitle": "아직 영상 없음",
     "profileNoVideosOwnSubtitle": "첫 영상을 공유하고 여기에서 확인해보세요",

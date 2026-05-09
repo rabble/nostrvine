@@ -1054,29 +1054,11 @@ abstract class AppLocalizations {
   /// **'Error loading reposted videos'**
   String get profileErrorLoadingReposts;
 
-  /// No description provided for @profileLoadingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading profile...'**
-  String get profileLoadingTitle;
-
-  /// No description provided for @profileLoadingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'This may take a few moments'**
-  String get profileLoadingSubtitle;
-
   /// No description provided for @profileLoadingVideos.
   ///
   /// In en, this message translates to:
   /// **'Loading videos...'**
   String get profileLoadingVideos;
-
-  /// Placeholder text covered by the loading-skeleton shimmer for a username. Never user-visible — only its rendered width sets the skeleton bar width. Pick a string of typical display-name length so the layout doesn't jump when the real name arrives.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading display name'**
-  String get userNameSkeletonPlaceholder;
 
   /// No description provided for @profileNoVideosTitle.
   ///
