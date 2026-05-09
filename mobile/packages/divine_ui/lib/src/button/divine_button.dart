@@ -48,7 +48,11 @@ enum DivineButtonType {
 /// area.
 enum DivineButtonSize {
   /// Tiny button: no outer tap-padding, 12px horizontal / 6px vertical
-  /// inner padding, 16px border radius, 14px `labelLargeFont` text,
+  /// inner padding, 12.8px border radius (= 32 × 0.4, matches a 32px
+  /// `UserAvatar`'s rounded square so the button rhymes visually with
+  /// the avatar it usually sits next to), 14px `titleSmallFont` text
+  /// (Bricolage Grotesque 800 — heavier than the Inter `labelLargeFont`
+  /// used elsewhere so the small chip still reads as a primary action),
   /// 20px icon. Visual height and tap target both 32px (deliberately
   /// flush with the avatar / type-icon module so the row's intrinsic
   /// height matches whether the button is present or not).
@@ -216,7 +220,10 @@ class _DivineButtonContent extends StatelessWidget {
   }
 
   double get _borderRadius => switch (size) {
-    DivineButtonSize.tiny => 16,
+    // 32 × 0.4 — same factor `UserAvatar` uses for non-tiny avatars, so
+    // a tiny button sitting next to a 32px avatar shares its corner
+    // curvature exactly.
+    DivineButtonSize.tiny => 12.8,
     DivineButtonSize.small => 16,
     DivineButtonSize.base => 20,
   };
@@ -260,10 +267,13 @@ class _DivineButtonContent extends StatelessWidget {
       );
     }
 
-    // Tiny buttons use the smaller labelLargeFont (14/20) so 6px vertical
-    // padding × 2 + 20px line-height totals exactly 32px.
+    // Tiny buttons use Bricolage `titleSmallFont` (800 14/20/0.1) — same
+    // 14/20 dimensions as `labelLargeFont` so 6px vertical padding × 2
+    // + 20px line-height still totals exactly 32px, but the heavier
+    // weight and brand font keep the small chip reading as a primary
+    // action.
     if (size == DivineButtonSize.tiny) {
-      return VineTheme.labelLargeFont(color: _foregroundColor);
+      return VineTheme.titleSmallFont(color: _foregroundColor);
     }
 
     return VineTheme.titleMediumFont(color: _foregroundColor);

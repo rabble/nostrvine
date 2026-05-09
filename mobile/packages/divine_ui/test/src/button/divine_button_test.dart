@@ -368,6 +368,54 @@ void main() {
       );
 
       testWidgets(
+        'tiny uses 12.8 corner radius (matches 32px UserAvatar)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+          );
+
+          // The Ink widget owns the decorated background; its border
+          // radius is the source of truth for the chip's corner.
+          final ink = tester.widget<Ink>(find.byType(Ink));
+          final decoration = ink.decoration! as BoxDecoration;
+          final radius = decoration.borderRadius! as BorderRadius;
+          expect(radius.topLeft, equals(const Radius.circular(12.8)));
+        },
+      );
+
+      testWidgets(
+        'tiny uses titleSmallFont (Bricolage Grotesque 800 14/20)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(size: DivineButtonSize.tiny, onPressed: () {}),
+          );
+
+          final text = tester.widget<Text>(find.text('Test'));
+          // titleSmallFont = Bricolage 800 14/20/0.1.  Bigger weight
+          // than labelLargeFont (Inter 600) so the small chip still
+          // reads as a primary action.
+          expect(text.style?.fontWeight, equals(FontWeight.w800));
+          expect(text.style?.fontSize, equals(14));
+        },
+      );
+
+      testWidgets(
+        'small uses titleMediumFont (Bricolage Grotesque 800 16/24)',
+        (tester) async {
+          // Locks the contract that small / base keep the heavier-feel
+          // titleMediumFont — the tiny→titleSmallFont fork above must
+          // not leak into the other variants.
+          await tester.pumpWidget(
+            buildTestWidget(size: DivineButtonSize.small, onPressed: () {}),
+          );
+
+          final text = tester.widget<Text>(find.text('Test'));
+          expect(text.style?.fontWeight, equals(FontWeight.w800));
+          expect(text.style?.fontSize, equals(16));
+        },
+      );
+
+      testWidgets(
         'small visible chip is 40px tall (4px outer × 2 + 40 = 48 tap target)',
         (tester) async {
           await tester.pumpWidget(
