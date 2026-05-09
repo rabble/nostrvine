@@ -124,10 +124,6 @@ const _knownUntranslatedDebt = {
   'blueskyStatusFailed',
   'blueskyStatusDisabled',
   'blueskyStatusNotLinked',
-  // Profile Setup — image-type label + NIP-05 validation messages.
-  'profileSetupImagesTypeGroup',
-  'profileSetupExternalNip05InvalidFormat',
-  'profileSetupExternalNip05DivineDomain',
   // Explore / Categories Misc — search hint, video count suffix, list
   // person count, "by author" prefix, no-videos states.
   'categoryGalleryNoVideosInCategory',

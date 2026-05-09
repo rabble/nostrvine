@@ -777,7 +777,7 @@ class AppLocalizationsFil extends AppLocalizations {
       'Nabigo ang pagpili ng larawan. I-paste na lang ang image URL sa baba.';
 
   @override
-  String get profileSetupImagesTypeGroup => 'images';
+  String get profileSetupImagesTypeGroup => 'mga larawan';
 
   @override
   String profileSetupCameraAccessFailed(Object error) {
@@ -895,11 +895,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid NIP-05 format (e.g., name@domain.com)';
+      'Invalid NIP-05 format (hal., name@domain.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
-      'Use the username field above for divine.video';
+      'Gamitin ang username field sa itaas para sa divine.video';
 
   @override
   String get profileSetupProfilePicturePreview => 'Preview ng profile picture';

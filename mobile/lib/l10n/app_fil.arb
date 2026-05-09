@@ -1918,5 +1918,8 @@
     "contentFiltersWarn": "Babala",
     "contentFiltersFilterOut": "I-filter Out",
     "safetySettingsWhatYouSee": "ANG NAKIKITA MO",
-    "safetySettingsWhatYouPublish": "ANG PINO-POST MO"
+    "safetySettingsWhatYouPublish": "ANG PINO-POST MO",
+    "profileSetupImagesTypeGroup": "mga larawan",
+    "profileSetupExternalNip05InvalidFormat": "Invalid NIP-05 format (hal., name@domain.com)",
+    "profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video"
 }
