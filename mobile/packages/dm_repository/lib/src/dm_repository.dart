@@ -940,29 +940,11 @@ class DmRepository {
     } else if (outgoingDao != null) {
       // Recipient publish failed before the self-wrap could land, so
       // both wrap statuses remain retryable on the queue row.
-      final errorMessage = result.error ?? 'Unknown publish failure';
-      try {
-        await outgoingDao.markRecipientWrapStatus(
-          id: rumor.id,
-          status: OutgoingWrapStatus.failed,
-          lastError: errorMessage,
-        );
-        await outgoingDao.markSelfWrapStatus(
-          id: rumor.id,
-          status: OutgoingWrapStatus.failed,
-          lastError: errorMessage,
-        );
-      } on Object catch (e, stackTrace) {
-        Log.error(
-          'Failed to mark outgoing_dms row failed for ${rumor.id}: $e',
-          category: LogCategory.system,
-          error: e,
-          stackTrace: stackTrace,
-        );
-        // Don't rethrow — caller already gets the failure result. The
-        // queue row stays in pending/pending; getStillPendingForOwner
-        // will surface it on the next retry sweep.
-      }
+      await _finalizeAfterRecipientFailure(
+        outgoingDao: outgoingDao,
+        rumorId: rumor.id,
+        errorMessage: result.error ?? 'Unknown publish failure',
+      );
     }
 
     return result;
@@ -1142,6 +1124,38 @@ class DmRepository {
     }
   }
 
+  /// Apply the queue-row transition for a failed per-recipient rumor
+  /// publish. Shared between [sendMessage] and [sendGroupMessage] so
+  /// both call sites keep recipient/self wrap failure bookkeeping in
+  /// lockstep.
+  Future<void> _finalizeAfterRecipientFailure({
+    required OutgoingDmsDao outgoingDao,
+    required String rumorId,
+    required String errorMessage,
+  }) async {
+    try {
+      await outgoingDao.markRecipientWrapStatus(
+        id: rumorId,
+        status: OutgoingWrapStatus.failed,
+        lastError: errorMessage,
+      );
+      await outgoingDao.markSelfWrapStatus(
+        id: rumorId,
+        status: OutgoingWrapStatus.failed,
+        lastError: errorMessage,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to mark outgoing_dms row failed for $rumorId: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Don't rethrow — caller already gets the failure result. The
+      // queue row stays retryable and the next sweep can pick it up.
+    }
+  }
+
   /// Send a text message to a group conversation.
   ///
   /// Throws [StateError] if the repository has not been initialized.
@@ -1296,28 +1310,11 @@ class DmRepository {
       for (var i = 0; i < rumors.length; i++) {
         final result = results[i];
         if (result.success) continue;
-        final errorMessage = result.error ?? 'Unknown publish failure';
-        try {
-          await outgoingDao.markRecipientWrapStatus(
-            id: rumors[i].id,
-            status: OutgoingWrapStatus.failed,
-            lastError: errorMessage,
-          );
-          await outgoingDao.markSelfWrapStatus(
-            id: rumors[i].id,
-            status: OutgoingWrapStatus.failed,
-            lastError: errorMessage,
-          );
-        } on Object catch (e, stackTrace) {
-          Log.error(
-            'Failed to mark outgoing_dms row failed for ${rumors[i].id}: '
-            '$e',
-            category: LogCategory.system,
-            error: e,
-            stackTrace: stackTrace,
-          );
-          // Don't rethrow — caller already gets the failure result.
-        }
+        await _finalizeAfterRecipientFailure(
+          outgoingDao: outgoingDao,
+          rumorId: rumors[i].id,
+          errorMessage: result.error ?? 'Unknown publish failure',
+        );
       }
     }
 

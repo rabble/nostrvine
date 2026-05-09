@@ -181,41 +181,6 @@ void main() {
           content,
         );
       });
-
-      // Forward sendRumor invocations to sendPrivateMessage so the many
-      // existing `when(() => mockMessageService.sendPrivateMessage(...))`
-      // stubs and `verify(() => mockMessageService.sendPrivateMessage(...))`
-      // assertions in this file keep working unchanged after the
-      // refactor that split sendPrivateMessage into buildRumor +
-      // sendRumor. The forwarded call records both invocations on the
-      // mock — sendRumor for new tests that target the split, and
-      // sendPrivateMessage for the legacy assertions.
-      when(
-        () => mockMessageService.sendRumor(
-          rumorEvent: any(named: 'rumorEvent'),
-          recipientPubkey: any(named: 'recipientPubkey'),
-        ),
-      ).thenAnswer((inv) async {
-        final rumorEvent = inv.namedArguments[#rumorEvent] as Event;
-        final recipientPubkey = inv.namedArguments[#recipientPubkey] as String;
-        // additionalTags excludes the leading p-tag that buildRumor
-        // injected, so the legacy verify assertions match the original
-        // caller-supplied tags exactly.
-        final passthroughTags = rumorEvent.tags
-            .where(
-              (tag) =>
-                  !(tag.length >= 2 &&
-                      tag[0] == 'p' &&
-                      tag[1] == recipientPubkey),
-            )
-            .toList();
-        return mockMessageService.sendPrivateMessage(
-          recipientPubkey: recipientPubkey,
-          content: rumorEvent.content,
-          eventKind: rumorEvent.kind,
-          additionalTags: passthroughTags,
-        );
-      });
     });
 
     DmRepository createRepository({
@@ -237,6 +202,40 @@ void main() {
         nip04Decryptor: nip04Decryptor,
         syncState: syncState,
       );
+    }
+
+    List<List<String>> additionalTagsFromRumor(
+      Event rumorEvent,
+      String recipientPubkey,
+    ) {
+      return rumorEvent.tags
+          .where(
+            (tag) =>
+                !(tag.length >= 2 &&
+                    tag[0] == 'p' &&
+                    tag[1] == recipientPubkey),
+          )
+          .map(List<String>.from)
+          .toList();
+    }
+
+    void stubSendRumor(
+      FutureOr<NIP17SendResult> Function(
+        Event rumorEvent,
+        String recipientPubkey,
+      )
+      answer,
+    ) {
+      when(
+        () => mockMessageService.sendRumor(
+          rumorEvent: any(named: 'rumorEvent'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+        ),
+      ).thenAnswer((inv) async {
+        final rumorEvent = inv.namedArguments[#rumorEvent] as Event;
+        final recipientPubkey = inv.namedArguments[#recipientPubkey] as String;
+        return answer(rumorEvent, recipientPubkey);
+      });
     }
 
     // -----------------------------------------------------------------
@@ -363,15 +362,9 @@ void main() {
       });
 
       test('sendMessage forwards additional NIP-17 tags', () async {
-        when(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        ).thenAnswer(
-          (_) async => const NIP17SendResult.failure('relay unavailable'),
+        stubSendRumor(
+          (rumorEvent, recipientPubkey) async =>
+              const NIP17SendResult.failure('relay unavailable'),
         );
 
         final repository = createRepository();
@@ -396,33 +389,27 @@ void main() {
           additionalTags: inviteTags,
         );
 
-        final captured =
+        final rumorEvent =
             verify(
-                  () => mockMessageService.sendPrivateMessage(
+                  () => mockMessageService.sendRumor(
+                    rumorEvent: captureAny(named: 'rumorEvent'),
                     recipientPubkey: _validPubkeyB,
-                    content: 'Invited you to collaborate',
-                    eventKind: any(named: 'eventKind'),
-                    additionalTags: captureAny(named: 'additionalTags'),
                   ),
                 ).captured.single
-                as List<List<String>>;
+                as Event;
 
-        expect(captured, containsAll(inviteTags));
+        expect(
+          additionalTagsFromRumor(rumorEvent, _validPubkeyB),
+          containsAll(inviteTags),
+        );
       });
 
       test('persists message and conversation on success', () async {
-        when(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
+        stubSendRumor(
+          (_, recipientPubkey) async => NIP17SendResult.success(
             rumorEventId: _rumorEventId,
             messageEventId: _giftWrapEventId,
-            recipientPubkey: _validPubkeyB,
+            recipientPubkey: recipientPubkey,
           ),
         );
         when(
@@ -529,15 +516,9 @@ void main() {
       });
 
       test('does not persist on send failure', () async {
-        when(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        ).thenAnswer(
-          (_) async => const NIP17SendResult.failure('Relay rejected'),
+        stubSendRumor(
+          (rumorEvent, recipientPubkey) async =>
+              const NIP17SendResult.failure('Relay rejected'),
         );
 
         final repository = createRepository();
@@ -577,18 +558,11 @@ void main() {
       });
 
       test('skipNip04Fallback: true suppresses NIP-04 publish', () async {
-        when(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
+        stubSendRumor(
+          (_, recipientPubkey) async => NIP17SendResult.success(
             rumorEventId: _rumorEventId,
             messageEventId: _giftWrapEventId,
-            recipientPubkey: _validPubkeyB,
+            recipientPubkey: recipientPubkey,
           ),
         );
         when(
@@ -667,18 +641,11 @@ void main() {
       test(
         'second send to same conversation skips NIP-04 fallback (#3663)',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
           when(
@@ -3181,18 +3148,11 @@ void main() {
               'Reason: Spam or Unwanted Content\n'
               'Event: abc123eventid';
 
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: moderationPubkey,
+              recipientPubkey: recipientPubkey,
             ),
           );
           stubDaoInserts();
@@ -3211,11 +3171,9 @@ void main() {
           expect(result.success, isTrue);
 
           verify(
-            () => mockMessageService.sendPrivateMessage(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: moderationPubkey,
-              content: reportContent,
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
             ),
           ).called(1);
 
@@ -3417,18 +3375,11 @@ void main() {
               'ff0011223344556677889900aabbccddeeff'
               '0011223344556677889900aabbcc';
 
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: externalUserPubkey,
+              recipientPubkey: recipientPubkey,
             ),
           );
           stubDaoInserts();
@@ -3447,11 +3398,9 @@ void main() {
           expect(result.success, isTrue);
 
           verify(
-            () => mockMessageService.sendPrivateMessage(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: externalUserPubkey,
-              content: 'Hello from Divine!',
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
             ),
           ).called(1);
         },
@@ -4197,18 +4146,11 @@ void main() {
       test(
         'sends NIP-04 fallback when protocol is unknown',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
           stubDaoInserts();
@@ -4252,11 +4194,9 @@ void main() {
 
           // Verify both NIP-17 and NIP-04 were called
           verify(
-            () => mockMessageService.sendPrivateMessage(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
             ),
           ).called(1);
 
@@ -4272,18 +4212,11 @@ void main() {
           final participants = [_validPubkeyA, _validPubkeyB]..sort();
           final convId = DmRepository.computeConversationId(participants);
 
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
           stubDaoInserts();
@@ -4317,11 +4250,9 @@ void main() {
 
           // NIP-17 was sent
           verify(
-            () => mockMessageService.sendPrivateMessage(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
             ),
           ).called(1);
 
@@ -6257,18 +6188,11 @@ void main() {
 
     group('sendMessage - replyToId', () {
       test('includes reply-to tag when replyToId is provided', () async {
-        when(
-          () => mockMessageService.sendPrivateMessage(
-            recipientPubkey: any(named: 'recipientPubkey'),
-            content: any(named: 'content'),
-            eventKind: any(named: 'eventKind'),
-            additionalTags: any(named: 'additionalTags'),
-          ),
-        ).thenAnswer(
-          (_) async => NIP17SendResult.success(
+        stubSendRumor(
+          (_, recipientPubkey) async => NIP17SendResult.success(
             rumorEventId: _rumorEventId,
             messageEventId: _giftWrapEventId,
-            recipientPubkey: _validPubkeyB,
+            recipientPubkey: recipientPubkey,
           ),
         );
 
@@ -6336,24 +6260,18 @@ void main() {
           replyToId: replyId,
         );
 
-        // Verify the reply-to tag was passed to sendPrivateMessage
-        final captured =
+        final rumorEvent =
             verify(
-                  () => mockMessageService.sendPrivateMessage(
+                  () => mockMessageService.sendRumor(
+                    rumorEvent: captureAny(named: 'rumorEvent'),
                     recipientPubkey: any(named: 'recipientPubkey'),
-                    content: any(named: 'content'),
-                    eventKind: any(named: 'eventKind'),
-                    additionalTags: captureAny(named: 'additionalTags'),
                   ),
                 ).captured.single
-                as List<dynamic>;
+                as Event;
+        final captured = additionalTagsFromRumor(rumorEvent, _validPubkeyB);
         expect(
           captured.any(
-            (tag) =>
-                tag is List &&
-                tag.length == 2 &&
-                tag[0] == 'e' &&
-                tag[1] == replyId,
+            (tag) => tag.length == 2 && tag[0] == 'e' && tag[1] == replyId,
           ),
           isTrue,
         );
@@ -6418,18 +6336,11 @@ void main() {
       test(
         'sends to each recipient and persists group conversation',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
           stubDaoInserts();
@@ -6445,11 +6356,9 @@ void main() {
 
           // Verify sent to each recipient
           verify(
-            () => mockMessageService.sendPrivateMessage(
+            () => mockMessageService.sendRumor(
+              rumorEvent: any(named: 'rumorEvent'),
               recipientPubkey: any(named: 'recipientPubkey'),
-              content: 'Group hello!',
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
             ),
           ).called(2);
 
@@ -6475,20 +6384,13 @@ void main() {
         'persists when at least one send succeeds (partial failure)',
         () async {
           var callCount = 0;
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer((_) async {
+          stubSendRumor((_, recipientPubkey) async {
             callCount++;
             if (callCount == 1) {
               return NIP17SendResult.success(
                 rumorEventId: _rumorEventId,
                 messageEventId: _giftWrapEventId,
-                recipientPubkey: _validPubkeyB,
+                recipientPubkey: recipientPubkey,
               );
             }
             return const NIP17SendResult.failure('relay timeout');
@@ -6524,15 +6426,9 @@ void main() {
       test(
         'does not persist when all sends fail',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => const NIP17SendResult.failure('relay timeout'),
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async =>
+                const NIP17SendResult.failure('relay timeout'),
           );
 
           final repo = createRepository();
@@ -7009,18 +6905,11 @@ void main() {
             () => mockSigner.encrypt(any(), any()),
           ).thenAnswer((_) async => null);
 
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
 
@@ -7114,18 +7003,11 @@ void main() {
             () => mockSigner.signEvent(any()),
           ).thenAnswer((_) async => null);
 
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
 
@@ -7208,18 +7090,11 @@ void main() {
             participants,
           );
 
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
 
@@ -7407,18 +7282,11 @@ void main() {
         'enqueues a pending row with the rumor id, then deletes it on '
         'full delivery',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
 
@@ -7474,15 +7342,9 @@ void main() {
         'on publish failure: marks both wraps failed with the error '
         'and leaves the row for the retry service',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => const NIP17SendResult.failure('relay unavailable'),
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async =>
+                const NIP17SendResult.failure('relay unavailable'),
           );
 
           final repository = createRepository(
@@ -7556,18 +7418,11 @@ void main() {
         'on partial delivery: persists locally, keeps the queue row, '
         'marks recipient sent, and marks self failed',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
               selfWrapPublished: false,
             ),
           );
@@ -7637,18 +7492,11 @@ void main() {
         'sendMessage falls back to the direct-write behaviour and '
         'never touches the queue',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => NIP17SendResult.success(
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
               rumorEventId: _rumorEventId,
               messageEventId: _giftWrapEventId,
-              recipientPubkey: _validPubkeyB,
+              recipientPubkey: recipientPubkey,
             ),
           );
 
@@ -7749,17 +7597,9 @@ void main() {
         'enqueues a row per recipient and deletes them all on full delivery',
         () async {
           // Per-recipient rumor.id differs because additionalTags differ.
-          // The forwarding shim returns whatever NIP17SendResult we
-          // configure here; pin success on both recipients.
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer((inv) async {
-            final recipient = inv.namedArguments[#recipientPubkey] as String;
+          // Pin success on both recipients so both queued rumor ids
+          // take the full-delivery path.
+          stubSendRumor((_, recipient) async {
             return NIP17SendResult.success(
               rumorEventId: 'rumor-$recipient',
               messageEventId: 'wrap-$recipient',
@@ -7820,15 +7660,7 @@ void main() {
         'marks recipient sent + self failed only for the recipients '
         'whose self-wrap failed, deletes rows for fully-delivered ones',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer((inv) async {
-            final recipient = inv.namedArguments[#recipientPubkey] as String;
+          stubSendRumor((_, recipient) async {
             return NIP17SendResult.success(
               rumorEventId: 'rumor-$recipient',
               messageEventId: 'wrap-$recipient',
@@ -7884,15 +7716,7 @@ void main() {
         'marks both wraps failed for a recipient whose recipient '
         'publish failed, leaves the others on their full-delivery path',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer((inv) async {
-            final recipient = inv.namedArguments[#recipientPubkey] as String;
+          stubSendRumor((_, recipient) async {
             if (recipient == _validPubkeyC) {
               return const NIP17SendResult.failure('relay rejected');
             }
@@ -7954,15 +7778,9 @@ void main() {
         'when all recipients fail: marks every row both-wraps failed '
         'and never inserts a direct_messages row',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer(
-            (_) async => const NIP17SendResult.failure('all relays down'),
+          stubSendRumor(
+            (rumorEvent, recipientPubkey) async =>
+                const NIP17SendResult.failure('all relays down'),
           );
 
           final repository = createRepository(
@@ -8024,15 +7842,7 @@ void main() {
         'queue is opt-in: when no OutgoingDmsDao is injected, '
         'sendGroupMessage falls back to the direct-write behaviour',
         () async {
-          when(
-            () => mockMessageService.sendPrivateMessage(
-              recipientPubkey: any(named: 'recipientPubkey'),
-              content: any(named: 'content'),
-              eventKind: any(named: 'eventKind'),
-              additionalTags: any(named: 'additionalTags'),
-            ),
-          ).thenAnswer((inv) async {
-            final recipient = inv.namedArguments[#recipientPubkey] as String;
+          stubSendRumor((_, recipient) async {
             return NIP17SendResult.success(
               rumorEventId: 'rumor-$recipient',
               messageEventId: 'wrap-$recipient',
