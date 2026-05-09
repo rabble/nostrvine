@@ -551,6 +551,9 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileLoadingVideos => 'ቪዲዮዎችን በመጫን ላይ...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'እስካሁን ምንም ቪዲዮዎች የሉም';
 
   @override

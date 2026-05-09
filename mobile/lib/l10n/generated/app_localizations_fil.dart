@@ -581,6 +581,9 @@ class AppLocalizationsFil extends AppLocalizations {
   String get profileLoadingVideos => 'Naglo-load ang mga video...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'Wala pang video';
 
   @override

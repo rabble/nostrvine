@@ -130,6 +130,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
   Widget build(BuildContext context) {
     // Restore widget fields via `widget.` — same logic as before.
     final UserProfile? effectiveProfile;
+    final bool isLoadingIdentity;
     if (widget.isOwnProfile) {
       final state = context.watch<MyProfileBloc>().state;
       effectiveProfile =
@@ -140,12 +141,23 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             _ => null,
           } ??
           widget.profile;
+      // Skeleton on the user's own profile is appropriate only while we
+      // genuinely have nothing to show. As soon as a cached profile is
+      // available, fall through to render the real identity. After
+      // MyProfileError(notFound) the generated fallback is the truthful
+      // steady state — don't skeleton it.
+      isLoadingIdentity =
+          effectiveProfile == null &&
+          (state is MyProfileInitial || state is MyProfileLoading);
     } else if (widget.profile != null) {
       effectiveProfile = widget.profile;
+      isLoadingIdentity = false;
     } else {
-      effectiveProfile = ref
-          .watch(fetchUserProfileProvider(widget.userIdHex))
-          .value;
+      final asyncProfile = ref.watch(
+        fetchUserProfileProvider(widget.userIdHex),
+      );
+      effectiveProfile = asyncProfile.value;
+      isLoadingIdentity = asyncProfile.isLoading && asyncProfile.value == null;
     }
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
@@ -259,6 +271,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     userIdHex: widget.userIdHex,
                     profileColor: profileColor,
                     pendingActions: pendingActions,
+                    isLoading: isLoadingIdentity,
                     onActionTap: pendingActions.isNotEmpty
                         ? () => _showActionsSheet(context, pendingActions)
                         : null,
@@ -276,6 +289,7 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     displayNameHint: widget.displayNameHint,
                     accentColor: profileColor,
                     isOwnProfile: widget.isOwnProfile,
+                    isLoading: isLoadingIdentity,
                   ),
                 ),
                 if (!widget.isOwnProfile) ...[
@@ -353,7 +367,14 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 }
 
 /// Profile name, NIP-05, bio, and public key display.
-class _ProfileNameAndBio extends StatelessWidget {
+///
+/// When [isLoading] is true, the username text renders as a
+/// [Skeletonizer] shimmer instead of the real-looking generated
+/// fallback (#4163). Mirrors the timeout fallthrough used by
+/// [_ProfileStatsRow]: after [_skeletonTimeout] the skeleton
+/// dissolves to the existing fallback so users who genuinely have
+/// no Kind 0 still see a usable identity.
+class _ProfileNameAndBio extends StatefulWidget {
   const _ProfileNameAndBio({
     required this.profile,
     required this.userIdHex,
@@ -362,6 +383,7 @@ class _ProfileNameAndBio extends StatelessWidget {
     required this.isOwnProfile,
     this.displayNameHint,
     this.accentColor,
+    this.isLoading = false,
   });
 
   final UserProfile? profile;
@@ -374,27 +396,77 @@ class _ProfileNameAndBio extends StatelessWidget {
   /// Optional accent color (from profile color) for links/buttons.
   final Color? accentColor;
 
+  /// Whether the profile-load is still in flight. Drives the username
+  /// skeleton — see class docs.
+  final bool isLoading;
+
+  @override
+  State<_ProfileNameAndBio> createState() => _ProfileNameAndBioState();
+}
+
+class _ProfileNameAndBioState extends State<_ProfileNameAndBio> {
+  static const _skeletonTimeout = Duration(seconds: 7);
+
+  Timer? _timer;
+  bool _timeoutExpired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeStartTimer();
+  }
+
+  @override
+  void didUpdateWidget(_ProfileNameAndBio oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLoading != oldWidget.isLoading) {
+      _timer?.cancel();
+      _timer = null;
+      _timeoutExpired = false;
+      _maybeStartTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _maybeStartTimer() {
+    if (!widget.isLoading) return;
+    _timer = Timer(_skeletonTimeout, () {
+      if (mounted) setState(() => _timeoutExpired = true);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final showSkeleton = widget.isLoading && !_timeoutExpired;
     return Column(
       children: [
-        if (profile != null)
-          UserName.fromUserProfile(profile!, style: VineTheme.titleLargeFont())
+        if (widget.profile != null)
+          UserName.fromUserProfile(
+            widget.profile!,
+            style: VineTheme.titleLargeFont(),
+            isLoading: showSkeleton,
+          )
         else
           UserName.fromPubKey(
-            userIdHex,
+            widget.userIdHex,
             style: VineTheme.titleLargeFont(),
-            anonymousName: displayNameHint,
+            anonymousName: widget.displayNameHint,
+            isLoading: showSkeleton,
           ),
         _UniqueIdentifier(
-          userIdHex: userIdHex,
-          nip05: nip05,
-          isOwnProfile: isOwnProfile,
-          accentColor: accentColor,
+          userIdHex: widget.userIdHex,
+          nip05: widget.nip05,
+          isOwnProfile: widget.isOwnProfile,
+          accentColor: widget.accentColor,
         ),
-        if (about != null && about!.isNotEmpty) ...[
+        if (widget.about != null && widget.about!.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _AboutText(about: about!),
+          _AboutText(about: widget.about!),
         ],
         _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],
@@ -838,13 +910,20 @@ class _StatDivider extends StatelessWidget {
 /// your account") is centred below the avatar. A red count badge appears
 /// on the label when more than one action is pending. Tapping either the
 /// avatar or the label triggers [onActionTap].
-class _ProfileAvatarWithColor extends StatelessWidget {
+///
+/// When [isLoading] is true, the avatar is wrapped in a [Skeletonizer]
+/// shimmer instead of rendering the deterministic colored identicon
+/// fallback (#4163). Mirrors the [_ProfileStatsRow] timeout fallthrough
+/// so users who genuinely have no Kind 0 still see the identicon after
+/// [_skeletonTimeout].
+class _ProfileAvatarWithColor extends StatefulWidget {
   const _ProfileAvatarWithColor({
     required this.imageUrl,
     required this.userIdHex,
     this.profileColor,
     this.pendingActions = const [],
     this.onActionTap,
+    this.isLoading = false,
   });
 
   final String? imageUrl;
@@ -861,27 +940,74 @@ class _ProfileAvatarWithColor extends StatelessWidget {
   /// Called when the label or avatar is tapped.
   final VoidCallback? onActionTap;
 
+  /// Whether the profile-load is still in flight. Drives the avatar
+  /// skeleton — see class docs.
+  final bool isLoading;
+
+  @override
+  State<_ProfileAvatarWithColor> createState() =>
+      _ProfileAvatarWithColorState();
+}
+
+class _ProfileAvatarWithColorState extends State<_ProfileAvatarWithColor> {
+  static const _skeletonTimeout = Duration(seconds: 7);
+
+  Timer? _timer;
+  bool _timeoutExpired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _maybeStartTimer();
+  }
+
+  @override
+  void didUpdateWidget(_ProfileAvatarWithColor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isLoading != oldWidget.isLoading) {
+      _timer?.cancel();
+      _timer = null;
+      _timeoutExpired = false;
+      _maybeStartTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _maybeStartTimer() {
+    if (!widget.isLoading) return;
+    _timer = Timer(_skeletonTimeout, () {
+      if (mounted) setState(() => _timeoutExpired = true);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     const avatarSize = 144.0;
-    final hasAvatar = imageUrl != null && imageUrl!.isNotEmpty;
+    final hasAvatar = widget.imageUrl != null && widget.imageUrl!.isNotEmpty;
+    final showSkeleton = widget.isLoading && !_timeoutExpired;
     final avatarWidget = UserAvatar(
-      imageUrl: imageUrl,
-      placeholderSeed: userIdHex,
+      imageUrl: widget.imageUrl,
+      placeholderSeed: widget.userIdHex,
       size: avatarSize,
+      isLoading: showSkeleton,
     );
     final avatar = hasAvatar
         ? GestureDetector(
             onTap: () => _showAvatarLightbox(
               context,
-              imageUrl: imageUrl,
-              userIdHex: userIdHex,
+              imageUrl: widget.imageUrl,
+              userIdHex: widget.userIdHex,
             ),
             child: avatarWidget,
           )
         : avatarWidget;
 
-    if (pendingActions.isEmpty) return avatar;
+    if (widget.pendingActions.isEmpty) return avatar;
 
     // The label overlaps the avatar bottom, so we need extra space below.
     return Stack(
@@ -894,10 +1020,10 @@ class _ProfileAvatarWithColor extends StatelessWidget {
         Positioned(
           bottom: 0,
           child: GestureDetector(
-            onTap: onActionTap,
+            onTap: widget.onActionTap,
             child: _ProfileActionLabel(
-              action: pendingActions.first,
-              badgeCount: pendingActions.length,
+              action: widget.pendingActions.first,
+              badgeCount: widget.pendingActions.length,
             ),
           ),
         ),

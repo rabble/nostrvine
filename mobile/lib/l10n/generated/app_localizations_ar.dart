@@ -550,6 +550,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileLoadingVideos => 'جاري تحميل الفيديوهات...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'لا توجد فيديوهات بعد';
 
   @override

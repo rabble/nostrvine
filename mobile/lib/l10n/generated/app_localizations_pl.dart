@@ -582,6 +582,9 @@ class AppLocalizationsPl extends AppLocalizations {
   String get profileLoadingVideos => 'Wczytywanie filmów...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'Brak filmów';
 
   @override

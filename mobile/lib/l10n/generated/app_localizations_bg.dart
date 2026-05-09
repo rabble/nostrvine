@@ -580,6 +580,9 @@ class AppLocalizationsBg extends AppLocalizations {
   String get profileLoadingVideos => 'Видеата се зареждат...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'Още няма видеа';
 
   @override

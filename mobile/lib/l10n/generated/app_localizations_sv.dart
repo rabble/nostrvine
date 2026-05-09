@@ -557,6 +557,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get profileLoadingVideos => 'Läser in videor...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'Inga videor än';
 
   @override

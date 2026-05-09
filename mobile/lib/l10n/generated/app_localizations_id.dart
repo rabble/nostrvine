@@ -555,6 +555,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileLoadingVideos => 'Memuat video...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'Belum Ada Video';
 
   @override

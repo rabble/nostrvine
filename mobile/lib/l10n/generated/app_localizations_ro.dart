@@ -599,6 +599,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get profileLoadingVideos => 'Se încarcă videoclipurile...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'Încă niciun videoclip';
 
   @override

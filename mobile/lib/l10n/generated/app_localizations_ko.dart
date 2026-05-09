@@ -525,6 +525,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileLoadingVideos => '영상을 불러오는 중...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => '아직 영상 없음';
 
   @override

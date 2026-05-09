@@ -1072,6 +1072,12 @@ abstract class AppLocalizations {
   /// **'Loading videos...'**
   String get profileLoadingVideos;
 
+  /// Placeholder text covered by the loading-skeleton shimmer for a username. Never user-visible — only its rendered width sets the skeleton bar width. Pick a string of typical display-name length so the layout doesn't jump when the real name arrives.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading display name'**
+  String get userNameSkeletonPlaceholder;
+
   /// No description provided for @profileNoVideosTitle.
   ///
   /// In en, this message translates to:

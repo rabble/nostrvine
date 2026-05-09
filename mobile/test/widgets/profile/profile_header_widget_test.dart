@@ -24,6 +24,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -1099,6 +1100,187 @@ void main() {
 
           final opacity = readFadeOpacity(tester);
           expect(opacity.opacity, equals(1.0));
+        },
+      );
+    });
+
+    group('Identity skeleton (#4163)', () {
+      // Asserts the wiring contract from `_ProfileHeaderWidgetState.build`
+      // to its `_ProfileAvatarWithColor` and `_ProfileNameAndBio` children:
+      // when the profile is still loading and there is no cached fallback,
+      // the username and avatar must render as a skeleton — never as the
+      // real-looking generated identity.
+      //
+      // Verified by reading `UserAvatar.isLoading` and `UserName.isLoading`
+      // from the rendered widgets — those are the boundary the parent has
+      // to set correctly. The Skeletonizer behavior itself is covered by
+      // `user_name_skeleton_test.dart` and `comprehensive_user_avatar_test.dart`.
+
+      testWidgets(
+        'own profile + MyProfileInitial → routes isLoading: true to '
+        'avatar and username',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileInitial(),
+            ),
+          );
+          await tester.pump();
+
+          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isTrue);
+
+          final userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isTrue);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileLoading(profile: null) → routes '
+        'isLoading: true',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileLoading(),
+            ),
+          );
+          await tester.pump();
+
+          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isTrue);
+
+          final userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isTrue);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileLoading(profile: cached) → routes '
+        'isLoading: false (we have data to show, do not skeleton)',
+        (tester) async {
+          final cached = createTestProfile(displayName: 'Cached Display Name');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoading(profile: cached),
+            ),
+          );
+          await tester.pump();
+
+          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isFalse);
+
+          final userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isFalse);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileError(notFound) → routes isLoading: false '
+        '(steady-state generated fallback path is preserved)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileError(
+                errorType: MyProfileErrorType.notFound,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isFalse);
+
+          final userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isFalse);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileLoaded(profile) → routes isLoading: false',
+        (tester) async {
+          final loaded = createTestProfile(displayName: 'Loaded Display Name');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoaded(profile: loaded, isFresh: true),
+            ),
+          );
+          await tester.pump();
+
+          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isFalse);
+
+          final userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isFalse);
+        },
+      );
+
+      testWidgets(
+        'other profile + suppliedProfile non-null → routes isLoading: false '
+        '(caller already has data)',
+        (tester) async {
+          final supplied = createTestProfile(displayName: 'Bob');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: false,
+              suppliedProfile: supplied,
+            ),
+          );
+          await tester.pump();
+
+          final avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isFalse);
+
+          final userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isFalse);
+        },
+      );
+
+      testWidgets(
+        'skeleton dissolves to fallback after the 7s timeout — even when '
+        'the parent still says loading',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileInitial(),
+            ),
+          );
+          await tester.pump();
+
+          // Before timeout — children request skeleton.
+          var avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isTrue);
+          var userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isTrue);
+
+          // Advance past the 7-second skeleton timeout (mirrors the
+          // pattern used by _ProfileStatsRow's existing test).
+          await tester.pump(const Duration(seconds: 8));
+          await tester.pumpAndSettle();
+
+          // After timeout — children flip back to non-skeleton even
+          // though the bloc is still in an initial state. This is what
+          // lets users who genuinely have no Kind 0 still see the
+          // generated-name fallback rather than an infinite shimmer.
+          avatar = tester.widget<UserAvatar>(find.byType(UserAvatar));
+          expect(avatar.isLoading, isFalse);
+          userName = tester.widget<UserName>(find.byType(UserName));
+          expect(userName.isLoading, isFalse);
         },
       );
     });

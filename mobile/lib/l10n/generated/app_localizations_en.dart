@@ -572,6 +572,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLoadingVideos => 'Loading videos...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => 'No videos yet';
 
   @override

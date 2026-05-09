@@ -524,6 +524,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileLoadingVideos => '動画を読み込み中...';
 
   @override
+  String get userNameSkeletonPlaceholder => 'Loading display name';
+
+  @override
   String get profileNoVideosTitle => '動画はまだないよ';
 
   @override
