@@ -823,6 +823,18 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încărcarea pozei de profil nu este disponibilă încă pe web. Folosește aplicația de iOS sau Android ori lipește URL-ul unei imagini.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Încarcă fotografie';
+
+  @override
+  String get profileSetupBannerClearButton => 'Șterge bannerul';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Banner actualizat';
+
+  @override
   String get profileSetupUsernameChecking => 'Se verifică disponibilitatea...';
 
   @override

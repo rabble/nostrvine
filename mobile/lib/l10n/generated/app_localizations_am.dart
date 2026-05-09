@@ -768,6 +768,18 @@ class AppLocalizationsAm extends AppLocalizations {
       'የመገለጫ ስዕል መስቀል በድር ላይ እስካሁን አይገኝም። የiOS ወይም Android መተግበሪያን ተጠቀም፣ ወይም የምስል URL ለጥፍ።';
 
   @override
+  String get profileSetupBannerSectionTitle => 'ባነር';
+
+  @override
+  String get profileSetupBannerUploadButton => 'ፎቶ ስቀል';
+
+  @override
+  String get profileSetupBannerClearButton => 'ባነርን አጥፋ';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'ባነር ተዘመነ';
+
+  @override
   String get profileSetupUsernameChecking => 'ተገኝነትን በማጣራት ላይ...';
 
   @override

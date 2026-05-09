@@ -737,6 +737,18 @@ class AppLocalizationsKo extends AppLocalizations {
       '프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.';
 
   @override
+  String get profileSetupBannerSectionTitle => '배너';
+
+  @override
+  String get profileSetupBannerUploadButton => '사진 업로드';
+
+  @override
+  String get profileSetupBannerClearButton => '배너 지우기';
+
+  @override
+  String get profileSetupBannerUploadSuccess => '배너가 업데이트되었어요';
+
+  @override
   String get profileSetupUsernameChecking => '사용 가능 여부 확인 중...';
 
   @override

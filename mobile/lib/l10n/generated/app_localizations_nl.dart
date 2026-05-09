@@ -795,6 +795,18 @@ class AppLocalizationsNl extends AppLocalizations {
       'Het uploaden van een profielfoto is nog niet beschikbaar op web. Gebruik de iOS- of Android-app, of plak een afbeeldings-URL.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Foto uploaden';
+
+  @override
+  String get profileSetupBannerClearButton => 'Banner wissen';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Banner bijgewerkt';
+
+  @override
   String get profileSetupUsernameChecking => 'Beschikbaarheid controleren...';
 
   @override

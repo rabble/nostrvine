@@ -794,6 +794,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Upload photo';
+
+  @override
+  String get profileSetupBannerClearButton => 'Clear banner';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Banner updated';
+
+  @override
   String get profileSetupUsernameChecking => 'Checking availability...';
 
   @override

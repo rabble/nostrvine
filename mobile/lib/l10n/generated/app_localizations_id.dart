@@ -778,6 +778,18 @@ class AppLocalizationsId extends AppLocalizations {
       'Unggah foto profil belum tersedia di web. Pakai aplikasi iOS atau Android, atau tempel URL gambar.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Unggah foto';
+
+  @override
+  String get profileSetupBannerClearButton => 'Hapus banner';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Banner diperbarui';
+
+  @override
   String get profileSetupUsernameChecking => 'Mengecek ketersediaan...';
 
   @override
