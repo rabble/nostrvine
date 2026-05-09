@@ -361,12 +361,8 @@ void main() {
     });
   });
 
-  // The provider tracks _initialLoadPending in instance state to keep the
-  // videos tab in its loading-vs-empty branch correct during the cold-start
-  // fetch window. The actual transitions are driven by ref.watch'd
-  // dependencies that aren't easy to drive from a unit test, but the
-  // emit-time rule itself is a pure function — pinning it here so call sites
-  // that compute `isInitialLoad` from it can't drift (#4164).
+  // Pure-function coverage for shouldKeepInitialLoad; full provider flow is
+  // integration-test territory (ref.watch deps aren't unit-testable). (#4164)
   group('$ProfileFeed shouldKeepInitialLoad', () {
     test('keeps loading when pending and videos empty (cold-start window)', () {
       expect(
