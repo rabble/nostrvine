@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
+import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -197,6 +198,45 @@ void main() {
 
         expect(find.textContaining('Hey check this out'), findsOneWidget);
       });
+
+      testWidgets(
+        'renders $NotificationCommentQuote when commentText is set',
+        (tester) async {
+          await _pump(
+            tester,
+            notification: _actor(
+              type: NotificationKind.reply,
+              commentText: 'I guess xd',
+            ),
+          );
+
+          expect(find.byType(NotificationCommentQuote), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'timestamp moves to the quote when commentText is present',
+        (tester) async {
+          // The timestamp must anchor to the visual end of the row, so
+          // when a comment quote sits below the message the trailing
+          // relative time goes inside the quote (not on the message
+          // line). This locks the rendering contract that fixes the
+          // "2d sandwiched between message and quote" layout regression.
+          await _pump(
+            tester,
+            notification: _actor(
+              type: NotificationKind.reply,
+              commentText: 'I guess xd',
+            ),
+          );
+
+          final quoteWidget = tester.widget<NotificationCommentQuote>(
+            find.byType(NotificationCommentQuote),
+          );
+          expect(quoteWidget.timestamp, isNotNull);
+          expect(quoteWidget.timestamp, isNotEmpty);
+        },
+      );
     });
 
     group('interactions', () {

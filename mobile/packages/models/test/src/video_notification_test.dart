@@ -41,6 +41,35 @@ void main() {
           timestamp: timestamp,
         );
       });
+
+      test('exposes optional commentText for comment kind', () {
+        // Comment notifications carry an excerpt of the most recent
+        // comment so the row can quote it under the message text.
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.comment,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          commentText: 'Loved this clip!',
+        );
+
+        expect(notification.commentText, equals('Loved this clip!'));
+      });
+
+      test('commentText defaults to null when not set', () {
+        final notification = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.like,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+        );
+
+        expect(notification.commentText, isNull);
+      });
     });
 
     group('equality', () {
@@ -128,6 +157,22 @@ void main() {
         final updated = original.copyWith(totalCount: 2);
 
         expect(updated.isRead, isTrue);
+      });
+
+      test('preserves commentText when not overridden', () {
+        final original = VideoNotification(
+          id: 'n1',
+          type: NotificationKind.comment,
+          videoEventId: 'v1',
+          actors: [actorAlice],
+          totalCount: 1,
+          timestamp: timestamp,
+          commentText: 'Original comment',
+        );
+
+        final updated = original.copyWith(isRead: true);
+
+        expect(updated.commentText, equals('Original comment'));
       });
     });
   });

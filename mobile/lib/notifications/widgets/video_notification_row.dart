@@ -8,6 +8,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/notifications/widgets/notification_type_icon_spec.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
@@ -129,15 +130,27 @@ class _NotificationContent extends StatelessWidget {
   final VideoNotification notification;
   final VoidCallback onProfileTap;
 
+  bool get _hasComment =>
+      notification.commentText != null && notification.commentText!.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final overflowCount = notification.totalCount - notification.actors.length;
+    // The trailing relative timestamp anchors to the visual end of the
+    // row. When a comment quote is rendered, it goes after the quote
+    // (NotificationCommentQuote handles that inline). Without a quote,
+    // it sits at the end of the message text.
+    final relativeTime = LocalizedTimeFormatter.formatRelative(
+      l10n,
+      notification.timestamp.millisecondsSinceEpoch ~/ 1000,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Semantics(
           button: true,
-          label: context.l10n.notificationsViewProfilesSemanticLabel,
+          label: l10n.notificationsViewProfilesSemanticLabel,
           child: GestureDetector(
             onTap: onProfileTap,
             child: NotificationAvatarStack(
@@ -147,16 +160,32 @@ class _NotificationContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        _MessageText(notification: notification),
+        _MessageText(
+          notification: notification,
+          timestamp: _hasComment ? null : relativeTime,
+        ),
+        if (_hasComment) ...[
+          const SizedBox(height: 4),
+          NotificationCommentQuote(
+            text: notification.commentText!,
+            timestamp: relativeTime,
+          ),
+        ],
       ],
     );
   }
 }
 
 class _MessageText extends StatelessWidget {
-  const _MessageText({required this.notification});
+  const _MessageText({required this.notification, this.timestamp});
 
   final VideoNotification notification;
+
+  /// When non-empty, appended in muted style at the end of the message.
+  /// Pass `null` (the default) when a [NotificationCommentQuote] sits
+  /// below this widget — the quote renders the timestamp instead, so it
+  /// stays anchored to the visual end of the row.
+  final String? timestamp;
 
   @override
   Widget build(BuildContext context) {
@@ -205,13 +234,15 @@ class _MessageText extends StatelessWidget {
       );
     }
 
-    spans.add(
-      TextSpan(
-        text:
-            ' ${LocalizedTimeFormatter.formatRelative(l10n, notification.timestamp.millisecondsSinceEpoch ~/ 1000)}',
-        style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
-      ),
-    );
+    final ts = timestamp;
+    if (ts != null && ts.isNotEmpty) {
+      spans.add(
+        TextSpan(
+          text: ' $ts',
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
+        ),
+      );
+    }
 
     return Text.rich(
       TextSpan(children: spans),

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
+import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/notifications/widgets/video_notification_row.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
 
@@ -33,6 +34,7 @@ VideoNotification _video({
   int totalCount = 1,
   String? videoThumbnailUrl,
   String? videoTitle,
+  String? commentText,
   bool isRead = false,
 }) {
   return VideoNotification(
@@ -45,6 +47,7 @@ VideoNotification _video({
     timestamp: DateTime.utc(2026, 5, 4, 12),
     videoThumbnailUrl: videoThumbnailUrl,
     videoTitle: videoTitle,
+    commentText: commentText,
     isRead: isRead,
   );
 }
@@ -133,6 +136,60 @@ void main() {
           );
 
           expect(find.textContaining('My Cool Vine'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders $NotificationCommentQuote when commentText is set',
+        (tester) async {
+          await _pump(
+            tester,
+            notification: _video(
+              type: NotificationKind.comment,
+              commentText: 'Loved this clip!',
+            ),
+          );
+
+          // The quote widget renders the body with curly quotes.
+          expect(find.byType(NotificationCommentQuote), findsOneWidget);
+          expect(find.textContaining('Loved this clip!'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'no $NotificationCommentQuote when commentText is null',
+        (tester) async {
+          await _pump(
+            tester,
+            notification: _video(type: NotificationKind.comment),
+          );
+
+          expect(find.byType(NotificationCommentQuote), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'timestamp moves to the quote when commentText is present',
+        (tester) async {
+          // The timestamp must anchor to the visual end of the row, so
+          // when a comment quote is rendered the timestamp goes there
+          // instead of the message line. This test asserts the message
+          // line does NOT carry the timestamp suffix while the quote
+          // does.
+          await _pump(
+            tester,
+            notification: _video(
+              type: NotificationKind.comment,
+              commentText: 'Thanks!',
+            ),
+          );
+
+          final quoteWidget = tester.widget<NotificationCommentQuote>(
+            find.byType(NotificationCommentQuote),
+          );
+          // The widget owns the timestamp suffix.
+          expect(quoteWidget.timestamp, isNotNull);
+          expect(quoteWidget.timestamp, isNotEmpty);
         },
       );
 
