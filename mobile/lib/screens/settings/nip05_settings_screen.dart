@@ -128,6 +128,10 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             final currentProfile = _profileFromState(myProfileState);
             return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
               builder: (context, editorState) {
+                if (myProfileState is MyProfileError) {
+                  return _buildLoadError(context);
+                }
+
                 return Align(
                   alignment: Alignment.topCenter,
                   child: ConstrainedBox(
@@ -172,6 +176,38 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
       child: Text(
         context.l10n.nostrSettingsNip05AddressSubtitle,
         style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+      ),
+    );
+  }
+
+  Widget _buildLoadError(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 16,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              color: VineTheme.secondaryText,
+              size: 48,
+            ),
+            Text(
+              context.l10n.profilePleaseTryAgain,
+              textAlign: TextAlign.center,
+              style: VineTheme.titleSmallFont(),
+            ),
+            DivineButton(
+              type: DivineButtonType.secondary,
+              size: DivineButtonSize.small,
+              label: context.l10n.profileRetryButton,
+              onPressed: () {
+                context.read<MyProfileBloc>().add(const MyProfileLoadRequested());
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
