@@ -410,6 +410,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               profileStats: headerStats,
               displayName: displayName,
               videos: value.videos,
+              isLoadingVideos: value.isInitialLoad,
+              videoLoadError: value.error,
               scrollController: _scrollController,
               onBack: context.pop,
               onMore: _more,

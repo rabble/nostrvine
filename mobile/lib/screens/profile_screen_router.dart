@@ -500,6 +500,8 @@ class _ProfileDataView extends ConsumerWidget {
           displayName: displayName,
           profileStats: profileStats,
           videos: value.videos,
+          isLoadingVideos: value.isInitialLoad,
+          videoLoadError: value.error,
           videoIndex: videoIndex,
           scrollController: scrollController,
           onEditProfile: onEditProfile,
@@ -531,6 +533,8 @@ class ProfileViewSwitcher extends StatelessWidget {
     this.profileStats,
     this.refreshNotifier,
     this.displayName,
+    this.isLoadingVideos = false,
+    this.videoLoadError,
     super.key,
   });
 
@@ -546,6 +550,16 @@ class ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onOpenClips;
   final void Function(String userIdHex) onMore;
   final void Function(String userIdHex) onShareProfile;
+
+  /// Whether the videos fetch (Nostr relay + Funnelcake REST) is still in
+  /// flight. Drives the videos-tab loading-vs-empty branch in
+  /// [ProfileGridView] / [ProfileVideosGrid] so we don't render "No
+  /// videos" while the cold-start fetch is still running.
+  final bool isLoadingVideos;
+
+  /// Error surfaced by the videos provider, if any. Drives the videos-tab
+  /// error state in [ProfileGridView] / [ProfileVideosGrid].
+  final String? videoLoadError;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -573,6 +587,8 @@ class ProfileViewSwitcher extends StatelessWidget {
             displayName: displayName,
             profileStats: profileStats,
             videos: videos,
+            isLoadingVideos: isLoadingVideos,
+            videoLoadError: videoLoadError,
             scrollController: scrollController,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
