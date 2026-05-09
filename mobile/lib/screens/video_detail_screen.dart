@@ -14,6 +14,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:unified_logger/unified_logger.dart';
 
 class VideoDetailRouteExtra {
@@ -247,9 +248,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        body: Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
+        body: Center(child: BrandedLoadingIndicator()),
       );
     }
 

@@ -349,68 +349,65 @@ void main() {
           );
         });
 
-        test(
-          'continues past a full API page of reply-only videos',
-          () async {
-            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-            when(
-              () => mockFunnelcakeClient.getRecentVideos(
-                limit: any(named: 'limit'),
-                before: any(named: 'before'),
-              ),
-            ).thenAnswer((invocation) async {
-              final before = invocation.namedArguments[#before] as int?;
-              final limit = invocation.namedArguments[#limit] as int? ?? 5;
+        test('continues past a full API page of reply-only videos', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((invocation) async {
+            final before = invocation.namedArguments[#before] as int?;
+            final limit = invocation.namedArguments[#limit] as int? ?? 5;
 
-              if (before != null) {
-                return [
-                  _createVideoStats(
-                    id: 'feed-video',
-                    pubkey: 'test-pubkey',
-                    dTag: 'feed-dtag',
-                    videoUrl: 'https://example.com/feed.mp4',
-                    createdAt: 1704060000,
-                  ),
-                ];
-              }
-
-              return List.generate(
-                limit,
-                (index) => _createVideoStats(
-                  id: 'video-reply-$index',
+            if (before != null) {
+              return [
+                _createVideoStats(
+                  id: 'feed-video',
                   pubkey: 'test-pubkey',
-                  dTag: 'reply-dtag-$index',
-                  videoUrl: 'https://example.com/reply-$index.mp4',
-                  createdAt: 1704070000 - index,
-                  rawTags: const {
-                    'E': 'root-event-id',
-                    'K': '34236',
-                    'P': 'root-author',
-                    'e': 'root-event-id',
-                    'k': '34236',
-                    'p': 'root-author',
-                  },
+                  dTag: 'feed-dtag',
+                  videoUrl: 'https://example.com/feed.mp4',
+                  createdAt: 1704060000,
                 ),
-              );
-            });
+              ];
+            }
 
-            final repositoryWithApi = VideosRepository(
-              nostrClient: mockNostrClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-            );
-
-            final result = await repositoryWithApi.getNewVideos();
-
-            expect(result.map((video) => video.id), equals(['feed-video']));
-            verify(
-              () => mockFunnelcakeClient.getRecentVideos(
-                limit: any(named: 'limit'),
-                before: any(named: 'before'),
+            return List.generate(
+              limit,
+              (index) => _createVideoStats(
+                id: 'video-reply-$index',
+                pubkey: 'test-pubkey',
+                dTag: 'reply-dtag-$index',
+                videoUrl: 'https://example.com/reply-$index.mp4',
+                createdAt: 1704070000 - index,
+                rawTags: const {
+                  'E': 'root-event-id',
+                  'K': '34236',
+                  'P': 'root-author',
+                  'e': 'root-event-id',
+                  'k': '34236',
+                  'p': 'root-author',
+                },
               ),
-            ).called(2);
-            verifyNever(() => mockNostrClient.queryEvents(any()));
-          },
-        );
+            );
+          });
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getNewVideos();
+
+          expect(result.map((video) => video.id), equals(['feed-video']));
+          verify(
+            () => mockFunnelcakeClient.getRecentVideos(
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(2);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
 
         test(
           'accumulates visible API videos across mixed reply-heavy pages',
@@ -621,53 +618,49 @@ void main() {
         expect(result.map((video) => video.id), equals(['feed-video']));
       });
 
-      test(
-        'continues past a full relay page of reply-only videos',
-        () async {
-          final feedVideo = _createVideoEvent(
-            id: 'feed-video',
-            pubkey: 'test-pubkey',
-            videoUrl: 'https://example.com/feed.mp4',
-            createdAt: 1704060000,
+      test('continues past a full relay page of reply-only videos', () async {
+        final feedVideo = _createVideoEvent(
+          id: 'feed-video',
+          pubkey: 'test-pubkey',
+          videoUrl: 'https://example.com/feed.mp4',
+          createdAt: 1704060000,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments.first as List<Filter>;
+          final filter = filters.single;
+          final limit = filter.limit ?? 5;
+
+          if (filter.until != null) {
+            return [feedVideo];
+          }
+
+          return List.generate(
+            limit,
+            (index) => _createVideoEvent(
+              id: 'video-reply-$index',
+              pubkey: 'test-pubkey',
+              videoUrl: 'https://example.com/reply-$index.mp4',
+              createdAt: 1704070000 - index,
+              extraTags: const [
+                ['E', 'root-event-id', '', 'root-author'],
+                ['K', '34236'],
+                ['P', 'root-author'],
+                ['e', 'root-event-id', '', 'root-author'],
+                ['k', '34236'],
+                ['p', 'root-author'],
+              ],
+            ),
           );
+        });
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
-            invocation,
-          ) async {
-            final filters =
-                invocation.positionalArguments.first as List<Filter>;
-            final filter = filters.single;
-            final limit = filter.limit ?? 5;
+        final result = await repository.getNewVideos();
 
-            if (filter.until != null) {
-              return [feedVideo];
-            }
-
-            return List.generate(
-              limit,
-              (index) => _createVideoEvent(
-                id: 'video-reply-$index',
-                pubkey: 'test-pubkey',
-                videoUrl: 'https://example.com/reply-$index.mp4',
-                createdAt: 1704070000 - index,
-                extraTags: const [
-                  ['E', 'root-event-id', '', 'root-author'],
-                  ['K', '34236'],
-                  ['P', 'root-author'],
-                  ['e', 'root-event-id', '', 'root-author'],
-                  ['k', '34236'],
-                  ['p', 'root-author'],
-                ],
-              ),
-            );
-          });
-
-          final result = await repository.getNewVideos();
-
-          expect(result.map((video) => video.id), equals(['feed-video']));
-          verify(() => mockNostrClient.queryEvents(any())).called(2);
-        },
-      );
+        expect(result.map((video) => video.id), equals(['feed-video']));
+        verify(() => mockNostrClient.queryEvents(any())).called(2);
+      });
 
       test(
         'accumulates visible relay videos across mixed reply-heavy pages',
@@ -7179,47 +7172,42 @@ void main() {
         },
       );
 
-      test(
-        'returns video without stats when stats hydration times out',
-        () {
-          const eventId = 'timeout-event-id';
-          final nostrEvent = _createVideoEvent(
-            id: eventId,
-            pubkey: 'pubkey-1',
-            videoUrl: 'https://example.com/video.mp4',
-            createdAt: 1739350000,
+      test('returns video without stats when stats hydration times out', () {
+        const eventId = 'timeout-event-id';
+        final nostrEvent = _createVideoEvent(
+          id: eventId,
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1739350000,
+        );
+
+        return fakeAsync((async) {
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [nostrEvent]);
+
+          // Funnelcake hangs indefinitely — never completes.
+          when(
+            () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
+          ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
           );
 
-          return fakeAsync((async) {
-            when(
-              () => mockNostrClient.queryEvents(any()),
-            ).thenAnswer((_) async => [nostrEvent]);
+          VideoEvent? result;
+          unawaited(repo.fetchVideoWithStats(eventId).then((v) => result = v));
 
-            // Funnelcake hangs indefinitely — never completes.
-            when(
-              () => mockFunnelcakeClient.getBulkVideoStats([eventId]),
-            ).thenAnswer((_) => Completer<BulkVideoStatsResponse>().future);
+          // Advance past the 3-second stats-fetch timeout.
+          async.elapse(const Duration(seconds: 4));
 
-            final repo = VideosRepository(
-              nostrClient: mockNostrClient,
-              funnelcakeApiClient: mockFunnelcakeClient,
-            );
-
-            VideoEvent? result;
-            unawaited(
-              repo.fetchVideoWithStats(eventId).then((v) => result = v),
-            );
-
-            // Advance past the 3-second stats-fetch timeout.
-            async.elapse(const Duration(seconds: 4));
-
-            expect(result, isNotNull);
-            expect(result!.id, equals(eventId));
-            // No stats hydrated — originalLoops should remain null.
-            expect(result!.originalLoops, isNull);
-          });
-        },
-      );
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          // No stats hydrated — originalLoops should remain null.
+          expect(result!.originalLoops, isNull);
+        });
+      });
     });
 
     group('fetchVideoWithStatsForRouteId', () {
@@ -7453,15 +7441,60 @@ void main() {
         },
       );
 
-      test('falls back to Funnelcake route lookup when relay misses shared '
-          'stable ID', () async {
+      test(
+        'resolves shared stable IDs via Funnelcake REST without hitting relay',
+        () async {
+          const stableId =
+              'e96357668c72c8923340b0ecf4bfacea'
+              '505172c4190e9953e603124c67175f3b';
+          const eventId =
+              'e46ff7d0d71d6c8114b58728afa43f08'
+              'd6286fd9a704683af799fd8f855586c2';
+          final apiHit = Event.fromJson({
+            'id': eventId,
+            'pubkey':
+                '076c979382b90f5d3a2b21f95e1ee86b'
+                '6033f14c92e79b7fad3fe1f1073f4886',
+            'created_at': 1777868006,
+            'kind': 34236,
+            'tags': [
+              ['d', stableId],
+              ['url', 'https://media.divine.video/$stableId'],
+              ['title', 'Divine team swag'],
+            ],
+            'content': 'Divine team swag!',
+            'sig': 'sig',
+          });
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getVideoEvent(stableId),
+          ).thenAnswer((_) async => apiHit);
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(stableId);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.stableId, equals(stableId));
+          verify(() => mockFunnelcakeClient.getVideoEvent(stableId)).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test('falls back to relay when Funnelcake REST returns null '
+          '(event only on personal relay)', () async {
         const stableId =
             'e96357668c72c8923340b0ecf4bfacea'
             '505172c4190e9953e603124c67175f3b';
         const eventId =
             'e46ff7d0d71d6c8114b58728afa43f08'
             'd6286fd9a704683af799fd8f855586c2';
-        final relayMissThenApiHit = Event.fromJson({
+        final relayHit = Event.fromJson({
           'id': eventId,
           'pubkey':
               '076c979382b90f5d3a2b21f95e1ee86b'
@@ -7471,19 +7504,26 @@ void main() {
           'tags': [
             ['d', stableId],
             ['url', 'https://media.divine.video/$stableId'],
-            ['title', 'Divine team swag'],
+            ['title', 'Personal relay only'],
           ],
-          'content': 'Divine team swag!',
+          'content': 'Personal relay only',
           'sig': 'sig',
         });
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
-          () => mockNostrClient.queryEvents(any()),
-        ).thenAnswer((_) async => <Event>[]);
-        when(
           () => mockFunnelcakeClient.getVideoEvent(stableId),
-        ).thenAnswer((_) async => relayMissThenApiHit);
+        ).thenAnswer((_) async => null);
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments.single as List<Filter>;
+          final filter = filters.single;
+          if (filter.d?.contains(stableId) ?? false) {
+            return [relayHit];
+          }
+          return <Event>[];
+        });
 
         final repo = VideosRepository(
           nostrClient: mockNostrClient,
@@ -7494,8 +7534,88 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.id, equals(eventId));
-        expect(result.stableId, equals(stableId));
         verify(() => mockFunnelcakeClient.getVideoEvent(stableId)).called(1);
+        verify(() => mockNostrClient.queryEvents(any())).called(greaterThan(0));
+      });
+
+      test('falls back to relay when Funnelcake REST throws', () async {
+        const stableId =
+            'e96357668c72c8923340b0ecf4bfacea'
+            '505172c4190e9953e603124c67175f3b';
+        const eventId =
+            'e46ff7d0d71d6c8114b58728afa43f08'
+            'd6286fd9a704683af799fd8f855586c2';
+        final relayHit = Event.fromJson({
+          'id': eventId,
+          'pubkey':
+              '076c979382b90f5d3a2b21f95e1ee86b'
+              '6033f14c92e79b7fad3fe1f1073f4886',
+          'created_at': 1777868006,
+          'kind': 34236,
+          'tags': [
+            ['d', stableId],
+            ['url', 'https://media.divine.video/$stableId'],
+            ['title', 'REST down'],
+          ],
+          'content': 'REST down',
+          'sig': 'sig',
+        });
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getVideoEvent(stableId),
+        ).thenThrow(const FunnelcakeTimeoutException('https://example.test'));
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments.single as List<Filter>;
+          final filter = filters.single;
+          if (filter.d?.contains(stableId) ?? false) {
+            return [relayHit];
+          }
+          return <Event>[];
+        });
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo.fetchVideoWithStatsForRouteId(stableId);
+
+        expect(result, isNotNull);
+        expect(result!.id, equals(eventId));
+      });
+
+      test('returns null without blocking when relay queries hang past the '
+          'route timeout', () async {
+        const stableId =
+            'e96357668c72c8923340b0ecf4bfacea'
+            '505172c4190e9953e603124c67175f3b';
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getVideoEvent(stableId),
+        ).thenAnswer((_) async => null);
+        // Relay never completes — simulates a stuck subscription waiting
+        // for EOSE from a still-connecting relay during cold start.
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) => Completer<List<Event>>().future);
+
+        final repo = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repo
+            .fetchVideoWithStatsForRouteId(stableId)
+            // Cap above the in-source 3s timeout but well below the 60s+
+            // user-visible regression — a passing test proves the in-source
+            // timeout fired before the test wrapper.
+            .timeout(const Duration(seconds: 10));
+
+        expect(result, isNull);
       });
 
       test('returns blocked-author videos for direct route lookups', () async {

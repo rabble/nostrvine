@@ -40,6 +40,15 @@ const Duration _relaySearchTimeout = Duration(seconds: 15);
 /// healthy Funnelcake responses while still bounding degraded-service latency.
 const Duration _statsFetchTimeout = Duration(seconds: 3);
 
+/// Per-call timeout for relay queries inside the route-lookup orchestrator.
+///
+/// `NostrClient.queryEvents` waits for EOSE from every relay in the pool with
+/// a default 5-second timeout, and any relay still mid-connect during cold
+/// start blocks the whole batch. Capping each route-lookup relay call at 3s
+/// stops a stuck subscription from dominating deep-link UX once Funnelcake
+/// has already been tried.
+const Duration _routeRelayTimeout = Duration(seconds: 3);
+
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
 ///
@@ -235,10 +244,7 @@ class VideosRepository {
       cursor = nextCursor;
     }
 
-    return (
-      videos: visible.take(limit).toList(),
-      rawBody: rawBody,
-    );
+    return (videos: visible.take(limit).toList(), rawBody: rawBody);
   }
 
   Future<({List<VideoEvent> videos, String? rawBody})>
@@ -1642,15 +1648,11 @@ class VideosRepository {
   /// feed context: notification taps and `divine.video/video/:id` deep-links.
   Future<VideoEvent?> fetchVideoWithStats(String eventId) async {
     if (eventId.isEmpty) return null;
-    final videos = await getVideosByIds(
-      [eventId],
-      hydrateBulkStats: false,
-    );
+    final videos = await getVideosByIds([eventId], hydrateBulkStats: false);
     if (videos.isEmpty) return null;
-    final hydrated = await _hydrateVideosWithBulkStats(videos).timeout(
-      _statsFetchTimeout,
-      onTimeout: () => videos,
-    );
+    final hydrated = await _hydrateVideosWithBulkStats(
+      videos,
+    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
     return hydrated.firstOrNull;
   }
 
@@ -1658,34 +1660,58 @@ class VideosRepository {
   ///
   /// Supports raw event IDs, plain stable IDs / d-tags, and NIP-19
   /// `note1...`, `nevent1...`, and `naddr1...` references.
+  ///
+  /// Lookup order is tuned for `divine.video/video/<id>` deep-links: local
+  /// cache → Funnelcake REST → relay queries (each capped by
+  /// [_routeRelayTimeout]). REST runs before the WebSocket fallback because
+  /// it answers in <1s without waiting on relay connection state, and the
+  /// hash in a divine.video share URL is the canonical d-tag/sha256 served
+  /// by Funnelcake. Relay queries are kept as a fallback for events that
+  /// only exist on user-configured personal relays.
   Future<VideoEvent?> fetchVideoWithStatsForRouteId(String routeId) async {
     final candidate = _VideoRouteCandidate.parse(routeId);
     if (candidate == null) return null;
 
+    final cached = await _fetchRouteVideoFromLocalCache(candidate);
+    if (cached != null) return cached;
+
+    final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
+    if (funnelcakeRouteId != null) {
+      try {
+        final byFunnelcake = await _fetchVideoFromRouteApi(
+          funnelcakeRouteId,
+          permissive: true,
+        );
+        if (byFunnelcake != null) return byFunnelcake;
+      } on FunnelcakeException catch (e, stackTrace) {
+        developer.log(
+          'Funnelcake route lookup failed; falling back to relay',
+          name: 'VideosRepository',
+          error: e,
+          stackTrace: stackTrace,
+        );
+      }
+    }
+
     if (candidate.eventId != null) {
-      final byEventId = await _fetchRouteVideoByEventId(candidate.eventId!);
+      final byEventId = await _fetchRouteVideoByEventIdFromRelay(
+        candidate.eventId!,
+      ).timeout(_routeRelayTimeout, onTimeout: () => null);
       if (byEventId != null) return byEventId;
     }
 
     if (candidate.addressableId != null) {
       final videos = await getVideosByAddressableIds([
         candidate.addressableId!,
-      ]);
+      ]).timeout(_routeRelayTimeout, onTimeout: () => const <VideoEvent>[]);
       if (videos.isNotEmpty) return videos.first;
     }
 
     if (candidate.stableId != null) {
-      final byStableId = await _fetchVideoByStableId(candidate.stableId!);
+      final byStableId = await _fetchVideoByStableIdFromRelay(
+        candidate.stableId!,
+      ).timeout(_routeRelayTimeout, onTimeout: () => null);
       if (byStableId != null) return byStableId;
-    }
-
-    final funnelcakeRouteId = candidate.stableId ?? candidate.eventId;
-    if (funnelcakeRouteId != null) {
-      final byFunnelcake = await _fetchVideoFromRouteApi(
-        funnelcakeRouteId,
-        permissive: true,
-      );
-      if (byFunnelcake != null) return byFunnelcake;
     }
 
     return null;
@@ -1751,65 +1777,29 @@ class VideosRepository {
     );
   }
 
-  Future<VideoEvent?> _fetchRouteVideoByEventId(String eventId) async {
-    if (eventId.isEmpty) return null;
+  /// Returns a hydrated video from local storage when either the candidate's
+  /// event id or stable id (d-tag) hits the cache.
+  ///
+  /// Shared links should be able to reopen a video on a cold start before the
+  /// relay layer has finished connecting and before the REST fallback returns.
+  Future<VideoEvent?> _fetchRouteVideoFromLocalCache(
+    _VideoRouteCandidate candidate,
+  ) async {
+    if (_localStorage == null) return null;
 
     final candidates = <Event>[];
 
-    if (_localStorage != null) {
-      // Shared links should be able to reopen a video from local cache on a
-      // cold start before the relay layer has finished connecting.
-      candidates.addAll(await _localStorage.getEventsByIds([eventId]));
-    }
-
-    if (candidates.isEmpty) {
+    if (candidate.eventId != null && candidate.eventId!.isNotEmpty) {
       candidates.addAll(
-        await _nostrClient.queryEvents([
-          Filter(
-            ids: [eventId],
-            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
-          ),
-        ]),
+        await _localStorage.getEventsByIds([candidate.eventId!]),
       );
     }
 
-    if (candidates.isEmpty) return null;
-
-    final videos = <VideoEvent>[];
-    for (final event in candidates) {
-      final video = _tryParseAndFilter(
-        event,
-        permissive: true,
-        ignoreBlockFilter: true,
-      );
-      if (video != null) {
-        videos.add(video);
-      }
-    }
-    if (videos.isEmpty) return null;
-
-    final hydrated = await _hydrateVideosWithBulkStats(videos);
-    return hydrated.firstOrNull;
-  }
-
-  Future<VideoEvent?> _fetchVideoByStableId(String stableId) async {
-    final candidates = <Event>[];
-
-    if (_localStorage != null) {
-      candidates.addAll(await _localStorage.getEventsByDTag(stableId));
-    }
-
-    if (candidates.isEmpty) {
+    if (candidates.isEmpty &&
+        candidate.stableId != null &&
+        candidate.stableId!.isNotEmpty) {
       candidates.addAll(
-        await _nostrClient.queryEvents([
-          Filter(
-            // Route-specific lookups accept all supported NIP-71 video kinds so
-            // older shared links still resolve instead of failing as not found.
-            kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
-            d: [stableId],
-            limit: 10,
-          ),
-        ]),
+        await _localStorage.getEventsByDTag(candidate.stableId!),
       );
     }
 
@@ -1830,7 +1820,65 @@ class VideosRepository {
     if (videos.isEmpty) return null;
 
     final hydrated = await _hydrateVideosWithBulkStats(videos);
-    return hydrated.isEmpty ? null : hydrated.first;
+    return hydrated.firstOrNull;
+  }
+
+  Future<VideoEvent?> _fetchRouteVideoByEventIdFromRelay(String eventId) async {
+    if (eventId.isEmpty) return null;
+
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        ids: [eventId],
+        kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+      ),
+    ]);
+    if (events.isEmpty) return null;
+
+    final videos = <VideoEvent>[];
+    for (final event in events) {
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+    if (videos.isEmpty) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return hydrated.firstOrNull;
+  }
+
+  Future<VideoEvent?> _fetchVideoByStableIdFromRelay(String stableId) async {
+    final events = await _nostrClient.queryEvents([
+      Filter(
+        // Route-specific lookups accept all supported NIP-71 video kinds so
+        // older shared links still resolve instead of failing as not found.
+        kinds: NIP71VideoKinds.getAllAcceptableVideoKinds(),
+        d: [stableId],
+        limit: 10,
+      ),
+    ]);
+    if (events.isEmpty) return null;
+
+    events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final videos = <VideoEvent>[];
+    for (final event in events) {
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+    if (videos.isEmpty) return null;
+
+    final hydrated = await _hydrateVideosWithBulkStats(videos);
+    return hydrated.firstOrNull;
   }
 
   Future<VideoEvent?> _fetchVideoFromRouteApi(
@@ -1903,10 +1951,7 @@ class _VideoRouteCandidate {
     // navigation. AId.fromString validates the format and extracts the d-tag.
     final aid = AId.fromString(trimmed);
     if (aid != null && NIP71VideoKinds.isVideoKind(aid.kind)) {
-      return _VideoRouteCandidate(
-        addressableId: trimmed,
-        stableId: aid.dTag,
-      );
+      return _VideoRouteCandidate(addressableId: trimmed, stableId: aid.dTag);
     }
 
     return _VideoRouteCandidate(stableId: trimmed);
