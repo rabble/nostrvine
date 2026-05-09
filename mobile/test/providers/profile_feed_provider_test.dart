@@ -360,6 +360,59 @@ void main() {
       );
     });
   });
+
+  // The provider tracks _initialLoadPending in instance state to keep the
+  // videos tab in its loading-vs-empty branch correct during the cold-start
+  // fetch window. The actual transitions are driven by ref.watch'd
+  // dependencies that aren't easy to drive from a unit test, but the
+  // emit-time rule itself is a pure function — pinning it here so call sites
+  // that compute `isInitialLoad` from it can't drift (#4164).
+  group('$ProfileFeed shouldKeepInitialLoad', () {
+    test('keeps loading when pending and videos empty (cold-start window)', () {
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: true,
+          videosEmpty: true,
+        ),
+        isTrue,
+      );
+    });
+
+    test('clears loading once videos arrive even while still pending', () {
+      // Once any source has produced videos the spinner should clear, even
+      // if other sources haven't settled yet — otherwise the grid would
+      // re-render the empty branch on the next pending re-emit.
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: true,
+          videosEmpty: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test('clears loading after sources have settled with empty result', () {
+      // REST authoritative empty / hard-timeout → pending becomes false →
+      // empty state is allowed to render.
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: false,
+          videosEmpty: true,
+        ),
+        isFalse,
+      );
+    });
+
+    test('clears loading when not pending and videos populated', () {
+      expect(
+        ProfileFeed.shouldKeepInitialLoad(
+          initialLoadPending: false,
+          videosEmpty: false,
+        ),
+        isFalse,
+      );
+    });
+  });
 }
 
 /// Helper function to create test VideoEvent objects
