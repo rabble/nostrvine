@@ -272,10 +272,12 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
             ),
           ),
 
-          // Identity content. A single Skeletonizer drives the
-          // username + avatar shimmer; static chrome below uses
-          // Skeleton.keep so it renders normally during the loading
-          // window and stays interactive (#4163).
+          // Identity content. A single Skeletonizer wraps just the avatar
+          // and the name/NIP-05/bio block so its shimmer + pointer
+          // absorption stays scoped to the widgets actually loading. The
+          // people-list pill, stats row, and action buttons sit as
+          // siblings outside the skeleton so they remain tappable
+          // during the loading window (#4183 review).
           Skeletonizer(
             enabled: showIdentitySkeleton,
             enableSwitchAnimation: true,
@@ -309,41 +311,34 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
                     isOwnProfile: widget.isOwnProfile,
                   ),
                 ),
-                if (!widget.isOwnProfile) ...[
-                  Skeleton.keep(
-                    child: PeopleListMembershipIndicator(
-                      pubkey: widget.userIdHex,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-
-                // Stats row owns its own loading skeleton (driven by
-                // profileStats == null), so opt out of the parent.
-                Skeleton.keep(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: _ProfileStatsRow(
-                      userIdHex: widget.userIdHex,
-                      profileStats: widget.profileStats,
-                    ),
-                  ),
-                ),
-
-                Skeleton.keep(
-                  child: ProfileActionButtons(
-                    userIdHex: widget.userIdHex,
-                    isOwnProfile: widget.isOwnProfile,
-                    displayName: widget.displayName,
-                    onEditProfile: widget.onEditProfile,
-                    onOpenClips: widget.onOpenClips,
-                    onMessageUser: widget.onMessageUser,
-                    onShareProfile: widget.onShareProfile,
-                    onBlockedTap: widget.onBlockedTap,
-                  ),
-                ),
               ],
             ),
+          ),
+          if (!widget.isOwnProfile) ...[
+            PeopleListMembershipIndicator(pubkey: widget.userIdHex),
+            const SizedBox(height: 16),
+          ],
+
+          // Stats row owns its own loading skeleton (driven by
+          // profileStats == null) and lives outside the identity
+          // skeletonizer so it remains interactive.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: _ProfileStatsRow(
+              userIdHex: widget.userIdHex,
+              profileStats: widget.profileStats,
+            ),
+          ),
+
+          ProfileActionButtons(
+            userIdHex: widget.userIdHex,
+            isOwnProfile: widget.isOwnProfile,
+            displayName: widget.displayName,
+            onEditProfile: widget.onEditProfile,
+            onOpenClips: widget.onOpenClips,
+            onMessageUser: widget.onMessageUser,
+            onShareProfile: widget.onShareProfile,
+            onBlockedTap: widget.onBlockedTap,
           ),
         ],
       ),

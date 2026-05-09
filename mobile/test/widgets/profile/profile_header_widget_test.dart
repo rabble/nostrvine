@@ -22,7 +22,9 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
+import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -1048,15 +1050,16 @@ void main() {
     group('Identity skeleton (#4163)', () {
       // Asserts the wiring contract from `_ProfileHeaderWidgetState.build`:
       // when the profile is still loading and there is no cached fallback,
-      // the identity-content subtree is wrapped in an enabled Skeletonizer.
-      // Static chrome below (stats row, action buttons) sits inside the
-      // same Skeletonizer but is opted out via `Skeleton.keep` so it
-      // remains interactive — covered separately at the end of this group.
+      // the avatar + name/bio block is wrapped in an enabled Skeletonizer.
+      // Static chrome (stats row, action buttons, people-list pill) sits
+      // OUTSIDE the identity Skeletonizer so it stays both visible and
+      // interactive during the loading window — pinned at the end of this
+      // group.
       //
       // The header subtree always contains 2 Skeletonizers at runtime: the
-      // identity one (top-level) and the stats one (inside _ProfileStatsRow,
-      // gated on profileStats == null). The identity Skeletonizer is the
-      // first one encountered in widget order.
+      // identity one (over avatar + name/bio) and the stats one (inside
+      // _ProfileStatsRow, gated on profileStats == null). The identity
+      // Skeletonizer is the first one encountered in widget order.
 
       Skeletonizer findIdentitySkeletonizer(WidgetTester tester) {
         final matches = tester
@@ -1213,8 +1216,8 @@ void main() {
       );
 
       testWidgets(
-        'wraps action buttons and stats row in Skeleton.keep so the '
-        'static chrome opts out of the parent shimmer',
+        'stats row and action buttons sit outside the identity '
+        'Skeletonizer so they stay tappable during the loading window',
         (tester) async {
           await tester.pumpWidget(
             buildTestWidget(
@@ -1225,23 +1228,41 @@ void main() {
           );
           await tester.pump();
 
-          // At least two Skeleton.keep nodes: stats row + action buttons.
-          // (PeopleListMembershipIndicator adds a third on other profiles.)
-          final keepNodes = tester
-              .widgetList<Skeleton>(
-                find.descendant(
-                  of: find.byType(ProfileHeaderWidget),
-                  matching: find.bySubtype<Skeleton>(),
-                ),
+          // The identity Skeletonizer is the first descendant of the
+          // header. Anything that should stay interactive during the
+          // loading window must NOT be a descendant of it.
+          final identitySkeletonizer = find
+              .descendant(
+                of: find.byType(ProfileHeaderWidget),
+                matching: find.bySubtype<Skeletonizer>(),
               )
-              .toList();
+              .first;
+
           expect(
-            keepNodes.length,
-            greaterThanOrEqualTo(2),
+            find.descendant(
+              of: identitySkeletonizer,
+              matching: find.byType(ProfileActionButtons),
+            ),
+            findsNothing,
             reason:
-                'Expected Skeleton.keep wrappers around stats row and action '
-                'buttons so static chrome stays interactive during the '
-                'identity skeleton (#4163 review).',
+                'ProfileActionButtons (Library/edit/share) must live outside '
+                'the identity Skeletonizer so the buttons remain tappable '
+                'during the loading window (#4183 review).',
+          );
+
+          // _ProfileStatsRow is private; the stat columns it renders are
+          // the proxy. Their location relative to the identity skeleton
+          // is what matters.
+          expect(
+            find.descendant(
+              of: identitySkeletonizer,
+              matching: find.byType(ProfileStatColumn),
+            ),
+            findsNothing,
+            reason:
+                'Stats columns must live outside the identity Skeletonizer '
+                'so the followers/following/likes/loops counts remain '
+                'tappable during the loading window (#4183 review).',
           );
         },
       );
