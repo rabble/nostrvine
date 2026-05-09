@@ -631,7 +631,7 @@ void main() {
           any(),
           targetRelays: any(named: 'targetRelays'),
         ),
-      ).thenAnswer((_) async => reportEvent);
+      ).thenAnswer((_) async => PublishSuccess(event: reportEvent));
 
       await stagingService.reportContent(
         eventId: 'evt_relay',

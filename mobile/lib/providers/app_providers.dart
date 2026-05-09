@@ -1976,12 +1976,12 @@ CurationRepository curationRepository(Ref ref) {
 // Legacy ExploreVideoManager removed - functionality replaced by pure Riverpod video providers
 
 /// Content reporting service for NIP-56 compliance
-@Riverpod(keepAlive: true)
+@riverpod
 Future<ContentReportingService> contentReportingService(Ref ref) async {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final prefs = ref.watch(sharedPreferencesProvider);
-  final env = ref.read(currentEnvironmentProvider);
+  final env = ref.watch(currentEnvironmentProvider);
   final service = ContentReportingService(
     nostrService: nostrService,
     authService: authService,

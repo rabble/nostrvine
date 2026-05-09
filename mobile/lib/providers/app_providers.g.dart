@@ -3921,7 +3921,7 @@ final class ContentReportingServiceProvider
         argument: null,
         retry: null,
         name: r'contentReportingServiceProvider',
-        isAutoDispose: false,
+        isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -3942,7 +3942,7 @@ final class ContentReportingServiceProvider
 }
 
 String _$contentReportingServiceHash() =>
-    r'b246ddd7f795dcf5adb837e3530bbc21c2c14fa8';
+    r'5f32ae82aae7471e3e3dd008a011607def6bc149';
 
 /// Lists state notifier - manages curated lists state
 
