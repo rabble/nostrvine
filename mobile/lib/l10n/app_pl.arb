@@ -2806,6 +2806,8 @@
     "videoEditorExtractAudioLabel": "Wyodrębnij dźwięk",
     "videoEditorClipAudioTitle": "Dźwięk klipu",
     "videoEditorExtractAudioFromClipSemanticLabel": "Wyodrębnij dźwięk z klipu i wycisz oryginał",
+    "videoEditorExtractAudioNoLocalFile": "Nie można wyodrębnić audio: klip nie jest dostępny lokalnie.",
+    "videoEditorExtractAudioFailed": "Nie udało się wyodrębnić audio. Spróbuj ponownie.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Zakończ edycję osi czasu",
     "videoEditorAudioPlayPreviewSemanticLabel": "Odtwórz podgląd",
     "videoEditorAudioPausePreviewSemanticLabel": "Wstrzymaj podgląd",

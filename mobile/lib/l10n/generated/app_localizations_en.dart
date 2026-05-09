@@ -6585,6 +6585,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cannot extract audio: clip is not locally available.';
 
   @override
+  String get videoEditorExtractAudioFailed =>
+      'Could not extract audio. Please try again.';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Finish timeline editing';
 

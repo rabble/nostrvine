@@ -3365,6 +3365,8 @@
     "videoEditorExtractAudioLabel": "ኦዲዮ ያውጡ",
     "videoEditorClipAudioTitle": "ክሊፕ ኦዲዮ",
     "videoEditorExtractAudioFromClipSemanticLabel": "ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ",
+    "videoEditorExtractAudioNoLocalFile": "ድምፅ ማዎጣት አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።",
+    "videoEditorExtractAudioFailed": "ድምፅ ማዎጣት አልተቻለም። እንደገና ሞክር።",
     "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",
     "videoEditorAudioPausePreviewSemanticLabel": "ቅድመ እይታን ባለበት አቁም",

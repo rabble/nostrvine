@@ -3604,6 +3604,7 @@
   "videoEditorClipAudioTitle": "Clip Audio",
   "videoEditorExtractAudioFromClipSemanticLabel": "Extract audio from clip and mute original",
   "videoEditorExtractAudioNoLocalFile": "Cannot extract audio: clip is not locally available.",
+  "videoEditorExtractAudioFailed": "Could not extract audio. Please try again.",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",

@@ -6620,7 +6620,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Cannot extract audio: clip is not locally available.';
+      'Kan audio niet extraheren: clip is niet lokaal beschikbaar.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Kon audio niet extraheren. Probeer het opnieuw.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

@@ -2806,6 +2806,8 @@
     "videoEditorExtractAudioLabel": "Audio extrahieren",
     "videoEditorClipAudioTitle": "Clip-Audio",
     "videoEditorExtractAudioFromClipSemanticLabel": "Audio aus Clip extrahieren und Original stummschalten",
+    "videoEditorExtractAudioNoLocalFile": "Audio kann nicht extrahiert werden: Clip ist lokal nicht verfügbar.",
+    "videoEditorExtractAudioFailed": "Audio konnte nicht extrahiert werden. Bitte erneut versuchen.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Timeline-Bearbeitung abschließen",
     "videoEditorAudioPlayPreviewSemanticLabel": "Vorschau abspielen",
     "videoEditorAudioPausePreviewSemanticLabel": "Vorschau pausieren",

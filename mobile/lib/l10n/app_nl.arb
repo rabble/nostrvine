@@ -2806,6 +2806,8 @@
     "videoEditorExtractAudioLabel": "Audio extraheren",
     "videoEditorClipAudioTitle": "Clip-audio",
     "videoEditorExtractAudioFromClipSemanticLabel": "Audio uit clip extraheren en origineel dempen",
+    "videoEditorExtractAudioNoLocalFile": "Kan audio niet extraheren: clip is niet lokaal beschikbaar.",
+    "videoEditorExtractAudioFailed": "Kon audio niet extraheren. Probeer het opnieuw.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
     "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",

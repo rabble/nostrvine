@@ -11624,6 +11624,12 @@ abstract class AppLocalizations {
   /// **'Cannot extract audio: clip is not locally available.'**
   String get videoEditorExtractAudioNoLocalFile;
 
+  /// No description provided for @videoEditorExtractAudioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not extract audio. Please try again.'**
+  String get videoEditorExtractAudioFailed;
+
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///
   /// In en, this message translates to:

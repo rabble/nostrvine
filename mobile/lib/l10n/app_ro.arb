@@ -2806,6 +2806,8 @@
     "videoEditorExtractAudioLabel": "Extrage audio",
     "videoEditorClipAudioTitle": "Audio clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extrage audio din clip și dezactivează sunetul originalului",
+    "videoEditorExtractAudioNoLocalFile": "Nu se poate extrage audio: clipul nu este disponibil local.",
+    "videoEditorExtractAudioFailed": "Nu s-a putut extrage audio. Vă rugăm să încercați din nou.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",
     "videoEditorAudioPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",

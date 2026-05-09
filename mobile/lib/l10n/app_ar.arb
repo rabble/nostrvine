@@ -2809,6 +2809,8 @@
     "videoEditorExtractAudioLabel": "استخراج الصوت",
     "videoEditorClipAudioTitle": "صوت المقطع",
     "videoEditorExtractAudioFromClipSemanticLabel": "استخراج الصوت من المقطع وكتم الصوت الأصلي",
+    "videoEditorExtractAudioNoLocalFile": "لا يمكن استخراج الصوت: المقطع غير متاح محليًا.",
+    "videoEditorExtractAudioFailed": "تعذّر استخراج الصوت. يرجى المحاولة مجددًا.",
     "videoEditorStickersDivineOriginals": "Divine الأصلية",
     "videoEditorStickerSearchHint": "البحث في الملصقات...",
     "videoEditorTextAlignmentSemanticLabel": "محاذاة النص",

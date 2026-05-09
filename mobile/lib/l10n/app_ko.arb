@@ -2105,6 +2105,8 @@
     "videoEditorExtractAudioLabel": "오디오 추출",
     "videoEditorClipAudioTitle": "클립 오디오",
     "videoEditorExtractAudioFromClipSemanticLabel": "클립에서 오디오를 추출하고 원본을 음소거",
+    "videoEditorExtractAudioNoLocalFile": "오디오를 추출할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.",
+    "videoEditorExtractAudioFailed": "오디오를 추출할 수 없었습니다. 다시 시도해 주세요.",
     "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",
     "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",

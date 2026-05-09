@@ -6659,7 +6659,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get videoEditorExtractAudioNoLocalFile =>
-      'Cannot extract audio: clip is not locally available.';
+      'Не може да се извлече аудио: клипът не е наличен локално.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Не можа да се извлече аудио. Моля, опитайте отново.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

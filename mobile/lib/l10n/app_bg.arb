@@ -3059,6 +3059,8 @@
     "videoEditorExtractAudioLabel": "Извличане на аудио",
     "videoEditorClipAudioTitle": "Аудио от клип",
     "videoEditorExtractAudioFromClipSemanticLabel": "Извлечи аудио от клип и заглуши оригинала",
+    "videoEditorExtractAudioNoLocalFile": "Не може да се извлече аудио: клипът не е наличен локално.",
+    "videoEditorExtractAudioFailed": "Не можа да се извлече аудио. Моля, опитайте отново.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Завършете редактирането на времевата линия",
     "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",
     "videoEditorAudioPausePreviewSemanticLabel": "Пауза на прегледа",

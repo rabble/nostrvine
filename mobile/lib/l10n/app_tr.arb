@@ -2816,6 +2816,8 @@
     "videoEditorExtractAudioLabel": "Sesi çıkar",
     "videoEditorClipAudioTitle": "Klip sesi",
     "videoEditorExtractAudioFromClipSemanticLabel": "Klipten sesi çıkar ve orijinali sessize al",
+    "videoEditorExtractAudioNoLocalFile": "Ses çıkarılamıyor: klip yerel olarak kullanılamıyor.",
+    "videoEditorExtractAudioFailed": "Ses çıkarılamadı. Lütfen tekrar deneyin.",
     "videoEditorStickersDivineOriginals": "Divine Orijinaller",
     "videoEditorStickerSearchHint": "Çıkartma ara...",
     "videoEditorTextAlignmentSemanticLabel": "Metin hizalama",

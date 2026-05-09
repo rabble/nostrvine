@@ -2816,6 +2816,8 @@
     "videoEditorExtractAudioLabel": "Ekstrak audio",
     "videoEditorClipAudioTitle": "Audio klip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Ekstrak audio dari klip dan bisukan aslinya",
+    "videoEditorExtractAudioNoLocalFile": "Tidak dapat mengekstrak audio: klip tidak tersedia secara lokal.",
+    "videoEditorExtractAudioFailed": "Tidak dapat mengekstrak audio. Silakan coba lagi.",
     "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",
     "videoEditorTextAlignmentSemanticLabel": "Perataan teks",

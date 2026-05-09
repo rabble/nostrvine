@@ -2806,6 +2806,8 @@
     "videoEditorExtractAudioLabel": "Extraire l'audio",
     "videoEditorClipAudioTitle": "Audio du clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extraire l'audio du clip et couper le son de l'original",
+    "videoEditorExtractAudioNoLocalFile": "Impossible d'extraire l'audio : le clip n'est pas disponible localement.",
+    "videoEditorExtractAudioFailed": "Impossible d'extraire l'audio. Veuillez réessayer.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminer l'édition de la timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "Lire l'aperçu",
     "videoEditorAudioPausePreviewSemanticLabel": "Mettre l'aperçu en pause",

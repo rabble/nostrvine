@@ -2806,6 +2806,8 @@
     "videoEditorExtractAudioLabel": "Extrair áudio",
     "videoEditorClipAudioTitle": "Áudio do clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extrair áudio do clipe e silenciar o original",
+    "videoEditorExtractAudioNoLocalFile": "Não é possível extrair o áudio: o clipe não está disponível localmente.",
+    "videoEditorExtractAudioFailed": "Não foi possível extrair o áudio. Por favor, tente novamente.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizar edição da linha do tempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproduzir prévia",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausar prévia",
