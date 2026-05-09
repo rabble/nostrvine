@@ -126,23 +126,23 @@ void main() {
       test(
         'does not write to cache when publishEvent returns PublishFailed',
         () async {
-        final client = _MockNostrClient();
-        when(() => client.publicKey).thenReturn(_ownerPubkey);
-        when(
-          () => client.publishEvent(any()),
-        ).thenAnswer((_) async => const PublishFailed());
-        final repository = buildRepository(nostrClient: client);
+          final client = _MockNostrClient();
+          when(() => client.publicKey).thenReturn(_ownerPubkey);
+          when(
+            () => client.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
+          final repository = buildRepository(nostrClient: client);
 
-        final result = await repository.createList(
-          ownerPubkey: _ownerPubkey,
-          name: 'Besties',
-        );
+          final result = await repository.createList(
+            ownerPubkey: _ownerPubkey,
+            name: 'Besties',
+          );
 
-        expect(result.status, equals(PeopleListPublishStatus.failed));
-        expect(result.submitted, isFalse);
+          expect(result.status, equals(PeopleListPublishStatus.failed));
+          expect(result.submitted, isFalse);
 
-        final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
-        expect(stored, isEmpty);
+          final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
+          expect(stored, isEmpty);
         },
       );
 
@@ -453,45 +453,45 @@ void main() {
         'does not tombstone locally when publish does not return '
         'PublishSuccess',
         () async {
-        final client = _MockNostrClient();
-        when(() => client.publicKey).thenReturn(_ownerPubkey);
+          final client = _MockNostrClient();
+          when(() => client.publicKey).thenReturn(_ownerPubkey);
 
-        // First call for createList succeeds, second (deleteList) fails.
-        var publishCalls = 0;
-        when(() => client.publishEvent(any())).thenAnswer((invocation) async {
-          publishCalls++;
-          if (publishCalls == 1) {
-            final event = invocation.positionalArguments.first as Event;
-            return PublishSuccess(
-              event: signedEvent(
-                kind: event.kind,
-                tags: event.tags,
-                content: event.content,
-                createdAt: event.createdAt,
-              ),
-            );
-          }
-          return const PublishFailed();
-        });
-        final repository = buildRepository(nostrClient: client);
+          // First call for createList succeeds, second (deleteList) fails.
+          var publishCalls = 0;
+          when(() => client.publishEvent(any())).thenAnswer((invocation) async {
+            publishCalls++;
+            if (publishCalls == 1) {
+              final event = invocation.positionalArguments.first as Event;
+              return PublishSuccess(
+                event: signedEvent(
+                  kind: event.kind,
+                  tags: event.tags,
+                  content: event.content,
+                  createdAt: event.createdAt,
+                ),
+              );
+            }
+            return const PublishFailed();
+          });
+          final repository = buildRepository(nostrClient: client);
 
-        await repository.createList(
-          ownerPubkey: _ownerPubkey,
-          name: 'Besties',
-          initialPubkeys: const [_memberA],
-        );
-        final listId = (await repository.readLists(
-          ownerPubkey: _ownerPubkey,
-        )).single.id;
+          await repository.createList(
+            ownerPubkey: _ownerPubkey,
+            name: 'Besties',
+            initialPubkeys: const [_memberA],
+          );
+          final listId = (await repository.readLists(
+            ownerPubkey: _ownerPubkey,
+          )).single.id;
 
-        final result = await repository.deleteList(
-          ownerPubkey: _ownerPubkey,
-          listId: listId,
-        );
+          final result = await repository.deleteList(
+            ownerPubkey: _ownerPubkey,
+            listId: listId,
+          );
 
-        expect(result.status, equals(PeopleListPublishStatus.failed));
-        final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
-        expect(stored, hasLength(1));
+          expect(result.status, equals(PeopleListPublishStatus.failed));
+          final stored = await repository.readLists(ownerPubkey: _ownerPubkey);
+          expect(stored, hasLength(1));
         },
       );
     });

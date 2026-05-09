@@ -4080,8 +4080,23 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     return null;
   }
 
-  /// Preserve original timestamp when updating video events
-  /// This maintains the original creation time for older events that may not have 'published_at'
+  /// Merges an incoming [updatedVideo] (parsed from a freshly published Nostr
+  /// event) with the [existingVideo] already held in the service, carrying
+  /// forward fields that are not stored in Nostr event tags and therefore
+  /// cannot survive a round-trip through [VideoEvent.fromNostrEvent].
+  ///
+  /// **Timestamp preservation** — when neither version has a `published_at`
+  /// tag (common for classic Vine imports), the original `createdAt` /
+  /// `timestamp` values are kept so the video retains its chronological
+  /// position in feeds.
+  ///
+  /// **Runtime like-count carry-forward** — [VideoEvent.nostrLikeCount] is
+  /// injected at runtime after a relay batch query; it is never written into
+  /// the Nostr event body.  Without this carry-forward a metadata edit (e.g.
+  /// changing hashtags) drops the displayed count to zero until the next
+  /// batch re-fetch completes.  The relay-fetched count will overwrite this
+  /// carried value once the batch fires, so there is no risk of a stale
+  /// count persisting indefinitely.
   VideoEvent _mergeUpdatedVideo(
     VideoEvent existingVideo,
     VideoEvent updatedVideo,

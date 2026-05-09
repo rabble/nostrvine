@@ -83,12 +83,19 @@ sendPostPublishCollaboratorInvites({
 /// Tag names that carry engagement counts on Vine-imported video events.
 ///
 /// These are baked into the Nostr event body and must survive a metadata
-/// edit; without that, `originalLoops` / `originalLikes` get permanently
-/// zeroed on the replacement event. See [extractEngagementCountTags].
-const _engagementCountTagNames = {'loops', 'likes', 'reposts', 'views'};
+/// edit; without that, `originalLoops` / `originalLikes` / `originalComments`
+/// get permanently zeroed on the replacement event.
+/// See [extractEngagementCountTags].
+const _engagementCountTagNames = {
+  'loops',
+  'likes',
+  'reposts',
+  'views',
+  'comments',
+};
 
-/// Returns the subset of [tags] that carry engagement counts (loops,
-/// likes, reposts, views) on Vine-imported video events.
+/// Returns the subset of [tags] that carry engagement counts (loops, likes,
+/// reposts, views, comments) on Vine-imported video events.
 ///
 /// Tags missing a value are skipped — `tag.length >= 2` already implies
 /// the tag is non-empty.

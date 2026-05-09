@@ -248,21 +248,23 @@ void main() {
       expect(result[0], equals(['loops', '850000']));
     });
 
-    test('extracts all four engagement tag types', () {
+    test('extracts all five engagement tag types', () {
       final tags = [
         ['loops', '100'],
         ['likes', '42'],
         ['reposts', '7'],
         ['views', '999'],
+        ['comments', '13'],
         ['title', 'Test'],
       ];
       final result = extractEngagementCountTags(tags);
-      expect(result, hasLength(4));
+      expect(result, hasLength(5));
       expect(result.map((t) => t[0]).toSet(), {
         'loops',
         'likes',
         'reposts',
         'views',
+        'comments',
       });
     });
 
