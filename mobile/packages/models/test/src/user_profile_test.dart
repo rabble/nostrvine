@@ -183,7 +183,7 @@ void main() {
         'through Funnelcake does not silently drop them on the next publish '
         '(#4175)',
         () {
-          final result = UserProfileFound(
+          const result = UserProfileFound(
             profile: UserProfileData(
               pubkey: testPubkey,
               name: 'alice',
@@ -213,7 +213,7 @@ void main() {
       );
 
       test('omits null typed fields from rawData', () {
-        final result = UserProfileFound(
+        const result = UserProfileFound(
           profile: UserProfileData(
             pubkey: testPubkey,
             displayName: 'Alice',
