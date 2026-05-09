@@ -605,43 +605,31 @@ class ProfileRepository {
   /// been hydrated from the Funnelcake REST API and is missing keys the
   /// REST schema does not expose).
   ///
-  /// Falls back to [currentProfile] when:
-  /// - the relay fetch returns null,
-  /// - the relay fetch throws or times out (we cap at
-  ///   [_publishSeedRelayTimeout] so a slow relay does not stall Save),
-  /// - we have no pubkey to fetch with (cold publish, never published).
+  /// Returns [currentProfile] unchanged when:
+  /// - we have no pubkey to fetch with (cold publish, never published),
+  /// - the relay fetch returns null (its documented failure mode — internal
+  ///   errors are swallowed by [fetchFreshProfile]),
+  /// - the relay fetch exceeds [_publishSeedRelayTimeout],
+  /// - the relay event is older than [currentProfile] AND its rawData is no
+  ///   richer (i.e., currentProfile is already authoritative).
   Future<UserProfile?> _resolvePublishSeed(UserProfile? currentProfile) async {
-    final pubkey = currentProfile?.pubkey;
-    if (pubkey == null) {
+    if (currentProfile == null) {
+      return null;
+    }
+    final fresh = await fetchFreshProfile(
+      pubkey: currentProfile.pubkey,
+    ).timeout(_publishSeedRelayTimeout, onTimeout: () => null);
+    if (fresh == null) {
       return currentProfile;
     }
-    try {
-      final fresh = await fetchFreshProfile(
-        pubkey: pubkey,
-      ).timeout(_publishSeedRelayTimeout, onTimeout: () => null);
-      if (fresh == null) {
-        return currentProfile;
-      }
-      if (currentProfile == null) {
-        return fresh;
-      }
-      // Prefer fresh when it is newer or when currentProfile's rawData is
-      // sparse (REST-sourced) — the latter case is exactly the
-      // arbitrary-fields-loss bug this seed step exists to fix.
-      if (fresh.createdAt.isAfter(currentProfile.createdAt) ||
-          currentProfile.rawData.length < fresh.rawData.length) {
-        return fresh;
-      }
-      return currentProfile;
-    } on Object catch (e) {
-      Log.warning(
-        'saveProfileEvent: relay seed fetch failed, '
-        'falling back to currentProfile: $e',
-        name: 'ProfileRepository.saveProfileEvent',
-        category: LogCategory.relay,
-      );
-      return currentProfile;
+    // Prefer fresh when it is newer or when currentProfile's rawData is
+    // sparse (REST-sourced) — the latter case is exactly the
+    // arbitrary-fields-loss bug this seed step exists to fix.
+    if (fresh.createdAt.isAfter(currentProfile.createdAt) ||
+        currentProfile.rawData.length < fresh.rawData.length) {
+      return fresh;
     }
+    return currentProfile;
   }
 
   /// Claims a username via NIP-98 authenticated request.
