@@ -36,10 +36,6 @@ class ActorNotificationRow extends StatelessWidget {
   /// Called when the Follow back button is tapped (follow kind only).
   final VoidCallback? onFollowBack;
 
-  bool get _showFollowBack =>
-      notification.type == NotificationKind.follow &&
-      !notification.isFollowingBack;
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -74,12 +70,9 @@ class ActorNotificationRow extends StatelessWidget {
                     child: _NotificationContent(
                       notification: notification,
                       onProfileTap: onProfileTap,
+                      onFollowBack: onFollowBack,
                     ),
                   ),
-                  if (_showFollowBack) ...[
-                    const SizedBox(width: 8),
-                    _FollowBackButton(onPressed: onFollowBack),
-                  ],
                 ],
               ),
             ),
@@ -112,10 +105,16 @@ class _NotificationContent extends StatelessWidget {
   const _NotificationContent({
     required this.notification,
     required this.onProfileTap,
+    this.onFollowBack,
   });
 
   final ActorNotification notification;
   final VoidCallback onProfileTap;
+  final VoidCallback? onFollowBack;
+
+  bool get _showFollowBack =>
+      notification.type == NotificationKind.follow &&
+      !notification.isFollowingBack;
 
   bool get _hasComment =>
       notification.commentText != null && notification.commentText!.isNotEmpty;
@@ -126,16 +125,30 @@ class _NotificationContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        UserAvatar(
-          imageUrl: notification.actor.pictureUrl,
-          name: notification.actor.displayName,
-          placeholderSeed: notification.actor.pubkey,
-          size: NotificationConstants.avatarSize,
-          cornerRadius: NotificationConstants.avatarCornerRadius,
-          onTap: onProfileTap,
-          semanticLabel: l10n.notificationsViewProfileSemanticLabel(
-            notification.actor.displayName,
-          ),
+        // Avatar + (optional) Follow back share a single row so the avatar
+        // stays anchored to the top-left and the button hugs the right
+        // edge. Keeping the button on this row — instead of as a sibling
+        // of the entire content column — means the message text's width
+        // below doesn't change when the button appears or disappears, so
+        // tapping Follow back never re-wraps the message line.
+        Row(
+          children: [
+            UserAvatar(
+              imageUrl: notification.actor.pictureUrl,
+              name: notification.actor.displayName,
+              placeholderSeed: notification.actor.pubkey,
+              size: NotificationConstants.avatarSize,
+              cornerRadius: NotificationConstants.avatarCornerRadius,
+              onTap: onProfileTap,
+              semanticLabel: l10n.notificationsViewProfileSemanticLabel(
+                notification.actor.displayName,
+              ),
+            ),
+            if (_showFollowBack) ...[
+              const Spacer(),
+              _FollowBackButton(onPressed: onFollowBack),
+            ],
+          ],
         ),
         const SizedBox(height: 8),
         _MessageText(notification: notification),

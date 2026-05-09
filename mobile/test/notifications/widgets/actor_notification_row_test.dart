@@ -9,6 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 const _alice = ActorInfo(
   pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -144,6 +145,33 @@ void main() {
 
           final button = tester.widget<DivineButton>(find.byType(DivineButton));
           expect(button.size, equals(DivineButtonSize.tiny));
+        },
+      );
+
+      testWidgets(
+        'Follow back button shares its row with the avatar so message '
+        'text width is stable when the button appears / disappears',
+        (tester) async {
+          await _pump(tester, notification: _actor());
+
+          // The Row that holds the avatar must also hold the Follow back
+          // button — they're siblings, not children of separate columns.
+          // If the button were a sibling of the entire content column the
+          // message text below would re-wrap when the button appears or
+          // disappears.
+          final avatarRow = find
+              .ancestor(
+                of: find.byType(UserAvatar),
+                matching: find.byType(Row),
+              )
+              .first;
+          expect(
+            find.descendant(
+              of: avatarRow,
+              matching: find.byType(DivineButton),
+            ),
+            findsOneWidget,
+          );
         },
       );
 
