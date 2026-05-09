@@ -2,10 +2,10 @@
 // ABOUTME: likeComment / reply rendering, follow-back button visibility,
 // ABOUTME: and tap callbacks.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/constants/notification_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/actor_notification_row.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
@@ -138,19 +138,12 @@ void main() {
       });
 
       testWidgets(
-        'Follow back button height matches the avatar / type icon (32px)',
+        'Follow back button uses DivineButtonSize.tiny (32px visible)',
         (tester) async {
           await _pump(tester, notification: _actor());
 
-          // Locate the height-clamping SizedBox that wraps the button.
-          final sizedBoxFinder = find.ancestor(
-            of: find.text(_l10n.notificationFollowBack),
-            matching: find.byWidgetPredicate(
-              (w) =>
-                  w is SizedBox && w.height == NotificationConstants.avatarSize,
-            ),
-          );
-          expect(sizedBoxFinder, findsOneWidget);
+          final button = tester.widget<DivineButton>(find.byType(DivineButton));
+          expect(button.size, equals(DivineButtonSize.tiny));
         },
       );
 

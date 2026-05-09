@@ -37,16 +37,26 @@ enum DivineButtonType {
 
 /// The size of a [DivineButton].
 ///
-/// Both sizes have the same 48px total outer height for consistent touch
-/// targets. The [small] variant wraps the visible button in 4px padding,
-/// making it appear 40px tall while keeping the 48px tap area.
+/// All sizes have the same 48px total outer height for consistent touch
+/// targets. The [tiny] and [small] variants wrap the visible button in
+/// extra outer padding so the visible chip is shorter while the tap area
+/// stays 48px.
 enum DivineButtonSize {
+  /// Tiny button: 8px outer padding, 12px horizontal / 6px vertical
+  /// inner padding, 16px border radius, 14px `labelLargeFont` text,
+  /// 20px icon. Visual height 32px, tap target 48px. Use when the
+  /// surrounding layout is built on a 32px module (e.g. a notification
+  /// row aligned with 32px avatars and type icons).
+  tiny,
+
   /// Small button: 4px outer padding, 16px horizontal / 8px vertical
-  /// inner padding, 16px border radius. Visual height 40px, tap target 48px.
+  /// inner padding, 16px border radius, 16px `titleMediumFont` text,
+  /// 24px icon. Visual height 40px, tap target 48px.
   small,
 
   /// Base/medium button: 24px horizontal / 12px vertical padding, 20px
-  /// border radius. Total height 48px.
+  /// border radius, 16px `titleMediumFont` text, 24px icon. Total
+  /// height 48px.
   base,
 }
 
@@ -160,8 +170,13 @@ class _DivineButtonContent extends StatelessWidget {
 
   bool get _isEnabled => onPressed != null && !isLoading;
 
-  /// Icon size is 24px for both variants.
-  static const double _iconSize = 24;
+  /// Icon size scales with [size]: tiny uses a smaller 20px icon to fit
+  /// inside the 32px visible chip, small/base use 24px.
+  double get _iconSize => switch (size) {
+    DivineButtonSize.tiny => 20,
+    DivineButtonSize.small => 24,
+    DivineButtonSize.base => 24,
+  };
 
   /// Whether the button has no text label (icon-only mode).
   ///
@@ -174,11 +189,16 @@ class _DivineButtonContent extends StatelessWidget {
     if (_noLabel) {
       // Match DivineIconButton padding for icon-only mode.
       return switch (size) {
+        DivineButtonSize.tiny => const EdgeInsets.all(6),
         DivineButtonSize.small => const EdgeInsets.all(8),
         DivineButtonSize.base => const EdgeInsets.all(12),
       };
     }
     return switch (size) {
+      DivineButtonSize.tiny => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
       DivineButtonSize.small => const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 8,
@@ -191,6 +211,7 @@ class _DivineButtonContent extends StatelessWidget {
   }
 
   double get _borderRadius => switch (size) {
+    DivineButtonSize.tiny => 16,
     DivineButtonSize.small => 16,
     DivineButtonSize.base => 20,
   };
@@ -232,6 +253,12 @@ class _DivineButtonContent extends StatelessWidget {
         decorationColor: VineTheme.primary,
         decorationThickness: 2,
       );
+    }
+
+    // Tiny buttons use the smaller labelLargeFont (14/20) so 6px vertical
+    // padding × 2 + 20px line-height totals exactly 32px.
+    if (size == DivineButtonSize.tiny) {
+      return VineTheme.labelLargeFont(color: _foregroundColor);
     }
 
     return VineTheme.titleMediumFont(color: _foregroundColor);
@@ -279,6 +306,7 @@ class _DivineButtonContent extends StatelessWidget {
           DivineIcon(
             icon: leadingIcon!,
             color: _foregroundColor,
+            size: _iconSize,
           ),
         if (!_noLabel)
           Flexible(
@@ -294,6 +322,7 @@ class _DivineButtonContent extends StatelessWidget {
           DivineIcon(
             icon: trailingIcon!,
             color: _foregroundColor,
+            size: _iconSize,
           ),
       ],
     );
@@ -328,10 +357,15 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    // Small variant: wrap in 4px padding so the visible button is 40px
-    // tall but the tap target remains 48px.
-    if (size == DivineButtonSize.small) {
-      button = Padding(padding: const EdgeInsets.all(4), child: button);
+    // Tiny / small variants: wrap in extra outer padding so the visible
+    // chip is shorter than 48px while the tap target stays 48px.
+    final outerPad = switch (size) {
+      DivineButtonSize.tiny => 8.0, // 32 + 8 + 8 = 48 tap target.
+      DivineButtonSize.small => 4.0, // 40 + 4 + 4 = 48 tap target.
+      DivineButtonSize.base => null,
+    };
+    if (outerPad != null) {
+      button = Padding(padding: EdgeInsets.all(outerPad), child: button);
     }
 
     return button;

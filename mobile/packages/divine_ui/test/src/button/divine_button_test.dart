@@ -187,6 +187,24 @@ void main() {
         );
         expect(divineIcon.size, 24);
       });
+
+      testWidgets('tiny size renders 20px icon', (tester) async {
+        // The 32px visible chip can't fit a 24px icon plus the 6px
+        // padding above and below — tiny scales the icon down to 20px so
+        // 6 + 20 + 6 = 32 exactly.
+        await tester.pumpWidget(
+          buildTestWidget(
+            size: DivineButtonSize.tiny,
+            leadingIcon: DivineIconName.envelope,
+            onPressed: () {},
+          ),
+        );
+
+        final divineIcon = tester.widget<DivineIcon>(
+          find.byType(DivineIcon),
+        );
+        expect(divineIcon.size, 20);
+      });
     });
 
     group('interaction', () {
@@ -294,6 +312,17 @@ void main() {
     });
 
     group('button sizes', () {
+      testWidgets('renders tiny size', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            size: DivineButtonSize.tiny,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+      });
+
       testWidgets('renders small size', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
@@ -314,6 +343,45 @@ void main() {
 
         expect(find.byType(DivineButton), findsOneWidget);
       });
+
+      testWidgets(
+        'tiny visible chip is 32px tall (8px outer × 2 + 32 = 48 tap target)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineButtonSize.tiny,
+              onPressed: () {},
+            ),
+          );
+
+          // The outermost Padding inside the button widget tree owns the
+          // tap-target inflation. For tiny, that's 8px on every side, so
+          // the visible chip's painted box (the AnimatedOpacity that wraps
+          // the Material decoration) is exactly 16px shorter than the
+          // outer DivineButton's painted size.
+          final outerSize = tester.getSize(find.byType(DivineButton));
+          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+          expect(outerSize.height - innerSize.height, equals(16));
+          expect(innerSize.height, equals(32));
+        },
+      );
+
+      testWidgets(
+        'small visible chip is 40px tall (4px outer × 2 + 40 = 48 tap target)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              size: DivineButtonSize.small,
+              onPressed: () {},
+            ),
+          );
+
+          final outerSize = tester.getSize(find.byType(DivineButton));
+          final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+          expect(outerSize.height - innerSize.height, equals(8));
+          expect(innerSize.height, equals(40));
+        },
+      );
     });
 
     group('disabled state', () {
@@ -503,6 +571,25 @@ void main() {
     });
 
     group('icon-only mode (empty label)', () {
+      testWidgets('tiny size uses DivineIconButton padding', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            label: '',
+            leadingIcon: DivineIconName.heart,
+            size: DivineButtonSize.tiny,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(DivineButton), findsOneWidget);
+        expect(find.byType(DivineIcon), findsOneWidget);
+        expect(find.text(''), findsNothing);
+
+        // Tiny icon-only is 6 + 20 + 6 = 32 visible.
+        final innerSize = tester.getSize(find.byType(AnimatedOpacity));
+        expect(innerSize.height, equals(32));
+      });
+
       testWidgets('small size uses DivineIconButton padding', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
