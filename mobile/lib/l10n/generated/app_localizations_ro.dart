@@ -4086,11 +4086,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Miniatură video pentru $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Miniatură video';
 
   @override
   String notificationsLoadingType(String type) {

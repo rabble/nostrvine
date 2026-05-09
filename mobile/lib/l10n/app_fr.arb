@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Infractions non listées ci-dessus",
     "reportLearnMoreAt": "En savoir plus sur",
     "supportLogsSavedTo": "Journaux enregistrés dans {path}",
-    "supportRevealLogsAction": "Afficher dans le dossier"
+    "supportRevealLogsAction": "Afficher dans le dossier",
+    "notificationsVideoThumbnailFor": "Miniature de la vidéo {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniature de la vidéo"
 }

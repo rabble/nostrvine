@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Pelanggaran yang tidak tercantum di atas",
     "reportLearnMoreAt": "Pelajari lebih lanjut di",
     "supportLogsSavedTo": "Log disimpan ke {path}",
-    "supportRevealLogsAction": "Tampilkan di folder"
+    "supportRevealLogsAction": "Tampilkan di folder",
+    "notificationsVideoThumbnailFor": "Thumbnail video untuk {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Thumbnail video"
 }

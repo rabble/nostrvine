@@ -4031,11 +4031,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Miniature de la vidéo $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Miniature de la vidéo';
 
   @override
   String notificationsLoadingType(String type) {

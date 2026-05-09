@@ -4016,11 +4016,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Миниатюра на видео за $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Миниатюра на видео';
 
   @override
   String notificationsLoadingType(String type) {

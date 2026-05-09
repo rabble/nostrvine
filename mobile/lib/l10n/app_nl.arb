@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Overtredingen die hierboven niet staan",
     "reportLearnMoreAt": "Meer info op",
     "supportLogsSavedTo": "Logs opgeslagen in {path}",
-    "supportRevealLogsAction": "Tonen in map"
+    "supportRevealLogsAction": "Tonen in map",
+    "notificationsVideoThumbnailFor": "Videominiatuur van {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videominiatuur"
 }

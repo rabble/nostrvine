@@ -3793,11 +3793,11 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return '$title 동영상 썸네일';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => '동영상 썸네일';
 
   @override
   String notificationsLoadingType(String type) {

@@ -2095,5 +2095,14 @@
     "profileEditGetVerifiedSubtitle": "I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.",
     "@profileEditGetVerifiedSubtitle": {
         "description": "Subtitle explaining the verified accounts call to action in the profile editor"
-    }
+    },
+    "notificationsVideoThumbnailFor": "Thumbnail ng video para sa {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Thumbnail ng video"
 }

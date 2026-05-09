@@ -3996,11 +3996,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Miniatura do vídeo $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Miniatura do vídeo';
 
   @override
   String notificationsLoadingType(String type) {

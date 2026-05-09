@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "上記に記載されていない違反",
     "reportLearnMoreAt": "詳しくはこちら",
     "supportLogsSavedTo": "ログを{path}に保存しました",
-    "supportRevealLogsAction": "フォルダで表示"
+    "supportRevealLogsAction": "フォルダで表示",
+    "notificationsVideoThumbnailFor": "{title}の動画サムネイル",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "動画のサムネイル"
 }

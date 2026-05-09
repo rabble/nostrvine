@@ -3670,5 +3670,14 @@
     "reportReasonOtherSubtitle": "ከላይ ያልተዘረዘሩ ጥሰቶች",
     "reportLearnMoreAt": "የበለጠ ይወቁ በ",
     "supportLogsSavedTo": "ምዝግቦች ተቀምጠዋል በ {path}",
-    "supportRevealLogsAction": "በአቃፊ ውስጥ አሳይ"
+    "supportRevealLogsAction": "በአቃፊ ውስጥ አሳይ",
+    "notificationsVideoThumbnailFor": "የ{title} ቪዲዮ ድንክዬ",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "የቪዲዮ ድንክዬ"
 }

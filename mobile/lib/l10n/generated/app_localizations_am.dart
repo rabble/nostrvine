@@ -3885,11 +3885,11 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'የ$title ቪዲዮ ድንክዬ';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'የቪዲዮ ድንክዬ';
 
   @override
   String notificationsLoadingType(String type) {

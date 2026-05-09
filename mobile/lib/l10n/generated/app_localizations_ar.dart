@@ -3929,11 +3929,11 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'صورة مصغرة لفيديو $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'صورة مصغرة للفيديو';
 
   @override
   String notificationsLoadingType(String type) {

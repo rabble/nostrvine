@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Naruszenia niewymienione powyżej",
     "reportLearnMoreAt": "Dowiedz się więcej na",
     "supportLogsSavedTo": "Logi zapisano w {path}",
-    "supportRevealLogsAction": "Pokaż w folderze"
+    "supportRevealLogsAction": "Pokaż w folderze",
+    "notificationsVideoThumbnailFor": "Miniatura wideo dla {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniatura wideo"
 }

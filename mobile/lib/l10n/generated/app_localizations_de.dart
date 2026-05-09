@@ -4020,11 +4020,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Videovorschaubild für $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Videovorschaubild';
 
   @override
   String notificationsLoadingType(String type) {

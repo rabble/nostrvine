@@ -2837,5 +2837,14 @@
     "reportReasonOtherSubtitle": "위에 나열되지 않은 위반",
     "reportLearnMoreAt": "자세한 내용은",
     "supportLogsSavedTo": "{path}에 로그 저장됨",
-    "supportRevealLogsAction": "폴더에서 보기"
+    "supportRevealLogsAction": "폴더에서 보기",
+    "notificationsVideoThumbnailFor": "{title} 동영상 썸네일",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "동영상 썸네일"
 }

@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Infracciones no listadas arriba",
     "reportLearnMoreAt": "Más información en",
     "supportLogsSavedTo": "Registros guardados en {path}",
-    "supportRevealLogsAction": "Mostrar en carpeta"
+    "supportRevealLogsAction": "Mostrar en carpeta",
+    "notificationsVideoThumbnailFor": "Miniatura del video {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniatura del video"
 }

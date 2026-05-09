@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "انتهاكات غير مدرجة أعلاه",
     "reportLearnMoreAt": "اعرف المزيد على",
     "supportLogsSavedTo": "حُفظت السجلات في {path}",
-    "supportRevealLogsAction": "إظهار في المجلد"
+    "supportRevealLogsAction": "إظهار في المجلد",
+    "notificationsVideoThumbnailFor": "صورة مصغرة لفيديو {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "صورة مصغرة للفيديو"
 }

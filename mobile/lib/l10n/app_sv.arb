@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Överträdelser som inte listas ovan",
     "reportLearnMoreAt": "Läs mer på",
     "supportLogsSavedTo": "Loggar sparade i {path}",
-    "supportRevealLogsAction": "Visa i mapp"
+    "supportRevealLogsAction": "Visa i mapp",
+    "notificationsVideoThumbnailFor": "Videominiatyr för {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videominiatyr"
 }

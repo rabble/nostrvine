@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Violazioni non elencate sopra",
     "reportLearnMoreAt": "Scopri di più su",
     "supportLogsSavedTo": "Log salvati in {path}",
-    "supportRevealLogsAction": "Mostra nella cartella"
+    "supportRevealLogsAction": "Mostra nella cartella",
+    "notificationsVideoThumbnailFor": "Anteprima del video {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Anteprima del video"
 }

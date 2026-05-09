@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Încălcări care nu sunt listate mai sus",
     "reportLearnMoreAt": "Află mai multe la",
     "supportLogsSavedTo": "Jurnale salvate în {path}",
-    "supportRevealLogsAction": "Arată în dosar"
+    "supportRevealLogsAction": "Arată în dosar",
+    "notificationsVideoThumbnailFor": "Miniatură video pentru {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniatură video"
 }

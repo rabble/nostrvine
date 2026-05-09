@@ -3778,11 +3778,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return '$titleの動画サムネイル';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => '動画のサムネイル';
 
   @override
   String notificationsLoadingType(String type) {

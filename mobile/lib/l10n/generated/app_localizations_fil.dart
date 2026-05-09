@@ -4029,11 +4029,11 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Thumbnail ng video para sa $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Thumbnail ng video';
 
   @override
   String notificationsLoadingType(String type) {

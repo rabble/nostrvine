@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Verstöße, die oben nicht aufgeführt sind",
     "reportLearnMoreAt": "Mehr erfahren unter",
     "supportLogsSavedTo": "Logs gespeichert unter {path}",
-    "supportRevealLogsAction": "Im Ordner anzeigen"
+    "supportRevealLogsAction": "Im Ordner anzeigen",
+    "notificationsVideoThumbnailFor": "Videovorschaubild für {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videovorschaubild"
 }

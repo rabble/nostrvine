@@ -3676,5 +3676,14 @@
     "reportReasonOtherSubtitle": "Нарушения, които не са изброени по-горе",
     "reportLearnMoreAt": "Научи повече на",
     "supportLogsSavedTo": "Логовете са запазени в {path}",
-    "supportRevealLogsAction": "Покажи в папка"
+    "supportRevealLogsAction": "Покажи в папка",
+    "notificationsVideoThumbnailFor": "Миниатюра на видео за {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Миниатюра на видео"
 }

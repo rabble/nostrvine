@@ -3541,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Yukarıda listelenmeyen ihlaller",
     "reportLearnMoreAt": "Daha fazla bilgi:",
     "supportLogsSavedTo": "Günlükler {path} konumuna kaydedildi",
-    "supportRevealLogsAction": "Klasörde göster"
+    "supportRevealLogsAction": "Klasörde göster",
+    "notificationsVideoThumbnailFor": "{title} için video küçük resmi",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Video küçük resmi"
 }

@@ -3941,11 +3941,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String notificationsVideoThumbnailFor(String title) {
-    return 'Video thumbnail for $title';
+    return 'Thumbnail video untuk $title';
   }
 
   @override
-  String get notificationsVideoThumbnail => 'Video thumbnail';
+  String get notificationsVideoThumbnail => 'Thumbnail video';
 
   @override
   String notificationsLoadingType(String type) {
