@@ -227,54 +227,57 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('shows retry UI instead of spinning forever when profile load fails', (
-      tester,
-    ) async {
-      when(
-        () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-      ).thenThrow(Exception('network failed'));
+    testWidgets(
+      'shows retry UI instead of spinning forever when profile load fails',
+      (
+        tester,
+      ) async {
+        when(
+          () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).thenThrow(Exception('network failed'));
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: VineTheme.theme,
-          home: MultiBlocProvider(
-            providers: [
-              BlocProvider(
-                create: (_) => ProfileEditorBloc(
-                  profileRepository: mockProfileRepository,
-                  blossomUploadService: mockBlossomUploadService,
-                  hasExistingProfile: true,
-                  currentUserPubkey: testPubkey,
+        await tester.pumpWidget(
+          MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: VineTheme.theme,
+            home: MultiBlocProvider(
+              providers: [
+                BlocProvider(
+                  create: (_) => ProfileEditorBloc(
+                    profileRepository: mockProfileRepository,
+                    blossomUploadService: mockBlossomUploadService,
+                    hasExistingProfile: true,
+                    currentUserPubkey: testPubkey,
+                  ),
                 ),
-              ),
-              BlocProvider(
-                create: (_) => MyProfileBloc(
-                  profileRepository: mockProfileRepository,
-                  pubkey: testPubkey,
-                )..add(const MyProfileLoadRequested()),
-              ),
-            ],
-            child: const Nip05SettingsView(),
+                BlocProvider(
+                  create: (_) => MyProfileBloc(
+                    profileRepository: mockProfileRepository,
+                    pubkey: testPubkey,
+                  )..add(const MyProfileLoadRequested()),
+                ),
+              ],
+              child: const Nip05SettingsView(),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text(l10n.profilePleaseTryAgain), findsOneWidget);
-      expect(find.text(l10n.profileRetryButton), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
+        expect(find.text(l10n.profilePleaseTryAgain), findsOneWidget);
+        expect(find.text(l10n.profileRetryButton), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
 
-      await tester.tap(find.text(l10n.profileRetryButton));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text(l10n.profileRetryButton));
+        await tester.pumpAndSettle();
 
-      verify(
-        () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
-      ).called(2);
-    });
+        verify(
+          () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+        ).called(2);
+      },
+    );
   });
 }

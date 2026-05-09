@@ -203,7 +203,9 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
               size: DivineButtonSize.small,
               label: context.l10n.profileRetryButton,
               onPressed: () {
-                context.read<MyProfileBloc>().add(const MyProfileLoadRequested());
+                context.read<MyProfileBloc>().add(
+                  const MyProfileLoadRequested(),
+                );
               },
             ),
           ],

@@ -13,7 +13,8 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
-import 'package:openvine/services/auth_service.dart' show AuthService, AuthState;
+import 'package:openvine/services/auth_service.dart'
+    show AuthService, AuthState;
 import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
