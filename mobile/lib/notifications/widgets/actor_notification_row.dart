@@ -237,6 +237,16 @@ class _CommentQuote extends StatelessWidget {
   }
 }
 
+/// Trailing "Follow back" button on follow-kind rows.
+///
+/// Sized to match [NotificationConstants.avatarSize] (32px) so the row's
+/// trailing affordance aligns vertically with the leading type icon and
+/// the actor's avatar. [DivineButton]'s `small` variant is 40px tall
+/// (24px titleMediumFont line-height + 8px vertical padding × 2) and
+/// can't be clamped without clipping text, so this is a deliberate
+/// local primitive that mirrors the design-system primary button at a
+/// 32px height. If `divine_ui` ever grows a `DivineButtonSize.tiny`
+/// variant this should swap to it.
 class _FollowBackButton extends StatelessWidget {
   const _FollowBackButton({this.onPressed});
 
@@ -244,10 +254,25 @@ class _FollowBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DivineButton(
-      label: context.l10n.notificationFollowBack,
-      onPressed: onPressed,
-      size: DivineButtonSize.small,
+    return SizedBox(
+      height: NotificationConstants.avatarSize,
+      child: Material(
+        color: VineTheme.primary,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Center(
+              child: Text(
+                context.l10n.notificationFollowBack,
+                style: VineTheme.labelLargeFont(color: VineTheme.onPrimary),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
