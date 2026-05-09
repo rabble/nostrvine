@@ -3,10 +3,15 @@
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockAudioExtractionService extends Mock
+    implements AudioExtractionService {}
 
 DivineVideoClip _createClip({
   String id = 'clip-1',
@@ -16,6 +21,33 @@ DivineVideoClip _createClip({
     id: id,
     video: EditorVideo.file('/path/$id.mp4'),
     duration: duration,
+    recordedAt: DateTime(2025),
+    targetAspectRatio: .vertical,
+    originalAspectRatio: 9 / 16,
+  );
+}
+
+DivineVideoClip _createClipWithFile({
+  String id = 'clip-local',
+  Duration duration = const Duration(seconds: 5),
+  Duration trimStart = const Duration(seconds: 1),
+  Duration trimEnd = const Duration(milliseconds: 500),
+}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.file('/path/$id.mp4'),
+    duration: duration,
+    recordedAt: DateTime(2025),
+    targetAspectRatio: .vertical,
+    originalAspectRatio: 9 / 16,
+  ).copyWith(trimStart: trimStart, trimEnd: trimEnd);
+}
+
+DivineVideoClip _createClipNoFile({String id = 'clip-no-file'}) {
+  return DivineVideoClip(
+    id: id,
+    video: EditorVideo.network('https://example.com/vid.mp4'),
+    duration: const Duration(seconds: 3),
     recordedAt: DateTime(2025),
     targetAspectRatio: .vertical,
     originalAspectRatio: 9 / 16,
@@ -39,8 +71,13 @@ void main() {
       ];
     });
 
-    ClipEditorBloc buildBloc() {
-      return ClipEditorBloc(onFinalClipInvalidated: () {});
+    ClipEditorBloc buildBloc({
+      AudioExtractionService? audioExtractionService,
+    }) {
+      return ClipEditorBloc(
+        onFinalClipInvalidated: () {},
+        audioExtractionService: audioExtractionService,
+      );
     }
 
     test('initial state has correct defaults', () {
@@ -986,6 +1023,127 @@ void main() {
           ),
         );
       });
+    });
+
+    // =========================================================
+    // AUDIO EXTRACTION
+    // =========================================================
+
+    group('ClipEditorAudioExtractionRequested', () {
+      late _MockAudioExtractionService mockService;
+
+      setUp(() {
+        mockService = _MockAudioExtractionService();
+      });
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits ClipAudioExtractionNoLocalFile when clip has no local file',
+        build: buildBloc,
+        seed: () => ClipEditorState(
+          clips: [_createClipNoFile()],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.lastAudioExtraction,
+            'lastAudioExtraction',
+            isA<ClipAudioExtractionNoLocalFile>(),
+          ),
+        ],
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits isExtractingAudio then success with muted clip and correct endTime',
+        build: () {
+          when(() => mockService.extractAudio(any())).thenAnswer(
+            (_) async => const AudioExtractionResult(
+              audioFilePath: '/tmp/audio.m4a',
+              duration: 5,
+              fileSize: 12345,
+              sha256Hash: 'abc123',
+              mimeType: 'audio/mp4',
+            ),
+          );
+          return buildBloc(audioExtractionService: mockService);
+        },
+        seed: () => ClipEditorState(
+          clips: [_createClipWithFile()],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isExtractingAudio,
+            'isExtractingAudio',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.isExtractingAudio,
+                'isExtractingAudio',
+                isFalse,
+              )
+              .having(
+                (s) => s.clips.first.volume,
+                'volume',
+                0,
+              )
+              .having(
+                (s) => s.lastAudioExtraction,
+                'lastAudioExtraction',
+                isA<ClipAudioExtractionSuccess>(),
+              ),
+        ],
+        verify: (bloc) {
+          final result =
+              bloc.state.lastAudioExtraction! as ClipAudioExtractionSuccess;
+          final clip = _createClipWithFile();
+          // endTime must use trimmedDuration, not duration
+          expect(result.audioEvent.endTime, equals(clip.trimmedDuration));
+        },
+      );
+
+      blocTest<ClipEditorBloc, ClipEditorState>(
+        'emits isExtractingAudio then ClipAudioExtractionFailure on AudioExtractionException',
+        build: () {
+          when(() => mockService.extractAudio(any())).thenThrow(
+            const AudioExtractionException('Extraction failed'),
+          );
+          return buildBloc(audioExtractionService: mockService);
+        },
+        seed: () => ClipEditorState(
+          clips: [_createClipWithFile()],
+        ),
+        act: (bloc) => bloc.add(
+          const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
+        ),
+        expect: () => [
+          isA<ClipEditorState>().having(
+            (s) => s.isExtractingAudio,
+            'isExtractingAudio',
+            isTrue,
+          ),
+          isA<ClipEditorState>()
+              .having(
+                (s) => s.isExtractingAudio,
+                'isExtractingAudio',
+                isFalse,
+              )
+              .having(
+                (s) => s.lastAudioExtraction,
+                'lastAudioExtraction',
+                isA<ClipAudioExtractionFailure>().having(
+                  (f) => f.errorMessage,
+                  'errorMessage',
+                  'Extraction failed',
+                ),
+              ),
+        ],
+        errors: () => [isA<AudioExtractionException>()],
+      );
     });
   });
 }

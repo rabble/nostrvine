@@ -760,7 +760,7 @@ class VideoEditorRenderService {
     }
 
     final volumeSegments = segments
-        .map((s) => s.copyWith(volume: originalAudioVolume))
+        .map((s) => s.copyWith(volume: s.volume ?? originalAudioVolume))
         .toList();
 
     Size? renderResolution;

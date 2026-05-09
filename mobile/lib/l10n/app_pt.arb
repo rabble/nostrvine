@@ -2804,6 +2804,7 @@
     "videoEditorSplitLabel": "Dividir",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividir clipe selecionado",
     "videoEditorExtractAudioLabel": "Extrair áudio",
+    "videoEditorClipAudioTitle": "Áudio do clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extrair áudio do clipe e silenciar o original",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizar edição da linha do tempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproduzir prévia",

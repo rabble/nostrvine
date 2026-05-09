@@ -2804,6 +2804,7 @@
     "videoEditorSplitLabel": "Scinder",
     "videoEditorSplitSelectedClipSemanticLabel": "Scinder le clip sélectionné",
     "videoEditorExtractAudioLabel": "Extraire l'audio",
+    "videoEditorClipAudioTitle": "Audio du clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extraire l'audio du clip et couper le son de l'original",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminer l'édition de la timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "Lire l'aperçu",

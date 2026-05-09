@@ -6329,8 +6329,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoEditorExtractAudioLabel => '오디오 추출';
 
   @override
+  String get videoEditorClipAudioTitle => '클립 오디오';
+
+  @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
       '클립에서 오디오를 추출하고 원본을 음소거';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';

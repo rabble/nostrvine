@@ -11606,11 +11606,23 @@ abstract class AppLocalizations {
   /// **'Extract Audio'**
   String get videoEditorExtractAudioLabel;
 
+  /// No description provided for @videoEditorClipAudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip Audio'**
+  String get videoEditorClipAudioTitle;
+
   /// No description provided for @videoEditorExtractAudioFromClipSemanticLabel.
   ///
   /// In en, this message translates to:
   /// **'Extract audio from clip and mute original'**
   String get videoEditorExtractAudioFromClipSemanticLabel;
+
+  /// No description provided for @videoEditorExtractAudioNoLocalFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot extract audio: clip is not locally available.'**
+  String get videoEditorExtractAudioNoLocalFile;
 
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///

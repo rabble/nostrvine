@@ -3057,6 +3057,7 @@
     "videoEditorSplitLabel": "Сплит",
     "videoEditorSplitSelectedClipSemanticLabel": "Разделете избрания клип",
     "videoEditorExtractAudioLabel": "Извличане на аудио",
+    "videoEditorClipAudioTitle": "Аудио от клип",
     "videoEditorExtractAudioFromClipSemanticLabel": "Извлечи аудио от клип и заглуши оригинала",
     "videoEditorFinishTimelineEditingSemanticLabel": "Завършете редактирането на времевата линия",
     "videoEditorAudioPlayPreviewSemanticLabel": "Пусни предварителен преглед",

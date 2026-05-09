@@ -2804,6 +2804,7 @@
     "videoEditorSplitLabel": "Împarte",
     "videoEditorSplitSelectedClipSemanticLabel": "Împarte clipul selectat",
     "videoEditorExtractAudioLabel": "Extrage audio",
+    "videoEditorClipAudioTitle": "Audio clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extrage audio din clip și dezactivează sunetul originalului",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",

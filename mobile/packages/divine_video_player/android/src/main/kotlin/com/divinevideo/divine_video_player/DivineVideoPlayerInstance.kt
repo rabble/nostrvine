@@ -65,6 +65,8 @@ internal class DivineVideoPlayerInstance(
 
     /** Accumulated clip durations for global timeline calculation. */
     private var clipOffsets = listOf<Long>()
+    /** Per-clip audio volumes (0.0–1.0). Multiplied by [volume] on each clip transition. */
+    private var clipVolumes = listOf<Float>()
     private var clipCount = 0
     private var isLooping = false
     private var volume = 1.0
@@ -234,12 +236,14 @@ internal class DivineVideoPlayerInstance(
         val exoPlayer = ensurePlayer()
         val mediaItems = mutableListOf<MediaItem>()
         val offsets = mutableListOf<Long>()
+        val volumes = mutableListOf<Float>()
         var accumulated = 0L
 
         for (map in clipsRaw) {
             val uri = map["uri"] as? String ?: continue
             val startMs = (map["startMs"] as? Number)?.toLong() ?: 0L
             val endMs = (map["endMs"] as? Number)?.toLong()
+            val clipVol = (map["volume"] as? Number)?.toFloat() ?: 1.0f
 
             val builder = MediaItem.Builder().setUri(uri)
                 .setClippingConfiguration(
@@ -253,6 +257,7 @@ internal class DivineVideoPlayerInstance(
 
             mediaItems.add(builder.build())
             offsets.add(accumulated)
+            volumes.add(clipVol)
 
             // If endMs is unknown, we'll recalculate after prepare.
             if (endMs != null) {
@@ -261,6 +266,7 @@ internal class DivineVideoPlayerInstance(
         }
 
         clipOffsets = offsets
+        clipVolumes = volumes
         clipCount = mediaItems.size
         firstFrameRendered = false
 
@@ -290,6 +296,9 @@ internal class DivineVideoPlayerInstance(
         exoPlayer.setMediaItems(mediaItems, startIndex, startLocalMs)
         exoPlayer.prepare()
         isResettingPlayer = false
+        // Apply the first clip's per-clip volume immediately so the correct
+        // level is audible as soon as the decoder is ready.
+        exoPlayer.volume = (clipVolumes.firstOrNull() ?: 1.0f) * volume.toFloat()
         // While ExoPlayer buffers to the seek position, report the target
         // position so the timeline doesn't show intermediate values.
         pendingGlobalStartMs = globalStartMs
@@ -371,7 +380,8 @@ internal class DivineVideoPlayerInstance(
 
     private fun handleSetVolume(call: MethodCall, result: MethodChannel.Result) {
         volume = (call.argument<Number>("volume"))?.toDouble() ?: 1.0
-        player?.volume = volume.toFloat()
+        val currentIndex = player?.currentMediaItemIndex ?: 0
+        player?.volume = (clipVolumes.getOrElse(currentIndex) { 1.0f }) * volume.toFloat()
         result.success(null)
     }
 
@@ -422,6 +432,7 @@ internal class DivineVideoPlayerInstance(
         exoPlayer.stop()
         exoPlayer.clearMediaItems()
         clipOffsets = listOf()
+        clipVolumes = listOf()
         clipCount = 0
         firstFrameRendered = false
         sendStateUpdate()
@@ -630,6 +641,9 @@ internal class DivineVideoPlayerInstance(
                     player?.setVideoSurface(null)
                     player?.setVideoSurface(surface)
                 }
+                // Apply per-clip volume for the clip that just started.
+                val newIndex = player?.currentMediaItemIndex ?: 0
+                player?.volume = (clipVolumes.getOrElse(newIndex) { 1.0f }) * volume.toFloat()
             }
             syncAudioOverlays()
             sendStateUpdate()

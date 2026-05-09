@@ -6644,8 +6644,15 @@ class AppLocalizationsIt extends AppLocalizations {
   String get videoEditorExtractAudioLabel => 'Estrai audio';
 
   @override
+  String get videoEditorClipAudioTitle => 'Audio clip';
+
+  @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
       'Estrai audio dal clip e silenzia l\'originale';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

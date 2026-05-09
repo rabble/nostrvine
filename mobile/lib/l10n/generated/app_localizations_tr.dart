@@ -6552,8 +6552,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoEditorExtractAudioLabel => 'Sesi çıkar';
 
   @override
+  String get videoEditorClipAudioTitle => 'Klip sesi';
+
+  @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
       'Klipten sesi çıkar ve orijinali sessize al';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

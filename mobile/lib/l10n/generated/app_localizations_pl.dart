@@ -6730,8 +6730,15 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoEditorExtractAudioLabel => 'Wyodrębnij dźwięk';
 
   @override
+  String get videoEditorClipAudioTitle => 'Dźwięk klipu';
+
+  @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
       'Wyodrębnij dźwięk z klipu i wycisz oryginał';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

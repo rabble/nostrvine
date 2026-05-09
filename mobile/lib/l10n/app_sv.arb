@@ -2804,6 +2804,7 @@
     "videoEditorSplitLabel": "Dela",
     "videoEditorSplitSelectedClipSemanticLabel": "Dela valt klipp",
     "videoEditorExtractAudioLabel": "Extrahera ljud",
+    "videoEditorClipAudioTitle": "Klippljud",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extrahera ljud från klipp och tysta originalet",
     "videoEditorFinishTimelineEditingSemanticLabel": "Avsluta redigering av tidslinje",
     "videoEditorAudioPlayPreviewSemanticLabel": "Spela förhandsvisning",

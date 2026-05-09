@@ -2812,6 +2812,7 @@
     "videoEditorSplitLabel": "Dividir",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividir clip seleccionado",
     "videoEditorExtractAudioLabel": "Extraer audio",
+    "videoEditorClipAudioTitle": "Audio del clip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Extraer audio del clip y silenciar el original",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminar edición de la línea de tiempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproducir vista previa",

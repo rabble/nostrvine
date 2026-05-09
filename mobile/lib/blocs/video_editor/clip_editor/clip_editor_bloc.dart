@@ -1,8 +1,10 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -22,8 +24,12 @@ part 'clip_editor_state.dart';
 /// architecture replaces the Riverpod provider with a [VideoEditorRepository]
 /// injected directly into this BLoC.
 class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
-  ClipEditorBloc({required this.onFinalClipInvalidated})
-    : super(const ClipEditorState()) {
+  ClipEditorBloc({
+    required this.onFinalClipInvalidated,
+    AudioExtractionService? audioExtractionService,
+  }) : _audioExtractionService =
+           audioExtractionService ?? AudioExtractionService(),
+       super(const ClipEditorState()) {
     // Clip data
     on<ClipEditorInitialized>(_onInitialized);
     on<ClipEditorClipRemoved>(_onClipRemoved);
@@ -47,9 +53,16 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     on<ClipEditorTrimUpdated>(_onTrimUpdated, transformer: restartable());
     on<ClipEditorTrimDragStarted>(_onTrimDragStarted);
     on<ClipEditorTrimDragEnded>(_onTrimDragEnded);
+
+    // Audio extraction
+    on<ClipEditorAudioExtractionRequested>(
+      _onAudioExtractionRequested,
+      transformer: droppable(),
+    );
   }
 
   final void Function() onFinalClipInvalidated;
+  final AudioExtractionService _audioExtractionService;
 
   // === CLIP DATA ===
 
@@ -394,5 +407,114 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         clearTrimmingClipId: true,
       ),
     );
+  }
+
+  // === AUDIO EXTRACTION ===
+
+  Future<void> _onAudioExtractionRequested(
+    ClipEditorAudioExtractionRequested event,
+    Emitter<ClipEditorState> emit,
+  ) async {
+    final clips = state.clips;
+    if (state.currentClipIndex >= clips.length) return;
+
+    final clip = clips[state.currentClipIndex];
+    final videoPath = clip.video.file?.path;
+
+    if (videoPath == null) {
+      Log.warning(
+        '⚠️ Audio extraction skipped: clip ${clip.id} has no local file',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          lastAudioExtraction: ClipAudioExtractionNoLocalFile(),
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(isExtractingAudio: true));
+
+    // Compute the absolute start position of this clip in the timeline.
+    var clipStart = Duration.zero;
+    for (var i = 0; i < state.currentClipIndex; i++) {
+      clipStart += clips[i].trimmedDuration;
+    }
+
+    try {
+      final result = await _audioExtractionService.extractAudio(videoPath);
+
+      final audioEvent = AudioEvent(
+        id: 'local_extracted_${DateTime.now().microsecondsSinceEpoch}',
+        pubkey: '',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        url: result.audioFilePath,
+        mimeType: result.mimeType,
+        sha256: result.sha256Hash,
+        fileSize: result.fileSize,
+        duration: clip.duration.inMilliseconds / 1000,
+        title: event.clipTitle,
+        startOffset: clip.trimStart,
+        startTime: clipStart,
+        endTime: clipStart + clip.trimmedDuration,
+      );
+
+      // Mute the source clip now that its audio has been extracted.
+      final index = clips.indexWhere((c) => c.id == clip.id);
+      final newClips = List<DivineVideoClip>.of(clips)
+        ..[index] = clip.copyWith(volume: 0);
+
+      Log.info(
+        '🎵 Audio extracted for clip ${clip.id}',
+        name: 'ClipEditorBloc',
+        category: LogCategory.video,
+      );
+
+      emit(
+        state.copyWith(
+          clips: List.unmodifiable(newClips),
+          isExtractingAudio: false,
+          lastAudioExtraction: ClipAudioExtractionSuccess(
+            audioEvent: audioEvent,
+          ),
+        ),
+      );
+    } on AudioExtractionException catch (e, stackTrace) {
+      Log.error(
+        '❌ Audio extraction failed: ${e.message}',
+        name: 'ClipEditorBloc',
+        error: e,
+        stackTrace: stackTrace,
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          isExtractingAudio: false,
+          lastAudioExtraction: ClipAudioExtractionFailure(
+            errorMessage: e.message,
+          ),
+        ),
+      );
+    } catch (e, stackTrace) {
+      Log.error(
+        '❌ Unexpected error during audio extraction: $e',
+        name: 'ClipEditorBloc',
+        error: e,
+        stackTrace: stackTrace,
+        category: LogCategory.video,
+      );
+      addError(e, stackTrace);
+      emit(
+        state.copyWith(
+          isExtractingAudio: false,
+          lastAudioExtraction: ClipAudioExtractionFailure(
+            errorMessage: e.toString(),
+          ),
+        ),
+      );
+    }
   }
 }

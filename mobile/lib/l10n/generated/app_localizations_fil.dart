@@ -6662,6 +6662,20 @@ class AppLocalizationsFil extends AppLocalizations {
       'I-split ang napiling clip';
 
   @override
+  String get videoEditorExtractAudioLabel => 'Extract Audio';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Clip Audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Extract audio from clip and mute original';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
+
+  @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>
       'Tapusin ang pag-edit ng timeline';
 

@@ -3363,6 +3363,7 @@
     "videoEditorSplitLabel": "ተከፈለ",
     "videoEditorSplitSelectedClipSemanticLabel": "የተመረጠውን ቅንጥብ ክፈል።",
     "videoEditorExtractAudioLabel": "ኦዲዮ ያውጡ",
+    "videoEditorClipAudioTitle": "ክሊፕ ኦዲዮ",
     "videoEditorExtractAudioFromClipSemanticLabel": "ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ",
     "videoEditorFinishTimelineEditingSemanticLabel": "የጊዜ መስመር አርትዖትን ጨርስ",
     "videoEditorAudioPlayPreviewSemanticLabel": "ቅድመ እይታን አጫውት።",

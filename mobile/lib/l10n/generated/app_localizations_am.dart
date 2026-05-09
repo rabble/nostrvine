@@ -6440,8 +6440,15 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoEditorExtractAudioLabel => 'ኦዲዮ ያውጡ';
 
   @override
+  String get videoEditorClipAudioTitle => 'ክሊፕ ኦዲዮ';
+
+  @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
       'ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

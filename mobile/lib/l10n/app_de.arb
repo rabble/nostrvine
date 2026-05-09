@@ -2804,6 +2804,7 @@
     "videoEditorSplitLabel": "Teilen",
     "videoEditorSplitSelectedClipSemanticLabel": "Ausgewählten Clip teilen",
     "videoEditorExtractAudioLabel": "Audio extrahieren",
+    "videoEditorClipAudioTitle": "Clip-Audio",
     "videoEditorExtractAudioFromClipSemanticLabel": "Audio aus Clip extrahieren und Original stummschalten",
     "videoEditorFinishTimelineEditingSemanticLabel": "Timeline-Bearbeitung abschließen",
     "videoEditorAudioPlayPreviewSemanticLabel": "Vorschau abspielen",

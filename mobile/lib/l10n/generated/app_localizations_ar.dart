@@ -6517,8 +6517,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoEditorExtractAudioLabel => 'استخراج الصوت';
 
   @override
+  String get videoEditorClipAudioTitle => 'صوت المقطع';
+
+  @override
   String get videoEditorExtractAudioFromClipSemanticLabel =>
       'استخراج الصوت من المقطع وكتم الصوت الأصلي';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Cannot extract audio: clip is not locally available.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

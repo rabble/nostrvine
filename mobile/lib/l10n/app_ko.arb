@@ -2103,6 +2103,7 @@
     },
     "videoEditorSplitSelectedClipSemanticLabel": "선택한 클립 분할",
     "videoEditorExtractAudioLabel": "오디오 추출",
+    "videoEditorClipAudioTitle": "클립 오디오",
     "videoEditorExtractAudioFromClipSemanticLabel": "클립에서 오디오를 추출하고 원본을 음소거",
     "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",

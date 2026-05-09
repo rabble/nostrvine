@@ -2814,6 +2814,7 @@
     },
     "videoEditorSplitSelectedClipSemanticLabel": "Bagi klip yang dipilih",
     "videoEditorExtractAudioLabel": "Ekstrak audio",
+    "videoEditorClipAudioTitle": "Audio klip",
     "videoEditorExtractAudioFromClipSemanticLabel": "Ekstrak audio dari klip dan bisukan aslinya",
     "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",

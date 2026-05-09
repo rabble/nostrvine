@@ -381,6 +381,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             uri: path,
             start: clip.trimStart,
             end: clip.duration - clip.trimEnd,
+            volume: clip.volume,
           ),
     ], startPosition: currentPosition);
   }
@@ -451,6 +452,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               uri: path,
               start: clip.trimStart,
               end: clip.duration - clip.trimEnd,
+              volume: clip.volume,
             ),
       ],
       startPosition: startPosition != null && startPosition > Duration.zero
@@ -811,6 +813,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 uri: path,
                 start: clip.trimStart,
                 end: clip.duration - clip.trimEnd,
+                volume: clip.volume,
               ),
         ], startPosition: currentPosition);
       },
@@ -895,7 +898,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             _pendingSeekPosition = null;
             _isSeeking = false;
             _videoPlayer?.setClips([
-              VideoClip(uri: path, end: clip.duration),
+              VideoClip(uri: path, end: clip.duration, volume: clip.volume),
             ]);
           },
         ),
@@ -994,6 +997,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                       uri: path,
                       start: clip.trimStart,
                       end: clip.duration - clip.trimEnd,
+                      volume: clip.volume,
                     ),
               ], startPosition: startPosition);
               if (mounted) {
