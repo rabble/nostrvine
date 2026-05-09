@@ -36,12 +36,10 @@ class VideoThumbnailWidget extends StatefulWidget {
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   String? _thumbnailUrl;
   double? _resolvedAspectRatio;
-  VineContentType? _derivedContentType;
 
   @override
   void initState() {
     super.initState();
-    _derivedContentType = _deriveContentType(widget.video);
     _loadThumbnail();
   }
 
@@ -61,7 +59,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         oldWidget.video.blurhash != widget.video.blurhash ||
         oldWidget.video.dimensions != widget.video.dimensions) {
       _resolvedAspectRatio = null;
-      _derivedContentType = _deriveContentType(widget.video);
       _loadThumbnail();
     }
   }
@@ -110,7 +107,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         // Show blurhash or flat color as background while image loads
         BlurhashDisplay(
           blurhash: widget.video.blurhash,
-          contentType: _derivedContentType,
+          contentType: _deriveContentType(widget.video),
           width: widget.width,
           height: widget.height,
           fit: fit,

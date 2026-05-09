@@ -42,7 +42,8 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
   @override
   void didUpdateWidget(BlurhashDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.blurhash != widget.blurhash) {
+    if (oldWidget.blurhash != widget.blurhash ||
+        oldWidget.contentType != widget.contentType) {
       _decodeBlurhash();
     }
   }
