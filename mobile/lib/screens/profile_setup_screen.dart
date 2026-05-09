@@ -31,6 +31,7 @@ import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
+import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -135,14 +136,12 @@ class _ProfileSetupScreenViewState
   final _bioController = TextEditingController();
   final _pictureController = TextEditingController();
   final _nip05Controller = TextEditingController();
-  final _externalNip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   // Focus nodes for tracking field focus state
   final _nameFocusNode = FocusNode();
   final _bioFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
-  final _externalNip05FocusNode = FocusNode();
 
   // Local-preview state for the brief window between picking and the
   // bloc receiving the staged URL. The bloc's `pendingPictureUrl` takes
@@ -166,7 +165,6 @@ class _ProfileSetupScreenViewState
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
     _usernameFocusNode.addListener(_onFocusChange);
-    _externalNip05FocusNode.addListener(_onFocusChange);
   }
 
   void _onFocusChange() {
@@ -180,15 +178,12 @@ class _ProfileSetupScreenViewState
     _bioController.dispose();
     _pictureController.dispose();
     _nip05Controller.dispose();
-    _externalNip05Controller.dispose();
     _nameFocusNode.removeListener(_onFocusChange);
     _bioFocusNode.removeListener(_onFocusChange);
     _usernameFocusNode.removeListener(_onFocusChange);
-    _externalNip05FocusNode.removeListener(_onFocusChange);
     _nameFocusNode.dispose();
     _bioFocusNode.dispose();
     _usernameFocusNode.dispose();
-    _externalNip05FocusNode.dispose();
 
     super.dispose();
   }
@@ -217,9 +212,6 @@ class _ProfileSetupScreenViewState
               if (extractedUsername != null) {
                 _nip05Controller.text = extractedUsername;
               }
-              if (externalNip05 != null) {
-                _externalNip05Controller.text = externalNip05;
-              }
             });
 
             final editorBloc = context.read<ProfileEditorBloc>();
@@ -231,6 +223,8 @@ class _ProfileSetupScreenViewState
               editorBloc.add(InitialUsernameSet(extractedUsername));
             }
             if (externalNip05 != null) {
+              // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
+              // Seed editor state here so Save from Edit Profile preserves it.
               editorBloc
                 ..add(InitialExternalNip05Set(externalNip05))
                 ..add(const Nip05ModeChanged(Nip05Mode.external_))
@@ -1038,13 +1032,6 @@ class _ProfileSetupScreenViewState
                                   );
                                 },
                               ),
-
-                              // External NIP-05 section
-                              _ExternalNip05Section(
-                                controller: _externalNip05Controller,
-                                focusNode: _externalNip05FocusNode,
-                              ),
-
                               const SizedBox(height: 24),
 
                               // Profile Color (optional)
@@ -1153,7 +1140,6 @@ class _ProfileSetupScreenViewState
                                 displayName: _nameController.text,
                                 about: _bioController.text,
                                 username: _nip05Controller.text,
-                                externalNip05: _externalNip05Controller.text,
                                 // Picture is owned by bloc state
                                 // (`pendingPictureUrl ?? persistedPictureUrl`).
                                 // Don't pass `_pictureController.text` here —
@@ -1195,7 +1181,6 @@ class _ProfileSetupScreenViewState
         displayName: _nameController.text,
         about: _bioController.text,
         username: _nip05Controller.text,
-        externalNip05: _externalNip05Controller.text,
         // Picture sourced from bloc state (see ProfileSaved dispatch above).
         banner: _selectedProfileColor != null
             ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
@@ -1489,257 +1474,6 @@ class _ProfileSetupScreenViewState
   }
 }
 
-/// Displays username availability status (checking, available, taken, reserved, error)
-class UsernameStatusIndicator extends StatelessWidget {
-  const UsernameStatusIndicator({
-    required this.status,
-    this.error,
-    this.formatMessage,
-    super.key,
-  });
-
-  final UsernameStatus status;
-  final UsernameValidationError? error;
-
-  /// Custom message from the server for format validation errors.
-  final String? formatMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    String? errorText;
-    if (error != null) {
-      errorText = switch (error) {
-        UsernameValidationError.invalidFormat =>
-          formatMessage ?? context.l10n.profileSetupUsernameInvalidFormat,
-        UsernameValidationError.invalidLength =>
-          context.l10n.profileSetupUsernameInvalidLength,
-        UsernameValidationError.networkError =>
-          context.l10n.profileSetupUsernameNetworkError,
-        null => null,
-      };
-    }
-    return switch (status) {
-      UsernameStatus.idle => const SizedBox.shrink(),
-      UsernameStatus.checking => const _UsernameCheckingIndicator(),
-      UsernameStatus.available => const _UsernameAvailableIndicator(),
-      UsernameStatus.taken => const _UsernameTakenIndicator(),
-      UsernameStatus.reserved => const _UsernameReservedIndicator(),
-      UsernameStatus.burned => const _UsernameBurnedIndicator(),
-      UsernameStatus.invalidFormat => _UsernameErrorIndicator(
-        message:
-            errorText ?? context.l10n.profileSetupUsernameInvalidFormatGeneric,
-      ),
-      UsernameStatus.error => _UsernameErrorIndicator(
-        message: errorText ?? context.l10n.profileSetupUsernameCheckFailed,
-      ),
-    };
-  }
-}
-
-/// Lowercases input text on every edit.
-///
-/// Composes with `FilteringTextInputFormatter` on the username field so that
-/// typed capital letters are normalized in place rather than triggering the
-/// lowercase-only validator. Lowercasing ASCII is a 1:1 character mapping so
-/// the existing selection offsets remain valid.
-class LowercaseTextInputFormatter extends TextInputFormatter {
-  const LowercaseTextInputFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final lowered = newValue.text.toLowerCase();
-    if (lowered == newValue.text) return newValue;
-    return newValue.copyWith(text: lowered);
-  }
-}
-
-class _UsernameCheckingIndicator extends StatelessWidget {
-  const _UsernameCheckingIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameChecking,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameAvailableIndicator extends StatelessWidget {
-  const _UsernameAvailableIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameAvailable,
-            style: const TextStyle(color: VineTheme.vineGreen, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameTakenIndicator extends StatelessWidget {
-  const _UsernameTakenIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.cancel, color: VineTheme.error, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameTakenIndicator,
-            style: const TextStyle(color: VineTheme.error, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameReservedIndicator extends StatelessWidget {
-  const _UsernameReservedIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.lock, color: VineTheme.warning, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.profileSetupUsernameReserved,
-                style: const TextStyle(color: VineTheme.warning, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  final username = context
-                      .read<ProfileEditorBloc>()
-                      .state
-                      .username;
-                  showDialog<void>(
-                    context: context,
-                    builder: (dialogContext) => BlocProvider.value(
-                      value: context.read<ProfileEditorBloc>(),
-                      child: UsernameReservedDialog(username),
-                    ),
-                  );
-                },
-                child: Text(
-                  context.l10n.profileSetupContactSupport,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => context.read<ProfileEditorBloc>().add(
-                  const UsernameRechecked(),
-                ),
-                child: Text(
-                  context.l10n.profileSetupCheckAgain,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameBurnedIndicator extends StatelessWidget {
-  const _UsernameBurnedIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.block, color: VineTheme.warning, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameBurned,
-            style: const TextStyle(color: VineTheme.warning, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameErrorIndicator extends StatelessWidget {
-  const _UsernameErrorIndicator({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: VineTheme.warning, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            message,
-            style: const TextStyle(color: VineTheme.warning, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SaveButton extends StatelessWidget {
   const _SaveButton({required this.canSave, required this.onSave});
 
@@ -1787,155 +1521,6 @@ class _SaveButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-    );
-  }
-}
-
-@visibleForTesting
-class UsernameReservedDialog extends StatefulWidget {
-  const UsernameReservedDialog(this.username, {super.key});
-
-  final String username;
-
-  @override
-  State<UsernameReservedDialog> createState() => _UsernameReservedDialogState();
-}
-
-class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
-  final _reasonController = TextEditingController();
-  bool _submitting = false;
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _contactSupport() async {
-    final reason = _reasonController.text.trim();
-    if (reason.isEmpty) return;
-
-    setState(() => _submitting = true);
-
-    final npub = ZendeskSupportService.userNpub;
-    final created = await ZendeskSupportService.createTicketViaApi(
-      subject: 'Reserved username request: ${widget.username}',
-      description:
-          'Username requested: ${widget.username}\n'
-          '${npub != null ? 'Nostr npub: $npub\n' : ''}\n'
-          'Why this name should be mine:\n$reason',
-      requesterName: ZendeskSupportService.userName,
-      requesterEmail: ZendeskSupportService.userEmail,
-      tags: ['reserved_username', 'name_request'],
-    );
-
-    if (!mounted) return;
-
-    setState(() => _submitting = false);
-
-    if (created) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.profileSetupSupportRequestSent),
-          backgroundColor: VineTheme.vineGreen,
-        ),
-      );
-    } else {
-      // Fallback to email if Zendesk is unavailable
-      final encodedReason = Uri.encodeComponent(reason);
-      final launched = await launchUrl(
-        Uri.parse(
-          'mailto:names@divine.video?subject=Reserved username request: '
-          '${widget.username}&body=Username requested: ${widget.username}'
-          '%0A%0AWhy this name should be mine:%0A$encodedReason',
-        ),
-      );
-      if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.profileSetupCouldntOpenEmail)),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: Text(
-        context.l10n.profileSetupUsernameReservedTitle,
-        style: const TextStyle(color: VineTheme.whiteText),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.profileSetupUsernameReservedBody(widget.username),
-            style: const TextStyle(color: VineTheme.secondaryText),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _reasonController,
-            maxLines: 3,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: context.l10n.profileSetupUsernameReservedHint,
-              hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-              border: const OutlineInputBorder(),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.surfaceContainer),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.vineGreen),
-              ),
-              contentPadding: const EdgeInsets.all(12),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.l10n.profileSetupUsernameReservedCheckHint,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            context.l10n.commonClose,
-            style: const TextStyle(color: VineTheme.lightText),
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            context.read<ProfileEditorBloc>().add(const UsernameRechecked());
-            Navigator.of(context).pop();
-          },
-          child: Text(
-            context.l10n.profileSetupCheckAgain,
-            style: const TextStyle(color: VineTheme.vineGreen),
-          ),
-        ),
-        FilledButton(
-          onPressed: _submitting ? null : _contactSupport,
-          style: FilledButton.styleFrom(backgroundColor: VineTheme.vineGreen),
-          child: _submitting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.whiteText,
-                  ),
-                )
-              : Text(context.l10n.profileSetupSendRequest),
-        ),
-      ],
     );
   }
 }
@@ -2112,142 +1697,6 @@ class _CustomColorButton extends StatelessWidget {
     if (result != null) {
       onColorPicked(result);
     }
-  }
-}
-
-/// Collapsible section for entering an external NIP-05 identifier.
-///
-/// Shows a toggle to switch between divine.video username mode and external
-/// NIP-05 mode. When expanded, displays a text field for entering the
-/// external NIP-05 (e.g., `alice@example.com`).
-class _ExternalNip05Section extends StatelessWidget {
-  const _ExternalNip05Section({
-    required this.controller,
-    required this.focusNode,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
-      buildWhen: (prev, curr) =>
-          prev.nip05Mode != curr.nip05Mode ||
-          prev.externalNip05Error != curr.externalNip05Error,
-      builder: (context, state) {
-        final isExternal = state.nip05Mode == Nip05Mode.external_;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            // Toggle button
-            GestureDetector(
-              onTap: () {
-                final newMode = isExternal
-                    ? Nip05Mode.divine
-                    : Nip05Mode.external_;
-                context.read<ProfileEditorBloc>()
-                  ..add(Nip05ModeChanged(newMode))
-                  ..add(
-                    ExternalNip05Changed(
-                      newMode == Nip05Mode.external_ ? controller.text : '',
-                    ),
-                  );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isExternal
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: isExternal
-                          ? VineTheme.vineGreen
-                          : VineTheme.onSurfaceMuted,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        context.l10n.profileSetupUseOwnNip05,
-                        style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // External NIP-05 input field (visible when toggled)
-            if (isExternal) ...[
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: 16),
-                child: Text(
-                  context.l10n.profileSetupNip05AddressLabel,
-                  style: VineTheme.labelMediumFont(
-                    color: focusNode.hasFocus
-                        ? VineTheme.primary
-                        : VineTheme.onSurfaceMuted,
-                  ),
-                ),
-              ),
-              TextFormField(
-                controller: controller,
-                focusNode: focusNode,
-                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-                decoration: InputDecoration(
-                  isCollapsed: true,
-                  hintText: 'you@example.com',
-                  hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-                  border: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  enabledBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  errorBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  focusedErrorBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  contentPadding: const EdgeInsets.all(16),
-                  errorMaxLines: 2,
-                  errorText: switch (state.externalNip05Error) {
-                    ExternalNip05ValidationError.invalidFormat =>
-                      context.l10n.profileSetupExternalNip05InvalidFormat,
-                    ExternalNip05ValidationError.divineDomain =>
-                      context.l10n.profileSetupExternalNip05DivineDomain,
-                    null => null,
-                  },
-                ),
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                onChanged: (value) => context.read<ProfileEditorBloc>().add(
-                  ExternalNip05Changed(value),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
   }
 }
 

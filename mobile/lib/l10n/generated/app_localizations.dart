@@ -1630,6 +1630,66 @@ abstract class AppLocalizations {
   /// **'Use the username field above for divine.video'**
   String get profileSetupExternalNip05DivineDomain;
 
+  /// No description provided for @nostrSettingsNip05Address.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 address'**
+  String get nostrSettingsNip05Address;
+
+  /// No description provided for @nostrSettingsNip05AddressSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.'**
+  String get nostrSettingsNip05AddressSubtitle;
+
+  /// No description provided for @nostrSettingsNip05AddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'you@example.com'**
+  String get nostrSettingsNip05AddressHint;
+
+  /// No description provided for @nostrSettingsNip05SaveAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Save NIP-05'**
+  String get nostrSettingsNip05SaveAction;
+
+  /// No description provided for @nostrSettingsNip05Saved.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 saved'**
+  String get nostrSettingsNip05Saved;
+
+  /// No description provided for @nostrSettingsNip05SaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save NIP-05. Please try again.'**
+  String get nostrSettingsNip05SaveFailed;
+
+  /// No description provided for @profileSetupNip05ConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own NIP-05?'**
+  String get profileSetupNip05ConfirmTitle;
+
+  /// No description provided for @profileSetupNip05ConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.'**
+  String get profileSetupNip05ConfirmBody;
+
+  /// No description provided for @profileSetupNip05ConfirmContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get profileSetupNip05ConfirmContinue;
+
+  /// No description provided for @profileSetupNip05ConfirmCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get profileSetupNip05ConfirmCancel;
+
   /// No description provided for @profileSetupProfilePicturePreview.
   ///
   /// In en, this message translates to:

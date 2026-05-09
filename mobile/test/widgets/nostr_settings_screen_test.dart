@@ -9,9 +9,12 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../helpers/go_router.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 
@@ -19,6 +22,8 @@ void main() {
   group(NostrSettingsScreen, () {
     late _MockAuthService mockAuthService;
     late SharedPreferences sharedPreferences;
+    final l10n = lookupAppLocalizations(const Locale('en'));
+
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
@@ -29,8 +34,11 @@ void main() {
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     });
 
-    Widget buildSubject({bool advancedRelaySettingsEnabled = false}) {
-      return ProviderScope(
+    Widget buildSubject({
+      bool advancedRelaySettingsEnabled = false,
+      MockGoRouter? goRouter,
+    }) {
+      final app = ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           authServiceProvider.overrideWithValue(mockAuthService),
@@ -48,6 +56,12 @@ void main() {
           home: NostrSettingsScreen(),
         ),
       );
+
+      if (goRouter == null) {
+        return app;
+      }
+
+      return MockGoRouterProvider(goRouter: goRouter, child: app);
     }
 
     testWidgets('shows Experimental Features tile and opens feature flags', (
@@ -56,9 +70,9 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Experimental Features'), findsOneWidget);
+      expect(find.text(l10n.settingsExperimentalFeatures), findsOneWidget);
 
-      await tester.tap(find.text('Experimental Features'));
+      await tester.tap(find.text(l10n.settingsExperimentalFeatures));
       await tester.pumpAndSettle();
 
       expect(find.byType(FeatureFlagScreen), findsOneWidget);
@@ -69,8 +83,8 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.text('Relays'), findsNothing);
-      expect(find.text('Relay Diagnostics'), findsNothing);
+      expect(find.text(l10n.nostrSettingsRelays), findsNothing);
+      expect(find.text(l10n.nostrSettingsRelayDiagnostics), findsNothing);
     });
 
     testWidgets('shows Relays and Relay Diagnostics tiles when '
@@ -78,8 +92,41 @@ void main() {
       await tester.pumpWidget(buildSubject(advancedRelaySettingsEnabled: true));
       await tester.pumpAndSettle();
 
-      expect(find.text('Relays'), findsOneWidget);
-      expect(find.text('Relay Diagnostics'), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsRelays), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsRelayDiagnostics), findsOneWidget);
+    });
+
+    testWidgets('shows NIP-05 address tile', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
+      expect(find.text(l10n.nostrSettingsNip05AddressSubtitle), findsOneWidget);
+    });
+
+    testWidgets('opens NIP-05 settings via named route', (tester) async {
+      final goRouter = MockGoRouter();
+      when(
+        () => goRouter.pushNamed(
+          any(),
+          pathParameters: any(named: 'pathParameters'),
+          extra: any(named: 'extra'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildSubject(goRouter: goRouter));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(l10n.nostrSettingsNip05Address));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => goRouter.pushNamed(
+          Nip05SettingsScreen.routeName,
+          pathParameters: any(named: 'pathParameters'),
+          extra: any(named: 'extra'),
+        ),
+      ).called(1);
     });
   });
 }

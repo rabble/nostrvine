@@ -894,11 +894,44 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid NIP-05 format (e.g., name@domain.com)';
+      'Invalid na NIP-05 format (hal. name@domain.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
-      'Use the username field above for divine.video';
+      'Gamitin ang username field sa itaas para sa divine.video';
+
+  @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Gamitin ang divine.video username mo, o ituro ang handle mo sa isang NIP-05 address sa domain na kontrolado mo.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'I-save ang NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'Naisave ang NIP-05';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Hindi na-save ang NIP-05. Pakisubukan ulit.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Gamitin ang sarili mong NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'Ini-uugnay ng NIP-05 ang pangalang gaya ng you@yourdomain.com sa iyong Nostr identity. Kailangan mong kontrolado ang domain at naka-host ang verification file sa tamang path. Kapag mali ito, hindi ka mahahanap ng mga tao at mawawala ang verified handle mo. Magpatuloy lang kung na-set up mo na ito.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Magpatuloy';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Kanselahin';
 
   @override
   String get profileSetupProfilePicturePreview => 'Preview ng profile picture';

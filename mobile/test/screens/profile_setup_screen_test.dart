@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
 import '../helpers/test_provider_overrides.dart';
 

@@ -69,6 +69,7 @@ import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -819,6 +820,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: NostrSettingsScreen.path,
         name: NostrSettingsScreen.routeName,
         builder: (_, _) => const NostrSettingsScreen(),
+      ),
+      GoRoute(
+        path: Nip05SettingsScreen.path,
+        name: Nip05SettingsScreen.routeName,
+        builder: (_, _) => const Nip05SettingsScreen(),
       ),
       GoRoute(
         path: RelaySettingsScreen.path,

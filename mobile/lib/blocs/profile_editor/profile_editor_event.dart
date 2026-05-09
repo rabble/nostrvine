@@ -46,6 +46,17 @@ final class ProfileSaved extends ProfileEditorEvent {
   final String? banner;
 }
 
+/// Request to save only the NIP-05-related profile identity fields.
+///
+/// The BLoC composes the final kind-0 payload from the current profile plus its
+/// own NIP-05 editor state so settings screens do not need to mirror
+/// unrelated profile fields.
+final class ProfileNip05Saved extends ProfileEditorEvent {
+  const ProfileNip05Saved({required this.currentProfile});
+
+  final UserProfile currentProfile;
+}
+
 /// Confirmation to proceed with saving profile despite warnings.
 final class ProfileSaveConfirmed extends ProfileEditorEvent {
   const ProfileSaveConfirmed();
