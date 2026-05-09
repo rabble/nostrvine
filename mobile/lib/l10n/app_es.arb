@@ -3158,7 +3158,7 @@
             }
         }
     },
-    "relaySettingsSubscriptionsSummary": "{count} subs",
+    "relaySettingsSubscriptionsSummary": "{count} suscripciones",
     "@relaySettingsSubscriptionsSummary": {
         "placeholders": {
             "count": {

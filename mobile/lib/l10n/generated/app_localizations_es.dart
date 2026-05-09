@@ -1849,7 +1849,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    return '$count suscripciones';
   }
 
   @override

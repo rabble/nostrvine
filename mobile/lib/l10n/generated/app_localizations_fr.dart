@@ -178,7 +178,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get generalSettingsSectionCreating => 'CRÉATION';
 
   @override
-  String get generalSettingsSectionApp => 'APP';
+  String get generalSettingsSectionApp => 'APPLICATION';
 
   @override
   String get generalSettingsClosedCaptions => 'Sous-titres';
@@ -671,7 +671,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profileLoopsLabel => 'Loops';
 
   @override
-  String get profileLikesLabel => 'Likes';
+  String get profileLikesLabel => 'J\'aime';
 
   @override
   String get profileMyLibraryLabel => 'Ma bibliothèque';
@@ -1885,7 +1885,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nostrSettingsSectionDangerZone => 'Zone de danger';
 
   @override
-  String get nostrSettingsRelays => 'Relays';
+  String get nostrSettingsRelays => 'Relais';
 
   @override
   String get nostrSettingsRelaysSubtitle =>
@@ -7014,14 +7014,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Vidéo supprimée';
 
   @override
-  String get settingsBadgesTitle => 'Badges';
+  String get settingsBadgesTitle => 'Insignes';
 
   @override
   String get settingsBadgesSubtitle =>
       'Accepte les récompenses et vérifie le statut des badges délivrés.';
 
   @override
-  String get badgesTitle => 'Badges';
+  String get badgesTitle => 'Insignes';
 
   @override
   String get badgesIntroTitle => 'Comprends ton parcours de badges';

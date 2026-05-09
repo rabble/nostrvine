@@ -1407,7 +1407,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionLikeLabel => 'Like';
+  String get videoActionLikeLabel => 'Liken';
 
   @override
   String get videoActionReplyLabel => 'Reageren';
@@ -1835,12 +1835,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    return '$count abonnementen';
   }
 
   @override
   String relaySettingsEventsSummary(String count) {
-    return '$count events';
+    return '$count gebeurtenissen';
   }
 
   @override

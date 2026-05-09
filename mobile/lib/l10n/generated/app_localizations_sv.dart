@@ -159,7 +159,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get generalSettingsSectionCreating => 'SKAPANDE';
 
   @override
-  String get generalSettingsSectionApp => 'APP';
+  String get generalSettingsSectionApp => 'APPEN';
 
   @override
   String get generalSettingsClosedCaptions => 'Undertexter';

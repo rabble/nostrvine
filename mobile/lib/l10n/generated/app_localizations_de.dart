@@ -6995,14 +6995,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fullscreenFeedRemovedMessage => 'Video entfernt';
 
   @override
-  String get settingsBadgesTitle => 'Badges';
+  String get settingsBadgesTitle => 'Abzeichen';
 
   @override
   String get settingsBadgesSubtitle =>
       'Auszeichnungen annehmen und Status vergebener Badges prüfen.';
 
   @override
-  String get badgesTitle => 'Badges';
+  String get badgesTitle => 'Abzeichen';
 
   @override
   String get badgesIntroTitle => 'Versteh deine Badge-Spur';
