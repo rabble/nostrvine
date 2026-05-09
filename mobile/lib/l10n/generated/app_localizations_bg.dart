@@ -804,6 +804,18 @@ class AppLocalizationsBg extends AppLocalizations {
       'Качването на профилна снимка все още не е налично в уеб. Използвай приложението за iOS или Android или постави URL на изображение.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Банер';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Качи снимка';
+
+  @override
+  String get profileSetupBannerClearButton => 'Изчисти банера';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Банерът е обновен';
+
+  @override
   String get profileSetupUsernameChecking => 'Проверява се наличността...';
 
   @override

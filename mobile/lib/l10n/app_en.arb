@@ -399,6 +399,22 @@
   "profileSetupUploadFileTooLarge": "File too large: Please choose a smaller image (max 10MB).",
   "profileSetupUploadServerError": "Upload failed. Our servers are temporarily unavailable. Please try again in a moment.",
   "profileSetupUploadUnsupportedOnWeb": "Profile picture upload isn't available on web yet. Use the iOS or Android app, or paste an image URL.",
+  "profileSetupBannerSectionTitle": "Banner",
+  "@profileSetupBannerSectionTitle": {
+    "description": "Section header above the profile banner editing block on the profile setup screen."
+  },
+  "profileSetupBannerUploadButton": "Upload photo",
+  "@profileSetupBannerUploadButton": {
+    "description": "Label on the button that opens the image picker to upload a profile banner image."
+  },
+  "profileSetupBannerClearButton": "Clear banner",
+  "@profileSetupBannerClearButton": {
+    "description": "Label on the button that removes the currently selected profile banner image."
+  },
+  "profileSetupBannerUploadSuccess": "Banner updated",
+  "@profileSetupBannerUploadSuccess": {
+    "description": "Snackbar message shown after a profile banner image is successfully uploaded."
+  },
   "profileSetupUsernameChecking": "Checking availability...",
   "profileSetupUsernameAvailable": "Username available!",
   "profileSetupUsernameTakenIndicator": "Username already taken",

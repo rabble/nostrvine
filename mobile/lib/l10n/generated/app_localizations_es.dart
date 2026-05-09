@@ -802,6 +802,18 @@ class AppLocalizationsEs extends AppLocalizations {
       'La subida de foto de perfil todavía no está disponible en la web. Usá la app de iOS o Android o pegá la URL de una imagen.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Subir foto';
+
+  @override
+  String get profileSetupBannerClearButton => 'Quitar banner';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Banner actualizado';
+
+  @override
   String get profileSetupUsernameChecking => 'Verificando disponibilidad...';
 
   @override

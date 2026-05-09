@@ -735,6 +735,18 @@ class AppLocalizationsJa extends AppLocalizations {
       'プロフィール画像のアップロードは、まだWebでは使えないよ。iOSかAndroidのアプリを使うか、画像URLを貼り付けてね。';
 
   @override
+  String get profileSetupBannerSectionTitle => 'バナー';
+
+  @override
+  String get profileSetupBannerUploadButton => '写真をアップロード';
+
+  @override
+  String get profileSetupBannerClearButton => 'バナーをクリア';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'バナーを更新したよ';
+
+  @override
   String get profileSetupUsernameChecking => '使えるか確認中...';
 
   @override

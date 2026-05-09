@@ -1468,6 +1468,30 @@ abstract class AppLocalizations {
   /// **'Profile picture upload isn\'t available on web yet. Use the iOS or Android app, or paste an image URL.'**
   String get profileSetupUploadUnsupportedOnWeb;
 
+  /// Section header above the profile banner editing block on the profile setup screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Banner'**
+  String get profileSetupBannerSectionTitle;
+
+  /// Label on the button that opens the image picker to upload a profile banner image.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get profileSetupBannerUploadButton;
+
+  /// Label on the button that removes the currently selected profile banner image.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear banner'**
+  String get profileSetupBannerClearButton;
+
+  /// Snackbar message shown after a profile banner image is successfully uploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Banner updated'**
+  String get profileSetupBannerUploadSuccess;
+
   /// No description provided for @profileSetupUsernameChecking.
   ///
   /// In en, this message translates to:

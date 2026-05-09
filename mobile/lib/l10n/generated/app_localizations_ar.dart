@@ -770,6 +770,18 @@ class AppLocalizationsAr extends AppLocalizations {
       'رفع صورة الملف الشخصي غير متاح على الويب حتى الآن. استخدم تطبيق iOS أو Android، أو الصق رابط الصورة.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'الغلاف';
+
+  @override
+  String get profileSetupBannerUploadButton => 'رفع صورة';
+
+  @override
+  String get profileSetupBannerClearButton => 'مسح الغلاف';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'تم تحديث الغلاف';
+
+  @override
   String get profileSetupUsernameChecking => 'جاري التحقق من التوفر...';
 
   @override

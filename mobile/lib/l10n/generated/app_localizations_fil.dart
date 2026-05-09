@@ -806,6 +806,18 @@ class AppLocalizationsFil extends AppLocalizations {
       'Hindi pa available sa web ang pag-upload ng profile picture. Gamitin ang iOS o Android app, o i-paste ang image URL.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Mag-upload ng larawan';
+
+  @override
+  String get profileSetupBannerClearButton => 'I-clear ang banner';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Na-update ang banner';
+
+  @override
   String get profileSetupUsernameChecking => 'Tinitingnan ang availability...';
 
   @override

@@ -805,6 +805,18 @@ class AppLocalizationsPl extends AppLocalizations {
       'Przesyłanie zdjęcia profilowego nie jest jeszcze dostępne w wersji webowej. Użyj aplikacji na iOS lub Androida albo wklej URL obrazu.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Baner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Prześlij zdjęcie';
+
+  @override
+  String get profileSetupBannerClearButton => 'Wyczyść baner';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Baner zaktualizowany';
+
+  @override
   String get profileSetupUsernameChecking => 'Sprawdzanie dostępności...';
 
   @override

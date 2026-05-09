@@ -776,6 +776,18 @@ class AppLocalizationsTr extends AppLocalizations {
       'Profil resmi yükleme henüz web\'de kullanılamıyor. iOS ya da Android uygulamasını kullan veya bir görsel URL\'si yapıştır.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Afiş';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Fotoğraf yükle';
+
+  @override
+  String get profileSetupBannerClearButton => 'Afişi temizle';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Afiş güncellendi';
+
+  @override
   String get profileSetupUsernameChecking => 'Uygunluk kontrol ediliyor...';
 
   @override

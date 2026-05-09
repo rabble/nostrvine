@@ -779,6 +779,18 @@ class AppLocalizationsSv extends AppLocalizations {
       'Uppladdning av profilbild är inte tillgänglig på webben än. Använd iOS- eller Android-appen eller klistra in en bild-URL.';
 
   @override
+  String get profileSetupBannerSectionTitle => 'Banner';
+
+  @override
+  String get profileSetupBannerUploadButton => 'Ladda upp foto';
+
+  @override
+  String get profileSetupBannerClearButton => 'Rensa banner';
+
+  @override
+  String get profileSetupBannerUploadSuccess => 'Banner uppdaterad';
+
+  @override
   String get profileSetupUsernameChecking => 'Kollar tillgänglighet...';
 
   @override
