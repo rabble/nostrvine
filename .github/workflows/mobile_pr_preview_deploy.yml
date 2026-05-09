@@ -174,10 +174,20 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # `--commit-message` is set explicitly so wrangler does not fall
+          # back to `git log -1` against the workflow's checkout (which is
+          # main's tip on workflow_run, not the PR's). A non-ASCII
+          # character on main has been observed to mojibake through
+          # wrangler and trip Cloudflare's `Invalid commit message, it
+          # must be a valid UTF-8 string` rejection (CF code 8000111).
+          # The PR's head SHA is ASCII-only and unambiguously identifies
+          # the deployed commit.
           command: >-
             pages deploy artifact/web
             --project-name=openvine-app
             --branch=${{ steps.metadata.outputs.preview_branch }}
+            --commit-hash=${{ steps.metadata.outputs.head_sha }}
+            --commit-message=${{ steps.metadata.outputs.head_sha }}
 
       - name: Render deployed preview comment
         if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
