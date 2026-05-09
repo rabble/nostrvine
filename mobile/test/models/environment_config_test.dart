@@ -207,6 +207,25 @@ void main() {
       );
     });
 
+    group('verifierBaseUrl', () {
+      test('production returns the verifier host', () {
+        const config = EnvironmentConfig(
+          environment: AppEnvironment.production,
+        );
+        expect(config.verifierBaseUrl, equals('https://verifyer.divine.video'));
+      });
+
+      test('is the same across environments (no local stub)', () {
+        for (final env in AppEnvironment.values) {
+          final config = EnvironmentConfig(environment: env);
+          expect(
+            config.verifierBaseUrl,
+            equals('https://verifyer.divine.video'),
+          );
+        }
+      });
+    });
+
     group('equality', () {
       test('same environment are equal', () {
         const config1 = EnvironmentConfig(environment: AppEnvironment.staging);

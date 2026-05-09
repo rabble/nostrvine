@@ -7038,4 +7038,19 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Reactie op video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Geverifieerd $platform-account: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Geverifieerde accounts';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Laat je verifiëren';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Koppel je social-media-accounts zodat mensen weten dat jij het bent.';
 }

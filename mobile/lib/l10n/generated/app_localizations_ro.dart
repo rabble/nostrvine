@@ -7181,4 +7181,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Răspuns la videoclip';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Cont $platform verificat: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Conturi verificate';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifică-te';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Conectează-ți conturile de social media ca lumea să știe că ești tu.';
 }

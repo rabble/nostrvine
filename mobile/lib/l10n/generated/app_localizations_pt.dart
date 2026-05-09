@@ -7052,4 +7052,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Responder ao vídeo';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Conta $platform verificada: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Contas verificadas';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifique-se';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Conecte suas redes sociais para que as pessoas saibam que é você mesmo.';
 }

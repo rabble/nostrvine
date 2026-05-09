@@ -6933,4 +6933,19 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'رد على فيديو';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'حساب $platform موثّق: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'الحسابات الموثّقة';
+
+  @override
+  String get profileEditGetVerifiedCta => 'وثّق حسابك';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'اربط حساباتك على وسائل التواصل ليعرف الناس أنّك أنت فعلًا.';
 }

@@ -147,6 +147,22 @@ enum UsernameValidationError {
   networkError,
 }
 
+/// Status of the in-app verifier WebView launch flow.
+///
+/// Used as a one-shot signal — the UI listens for [launchRequested], pushes
+/// the WebView, and dispatches [VerifierWebViewDismissed] on return so the
+/// status flips to [dismissed]. The bloc never navigates itself.
+enum VerifierStatus {
+  /// No launch pending.
+  idle,
+
+  /// User tapped "Get verified" — UI should push the WebView.
+  launchRequested,
+
+  /// WebView was popped — UI should refresh kind 0 to pick up new claims.
+  dismissed,
+}
+
 /// Whether the profile editor is in divine.video username or external NIP-05
 /// mode.
 enum Nip05Mode {
@@ -199,6 +215,7 @@ final class ProfileEditorState extends Equatable {
     this.pendingPictureUrl,
     this.persistedPictureUrl,
     this.avatarUploadError,
+    this.verifierStatus = VerifierStatus.idle,
   });
 
   /// Current status of the operation.
@@ -261,6 +278,9 @@ final class ProfileEditorState extends Equatable {
   /// is set, signalling "no picture".
   String? get effectivePictureUrl => pendingPictureUrl ?? persistedPictureUrl;
 
+  /// One-shot signal driving the in-app verifier WebView launch + dismiss.
+  final VerifierStatus verifierStatus;
+
   /// Whether the username state allows saving the profile (divine.video mode).
   bool get isUsernameSaveReady {
     if (usernameStatus == UsernameStatus.checking) return false;
@@ -317,6 +337,7 @@ final class ProfileEditorState extends Equatable {
     Object? pendingPictureUrl = _kUnset,
     Object? persistedPictureUrl = _kUnset,
     AvatarUploadError? avatarUploadError,
+    VerifierStatus? verifierStatus,
   }) {
     return ProfileEditorState(
       status: status ?? this.status,
@@ -340,6 +361,7 @@ final class ProfileEditorState extends Equatable {
           ? this.persistedPictureUrl
           : persistedPictureUrl as String?,
       avatarUploadError: avatarUploadError,
+      verifierStatus: verifierStatus ?? this.verifierStatus,
     );
   }
 
@@ -362,5 +384,6 @@ final class ProfileEditorState extends Equatable {
     pendingPictureUrl,
     persistedPictureUrl,
     avatarUploadError,
+    verifierStatus,
   ];
 }

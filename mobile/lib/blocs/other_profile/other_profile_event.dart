@@ -46,3 +46,12 @@ final class OtherProfileBlockRequested extends OtherProfileEvent {
 final class OtherProfileUnblockRequested extends OtherProfileEvent {
   const OtherProfileUnblockRequested();
 }
+
+/// Event triggered to fetch verifier-confirmed NIP-39 identity claims for
+/// the currently loaded profile.
+///
+/// Auto-dispatched after a successful profile load. Falls back to an empty
+/// claim list if the verifier is unreachable or returns an error.
+final class VerifiedClaimsRequested extends OtherProfileEvent {
+  const VerifiedClaimsRequested();
+}

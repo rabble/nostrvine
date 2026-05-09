@@ -6740,4 +6740,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => '영상에 답글';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return '인증된 $platform 계정: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => '인증된 계정';
+
+  @override
+  String get profileEditGetVerifiedCta => '인증 받기';
+
+  @override
+  String get profileEditGetVerifiedSubtitle => '소셜 미디어 계정을 연결해서 진짜 너인 걸 알려줘.';
 }

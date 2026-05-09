@@ -6975,4 +6975,19 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Balas video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Akun $platform terverifikasi: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Akun terverifikasi';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifikasi diri';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Hubungkan akun media sosialmu biar orang tahu ini memang kamu.';
 }

@@ -6977,4 +6977,19 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Videoya yanıt';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Doğrulanmış $platform hesabı: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Doğrulanmış hesaplar';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Hesabını doğrula';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Sosyal medya hesaplarını bağla ki insanlar gerçekten sen olduğunu bilsin.';
 }

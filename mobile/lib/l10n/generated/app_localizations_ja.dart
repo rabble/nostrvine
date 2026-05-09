@@ -6716,4 +6716,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => '動画への返信';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return '認証済み$platformアカウント: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => '認証済みアカウント';
+
+  @override
+  String get profileEditGetVerifiedCta => '認証を受ける';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'ソーシャルメディアのアカウントをつないで、本物のあなただと伝えよう。';
 }

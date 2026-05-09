@@ -12353,6 +12353,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reply to video'**
   String get commentsReplyParentFallbackLabel;
+
+  /// Screen reader label for a verified-account chip on a user's profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified {platform} account: {identity}'**
+  String verifiedAccountChipSemanticLabel(String platform, String identity);
+
+  /// Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified accounts'**
+  String get profileEditVerifiedAccountsTitle;
+
+  /// Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Get verified'**
+  String get profileEditGetVerifiedCta;
+
+  /// Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Link your social media accounts so people know it\'s really you.'**
+  String get profileEditGetVerifiedSubtitle;
 }
 
 class _AppLocalizationsDelegate

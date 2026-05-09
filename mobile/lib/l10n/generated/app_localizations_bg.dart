@@ -7085,4 +7085,19 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Отговор на видео';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Потвърден акаунт в $platform: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Потвърдени акаунти';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Потвърди се';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Свържи социалните си мрежи, за да знаят хората, че това си наистина ти.';
 }

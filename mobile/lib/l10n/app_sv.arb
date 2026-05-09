@@ -3233,6 +3233,26 @@
     "@profileEditPublicKeyLink": {
         "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
     },
+    "verifiedAccountChipSemanticLabel": "Verifierat {platform}-konto: {identity}",
+    "@verifiedAccountChipSemanticLabel": {
+        "description": "Screen reader label for a verified-account chip on a user's profile.",
+        "placeholders": {
+            "platform": { "type": "String" },
+            "identity": { "type": "String" }
+        }
+    },
+    "profileEditVerifiedAccountsTitle": "Verifierade konton",
+    "@profileEditVerifiedAccountsTitle": {
+        "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+    },
+    "profileEditGetVerifiedCta": "Verifiera dig",
+    "@profileEditGetVerifiedCta": {
+        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+    },
+    "profileEditGetVerifiedSubtitle": "Koppla dina sociala medier-konton så folk vet att det är du.",
+    "@profileEditGetVerifiedSubtitle": {
+        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+    },
     "soundUntitled": "Namnlöst ljud",
     "soundStopPreview": "Stoppa förhandsvisning",
     "soundPreviewSemanticLabel": "Förhandsvisa {title}",

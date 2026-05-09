@@ -23,6 +23,7 @@ import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
@@ -754,6 +755,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               : null;
           final appId = state.pathParameters['appId'] ?? '';
           return ResolvedSandboxRouteScreen(appId: appId, initialApp: app);
+        },
+      ),
+      GoRoute(
+        path: WebIframeSandboxScreen.path,
+        name: WebIframeSandboxScreen.routeName,
+        builder: (_, state) {
+          final app = state.extra is NostrAppDirectoryEntry
+              ? state.extra! as NostrAppDirectoryEntry
+              : null;
+          if (app == null) {
+            // No NostrAppDirectoryEntry passed in — bounce to the apps
+            // directory. The web iframe screen needs the entry's
+            // launchUrl + origin, which we can't reconstruct from the
+            // path parameter alone.
+            return const SizedBox.shrink();
+          }
+          return WebIframeSandboxScreen(app: app);
         },
       ),
       GoRoute(

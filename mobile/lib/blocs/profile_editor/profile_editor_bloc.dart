@@ -74,6 +74,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
     on<ProfilePictureUploadCleared>(_onProfilePictureUploadCleared);
     on<ProfilePictureUrlSet>(_onProfilePictureUrlSet);
+    on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
+    on<VerifierWebViewDismissed>(_onVerifierWebViewDismissed);
   }
 
   final ProfileRepository _profileRepository;
@@ -685,5 +687,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         ),
       );
     }
+  }
+
+  void _onVerifierLaunchRequested(
+    VerifierLaunchRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.launchRequested));
+  }
+
+  void _onVerifierWebViewDismissed(
+    VerifierWebViewDismissed event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.dismissed));
   }
 }

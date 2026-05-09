@@ -38,7 +38,7 @@ void main() {
             '3f4f6cc4d9a262fefca56f8f5c0a7a4b6a6f4a8f5b2c0d1f7a8b9c0d1e2f3041',
       };
       final verifiedIdentityBundle = <String, dynamic>{
-        'issuer': 'verifier.divine.video',
+        'issuer': 'verifyer.divine.video',
         'verified_claims': <Map<String, String>>[
           <String, String>{'type': 'nip05', 'value': 'alice@example.com'},
           <String, String>{'type': 'domain', 'value': 'example.com'},
@@ -105,7 +105,7 @@ void main() {
             'pubkey': _alicePubkey,
           }),
           verifiedIdentityBundleJson: jsonEncode(<String, dynamic>{
-            'issuer': 'verifier.divine.video',
+            'issuer': 'verifyer.divine.video',
           }),
         );
 
@@ -128,7 +128,7 @@ void main() {
         expect(
           jsonDecode(upload.nativeProof!.verifiedIdentityBundleJson!)
               as Map<String, dynamic>,
-          containsPair('issuer', 'verifier.divine.video'),
+          containsPair('issuer', 'verifyer.divine.video'),
         );
       },
     );

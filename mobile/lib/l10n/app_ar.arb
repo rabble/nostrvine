@@ -3233,6 +3233,26 @@
     "@profileEditPublicKeyLink": {
         "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
     },
+    "verifiedAccountChipSemanticLabel": "حساب {platform} موثّق: {identity}",
+    "@verifiedAccountChipSemanticLabel": {
+        "description": "Screen reader label for a verified-account chip on a user's profile.",
+        "placeholders": {
+            "platform": { "type": "String" },
+            "identity": { "type": "String" }
+        }
+    },
+    "profileEditVerifiedAccountsTitle": "الحسابات الموثّقة",
+    "@profileEditVerifiedAccountsTitle": {
+        "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+    },
+    "profileEditGetVerifiedCta": "وثّق حسابك",
+    "@profileEditGetVerifiedCta": {
+        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+    },
+    "profileEditGetVerifiedSubtitle": "اربط حساباتك على وسائل التواصل ليعرف الناس أنّك أنت فعلًا.",
+    "@profileEditGetVerifiedSubtitle": {
+        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+    },
     "soundUntitled": "صوت بلا عنوان",
     "soundStopPreview": "إيقاف المعاينة",
     "soundPreviewSemanticLabel": "معاينة {title}",

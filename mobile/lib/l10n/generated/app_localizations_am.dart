@@ -6853,4 +6853,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'ምላሽ ለ ቪዲዮ';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'የተረጋገጠ $platform መለያ: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'የተረጋገጡ መለያዎች';
+
+  @override
+  String get profileEditGetVerifiedCta => 'ተረጋግጥ';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ የማህበራዊ ሚዲያ መለያዎችህን አገናኝ።';
 }

@@ -15,18 +15,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
+import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -69,6 +75,9 @@ class ProfileSetupScreen extends ConsumerWidget {
     final profileRepository = ref.watch(profileRepositoryProvider);
     final blossomUploadService = ref.watch(blossomUploadServiceProvider);
     final authService = ref.watch(authServiceProvider);
+    final identityClaimsRepository = ref.watch(
+      identityClaimsRepositoryProvider,
+    );
 
     final pubkey = authService.currentPublicKeyHex;
 
@@ -99,6 +108,7 @@ class ProfileSetupScreen extends ConsumerWidget {
             final bloc = MyProfileBloc(
               profileRepository: profileRepository,
               pubkey: pubkey,
+              identityClaimsRepository: identityClaimsRepository,
             );
             if (!isNewUser) bloc.add(const MyProfileLoadRequested());
             return bloc;
@@ -377,6 +387,7 @@ class _ProfileSetupScreenViewState
         BlocListener<ProfileEditorBloc, ProfileEditorState>(
           listenWhen: (prev, curr) =>
               prev.pendingAvatarStatus != curr.pendingAvatarStatus,
+              prev.pendingAvatarStatus != curr.pendingAvatarStatus,
           listener: (context, state) {
             switch (state.pendingAvatarStatus) {
               case PendingAvatarStatus.staged:
@@ -404,6 +415,43 @@ class _ProfileSetupScreenViewState
               case PendingAvatarStatus.uploading:
                 break;
             }
+          },
+        ),
+        BlocListener<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) =>
+              prev.verifierStatus != curr.verifierStatus &&
+              curr.verifierStatus == VerifierStatus.launchRequested,
+          listener: (context, state) async {
+            final editorBloc = context.read<ProfileEditorBloc>();
+            final myProfileBloc = context.read<MyProfileBloc>();
+            final verifyer = preloadedNostrApps.firstWhere(
+              (app) => app.slug == 'verifyer',
+            );
+            if (nostrAppsSandboxSupported) {
+              // Native (iOS / Android / macOS): full webview_flutter
+              // sandbox with NIP-07 bridge injection.
+              await context.push(
+                NostrAppSandboxScreen.pathForAppId(verifyer.id),
+                extra: verifyer,
+              );
+            } else if (kIsWeb) {
+              // Flutter web: webview_flutter is unavailable, but we can
+              // host the verifyer in an <iframe> with a postMessage
+              // NIP-07 bridge to Divine's web signer.
+              await context.push(
+                WebIframeSandboxScreen.pathForAppId(verifyer.id),
+                extra: verifyer,
+              );
+            } else {
+              // Last-resort fallback for any future platform without
+              // either capability — open in the system browser.
+              await launchUrl(
+                Uri.parse(verifyer.launchUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            }
+            editorBloc.add(const VerifierWebViewDismissed());
+            myProfileBloc.add(const MyProfileFetchRequested());
           },
         ),
       ],
@@ -835,6 +883,8 @@ class _ProfileSetupScreenViewState
                                 onChanged: (_) => setState(() {}),
                               ),
                               const SizedBox(height: 16),
+
+                              const _VerifiedAccountsSection(),
 
                               const _PublicKeyLink(),
                               const SizedBox(height: 16),
@@ -2216,6 +2266,70 @@ class _PublicKeyLink extends StatelessWidget {
           l10n.profileEditPublicKeyLink,
           style: VineTheme.labelMediumFont(color: VineTheme.primary),
         ),
+      ),
+    );
+  }
+}
+
+class _VerifiedAccountsSection extends StatelessWidget {
+  const _VerifiedAccountsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final claims = context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
+      final state = bloc.state;
+      if (state is MyProfileLoaded) return state.verifiedClaims;
+      if (state is MyProfileUpdated) return state.verifiedClaims;
+      return const [];
+    });
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 8),
+            child: Text(
+              l10n.profileEditVerifiedAccountsTitle,
+              style: VineTheme.labelMediumFont(color: VineTheme.lightText),
+            ),
+          ),
+          if (claims.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: VerifiedAccountsRow(claims: claims),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const _GetVerifiedTile(),
+        ],
+      ),
+    );
+  }
+}
+
+class _GetVerifiedTile extends StatelessWidget {
+  const _GetVerifiedTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ListTile(
+      title: Text(
+        l10n.profileEditGetVerifiedCta,
+        style: VineTheme.titleMediumFont(),
+      ),
+      subtitle: Text(
+        l10n.profileEditGetVerifiedSubtitle,
+        style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: VineTheme.lightText,
+      ),
+      onTap: () => context.read<ProfileEditorBloc>().add(
+        const VerifierLaunchRequested(),
       ),
     );
   }

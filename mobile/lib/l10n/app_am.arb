@@ -3562,6 +3562,26 @@
     "@profileEditPublicKeyLink": {
         "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
     },
+    "verifiedAccountChipSemanticLabel": "የተረጋገጠ {platform} መለያ: {identity}",
+    "@verifiedAccountChipSemanticLabel": {
+        "description": "Screen reader label for a verified-account chip on a user's profile.",
+        "placeholders": {
+            "platform": { "type": "String" },
+            "identity": { "type": "String" }
+        }
+    },
+    "profileEditVerifiedAccountsTitle": "የተረጋገጡ መለያዎች",
+    "@profileEditVerifiedAccountsTitle": {
+        "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+    },
+    "profileEditGetVerifiedCta": "ተረጋግጥ",
+    "@profileEditGetVerifiedCta": {
+        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+    },
+    "profileEditGetVerifiedSubtitle": "ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ የማህበራዊ ሚዲያ መለያዎችህን አገናኝ።",
+    "@profileEditGetVerifiedSubtitle": {
+        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
+    },
     "blossomServerUrlMustUseHttps": "የBlossom አገልጋይ URL https:// መጠቀም አለበት",
     "@blossomServerUrlMustUseHttps": {
         "description": "Snackbar shown when the user typed a non-loopback http:// Blossom server URL. Under release transport security those uploads would silently fail at the OS layer; the validator rejects them with this hint instead."

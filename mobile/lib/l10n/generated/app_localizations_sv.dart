@@ -7006,4 +7006,19 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Svar på video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Verifierat $platform-konto: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Verifierade konton';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifiera dig';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Koppla dina sociala medier-konton så folk vet att det är du.';
 }
