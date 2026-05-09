@@ -52,9 +52,6 @@ class VideoNotificationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final spec = notificationTypeIconSpec(notification.type);
-    final overflowCount = notification.totalCount - notification.actors.length;
-
     return Material(
       color: VineTheme.surfaceContainerHigh,
       child: Semantics(
@@ -77,31 +74,15 @@ class VideoNotificationRow extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  NotificationTypeIcon(
-                    icon: spec.icon,
-                    backgroundColor: spec.background,
-                    foregroundColor: spec.foreground,
-                    showUnreadDot: !notification.isRead,
+                  _LeadingTypeIcon(
+                    type: notification.type,
+                    isRead: notification.isRead,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: onProfileTap,
-                          child: NotificationAvatarStack(
-                            actors: notification.actors
-                                .take(_maxStackActors)
-                                .toList(),
-                            overflowCount: overflowCount > 0
-                                ? overflowCount
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        _MessageText(notification: notification),
-                      ],
+                    child: _NotificationContent(
+                      notification: notification,
+                      onProfileTap: onProfileTap,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -117,6 +98,57 @@ class VideoNotificationRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LeadingTypeIcon extends StatelessWidget {
+  const _LeadingTypeIcon({required this.type, required this.isRead});
+
+  final NotificationKind type;
+  final bool isRead;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = notificationTypeIconSpec(type);
+    return NotificationTypeIcon(
+      icon: spec.icon,
+      backgroundColor: spec.background,
+      foregroundColor: spec.foreground,
+      showUnreadDot: !isRead,
+    );
+  }
+}
+
+class _NotificationContent extends StatelessWidget {
+  const _NotificationContent({
+    required this.notification,
+    required this.onProfileTap,
+  });
+
+  final VideoNotification notification;
+  final VoidCallback onProfileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final overflowCount = notification.totalCount - notification.actors.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          label: context.l10n.notificationsViewProfilesSemanticLabel,
+          child: GestureDetector(
+            onTap: onProfileTap,
+            child: NotificationAvatarStack(
+              actors: notification.actors.take(_maxStackActors).toList(),
+              overflowCount: overflowCount > 0 ? overflowCount : null,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _MessageText(notification: notification),
+      ],
     );
   }
 }
@@ -238,8 +270,11 @@ class _Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Semantics(
-      label: title != null ? 'Video thumbnail for $title' : 'Video thumbnail',
+      label: title != null
+          ? l10n.notificationsVideoThumbnailFor(title!)
+          : l10n.notificationsVideoThumbnail,
       button: true,
       child: GestureDetector(
         onTap: onTap,

@@ -40,14 +40,9 @@ class ActorNotificationRow extends StatelessWidget {
       notification.type == NotificationKind.follow &&
       !notification.isFollowingBack;
 
-  bool get _hasComment =>
-      notification.commentText != null && notification.commentText!.isNotEmpty;
-
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final spec = notificationTypeIconSpec(notification.type);
-
     return Material(
       color: VineTheme.surfaceContainerHigh,
       child: Semantics(
@@ -70,37 +65,15 @@ class ActorNotificationRow extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  NotificationTypeIcon(
-                    icon: spec.icon,
-                    backgroundColor: spec.background,
-                    foregroundColor: spec.foreground,
-                    showUnreadDot: !notification.isRead,
+                  _LeadingTypeIcon(
+                    type: notification.type,
+                    isRead: notification.isRead,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        UserAvatar(
-                          imageUrl: notification.actor.pictureUrl,
-                          name: notification.actor.displayName,
-                          placeholderSeed: notification.actor.pubkey,
-                          size: NotificationConstants.avatarSize,
-                          cornerRadius:
-                              NotificationConstants.avatarCornerRadius,
-                          onTap: onProfileTap,
-                          semanticLabel: l10n
-                              .notificationsViewProfileSemanticLabel(
-                                notification.actor.displayName,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        _MessageText(notification: notification),
-                        if (_hasComment) ...[
-                          const SizedBox(height: 4),
-                          _CommentQuote(text: notification.commentText!),
-                        ],
-                      ],
+                    child: _NotificationContent(
+                      notification: notification,
+                      onProfileTap: onProfileTap,
                     ),
                   ),
                   if (_showFollowBack) ...[
@@ -113,6 +86,64 @@ class ActorNotificationRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LeadingTypeIcon extends StatelessWidget {
+  const _LeadingTypeIcon({required this.type, required this.isRead});
+
+  final NotificationKind type;
+  final bool isRead;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = notificationTypeIconSpec(type);
+    return NotificationTypeIcon(
+      icon: spec.icon,
+      backgroundColor: spec.background,
+      foregroundColor: spec.foreground,
+      showUnreadDot: !isRead,
+    );
+  }
+}
+
+class _NotificationContent extends StatelessWidget {
+  const _NotificationContent({
+    required this.notification,
+    required this.onProfileTap,
+  });
+
+  final ActorNotification notification;
+  final VoidCallback onProfileTap;
+
+  bool get _hasComment =>
+      notification.commentText != null && notification.commentText!.isNotEmpty;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        UserAvatar(
+          imageUrl: notification.actor.pictureUrl,
+          name: notification.actor.displayName,
+          placeholderSeed: notification.actor.pubkey,
+          size: NotificationConstants.avatarSize,
+          cornerRadius: NotificationConstants.avatarCornerRadius,
+          onTap: onProfileTap,
+          semanticLabel: l10n.notificationsViewProfileSemanticLabel(
+            notification.actor.displayName,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _MessageText(notification: notification),
+        if (_hasComment) ...[
+          const SizedBox(height: 4),
+          _CommentQuote(text: notification.commentText!),
+        ],
+      ],
     );
   }
 }

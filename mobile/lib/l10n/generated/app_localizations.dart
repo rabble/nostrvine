@@ -6980,6 +6980,18 @@ abstract class AppLocalizations {
   /// **'View profiles'**
   String get notificationsViewProfilesSemanticLabel;
 
+  /// Screen-reader label for the video thumbnail on a video-anchored notification row when the video title is known.
+  ///
+  /// In en, this message translates to:
+  /// **'Video thumbnail for {title}'**
+  String notificationsVideoThumbnailFor(String title);
+
+  /// Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Video thumbnail'**
+  String get notificationsVideoThumbnail;
+
   /// No description provided for @notificationsLoadingType.
   ///
   /// In en, this message translates to:

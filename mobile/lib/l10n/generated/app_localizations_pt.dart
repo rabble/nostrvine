@@ -3995,6 +3995,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get notificationsViewProfilesSemanticLabel => 'Ver perfis';
 
   @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Video thumbnail for $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Video thumbnail';
+
+  @override
   String notificationsLoadingType(String type) {
     return 'Carregando notificações de $type...';
   }

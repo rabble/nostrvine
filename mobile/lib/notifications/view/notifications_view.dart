@@ -355,21 +355,22 @@ class _FailureBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
           const SizedBox(height: 16),
           Text(
             context.l10n.notificationsFailedToLoad,
-            style: const TextStyle(
-              fontSize: 18,
-              color: VineTheme.secondaryText,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
           ),
           const SizedBox(height: 16),
           TextButton(
             onPressed: onRetry,
             child: Text(
               context.l10n.notificationsRetry,
-              style: const TextStyle(color: VineTheme.vineGreen),
+              style: VineTheme.labelLargeFont(color: VineTheme.vineGreen),
             ),
           ),
         ],

@@ -3884,6 +3884,14 @@ class AppLocalizationsAm extends AppLocalizations {
   String get notificationsViewProfilesSemanticLabel => 'መገለጫዎችን ይመልከቱ';
 
   @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Video thumbnail for $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Video thumbnail';
+
+  @override
   String notificationsLoadingType(String type) {
     return '$type ማሳወቂያዎችን በመጫን ላይ...';
   }

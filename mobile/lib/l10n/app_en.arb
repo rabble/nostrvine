@@ -2092,6 +2092,19 @@
   "@notificationsViewProfilesSemanticLabel": {
     "description": "Screen-reader label for a grouped notification's avatar stack, which opens the list of involved profiles."
   },
+  "notificationsVideoThumbnailFor": "Video thumbnail for {title}",
+  "@notificationsVideoThumbnailFor": {
+    "description": "Screen-reader label for the video thumbnail on a video-anchored notification row when the video title is known.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Video thumbnail",
+  "@notificationsVideoThumbnail": {
+    "description": "Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing."
+  },
   "notificationsLoadingType": "Loading {type} notifications...",
   "@notificationsLoadingType": {
     "placeholders": {
