@@ -477,30 +477,6 @@
   "exploreTabForYou": "For You",
   "exploreTabLists": "Lists",
   "exploreTabIntegratedApps": "Integrated Apps",
-  "popularFilterLabel": "Time period",
-  "@popularFilterLabel": {
-    "description": "Accessible label for the time-window filter row above the Popular feed grid."
-  },
-  "popularFilterRightNow": "Right Now",
-  "@popularFilterRightNow": {
-    "description": "Time-window chip on the Popular tab. Selects the live 24h watch-volume sort (current default)."
-  },
-  "popularFilterToday": "Today",
-  "@popularFilterToday": {
-    "description": "Time-window chip on the Popular tab. Top videos from the last 24 hours (period=day on the leaderboard API)."
-  },
-  "popularFilterWeek": "This Week",
-  "@popularFilterWeek": {
-    "description": "Time-window chip on the Popular tab. Top videos from the last 7 days."
-  },
-  "popularFilterMonth": "This Month",
-  "@popularFilterMonth": {
-    "description": "Time-window chip on the Popular tab. Top videos from the last 30 days."
-  },
-  "popularFilterAllTime": "All Time",
-  "@popularFilterAllTime": {
-    "description": "Time-window chip on the Popular tab. Top videos all time."
-  },
   "exploreNoVideosAvailable": "No videos available",
   "exploreErrorPrefix": "Error: {error}",
   "@exploreErrorPrefix": {

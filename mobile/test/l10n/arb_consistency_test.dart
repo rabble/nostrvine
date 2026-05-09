@@ -373,14 +373,6 @@ const _knownUntranslatedDebt = {
   // divine.video/safety" link). Falls back to English in non-English
   // locales until translated.
   'reportLearnMoreAt',
-  // Added by the Popular tab time-period filter chips. English ships;
-  // translators will pick these up in a follow-up pass.
-  'popularFilterAllTime',
-  'popularFilterLabel',
-  'popularFilterMonth',
-  'popularFilterRightNow',
-  'popularFilterToday',
-  'popularFilterWeek',
   // Added by the desktop save-to-Downloads log export flow. Other locales
   // fall back to English until the next translation pass.
   'supportLogsSavedTo',

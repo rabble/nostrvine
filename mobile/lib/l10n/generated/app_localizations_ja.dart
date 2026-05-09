@@ -941,24 +941,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exploreTabIntegratedApps => '連携アプリ';
 
   @override
-  String get popularFilterLabel => 'Time period';
-
-  @override
-  String get popularFilterRightNow => 'Right Now';
-
-  @override
-  String get popularFilterToday => 'Today';
-
-  @override
-  String get popularFilterWeek => 'This Week';
-
-  @override
-  String get popularFilterMonth => 'This Month';
-
-  @override
-  String get popularFilterAllTime => 'All Time';
-
-  @override
   String get exploreNoVideosAvailable => '動画がないよ';
 
   @override

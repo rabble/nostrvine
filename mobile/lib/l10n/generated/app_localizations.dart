@@ -1852,42 +1852,6 @@ abstract class AppLocalizations {
   /// **'Integrated Apps'**
   String get exploreTabIntegratedApps;
 
-  /// Accessible label for the time-window filter row above the Popular feed grid.
-  ///
-  /// In en, this message translates to:
-  /// **'Time period'**
-  String get popularFilterLabel;
-
-  /// Time-window chip on the Popular tab. Selects the live 24h watch-volume sort (current default).
-  ///
-  /// In en, this message translates to:
-  /// **'Right Now'**
-  String get popularFilterRightNow;
-
-  /// Time-window chip on the Popular tab. Top videos from the last 24 hours (period=day on the leaderboard API).
-  ///
-  /// In en, this message translates to:
-  /// **'Today'**
-  String get popularFilterToday;
-
-  /// Time-window chip on the Popular tab. Top videos from the last 7 days.
-  ///
-  /// In en, this message translates to:
-  /// **'This Week'**
-  String get popularFilterWeek;
-
-  /// Time-window chip on the Popular tab. Top videos from the last 30 days.
-  ///
-  /// In en, this message translates to:
-  /// **'This Month'**
-  String get popularFilterMonth;
-
-  /// Time-window chip on the Popular tab. Top videos all time.
-  ///
-  /// In en, this message translates to:
-  /// **'All Time'**
-  String get popularFilterAllTime;
-
   /// No description provided for @exploreNoVideosAvailable.
   ///
   /// In en, this message translates to:
