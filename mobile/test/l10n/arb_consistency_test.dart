@@ -79,19 +79,6 @@ const _knownUntranslatedDebt = {
   'generalSettingsVideoShapeSquareAndPortrait',
   'generalSettingsVideoShapeSquareAndPortraitSubtitle',
   'generalSettingsVideoShapeSquareOnlySubtitle',
-  // Content Safety / Filters — "What you see / publish" toggles and
-  // category filters.
-  'settingsContentSafetyTitle',
-  'contentFiltersAdultContent',
-  'contentFiltersViolenceGore',
-  'contentFiltersSubstances',
-  'contentFiltersOther',
-  'contentFiltersAgeGateMessage',
-  'contentFiltersShow',
-  'contentFiltersWarn',
-  'contentFiltersFilterOut',
-  'safetySettingsWhatYouSee',
-  'safetySettingsWhatYouPublish',
   // Relay Settings — external relay status, time-ago strings, summaries,
   // and the #3362 wss:// scheme gate.
   'relaySettingsExternalRelay',

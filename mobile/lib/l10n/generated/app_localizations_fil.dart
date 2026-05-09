@@ -160,7 +160,7 @@ class AppLocalizationsFil extends AppLocalizations {
   String get settingsGeneralTitle => 'General Settings';
 
   @override
-  String get settingsContentSafetyTitle => 'Content & Safety';
+  String get settingsContentSafetyTitle => 'Content at Safety';
 
   @override
   String get generalSettingsSectionIntegrations => 'INTEGRATIONS';
@@ -279,26 +279,26 @@ class AppLocalizationsFil extends AppLocalizations {
   String get contentFiltersAdultContent => 'ADULT CONTENT';
 
   @override
-  String get contentFiltersViolenceGore => 'VIOLENCE & GORE';
+  String get contentFiltersViolenceGore => 'KARAHASAN AT GORE';
 
   @override
-  String get contentFiltersSubstances => 'SUBSTANCES';
+  String get contentFiltersSubstances => 'MGA SUBSTANSIYA';
 
   @override
-  String get contentFiltersOther => 'OTHER';
+  String get contentFiltersOther => 'IBA PA';
 
   @override
   String get contentFiltersAgeGateMessage =>
-      'Verify your age in Safety & Privacy settings to unlock adult content filters';
+      'I-verify ang edad mo sa Safety & Privacy settings para i-unlock ang mga adult content filter';
 
   @override
-  String get contentFiltersShow => 'Show';
+  String get contentFiltersShow => 'Ipakita';
 
   @override
-  String get contentFiltersWarn => 'Warn';
+  String get contentFiltersWarn => 'Babala';
 
   @override
-  String get contentFiltersFilterOut => 'Filter Out';
+  String get contentFiltersFilterOut => 'I-filter Out';
 
   @override
   String get profileBlockedAccountNotAvailable =>
@@ -2233,10 +2233,10 @@ class AppLocalizationsFil extends AppLocalizations {
   String get safetySettingsLabel => 'MGA SETTING';
 
   @override
-  String get safetySettingsWhatYouSee => 'WHAT YOU SEE';
+  String get safetySettingsWhatYouSee => 'ANG NAKIKITA MO';
 
   @override
-  String get safetySettingsWhatYouPublish => 'WHAT YOU PUBLISH';
+  String get safetySettingsWhatYouPublish => 'ANG PINO-POST MO';
 
   @override
   String get safetySettingsShowDivineHostedOnly =>

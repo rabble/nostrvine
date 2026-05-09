@@ -1907,5 +1907,16 @@
     "userNotAvailableBody": "Hindi available ang account na ito ngayon.",
     "userNotAvailableTitle": "Hindi available ang account",
     "videoOverlayOpenMetadataFromDescription": "Buksan ang video details",
-    "videoOverlayOpenMetadataFromTitle": "Buksan ang video details"
+    "videoOverlayOpenMetadataFromTitle": "Buksan ang video details",
+    "settingsContentSafetyTitle": "Content at Safety",
+    "contentFiltersAdultContent": "ADULT CONTENT",
+    "contentFiltersViolenceGore": "KARAHASAN AT GORE",
+    "contentFiltersSubstances": "MGA SUBSTANSIYA",
+    "contentFiltersOther": "IBA PA",
+    "contentFiltersAgeGateMessage": "I-verify ang edad mo sa Safety & Privacy settings para i-unlock ang mga adult content filter",
+    "contentFiltersShow": "Ipakita",
+    "contentFiltersWarn": "Babala",
+    "contentFiltersFilterOut": "I-filter Out",
+    "safetySettingsWhatYouSee": "ANG NAKIKITA MO",
+    "safetySettingsWhatYouPublish": "ANG PINO-POST MO"
 }
