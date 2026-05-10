@@ -7875,6 +7875,67 @@ void main() {
       );
 
       test(
+        'addressable relay lookup accepts legacy NIP-71 kinds — '
+        'naddr1 pointing at kind 22 must resolve like a raw 64-hex route',
+        () async {
+          const eventId =
+              'a895f6b60119d9521934a691347d9f78'
+              'e8770b56da16bb255ee77ac112b4c1f6';
+          const author =
+              '4bf0c63fcb93463407af97a5e5ee64fa'
+              '883d107ef9e558472c4eb9aaaefa459d';
+          const dTag = 'legacy-vine-22';
+          // naddr1 referencing legacy kind 22 (NIP-71 short video) — the
+          // pre-relax addressable branch gated on isVideoKind() and would
+          // drop this at the kind check before querying the relay.
+          final naddr = NIP19Tlv.encodeNaddr(
+            Naddr(id: dTag, author: author, kind: 22),
+          );
+          final legacyEvent = Event.fromJson({
+            'id': eventId,
+            'pubkey': author,
+            'created_at': 1739350000,
+            'kind': 22,
+            'tags': [
+              ['d', dTag],
+              ['url', 'https://example.com/legacy.mp4'],
+              ['title', 'Legacy kind-22 addressable'],
+            ],
+            'content': '',
+            'sig': 'sig',
+          });
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+            invocation,
+          ) async {
+            final filters =
+                invocation.positionalArguments.single as List<Filter>;
+            final filter = filters.single;
+            // Only match the addressable filter (kind + author + d-tag),
+            // so the test fails loudly if the gate sends us back to the
+            // event-id or stable-id branches instead.
+            if ((filter.kinds?.contains(22) ?? false) &&
+                (filter.authors?.contains(author) ?? false) &&
+                (filter.d?.contains(dTag) ?? false)) {
+              return [legacyEvent];
+            }
+            return <Event>[];
+          });
+
+          final repo = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repo.fetchVideoWithStatsForRouteId(naddr);
+
+          expect(result, isNotNull);
+          expect(result!.id, equals(eventId));
+          expect(result.vineId, equals(dTag));
+        },
+      );
+
+      test(
         'resolves plain stable IDs from local storage before relay',
         () async {
           const eventId =

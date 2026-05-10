@@ -1905,11 +1905,24 @@ class VideosRepository {
   /// around the relay query specifically, not around enrichment that has its
   /// own timeout. Stats hydration here is bounded by [_statsFetchTimeout]
   /// so a stalled stats endpoint cannot re-stall deep-link UX.
+  ///
+  /// Funnelcake fallback for missing addressable ids is intentionally not
+  /// duplicated here. The orchestrator already tries Funnelcake REST as
+  /// step 2 with `funnelcakeRouteId = candidate.stableId ?? candidate.eventId`,
+  /// and `_VideoRouteCandidate.parse` populates `stableId` from
+  /// `decoded.id` / `aid.dTag` for both naddr and raw `kind:pubkey:d-tag`
+  /// inputs — so REST has already been attempted by the time we get here.
+  ///
+  /// Accepts every kind in [NIP71VideoKinds.getAllAcceptableVideoKinds] for
+  /// parity with [_fetchRouteVideoByEventIdFromRelay] /
+  /// [_fetchVideoByStableIdFromRelay]. Older share links pointing at legacy
+  /// kinds (e.g. 21, 22, 34235) reach this branch via naddr1 references and
+  /// must resolve the same way they do via raw event id or bare d-tag.
   Future<VideoEvent?> _fetchAddressableVideoFromRelay(
     String addressableId,
   ) async {
     final parsed = AId.fromString(addressableId);
-    if (parsed == null || !NIP71VideoKinds.isVideoKind(parsed.kind)) {
+    if (parsed == null || !NIP71VideoKinds.isAcceptableVideoKind(parsed.kind)) {
       return null;
     }
 
