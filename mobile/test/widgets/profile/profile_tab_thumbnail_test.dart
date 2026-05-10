@@ -103,19 +103,34 @@ void main() {
       // Caps decoded thumbnail size so a 50+ tile profile grid stays under
       // Flutter's default ImageCache budget. Without it the cache thrashes
       // on cold-load and stalls the first paint by ~1s (#4190).
+      //
+      // Only memCacheWidth is set — memCacheHeight is intentionally omitted.
+      // ResizeImage scales proportionally from the width constraint, so a
+      // portrait thumbnail (9:16) is decoded at tile_width × taller_pixels,
+      // and BoxFit.cover crops the excess height without upscaling.
+      //
+      // Setting memCacheHeight to the square tile height would make
+      // ResizeImagePolicy.fit choose the tighter axis, decoding portrait
+      // images narrower than the tile (e.g. 169 px wide for a 300 px tile)
+      // and forcing BoxFit.cover to upscale — visible blurring.
+      //
+      // buildSubject wraps in SizedBox(100×100) and the test surface has
+      // devicePixelRatio=1.0, so the expected memCacheWidth is 100.
       testWidgets(
-        '$VineCachedImage forwards a memCacheWidth that caps decoded size',
+        '$VineCachedImage memCacheWidth matches tile width × devicePixelRatio '
+        'and memCacheHeight is null',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
           );
 
+          final dpr = tester.view.devicePixelRatio;
+          final expectedMemCacheWidth = (100.0 * dpr).round();
+
           final image = tester.widget<VineCachedImage>(
             find.byType(VineCachedImage),
           );
-          expect(image.memCacheWidth, equals(400));
-          // memCacheHeight is intentionally unset so BoxFit.cover scales
-          // proportionally rather than skewing aspect-sensitive crops.
+          expect(image.memCacheWidth, equals(expectedMemCacheWidth));
           expect(image.memCacheHeight, isNull);
         },
       );
