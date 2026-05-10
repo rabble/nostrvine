@@ -7,6 +7,7 @@
 
 import 'dart:io' show File;
 import 'dart:typed_data';
+import 'dart:ui' show Color;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
@@ -76,6 +77,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
     on<ProfilePictureUploadCleared>(_onProfilePictureUploadCleared);
     on<ProfilePictureUrlSet>(_onProfilePictureUrlSet);
+    on<InitialPersistedBannerSet>(_onInitialPersistedBannerSet);
+    on<ProfileBannerUploadRequested>(
+      _onProfileBannerUploadRequested,
+      transformer: droppable(),
+    );
+    on<ProfileBannerColorSelected>(_onProfileBannerColorSelected);
+    on<ProfileBannerCleared>(_onProfileBannerCleared);
     on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
     on<VerifierWebViewDismissed>(_onVerifierWebViewDismissed);
   }
@@ -229,6 +237,151 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
   }
 
+  void _onInitialPersistedBannerSet(
+    InitialPersistedBannerSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    final banner = event.banner;
+    final parsedColor = _parseBannerHexColor(banner);
+    emit(
+      state.copyWith(
+        persistedBanner: banner,
+        pendingBannerColor: parsedColor,
+      ),
+    );
+  }
+
+  /// Parses a banner string into a [Color] when it looks like a hex color.
+  ///
+  /// Accepts `0xRRGGBB`, `#RRGGBB`, or bare `RRGGBB`. Returns `null` for
+  /// URLs, empty strings, and malformed input. Mirrors the parser in
+  /// `UserProfileUtils.profileBackgroundColor` to keep the seeding behavior
+  /// in lockstep with how the rest of the app reads `banner` as a color.
+  Color? _parseBannerHexColor(String? banner) {
+    if (banner == null || banner.isEmpty) return null;
+    var hex = banner;
+    if (hex.startsWith('0x')) {
+      hex = hex.substring(2);
+    } else if (hex.startsWith('#')) {
+      hex = hex.substring(1);
+    } else if (hex.startsWith('http')) {
+      return null;
+    }
+    if (hex.length != 6) return null;
+    final value = int.tryParse(hex, radix: 16);
+    if (value == null) return null;
+    return Color(0xFF000000 | value);
+  }
+
+  Future<void> _onProfileBannerUploadRequested(
+    ProfileBannerUploadRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    emit(state.copyWith(pendingBannerStatus: PendingBannerStatus.uploading));
+
+    BlossomUploadResult result;
+    try {
+      if (event.bytes != null) {
+        result = await _blossomUploadService.uploadImageBytes(
+          bytes: event.bytes!,
+          filename: event.filename ?? 'banner.jpg',
+          nostrPubkey: event.pubkey,
+          mimeType: event.mimeType,
+        );
+      } else {
+        result = await _blossomUploadService.uploadImage(
+          imageFile: event.file!,
+          nostrPubkey: event.pubkey,
+          mimeType: event.mimeType,
+        );
+      }
+    } on Object catch (error, stackTrace) {
+      Log.error(
+        'Banner upload threw: $error',
+        name: 'ProfileEditorBloc',
+        category: LogCategory.ui,
+      );
+      addError(error, stackTrace);
+      emit(
+        state.copyWith(
+          pendingBannerStatus: PendingBannerStatus.failed,
+          bannerUploadError: BannerUploadError.generic,
+        ),
+      );
+      return;
+    }
+
+    if (result.success && (result.cdnUrl?.isNotEmpty ?? false)) {
+      Log.info(
+        '✅ Banner staged: ${result.cdnUrl}',
+        name: 'ProfileEditorBloc',
+        category: LogCategory.ui,
+      );
+      emit(
+        state.copyWith(
+          pendingBannerStatus: PendingBannerStatus.staged,
+          pendingBannerUrl: result.cdnUrl,
+          // Image and color are mutually exclusive — clear any staged color.
+          pendingBannerColor: null,
+        ),
+      );
+      return;
+    }
+
+    final errorMessage = result.errorMessage ?? 'Upload failed';
+    Log.error(
+      'Banner upload failed: $errorMessage',
+      name: 'ProfileEditorBloc',
+      category: LogCategory.ui,
+    );
+    addError(Exception(errorMessage), StackTrace.current);
+    emit(
+      state.copyWith(
+        pendingBannerStatus: PendingBannerStatus.failed,
+        bannerUploadError: _mapBannerUploadFailureReason(result.failureReason),
+      ),
+    );
+  }
+
+  BannerUploadError _mapBannerUploadFailureReason(
+    BlossomUploadFailureReason? failureReason,
+  ) {
+    return switch (failureReason ?? BlossomUploadFailureReason.unknown) {
+      BlossomUploadFailureReason.network => BannerUploadError.network,
+      BlossomUploadFailureReason.auth => BannerUploadError.auth,
+      BlossomUploadFailureReason.fileTooLarge => BannerUploadError.fileTooLarge,
+      BlossomUploadFailureReason.server => BannerUploadError.server,
+      BlossomUploadFailureReason.unknown => BannerUploadError.generic,
+    };
+  }
+
+  void _onProfileBannerColorSelected(
+    ProfileBannerColorSelected event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        pendingBannerColor: event.color,
+        // Image and color are mutually exclusive — clear any staged URL.
+        pendingBannerUrl: null,
+        pendingBannerStatus: PendingBannerStatus.idle,
+      ),
+    );
+  }
+
+  void _onProfileBannerCleared(
+    ProfileBannerCleared event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        pendingBannerUrl: null,
+        pendingBannerColor: null,
+        pendingBannerStatus: PendingBannerStatus.idle,
+      ),
+    );
+  }
+
   Future<void> _onProfileSaved(
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
@@ -243,6 +396,17 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     if (state.pendingAvatarStatus == PendingAvatarStatus.uploading) {
       Log.info(
         'Ignoring ProfileSaved received while avatar upload is in flight',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    // Same belt-and-braces guard for banner uploads: drop the save if the
+    // banner is still uploading so we don't publish kind 0 with the
+    // pre-upload banner and then have a staged URL land afterwards.
+    if (state.pendingBannerStatus == PendingBannerStatus.uploading) {
+      Log.info(
+        'Ignoring ProfileSaved received while banner upload is in flight',
         name: 'ProfileEditorBloc',
       );
       return;
@@ -269,6 +433,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
 
     await _saveProfile(event, effectivePicture, emit);
+  }
+
+  /// Banner string the next save should write into kind 0.
+  ///
+  /// Priority: staged value derived from bloc state ([effectiveBanner]) >
+  /// caller-supplied `event.banner` (legacy fallback). Empty / whitespace
+  /// is treated as "no banner".
+  String? _resolveEffectiveBanner(ProfileSaved event) {
+    final fromState = state.effectiveBanner?.trim();
+    if (fromState != null && fromState.isNotEmpty) return fromState;
+    final fromEvent = event.banner?.trim();
+    if (fromEvent != null && fromEvent.isNotEmpty) return fromEvent;
+    return null;
   }
 
   /// Picture URL the next save should write into kind 0.
@@ -630,7 +807,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         username == null &&
         (state.initialUsername != null || state.initialExternalNip05 != null);
     final picture = effectivePicture;
-    final banner = (event.banner?.trim().isEmpty ?? true) ? null : event.banner;
+    // Banner is owned by bloc state (staged URL > staged color > persisted),
+    // with `event.banner` as a legacy fallback for callers that haven't
+    // migrated to the staged-state model yet. Empty string treated as null.
+    final banner = _resolveEffectiveBanner(event);
 
     final currentProfile = await _profileRepository.getCachedProfile(
       pubkey: event.pubkey,

@@ -1,6 +1,6 @@
 // ABOUTME: Events for the ProfileEditorBloc
 // ABOUTME: Defines actions for saving profile, claiming username, and
-// ABOUTME: staging avatar uploads for the current edit session.
+// ABOUTME: staging avatar / banner uploads for the current edit session.
 
 part of 'profile_editor_bloc.dart';
 
@@ -188,4 +188,68 @@ final class VerifierLaunchRequested extends ProfileEditorEvent {
 /// consumers (e.g. MyProfileBloc) can refresh kind 0 and pick up new claims.
 final class VerifierWebViewDismissed extends ProfileEditorEvent {
   const VerifierWebViewDismissed();
+}
+
+/// Sets the user's existing persisted banner value after profile load.
+///
+/// Mirrors what the user's kind 0 currently advertises. The banner string
+/// can be either a CDN URL or a hex color (e.g. `0x33ccbf`); the bloc
+/// classifies it and seeds [ProfileEditorState.pendingBannerColor] when it
+/// looks like a color so the color picker pre-selects.
+final class InitialPersistedBannerSet extends ProfileEditorEvent {
+  const InitialPersistedBannerSet(this.banner);
+
+  /// The banner value from the user's currently persisted kind 0, or
+  /// `null` if the user has no profile yet or no banner set.
+  final String? banner;
+}
+
+/// Request to upload a new banner image for the current edit session.
+///
+/// Exactly one of [file] or [bytes] must be supplied. The bloc handles the
+/// upload via the injected `BlossomUploadService` and stages the resulting
+/// CDN URL on success. Save remains the only path that publishes a kind 0
+/// — this event does **not** trigger publish.
+final class ProfileBannerUploadRequested extends ProfileEditorEvent {
+  const ProfileBannerUploadRequested({
+    required this.pubkey,
+    this.file,
+    this.bytes,
+    this.filename,
+    this.mimeType = 'image/jpeg',
+  }) : assert(
+         (file == null) != (bytes == null),
+         'Exactly one of file or bytes must be supplied',
+       );
+
+  /// User's public key in hex format.
+  final String pubkey;
+
+  /// Native file payload (iOS / Android / desktop).
+  final File? file;
+
+  /// In-memory bytes payload (web).
+  final Uint8List? bytes;
+
+  /// Filename for the bytes payload (web only).
+  final String? filename;
+
+  /// MIME type. Defaults to `image/jpeg`.
+  final String mimeType;
+}
+
+/// User picked a banner color. Mutually exclusive with an uploaded image —
+/// selecting a color clears any staged banner image URL.
+final class ProfileBannerColorSelected extends ProfileEditorEvent {
+  const ProfileBannerColorSelected(this.color);
+
+  /// The selected color. The bloc serializes this into a hex string when
+  /// publishing kind 0 via [ProfileEditorState.effectiveBanner].
+  final Color color;
+}
+
+/// User explicitly cleared the banner. Drops both the staged image URL and
+/// the staged color; Save will publish `null` for the banner field.
+final class ProfileBannerCleared extends ProfileEditorEvent {
+  const ProfileBannerCleared();
 }

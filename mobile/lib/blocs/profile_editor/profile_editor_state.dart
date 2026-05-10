@@ -74,6 +74,47 @@ enum AvatarUploadError {
   generic,
 }
 
+/// Categorization of banner upload failures for l10n-friendly UI messaging.
+///
+/// Mirrors [AvatarUploadError] so the UI can map both upload paths to the
+/// same localized snackbar strings via the existing
+/// `profileSetupUploadErrorMessage` helper.
+enum BannerUploadError {
+  /// Network or connection error.
+  network,
+
+  /// Authentication error (401/403).
+  auth,
+
+  /// File too large (413).
+  fileTooLarge,
+
+  /// Server error (500/502/503/504).
+  server,
+
+  /// Generic / uncategorized failure.
+  generic,
+}
+
+/// Status of the staged banner upload for the current edit session.
+///
+/// Parallels [PendingAvatarStatus]. The banner shown on the edit screen
+/// resolves to `pendingBannerUrl ?? pendingBannerColor ?? persistedBanner`.
+enum PendingBannerStatus {
+  /// No upload in flight and no staged change for this session.
+  idle,
+
+  /// An upload is in flight.
+  uploading,
+
+  /// An upload finished and produced a new banner URL.
+  staged,
+
+  /// An upload failed. `pendingBannerUrl` is preserved so a retry doesn't
+  /// blank a previously-staged banner.
+  failed,
+}
+
 /// Status of the staged avatar upload for the current edit session.
 ///
 /// The avatar shown on the edit screen resolves to
@@ -215,6 +256,11 @@ final class ProfileEditorState extends Equatable {
     this.pendingPictureUrl,
     this.persistedPictureUrl,
     this.avatarUploadError,
+    this.pendingBannerStatus = PendingBannerStatus.idle,
+    this.pendingBannerUrl,
+    this.pendingBannerColor,
+    this.persistedBanner,
+    this.bannerUploadError,
     this.verifierStatus = VerifierStatus.idle,
   });
 
@@ -278,6 +324,38 @@ final class ProfileEditorState extends Equatable {
   /// is set, signalling "no picture".
   String? get effectivePictureUrl => pendingPictureUrl ?? persistedPictureUrl;
 
+  /// Status of the staged banner upload for this edit session.
+  final PendingBannerStatus pendingBannerStatus;
+
+  /// URL of the staged banner image (uploaded) that has not yet been
+  /// persisted via Save. Mutually exclusive with [pendingBannerColor].
+  final String? pendingBannerUrl;
+
+  /// Staged banner color (user picked a swatch) that has not yet been
+  /// persisted via Save. Mutually exclusive with [pendingBannerUrl].
+  final Color? pendingBannerColor;
+
+  /// Banner value currently persisted on the user's kind 0. Can be either
+  /// a URL or a hex color string (e.g. `0x33ccbf`); see
+  /// `UserProfileUtils.profileBackgroundColor` for the parse contract.
+  final String? persistedBanner;
+
+  /// Categorization of the most recent banner upload failure.
+  final BannerUploadError? bannerUploadError;
+
+  /// The banner value that should be written when Save is tapped:
+  /// staged image URL > staged color (encoded as `0xRRGGBB`) > persisted
+  /// banner. Returns `null` when none are set.
+  String? get effectiveBanner {
+    final url = pendingBannerUrl;
+    if (url != null && url.isNotEmpty) return url;
+    final color = pendingBannerColor;
+    if (color != null) {
+      return '0x${color.toARGB32().toRadixString(16).substring(2)}';
+    }
+    return persistedBanner;
+  }
+
   /// One-shot signal driving the in-app verifier WebView launch + dismiss.
   final VerifierStatus verifierStatus;
 
@@ -308,6 +386,7 @@ final class ProfileEditorState extends Equatable {
   /// enforces the same invariant defensively in `_onProfileSaved`.
   bool get isSaveReady {
     if (pendingAvatarStatus == PendingAvatarStatus.uploading) return false;
+    if (pendingBannerStatus == PendingBannerStatus.uploading) return false;
     return switch (nip05Mode) {
       Nip05Mode.divine => isUsernameSaveReady,
       Nip05Mode.external_ => isExternalNip05SaveReady,
@@ -337,6 +416,11 @@ final class ProfileEditorState extends Equatable {
     Object? pendingPictureUrl = _kUnset,
     Object? persistedPictureUrl = _kUnset,
     AvatarUploadError? avatarUploadError,
+    PendingBannerStatus? pendingBannerStatus,
+    Object? pendingBannerUrl = _kUnset,
+    Object? pendingBannerColor = _kUnset,
+    Object? persistedBanner = _kUnset,
+    BannerUploadError? bannerUploadError,
     VerifierStatus? verifierStatus,
   }) {
     return ProfileEditorState(
@@ -361,6 +445,17 @@ final class ProfileEditorState extends Equatable {
           ? this.persistedPictureUrl
           : persistedPictureUrl as String?,
       avatarUploadError: avatarUploadError,
+      pendingBannerStatus: pendingBannerStatus ?? this.pendingBannerStatus,
+      pendingBannerUrl: identical(pendingBannerUrl, _kUnset)
+          ? this.pendingBannerUrl
+          : pendingBannerUrl as String?,
+      pendingBannerColor: identical(pendingBannerColor, _kUnset)
+          ? this.pendingBannerColor
+          : pendingBannerColor as Color?,
+      persistedBanner: identical(persistedBanner, _kUnset)
+          ? this.persistedBanner
+          : persistedBanner as String?,
+      bannerUploadError: bannerUploadError,
       verifierStatus: verifierStatus ?? this.verifierStatus,
     );
   }
@@ -384,6 +479,11 @@ final class ProfileEditorState extends Equatable {
     pendingPictureUrl,
     persistedPictureUrl,
     avatarUploadError,
+    pendingBannerStatus,
+    pendingBannerUrl,
+    pendingBannerColor,
+    persistedBanner,
+    bannerUploadError,
     verifierStatus,
   ];
 }
