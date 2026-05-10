@@ -13713,7 +13713,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.'**
+  /// **'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.'**
   String get minorAccountReviewParentConsentBody;
 
   /// No description provided for @minorAccountReviewParentConsentChecklist.
