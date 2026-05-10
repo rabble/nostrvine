@@ -88,7 +88,9 @@ void main() {
           username: any(named: 'username'),
         ),
       ).thenAnswer((_) async => const UsernameClaimSuccess());
-      when(() => profileRepository.cacheProfile(any())).thenAnswer((_) async {});
+      when(
+        () => profileRepository.cacheProfile(any()),
+      ).thenAnswer((_) async {});
     });
 
     ProviderContainer buildContainer() {
