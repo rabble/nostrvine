@@ -10,7 +10,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -26,12 +25,12 @@ import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
 import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/utils/nostr_apps_platform_support.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/vine_cached_image.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -50,6 +49,23 @@ String profileSetupUploadErrorMessage(
     AvatarUploadError.fileTooLarge => l10n.profileSetupUploadFileTooLarge,
     AvatarUploadError.server => l10n.profileSetupUploadServerError,
     AvatarUploadError.generic => l10n.profileSetupUploadFailedGeneric,
+  };
+}
+
+/// Maps a [BannerUploadError] case to its localized snackbar string.
+///
+/// Reuses the same upload-error copy as the avatar — the failure modes
+/// are identical from the user's point of view.
+String profileSetupBannerUploadErrorMessage(
+  AppLocalizations l10n,
+  BannerUploadError error,
+) {
+  return switch (error) {
+    BannerUploadError.network => l10n.profileSetupUploadNetworkError,
+    BannerUploadError.auth => l10n.profileSetupUploadAuthError,
+    BannerUploadError.fileTooLarge => l10n.profileSetupUploadFileTooLarge,
+    BannerUploadError.server => l10n.profileSetupUploadServerError,
+    BannerUploadError.generic => l10n.profileSetupUploadFailedGeneric,
   };
 }
 
@@ -153,7 +169,6 @@ class _ProfileSetupScreenViewState
   // preview and the bytes-based upload path.
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
-  Color? _selectedProfileColor;
 
   @override
   void initState() {
@@ -206,7 +221,6 @@ class _ProfileSetupScreenViewState
               _nameController.text = profile.displayName ?? profile.name ?? '';
               _bioController.text = profile.about ?? '';
               _pictureController.text = profile.picture ?? '';
-              _selectedProfileColor = profile.profileBackgroundColor;
 
               if (extractedUsername != null) {
                 _nip05Controller.text = extractedUsername;
@@ -217,7 +231,9 @@ class _ProfileSetupScreenViewState
             // Seed bloc with the persisted picture so the avatar widget can
             // render `pendingPictureUrl ?? persistedPictureUrl` purely from
             // state, no widget-local fallback for the existing avatar.
-            editorBloc.add(InitialPersistedPictureSet(profile.picture));
+            editorBloc
+              ..add(InitialPersistedPictureSet(profile.picture))
+              ..add(InitialPersistedBannerSet(profile.banner));
             if (extractedUsername != null) {
               editorBloc.add(InitialUsernameSet(extractedUsername));
             }
@@ -405,6 +421,40 @@ class _ProfileSetupScreenViewState
                 );
               case PendingAvatarStatus.idle:
               case PendingAvatarStatus.uploading:
+                break;
+            }
+          },
+        ),
+        BlocListener<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) =>
+              prev.pendingBannerStatus != curr.pendingBannerStatus,
+          listener: (context, state) {
+            switch (state.pendingBannerStatus) {
+              case PendingBannerStatus.staged:
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      context.l10n.profileSetupBannerUploadSuccess,
+                    ),
+                    backgroundColor: VineTheme.vineGreen,
+                  ),
+                );
+              case PendingBannerStatus.failed:
+                final classified =
+                    state.bannerUploadError ?? BannerUploadError.generic;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      profileSetupBannerUploadErrorMessage(
+                        context.l10n,
+                        classified,
+                      ),
+                    ),
+                    backgroundColor: VineTheme.error,
+                  ),
+                );
+              case PendingBannerStatus.idle:
+              case PendingBannerStatus.uploading:
                 break;
             }
           },
@@ -1030,30 +1080,11 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 24),
 
-                              // Profile Color (optional)
-                              Padding(
-                                padding: const EdgeInsetsDirectional.only(
-                                  start: 16,
-                                ),
-                                child: Text(
-                                  context.l10n.profileSetupProfileColorLabel,
-                                  style: VineTheme.labelMediumFont(
-                                    color: VineTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Padding(
-                                padding: const .symmetric(horizontal: 16),
-                                child: _ProfileColorPicker(
-                                  selectedColor: _selectedProfileColor,
-                                  onColorChanged: (color) {
-                                    setState(() {
-                                      _selectedProfileColor = color;
-                                    });
-                                  },
-                                ),
-                              ),
+                              // Banner section: image upload + color swatches.
+                              // Replaces the old standalone profile-color
+                              // picker; the bloc serializes the chosen color
+                              // into the same kind-0 `banner` field.
+                              const _BannerEditingBlock(),
                             ],
                           ),
                         ),
@@ -1136,15 +1167,12 @@ class _ProfileSetupScreenViewState
                                 displayName: _nameController.text,
                                 about: _bioController.text,
                                 username: _nip05Controller.text,
-                                // Picture is owned by bloc state
-                                // (`pendingPictureUrl ?? persistedPictureUrl`).
-                                // Don't pass `_pictureController.text` here —
-                                // it's only used as the URL-entry sheet
-                                // text field and is staged separately via
-                                // `ProfilePictureUrlSet`.
-                                banner: _selectedProfileColor != null
-                                    ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
-                                    : null,
+                                // Picture and banner are owned by bloc state.
+                                // The bloc reads pendingPictureUrl /
+                                // pendingBannerUrl / pendingBannerColor /
+                                // persistedBanner directly via
+                                // `effectiveBanner`, so we don't pass them
+                                // through the event.
                               ),
                             );
                           },
@@ -1177,10 +1205,8 @@ class _ProfileSetupScreenViewState
         displayName: _nameController.text,
         about: _bioController.text,
         username: _nip05Controller.text,
-        // Picture sourced from bloc state (see ProfileSaved dispatch above).
-        banner: _selectedProfileColor != null
-            ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
-            : null,
+        // Picture and banner sourced from bloc state (see ProfileSaved
+        // dispatch above) via `effectiveBanner` / `effectivePictureUrl`.
       ),
     );
   }
@@ -1521,178 +1547,302 @@ class _SaveButton extends StatelessWidget {
   }
 }
 
-/// Color picker widget for selecting profile background color.
-class _ProfileColorPicker extends StatelessWidget {
-  const _ProfileColorPicker({
-    required this.selectedColor,
-    required this.onColorChanged,
-  });
+/// Banner editing block: 3:1 preview, gallery upload, and color swatches.
+///
+/// Image and color are mutually exclusive — selecting one clears the other
+/// at the bloc layer. The preview reads
+/// `pendingBannerUrl ?? pendingBannerColor ?? persistedBanner` via
+/// granular `context.select`s so unrelated state changes don't rebuild it.
+class _BannerEditingBlock extends StatelessWidget {
+  const _BannerEditingBlock();
 
-  final Color? selectedColor;
-  final ValueChanged<Color?> onColorChanged;
-
-  // Preset colors from VineTheme brand accent palette
-  static const List<Color> _presetColors = [
-    VineTheme.vineGreen, // Green (brand primary)
-    VineTheme.accentBlue, // Blue
-    VineTheme.accentPurple, // Purple
-    VineTheme.likeRed, // Red
-    VineTheme.accentOrange, // Orange
-    VineTheme.accentLime, // Lime
-    VineTheme.accentPink, // Pink
-    VineTheme.accentViolet, // Violet
+  // Brand-accent palette parallel to the avatar's profile-color picker.
+  // Order is load-bearing for the
+  // `profile_banner_color_swatch_preset_<index>` keys used in tests.
+  static const List<Color> _bannerSwatchPalette = [
+    VineTheme.vineGreen,
+    VineTheme.accentBlue,
+    VineTheme.accentPurple,
+    VineTheme.likeRed,
+    VineTheme.accentOrange,
+    VineTheme.accentLime,
+    VineTheme.accentPink,
+    VineTheme.accentViolet,
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Preset color swatches
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            // "No color" option
-            _ColorSwatch(
-              color: null,
-              isSelected: selectedColor == null,
-              onTap: () => onColorChanged(null),
-            ),
-            // Preset colors
-            for (final color in _presetColors)
-              _ColorSwatch(
-                color: color,
-                isSelected: selectedColor == color,
-                onTap: () => onColorChanged(color),
+    final l10n = context.l10n;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              l10n.profileSetupBannerSectionTitle,
+              style: VineTheme.labelMediumFont(
+                color: VineTheme.onSurfaceMuted,
               ),
-            // Custom color picker
-            _CustomColorButton(
-              currentColor: selectedColor,
-              onColorPicked: onColorChanged,
             ),
-          ],
+          ),
+          const _BannerPreview(),
+          const SizedBox(height: 12),
+          const _BannerActionRow(),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (var i = 0; i < _bannerSwatchPalette.length; i++)
+                _BannerColorSwatch(
+                  index: i,
+                  color: _bannerSwatchPalette[i],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BannerPreview extends StatelessWidget {
+  const _BannerPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    final pendingUrl = context.select(
+      (ProfileEditorBloc b) => b.state.pendingBannerUrl,
+    );
+    final pendingColor = context.select(
+      (ProfileEditorBloc b) => b.state.pendingBannerColor,
+    );
+    final persistedBanner = context.select(
+      (ProfileEditorBloc b) => b.state.persistedBanner,
+    );
+    final isUploading = context.select(
+      (ProfileEditorBloc b) =>
+          b.state.pendingBannerStatus == PendingBannerStatus.uploading,
+    );
+
+    final radius = BorderRadius.circular(16);
+    final imageUrl = (pendingUrl != null && pendingUrl.isNotEmpty)
+        ? pendingUrl
+        : (pendingColor == null &&
+              persistedBanner != null &&
+              persistedBanner.startsWith('http'))
+        ? persistedBanner
+        : null;
+
+    Widget child;
+    Key previewKey;
+    if (imageUrl != null) {
+      previewKey = const ValueKey('profile_banner_image_preview');
+      child = Semantics(
+        label: context.l10n.profileSetupBannerSectionTitle,
+        image: true,
+        child: ClipRRect(
+          borderRadius: radius,
+          child: VineCachedImage(imageUrl: imageUrl),
         ),
+      );
+    } else if (pendingColor != null) {
+      previewKey = const ValueKey('profile_banner_color_preview');
+      child = DecoratedBox(
+        decoration: BoxDecoration(
+          color: pendingColor,
+          borderRadius: radius,
+        ),
+      );
+    } else {
+      previewKey = const ValueKey('profile_banner_empty_preview');
+      child = DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.surfaceContainer,
+          borderRadius: radius,
+          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        AspectRatio(
+          key: previewKey,
+          aspectRatio: 3,
+          child: child,
+        ),
+        if (isUploading)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: VineTheme.backgroundColor.withValues(alpha: 0.6),
+                borderRadius: radius,
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: VineTheme.vineGreen,
+                  strokeWidth: 3,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 }
 
-/// Individual color swatch button.
-class _ColorSwatch extends StatelessWidget {
-  const _ColorSwatch({
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final Color? color;
-  final bool isSelected;
-  final VoidCallback onTap;
+class _BannerActionRow extends StatelessWidget {
+  const _BannerActionRow();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: color ?? VineTheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? VineTheme.whiteText : VineTheme.transparent,
-            width: 3,
+    final l10n = context.l10n;
+    final hasSelection = context.select(
+      (ProfileEditorBloc b) =>
+          (b.state.pendingBannerUrl?.isNotEmpty ?? false) ||
+          b.state.pendingBannerColor != null ||
+          (b.state.persistedBanner?.isNotEmpty ?? false),
+    );
+    final isUploading = context.select(
+      (ProfileEditorBloc b) =>
+          b.state.pendingBannerStatus == PendingBannerStatus.uploading,
+    );
+
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: isUploading ? null : () => _pickBannerImage(context),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: VineTheme.vineGreen,
+              side: const BorderSide(
+                color: VineTheme.outlineMuted,
+                width: 2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: Text(
+              l10n.profileSetupBannerUploadButton,
+              style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+            ),
           ),
         ),
-        child: color == null
-            ? const Icon(Icons.block, color: VineTheme.onSurfaceMuted, size: 20)
-            : isSelected
-            ? const Icon(Icons.check, color: VineTheme.whiteText, size: 20)
-            : null,
-      ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: (isUploading || !hasSelection)
+                ? null
+                : () => context.read<ProfileEditorBloc>().add(
+                    const ProfileBannerCleared(),
+                  ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: VineTheme.lightText,
+              side: const BorderSide(
+                color: VineTheme.outlineMuted,
+                width: 2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+            child: Text(
+              l10n.profileSetupBannerClearButton,
+              style: VineTheme.titleMediumFont(color: VineTheme.lightText),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _pickBannerImage(BuildContext context) async {
+    final editorBloc = context.read<ProfileEditorBloc>();
+    final container = ProviderScope.containerOf(context, listen: false);
+    final pk = container.read(authServiceProvider).currentPublicKeyHex;
+    if (pk == null) return;
+
+    final picker = ImagePicker();
+    XFile? picked;
+    try {
+      picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1500,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
+    } catch (e) {
+      Log.error(
+        'Banner image_picker error: $e',
+        name: 'ProfileSetupScreen',
+        category: LogCategory.ui,
+      );
+      return;
+    }
+    if (picked == null) return;
+
+    if (kIsWeb) {
+      final bytes = await picked.readAsBytes();
+      editorBloc.add(
+        ProfileBannerUploadRequested(
+          pubkey: pk,
+          bytes: bytes,
+          filename: picked.name,
+        ),
+      );
+    } else {
+      editorBloc.add(
+        ProfileBannerUploadRequested(
+          pubkey: pk,
+          file: File(picked.path),
+        ),
+      );
+    }
   }
 }
 
-/// Button to open custom color picker dialog.
-class _CustomColorButton extends StatelessWidget {
-  const _CustomColorButton({
-    required this.currentColor,
-    required this.onColorPicked,
-  });
+class _BannerColorSwatch extends StatelessWidget {
+  const _BannerColorSwatch({required this.index, required this.color});
 
-  final Color? currentColor;
-  final ValueChanged<Color?> onColorPicked;
+  final int index;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _showColorPicker(context),
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [
-              VineTheme.error,
-              VineTheme.warning,
-              VineTheme.accentYellow,
-              VineTheme.success,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: VineTheme.whiteText.withValues(alpha: 0.3)),
-        ),
-        child: const Icon(Icons.colorize, color: VineTheme.whiteText, size: 20),
-      ),
+    final isSelected = context.select(
+      (ProfileEditorBloc b) => b.state.pendingBannerColor == color,
     );
-  }
-
-  Future<void> _showColorPicker(BuildContext context) async {
-    Color pickerColor = currentColor ?? VineTheme.vineGreen;
-
-    final result = await showDialog<Color>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          context.l10n.profileSetupPickColorTitle,
-          style: const TextStyle(color: VineTheme.whiteText),
+    return Semantics(
+      button: true,
+      label: context.l10n.profileSetupBannerSectionTitle,
+      child: GestureDetector(
+        key: ValueKey('profile_banner_color_swatch_preset_$index'),
+        onTap: () => context.read<ProfileEditorBloc>().add(
+          ProfileBannerColorSelected(color),
         ),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: pickerColor,
-            onColorChanged: (color) => pickerColor = color,
-            enableAlpha: false,
-            displayThumbColor: true,
-            pickerAreaHeightPercent: 0.8,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              context.l10n.commonCancel,
-              style: const TextStyle(color: VineTheme.onSurfaceMuted),
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected ? VineTheme.whiteText : VineTheme.transparent,
+              width: 3,
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(pickerColor),
-            child: Text(
-              context.l10n.profileSetupSelectButton,
-              style: const TextStyle(color: VineTheme.vineGreen),
-            ),
-          ),
-        ],
+          child: isSelected
+              ? const Icon(Icons.check, color: VineTheme.whiteText, size: 20)
+              : null,
+        ),
       ),
     );
-
-    if (result != null) {
-      onColorPicked(result);
-    }
   }
 }
 
