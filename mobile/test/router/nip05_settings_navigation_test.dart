@@ -167,5 +167,45 @@ void main() {
       );
       expect(find.byType(Nip05SettingsView), findsOneWidget);
     });
+
+    testWidgets(
+      'popping NIP-05 settings returns to Nostr settings without trapping navigation',
+      (tester) async {
+        final container = buildContainer();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: MaterialApp.router(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: container.read(goRouterProvider),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final router = container.read(goRouterProvider);
+        router.go(NostrSettingsScreen.path);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text(l10n.nostrSettingsNip05Address));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Nip05SettingsView), findsOneWidget);
+        expect(router.canPop(), isTrue);
+
+        router.pop();
+        await tester.pumpAndSettle();
+
+        expect(
+          router.routeInformationProvider.value.uri.toString(),
+          NostrSettingsScreen.path,
+        );
+        expect(find.byType(Nip05SettingsView), findsNothing);
+        expect(find.text(l10n.nostrSettingsNip05Address), findsOneWidget);
+      },
+    );
   });
 }
