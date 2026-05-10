@@ -30,7 +30,7 @@ class AppConstants {
   ];
 
   /// Support email used by account-review and support flows.
-  static const String supportEmail = 'support@divine.video';
+  static const String supportEmail = 'contact@divine.video';
 
   // ============================================================================
   // FEED CONFIGURATION

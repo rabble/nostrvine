@@ -13410,6 +13410,90 @@ abstract class AppLocalizations {
   /// **'Waiting for recipient'**
   String get badgesRecipientWaitingStatus;
 
+  /// No description provided for @minorAccountReviewWelcomePageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Family guide'**
+  String get minorAccountReviewWelcomePageTitle;
+
+  /// No description provided for @minorAccountReviewWelcomeCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Not 16 yet? That\'s OK. Here\'s what you can do.'**
+  String get minorAccountReviewWelcomeCta;
+
+  /// No description provided for @minorAccountReviewWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not 16 yet? That\'s OK.'**
+  String get minorAccountReviewWelcomeTitle;
+
+  /// No description provided for @minorAccountReviewWelcomeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.'**
+  String get minorAccountReviewWelcomeBody;
+
+  /// No description provided for @minorAccountReviewModerationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'We need one more step'**
+  String get minorAccountReviewModerationTitle;
+
+  /// No description provided for @minorAccountReviewModerationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.'**
+  String get minorAccountReviewModerationBody;
+
+  /// No description provided for @minorAccountReviewRulesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The rules are not the same everywhere'**
+  String get minorAccountReviewRulesTitle;
+
+  /// No description provided for @minorAccountReviewRulesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.'**
+  String get minorAccountReviewRulesBody;
+
+  /// No description provided for @minorAccountReviewApproachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How Divine thinks about it'**
+  String get minorAccountReviewApproachTitle;
+
+  /// No description provided for @minorAccountReviewApproachBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.'**
+  String get minorAccountReviewApproachBody;
+
+  /// No description provided for @minorAccountReviewChooseAgeBandTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the path that fits'**
+  String get minorAccountReviewChooseAgeBandTitle;
+
+  /// No description provided for @minorAccountReviewUnder13Cta.
+  ///
+  /// In en, this message translates to:
+  /// **'Under 13: parent or guardian emails support'**
+  String get minorAccountReviewUnder13Cta;
+
+  /// No description provided for @minorAccountReviewTeenCta.
+  ///
+  /// In en, this message translates to:
+  /// **'13 to 15: parent consent video steps'**
+  String get minorAccountReviewTeenCta;
+
+  /// No description provided for @minorAccountReviewFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.'**
+  String get minorAccountReviewFooter;
+
   /// No description provided for @minorAccountReviewTitle.
   ///
   /// In en, this message translates to:
@@ -13542,11 +13626,137 @@ abstract class AppLocalizations {
   /// **'If this account belongs to someone under 13, a parent or guardian must email {supportEmail} and include the case ID.'**
   String minorAccountReviewUnder13Body(String supportEmail);
 
+  /// No description provided for @minorAccountReviewUnder13PublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Under-13 accounts'**
+  String get minorAccountReviewUnder13PublicTitle;
+
+  /// No description provided for @minorAccountReviewUnder13PublicBody.
+  ///
+  /// In en, this message translates to:
+  /// **'If this account belongs to someone under 13, a parent or guardian should email Divine so our team can review what help is available.'**
+  String get minorAccountReviewUnder13PublicBody;
+
+  /// No description provided for @minorAccountReviewUnder13EmailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Divine support'**
+  String get minorAccountReviewUnder13EmailTitle;
+
+  /// No description provided for @minorAccountReviewUnder13ParentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What the parent or guardian should include'**
+  String get minorAccountReviewUnder13ParentTitle;
+
+  /// No description provided for @minorAccountReviewUnder13ParentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.'**
+  String get minorAccountReviewUnder13ParentBody;
+
+  /// No description provided for @minorAccountReviewUnder13EmailCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Divine support'**
+  String get minorAccountReviewUnder13EmailCta;
+
+  /// No description provided for @minorAccountReviewUnder13PublicEmailSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Under-13 account review help'**
+  String get minorAccountReviewUnder13PublicEmailSubject;
+
+  /// No description provided for @minorAccountReviewUnder13PublicEmailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.'**
+  String get minorAccountReviewUnder13PublicEmailBody;
+
   /// No description provided for @minorAccountReviewTeenBody.
   ///
   /// In en, this message translates to:
   /// **'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.'**
   String get minorAccountReviewTeenBody;
+
+  /// No description provided for @minorAccountReviewParentConsentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'If the account belongs to someone 13 to 15'**
+  String get minorAccountReviewParentConsentTitle;
+
+  /// No description provided for @minorAccountReviewParentConsentBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A parent or guardian should email Divine support so we can help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, contact Divine support and let us know. Our team can review the situation and explain what to do next.'**
+  String get minorAccountReviewParentConsentBody;
+
+  /// No description provided for @minorAccountReviewParentConsentChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'What to include'**
+  String get minorAccountReviewParentConsentChecklist;
+
+  /// No description provided for @minorAccountReviewParentConsentChecklistKid.
+  ///
+  /// In en, this message translates to:
+  /// **'The teen\'s age'**
+  String get minorAccountReviewParentConsentChecklistKid;
+
+  /// No description provided for @minorAccountReviewParentConsentChecklistPermission.
+  ///
+  /// In en, this message translates to:
+  /// **'How you\'re related to them, if relevant'**
+  String get minorAccountReviewParentConsentChecklistPermission;
+
+  /// No description provided for @minorAccountReviewParentConsentChecklistSupervision.
+  ///
+  /// In en, this message translates to:
+  /// **'Any context that would help our team understand the situation'**
+  String get minorAccountReviewParentConsentChecklistSupervision;
+
+  /// No description provided for @minorAccountReviewParentConsentPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'What happens next'**
+  String get minorAccountReviewParentConsentPrivacy;
+
+  /// No description provided for @minorAccountReviewParentConsentNeverPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Our team will review the message and reply with next steps'**
+  String get minorAccountReviewParentConsentNeverPost;
+
+  /// No description provided for @minorAccountReviewParentConsentDoNotSave.
+  ///
+  /// In en, this message translates to:
+  /// **'If parent or guardian contact is not possible or would put someone at risk, say that in the email'**
+  String get minorAccountReviewParentConsentDoNotSave;
+
+  /// No description provided for @minorAccountReviewParentConsentOneMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Please don\'t post private personal details publicly in the app'**
+  String get minorAccountReviewParentConsentOneMove;
+
+  /// No description provided for @minorAccountReviewParentConsentEmailCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Email Divine support'**
+  String get minorAccountReviewParentConsentEmailCta;
+
+  /// No description provided for @minorAccountReviewParentConsentEmailSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'13-15 account review help'**
+  String get minorAccountReviewParentConsentEmailSubject;
+
+  /// No description provided for @minorAccountReviewParentConsentEmailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nThe teen\'s age:\nMy relationship to them:\nHelpful context:\n\nThanks.'**
+  String get minorAccountReviewParentConsentEmailBody;
 
   /// No description provided for @minorAccountReviewParentSupportInstructions.
   ///
@@ -13691,6 +13901,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.'**
   String get minorAccountReviewUnder13Instructions;
+
+  /// No description provided for @minorAccountReviewUnder13EmailSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Under-13 account review for case {caseId}'**
+  String minorAccountReviewUnder13EmailSubject(String caseId);
+
+  /// No description provided for @minorAccountReviewUnder13EmailBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case {caseId}.\n\nThanks.'**
+  String minorAccountReviewUnder13EmailBody(String caseId);
 
   /// No description provided for @devOptionsMinorReviewSimulationTitle.
   ///

@@ -81,7 +81,7 @@ void main() {
       when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => InviteClientConfig(
           mode: parseOnboardingMode('waitlist_only'),
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
         ),
       );
 
@@ -101,7 +101,7 @@ void main() {
         when(() => response.body).thenReturn(
           jsonEncode({
             'onboarding_mode': 'invite_code_required',
-            'support_email': 'support@divine.video',
+            'support_email': 'contact@divine.video',
           }),
         );
         when(
@@ -127,7 +127,7 @@ void main() {
       when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
         ),
       );
       when(() => mockInviteApiClient.validateCode(any())).thenAnswer(
@@ -178,7 +178,7 @@ void main() {
       when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
         ),
       );
 
@@ -231,7 +231,7 @@ void main() {
       when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
         ),
       );
       when(
@@ -306,7 +306,7 @@ void main() {
       when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
         (_) async => const InviteClientConfig(
           mode: OnboardingMode.inviteCodeRequired,
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
         ),
       );
       when(

@@ -7507,6 +7507,58 @@ class AppLocalizationsAm extends AppLocalizations {
   String get badgesRecipientWaitingStatus => 'ተቀባይን በመጠባበቅ ላይ';
 
   @override
+  String get minorAccountReviewWelcomePageTitle => 'Family guide';
+
+  @override
+  String get minorAccountReviewWelcomeCta =>
+      'Not 16 yet? That\'s OK. Here\'s what you can do.';
+
+  @override
+  String get minorAccountReviewWelcomeTitle => 'Not 16 yet? That\'s OK.';
+
+  @override
+  String get minorAccountReviewWelcomeBody =>
+      'Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.';
+
+  @override
+  String get minorAccountReviewModerationTitle => 'We need one more step';
+
+  @override
+  String get minorAccountReviewModerationBody =>
+      'We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.';
+
+  @override
+  String get minorAccountReviewRulesTitle =>
+      'The rules are not the same everywhere';
+
+  @override
+  String get minorAccountReviewRulesBody =>
+      'Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.';
+
+  @override
+  String get minorAccountReviewApproachTitle => 'How Divine thinks about it';
+
+  @override
+  String get minorAccountReviewApproachBody =>
+      'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
+
+  @override
+  String get minorAccountReviewChooseAgeBandTitle =>
+      'Choose the path that fits';
+
+  @override
+  String get minorAccountReviewUnder13Cta =>
+      'Under 13: parent or guardian emails support';
+
+  @override
+  String get minorAccountReviewTeenCta =>
+      '13 to 15: parent consent video steps';
+
+  @override
+  String get minorAccountReviewFooter =>
+      'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.';
+
+  @override
   String get minorAccountReviewTitle => 'Account Review';
 
   @override
@@ -7588,8 +7640,85 @@ class AppLocalizationsAm extends AppLocalizations {
   }
 
   @override
+  String get minorAccountReviewUnder13PublicTitle => 'Under-13 accounts';
+
+  @override
+  String get minorAccountReviewUnder13PublicBody =>
+      'If this account belongs to someone under 13, a parent or guardian should email Divine so our team can review what help is available.';
+
+  @override
+  String get minorAccountReviewUnder13EmailTitle => 'Email Divine support';
+
+  @override
+  String get minorAccountReviewUnder13ParentTitle =>
+      'What the parent or guardian should include';
+
+  @override
+  String get minorAccountReviewUnder13ParentBody =>
+      'Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.';
+
+  @override
+  String get minorAccountReviewUnder13EmailCta => 'Email Divine support';
+
+  @override
+  String get minorAccountReviewUnder13PublicEmailSubject =>
+      'Under-13 account review help';
+
+  @override
+  String get minorAccountReviewUnder13PublicEmailBody =>
+      'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.';
+
+  @override
   String get minorAccountReviewTeenBody =>
       'If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.';
+
+  @override
+  String get minorAccountReviewParentConsentTitle =>
+      'If the account belongs to someone 13 to 15';
+
+  @override
+  String get minorAccountReviewParentConsentBody =>
+      'A parent or guardian should email Divine support so we can help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, contact Divine support and let us know. Our team can review the situation and explain what to do next.';
+
+  @override
+  String get minorAccountReviewParentConsentChecklist => 'What to include';
+
+  @override
+  String get minorAccountReviewParentConsentChecklistKid => 'The teen\'s age';
+
+  @override
+  String get minorAccountReviewParentConsentChecklistPermission =>
+      'How you\'re related to them, if relevant';
+
+  @override
+  String get minorAccountReviewParentConsentChecklistSupervision =>
+      'Any context that would help our team understand the situation';
+
+  @override
+  String get minorAccountReviewParentConsentPrivacy => 'What happens next';
+
+  @override
+  String get minorAccountReviewParentConsentNeverPost =>
+      'Our team will review the message and reply with next steps';
+
+  @override
+  String get minorAccountReviewParentConsentDoNotSave =>
+      'If parent or guardian contact is not possible or would put someone at risk, say that in the email';
+
+  @override
+  String get minorAccountReviewParentConsentOneMove =>
+      'Please don\'t post private personal details publicly in the app';
+
+  @override
+  String get minorAccountReviewParentConsentEmailCta => 'Email Divine support';
+
+  @override
+  String get minorAccountReviewParentConsentEmailSubject =>
+      '13-15 account review help';
+
+  @override
+  String get minorAccountReviewParentConsentEmailBody =>
+      'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nThe teen\'s age:\nMy relationship to them:\nHelpful context:\n\nThanks.';
 
   @override
   String get minorAccountReviewParentSupportInstructions =>
@@ -7676,6 +7805,16 @@ class AppLocalizationsAm extends AppLocalizations {
   @override
   String get minorAccountReviewUnder13Instructions =>
       'Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.';
+
+  @override
+  String minorAccountReviewUnder13EmailSubject(String caseId) {
+    return 'Under-13 account review for case $caseId';
+  }
+
+  @override
+  String minorAccountReviewUnder13EmailBody(String caseId) {
+    return 'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case $caseId.\n\nThanks.';
+  }
 
   @override
   String get devOptionsMinorReviewSimulationTitle =>

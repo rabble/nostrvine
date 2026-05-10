@@ -4441,6 +4441,20 @@
   "badgesIssuedNoRecipients": "No recipients found for this award.",
   "badgesRecipientAcceptedStatus": "Accepted by recipient",
   "badgesRecipientWaitingStatus": "Waiting for recipient",
+  "minorAccountReviewWelcomePageTitle": "Family guide",
+  "minorAccountReviewWelcomeCta": "Not 16 yet? That's OK. Here's what you can do.",
+  "minorAccountReviewWelcomeTitle": "Not 16 yet? That's OK.",
+  "minorAccountReviewWelcomeBody": "Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.",
+  "minorAccountReviewModerationTitle": "We need one more step",
+  "minorAccountReviewModerationBody": "We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.",
+  "minorAccountReviewRulesTitle": "The rules are not the same everywhere",
+  "minorAccountReviewRulesBody": "Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.",
+  "minorAccountReviewApproachTitle": "How Divine thinks about it",
+  "minorAccountReviewApproachBody": "We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.",
+  "minorAccountReviewChooseAgeBandTitle": "Choose the path that fits",
+  "minorAccountReviewUnder13Cta": "Under 13: parent or guardian emails support",
+  "minorAccountReviewTeenCta": "13 to 15: parent consent video steps",
+  "minorAccountReviewFooter": "If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.",
   "minorAccountReviewTitle": "Account Review",
   "minorAccountReviewCheckingStatusTitle": "Checking account status...",
   "minorAccountReviewCheckingStatusBody": "Please wait while we confirm this account's current review status.",
@@ -4477,7 +4491,28 @@
       }
     }
   },
+  "minorAccountReviewUnder13PublicTitle": "Under-13 accounts",
+  "minorAccountReviewUnder13PublicBody": "If this account belongs to someone under 13, a parent or guardian should email Divine so our team can review what help is available.",
+  "minorAccountReviewUnder13EmailTitle": "Email Divine support",
+  "minorAccountReviewUnder13ParentTitle": "What the parent or guardian should include",
+  "minorAccountReviewUnder13ParentBody": "Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.",
+  "minorAccountReviewUnder13EmailCta": "Email Divine support",
+  "minorAccountReviewUnder13PublicEmailSubject": "Under-13 account review help",
+  "minorAccountReviewUnder13PublicEmailBody": "Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.",
   "minorAccountReviewTeenBody": "If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.",
+  "minorAccountReviewParentConsentTitle": "If the account belongs to someone 13 to 15",
+  "minorAccountReviewParentConsentBody": "A parent or guardian should email Divine support so we can help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, contact Divine support and let us know. Our team can review the situation and explain what to do next.",
+  "minorAccountReviewParentConsentChecklist": "What to include",
+  "minorAccountReviewParentConsentChecklistKid": "The teen's age",
+  "minorAccountReviewParentConsentChecklistPermission": "How you're related to them, if relevant",
+  "minorAccountReviewParentConsentChecklistSupervision": "Any context that would help our team understand the situation",
+  "minorAccountReviewParentConsentPrivacy": "What happens next",
+  "minorAccountReviewParentConsentNeverPost": "Our team will review the message and reply with next steps",
+  "minorAccountReviewParentConsentDoNotSave": "If parent or guardian contact is not possible or would put someone at risk, say that in the email",
+  "minorAccountReviewParentConsentOneMove": "Please don't post private personal details publicly in the app",
+  "minorAccountReviewParentConsentEmailCta": "Email Divine support",
+  "minorAccountReviewParentConsentEmailSubject": "13-15 account review help",
+  "minorAccountReviewParentConsentEmailBody": "Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nThe teen's age:\nMy relationship to them:\nHelpful context:\n\nThanks.",
   "minorAccountReviewParentSupportInstructions": "Parent Support Instructions",
   "minorAccountReviewContinue": "Continue",
   "minorAccountReviewErrorTitle": "We could not load your account review status.",
@@ -4516,6 +4551,22 @@
   "minorAccountReviewCaseIdCopied": "Case ID copied",
   "minorAccountReviewUnavailable": "Unavailable",
   "minorAccountReviewUnder13Instructions": "Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.",
+  "minorAccountReviewUnder13EmailSubject": "Under-13 account review for case {caseId}",
+  "@minorAccountReviewUnder13EmailSubject": {
+    "placeholders": {
+      "caseId": {
+        "type": "String"
+      }
+    }
+  },
+  "minorAccountReviewUnder13EmailBody": "Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case {caseId}.\n\nThanks.",
+  "@minorAccountReviewUnder13EmailBody": {
+    "placeholders": {
+      "caseId": {
+        "type": "String"
+      }
+    }
+  },
   "devOptionsMinorReviewSimulationTitle": "Minor Account Review Simulation",
   "devOptionsMinorReviewCurrentStateLabel": "Current state",
   "devOptionsMinorReviewStateRestricted": "Restricted ({state})",

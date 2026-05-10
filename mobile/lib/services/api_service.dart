@@ -192,8 +192,9 @@ class ApiService {
     );
 
     try {
-      final uri =
-          Uri.parse('$_baseUrl/v1/minor-review-cases/$caseId/parent-contact');
+      final uri = Uri.parse(
+        '$_baseUrl/v1/minor-review-cases/$caseId/parent-contact',
+      );
       final response = await _client
           .post(
             uri,

@@ -57,8 +57,10 @@ import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
+import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/original_sound_detail_screen.dart';
@@ -247,10 +249,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       );
 
       final isReviewRoute = location == MinorAccountReviewScreen.path;
+      final isPublicReviewRoute =
+          location == MinorAccountReviewScreen.welcomePath;
       final isReviewLoadingRoute =
           location == MinorAccountReviewLoadingScreen.path;
+      final isPublicParentConsentRoute =
+          location == MinorAccountReviewParentConsentScreen.path;
       final isParentContactRoute =
           location == MinorAccountReviewParentContactScreen.path;
+      final isPublicUnder13Route =
+          location == MinorAccountReviewUnder13Screen.path;
       final isUnder13SupportRoute =
           location == MinorAccountReviewUnder13SupportScreen.path;
       final isSupportRoute = location == SupportCenterScreen.path;
@@ -274,7 +282,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           location.startsWith(WelcomeScreen.inviteGatePath) ||
           location.startsWith(WelcomeScreen.resetPasswordPath) ||
           location.startsWith(ResetPasswordScreen.path) ||
-          location.startsWith(EmailVerificationScreen.path);
+          location.startsWith(EmailVerificationScreen.path) ||
+          isPublicReviewRoute ||
+          isPublicParentConsentRoute ||
+          isPublicUnder13Route;
 
       if (authState == AuthState.authenticated && reviewStatusAsync.isLoading) {
         if (!isReviewLoadingRoute) {
@@ -302,7 +313,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             !isParentContactRoute &&
             !isUnder13SupportRoute &&
             !isSupportRoute &&
-            !isModerationConversationRoute) {
+            !isModerationConversationRoute &&
+            !isPublicReviewRoute &&
+            !isPublicParentConsentRoute &&
+            !isPublicUnder13Route) {
           Log.info(
             'Router redirect: restricted account on $location — '
             'redirecting to ${MinorAccountReviewScreen.path}',
@@ -670,6 +684,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) => const CreatorAnalyticsScreen(),
       ),
       GoRoute(
+        path: MinorAccountReviewScreen.welcomePath,
+        name: '${MinorAccountReviewScreen.routeName}-welcome',
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const MinorAccountReviewScreen(
+          entryPoint: MinorAccountReviewEntryPoint.welcome,
+        ),
+      ),
+      GoRoute(
         path: MinorAccountReviewScreen.path,
         name: MinorAccountReviewScreen.routeName,
         parentNavigatorKey: NavigatorKeys.root,
@@ -682,10 +704,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) => const MinorAccountReviewLoadingScreen(),
       ),
       GoRoute(
+        path: MinorAccountReviewParentConsentScreen.path,
+        name: MinorAccountReviewParentConsentScreen.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const MinorAccountReviewParentConsentScreen(),
+      ),
+      GoRoute(
         path: MinorAccountReviewParentContactScreen.path,
         name: MinorAccountReviewParentContactScreen.routeName,
         parentNavigatorKey: NavigatorKeys.root,
         builder: (ctx, st) => const MinorAccountReviewParentContactScreen(),
+      ),
+      GoRoute(
+        path: MinorAccountReviewUnder13Screen.path,
+        name: MinorAccountReviewUnder13Screen.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const MinorAccountReviewUnder13Screen(),
       ),
       GoRoute(
         path: MinorAccountReviewUnder13SupportScreen.path,

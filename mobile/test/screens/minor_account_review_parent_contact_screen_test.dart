@@ -30,7 +30,7 @@ void main() {
               title: 'Account review required',
               body: 'We need parental consent information.',
             ),
-            supportEmail: 'support@divine.video',
+            supportEmail: 'contact@divine.video',
           ),
         ),
       );

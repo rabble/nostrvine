@@ -196,7 +196,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
               expanded: true,
               type: .secondary,
               label: context.l10n.authContactSupport,
-              onPressed: () => _contactSupport('support@divine.video'),
+              onPressed: () => _contactSupport('contact@divine.video'),
             ),
           );
         }

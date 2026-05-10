@@ -5,7 +5,8 @@ import 'package:openvine/constants/app_constants.dart';
 
 enum AccountRestrictionStatus {
   active,
-  restrictedMinorReview;
+  restrictedMinorReview
+  ;
 
   static AccountRestrictionStatus fromJsonValue(String? value) {
     return switch (value) {
@@ -25,7 +26,8 @@ enum MinorReviewCaseState {
   needsFollowUp,
   cleared,
   deniedClosed,
-  unknown;
+  unknown
+  ;
 
   static MinorReviewCaseState fromJsonValue(String? value) {
     return switch (value) {
@@ -47,7 +49,8 @@ enum SuspectedAgeBand {
   under13,
   age13To15,
   age16PlusClaimed,
-  unknown;
+  unknown
+  ;
 
   static SuspectedAgeBand fromJsonValue(String? value) {
     return switch (value) {
@@ -63,7 +66,8 @@ enum MinorReviewResolutionType {
   supportEmailOnly,
   parentVideoOrEmail,
   supportReviewOnly,
-  unknown;
+  unknown
+  ;
 
   static MinorReviewResolutionType fromJsonValue(String? value) {
     return switch (value) {

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/l10n/generated/app_localizations_en.dart';
+import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -38,9 +39,15 @@ void main() {
   ) async {
     final strings = AppLocalizationsEn();
     final container = ProviderContainer(
-      overrides: [authServiceProvider.overrideWithValue(authenticatedAuth())],
+      overrides: [
+        authServiceProvider.overrideWithValue(authenticatedAuth()),
+        currentMinorAccountReviewStatusProvider.overrideWith(
+          (ref) async => MinorAccountReviewStatus.active(),
+        ),
+      ],
     );
     addTearDown(container.dispose);
+    await container.read(currentMinorAccountReviewStatusProvider.future);
 
     await _pumpRouter(tester, container);
 
@@ -60,9 +67,13 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authServiceProvider.overrideWithValue(authenticatedAuth()),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
         ],
       );
       addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
 
       await _pumpRouter(tester, container);
 

@@ -30,7 +30,7 @@ void main() {
             title: 'Account review required',
             body: 'Parental consent is required.',
           ),
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
           moderationConversationPubkey: 'abc123',
         ),
       );
@@ -60,7 +60,7 @@ void main() {
               title: 'Parent support required',
               body: 'A parent must contact support.',
             ),
-            supportEmail: 'support@divine.video',
+            supportEmail: 'contact@divine.video',
           ),
         ),
       );

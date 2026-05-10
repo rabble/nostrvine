@@ -55,12 +55,13 @@ class MinorAccountReviewOverrideService {
                 MinorReviewCaseState.deniedClosed => 'denied_closed',
                 MinorReviewCaseState.unknown => 'unknown',
               },
-              'suspectedAgeBand': switch (status.currentCase!.suspectedAgeBand) {
-                SuspectedAgeBand.under13 => 'under_13',
-                SuspectedAgeBand.age13To15 => 'age_13_15',
-                SuspectedAgeBand.age16PlusClaimed => 'age_16_plus_claimed',
-                SuspectedAgeBand.unknown => 'unknown',
-              },
+              'suspectedAgeBand':
+                  switch (status.currentCase!.suspectedAgeBand) {
+                    SuspectedAgeBand.under13 => 'under_13',
+                    SuspectedAgeBand.age13To15 => 'age_13_15',
+                    SuspectedAgeBand.age16PlusClaimed => 'age_16_plus_claimed',
+                    SuspectedAgeBand.unknown => 'unknown',
+                  },
               'allowedResolution':
                   switch (status.currentCase!.allowedResolution) {
                     MinorReviewResolutionType.supportEmailOnly =>
