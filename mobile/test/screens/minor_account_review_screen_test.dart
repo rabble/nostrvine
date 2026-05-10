@@ -27,6 +27,12 @@ void main() {
 
       expect(find.text('Family guide'), findsOneWidget);
       expect(find.text("Not 16 yet? That's OK."), findsOneWidget);
+      expect(
+        find.text(
+          'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.',
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('welcome-entry back button pops to the previous screen', (

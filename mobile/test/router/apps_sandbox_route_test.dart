@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
@@ -40,6 +41,9 @@ void main() {
         ...getStandardTestOverrides(
           mockSharedPreferences: sharedPreferences,
           mockAuthService: mockAuth,
+        ),
+        currentMinorAccountReviewStatusProvider.overrideWith(
+          (ref) async => MinorAccountReviewStatus.active(),
         ),
       ],
     );
@@ -97,6 +101,9 @@ void main() {
             mockSharedPreferences: sharedPreferences,
             mockAuthService: mockAuth,
           ),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
+          ),
           nostrAppDirectoryServiceProvider.overrideWithValue(
             mockDirectoryService,
           ),
@@ -152,6 +159,9 @@ void main() {
           ...getStandardTestOverrides(
             mockSharedPreferences: sharedPreferences,
             mockAuthService: mockAuth,
+          ),
+          currentMinorAccountReviewStatusProvider.overrideWith(
+            (ref) async => MinorAccountReviewStatus.active(),
           ),
           nostrAppDirectoryServiceProvider.overrideWithValue(
             mockDirectoryService,
