@@ -11,6 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
@@ -38,6 +39,9 @@ class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
 
 class _MockInviteStatusCubit extends MockCubit<InviteStatusState>
     implements InviteStatusCubit {}
+
+class _MockDmUnreadCountCubit extends MockCubit<int>
+    implements DmUnreadCountCubit {}
 
 /// Minimal mock so the legacy RelayNotifications provider (still used for
 /// unread-count) does not start real timers or HTTP calls.
@@ -106,7 +110,11 @@ void main() {
       );
     });
 
-    Widget buildSubject({ConversationListState? state}) {
+    Widget buildSubject({
+      ConversationListState? state,
+      int dmUnreadCount = 0,
+      int notificationUnreadCount = 0,
+    }) {
       if (state != null) {
         whenListen(
           mockBloc,
@@ -125,10 +133,20 @@ void main() {
       when(() => mockInviteCubit.state).thenReturn(const InviteStatusState());
       when(mockInviteCubit.load).thenAnswer((_) async {});
 
+      final mockDmUnreadCubit = _MockDmUnreadCountCubit();
+      when(() => mockDmUnreadCubit.state).thenReturn(dmUnreadCount);
+      whenListen(
+        mockDmUnreadCubit,
+        const Stream<int>.empty(),
+        initialState: dmUnreadCount,
+      );
+
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
-          relayNotificationUnreadCountProvider.overrideWithValue(0),
+          relayNotificationUnreadCountProvider.overrideWithValue(
+            notificationUnreadCount,
+          ),
           relayNotificationsProvider.overrideWith(_MockRelayNotifications.new),
           notificationRepositoryProvider.overrideWithValue(null),
           goRouterProvider.overrideWithValue(mockGoRouter),
@@ -140,6 +158,7 @@ void main() {
               BlocProvider<ConversationListBloc>.value(value: mockBloc),
               BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
               BlocProvider<InviteStatusCubit>.value(value: mockInviteCubit),
+              BlocProvider<DmUnreadCountCubit>.value(value: mockDmUnreadCubit),
             ],
             child: const InboxView(),
           ),
@@ -154,6 +173,34 @@ void main() {
 
         expect(find.byType(InboxSegmentedToggle), findsOneWidget);
       });
+
+      testWidgets(
+        'forwards DmUnreadCountCubit state to '
+        '$InboxSegmentedToggle.messageCount',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(dmUnreadCount: 5));
+          await tester.pump();
+
+          final toggle = tester.widget<InboxSegmentedToggle>(
+            find.byType(InboxSegmentedToggle),
+          );
+          expect(toggle.messageCount, equals(5));
+        },
+      );
+
+      testWidgets(
+        'forwards relayNotificationUnreadCountProvider to '
+        '$InboxSegmentedToggle.notificationCount',
+        (tester) async {
+          await tester.pumpWidget(buildSubject(notificationUnreadCount: 7));
+          await tester.pump();
+
+          final toggle = tester.widget<InboxSegmentedToggle>(
+            find.byType(InboxSegmentedToggle),
+          );
+          expect(toggle.notificationCount, equals(7));
+        },
+      );
 
       testWidgets('renders $FollowingBar in messages tab', (tester) async {
         await tester.pumpWidget(buildSubject());
