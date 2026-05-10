@@ -42,6 +42,32 @@ void main() {
       expect(shouldSkipRouteNormalization('/video/abc123'), isFalse);
       expect(shouldSkipRouteNormalization('/home/0'), isFalse);
     });
+
+    test('skips video engagement list routes', () {
+      // parseRoute/buildRoute don't know about /likers and /reposters
+      // sub-routes, so without skipping the normalizer would rewrite them
+      // back to /video/<id> and the engagement screen would never render.
+      expect(
+        shouldSkipRouteNormalization('/video/abc123/likers'),
+        isTrue,
+      );
+      expect(
+        shouldSkipRouteNormalization('/video/abc123/reposters'),
+        isTrue,
+      );
+      expect(
+        shouldSkipRouteNormalization(
+          '/video/abc123/likers?a=34236%3Apubkey%3Adtag',
+        ),
+        isTrue,
+      );
+      expect(
+        shouldSkipRouteNormalization(
+          '/video/abc123/reposters?a=34236%3Apubkey%3Adtag',
+        ),
+        isTrue,
+      );
+    });
   });
 }
 
