@@ -125,13 +125,6 @@ class _WelcomeEntryView extends StatelessWidget {
                   onPressed: () =>
                       context.push(MinorAccountReviewParentConsentScreen.path),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  l10n.minorAccountReviewFooter,
-                  style: VineTheme.bodyMediumFont(
-                    color: VineTheme.secondaryText,
-                  ),
-                ),
               ],
             ),
           ),
