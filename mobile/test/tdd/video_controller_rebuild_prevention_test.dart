@@ -145,13 +145,4 @@ class _MockVideoController extends VideoPlayerController {
       isPlaying: isPlaying,
     );
   }
-
-  @override
-  Future<List<VideoAudioTrack>> getAudioTracks() async => const [];
-
-  @override
-  Future<void> selectAudioTrack(String trackId) async {}
-
-  @override
-  bool isAudioTrackSupportAvailable() => false;
 }

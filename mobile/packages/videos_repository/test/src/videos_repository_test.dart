@@ -3677,7 +3677,6 @@ void main() {
           );
 
           await repositoryWithApi.getPopularVideos(
-            limit: 25,
             period: LeaderboardPeriod.month,
             offset: 100,
           );

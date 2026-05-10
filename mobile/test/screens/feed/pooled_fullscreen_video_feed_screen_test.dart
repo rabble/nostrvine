@@ -607,6 +607,10 @@ void main() {
                   status: FullscreenFeedStatus.ready,
                   videos: videos,
                 ),
+                additionalOverrides: [
+                  isFeatureEnabledProvider(FeatureFlag.nativeFeedPlayer)
+                      .overrideWithValue(true),
+                ],
               ),
             );
             await tester.pump();

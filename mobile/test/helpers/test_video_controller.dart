@@ -55,15 +55,6 @@ class TestVideoPlayerController extends VideoPlayerController {
   }
 
   @override
-  Future<List<VideoAudioTrack>> getAudioTracks() async => const [];
-
-  @override
-  Future<void> selectAudioTrack(String trackId) async {}
-
-  @override
-  bool isAudioTrackSupportAvailable() => false;
-
-  @override
   Future<void> dispose() async {
     _isDisposed = true;
     _isInitialized = false;

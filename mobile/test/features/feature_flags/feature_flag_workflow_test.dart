@@ -89,13 +89,18 @@ void main() {
       expect(find.text('New Camera UI'), findsOneWidget);
 
       // Enable the new camera UI feature
-      final switches = find.byType(Switch);
-
       // Update mock to return true when getBool is called after toggle
       when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
       when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
-      await tester.tap(switches.first);
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(newCameraSwitch);
       await tester.pumpAndSettle();
 
       // Verify persistence call was made
@@ -199,9 +204,18 @@ void main() {
       await service1.initialize();
       await tester.pumpAndSettle();
 
-      // Change a flag
-      final firstSwitch = find.byType(Switch).first;
-      await tester.tap(firstSwitch);
+      // Change a flag - find the newCameraUI switch specifically
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(newCameraSwitch);
       await tester.pumpAndSettle();
 
       // Verify persistence call
@@ -394,8 +408,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Try to toggle a flag - should not crash the app but should update UI
-      final firstSwitch = find.byType(Switch).first;
-      await tester.tap(firstSwitch);
+      final newCameraSwitch = find.descendant(
+        of: find.ancestor(
+          of: find.text('New Camera UI'),
+          matching: find.byType(Card),
+        ),
+        matching: find.byType(Switch),
+      );
+      await tester.tap(newCameraSwitch);
       await tester.pumpAndSettle();
 
       // App should still be functional

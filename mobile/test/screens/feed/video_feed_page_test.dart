@@ -17,6 +17,8 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
@@ -830,7 +832,8 @@ void main() {
     late VideoFeedController videoFeedController;
     late _MockVideoVolumeCubit videoVolumeCubit;
 
-    setUp(() {
+    setUp(() async {
+      await PlayerPool.init();
       InfiniteVideoFeed.debugIsSupportedOverride = true;
       videoFeedBloc = _MockVideoFeedBloc();
       videoFeedController = _MockVideoFeedController();
@@ -859,6 +862,8 @@ void main() {
           routerLocationStreamProvider.overrideWith(
             (ref) => Stream.value('/home'),
           ),
+          isFeatureEnabledProvider(FeatureFlag.nativeFeedPlayer)
+              .overrideWithValue(true),
         ],
         home: MultiBlocProvider(
           providers: [
