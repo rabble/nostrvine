@@ -7939,36 +7939,42 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'A parent or guardian should email Divine support so we can help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, contact Divine support and let us know. Our team can review the situation and explain what to do next.';
+      'A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
 
   @override
-  String get minorAccountReviewParentConsentChecklist => 'What to include';
+  String get minorAccountReviewParentConsentChecklist =>
+      'What the video should show';
 
   @override
-  String get minorAccountReviewParentConsentChecklistKid => 'The teen\'s age';
+  String get minorAccountReviewParentConsentChecklistKid =>
+      'The teen in the video';
 
   @override
   String get minorAccountReviewParentConsentChecklistPermission =>
-      'How you\'re related to them, if relevant';
+      'A parent or guardian speaking on camera';
+
+  @override
+  String get minorAccountReviewParentConsentChecklistAgeBand =>
+      'A clear statement that the teen is 13 to 15 and has permission to use Divine';
 
   @override
   String get minorAccountReviewParentConsentChecklistSupervision =>
-      'Any context that would help our team understand the situation';
+      'A clear statement that the parent or guardian knows about the account and will supervise its use';
 
   @override
-  String get minorAccountReviewParentConsentPrivacy => 'What happens next';
+  String get minorAccountReviewParentConsentPrivacy => 'How to send it';
 
   @override
   String get minorAccountReviewParentConsentNeverPost =>
-      'Our team will review the message and reply with next steps';
+      'Attach the video when you email Divine support';
 
   @override
   String get minorAccountReviewParentConsentDoNotSave =>
-      'If parent or guardian contact is not possible or would put someone at risk, say that in the email';
+      'Keep the video private and do not post it in the app';
 
   @override
   String get minorAccountReviewParentConsentOneMove =>
-      'Please don\'t post private personal details publicly in the app';
+      'Our team will review it and reply with next steps';
 
   @override
   String get minorAccountReviewParentConsentEmailCta => 'Email Divine support';
@@ -7979,7 +7985,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentEmailBody =>
-      'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nThe teen\'s age:\nMy relationship to them:\nHelpful context:\n\nThanks.';
+      'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nHelpful context:\n\nThanks.';
 
   @override
   String get minorAccountReviewParentSupportInstructions =>

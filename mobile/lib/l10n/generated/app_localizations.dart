@@ -13713,55 +13713,61 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentBody.
   ///
   /// In en, this message translates to:
-  /// **'A parent or guardian should email Divine support so we can help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, contact Divine support and let us know. Our team can review the situation and explain what to do next.'**
+  /// **'A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.'**
   String get minorAccountReviewParentConsentBody;
 
   /// No description provided for @minorAccountReviewParentConsentChecklist.
   ///
   /// In en, this message translates to:
-  /// **'What to include'**
+  /// **'What the video should show'**
   String get minorAccountReviewParentConsentChecklist;
 
   /// No description provided for @minorAccountReviewParentConsentChecklistKid.
   ///
   /// In en, this message translates to:
-  /// **'The teen\'s age'**
+  /// **'The teen in the video'**
   String get minorAccountReviewParentConsentChecklistKid;
 
   /// No description provided for @minorAccountReviewParentConsentChecklistPermission.
   ///
   /// In en, this message translates to:
-  /// **'How you\'re related to them, if relevant'**
+  /// **'A parent or guardian speaking on camera'**
   String get minorAccountReviewParentConsentChecklistPermission;
+
+  /// No description provided for @minorAccountReviewParentConsentChecklistAgeBand.
+  ///
+  /// In en, this message translates to:
+  /// **'A clear statement that the teen is 13 to 15 and has permission to use Divine'**
+  String get minorAccountReviewParentConsentChecklistAgeBand;
 
   /// No description provided for @minorAccountReviewParentConsentChecklistSupervision.
   ///
   /// In en, this message translates to:
-  /// **'Any context that would help our team understand the situation'**
+  /// **'A clear statement that the parent or guardian knows about the account and will supervise its use'**
   String get minorAccountReviewParentConsentChecklistSupervision;
 
   /// No description provided for @minorAccountReviewParentConsentPrivacy.
   ///
   /// In en, this message translates to:
-  /// **'What happens next'**
+  /// **'How to send it'**
   String get minorAccountReviewParentConsentPrivacy;
 
   /// No description provided for @minorAccountReviewParentConsentNeverPost.
   ///
   /// In en, this message translates to:
-  /// **'Our team will review the message and reply with next steps'**
+  /// **'Attach the video when you email Divine support'**
   String get minorAccountReviewParentConsentNeverPost;
 
   /// No description provided for @minorAccountReviewParentConsentDoNotSave.
   ///
   /// In en, this message translates to:
-  /// **'If parent or guardian contact is not possible or would put someone at risk, say that in the email'**
+  /// **'Keep the video private and do not post it in the app'**
   String get minorAccountReviewParentConsentDoNotSave;
 
   /// No description provided for @minorAccountReviewParentConsentOneMove.
   ///
   /// In en, this message translates to:
-  /// **'Please don\'t post private personal details publicly in the app'**
+  /// **'Our team will review it and reply with next steps'**
   String get minorAccountReviewParentConsentOneMove;
 
   /// No description provided for @minorAccountReviewParentConsentEmailCta.
@@ -13779,7 +13785,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewParentConsentEmailBody.
   ///
   /// In en, this message translates to:
-  /// **'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nThe teen\'s age:\nMy relationship to them:\nHelpful context:\n\nThanks.'**
+  /// **'Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nI have attached a short private video that shows:\n- the teen\n- a parent or guardian speaking on camera\n- that the teen has permission to use Divine\n- that the parent or guardian knows about the account and will supervise its use\n\nHelpful context:\n\nThanks.'**
   String get minorAccountReviewParentConsentEmailBody;
 
   /// No description provided for @minorAccountReviewParentSupportInstructions.

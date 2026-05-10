@@ -48,6 +48,9 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
                         .minorAccountReviewParentConsentChecklistPermission,
                     context
                         .l10n
+                        .minorAccountReviewParentConsentChecklistAgeBand,
+                    context
+                        .l10n
                         .minorAccountReviewParentConsentChecklistSupervision,
                   ],
                 ),
