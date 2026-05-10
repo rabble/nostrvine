@@ -112,19 +112,26 @@ class _WelcomeEntryView extends StatelessWidget {
                   style: VineTheme.titleMediumFont(),
                 ),
                 const SizedBox(height: 12),
-                DivineButton(
-                  label: l10n.minorAccountReviewUnder13Cta,
-                  expanded: true,
-                  onPressed: () =>
-                      context.push(MinorAccountReviewUnder13Screen.path),
-                ),
-                const SizedBox(height: 12),
-                DivineButton(
-                  label: l10n.minorAccountReviewTeenCta,
-                  type: DivineButtonType.secondary,
-                  expanded: true,
-                  onPressed: () =>
-                      context.push(MinorAccountReviewParentConsentScreen.path),
+                Row(
+                  children: [
+                    Expanded(
+                      child: DivineButton(
+                        label: l10n.minorAccountReviewUnder13Cta,
+                        onPressed: () =>
+                            context.push(MinorAccountReviewUnder13Screen.path),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DivineButton(
+                        label: l10n.minorAccountReviewTeenCta,
+                        type: DivineButtonType.secondary,
+                        onPressed: () => context.push(
+                          MinorAccountReviewParentConsentScreen.path,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 _InfoCard(

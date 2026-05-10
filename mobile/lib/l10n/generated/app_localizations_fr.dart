@@ -7274,12 +7274,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Choose the path that fits';
 
   @override
-  String get minorAccountReviewUnder13Cta =>
-      'Under 13: parent or guardian emails support';
+  String get minorAccountReviewUnder13Cta => 'Under 13';
 
   @override
-  String get minorAccountReviewTeenCta =>
-      '13 to 15: parent or guardian contacts support';
+  String get minorAccountReviewTeenCta => 'Age 13-15';
 
   @override
   String get minorAccountReviewFamilyResourcesTitle => 'Helpful for families';
