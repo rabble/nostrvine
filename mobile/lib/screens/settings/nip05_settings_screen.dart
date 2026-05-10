@@ -20,7 +20,8 @@ const _divineVideoDomainSuffix = '.divine.video';
 
 class Nip05SettingsScreen extends ConsumerWidget {
   static const routeName = 'nip05-settings';
-  static const path = '/nostr-settings/nip05';
+  static const subpath = 'nip05';
+  static const path = '/nostr-settings/$subpath';
 
   const Nip05SettingsScreen({super.key});
 

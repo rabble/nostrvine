@@ -820,11 +820,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: NostrSettingsScreen.path,
         name: NostrSettingsScreen.routeName,
         builder: (_, _) => const NostrSettingsScreen(),
-      ),
-      GoRoute(
-        path: Nip05SettingsScreen.path,
-        name: Nip05SettingsScreen.routeName,
-        builder: (_, _) => const Nip05SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: Nip05SettingsScreen.subpath,
+            name: Nip05SettingsScreen.routeName,
+            builder: (_, _) => const Nip05SettingsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RelaySettingsScreen.path,
