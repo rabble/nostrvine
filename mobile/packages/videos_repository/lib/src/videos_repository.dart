@@ -1810,25 +1810,7 @@ class VideosRepository {
     }
 
     if (candidates.isEmpty) return null;
-
-    candidates.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final videos = <VideoEvent>[];
-    for (final event in candidates) {
-      final video = _tryParseAndFilter(
-        event,
-        permissive: true,
-        ignoreBlockFilter: true,
-      );
-      if (video != null) {
-        videos.add(video);
-      }
-    }
-    if (videos.isEmpty) return null;
-
-    final hydrated = await _hydrateVideosWithBulkStats(
-      videos,
-    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
-    return hydrated.firstOrNull;
+    return _parseAndHydrateFirstRouteVideo(candidates);
   }
 
   Future<VideoEvent?> _fetchRouteVideoByEventIdFromRelay(String eventId) async {
@@ -1842,25 +1824,7 @@ class VideosRepository {
           ),
         ])
         .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
-    if (events.isEmpty) return null;
-
-    final videos = <VideoEvent>[];
-    for (final event in events) {
-      final video = _tryParseAndFilter(
-        event,
-        permissive: true,
-        ignoreBlockFilter: true,
-      );
-      if (video != null) {
-        videos.add(video);
-      }
-    }
-    if (videos.isEmpty) return null;
-
-    final hydrated = await _hydrateVideosWithBulkStats(
-      videos,
-    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
-    return hydrated.firstOrNull;
+    return _parseAndHydrateFirstRouteVideo(events);
   }
 
   Future<VideoEvent?> _fetchVideoByStableIdFromRelay(String stableId) async {
@@ -1875,26 +1839,7 @@ class VideosRepository {
           ),
         ])
         .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
-    if (events.isEmpty) return null;
-
-    events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final videos = <VideoEvent>[];
-    for (final event in events) {
-      final video = _tryParseAndFilter(
-        event,
-        permissive: true,
-        ignoreBlockFilter: true,
-      );
-      if (video != null) {
-        videos.add(video);
-      }
-    }
-    if (videos.isEmpty) return null;
-
-    final hydrated = await _hydrateVideosWithBulkStats(
-      videos,
-    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
-    return hydrated.firstOrNull;
+    return _parseAndHydrateFirstRouteVideo(events);
   }
 
   /// Fetches a video by addressable id (`kind:pubkey:d-tag`) from relay only.
@@ -1935,26 +1880,7 @@ class VideosRepository {
           ),
         ])
         .timeout(_routeRelayTimeout, onTimeout: () => const <Event>[]);
-    if (events.isEmpty) return null;
-
-    events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final videos = <VideoEvent>[];
-    for (final event in events) {
-      final video = _tryParseAndFilter(
-        event,
-        permissive: true,
-        ignoreBlockFilter: true,
-      );
-      if (video != null) {
-        videos.add(video);
-      }
-    }
-    if (videos.isEmpty) return null;
-
-    final hydrated = await _hydrateVideosWithBulkStats(
-      videos,
-    ).timeout(_statsFetchTimeout, onTimeout: () => videos);
-    return hydrated.firstOrNull;
+    return _parseAndHydrateFirstRouteVideo(events);
   }
 
   Future<VideoEvent?> _fetchVideoFromRouteApi(
@@ -1975,7 +1901,33 @@ class VideosRepository {
     );
     if (video == null) return null;
 
-    final videos = [video];
+    return _hydrateFirstRouteVideo([video]);
+  }
+
+  Future<VideoEvent?> _parseAndHydrateFirstRouteVideo(
+    List<Event> events,
+  ) async {
+    if (events.isEmpty) return null;
+
+    events.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final videos = <VideoEvent>[];
+    for (final event in events) {
+      final video = _tryParseAndFilter(
+        event,
+        permissive: true,
+        ignoreBlockFilter: true,
+      );
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+
+    return _hydrateFirstRouteVideo(videos);
+  }
+
+  Future<VideoEvent?> _hydrateFirstRouteVideo(List<VideoEvent> videos) async {
+    if (videos.isEmpty) return null;
+
     final hydrated = await _hydrateVideosWithBulkStats(
       videos,
     ).timeout(_statsFetchTimeout, onTimeout: () => videos);
