@@ -2185,7 +2185,7 @@
   "minorAccountReviewUnder13PublicEmailBody": "Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.",
   "minorAccountReviewTeenBody": "If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.",
   "minorAccountReviewParentConsentTitle": "If the account belongs to someone 13 to 15",
-  "minorAccountReviewParentConsentBody": "A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.",
+  "minorAccountReviewParentConsentBody": "If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.",
   "minorAccountReviewParentConsentChecklist": "What the video should show",
   "minorAccountReviewParentConsentChecklistKid": "The teen in the video",
   "minorAccountReviewParentConsentChecklistPermission": "A parent or guardian speaking on camera",
