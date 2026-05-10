@@ -15,7 +15,9 @@ class VideoEditorDrawItemIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tool = context.watch<VideoEditorDrawBloc>().state.selectedTool;
+    final tool = context.select<VideoEditorDrawBloc, DrawToolType>(
+      (bloc) => bloc.state.selectedTool,
+    );
 
     final double itemFactor = switch (tool) {
       .pencil => 0,

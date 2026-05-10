@@ -141,27 +141,41 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Restore widget fields via `widget.` — same logic as before.
     final UserProfile? effectiveProfile;
     final bool isLoadingIdentity;
     if (widget.isOwnProfile) {
-      final state = context.watch<MyProfileBloc>().state;
-      effectiveProfile =
-          switch (state) {
-            MyProfileUpdated(:final profile) => profile,
-            MyProfileLoaded(:final profile) => profile,
-            MyProfileLoading(:final profile) => profile,
-            _ => null,
-          } ??
-          widget.profile;
+      // Project to (profile, isInitialOrLoading) so this widget rebuilds only
+      // when the displayed profile or the genuine "still loading" signal
+      // changes. Watching the whole state would also rebuild on isFresh /
+      // extractedUsername / verifiedClaims transitions and on the
+      // MyProfileError variant, none of which the header reads here.
+      final selection = context
+          .select<
+            MyProfileBloc,
+            ({UserProfile? profile, bool isInitialOrLoading})
+          >(
+            (bloc) {
+              final state = bloc.state;
+              return (
+                profile: switch (state) {
+                  MyProfileUpdated(:final profile) => profile,
+                  MyProfileLoaded(:final profile) => profile,
+                  MyProfileLoading(:final profile) => profile,
+                  _ => null,
+                },
+                isInitialOrLoading:
+                    state is MyProfileInitial || state is MyProfileLoading,
+              );
+            },
+          );
+      effectiveProfile = selection.profile ?? widget.profile;
       // Skeleton on the user's own profile is appropriate only while we
       // genuinely have nothing to show. As soon as a cached profile is
       // available, fall through to render the real identity. After
       // MyProfileError(notFound) the generated fallback is the truthful
       // steady state — don't skeleton it.
       isLoadingIdentity =
-          effectiveProfile == null &&
-          (state is MyProfileInitial || state is MyProfileLoading);
+          effectiveProfile == null && selection.isInitialOrLoading;
     } else if (widget.profile != null) {
       effectiveProfile = widget.profile;
       isLoadingIdentity = false;
