@@ -187,7 +187,6 @@ class _BlurhashImagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-
     // Scale the image to fit the widget size
     final src = Rect.fromLTWH(
       0,
