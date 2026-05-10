@@ -10,16 +10,10 @@ import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
 import 'package:openvine/notifications/widgets/notification_leading_type_icon.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
-
-/// Diameter of the video thumbnail on the right of the row.
-const double _thumbnailSize = 56;
+import 'package:openvine/notifications/widgets/notification_video_thumbnail.dart';
 
 /// Maximum stacked actor avatars before showing the overflow circle.
 const int _maxStackActors = 3;
-
-/// Memory-cache decode width for the thumbnail (~3.5x at 2x DPI).
-const int _thumbnailMemCacheWidth = 200;
 
 /// Displays a single video-anchored notification row.
 ///
@@ -86,8 +80,7 @@ class VideoNotificationRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _Thumbnail(
-                    key: const Key('video_notification_thumbnail'),
+                  NotificationVideoThumbnail(
                     imageUrl: notification.videoThumbnailUrl,
                     title: notification.videoTitle,
                     onTap: onThumbnailTap,
@@ -266,44 +259,4 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
     NotificationKind.mention ||
     NotificationKind.system => '',
   };
-}
-
-class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({
-    required this.imageUrl,
-    required this.title,
-    required this.onTap,
-    super.key,
-  });
-
-  final String? imageUrl;
-  final String? title;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return Semantics(
-      label: title != null
-          ? l10n.notificationsVideoThumbnailFor(title!)
-          : l10n.notificationsVideoThumbnail,
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: _thumbnailSize,
-            height: _thumbnailSize,
-            child: imageUrl != null
-                ? VineCachedImage(
-                    imageUrl: imageUrl!,
-                    memCacheWidth: _thumbnailMemCacheWidth,
-                  )
-                : const ColoredBox(color: VineTheme.cardBackground),
-          ),
-        ),
-      ),
-    );
-  }
 }

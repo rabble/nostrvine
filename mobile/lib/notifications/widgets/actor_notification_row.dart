@@ -136,7 +136,15 @@ class _NotificationContent extends StatelessWidget {
             ),
             if (_showFollowBack) ...[
               const Spacer(),
-              _FollowBackButton(onPressed: onFollowBack),
+              // Tiny variant (32px visible) so the row's trailing
+              // affordance aligns with the leading 32px type icon and
+              // the actor's 32px avatar — keeping the row's intrinsic
+              // height stable when the button shows / hides.
+              DivineButton(
+                label: l10n.notificationFollowBack,
+                onPressed: onFollowBack,
+                size: DivineButtonSize.tiny,
+              ),
             ],
           ],
         ),
@@ -237,24 +245,4 @@ String _verbFor(AppLocalizations l10n, NotificationKind type) {
     NotificationKind.comment ||
     NotificationKind.repost => '',
   };
-}
-
-/// Trailing "Follow back" button on follow-kind rows.
-///
-/// Uses [DivineButtonSize.tiny] (32px visible height) so the row's
-/// trailing affordance aligns vertically with the leading 32px type icon
-/// and the actor's 32px avatar.
-class _FollowBackButton extends StatelessWidget {
-  const _FollowBackButton({this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return DivineButton(
-      label: context.l10n.notificationFollowBack,
-      onPressed: onPressed,
-      size: DivineButtonSize.tiny,
-    );
-  }
 }

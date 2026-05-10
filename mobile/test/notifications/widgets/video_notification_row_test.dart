@@ -7,6 +7,7 @@ import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
 import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
+import 'package:openvine/notifications/widgets/notification_video_thumbnail.dart';
 import 'package:openvine/notifications/widgets/video_notification_row.dart';
 import 'package:openvine/widgets/notification_type_icon.dart';
 
@@ -199,7 +200,7 @@ void main() {
         await _pump(tester, notification: _video());
 
         expect(
-          find.byKey(const Key('video_notification_thumbnail')),
+          find.byType(NotificationVideoThumbnail),
           findsOneWidget,
         );
       });
@@ -243,7 +244,7 @@ void main() {
         );
 
         await tester.tap(
-          find.byKey(const Key('video_notification_thumbnail')),
+          find.byType(NotificationVideoThumbnail),
         );
         await tester.pump();
 

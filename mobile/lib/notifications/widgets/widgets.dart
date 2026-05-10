@@ -5,4 +5,5 @@ export 'notification_empty_state.dart';
 export 'notification_leading_type_icon.dart';
 export 'notification_list_item.dart';
 export 'notification_type_icon_spec.dart';
+export 'notification_video_thumbnail.dart';
 export 'video_notification_row.dart';
