@@ -131,9 +131,7 @@ class LikesRepository {
     if (_isDisposed || _likedIdsController.isClosed) return;
     final sortedRecords = _likeRecords.values.toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    _likedIdsController.add(
-      sortedRecords.map((r) => r.targetEventId).toList(),
-    );
+    _likedIdsController.add(sortedRecords.map((r) => r.targetEventId).toList());
   }
 
   /// Emits the current downvoted event IDs ordered by recency.
@@ -573,10 +571,7 @@ class LikesRepository {
     if (cached != null) return cached;
 
     // Query relays for count of Kind 7 reactions on this event
-    final filterByE = Filter(
-      kinds: const [EventKind.reaction],
-      e: [eventId],
-    );
+    final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
 
     int count;
 
@@ -641,10 +636,7 @@ class LikesRepository {
     if (uncachedIds.isEmpty) return counts;
 
     // Query relays for count of Kind 7 reactions on uncached events
-    final filterByE = Filter(
-      kinds: const [EventKind.reaction],
-      e: uncachedIds,
-    );
+    final filterByE = Filter(kinds: const [EventKind.reaction], e: uncachedIds);
 
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
     // So we need to fall back to querying events and counting client-side
@@ -732,10 +724,7 @@ class LikesRepository {
       return (upvotes: <String, int>{}, downvotes: <String, int>{});
     }
 
-    final filter = Filter(
-      kinds: const [EventKind.reaction],
-      e: eventIds,
-    );
+    final filter = Filter(kinds: const [EventKind.reaction], e: eventIds);
 
     final events = await _nostrClient.queryEvents([filter]);
 
@@ -863,9 +852,7 @@ class LikesRepository {
       );
 
       if (reactionEvent == null) {
-        throw const LikeFailedException(
-          'Failed to publish downvote reaction',
-        );
+        throw const LikeFailedException('Failed to publish downvote reaction');
       }
 
       _downvoteRecords[eventId] = LikeRecord(
@@ -1162,6 +1149,108 @@ class LikesRepository {
     }
   }
 
+  /// Fetch the list of pubkeys that liked the given video event.
+  ///
+  /// Queries Nostr relays for kind 7 (NIP-25) reaction events that reference
+  /// the target event via the `e` tag and (when [addressableId] is provided)
+  /// the `a` tag. Both filters are queried because clients may reference
+  /// addressable Kind 30000+ events using either form, and querying only one
+  /// would miss likers tagged with the other.
+  ///
+  /// Filters out:
+  /// - Reactions with content `'-'` (downvotes)
+  /// - Reactions deleted via Kind 5 deletion events from their author
+  ///
+  /// Pubkeys are deduplicated (a user who liked via both `e` and `a` tags
+  /// only appears once) and ordered by reaction recency, most recent first.
+  ///
+  /// Parameters:
+  /// - [eventId]: Hex event ID of the target event (required).
+  /// - [addressableId]: Optional `kind:pubkey:d-tag` for Kind 30000+ events.
+  ///
+  /// Throws [FetchLikersFailedException] if relay queries fail.
+  Future<List<String>> fetchEventLikers({
+    required String eventId,
+    String? addressableId,
+  }) async {
+    try {
+      final filterByE = Filter(kinds: const [EventKind.reaction], e: [eventId]);
+
+      final List<Event> reactions;
+      if (addressableId != null && addressableId.isNotEmpty) {
+        final filterByA = Filter(
+          kinds: const [EventKind.reaction],
+          a: [addressableId],
+        );
+        final results = await Future.wait([
+          _nostrClient.queryEvents([filterByE]),
+          _nostrClient.queryEvents([filterByA]),
+        ]);
+        reactions = [...results[0], ...results[1]];
+      } else {
+        reactions = await _nostrClient.queryEvents([filterByE]);
+      }
+
+      if (reactions.isEmpty) return <String>[];
+
+      // Deduplicate reactions by id first (the e-tag and a-tag queries can
+      // return the same event twice when both tags are present).
+      final reactionsById = <String, Event>{};
+      for (final event in reactions) {
+        reactionsById[event.id] = event;
+      }
+
+      // Fetch deletions authored by anyone who reacted, so we can drop
+      // reactions whose author later deleted them via Kind 5.
+      final reactionAuthors = reactionsById.values
+          .map((event) => event.pubkey)
+          .toSet()
+          .toList();
+      final deletionEvents = await _nostrClient.queryEvents([
+        Filter(
+          kinds: const [EventKind.eventDeletion],
+          authors: reactionAuthors,
+        ),
+      ]);
+
+      // Only honor a Kind 5 deletion when its author matches the reaction's
+      // author — otherwise anyone could suppress someone else's like by
+      // publishing a deletion that references the other user's reaction id.
+      final deletedReactionIds = <String>{};
+      for (final deletion in deletionEvents) {
+        for (final tag in deletion.tags) {
+          if (tag.length > 1 && tag[0] == 'e') {
+            final targetId = tag[1];
+            final target = reactionsById[targetId];
+            if (target != null && target.pubkey == deletion.pubkey) {
+              deletedReactionIds.add(targetId);
+            }
+          }
+        }
+      }
+
+      final survivors =
+          reactionsById.values
+              .where((event) => event.content != _downvoteContent)
+              .where((event) => !deletedReactionIds.contains(event.id))
+              .toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      final likerPubkeys = <String>[];
+      final seenPubkeys = <String>{};
+      for (final event in survivors) {
+        if (seenPubkeys.add(event.pubkey)) {
+          likerPubkeys.add(event.pubkey);
+        }
+      }
+      return likerPubkeys;
+    } catch (e) {
+      throw FetchLikersFailedException(
+        'Failed to fetch likers for event $eventId: $e',
+      );
+    }
+  }
+
   /// Builds a [LikesSyncResult] from the current in-memory cache.
   LikesSyncResult _buildSyncResult() {
     // Sort records by createdAt descending (most recent first)
@@ -1220,16 +1309,13 @@ class LikesRepository {
     // Use a deterministic subscription ID so we can unsubscribe later
     _reactionSubscriptionId = 'likes_repo_reactions_$currentUserPubkey';
 
-    final eventStream = _nostrClient.subscribe(
-      [
-        Filter(
-          authors: [currentUserPubkey],
-          kinds: const [EventKind.reaction],
-          limit: 1,
-        ),
-      ],
-      subscriptionId: _reactionSubscriptionId,
-    );
+    final eventStream = _nostrClient.subscribe([
+      Filter(
+        authors: [currentUserPubkey],
+        kinds: const [EventKind.reaction],
+        limit: 1,
+      ),
+    ], subscriptionId: _reactionSubscriptionId);
 
     _reactionSubscription = eventStream.listen(
       _processIncomingReaction,

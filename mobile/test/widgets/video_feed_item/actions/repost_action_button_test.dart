@@ -1,13 +1,16 @@
 // ABOUTME: Tests for RepostActionButton widget.
-// ABOUTME: Verifies rendering in preview mode without VideoInteractionsBloc.
+// ABOUTME: Verifies preview rendering, toggle dispatch, and the own-video
+// ABOUTME: navigation branch that opens the reposters list.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
@@ -38,29 +41,73 @@ void main() {
   Widget buildSubject({
     required VideoEvent video,
     bool isPreviewMode = false,
+    bool isOwnVideo = false,
     VideoInteractionsBloc? bloc,
     VoidCallback? onInteracted,
+    GoRouter? router,
   }) {
-    final widget = MaterialApp(
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: RepostActionButton(
-          video: video,
-          isPreviewMode: isPreviewMode,
-          onInteracted: onInteracted,
-        ),
-      ),
+    final body = RepostActionButton(
+      video: video,
+      isPreviewMode: isPreviewMode,
+      isOwnVideo: isOwnVideo,
+      onInteracted: onInteracted,
     );
+
+    final Widget app = router != null
+        ? MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          )
+        : MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: body),
+          );
 
     if (bloc != null) {
       return BlocProvider<VideoInteractionsBloc>.value(
         value: bloc,
-        child: widget,
+        child: app,
       );
     }
 
-    return widget;
+    return app;
+  }
+
+  GoRouter buildRouterCapturingNav({
+    required VideoEvent video,
+    required VideoInteractionsBloc bloc,
+    required List<String> visited,
+    bool isOwnVideo = true,
+  }) {
+    return GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => Scaffold(
+            body: BlocProvider<VideoInteractionsBloc>.value(
+              value: bloc,
+              child: RepostActionButton(
+                video: video,
+                isOwnVideo: isOwnVideo,
+              ),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/video/:eventId/reposters',
+          name: VideoEngagementListScreen.repostersRouteName,
+          builder: (context, state) {
+            final addressableId = state.uri.queryParameters['a'];
+            final query = addressableId == null ? '' : '?a=$addressableId';
+            visited.add('${state.uri.path}$query');
+            return const Scaffold(body: Text('reposters-stub'));
+          },
+        ),
+      ],
+    );
   }
 
   group(RepostActionButton, () {
@@ -161,6 +208,93 @@ void main() {
           () => mockBloc.add(const VideoInteractionsRepostToggled()),
         ).called(1);
       });
+    });
+
+    group('isOwnVideo navigates to reposters list', () {
+      late _MockVideoInteractionsBloc mockBloc;
+
+      setUp(() {
+        mockBloc = _MockVideoInteractionsBloc();
+        when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoInteractionsState(repostCount: 5));
+      });
+
+      testWidgets('does not dispatch toggle when tapped on own video', (
+        tester,
+      ) async {
+        final visited = <String>[];
+        final router = buildRouterCapturingNav(
+          video: testVideo,
+          bloc: mockBloc,
+          visited: visited,
+        );
+
+        await tester.pumpWidget(buildSubject(video: testVideo, router: router));
+        await tester.tap(find.byType(GestureDetector));
+        await tester.pumpAndSettle();
+
+        verifyNever(
+          () => mockBloc.add(const VideoInteractionsRepostToggled()),
+        );
+      });
+
+      testWidgets('navigates to reposters route with eventId path param', (
+        tester,
+      ) async {
+        final visited = <String>[];
+        final router = buildRouterCapturingNav(
+          video: testVideo,
+          bloc: mockBloc,
+          visited: visited,
+        );
+
+        await tester.pumpWidget(buildSubject(video: testVideo, router: router));
+        await tester.tap(find.byType(GestureDetector));
+        await tester.pumpAndSettle();
+
+        expect(visited, hasLength(1));
+        expect(visited.single, equals('/video/${testVideo.id}/reposters'));
+        expect(find.text('reposters-stub'), findsOneWidget);
+      });
+    });
+
+    group('long-press opens reposters list on any video', () {
+      late _MockVideoInteractionsBloc mockBloc;
+
+      setUp(() {
+        mockBloc = _MockVideoInteractionsBloc();
+        when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoInteractionsState(repostCount: 1));
+      });
+
+      testWidgets(
+        'long-press navigates to reposters route even when not own video',
+        (tester) async {
+          final visited = <String>[];
+          final router = buildRouterCapturingNav(
+            video: testVideo,
+            bloc: mockBloc,
+            visited: visited,
+            isOwnVideo: false,
+          );
+
+          await tester.pumpWidget(
+            buildSubject(video: testVideo, router: router),
+          );
+          await tester.longPress(find.byType(GestureDetector));
+          await tester.pumpAndSettle();
+
+          expect(visited, hasLength(1));
+          expect(visited.single, equals('/video/${testVideo.id}/reposters'));
+          verifyNever(
+            () => mockBloc.add(const VideoInteractionsRepostToggled()),
+          );
+        },
+      );
     });
   });
 }

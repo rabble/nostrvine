@@ -1,29 +1,26 @@
-// ABOUTME: One-row layout for VideoNotification — avatar stack on the left,
-// ABOUTME: message + timestamp in the middle, 56x56 video thumbnail on right.
+// ABOUTME: One-row layout for VideoNotification — leading 32x32 type icon,
+// ABOUTME: avatar stack + bold actor name(s) + verb + bold title +
+// ABOUTME: inline timestamp, 56x56 video thumbnail on the right.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/l10n/localized_time_formatter.dart';
 import 'package:openvine/notifications/widgets/notification_avatar_stack.dart';
-import 'package:openvine/widgets/vine_cached_image.dart';
-import 'package:time_formatter/time_formatter.dart';
-
-/// Diameter of the video thumbnail on the right of the row.
-const double _thumbnailSize = 56;
+import 'package:openvine/notifications/widgets/notification_comment_quote.dart';
+import 'package:openvine/notifications/widgets/notification_leading_type_icon.dart';
+import 'package:openvine/notifications/widgets/notification_video_thumbnail.dart';
 
 /// Maximum stacked actor avatars before showing the overflow circle.
 const int _maxStackActors = 3;
 
-/// Memory-cache decode width for the thumbnail (~3.5x at 2x DPI).
-const int _thumbnailMemCacheWidth = 200;
-
 /// Displays a single video-anchored notification row.
 ///
-/// Layout: avatar stack (left) → message + relative timestamp (center) →
-/// 56x56 rounded thumbnail (right). Tap targets are split: tap on the
-/// row body fires [onTap] (open the video), tap on the thumbnail fires
-/// [onThumbnailTap], tap on the avatar stack fires [onProfileTap].
+/// Layout: leading 32x32 type icon (left) → avatar stack + message text
+/// (center) → 56x56 rounded thumbnail (right). Tap targets are split: tap
+/// on the row body fires [onTap] (open the video), tap on the thumbnail
+/// fires [onThumbnailTap], tap on the avatar stack fires [onProfileTap].
 class VideoNotificationRow extends StatelessWidget {
   /// Creates a [VideoNotificationRow].
   const VideoNotificationRow({
@@ -49,58 +46,48 @@ class VideoNotificationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final overflowCount = notification.totalCount - notification.actors.length;
-    final firstName = notification.actors.first.displayName;
-    final othersCount = notification.totalCount - 1;
-    final message = othersCount <= 0
-        ? _verbWithActor(l10n, notification.type, firstName)
-        : '$firstName ${l10n.notificationAndConnector} '
-              '${l10n.notificationOthersCount(othersCount)} '
-              '${_verb(l10n, notification.type)}';
-
     return Material(
-      color: notification.isRead
-          ? VineTheme.backgroundColor
-          : VineTheme.cardBackground,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: onProfileTap,
-                child: NotificationAvatarStack(
-                  actors: notification.actors.take(_maxStackActors).toList(),
-                  overflowCount: overflowCount > 0 ? overflowCount : null,
-                ),
+      color: VineTheme.surfaceContainerHigh,
+      child: Semantics(
+        button: true,
+        container: true,
+        label: notification.isRead ? null : l10n.notificationsUnreadPrefix,
+        child: InkWell(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: VineTheme.outlineDisabled),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(message, style: VineTheme.bodyMediumFont()),
-                    const SizedBox(height: 4),
-                    Text(
-                      TimeFormatter.formatRelativeVerbose(
-                        notification.timestamp.millisecondsSinceEpoch ~/ 1000,
-                      ),
-                      style: VineTheme.bodySmallFont(
-                        color: VineTheme.lightText,
-                      ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  NotificationLeadingTypeIcon(
+                    type: notification.type,
+                    isRead: notification.isRead,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _NotificationContent(
+                      notification: notification,
+                      onProfileTap: onProfileTap,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  NotificationVideoThumbnail(
+                    imageUrl: notification.videoThumbnailUrl,
+                    title: notification.videoTitle,
+                    onTap: onThumbnailTap,
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              _Thumbnail(
-                key: const Key('video_notification_thumbnail'),
-                imageUrl: notification.videoThumbnailUrl,
-                title: notification.videoTitle,
-                onTap: onThumbnailTap,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -108,65 +95,168 @@ class VideoNotificationRow extends StatelessWidget {
   }
 }
 
-/// Builds the localized "{actor} {verb}" string for a single-actor row.
-String _verbWithActor(
-  AppLocalizations l10n,
-  NotificationKind type,
-  String actor,
-) {
-  return switch (type) {
-    NotificationKind.like => l10n.notificationLikedYourVideo(actor),
-    NotificationKind.likeComment => l10n.notificationLikedYourComment(actor),
-    NotificationKind.comment => l10n.notificationCommentedOnYourVideo(actor),
-    NotificationKind.repost => l10n.notificationRepostedYourVideo(actor),
-    // The repository asserts that VideoNotification.type is one of the
-    // four above; the remaining cases satisfy switch exhaustivity only.
-    NotificationKind.reply ||
-    NotificationKind.follow ||
-    NotificationKind.mention ||
-    NotificationKind.system => actor,
-  };
-}
-
-/// Returns just the verb portion (no actor name) for the multi-actor
-/// "{first} and N others {verb}" composition.
-String _verb(AppLocalizations l10n, NotificationKind type) {
-  return _verbWithActor(l10n, type, '').trimLeft();
-}
-
-class _Thumbnail extends StatelessWidget {
-  const _Thumbnail({
-    required this.imageUrl,
-    required this.title,
-    required this.onTap,
-    super.key,
+class _NotificationContent extends StatelessWidget {
+  const _NotificationContent({
+    required this.notification,
+    required this.onProfileTap,
   });
 
-  final String? imageUrl;
-  final String? title;
-  final VoidCallback onTap;
+  final VideoNotification notification;
+  final VoidCallback onProfileTap;
+
+  bool get _hasComment =>
+      notification.commentText != null && notification.commentText!.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label: title != null ? 'Video thumbnail for $title' : 'Video thumbnail',
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: SizedBox(
-            width: _thumbnailSize,
-            height: _thumbnailSize,
-            child: imageUrl != null
-                ? VineCachedImage(
-                    imageUrl: imageUrl!,
-                    memCacheWidth: _thumbnailMemCacheWidth,
-                  )
-                : const ColoredBox(color: VineTheme.cardBackground),
+    final l10n = context.l10n;
+    final overflowCount = notification.totalCount - notification.actors.length;
+    // The trailing relative timestamp anchors to the visual end of the
+    // row. When a comment quote is rendered, it goes after the quote
+    // (NotificationCommentQuote handles that inline). Without a quote,
+    // it sits at the end of the message text.
+    final relativeTime = LocalizedTimeFormatter.formatRelative(
+      l10n,
+      notification.timestamp.millisecondsSinceEpoch ~/ 1000,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          label: l10n.notificationsViewProfilesSemanticLabel,
+          child: GestureDetector(
+            onTap: onProfileTap,
+            child: NotificationAvatarStack(
+              actors: notification.actors.take(_maxStackActors).toList(),
+              overflowCount: overflowCount > 0 ? overflowCount : null,
+            ),
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        _MessageText(
+          notification: notification,
+          timestamp: _hasComment ? null : relativeTime,
+        ),
+        if (_hasComment) ...[
+          const SizedBox(height: 4),
+          NotificationCommentQuote(
+            text: notification.commentText!,
+            timestamp: relativeTime,
+          ),
+        ],
+      ],
     );
   }
+}
+
+class _MessageText extends StatelessWidget {
+  const _MessageText({required this.notification, this.timestamp});
+
+  final VideoNotification notification;
+
+  /// When non-empty, appended in muted style at the end of the message.
+  /// Pass `null` (the default) when a [NotificationCommentQuote] sits
+  /// below this widget — the quote renders the timestamp instead, so it
+  /// stays anchored to the visual end of the row.
+  final String? timestamp;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final spans = <InlineSpan>[];
+    final actors = notification.actors;
+    final type = notification.type;
+    final videoTitle = notification.videoTitle;
+    final othersCount = notification.totalCount - 1;
+
+    spans.add(
+      TextSpan(
+        text: actors.first.displayName,
+        style: VineTheme.labelLargeFont(),
+      ),
+    );
+
+    if (othersCount > 0) {
+      spans.add(
+        TextSpan(
+          text: ' ${l10n.notificationAndConnector} ',
+          style: VineTheme.bodyMediumFont(),
+        ),
+      );
+      spans.add(
+        TextSpan(
+          text: l10n.notificationOthersCount(othersCount),
+          style: VineTheme.labelLargeFont(),
+        ),
+      );
+    }
+
+    spans.add(
+      TextSpan(
+        text: ' ${_verbFor(l10n, type)}',
+        style: VineTheme.bodyMediumFont(),
+      ),
+    );
+
+    if (videoTitle != null && _typeShowsTitle(type)) {
+      spans.add(
+        TextSpan(
+          text: ' $videoTitle',
+          style: VineTheme.labelLargeFont(),
+        ),
+      );
+    }
+
+    final ts = timestamp;
+    if (ts != null && ts.isNotEmpty) {
+      spans.add(
+        TextSpan(
+          text: ' $ts',
+          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted55),
+        ),
+      );
+    }
+
+    return Text.rich(
+      TextSpan(children: spans),
+      textScaler: MediaQuery.textScalerOf(context),
+    );
+  }
+}
+
+/// Whether the row should append the bold video title after the verb.
+///
+/// `likeComment` is intentionally excluded: comment-likes are routed
+/// through `ActorNotification` and have no associated video title here;
+/// even if the dispatcher routes one to this row, suppressing the title
+/// keeps the message accurate.
+bool _typeShowsTitle(NotificationKind type) {
+  return type == NotificationKind.like ||
+      type == NotificationKind.comment ||
+      type == NotificationKind.repost;
+}
+
+/// Returns just the verb portion (no actor name) for inline composition.
+///
+/// l10n verb keys carry the actor name as a leading `{actorName}`
+/// placeholder. Calling them with an empty string and trimming the leading
+/// separator yields just the verb that the caller can prepend a bold actor
+/// span to.
+String _verbFor(AppLocalizations l10n, NotificationKind type) {
+  return switch (type) {
+    NotificationKind.like => l10n.notificationLikedYourVideo('').trimLeft(),
+    NotificationKind.likeComment =>
+      l10n.notificationLikedYourComment('').trimLeft(),
+    NotificationKind.comment =>
+      l10n.notificationCommentedOnYourVideo('').trimLeft(),
+    NotificationKind.repost =>
+      l10n.notificationRepostedYourVideo('').trimLeft(),
+    // VideoNotification asserts type ∈ {like, likeComment, comment,
+    // repost}; the remaining cases satisfy switch exhaustivity only.
+    NotificationKind.reply ||
+    NotificationKind.follow ||
+    NotificationKind.mention ||
+    NotificationKind.system => '',
+  };
 }

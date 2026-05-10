@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Meer opties",
     "videoActionHideSubtitles": "Ondertiteling verbergen",
     "videoActionShowSubtitles": "Ondertiteling tonen",
+    "videoEngagementLikersTitle": "Geliket door",
+    "videoEngagementRepostersTitle": "Gerepost door",
+    "videoEngagementLikersEmpty": "Nog geen likes",
+    "videoEngagementRepostersEmpty": "Nog geen reposts",
+    "videoEngagementLoadFailed": "Kon die lijst niet laden",
     "videoDescriptionLoops": "{count} loops",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -3536,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Overtredingen die hierboven niet staan",
     "reportLearnMoreAt": "Meer info op",
     "supportLogsSavedTo": "Logs opgeslagen in {path}",
-    "supportRevealLogsAction": "Tonen in map"
+    "supportRevealLogsAction": "Tonen in map",
+    "notificationsVideoThumbnailFor": "Videominiatuur van {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videominiatuur"
 }

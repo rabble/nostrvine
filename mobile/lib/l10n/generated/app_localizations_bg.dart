@@ -1500,6 +1500,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionShowSubtitles => 'Покажи субтитрите';
 
   @override
+  String get videoEngagementLikersTitle => 'Харесано от';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Споделено от';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Още няма харесвания';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Още няма споделяния';
+
+  @override
+  String get videoEngagementLoadFailed => 'Списъкът не можа да се зареди';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle =>
       'Отвори подробностите за видеото';
 
@@ -3998,6 +4013,14 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Преглед на профили';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Миниатюра на видео за $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Миниатюра на видео';
 
   @override
   String notificationsLoadingType(String type) {

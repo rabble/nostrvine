@@ -385,6 +385,11 @@
     "videoActionMoreOptions": "Iba pang options",
     "videoActionHideSubtitles": "Itago ang subtitles",
     "videoActionShowSubtitles": "Ipakita ang subtitles",
+    "videoEngagementLikersTitle": "Nag-like",
+    "videoEngagementRepostersTitle": "Nag-repost",
+    "videoEngagementLikersEmpty": "Wala pang nag-like",
+    "videoEngagementRepostersEmpty": "Wala pang nag-repost",
+    "videoEngagementLoadFailed": "Hindi ma-load ang listahan",
     "videoDescriptionLoops": "{count} loops",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
     "metadataBadgeNotDivine": "Hindi Divine",
@@ -2090,5 +2095,14 @@
     "profileEditGetVerifiedSubtitle": "I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.",
     "@profileEditGetVerifiedSubtitle": {
         "description": "Subtitle explaining the verified accounts call to action in the profile editor"
-    }
+    },
+    "notificationsVideoThumbnailFor": "Thumbnail ng video para sa {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Thumbnail ng video"
 }

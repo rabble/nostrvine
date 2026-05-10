@@ -297,6 +297,14 @@ class NotificationRepository {
       final titleFromNotif = group
           .map((n) => n.referencedVideoTitle)
           .firstWhere((t) => t != null && t.isNotEmpty, orElse: () => null);
+      // Carry the most-recent comment text (the same payload the bold
+      // first-actor span shows) so the row can quote it under the message
+      // text. Only meaningful for `comment` kind — likes and reposts have
+      // no body text. Reuses the same length-cap as actor-anchored
+      // comments / replies for layout safety.
+      final commentTextForRow = entry.key.kind == NotificationKind.comment
+          ? _truncateComment(group.first.content, entry.key.kind)
+          : null;
       result.add(
         VideoNotification(
           id: group.first.dedupeKey,
@@ -310,6 +318,7 @@ class NotificationRepository {
           totalCount: group.length,
           timestamp: group.first.createdAt,
           isRead: group.every((n) => n.read),
+          commentText: commentTextForRow,
         ),
       );
     }
@@ -408,6 +417,9 @@ class NotificationRepository {
         totalCount: 1,
         timestamp: raw.createdAt,
         isRead: raw.read,
+        commentText: kind == NotificationKind.comment
+            ? _truncateComment(raw.content, kind)
+            : null,
       );
     }
 

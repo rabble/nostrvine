@@ -1473,6 +1473,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionShowSubtitles => 'Visa undertexter';
 
   @override
+  String get videoEngagementLikersTitle => 'Gillat av';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Repostat av';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Inga gillningar än';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Inga reposts än';
+
+  @override
+  String get videoEngagementLoadFailed => 'Det gick inte att läsa in listan';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Öppna videodetaljer';
 
   @override
@@ -3950,6 +3965,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Visa profiler';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Videominiatyr för $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Videominiatyr';
 
   @override
   String notificationsLoadingType(String type) {

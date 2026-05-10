@@ -285,73 +285,76 @@ class _CommentHeader extends ConsumerWidget {
     final isCurrentUser =
         currentUserPubkey.isNotEmpty && currentUserPubkey == authorPubkey;
 
-    return Row(
-      spacing: 8,
-      children: [
-        UserAvatar(
-          size: avatarSize,
-          imageUrl: profile?.picture,
-          placeholderSeed: authorPubkey,
-        ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    relativeTime,
-                    style: VineTheme.labelSmallFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
-                  ),
-                  if (isCurrentUser) ...[
-                    Text(
-                      ' • ',
-                      style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceMuted,
-                      ),
-                    ),
-                    Text(
-                      'You',
-                      style: VineTheme.labelSmallFont(
-                        color: VineTheme.onSurfaceMuted,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              GestureDetector(
-                onTap: () {
-                  final npub = NostrKeyUtils.encodePubKey(authorPubkey);
-                  context.push(OtherProfileScreen.pathForNpub(npub));
-                },
-                child: profile == null
-                    ? Text(
-                        UserProfile.generatedNameFor(authorPubkey),
-                        style: const TextStyle(
-                          color: VineTheme.onSurface,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.1,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    : UserName.fromUserProfile(
-                        profile,
-                        style: const TextStyle(
-                          color: VineTheme.onSurface,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-              ),
-            ],
+    return IdentitySkeletonizer(
+      isLoading: profile == null,
+      child: Row(
+        spacing: 8,
+        children: [
+          UserAvatar(
+            size: avatarSize,
+            imageUrl: profile?.picture,
+            placeholderSeed: authorPubkey,
           ),
-        ),
-      ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      relativeTime,
+                      style: VineTheme.labelSmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                    if (isCurrentUser) ...[
+                      Text(
+                        ' • ',
+                        style: VineTheme.labelSmallFont(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
+                      ),
+                      Text(
+                        'You',
+                        style: VineTheme.labelSmallFont(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                GestureDetector(
+                  onTap: () {
+                    final npub = NostrKeyUtils.encodePubKey(authorPubkey);
+                    context.push(OtherProfileScreen.pathForNpub(npub));
+                  },
+                  child: profile == null
+                      ? Text(
+                          UserProfile.generatedNameFor(authorPubkey),
+                          style: const TextStyle(
+                            color: VineTheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.1,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      : UserName.fromUserProfile(
+                          profile,
+                          style: const TextStyle(
+                            color: VineTheme.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.1,
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

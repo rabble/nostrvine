@@ -140,7 +140,7 @@ class ConversationTile extends ConsumerWidget {
                             conversation.lastMessageContent!,
                           ),
                           style: VineTheme.bodyMediumFont(
-                            color: VineTheme.onSurfaceMuted,
+                            color: VineTheme.onSurfaceVariant,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,

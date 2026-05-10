@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Fler alternativ",
     "videoActionHideSubtitles": "Dölj undertexter",
     "videoActionShowSubtitles": "Visa undertexter",
+    "videoEngagementLikersTitle": "Gillat av",
+    "videoEngagementRepostersTitle": "Repostat av",
+    "videoEngagementLikersEmpty": "Inga gillningar än",
+    "videoEngagementRepostersEmpty": "Inga reposts än",
+    "videoEngagementLoadFailed": "Det gick inte att läsa in listan",
     "videoDescriptionLoops": "{count} loopar",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -3536,5 +3541,14 @@
     "reportReasonOtherSubtitle": "Överträdelser som inte listas ovan",
     "reportLearnMoreAt": "Läs mer på",
     "supportLogsSavedTo": "Loggar sparade i {path}",
-    "supportRevealLogsAction": "Visa i mapp"
+    "supportRevealLogsAction": "Visa i mapp",
+    "notificationsVideoThumbnailFor": "Videominiatyr för {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videominiatyr"
 }

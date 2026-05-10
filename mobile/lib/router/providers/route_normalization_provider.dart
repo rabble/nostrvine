@@ -24,7 +24,8 @@ bool shouldSkipRouteNormalization(String loc) {
       RegExp(r'^/apps/[^/]+/sandbox$').hasMatch(loc) ||
       loc.contains('${ResetPasswordScreen.path}?token=') ||
       loc.contains('${EmailVerificationScreen.path}?') ||
-      loc.startsWith(SearchResultsPage.pathPrefix)) {
+      loc.startsWith(SearchResultsPage.pathPrefix) ||
+      RegExp(r'^/video/[^/]+/(likers|reposters)(\?.*)?$').hasMatch(loc)) {
     return true;
   }
 

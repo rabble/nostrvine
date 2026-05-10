@@ -1815,6 +1815,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
         LikeActionButton(
           video: video,
           isPreviewMode: isPreviewMode,
+          isOwnVideo: isOwnVideo,
           onInteracted: onInteracted,
         ),
         CommentActionButton(
@@ -1825,6 +1826,7 @@ class VideoOverlayActionColumn extends ConsumerWidget {
         RepostActionButton(
           video: video,
           isPreviewMode: isPreviewMode,
+          isOwnVideo: isOwnVideo,
           onInteracted: onInteracted,
         ),
         ShareActionButton(video: video, onInteracted: onInteracted),

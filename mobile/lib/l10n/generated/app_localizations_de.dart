@@ -1498,6 +1498,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoActionShowSubtitles => 'Untertitel anzeigen';
 
   @override
+  String get videoEngagementLikersTitle => 'Geliket von';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Repostet von';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Noch keine Likes';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Noch keine Reposts';
+
+  @override
+  String get videoEngagementLoadFailed => 'Liste konnte nicht geladen werden';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Videodetails öffnen';
 
   @override
@@ -4002,6 +4017,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Profile öffnen';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Videovorschaubild für $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Videovorschaubild';
 
   @override
   String notificationsLoadingType(String type) {

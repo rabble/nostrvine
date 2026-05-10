@@ -1459,6 +1459,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionShowSubtitles => 'عرض الترجمات';
 
   @override
+  String get videoEngagementLikersTitle => 'أعجب به';
+
+  @override
+  String get videoEngagementRepostersTitle => 'أعاد نشره';
+
+  @override
+  String get videoEngagementLikersEmpty => 'لا توجد إعجابات بعد';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'لا توجد إعادات نشر بعد';
+
+  @override
+  String get videoEngagementLoadFailed => 'تعذّر تحميل القائمة';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'فتح تفاصيل الفيديو';
 
   @override
@@ -3911,6 +3926,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'عرض الملفات الشخصية';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'صورة مصغرة لفيديو $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'صورة مصغرة للفيديو';
 
   @override
   String notificationsLoadingType(String type) {

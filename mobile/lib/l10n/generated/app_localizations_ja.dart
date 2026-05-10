@@ -1387,6 +1387,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionShowSubtitles => '字幕を表示';
 
   @override
+  String get videoEngagementLikersTitle => 'いいねしたユーザー';
+
+  @override
+  String get videoEngagementRepostersTitle => 'リポストしたユーザー';
+
+  @override
+  String get videoEngagementLikersEmpty => 'まだいいねがありません';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'まだリポストがありません';
+
+  @override
+  String get videoEngagementLoadFailed => 'リストを読み込めませんでした';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => '動画の詳細を開く';
 
   @override
@@ -3760,6 +3775,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'プロフィールを開く';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return '$titleの動画サムネイル';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => '動画のサムネイル';
 
   @override
   String notificationsLoadingType(String type) {
