@@ -307,7 +307,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void handleVideoController([VideoFeedState? state]) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (!ownsController) return;
-    if (InfiniteVideoFeed.isSupported) return;
+    if (InfiniteVideoFeed.isSupported &&
+        ref.read(isFeatureEnabledProvider(FeatureFlag.nativeFeedPlayer))) {
+      return;
+    }
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
     if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
@@ -620,7 +623,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 onRefresh: () => _refreshFeed(context),
                 child: Stack(
                   children: [
-                    if (InfiniteVideoFeed.isSupported)
+                    if (InfiniteVideoFeed.isSupported &&
+                        ref.watch(
+                          isFeatureEnabledProvider(
+                            FeatureFlag.nativeFeedPlayer,
+                          ),
+                        ))
                       FeedVideos(
                         videos: state.videos,
                         contextTitle: state.mode.name,

@@ -382,7 +382,10 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
     if (kIsWeb) return; // Skip media_kit controller on web
     if (_controller != null) return;
-    if (InfiniteVideoFeed.isSupported) return;
+    if (InfiniteVideoFeed.isSupported &&
+        ref.read(isFeatureEnabledProvider(.nativeFeedPlayer))) {
+      return;
+    }
 
     final state = context.read<FullscreenFeedBloc>().state;
     if (!state.hasPooledVideos) return;
@@ -803,7 +806,9 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   horizontalPadding: 8,
                 ),
               ),
-              body: InfiniteVideoFeed.isSupported
+              body:
+                  InfiniteVideoFeed.isSupported &&
+                      ref.watch(isFeatureEnabledProvider(.nativeFeedPlayer))
                   ? FeedVideos(
                       key: _feedVideosKey,
                       videos: state.videos,
