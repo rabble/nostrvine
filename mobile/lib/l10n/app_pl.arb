@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Więcej opcji",
     "videoActionHideSubtitles": "Ukryj napisy",
     "videoActionShowSubtitles": "Pokaż napisy",
+    "videoEngagementLikersTitle": "Polubione przez",
+    "videoEngagementRepostersTitle": "Udostępnione przez",
+    "videoEngagementLikersEmpty": "Brak polubień",
+    "videoEngagementRepostersEmpty": "Brak udostępnień",
+    "videoEngagementLoadFailed": "Nie udało się wczytać listy",
     "videoDescriptionLoops": "{count} pętli",
     "@videoDescriptionLoops": {
         "placeholders": {

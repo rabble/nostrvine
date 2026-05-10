@@ -1499,19 +1499,19 @@ class AppLocalizationsPl extends AppLocalizations {
   String get videoActionShowSubtitles => 'Pokaż napisy';
 
   @override
-  String get videoEngagementLikersTitle => 'Liked by';
+  String get videoEngagementLikersTitle => 'Polubione przez';
 
   @override
-  String get videoEngagementRepostersTitle => 'Reposted by';
+  String get videoEngagementRepostersTitle => 'Udostępnione przez';
 
   @override
-  String get videoEngagementLikersEmpty => 'No likes yet';
+  String get videoEngagementLikersEmpty => 'Brak polubień';
 
   @override
-  String get videoEngagementRepostersEmpty => 'No reposts yet';
+  String get videoEngagementRepostersEmpty => 'Brak udostępnień';
 
   @override
-  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+  String get videoEngagementLoadFailed => 'Nie udało się wczytać listy';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => 'Otwórz szczegóły filmu';

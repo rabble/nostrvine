@@ -1503,6 +1503,21 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoActionShowSubtitles => 'Ipakita ang subtitles';
 
   @override
+  String get videoEngagementLikersTitle => 'Nag-like';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Nag-repost';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Wala pang nag-like';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Wala pang nag-repost';
+
+  @override
+  String get videoEngagementLoadFailed => 'Hindi ma-load ang listahan';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Buksan ang video details';
 
   @override

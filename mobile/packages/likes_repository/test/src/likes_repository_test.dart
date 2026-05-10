@@ -2262,6 +2262,7 @@ void main() {
         );
 
         final deletion = MockEvent();
+        when(() => deletion.pubkey).thenReturn(likerA);
         when(() => deletion.tags).thenReturn([
           ['e', 'reaction_deleted'],
         ]);
@@ -2297,6 +2298,7 @@ void main() {
           );
 
           final deletion = MockEvent();
+          when(() => deletion.pubkey).thenReturn(likerA);
           when(() => deletion.tags).thenReturn([
             ['e', 'reaction_deleted'],
           ]);
@@ -2310,6 +2312,43 @@ void main() {
           expect(await repository.fetchEventLikers(eventId: targetEventId), [
             likerA,
             likerC,
+          ]);
+        },
+      );
+
+      test(
+        'ignores Kind 5 deletions whose author does not match the reaction '
+        'author',
+        () async {
+          // likerA reacted, but likerB publishes a Kind 5 referencing likerA's
+          // reaction id. Without the same-author guard this would suppress
+          // likerA's like.
+          final reactionA = createReaction(
+            id: 'reaction_a',
+            authorPubkey: likerA,
+            createdAt: 1700000050,
+          );
+          final reactionB = createReaction(
+            id: 'reaction_b',
+            authorPubkey: likerB,
+            createdAt: 1700000100,
+          );
+
+          final spoofedDeletion = MockEvent();
+          when(() => spoofedDeletion.pubkey).thenReturn(likerB);
+          when(() => spoofedDeletion.tags).thenReturn([
+            ['e', 'reaction_a'],
+          ]);
+
+          mockQueryEventsSequence([
+            [reactionA, reactionB],
+            [spoofedDeletion],
+          ]);
+
+          repository = createRepository();
+          expect(await repository.fetchEventLikers(eventId: targetEventId), [
+            likerB,
+            likerA,
           ]);
         },
       );

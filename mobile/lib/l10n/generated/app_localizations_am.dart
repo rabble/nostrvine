@@ -1440,19 +1440,19 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionShowSubtitles => 'የትርጉም ጽሑፎችን አሳይ';
 
   @override
-  String get videoEngagementLikersTitle => 'Liked by';
+  String get videoEngagementLikersTitle => 'የወደዱት';
 
   @override
-  String get videoEngagementRepostersTitle => 'Reposted by';
+  String get videoEngagementRepostersTitle => 'እንደገና ያጋሩት';
 
   @override
-  String get videoEngagementLikersEmpty => 'No likes yet';
+  String get videoEngagementLikersEmpty => 'እስካሁን ምንም ምልክት የለም';
 
   @override
-  String get videoEngagementRepostersEmpty => 'No reposts yet';
+  String get videoEngagementRepostersEmpty => 'እስካሁን ምንም ድጋሚ ጋራ የለም';
 
   @override
-  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+  String get videoEngagementLoadFailed => 'ዝርዝሩን መጫን አልተቻለም';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => 'የቪዲዮ ዝርዝሮችን ይክፈቱ';

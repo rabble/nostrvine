@@ -1387,19 +1387,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get videoActionShowSubtitles => '字幕を表示';
 
   @override
-  String get videoEngagementLikersTitle => 'Liked by';
+  String get videoEngagementLikersTitle => 'いいねしたユーザー';
 
   @override
-  String get videoEngagementRepostersTitle => 'Reposted by';
+  String get videoEngagementRepostersTitle => 'リポストしたユーザー';
 
   @override
-  String get videoEngagementLikersEmpty => 'No likes yet';
+  String get videoEngagementLikersEmpty => 'まだいいねがありません';
 
   @override
-  String get videoEngagementRepostersEmpty => 'No reposts yet';
+  String get videoEngagementRepostersEmpty => 'まだリポストがありません';
 
   @override
-  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+  String get videoEngagementLoadFailed => 'リストを読み込めませんでした';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => '動画の詳細を開く';

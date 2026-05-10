@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Weitere Optionen",
     "videoActionHideSubtitles": "Untertitel ausblenden",
     "videoActionShowSubtitles": "Untertitel anzeigen",
+    "videoEngagementLikersTitle": "Geliket von",
+    "videoEngagementRepostersTitle": "Repostet von",
+    "videoEngagementLikersEmpty": "Noch keine Likes",
+    "videoEngagementRepostersEmpty": "Noch keine Reposts",
+    "videoEngagementLoadFailed": "Liste konnte nicht geladen werden",
     "videoDescriptionLoops": "{count} Loops",
     "@videoDescriptionLoops": {
         "placeholders": {

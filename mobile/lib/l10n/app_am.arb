@@ -694,6 +694,11 @@
     "videoActionMoreOptions": "ተጨማሪ አማራጮች",
     "videoActionHideSubtitles": "የትርጉም ጽሑፎችን ደብቅ",
     "videoActionShowSubtitles": "የትርጉም ጽሑፎችን አሳይ",
+    "videoEngagementLikersTitle": "የወደዱት",
+    "videoEngagementRepostersTitle": "እንደገና ያጋሩት",
+    "videoEngagementLikersEmpty": "እስካሁን ምንም ምልክት የለም",
+    "videoEngagementRepostersEmpty": "እስካሁን ምንም ድጋሚ ጋራ የለም",
+    "videoEngagementLoadFailed": "ዝርዝሩን መጫን አልተቻለም",
     "videoOverlayOpenMetadataFromTitle": "የቪዲዮ ዝርዝሮችን ይክፈቱ",
     "@videoOverlayOpenMetadataFromTitle": {
         "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."

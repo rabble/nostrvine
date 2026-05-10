@@ -600,6 +600,11 @@
     "videoActionMoreOptions": "خيارات إضافية",
     "videoActionHideSubtitles": "إخفاء الترجمات",
     "videoActionShowSubtitles": "عرض الترجمات",
+    "videoEngagementLikersTitle": "أعجب به",
+    "videoEngagementRepostersTitle": "أعاد نشره",
+    "videoEngagementLikersEmpty": "لا توجد إعجابات بعد",
+    "videoEngagementRepostersEmpty": "لا توجد إعادات نشر بعد",
+    "videoEngagementLoadFailed": "تعذّر تحميل القائمة",
     "videoDescriptionLoops": "{count} تكرار",
     "@videoDescriptionLoops": {
         "placeholders": {

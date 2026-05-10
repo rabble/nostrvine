@@ -1193,36 +1193,44 @@ class LikesRepository {
 
       if (reactions.isEmpty) return <String>[];
 
+      // Deduplicate reactions by id first (the e-tag and a-tag queries can
+      // return the same event twice when both tags are present).
+      final reactionsById = <String, Event>{};
+      for (final event in reactions) {
+        reactionsById[event.id] = event;
+      }
+
       // Fetch deletions authored by anyone who reacted, so we can drop
       // reactions whose author later deleted them via Kind 5.
-      final reactionAuthors = <String>{
-        for (final event in reactions) event.pubkey,
-      };
+      final reactionAuthors = reactionsById.values
+          .map((event) => event.pubkey)
+          .toSet()
+          .toList();
       final deletionEvents = await _nostrClient.queryEvents([
         Filter(
           kinds: const [EventKind.eventDeletion],
-          authors: reactionAuthors.toList(),
+          authors: reactionAuthors,
         ),
       ]);
 
+      // Only honor a Kind 5 deletion when its author matches the reaction's
+      // author — otherwise anyone could suppress someone else's like by
+      // publishing a deletion that references the other user's reaction id.
       final deletedReactionIds = <String>{};
       for (final deletion in deletionEvents) {
         for (final tag in deletion.tags) {
-          if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-            deletedReactionIds.add(tag[1]);
+          if (tag.length > 1 && tag[0] == 'e') {
+            final targetId = tag[1];
+            final target = reactionsById[targetId];
+            if (target != null && target.pubkey == deletion.pubkey) {
+              deletedReactionIds.add(targetId);
+            }
           }
         }
       }
 
-      // Deduplicate reactions by id first (the e-tag and a-tag queries can
-      // return the same event twice when both tags are present).
-      final uniqueReactions = <String, Event>{};
-      for (final event in reactions) {
-        uniqueReactions[event.id] = event;
-      }
-
       final survivors =
-          uniqueReactions.values
+          reactionsById.values
               .where((event) => event.content != _downvoteContent)
               .where((event) => !deletedReactionIds.contains(event.id))
               .toList()

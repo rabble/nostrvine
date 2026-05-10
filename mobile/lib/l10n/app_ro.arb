@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Mai multe opțiuni",
     "videoActionHideSubtitles": "Ascunde subtitrările",
     "videoActionShowSubtitles": "Arată subtitrările",
+    "videoEngagementLikersTitle": "Apreciat de",
+    "videoEngagementRepostersTitle": "Repostat de",
+    "videoEngagementLikersEmpty": "Niciun like încă",
+    "videoEngagementRepostersEmpty": "Niciun repost încă",
+    "videoEngagementLoadFailed": "Lista nu a putut fi încărcată",
     "videoDescriptionLoops": "{count} bucle",
     "@videoDescriptionLoops": {
         "placeholders": {

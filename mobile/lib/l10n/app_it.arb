@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Altre opzioni",
     "videoActionHideSubtitles": "Nascondi sottotitoli",
     "videoActionShowSubtitles": "Mostra sottotitoli",
+    "videoEngagementLikersTitle": "Piaciuto a",
+    "videoEngagementRepostersTitle": "Repostato da",
+    "videoEngagementLikersEmpty": "Ancora nessun mi piace",
+    "videoEngagementRepostersEmpty": "Ancora nessun repost",
+    "videoEngagementLoadFailed": "Impossibile caricare l'elenco",
     "videoDescriptionLoops": "{count} loop",
     "@videoDescriptionLoops": {
         "placeholders": {

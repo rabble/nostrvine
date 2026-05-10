@@ -1496,19 +1496,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get videoActionShowSubtitles => 'Mostrar subtítulos';
 
   @override
-  String get videoEngagementLikersTitle => 'Liked by';
+  String get videoEngagementLikersTitle => 'Le gustó a';
 
   @override
-  String get videoEngagementRepostersTitle => 'Reposted by';
+  String get videoEngagementRepostersTitle => 'Reposteado por';
 
   @override
-  String get videoEngagementLikersEmpty => 'No likes yet';
+  String get videoEngagementLikersEmpty => 'Aún no hay me gusta';
 
   @override
-  String get videoEngagementRepostersEmpty => 'No reposts yet';
+  String get videoEngagementRepostersEmpty => 'Aún no hay reposts';
 
   @override
-  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+  String get videoEngagementLoadFailed => 'No se pudo cargar la lista';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => 'Abrir detalles del video';

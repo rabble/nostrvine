@@ -600,6 +600,11 @@
     "videoActionMoreOptions": "Daha fazla seçenek",
     "videoActionHideSubtitles": "Altyazıları gizle",
     "videoActionShowSubtitles": "Altyazıları göster",
+    "videoEngagementLikersTitle": "Beğenenler",
+    "videoEngagementRepostersTitle": "Repost edenler",
+    "videoEngagementLikersEmpty": "Henüz beğeni yok",
+    "videoEngagementRepostersEmpty": "Henüz repost yok",
+    "videoEngagementLoadFailed": "Liste yüklenemedi",
     "videoDescriptionLoops": "{count} döngü",
     "@videoDescriptionLoops": {
         "placeholders": {

@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Plus d'options",
     "videoActionHideSubtitles": "Masquer les sous-titres",
     "videoActionShowSubtitles": "Afficher les sous-titres",
+    "videoEngagementLikersTitle": "Aimé par",
+    "videoEngagementRepostersTitle": "Reposté par",
+    "videoEngagementLikersEmpty": "Aucun j'aime pour l'instant",
+    "videoEngagementRepostersEmpty": "Aucun repost pour l'instant",
+    "videoEngagementLoadFailed": "Impossible de charger la liste",
     "videoDescriptionLoops": "{count} loops",
     "@videoDescriptionLoops": {
         "placeholders": {

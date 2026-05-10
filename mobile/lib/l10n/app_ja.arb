@@ -600,6 +600,11 @@
     "videoActionMoreOptions": "その他のオプション",
     "videoActionHideSubtitles": "字幕を隠す",
     "videoActionShowSubtitles": "字幕を表示",
+    "videoEngagementLikersTitle": "いいねしたユーザー",
+    "videoEngagementRepostersTitle": "リポストしたユーザー",
+    "videoEngagementLikersEmpty": "まだいいねがありません",
+    "videoEngagementRepostersEmpty": "まだリポストがありません",
+    "videoEngagementLoadFailed": "リストを読み込めませんでした",
     "videoDescriptionLoops": "{count}ループ",
     "@videoDescriptionLoops": {
         "placeholders": {

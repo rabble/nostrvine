@@ -1459,19 +1459,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get videoActionShowSubtitles => 'عرض الترجمات';
 
   @override
-  String get videoEngagementLikersTitle => 'Liked by';
+  String get videoEngagementLikersTitle => 'أعجب به';
 
   @override
-  String get videoEngagementRepostersTitle => 'Reposted by';
+  String get videoEngagementRepostersTitle => 'أعاد نشره';
 
   @override
-  String get videoEngagementLikersEmpty => 'No likes yet';
+  String get videoEngagementLikersEmpty => 'لا توجد إعجابات بعد';
 
   @override
-  String get videoEngagementRepostersEmpty => 'No reposts yet';
+  String get videoEngagementRepostersEmpty => 'لا توجد إعادات نشر بعد';
 
   @override
-  String get videoEngagementLoadFailed => 'Couldn\'t load that list';
+  String get videoEngagementLoadFailed => 'تعذّر تحميل القائمة';
 
   @override
   String get videoOverlayOpenMetadataFromTitle => 'فتح تفاصيل الفيديو';

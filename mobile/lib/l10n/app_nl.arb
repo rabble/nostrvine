@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Meer opties",
     "videoActionHideSubtitles": "Ondertiteling verbergen",
     "videoActionShowSubtitles": "Ondertiteling tonen",
+    "videoEngagementLikersTitle": "Geliket door",
+    "videoEngagementRepostersTitle": "Gerepost door",
+    "videoEngagementLikersEmpty": "Nog geen likes",
+    "videoEngagementRepostersEmpty": "Nog geen reposts",
+    "videoEngagementLoadFailed": "Kon die lijst niet laden",
     "videoDescriptionLoops": "{count} loops",
     "@videoDescriptionLoops": {
         "placeholders": {

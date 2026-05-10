@@ -643,6 +643,11 @@
     "videoActionMoreOptions": "Още опции",
     "videoActionHideSubtitles": "Скрий субтитрите",
     "videoActionShowSubtitles": "Покажи субтитрите",
+    "videoEngagementLikersTitle": "Харесано от",
+    "videoEngagementRepostersTitle": "Споделено от",
+    "videoEngagementLikersEmpty": "Още няма харесвания",
+    "videoEngagementRepostersEmpty": "Още няма споделяния",
+    "videoEngagementLoadFailed": "Списъкът не можа да се зареди",
     "videoOverlayOpenMetadataFromTitle": "Отвори подробностите за видеото",
     "@videoOverlayOpenMetadataFromTitle": {
         "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."

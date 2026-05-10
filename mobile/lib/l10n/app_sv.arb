@@ -603,6 +603,11 @@
     "videoActionMoreOptions": "Fler alternativ",
     "videoActionHideSubtitles": "Dölj undertexter",
     "videoActionShowSubtitles": "Visa undertexter",
+    "videoEngagementLikersTitle": "Gillat av",
+    "videoEngagementRepostersTitle": "Repostat av",
+    "videoEngagementLikersEmpty": "Inga gillningar än",
+    "videoEngagementRepostersEmpty": "Inga reposts än",
+    "videoEngagementLoadFailed": "Det gick inte att läsa in listan",
     "videoDescriptionLoops": "{count} loopar",
     "@videoDescriptionLoops": {
         "placeholders": {

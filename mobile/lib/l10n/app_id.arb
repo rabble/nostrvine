@@ -600,6 +600,11 @@
     "videoActionMoreOptions": "Opsi lainnya",
     "videoActionHideSubtitles": "Sembunyikan subtitle",
     "videoActionShowSubtitles": "Tampilkan subtitle",
+    "videoEngagementLikersTitle": "Disukai oleh",
+    "videoEngagementRepostersTitle": "Direpost oleh",
+    "videoEngagementLikersEmpty": "Belum ada suka",
+    "videoEngagementRepostersEmpty": "Belum ada repost",
+    "videoEngagementLoadFailed": "Tidak dapat memuat daftar",
     "videoDescriptionLoops": "{count} loop",
     "@videoDescriptionLoops": {
         "placeholders": {
