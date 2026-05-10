@@ -16,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -614,7 +615,9 @@ void main() {
         await tester.pump();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.profileEditPublicKeyLink));
+        final linkFinder = find.text(l10n.profileEditPublicKeyLink);
+        await tester.ensureVisible(linkFinder);
+        await tester.tap(linkFinder);
         await tester.pumpAndSettle();
 
         expect(find.byType(KeyManagementScreen), findsOneWidget);

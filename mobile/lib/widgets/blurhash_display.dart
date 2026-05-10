@@ -32,6 +32,7 @@ class BlurhashDisplay extends StatefulWidget {
 
 class _BlurhashDisplayState extends State<BlurhashDisplay> {
   BlurhashData? _blurhashData;
+  Future<ui.Image?>? _imageFuture;
 
   @override
   void initState() {
@@ -59,8 +60,16 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
       final data = BlurhashService.decodeBlurhash(hash);
 
       if (mounted && data != null) {
+        // Cache the decode future so its identity stays stable across parent
+        // rebuilds — otherwise FutureBuilder restarts the decode and re-shows
+        // the gradient fallback every time the surrounding tree rebuilds. #4196
+        final pixels = data.pixels;
+        final imageFuture = pixels != null
+            ? _createImageFromPixels(pixels, data.width, data.height)
+            : null;
         setState(() {
           _blurhashData = data;
+          _imageFuture = imageFuture;
         });
       }
     } catch (e) {
@@ -75,20 +84,19 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
   @override
   Widget build(BuildContext context) {
     // Use actual decoded image if available
-    if (_blurhashData?.pixels != null) {
+    final imageFuture = _imageFuture;
+    if (imageFuture != null) {
       return FutureBuilder<ui.Image?>(
-        future: _createImageFromPixels(
-          _blurhashData!.pixels!,
-          _blurhashData!.width,
-          _blurhashData!.height,
-        ),
+        future: imageFuture,
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
-            return CustomPaint(
-              painter: _BlurhashImagePainter(snapshot.data!),
-              size: Size(
-                widget.width ?? double.infinity,
-                widget.height ?? double.infinity,
+            return RepaintBoundary(
+              child: CustomPaint(
+                painter: _BlurhashImagePainter(snapshot.data!),
+                size: Size(
+                  widget.width ?? double.infinity,
+                  widget.height ?? double.infinity,
+                ),
               ),
             );
           }
@@ -175,11 +183,10 @@ class _BlurhashImagePainter extends CustomPainter {
   _BlurhashImagePainter(this.image);
 
   final ui.Image image;
+  final _paint = Paint()..filterQuality = FilterQuality.low;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..filterQuality = FilterQuality.low;
-
     // Scale the image to fit the widget size
     final src = Rect.fromLTWH(
       0,
@@ -189,7 +196,7 @@ class _BlurhashImagePainter extends CustomPainter {
     );
     final dst = Rect.fromLTWH(0, 0, size.width, size.height);
 
-    canvas.drawImageRect(image, src, dst, paint);
+    canvas.drawImageRect(image, src, dst, _paint);
   }
 
   @override

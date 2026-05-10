@@ -27,3 +27,4 @@ dependencies:
   nostr_sdk:
   unified_logger:
     path: ../unified_logger
+  verifier_client:

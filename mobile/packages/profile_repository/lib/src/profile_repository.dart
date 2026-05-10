@@ -27,6 +27,11 @@ const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 // platform's TCP timeout (~20s on Android).
 const _nameServerHttpTimeout = Duration(seconds: 10);
 
+// Caps the relay seed fetch in saveProfileEvent so a slow relay does not
+// stall Save indefinitely. On timeout we fall back to currentProfile,
+// which still carries the typed REST fields after #4175.
+const _publishSeedRelayTimeout = Duration(seconds: 4);
+
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
@@ -517,34 +522,52 @@ class ProfileRepository {
         nip05 ??
         (username != null ? '_@${username.toLowerCase()}.divine.video' : null);
 
-    // Funnelcake REST API profiles have rawData: {} but nip05 populated on
-    // the object. Fall back to the field so a profile round-trip through the
-    // REST API doesn't silently drop the verified handle from the Kind 0.
-    final existingNip05 =
-        (currentProfile?.rawData.containsKey('nip05') ?? false)
-        ? null // rawData has it; the spread below carries it through
-        : currentProfile?.nip05;
-    final effectiveNip05 = resolvedNip05 ?? existingNip05;
+    // Re-seed from the freshest Kind 0 we can get from relays. This is the
+    // only path that preserves arbitrary unknown fields (custom client keys,
+    // NIP-39 `i` tags, `bot`, future NIP additions) — the REST API does not
+    // expose them. Falls back to currentProfile on relay failure / timeout;
+    // currentProfile.rawData carries the typed REST fields per
+    // UserProfile.fromUserProfileFound.
+    final seed = await _resolvePublishSeed(currentProfile);
 
-    final profileContent = {
-      if (currentProfile != null) ...currentProfile.rawData,
-      'display_name': displayName,
-      'about': about,
-      'nip05': ?effectiveNip05,
-      'picture': picture,
-      'banner': banner,
-    };
+    final newContent = Map<String, dynamic>.from(seed?.rawData ?? const {});
 
-    // When the user explicitly removes their NIP-05 (no username, no external
-    // NIP-05), remove the key so the rawData spread does not preserve the old
-    // value.
-    if (clearNip05 && resolvedNip05 == null) {
-      profileContent.remove('nip05');
+    // Editable fields — caller's value is authoritative. Empty / null means
+    // "user cleared this field" → remove the key. The form pre-populates
+    // these fields so the user sees what they're editing; an empty submit
+    // is intentional.
+    newContent['display_name'] = displayName;
+    if (about != null && about.isNotEmpty) {
+      newContent['about'] = about;
+    } else {
+      newContent.remove('about');
+    }
+    if (picture != null && picture.isNotEmpty) {
+      newContent['picture'] = picture;
+    } else {
+      newContent.remove('picture');
+    }
+    if (banner != null && banner.isNotEmpty) {
+      newContent['banner'] = banner;
+    } else {
+      newContent.remove('banner');
     }
 
-    final result = await _nostrClient.sendProfile(
-      profileContent: profileContent,
-    );
+    // nip05 keeps the race-protected clear semantics from #4022:
+    // an empty/null `effectiveNip05` only REMOVES the key when the caller
+    // sets `clearNip05: true`. Otherwise the seed's nip05 (if any) survives.
+    final effectiveNip05 = resolvedNip05;
+    if (effectiveNip05 != null && effectiveNip05.isNotEmpty) {
+      newContent['nip05'] = effectiveNip05;
+    } else if (clearNip05) {
+      newContent.remove('nip05');
+    }
+
+    // Every other key — lud16, lud06, website, bot, NIP-39 `i` tags,
+    // custom client fields, future NIPs — flows through from the seed
+    // untouched. Adding new editable fields here MUST keep that invariant.
+
+    final result = await _nostrClient.sendProfile(profileContent: newContent);
 
     // Switch exhaustively over the typed result — no post-failure
     // connectedRelays snapshot needed.
@@ -574,6 +597,39 @@ class ProfileRepository {
           'Failed to publish profile. Please try again.',
         );
     }
+  }
+
+  /// Picks the freshest available [UserProfile] to seed a [saveProfileEvent]
+  /// publish from. Prefers a relay-fetched Kind 0 (which carries the full
+  /// raw event content as `rawData`) over [currentProfile] (which may have
+  /// been hydrated from the Funnelcake REST API and is missing keys the
+  /// REST schema does not expose).
+  ///
+  /// Returns [currentProfile] unchanged when:
+  /// - we have no pubkey to fetch with (cold publish, never published),
+  /// - the relay fetch returns null (its documented failure mode — internal
+  ///   errors are swallowed by [fetchFreshProfile]),
+  /// - the relay fetch exceeds [_publishSeedRelayTimeout],
+  /// - the relay event is older than [currentProfile] AND its rawData is no
+  ///   richer (i.e., currentProfile is already authoritative).
+  Future<UserProfile?> _resolvePublishSeed(UserProfile? currentProfile) async {
+    if (currentProfile == null) {
+      return null;
+    }
+    final fresh = await fetchFreshProfile(
+      pubkey: currentProfile.pubkey,
+    ).timeout(_publishSeedRelayTimeout, onTimeout: () => null);
+    if (fresh == null) {
+      return currentProfile;
+    }
+    // Prefer fresh when it is newer or when currentProfile's rawData is
+    // sparse (REST-sourced) — the latter case is exactly the
+    // arbitrary-fields-loss bug this seed step exists to fix.
+    if (fresh.createdAt.isAfter(currentProfile.createdAt) ||
+        currentProfile.rawData.length < fresh.rawData.length) {
+      return fresh;
+    }
+    return currentProfile;
   }
 
   /// Claims a username via NIP-98 authenticated request.

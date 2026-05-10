@@ -107,6 +107,9 @@ void main() {
       final profileSetupSource = File(
         'lib/screens/profile_setup_screen.dart',
       ).readAsStringSync();
+      final usernameStatusIndicatorSource = File(
+        'lib/widgets/profile_editor/username_status_indicator.dart',
+      ).readAsStringSync();
       final categoryGallerySource = File(
         'lib/screens/category_gallery_screen.dart',
       ).readAsStringSync();
@@ -171,7 +174,14 @@ void main() {
       expect(profileSetupSource, contains('context.l10n.profileSetupBioHint'));
       expect(profileSetupSource, contains('profileSetupUsernameHint'));
       expect(profileSetupSource, contains('profileSetupUsernameLabel'));
-      expect(profileSetupSource, contains('profileSetupUsernameChecking'));
+      expect(
+        usernameStatusIndicatorSource,
+        contains('profileSetupUsernameChecking'),
+      );
+      expect(
+        usernameStatusIndicatorSource,
+        contains('profileSetupUsernameAvailable'),
+      );
 
       expect(categoryGallerySource, isNot(contains("'Hot'")));
       expect(categoryGallerySource, isNot(contains("'For You'")));

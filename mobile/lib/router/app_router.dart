@@ -23,6 +23,7 @@ import 'package:openvine/screens/apps/app_detail_screen.dart';
 import 'package:openvine/screens/apps/apps_directory_screen.dart';
 import 'package:openvine/screens/apps/apps_permissions_screen.dart';
 import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
@@ -68,6 +69,7 @@ import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -757,6 +759,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: WebIframeSandboxScreen.path,
+        name: WebIframeSandboxScreen.routeName,
+        builder: (_, state) {
+          final app = state.extra is NostrAppDirectoryEntry
+              ? state.extra! as NostrAppDirectoryEntry
+              : null;
+          if (app == null) {
+            // No NostrAppDirectoryEntry passed in — bounce to the apps
+            // directory. The web iframe screen needs the entry's
+            // launchUrl + origin, which we can't reconstruct from the
+            // path parameter alone.
+            return const SizedBox.shrink();
+          }
+          return WebIframeSandboxScreen(app: app);
+        },
+      ),
+      GoRoute(
         path: AppDetailScreen.path,
         name: AppDetailScreen.routeName,
         builder: (_, state) {
@@ -801,6 +820,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: NostrSettingsScreen.path,
         name: NostrSettingsScreen.routeName,
         builder: (_, _) => const NostrSettingsScreen(),
+        routes: [
+          GoRoute(
+            path: Nip05SettingsScreen.subpath,
+            name: Nip05SettingsScreen.routeName,
+            builder: (_, _) => const Nip05SettingsScreen(),
+          ),
+        ],
       ),
       GoRoute(
         path: RelaySettingsScreen.path,

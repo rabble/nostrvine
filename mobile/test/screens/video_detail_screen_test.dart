@@ -14,6 +14,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
@@ -105,7 +106,7 @@ void main() {
     }
 
     group('loading state', () {
-      testWidgets('renders $CircularProgressIndicator while fetching video', (
+      testWidgets('renders $BrandedLoadingIndicator while fetching video', (
         tester,
       ) async {
         // fetchVideoWithStatsForRouteId stays pending
@@ -116,7 +117,8 @@ void main() {
 
         await tester.pumpWidget(buildSubject());
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
       });
     });
 
@@ -394,7 +396,7 @@ void main() {
           await tester.pumpWidget(buildSubject(videoId: 'cold_start_video'));
           await tester.pump();
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
           expect(find.text('Video not found'), findsNothing);
 
           isInitialized = true;

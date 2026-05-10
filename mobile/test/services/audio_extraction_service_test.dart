@@ -138,12 +138,12 @@ void main() {
 
     test('toString includes cause when present', () {
       const exception = AudioExtractionException(
-        'FFmpeg failed',
+        'Audio extraction failed',
         cause: 'Error: No audio stream found',
       );
 
       final str = exception.toString();
-      expect(str, contains('FFmpeg failed'));
+      expect(str, contains('Audio extraction failed'));
       expect(str, contains('caused by:'));
       expect(str, contains('No audio stream found'));
     });

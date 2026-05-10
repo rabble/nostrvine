@@ -432,6 +432,238 @@ void main() {
       });
     });
 
+    group('getLeaderboardVideos', () {
+      const responseBody =
+          '''
+{
+  "period": "week",
+  "entries": [
+    {
+      "id": "abc123",
+      "pubkey": "$testPubkey",
+      "kind": 34236,
+      "d_tag": "leader-1",
+      "title": "Top of the Week",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "author_name": "Alice",
+      "author_avatar": "https://example.com/alice.jpg",
+      "views": 50000,
+      "unique_viewers": 25000,
+      "loops": 37500
+    }
+  ]
+}
+''';
+
+      test('returns parsed videos from the entries field', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(responseBody, 200));
+
+        final videos = await client.getLeaderboardVideos(
+          period: LeaderboardPeriod.week,
+        );
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('abc123'));
+        expect(videos.first.title, equals('Top of the Week'));
+        expect(videos.first.views, equals(50000));
+        expect(videos.first.loops, equals(37500));
+      });
+
+      test(
+        'constructs URL /api/leaderboard/videos?period=week&limit=50',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('{"period":"week","entries":[]}', 200),
+          );
+
+          await client.getLeaderboardVideos(period: LeaderboardPeriod.week);
+
+          final captured = verify(
+            () => mockHttpClient.get(
+              captureAny(),
+              headers: any(named: 'headers'),
+            ),
+          ).captured;
+          final uri = captured.first as Uri;
+          expect(uri.path, equals('/api/leaderboard/videos'));
+          expect(uri.queryParameters['period'], equals('week'));
+          expect(uri.queryParameters['limit'], equals('50'));
+          expect(uri.queryParameters.containsKey('offset'), isFalse);
+        },
+      );
+
+      test('passes period=alltime when period is alltime', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('{"period":"alltime","entries":[]}', 200),
+        );
+
+        await client.getLeaderboardVideos(period: LeaderboardPeriod.alltime);
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+        expect(uri.queryParameters['period'], equals('alltime'));
+      });
+
+      test('passes day (not today) on the wire', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('{"period":"day","entries":[]}', 200),
+        );
+
+        await client.getLeaderboardVideos(period: LeaderboardPeriod.day);
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+        expect(uri.queryParameters['period'], equals('day'));
+      });
+
+      test('includes offset when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('{"period":"week","entries":[]}', 200),
+        );
+
+        await client.getLeaderboardVideos(
+          period: LeaderboardPeriod.week,
+          limit: 25,
+          offset: 50,
+        );
+
+        final uri =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+        expect(uri.queryParameters['limit'], equals('25'));
+        expect(uri.queryParameters['offset'], equals('50'));
+      });
+
+      test('filters out entries with empty id or video_url', () async {
+        const bodyWithJunk =
+            '''
+{
+  "period": "week",
+  "entries": [
+    {"id": "", "pubkey": "$testPubkey", "kind": 34236, "title": "no id",
+     "thumbnail": "x", "video_url": "https://x", "d_tag": "x"},
+    {"id": "no-url", "pubkey": "$testPubkey", "kind": 34236,
+     "title": "empty url",
+     "thumbnail": "x", "video_url": "", "d_tag": "x"},
+    {"id": "good", "pubkey": "$testPubkey", "kind": 34236, "title": "valid",
+     "thumbnail": "x", "video_url": "https://x", "d_tag": "x"}
+  ]
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(bodyWithJunk, 200));
+
+        final videos = await client.getLeaderboardVideos(
+          period: LeaderboardPeriod.week,
+        );
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('good'));
+      });
+
+      test('returns empty list when entries field is missing', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('{"period":"week"}', 200),
+        );
+
+        final videos = await client.getLeaderboardVideos(
+          period: LeaderboardPeriod.week,
+        );
+
+        expect(videos, isEmpty);
+      });
+
+      test(
+        'returns empty list when response body is not a JSON object',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response('[]', 200));
+
+          final videos = await client.getLeaderboardVideos(
+            period: LeaderboardPeriod.week,
+          );
+
+          expect(videos, isEmpty);
+        },
+      );
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.getLeaderboardVideos(
+            period: LeaderboardPeriod.week,
+          ),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeApiException on non-200 status', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('boom', 502));
+
+        expect(
+          () => client.getLeaderboardVideos(period: LeaderboardPeriod.week),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(502),
+            ),
+          ),
+        );
+      });
+
+      test('throws FunnelcakeTimeoutException on TimeoutException', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => throw TimeoutException('slow'));
+
+        expect(
+          () => client.getLeaderboardVideos(period: LeaderboardPeriod.week),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
+
     group('getHomeFeed', () {
       const validFeedResponse =
           '''

@@ -55,6 +55,7 @@ final class MyProfileLoaded extends MyProfileState {
     required this.isFresh,
     this.extractedUsername,
     this.externalNip05,
+    this.verifiedClaims = const [],
   });
 
   /// The loaded user profile.
@@ -75,12 +76,27 @@ final class MyProfileLoaded extends MyProfileState {
   /// Null if the NIP-05 is a divine.video/openvine.co domain or not set.
   final String? externalNip05;
 
+  /// Verifier-confirmed NIP-39 identity claims for this profile. Empty until
+  /// [VerifiedClaimsRequested] resolves; stays empty if the verifier fails.
+  final List<IdentityClaim> verifiedClaims;
+
+  /// Returns a copy of this state with the given fields replaced.
+  MyProfileLoaded copyWith({List<IdentityClaim>? verifiedClaims}) =>
+      MyProfileLoaded(
+        profile: profile,
+        isFresh: isFresh,
+        extractedUsername: extractedUsername,
+        externalNip05: externalNip05,
+        verifiedClaims: verifiedClaims ?? this.verifiedClaims,
+      );
+
   @override
   List<Object?> get props => [
     profile,
     isFresh,
     extractedUsername,
     externalNip05,
+    verifiedClaims,
   ];
 }
 
@@ -94,6 +110,7 @@ final class MyProfileUpdated extends MyProfileState {
     required this.profile,
     this.extractedUsername,
     this.externalNip05,
+    this.verifiedClaims = const [],
   });
 
   /// The current user profile from the local database.
@@ -105,8 +122,25 @@ final class MyProfileUpdated extends MyProfileState {
   /// External NIP-05 identifier (e.g., `alice@example.com`).
   final String? externalNip05;
 
+  /// Verifier-confirmed NIP-39 identity claims for this profile.
+  final List<IdentityClaim> verifiedClaims;
+
+  /// Returns a copy of this state with the given fields replaced.
+  MyProfileUpdated copyWith({List<IdentityClaim>? verifiedClaims}) =>
+      MyProfileUpdated(
+        profile: profile,
+        extractedUsername: extractedUsername,
+        externalNip05: externalNip05,
+        verifiedClaims: verifiedClaims ?? this.verifiedClaims,
+      );
+
   @override
-  List<Object?> get props => [profile, extractedUsername, externalNip05];
+  List<Object?> get props => [
+    profile,
+    extractedUsername,
+    externalNip05,
+    verifiedClaims,
+  ];
 }
 
 /// Error state when profile loading fails.

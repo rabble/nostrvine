@@ -116,6 +116,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     if (isOwnProfileGrid) {
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
       final profileRepository = ref.watch(profileRepositoryProvider);
+      final identityClaimsRepository = ref.watch(
+        identityClaimsRepositoryProvider,
+      );
 
       if (userIdHex == null || profileRepository == null) {
         return const _ProfileScaffold(body: ProfileLoadingView());
@@ -126,6 +129,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             MyProfileBloc(
                 profileRepository: profileRepository,
                 pubkey: userIdHex,
+                identityClaimsRepository: identityClaimsRepository,
               )
               ..add(const MyProfileSubscriptionRequested())
               ..add(const MyProfileFetchRequested()),

@@ -20,6 +20,7 @@ import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 
@@ -111,6 +112,12 @@ class NostrSettingsScreen extends ConsumerWidget {
                   title: context.l10n.nostrSettingsKeyManagement,
                   subtitle: context.l10n.nostrSettingsKeyManagementSubtitle,
                   onTap: () => context.push(KeyManagementScreen.path),
+                ),
+                _SettingsTile(
+                  icon: Icons.alternate_email,
+                  title: context.l10n.nostrSettingsNip05Address,
+                  subtitle: context.l10n.nostrSettingsNip05AddressSubtitle,
+                  onTap: () => context.pushNamed(Nip05SettingsScreen.routeName),
                 ),
                 _RemoveKeysTile(ref: ref),
                 _SectionHeader(

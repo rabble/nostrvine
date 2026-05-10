@@ -168,7 +168,7 @@ void main() {
             creatorBindingPayloadJson: '{"version":1}',
             cawgIdentityAssertionLabel: 'cawg.identity',
             verifiedIdentityBundleJson: jsonEncode(<String, dynamic>{
-              'issuer': 'verifier.divine.video',
+              'issuer': 'verifyer.divine.video',
               'status': 'verified',
             }),
           ),
@@ -185,7 +185,7 @@ void main() {
         expect(
           capturedEvent!.tags,
           contains(
-            equals(<String>['identity_verifier', 'verifier.divine.video']),
+            equals(<String>['identity_verifier', 'verifyer.divine.video']),
           ),
         );
         expect(
@@ -195,7 +195,7 @@ void main() {
 
         final parsedVideo = VideoEvent.fromNostrEvent(capturedEvent!);
         expect(parsedVideo.hasCreatorIdentityBinding, isTrue);
-        expect(parsedVideo.identityVerifier, equals('verifier.divine.video'));
+        expect(parsedVideo.identityVerifier, equals('verifyer.divine.video'));
         expect(parsedVideo.hasPortableIdentity, isTrue);
       },
     );

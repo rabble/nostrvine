@@ -41,6 +41,7 @@ import 'package:openvine/screens/settings/content_preferences_screen.dart';
 import 'package:openvine/screens/settings/general_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
 import 'package:openvine/screens/settings/legal_screen.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
 import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
@@ -101,6 +102,7 @@ enum RouteType {
   supportCenter, // Support center (bug reports, logs, FAQ, legal links)
   legal, // Legal screen (ToS, Privacy, Safety, DMCA, Licenses)
   nostrSettings, // Nostr settings (relays, media servers, keys, account)
+  nip05Settings, // NIP-05 management nested under Nostr settings
   blueskySettings, // Bluesky crosspost publishing settings
   secureAccount,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
@@ -331,6 +333,9 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.legal);
 
     case 'nostr-settings':
+      if (segments.length > 1 && segments[1] == Nip05SettingsScreen.subpath) {
+        return const RouteContext(type: RouteType.nip05Settings);
+      }
       return const RouteContext(type: RouteType.nostrSettings);
 
     case 'bluesky-settings':
@@ -579,6 +584,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.nostrSettings:
       return NostrSettingsScreen.path;
+
+    case RouteType.nip05Settings:
+      return Nip05SettingsScreen.path;
 
     case RouteType.blueskySettings:
       return BlueskySettingsScreen.path;

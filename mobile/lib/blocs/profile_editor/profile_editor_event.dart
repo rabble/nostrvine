@@ -46,6 +46,17 @@ final class ProfileSaved extends ProfileEditorEvent {
   final String? banner;
 }
 
+/// Request to save only the NIP-05-related profile identity fields.
+///
+/// The BLoC composes the final kind-0 payload from the current profile plus its
+/// own NIP-05 editor state so settings screens do not need to mirror
+/// unrelated profile fields.
+final class ProfileNip05Saved extends ProfileEditorEvent {
+  const ProfileNip05Saved({required this.currentProfile});
+
+  final UserProfile currentProfile;
+}
+
 /// Confirmation to proceed with saving profile despite warnings.
 final class ProfileSaveConfirmed extends ProfileEditorEvent {
   const ProfileSaveConfirmed();
@@ -165,4 +176,16 @@ final class ProfilePictureUrlSet extends ProfileEditorEvent {
   /// The picture URL the user entered. Empty string clears the staged
   /// picture (effectively the same as [ProfilePictureUploadCleared]).
   final String url;
+}
+
+/// User tapped the "Get verified" CTA — UI listens for this and pushes the
+/// in-app verifier WebView. The bloc only flips a status; no navigation here.
+final class VerifierLaunchRequested extends ProfileEditorEvent {
+  const VerifierLaunchRequested();
+}
+
+/// In-app verifier WebView was popped — UI dispatches this so downstream
+/// consumers (e.g. MyProfileBloc) can refresh kind 0 and pick up new claims.
+final class VerifierWebViewDismissed extends ProfileEditorEvent {
+  const VerifierWebViewDismissed();
 }

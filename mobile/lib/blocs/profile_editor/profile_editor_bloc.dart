@@ -12,6 +12,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:models/models.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -56,6 +57,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     on<InitialUsernameSet>(_onInitialUsernameSet);
     on<InitialPersistedPictureSet>(_onInitialPersistedPictureSet);
     on<ProfileSaved>(_onProfileSaved);
+    on<ProfileNip05Saved>(_onProfileNip05Saved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
     on<UsernameChanged>(
       _onUsernameChanged,
@@ -74,6 +76,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
     on<ProfilePictureUploadCleared>(_onProfilePictureUploadCleared);
     on<ProfilePictureUrlSet>(_onProfilePictureUrlSet);
+    on<VerifierLaunchRequested>(_onVerifierLaunchRequested);
+    on<VerifierWebViewDismissed>(_onVerifierWebViewDismissed);
   }
 
   final ProfileRepository _profileRepository;
@@ -291,6 +295,35 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final hasNoPicture =
         effectivePicture == null || effectivePicture.trim().isEmpty;
     return hasShortDisplayName && hasNoBio && hasNoPicture;
+  }
+
+  Future<void> _onProfileNip05Saved(
+    ProfileNip05Saved event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final displayName =
+        event.currentProfile.displayName ?? event.currentProfile.name ?? '';
+    if (displayName.trim().isEmpty) {
+      Log.error(
+        'NIP-05 save ignored because the loaded profile has no display name',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    final saveEvent = ProfileSaved(
+      pubkey: event.currentProfile.pubkey,
+      displayName: displayName,
+      about: event.currentProfile.about,
+      username: state.nip05Mode == Nip05Mode.divine ? state.username : null,
+      externalNip05: state.nip05Mode == Nip05Mode.external_
+          ? state.externalNip05
+          : null,
+      picture: event.currentProfile.picture,
+      banner: event.currentProfile.banner,
+    );
+
+    await _saveProfile(saveEvent, _resolveEffectivePicture(saveEvent), emit);
   }
 
   Future<void> _onProfileSaveConfirmed(
@@ -577,10 +610,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
             DivineUsernameValid(:final normalized) => normalized,
             DivineUsernameInvalid() => trimmedUsername,
           };
-    final externalNip05 =
-        !isExternal || (event.externalNip05?.trim().isEmpty ?? true)
+    final externalSource = (event.externalNip05?.trim().isEmpty ?? true)
+        ? state.externalNip05
+        : event.externalNip05!;
+    final externalNip05 = !isExternal || externalSource.trim().isEmpty
         ? null
-        : event.externalNip05?.trim().toLowerCase();
+        : externalSource.trim().toLowerCase();
 
     // Only clear NIP-05 when the user explicitly removes a verified handle
     // they were known to have: their initialUsername or initialExternalNip05
@@ -685,5 +720,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         ),
       );
     }
+  }
+
+  void _onVerifierLaunchRequested(
+    VerifierLaunchRequested event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.launchRequested));
+  }
+
+  void _onVerifierWebViewDismissed(
+    VerifierWebViewDismissed event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(verifierStatus: VerifierStatus.dismissed));
   }
 }

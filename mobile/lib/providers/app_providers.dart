@@ -1074,7 +1074,7 @@ final cawgVerifierBaseUriProvider = Provider<Uri>((ref) {
   return Uri.parse(
     const String.fromEnvironment(
       'CAWG_VERIFIER_BASE_URL',
-      defaultValue: 'https://verifier.divine.video',
+      defaultValue: 'https://verifyer.divine.video',
     ),
   );
 });
@@ -1751,6 +1751,23 @@ ProfileRepository? profileRepository(Ref ref) {
   );
 
   return repo;
+}
+
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+@Riverpod(keepAlive: true)
+VerifierClient verifierClient(Ref ref) {
+  final env = ref.watch(currentEnvironmentProvider);
+  return VerifierClient(baseUrl: env.verifierBaseUrl);
+}
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+@Riverpod(keepAlive: true)
+IdentityClaimsRepository identityClaimsRepository(Ref ref) {
+  return IdentityClaimsRepository(
+    verifierClient: ref.watch(verifierClientProvider),
+  );
 }
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
