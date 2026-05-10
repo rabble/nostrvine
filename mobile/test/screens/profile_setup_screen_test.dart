@@ -2,7 +2,6 @@
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,6 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -444,85 +444,79 @@ void main() {
       return l10n;
     }
 
-    testWidgets('maps server failures to the server error message', (
-      tester,
-    ) async {
+    testWidgets('maps network case to network error string', (tester) async {
       final l10n = await loadL10n(tester);
 
       expect(
-        profileSetupUploadErrorMessage(
-          l10n,
-          BlossomUploadFailureReason.server,
-        ),
-        l10n.profileSetupUploadServerError,
-      );
-    });
-
-    testWidgets('maps network failures to the network error message', (
-      tester,
-    ) async {
-      final l10n = await loadL10n(tester);
-
-      expect(
-        profileSetupUploadErrorMessage(
-          l10n,
-          BlossomUploadFailureReason.network,
-        ),
+        profileSetupUploadErrorMessage(l10n, AvatarUploadError.network),
         l10n.profileSetupUploadNetworkError,
       );
     });
 
-    testWidgets('maps auth failures to the auth error message', (
-      tester,
-    ) async {
+    testWidgets('maps auth case to auth error string', (tester) async {
       final l10n = await loadL10n(tester);
 
       expect(
-        profileSetupUploadErrorMessage(
-          l10n,
-          BlossomUploadFailureReason.auth,
-        ),
+        profileSetupUploadErrorMessage(l10n, AvatarUploadError.auth),
         l10n.profileSetupUploadAuthError,
       );
     });
 
-    testWidgets('maps fileTooLarge failures to the file-too-large message', (
+    testWidgets('maps fileTooLarge case to file-size error string', (
       tester,
     ) async {
       final l10n = await loadL10n(tester);
 
       expect(
-        profileSetupUploadErrorMessage(
-          l10n,
-          BlossomUploadFailureReason.fileTooLarge,
-        ),
+        profileSetupUploadErrorMessage(l10n, AvatarUploadError.fileTooLarge),
         l10n.profileSetupUploadFileTooLarge,
       );
     });
 
-    testWidgets('falls back to the generic message for unknown failures', (
-      tester,
-    ) async {
+    testWidgets('maps server case to server error string', (tester) async {
       final l10n = await loadL10n(tester);
 
       expect(
-        profileSetupUploadErrorMessage(
-          l10n,
-          BlossomUploadFailureReason.unknown,
-        ),
-        l10n.profileSetupUploadFailedGeneric,
+        profileSetupUploadErrorMessage(l10n, AvatarUploadError.server),
+        l10n.profileSetupUploadServerError,
       );
     });
 
-    testWidgets('falls back to the generic message when reason is null', (
-      tester,
-    ) async {
+    testWidgets('maps generic case to generic fallback string', (tester) async {
       final l10n = await loadL10n(tester);
 
       expect(
-        profileSetupUploadErrorMessage(l10n, null),
+        profileSetupUploadErrorMessage(l10n, AvatarUploadError.generic),
         l10n.profileSetupUploadFailedGeneric,
       );
+    });
+  });
+
+  group('profileSetupUploadStaged copy', () {
+    // Pin the staged-state copy to the contract the reviewer asked for:
+    // "Uploaded — tap Save to apply" (or equivalent). The exact English wording
+    // is verified verbatim so a silent product-copy change forces a deliberate
+    // ARB edit instead of slipping through review.
+    test('English copy reads as the staged-not-saved contract', () {
+      final l10n = lookupAppLocalizations(const Locale('en'));
+
+      expect(
+        l10n.profileSetupUploadStaged,
+        equals('Uploaded — tap Save to apply'),
+      );
+    });
+
+    // Spot-check one other locale to prove the key resolves through l10n
+    // (not hardcoded English). German is dense enough to break a typo.
+    test('German copy is translated, not falling back to English', () {
+      final en = lookupAppLocalizations(const Locale('en'));
+      final de = lookupAppLocalizations(const Locale('de'));
+
+      expect(
+        de.profileSetupUploadStaged,
+        isNot(equals(en.profileSetupUploadStaged)),
+      );
+      expect(de.profileSetupUploadStaged, contains('Speichern'));
     });
   });
 
@@ -549,12 +543,12 @@ void main() {
       return [
         authServiceProvider.overrideWithValue(mockAuthService),
         profileRepositoryProvider.overrideWith((ref) => mockProfileRepository),
-        fetchUserProfileProvider(testPubkeyHex).overrideWith(
-          (ref) async => null,
-        ),
-        userProfileReactiveProvider(testPubkeyHex).overrideWith(
-          (ref) => Stream<models.UserProfile?>.value(null),
-        ),
+        fetchUserProfileProvider(
+          testPubkeyHex,
+        ).overrideWith((ref) async => null),
+        userProfileReactiveProvider(
+          testPubkeyHex,
+        ).overrideWith((ref) => Stream<models.UserProfile?>.value(null)),
       ];
     }
 
@@ -621,7 +615,9 @@ void main() {
         await tester.pump();
 
         final l10n = lookupAppLocalizations(const Locale('en'));
-        await tester.tap(find.text(l10n.profileEditPublicKeyLink));
+        final linkFinder = find.text(l10n.profileEditPublicKeyLink);
+        await tester.ensureVisible(linkFinder);
+        await tester.tap(linkFinder);
         await tester.pumpAndSettle();
 
         expect(find.byType(KeyManagementScreen), findsOneWidget);

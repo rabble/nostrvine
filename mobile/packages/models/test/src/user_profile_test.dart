@@ -175,6 +175,65 @@ void main() {
         expect(profile.rawData['custom_field'], equals('custom_value'));
         expect(profile.rawData['nested'], equals({'key': 'value'}));
       });
+
+      test('preserves event tags as rawTags', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          [
+            ['i', 'github:octocat', 'abc123'],
+            ['i', 'twitter:elonmusk', 'def456'],
+            ['p', 'somepubkey'],
+          ],
+          jsonEncode({'name': 'alice'}),
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        expect(profile.rawTags, hasLength(3));
+        expect(
+          profile.rawTags.first,
+          equals(['i', 'github:octocat', 'abc123']),
+        );
+        expect(
+          profile.rawTags[1],
+          equals(['i', 'twitter:elonmusk', 'def456']),
+        );
+      });
+
+      test('rawTags defaults to empty when JSON content is malformed', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          [
+            ['i', 'github:octocat', 'abc'],
+          ],
+          'not-json',
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        // Malformed JSON falls through to the recovery branch which does not
+        // re-emit tags; callers needing tags should source them from a
+        // well-formed kind 0 event.
+        expect(profile.rawTags, isEmpty);
+      });
+
+      test('rawTags is empty when the event has no tags', () {
+        final event = Event(
+          testPubkey,
+          EventKind.metadata,
+          const [],
+          jsonEncode({'name': 'alice'}),
+          createdAt: 1704067200,
+        )..id = testEventId;
+
+        final profile = UserProfile.fromNostrEvent(event);
+
+        expect(profile.rawTags, isEmpty);
+      });
     });
 
     group('fromJson', () {

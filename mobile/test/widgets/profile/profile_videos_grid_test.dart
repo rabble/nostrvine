@@ -390,6 +390,44 @@ void main() {
       });
     });
 
+    group('loading-vs-empty regression guard (#4164)', () {
+      // The screens (`profile_screen_router.dart`, `other_profile_screen.dart`)
+      // are responsible for threading `state.isInitialLoad` into the
+      // `isLoading` parameter so the cold-start fetch window does not
+      // surface as a misleading "No videos" empty state. These tests pin
+      // the widget-side contract that drives the screens' wiring choice.
+      testWidgets(
+        'shows loading state — not empty state — when isLoading is true '
+        'and videos is empty',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          await tester.pumpWidget(
+            buildSubject(userIdHex: _ownPubkey, isLoading: true),
+          );
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileLoadingVideos), findsOneWidget);
+          expect(find.text(l10n.profileNoVideosTitle), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows empty state — not loading state — when isLoading is false '
+        'and videos is empty (preserves the genuine "user has nothing '
+        'posted" path)',
+        (tester) async {
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(_ownPubkey);
+
+          await tester.pumpWidget(buildSubject(userIdHex: _ownPubkey));
+
+          final l10n = lookupAppLocalizations(const Locale('en'));
+          expect(find.text(l10n.profileNoVideosTitle), findsOneWidget);
+          expect(find.text(l10n.profileLoadingVideos), findsNothing);
+        },
+      );
+    });
+
     group('scroll coordination with NestedScrollView', () {
       testWidgets(
         'uses PrimaryScrollController from NestedScrollView ancestor',

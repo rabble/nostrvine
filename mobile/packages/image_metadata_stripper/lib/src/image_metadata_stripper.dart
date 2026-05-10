@@ -5,38 +5,28 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
-/// Strips EXIF metadata (GPS, device info, timestamps) from image files.
+/// Strips EXIF metadata (GPS, device info, timestamps) from images.
 ///
-/// On native platforms (iOS, Android, macOS), uses platform channels to
-/// decode and re-encode the image, discarding all EXIF data.
-///
-/// On web, uses the pure-Dart `image` package to re-encode JPEGs without
-/// metadata. Other formats are left untouched on web.
+/// Path-based APIs ([stripMetadata], [stripMetadataInPlace]) use platform
+/// channels and are native-only — `dart:io` `File` cannot be constructed
+/// from an `image_picker` blob URL on web. Web callers must use
+/// [stripMetadataBytes], which runs in pure Dart over raw bytes.
 class ImageMetadataStripper {
   static const _channel = MethodChannel('image_metadata_stripper');
 
   /// Strips all EXIF metadata from the image at [inputPath] and writes
-  /// the cleaned image to [outputPath].
-  ///
-  /// On web, decodes JPEG files via the `image` package and re-encodes
-  /// them without EXIF data. Non-JPEG files are copied as-is.
+  /// the cleaned image to [outputPath]. Native-only — use
+  /// [stripMetadataBytes] on web.
   ///
   /// Throws [PlatformException] if the native call fails.
   static Future<void> stripMetadata({
     required String inputPath,
     required String outputPath,
   }) async {
-    if (kIsWeb) {
-      // coverage:ignore-start
-      // kIsWeb is a compile-time constant; tested via stripMetadataWeb.
-      await stripMetadataWeb(inputPath: inputPath, outputPath: outputPath);
-      // coverage:ignore-end
-    } else {
-      await _channel.invokeMethod<void>('stripImageMetadata', {
-        'inputPath': inputPath,
-        'outputPath': outputPath,
-      });
-    }
+    await _channel.invokeMethod<void>('stripImageMetadata', {
+      'inputPath': inputPath,
+      'outputPath': outputPath,
+    });
   }
 
   /// Convenience: strips metadata in-place by writing to a temp file
@@ -90,34 +80,68 @@ class ImageMetadataStripper {
     return imageFile;
   }
 
-  /// Web fallback: strips metadata from JPEG and PNG files using
-  /// pure Dart. JPEG EXIF is replaced losslessly (only orientation is
-  /// preserved). PNG is decoded and re-encoded (lossless).
-  /// Other formats are copied unchanged.
-  @visibleForTesting
-  static Future<void> stripMetadataWeb({
-    required String inputPath,
-    required String outputPath,
-  }) async {
-    final inputFile = File(inputPath);
-    final bytes = await inputFile.readAsBytes();
-    final lowerPath = inputPath.toLowerCase();
+  /// Strips EXIF metadata from raw image bytes using pure Dart.
+  ///
+  /// Designed for the web upload path where `dart:io` `File` cannot be used
+  /// against an `image_picker` blob URL. Native callers that already hold a
+  /// real filesystem path should prefer [stripMetadataInPlace] so the
+  /// hardware-accelerated platform stripper runs.
+  ///
+  /// JPEG EXIF is replaced losslessly (only orientation is preserved).
+  /// PNG is decoded and re-encoded (lossless). Other formats fall through to
+  /// a generic decode → JPEG re-encode, which discards metadata at the cost
+  /// of a re-encode. If decoding fails entirely, the original bytes are
+  /// returned unchanged so the upload can still proceed.
+  ///
+  /// The returned `filename` mirrors [stripMetadataInPlace]'s rename rule:
+  /// PNG keeps its `.png` extension; everything that is re-encoded as JPEG
+  /// switches to `.jpg`.
+  static ({Uint8List bytes, String filename}) stripMetadataBytes({
+    required Uint8List bytes,
+    required String filename,
+  }) {
+    final lower = filename.toLowerCase();
 
-    if (lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg')) {
-      final clean = stripJpegExif(bytes);
-      await File(outputPath).writeAsBytes(clean);
-      return;
-    } else if (lowerPath.endsWith('.png')) {
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+      return (bytes: stripJpegExif(bytes), filename: filename);
+    }
+
+    if (lower.endsWith('.png')) {
       final decoded = img.decodePng(bytes);
       if (decoded != null) {
-        final clean = img.encodePng(decoded);
-        await File(outputPath).writeAsBytes(clean);
-        return;
+        return (
+          bytes: Uint8List.fromList(img.encodePng(decoded)),
+          filename: filename,
+        );
       }
     }
 
-    // Unsupported format or decode failed — copy as-is.
-    await inputFile.copy(outputPath);
+    // Generic fallback: decode whatever the image package can recognise
+    // and re-encode as JPEG. This drops EXIF/XMP/etc. as a side-effect of
+    // the round-trip. `decodeImage` panics on some malformed inputs (e.g.
+    // PSD's signature probe) instead of returning null, so swallow any
+    // throw and fall through to returning the original bytes.
+    try {
+      final decoded = img.decodeImage(bytes);
+      if (decoded != null) {
+        final reencoded = Uint8List.fromList(
+          img.encodeJpg(decoded, quality: 95),
+        );
+        return (
+          bytes: reencoded,
+          filename: '${withoutExtension(filename)}.jpg',
+        );
+      }
+    } on Object catch (e, stackTrace) {
+      developer.log(
+        'Failed to decode image bytes for stripping; returning original',
+        name: 'ImageMetadataStripper',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return (bytes: bytes, filename: filename);
   }
 
   /// Replaces all JPEG EXIF data with a minimal block that only

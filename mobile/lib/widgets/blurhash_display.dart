@@ -14,12 +14,14 @@ class BlurhashDisplay extends StatefulWidget {
   const BlurhashDisplay({
     required this.blurhash,
     super.key,
+    this.contentType,
     this.width,
     this.height,
     this.fit = BoxFit.cover,
   });
 
-  final String blurhash;
+  final String? blurhash;
+  final VineContentType? contentType;
   final double? width;
   final double? height;
   final BoxFit fit;
@@ -40,14 +42,21 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
   @override
   void didUpdateWidget(BlurhashDisplay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.blurhash != widget.blurhash) {
+    if (oldWidget.blurhash != widget.blurhash ||
+        oldWidget.contentType != widget.contentType) {
       _decodeBlurhash();
     }
   }
 
   void _decodeBlurhash() {
+    final hash =
+        widget.blurhash ??
+        (widget.contentType != null
+            ? BlurhashService.getBlurhashForContentType(widget.contentType!)
+            : BlurhashService.getDefaultVineBlurhash());
+
     try {
-      final data = BlurhashService.decodeBlurhash(widget.blurhash);
+      final data = BlurhashService.decodeBlurhash(hash);
 
       if (mounted && data != null) {
         setState(() {
@@ -247,7 +256,7 @@ class BlurhashImage extends StatelessWidget {
         children: [
           // Blurhash placeholder
           BlurhashDisplay(
-            blurhash: blurhash!,
+            blurhash: blurhash,
             width: width,
             height: height,
             fit: fit,

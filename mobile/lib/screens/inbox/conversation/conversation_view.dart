@@ -143,10 +143,19 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
   }
 
   void _onSendOutcome(BuildContext context, ConversationState state) {
-    final lastFailedSend = state.lastFailedSend;
-    if (lastFailedSend == null) return;
+    final isPartial = state.sendStatus == SendStatus.sentPartial;
+    // Pick the retry payload based on which outcome we're recovering
+    // from: failed → full resend (content + recipients), sentPartial →
+    // self-wrap-only recovery (rumor ids). Either side may be null on
+    // an out-of-band emit; bail out rather than show a SnackBar that
+    // does nothing.
+    final partialSend = state.lastPartialSend;
+    final failedSend = state.lastFailedSend;
+    if (isPartial && partialSend == null) return;
+    if (!isPartial && failedSend == null) return;
+
     final l10n = context.l10n;
-    final message = state.sendStatus == SendStatus.sentPartial
+    final message = isPartial
         ? l10n.dmSendPartialMessage
         : l10n.dmSendFailedMessage;
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
@@ -156,12 +165,21 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
         action: SnackBarAction(
           label: l10n.dmSendFailedRetry,
           onPressed: () {
-            context.read<ConversationBloc>().add(
-              ConversationMessageSent(
-                recipientPubkeys: lastFailedSend.recipientPubkeys,
-                content: lastFailedSend.content,
-              ),
-            );
+            final bloc = context.read<ConversationBloc>();
+            if (isPartial) {
+              bloc.add(
+                ConversationSelfWrapRecoveryRequested(
+                  rumorIds: partialSend!.rumorIds,
+                ),
+              );
+            } else {
+              bloc.add(
+                ConversationMessageSent(
+                  recipientPubkeys: failedSend!.recipientPubkeys,
+                  content: failedSend.content,
+                ),
+              );
+            }
           },
         ),
       ),

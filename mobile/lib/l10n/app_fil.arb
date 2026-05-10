@@ -213,6 +213,18 @@
     "profileSetupSelectButton": "Piliin",
     "profileSetupUseOwnNip05": "Gamitin ang sarili mong NIP-05 address",
     "profileSetupNip05AddressLabel": "NIP-05 Address",
+"profileSetupExternalNip05InvalidFormat": "Invalid na NIP-05 format (hal. name@domain.com)",
+"profileSetupExternalNip05DivineDomain": "Gamitin ang username field sa itaas para sa divine.video",
+"nostrSettingsNip05Address": "NIP-05 address",
+"nostrSettingsNip05AddressSubtitle": "Gamitin ang divine.video username mo, o ituro ang handle mo sa isang NIP-05 address sa domain na kontrolado mo.",
+"nostrSettingsNip05AddressHint": "you@example.com",
+"nostrSettingsNip05SaveAction": "I-save ang NIP-05",
+"nostrSettingsNip05Saved": "Naisave ang NIP-05",
+"nostrSettingsNip05SaveFailed": "Hindi na-save ang NIP-05. Pakisubukan ulit.",
+"profileSetupNip05ConfirmTitle": "Gamitin ang sarili mong NIP-05?",
+"profileSetupNip05ConfirmBody": "Ini-uugnay ng NIP-05 ang pangalang gaya ng you@yourdomain.com sa iyong Nostr identity. Kailangan mong kontrolado ang domain at naka-host ang verification file sa tamang path. Kapag mali ito, hindi ka mahahanap ng mga tao at mawawala ang verified handle mo. Magpatuloy lang kung na-set up mo na ito.",
+"profileSetupNip05ConfirmContinue": "Magpatuloy",
+"profileSetupNip05ConfirmCancel": "Kanselahin",
     "profileSetupProfilePicturePreview": "Preview ng profile picture",
     "videoMetadataShareReplyToFeedTitle": "Ibahagi rin sa feed ko",
     "videoMetadataShareReplyToFeedSubtitle": "Kapag naka-off, sa thread lang ng komento mananatili ang video na ito.",
@@ -1362,7 +1374,7 @@
     "categoryVlog": "Vlog",
     "categoryVlogging": "Vlogging",
     "categoryWrestling": "Wrestling",
-    "profileSetupUploadSuccess": "Matagumpay na na-upload ang profile picture!",
+    "profileSetupUploadStaged": "Na-upload na — i-tap ang I-save para ilapat",
     "dmSendFailedMessage": "Hindi naipadala ang message",
     "dmSendFailedRetry": "Subukan ulit",
     "dmSendPartialMessage": "Naipadala, pero hindi nag-sync sa iba mong device",
@@ -2057,4 +2069,28 @@
     "soundsRemovedFromLibrary": "Naalis sa Sounds",
     "supportLogsSavedTo": "Na-save ang logs sa {path}",
     "supportRevealLogsAction": "Ipakita sa folder"
+    "verifiedAccountChipSemanticLabel": "Na-verify na {platform} account: {identity}",
+    "@verifiedAccountChipSemanticLabel": {
+        "description": "Semantic label for a verified account chip",
+        "placeholders": {
+            "platform": {
+                "type": "String"
+            },
+            "identity": {
+                "type": "String"
+            }
+        }
+    },
+    "profileEditVerifiedAccountsTitle": "Mga na-verify na account",
+    "@profileEditVerifiedAccountsTitle": {
+        "description": "Section title for verified accounts in the profile editor"
+    },
+    "profileEditGetVerifiedCta": "Magpa-verify",
+    "@profileEditGetVerifiedCta": {
+        "description": "Call to action button text for starting verified account linking"
+    },
+    "profileEditGetVerifiedSubtitle": "I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.",
+    "@profileEditGetVerifiedSubtitle": {
+        "description": "Subtitle explaining the verified accounts call to action in the profile editor"
+    }
 }

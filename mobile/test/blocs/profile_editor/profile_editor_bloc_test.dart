@@ -1,8 +1,14 @@
 // ABOUTME: Unit tests for ProfileEditorBloc
 // ABOUTME: Asserts claim-before-publish ordering — kind 0 must never be
-// ABOUTME: broadcast unless the username claim succeeded first.
+// ABOUTME: broadcast unless the username claim succeeded first. Also
+// ABOUTME: covers the staged-avatar contract: upload stages, save persists,
+// ABOUTME: failure preserves the prior preview, no publish on upload alone.
+
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -10,6 +16,10 @@ import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _FakeFile extends Fake implements File {}
 
 void main() {
   group('ProfileEditorBloc', () {
@@ -38,6 +48,8 @@ void main() {
       );
     }
 
+    late _MockBlossomUploadService mockBlossomUploadService;
+
     setUpAll(() {
       registerFallbackValue(
         UserProfile(
@@ -49,10 +61,13 @@ void main() {
               'fallback12345678901234567890123456789012345678901234567890123456',
         ),
       );
+      registerFallbackValue(_FakeFile());
+      registerFallbackValue(Uint8List(0));
     });
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
+      mockBlossomUploadService = _MockBlossomUploadService();
       when(
         () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
@@ -61,6 +76,7 @@ void main() {
     ProfileEditorBloc createBloc({bool hasExistingProfile = true}) =>
         ProfileEditorBloc(
           profileRepository: mockProfileRepository,
+          blossomUploadService: mockBlossomUploadService,
           hasExistingProfile: hasExistingProfile,
         );
 
@@ -380,6 +396,7 @@ void main() {
           },
           build: () => ProfileEditorBloc(
             profileRepository: mockProfileRepository,
+            blossomUploadService: mockBlossomUploadService,
             hasExistingProfile: true,
             currentUserPubkey: testPubkey,
           ),
@@ -1073,6 +1090,7 @@ void main() {
         },
         build: () => ProfileEditorBloc(
           profileRepository: mockProfileRepository,
+          blossomUploadService: mockBlossomUploadService,
           hasExistingProfile: true,
           currentUserPubkey: testPubkey,
         ),
@@ -1781,6 +1799,669 @@ void main() {
         );
         expect(state.isSaveReady, isFalse);
       });
+
+      test('returns false while an avatar upload is in flight', () {
+        // Reviewer #3916 bullet: Save must be unavailable during upload so
+        // the publish path can't race the staged URL.
+        const state = ProfileEditorState(
+          username: 'alice',
+          usernameStatus: UsernameStatus.available,
+          pendingAvatarStatus: PendingAvatarStatus.uploading,
+        );
+        expect(state.isSaveReady, isFalse);
+      });
+
+      test(
+        'returns true once the upload settles to staged (otherwise valid)',
+        () {
+          // Sanity check the gate is purely the uploading status, not
+          // "any non-idle pendingAvatarStatus".
+          const state = ProfileEditorState(
+            username: 'alice',
+            usernameStatus: UsernameStatus.available,
+            pendingAvatarStatus: PendingAvatarStatus.staged,
+            pendingPictureUrl: 'https://media.divine.video/staged-hash',
+          );
+          expect(state.isSaveReady, isTrue);
+        },
+      );
+    });
+
+    // Reviewer-mandated coverage for option C from PR #3916: avatar uploads
+    // stage in bloc state, save is the only publish point, failures preserve
+    // the prior preview, no kind-0 churn from upload alone.
+    group('profile picture staging', () {
+      const testStagedUrl = 'https://media.divine.video/staged-hash';
+      const testPersistedUrl = 'https://media.divine.video/persisted-hash';
+      final testBytes = Uint8List.fromList([0xFF, 0xD8, 0xFF]);
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUploadRequested with bytes stages on success',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: testStagedUrl,
+              fallbackUrl: testStagedUrl,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(
+            pubkey: testPubkey,
+            bytes: testBytes,
+            filename: 'avatar.jpg',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingAvatarStatus,
+            'pendingAvatarStatus',
+            PendingAvatarStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.staged,
+              )
+              .having(
+                (s) => s.pendingPictureUrl,
+                'pendingPictureUrl',
+                testStagedUrl,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: testBytes,
+              filename: 'avatar.jpg',
+              nostrPubkey: testPubkey,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUploadRequested with file stages on success',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: testStagedUrl,
+              fallbackUrl: testStagedUrl,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, file: _FakeFile()),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.pendingAvatarStatus,
+            'pendingAvatarStatus',
+            PendingAvatarStatus.uploading,
+          ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.staged,
+              )
+              .having(
+                (s) => s.pendingPictureUrl,
+                'pendingPictureUrl',
+                testStagedUrl,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: testPubkey,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'upload failure leaves pendingPictureUrl untouched and emits failed',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'Server error (503): unavailable',
+              failureReason: BlossomUploadFailureReason.server,
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: testStagedUrl,
+        ),
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        expect: () => [
+          // Optimistic transition to uploading retains the prior staged URL
+          // (so the avatar widget can show the previously-staged image while
+          // the next attempt is in flight).
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.uploading,
+              )
+              .having(
+                (s) => s.pendingPictureUrl,
+                'pendingPictureUrl',
+                testStagedUrl,
+              ),
+          // Failure preserves the prior URL — no fake-success preview — and
+          // classifies the error so the UI can show the right localized
+          // snackbar (server error, in this case).
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.failed,
+              )
+              .having(
+                (s) => s.pendingPictureUrl,
+                'pendingPictureUrl',
+                testStagedUrl,
+              )
+              .having(
+                (s) => s.avatarUploadError,
+                'avatarUploadError',
+                AvatarUploadError.server,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'maps network failureReason to AvatarUploadError.network',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'Connection timeout',
+              failureReason: BlossomUploadFailureReason.network,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        skip: 1, // skip the "uploading" emission, only assert final state
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.avatarUploadError,
+            'avatarUploadError',
+            AvatarUploadError.network,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'maps auth failureReason to AvatarUploadError.auth',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'Upload rejected: 401 Unauthorized',
+              failureReason: BlossomUploadFailureReason.auth,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.avatarUploadError,
+            'avatarUploadError',
+            AvatarUploadError.auth,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'maps fileTooLarge failureReason to AvatarUploadError.fileTooLarge',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'Payload too large (413)',
+              failureReason: BlossomUploadFailureReason.fileTooLarge,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.avatarUploadError,
+            'avatarUploadError',
+            AvatarUploadError.fileTooLarge,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'maps unknown failureReason to AvatarUploadError.generic',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: false,
+              errorMessage: 'something weird happened',
+              failureReason: BlossomUploadFailureReason.unknown,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.avatarUploadError,
+            'avatarUploadError',
+            AvatarUploadError.generic,
+          ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'unexpected thrown upload exception falls back to generic',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenThrow(Exception('socket exploded'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        skip: 1,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.failed,
+              )
+              .having(
+                (s) => s.avatarUploadError,
+                'avatarUploadError',
+                AvatarUploadError.generic,
+              ),
+        ],
+        errors: () => [isA<Exception>()],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUploadCleared resets pending to idle',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: testStagedUrl,
+        ),
+        act: (bloc) => bloc.add(const ProfilePictureUploadCleared()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.idle,
+              )
+              .having((s) => s.pendingPictureUrl, 'pendingPictureUrl', isNull),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUrlSet stages without an upload call',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ProfilePictureUrlSet('  $testStagedUrl  ')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.pendingAvatarStatus,
+                'pendingAvatarStatus',
+                PendingAvatarStatus.staged,
+              )
+              .having(
+                (s) => s.pendingPictureUrl,
+                'pendingPictureUrl',
+                testStagedUrl,
+              ),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockBlossomUploadService.uploadImage(
+              imageFile: any(named: 'imageFile'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+            ),
+          );
+          verifyNever(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved publishes staged picture from state',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.staged,
+          pendingPictureUrl: testStagedUrl,
+          persistedPictureUrl: testPersistedUrl,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testStagedUrl,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved with no staged change publishes the persisted picture',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        seed: () =>
+            const ProfileEditorState(persistedPictureUrl: testPersistedUrl),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+        verify: (_) {
+          // Picture argument falls back to persisted URL — Save with no edits
+          // must not silently blank an existing avatar.
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: testPersistedUrl,
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'upload success alone does not publish kind 0',
+        setUp: () {
+          when(
+            () => mockBlossomUploadService.uploadImageBytes(
+              bytes: any(named: 'bytes'),
+              filename: any(named: 'filename'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              mimeType: any(named: 'mimeType'),
+            ),
+          ).thenAnswer(
+            (_) async => const BlossomUploadResult(
+              success: true,
+              url: testStagedUrl,
+              fallbackUrl: testStagedUrl,
+            ),
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          ProfilePictureUploadRequested(pubkey: testPubkey, bytes: testBytes),
+        ),
+        verify: (_) {
+          // The load-bearing invariant from reviewer bullet 6: upload alone
+          // must not call into the profile-publish path.
+          verifyNever(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfileSaved while uploading is dropped — no publish, no claim',
+        // Pins the bloc-side guard from reviewer #3916 follow-up: even if the
+        // UI gate (`isSaveReady`) is bypassed, the bloc must not call into
+        // saveProfileEvent / claimUsername with a stale `persistedPictureUrl`
+        // while the staged URL is still in flight.
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.uploading,
+          persistedPictureUrl: testPersistedUrl,
+        ),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+          ),
+        ),
+        expect: () => const <ProfileEditorState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: any(named: 'displayName'),
+              about: any(named: 'about'),
+              username: any(named: 'username'),
+              nip05: any(named: 'nip05'),
+              clearNip05: any(named: 'clearNip05'),
+              picture: any(named: 'picture'),
+              banner: any(named: 'banner'),
+              currentProfile: any(named: 'currentProfile'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'ProfilePictureUrlSet while uploading is ignored',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          pendingAvatarStatus: PendingAvatarStatus.uploading,
+          persistedPictureUrl: testPersistedUrl,
+        ),
+        act: (bloc) => bloc.add(const ProfilePictureUrlSet(testStagedUrl)),
+        expect: () => const <ProfileEditorState>[],
+      );
+    });
+
+    group('verifier launch flow', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'flips verifierStatus to launchRequested on VerifierLaunchRequested',
+        build: () => ProfileEditorBloc(
+          profileRepository: mockProfileRepository,
+          blossomUploadService: mockBlossomUploadService,
+          hasExistingProfile: true,
+          currentUserPubkey: testPubkey,
+        ),
+        act: (bloc) => bloc.add(const VerifierLaunchRequested()),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.verifierStatus,
+            'verifierStatus',
+            VerifierStatus.launchRequested,
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'flips verifierStatus to dismissed on VerifierWebViewDismissed',
+        build: () => ProfileEditorBloc(
+          profileRepository: mockProfileRepository,
+          blossomUploadService: mockBlossomUploadService,
+          hasExistingProfile: true,
+          currentUserPubkey: testPubkey,
+        ),
+        seed: () => const ProfileEditorState(
+          verifierStatus: VerifierStatus.launchRequested,
+        ),
+        act: (bloc) => bloc.add(const VerifierWebViewDismissed()),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.verifierStatus,
+            'verifierStatus',
+            VerifierStatus.dismissed,
+          ),
+        ],
+      );
     });
   });
 }

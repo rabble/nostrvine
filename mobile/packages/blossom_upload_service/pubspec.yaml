@@ -27,5 +27,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # Used in tests to build minimal JPEG fixtures that exercise the
+  # bytes-based image upload path.
+  image: ^4.1.7
   mocktail: ^1.0.4
   very_good_analysis: ^10.2.0

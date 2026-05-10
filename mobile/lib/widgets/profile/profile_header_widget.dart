@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/features/people_lists/view/people_list_membership_indicator.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -29,9 +30,11 @@ import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_actions_sheet/profile_actions_sheet.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/widgets/profile/verified_accounts_row.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Profile header widget displaying avatar, stats, name, and bio.
@@ -393,8 +396,52 @@ class _ProfileNameAndBio extends StatelessWidget {
           const SizedBox(height: 16),
           _AboutText(about: about!),
         ],
+        _VerifiedAccountsBlock(isOwnProfile: isOwnProfile),
       ],
     );
+  }
+}
+
+class _VerifiedAccountsBlock extends StatelessWidget {
+  const _VerifiedAccountsBlock({required this.isOwnProfile});
+
+  final bool isOwnProfile;
+
+  @override
+  Widget build(BuildContext context) {
+    final claims = isOwnProfile
+        ? _readMyClaims(context)
+        : _readOtherClaims(context);
+    if (claims.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: VerifiedAccountsRow(claims: claims),
+    );
+  }
+
+  static List<IdentityClaim> _readMyClaims(BuildContext context) {
+    try {
+      return context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
+        final state = bloc.state;
+        if (state is MyProfileLoaded) return state.verifiedClaims;
+        if (state is MyProfileUpdated) return state.verifiedClaims;
+        return const [];
+      });
+    } on ProviderNotFoundException {
+      return const [];
+    }
+  }
+
+  static List<IdentityClaim> _readOtherClaims(BuildContext context) {
+    try {
+      return context.select<OtherProfileBloc, List<IdentityClaim>>((bloc) {
+        final state = bloc.state;
+        if (state is OtherProfileLoaded) return state.verifiedClaims;
+        return const [];
+      });
+    } on ProviderNotFoundException {
+      return const [];
+    }
   }
 }
 

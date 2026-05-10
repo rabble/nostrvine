@@ -11,6 +11,11 @@ import 'package:path_provider/path_provider.dart';
 /// Open a database connection for native platforms
 /// Uses file-based SQLite through drift's native implementation
 QueryExecutor openConnection() {
+  if (_isFlutterTestProcess) {
+    driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+    return NativeDatabase.memory();
+  }
+
   return LazyDatabase(() async {
     final dbPath = await getSharedDatabasePath();
     final dbFile = prepareDatabaseFile(dbPath);
@@ -19,6 +24,9 @@ QueryExecutor openConnection() {
     );
   });
 }
+
+bool get _isFlutterTestProcess =>
+    Platform.executable.contains('flutter_tester');
 
 /// Get path to shared database file
 ///

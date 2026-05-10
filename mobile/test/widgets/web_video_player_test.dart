@@ -57,6 +57,15 @@ class _FakeVideoPlayerController extends ValueNotifier<VideoPlayerValue>
   Future<void> setPlaybackSpeed(double speed) async {}
 
   @override
+  Future<List<VideoAudioTrack>> getAudioTracks() async => const [];
+
+  @override
+  Future<void> selectAudioTrack(String trackId) async {}
+
+  @override
+  bool isAudioTrackSupportAvailable() => false;
+
+  @override
   Future<void> dispose() async => super.dispose();
 
   @override

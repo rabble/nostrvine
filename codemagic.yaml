@@ -416,7 +416,7 @@ workflows:
           - POC
     environment:
       flutter: 3.41.9
-      xcode: 16.1  # Pinned to avoid FFmpeg Kit linker issues with newer Xcode
+      xcode: latest
       cocoapods: default
       groups:
         - zendesk_credentials
@@ -545,7 +545,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: 3.41.9
-      xcode: 16.1
+      xcode: latest
       cocoapods: default
       groups:
         - zendesk_credentials

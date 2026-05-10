@@ -66,6 +66,7 @@ workspace:
   - packages/time_formatter
   - packages/tv_static_effect
   - packages/unified_logger
+  - packages/verifier_client
   - packages/video_event_cache
   - packages/videos_repository
 
@@ -109,6 +110,7 @@ dependencies:
   # https://developer.apple.com/documentation/authenticationservices/aswebauthenticationsession
   flutter_web_auth_2: ^4.1.0
   dio: ^5.8.0
+  web: ^1.1.1
   webview_flutter: ^4.13.0
   webview_flutter_wkwebview: ^3.24.1
 
@@ -235,6 +237,9 @@ dependencies:
   # Logging
   logging: ^1.2.0
   unified_logger:
+
+  # Verifier Client - HTTP client for verifier.divine.video identity attestations
+  verifier_client:
 
   # Date formatting
   intl: ">=0.19.0 <1.0.0"

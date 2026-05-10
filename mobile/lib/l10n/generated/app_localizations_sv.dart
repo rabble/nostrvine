@@ -876,6 +876,39 @@ class AppLocalizationsSv extends AppLocalizations {
       'Använd användarnamnsfältet ovan för divine.video';
 
   @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
+
+  @override
   String get profileSetupProfilePicturePreview =>
       'Förhandsvisning av profilbild';
 
@@ -5108,7 +5141,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get categoryWrestling => 'Brottning';
 
   @override
-  String get profileSetupUploadSuccess => 'Profilbilden laddades upp!';
+  String get profileSetupUploadStaged =>
+      'Uppladdad — tryck på Spara för att tillämpa';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -7005,4 +7039,19 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Svar på video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Verifierat $platform-konto: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Verifierade konton';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifiera dig';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Koppla dina sociala medier-konton så folk vet att det är du.';
 }

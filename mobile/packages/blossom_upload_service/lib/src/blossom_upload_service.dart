@@ -6,6 +6,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:blossom_upload_service/src/blossom_auth_provider.dart';
 import 'package:blossom_upload_service/src/blossom_performance_monitor.dart';
@@ -210,6 +211,100 @@ class BlossomResumableUploadException implements Exception {
 
   @override
   String toString() => message;
+}
+
+/// Abstraction over the payload of a Blossom upload.
+///
+/// Two implementations exist:
+/// - [_FileUploadSource] streams from a `dart:io` [File], which the video,
+///   audio and bug-report paths use to keep memory usage bounded for large
+///   media on native platforms.
+/// - [_BytesUploadSource] wraps a [Uint8List] held entirely in memory, which
+///   the web image-upload path uses because `image_picker` hands back blob
+///   URLs that `dart:io` cannot resolve.
+///
+/// This lets `_uploadToServer`, `_uploadToServerResumable` and `_uploadChunks`
+/// share their HTTP plumbing across native and web without leaking File
+/// assumptions into the bytes path.
+sealed class _UploadSource {
+  /// Suggested filename, sent to the resumable init endpoint and used in
+  /// log lines. The bytes path threads this through from the caller; the
+  /// file path derives it from the underlying URI.
+  String get filename;
+
+  /// Body to pass to a non-resumable `dio.put(data: ...)` call.
+  ///
+  /// File-backed sources return a `Stream<List<int>>` so dio uploads in
+  /// constant memory; byte-backed sources return the [Uint8List] directly.
+  /// dio accepts either — the legacy PUT path does not branch on type.
+  Object getStreamingBody();
+
+  /// Reads `[start, start + length)` from the underlying payload.
+  ///
+  /// Used by the resumable chunk loop. File-backed sources lazily open a
+  /// single [RandomAccessFile] and reuse it across calls; byte-backed
+  /// sources slice the in-memory buffer.
+  ///
+  /// **Not safe for concurrent calls on the same source instance.** The
+  /// file impl mutates a shared `RandomAccessFile`'s position; callers
+  /// must serialize. The chunk loop in `_uploadChunks` already does so.
+  Future<List<int>> readRange(int start, int length);
+
+  /// Releases any resources opened by [readRange]. Always safe to call
+  /// (idempotent) and should be invoked from a `finally` once the chunk
+  /// loop completes or aborts.
+  Future<void> close();
+}
+
+class _FileUploadSource extends _UploadSource {
+  _FileUploadSource(this.file);
+
+  final File file;
+
+  RandomAccessFile? _reader;
+
+  @override
+  String get filename =>
+      file.uri.pathSegments.isEmpty ? 'upload.bin' : file.uri.pathSegments.last;
+
+  @override
+  Object getStreamingBody() => file.openRead();
+
+  @override
+  Future<List<int>> readRange(int start, int length) async {
+    final reader = _reader ??= await file.open();
+    await reader.setPosition(start);
+    return reader.read(length);
+  }
+
+  @override
+  Future<void> close() async {
+    final reader = _reader;
+    _reader = null;
+    if (reader != null) {
+      await reader.close();
+    }
+  }
+}
+
+class _BytesUploadSource extends _UploadSource {
+  _BytesUploadSource({required this.bytes, required this.filename});
+
+  final Uint8List bytes;
+
+  @override
+  final String filename;
+
+  @override
+  Object getStreamingBody() => bytes;
+
+  @override
+  Future<List<int>> readRange(int start, int length) async {
+    return Uint8List.sublistView(bytes, start, start + length);
+  }
+
+  @override
+  Future<void> close() async {}
 }
 
 class _DivineUploadCapability {
@@ -671,7 +766,7 @@ class BlossomUploadService {
 
   Future<BlossomUploadResult> _uploadToServerLegacyFallback({
     required String serverUrl,
-    required File file,
+    required _UploadSource source,
     required String fileHash,
     required int fileSize,
     required String contentType,
@@ -688,7 +783,7 @@ class BlossomUploadService {
 
     return _uploadToServer(
       serverUrl: serverUrl,
-      file: file,
+      source: source,
       fileHash: fileHash,
       fileSize: fileSize,
       contentType: contentType,
@@ -990,13 +1085,12 @@ class BlossomUploadService {
 
   Future<BlossomResumableUploadSession> _uploadChunks({
     required BlossomResumableUploadSession session,
-    required File file,
+    required _UploadSource source,
     required int fileSize,
     void Function(double)? onProgress,
     void Function(BlossomResumableUploadSession)? onResumableSessionUpdated,
   }) async {
     var currentSession = session;
-    final fileReader = await file.open();
     final totalChunks = (fileSize / currentSession.chunkSize).ceil();
     final startOffset = currentSession.nextOffset;
     var chunkIndex = 0;
@@ -1022,8 +1116,7 @@ class BlossomUploadService {
         final chunkLength = endExclusive - start;
         chunkIndex++;
 
-        await fileReader.setPosition(start);
-        final chunkBytes = await fileReader.read(chunkLength);
+        final chunkBytes = await source.readRange(start, chunkLength);
 
         // Per-chunk retry for transient 5xx / network errors.
         // Chunk bytes are already in memory so retries are cheap.
@@ -1136,7 +1229,7 @@ class BlossomUploadService {
 
       return currentSession;
     } finally {
-      await fileReader.close();
+      await source.close();
     }
   }
 
@@ -1182,10 +1275,7 @@ class BlossomUploadService {
     final response = await dio.post<dynamic>(
       '$serverUrl/upload/${session.uploadId}/complete',
       data: {'sha256': fileHash},
-      options: Options(
-        headers: headers,
-        validateStatus: _validateHttpStatus,
-      ),
+      options: Options(headers: headers, validateStatus: _validateHttpStatus),
     );
     completeStopwatch.stop();
 
@@ -1205,7 +1295,7 @@ class BlossomUploadService {
 
   Future<BlossomUploadResult> _uploadToServerResumable({
     required String serverUrl,
-    required File file,
+    required _UploadSource source,
     required String fileHash,
     required int fileSize,
     required String contentType,
@@ -1220,16 +1310,14 @@ class BlossomUploadService {
             fileHash: fileHash,
             fileSize: fileSize,
             contentType: contentType,
-            fileName: file.uri.pathSegments.isEmpty
-                ? 'upload.bin'
-                : file.uri.pathSegments.last,
+            fileName: source.filename,
           )
         : await _queryResumableUploadSession(resumableSession);
     onResumableSessionUpdated?.call(initialSession);
 
     final uploadedSession = await _uploadChunks(
       session: initialSession,
-      file: file,
+      source: source,
       fileSize: fileSize,
       onProgress: onProgress,
       onResumableSessionUpdated: onResumableSessionUpdated,
@@ -1346,7 +1434,7 @@ class BlossomUploadService {
   /// progress callbacks, and response parsing.
   Future<BlossomUploadResult> _uploadToServer({
     required String serverUrl,
-    required File file,
+    required _UploadSource source,
     required String fileHash,
     required int fileSize,
     required String contentType,
@@ -1403,12 +1491,13 @@ class BlossomUploadService {
         category: LogCategory.video,
       );
 
-      // PUT request with file stream (Blossom BUD-01 spec)
-      // Using stream instead of bytes to avoid loading entire file into memory
-      final fileStream = file.openRead();
+      // PUT body comes from the upload source: a streamed `Stream<List<int>>`
+      // for file-backed sources (constant-memory upload, used for video and
+      // audio) or the raw `Uint8List` for byte-backed sources (used by the
+      // web image-upload path where there is no filesystem to stream from).
       final response = await dio.put<dynamic>(
         '$serverUrl/upload',
-        data: fileStream,
+        data: source.getStreamingBody(),
         options: Options(
           headers: headers,
           validateStatus: // coverage:ignore-start
@@ -1617,12 +1706,13 @@ class BlossomUploadService {
           }
 
           late BlossomUploadResult result;
+          final videoSource = _FileUploadSource(videoFile);
           if (useResumable) {
             result = await _uploadWithSingleLegacyFallback(
               serverUrl: serverUrl,
               uploadResumable: () => _uploadToServerResumable(
                 serverUrl: serverUrl,
-                file: videoFile,
+                source: videoSource,
                 fileHash: fileHash,
                 fileSize: fileSize,
                 contentType: 'video/mp4',
@@ -1634,7 +1724,7 @@ class BlossomUploadService {
               uploadLegacyFallback: (fallbackReason) =>
                   _uploadToServerLegacyFallback(
                     serverUrl: serverUrl,
-                    file: videoFile,
+                    source: videoSource,
                     fileHash: fileHash,
                     fileSize: fileSize,
                     contentType: 'video/mp4',
@@ -1646,7 +1736,7 @@ class BlossomUploadService {
           } else {
             result = await _uploadToServer(
               serverUrl: serverUrl,
-              file: videoFile,
+              source: videoSource,
               fileHash: fileHash,
               fileSize: fileSize,
               contentType: 'video/mp4',
@@ -1773,6 +1863,12 @@ class BlossomUploadService {
   ///
   /// This uses the same Blossom BUD-01 protocol as video
   /// uploads but with image MIME type.
+  ///
+  /// Native callers should prefer this entry point because
+  /// [ImageMetadataStripper.stripMetadataInPlace] dispatches to a
+  /// hardware-accelerated platform stripper. The web image path cannot use
+  /// `dart:io` `File` against an `image_picker` blob URL — it should call
+  /// [uploadImageBytes] instead, which strips via the pure-Dart bytes API.
   Future<BlossomUploadResult> uploadImage({
     required File imageFile,
     required String nostrPubkey,
@@ -1816,139 +1912,14 @@ class BlossomUploadService {
 
       onProgress?.call(0.2);
 
-      // Get ordered list of servers to try
-      final serverUrls = await _getServerUrlsForUpload();
-
-      Log.info(
-        'Trying ${serverUrls.length} Blossom servers for image upload',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
+      return _uploadImageSourceToServers(
+        source: _FileUploadSource(strippedFile),
+        fileHash: fileHash,
+        fileSize: fileSize,
+        contentType: mimeType,
+        maxAttempts: maxAttempts,
+        onProgress: onProgress,
       );
-
-      BlossomUploadResult? lastError;
-
-      // Try each server in order until one succeeds
-      for (final serverUrl in serverUrls) {
-        try {
-          Log.info(
-            'Attempting image upload to: $serverUrl',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-
-          final capability = await _fetchDivineUploadCapability(serverUrl);
-
-          // Retry the actual upload work on transient 5xx / network blips
-          // before falling through to the next configured server. Capability
-          // discovery is not retried here — it has its own fail-soft path
-          // (`_isTransientCapabilityDiscoveryError`).
-          //
-          // #3862: previously a single 503 from the only server in the list
-          // (default config has just `media.divine.video`) surfaced to the
-          // user as a hard failure with no automatic recovery.
-          final result = await _uploadWithRetry(
-            attempt: () {
-              if (capability.supportsResumable) {
-                return _uploadWithSingleLegacyFallback(
-                  serverUrl: serverUrl,
-                  uploadResumable: () => _uploadToServerResumable(
-                    serverUrl: serverUrl,
-                    file: strippedFile,
-                    fileHash: fileHash,
-                    fileSize: fileSize,
-                    contentType: mimeType,
-                    onProgress: onProgress,
-                  ),
-                  uploadLegacyFallback: (fallbackReason) =>
-                      _uploadToServerLegacyFallback(
-                        serverUrl: serverUrl,
-                        file: strippedFile,
-                        fileHash: fileHash,
-                        fileSize: fileSize,
-                        contentType: mimeType,
-                        fallbackReason: fallbackReason,
-                        onProgress: onProgress,
-                      ),
-                );
-              }
-              return _uploadToServer(
-                serverUrl: serverUrl,
-                file: strippedFile,
-                fileHash: fileHash,
-                fileSize: fileSize,
-                contentType: mimeType,
-                onProgress: onProgress,
-              );
-            },
-            maxAttempts: maxAttempts,
-            debugContext: 'uploadImage($serverUrl)',
-          );
-
-          if (result.success) {
-            // Construct canonical Blossom URL from server + hash
-            final canonicalUrl = '$_defaultServerUrl/$fileHash';
-
-            Log.info(
-              'Image uploaded to: $serverUrl',
-              name: 'BlossomUploadService',
-              category: LogCategory.video,
-            );
-            Log.info(
-              '  Canonical URL: $canonicalUrl',
-              name: 'BlossomUploadService',
-              category: LogCategory.video,
-            );
-
-            return BlossomUploadResult(
-              success: true,
-              url: canonicalUrl,
-              fallbackUrl: canonicalUrl,
-              videoId: fileHash,
-            );
-          }
-
-          lastError = result;
-          Log.warning(
-            'Upload to $serverUrl failed: '
-            '${result.errorMessage}, '
-            'trying next server...',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-          // coverage:ignore-start
-        } on Object catch (e) {
-          final statusCode = e is DioException ? e.response?.statusCode : null;
-          lastError = BlossomUploadResult(
-            success: false,
-            statusCode: statusCode,
-            errorMessage: 'Upload to $serverUrl failed: $e',
-            failureReason: _classifyUploadException(e),
-          );
-          Log.warning(
-            'Upload to $serverUrl failed: $e, '
-            'trying next server...',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-          continue;
-          // coverage:ignore-end
-        }
-      }
-
-      // All servers failed
-      Log.error(
-        'All ${serverUrls.length} servers failed '
-        'for image upload',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
-      );
-
-      return lastError ??
-          const BlossomUploadResult(
-            success: false,
-            errorMessage: 'All servers failed',
-            failureReason: BlossomUploadFailureReason.unknown,
-          );
     } on Object catch (e) {
       Log.error(
         'Image upload exception: $e',
@@ -1961,6 +1932,220 @@ class BlossomUploadService {
         failureReason: _classifyUploadException(e),
       );
     }
+  }
+
+  /// Upload raw image bytes to the configured Blossom server.
+  ///
+  /// Designed for the web upload path, where [ImageMetadataStripper]'s
+  /// platform-channel based stripping cannot run and `dart:io` `File`
+  /// constructed from an `image_picker` blob URL throws on the first I/O
+  /// call. EXIF stripping happens in pure Dart via
+  /// [ImageMetadataStripper.stripMetadataBytes].
+  ///
+  /// Native callers that already hold a real filesystem `File` should
+  /// prefer [uploadImage] so they get the hardware-accelerated platform
+  /// stripper.
+  ///
+  /// [filename] is used to pick the EXIF strategy (JPEG-direct vs PNG
+  /// re-encode vs generic decode→JPEG) and is sent to the resumable
+  /// init endpoint. Defaults to `upload.jpg` for unnamed payloads.
+  Future<BlossomUploadResult> uploadImageBytes({
+    required Uint8List bytes,
+    required String nostrPubkey,
+    String? filename,
+    String mimeType = 'image/jpeg',
+    void Function(double)? onProgress,
+    int maxAttempts = _defaultUploadImageMaxAttempts,
+  }) async {
+    assert(maxAttempts >= 1, 'maxAttempts must be at least 1');
+    try {
+      if (!authProvider.isAuthenticated) {
+        return const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Not authenticated',
+          failureReason: BlossomUploadFailureReason.auth,
+        );
+      }
+
+      onProgress?.call(0.1);
+
+      final stripped = ImageMetadataStripper.stripMetadataBytes(
+        bytes: bytes,
+        filename: filename ?? 'upload.jpg',
+      );
+      final processedBytes = stripped.bytes;
+      final processedFilename = stripped.filename;
+
+      final fileHash = HashUtil.sha256Hash(processedBytes);
+      final fileSize = processedBytes.length;
+
+      Log.info(
+        'Image bytes hash: $fileHash, size: $fileSize bytes, '
+        'filename: $processedFilename',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+
+      onProgress?.call(0.2);
+
+      return _uploadImageSourceToServers(
+        source: _BytesUploadSource(
+          bytes: processedBytes,
+          filename: processedFilename,
+        ),
+        fileHash: fileHash,
+        fileSize: fileSize,
+        contentType: mimeType,
+        maxAttempts: maxAttempts,
+        onProgress: onProgress,
+      );
+    } on Object catch (e) {
+      Log.error(
+        'Image upload exception: $e',
+        name: 'BlossomUploadService',
+        category: LogCategory.video,
+      );
+      return BlossomUploadResult(
+        success: false,
+        errorMessage: 'Image upload failed: $e',
+        failureReason: _classifyUploadException(e),
+      );
+    }
+  }
+
+  Future<BlossomUploadResult> _uploadImageSourceToServers({
+    required _UploadSource source,
+    required String fileHash,
+    required int fileSize,
+    required String contentType,
+    required int maxAttempts,
+    void Function(double)? onProgress,
+  }) async {
+    // Get ordered list of servers to try
+    final serverUrls = await _getServerUrlsForUpload();
+
+    Log.info(
+      'Trying ${serverUrls.length} Blossom servers for image upload',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
+
+    BlossomUploadResult? lastError;
+
+    // Try each server in order until one succeeds
+    for (final serverUrl in serverUrls) {
+      try {
+        Log.info(
+          'Attempting image upload to: $serverUrl',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
+        final capability = await _fetchDivineUploadCapability(serverUrl);
+
+        final result = await _uploadWithRetry(
+          attempt: () {
+            if (capability.supportsResumable) {
+              return _uploadWithSingleLegacyFallback(
+                serverUrl: serverUrl,
+                uploadResumable: () => _uploadToServerResumable(
+                  serverUrl: serverUrl,
+                  source: source,
+                  fileHash: fileHash,
+                  fileSize: fileSize,
+                  contentType: contentType,
+                  onProgress: onProgress,
+                ),
+                uploadLegacyFallback: (fallbackReason) =>
+                    _uploadToServerLegacyFallback(
+                      serverUrl: serverUrl,
+                      source: source,
+                      fileHash: fileHash,
+                      fileSize: fileSize,
+                      contentType: contentType,
+                      fallbackReason: fallbackReason,
+                      onProgress: onProgress,
+                    ),
+              );
+            }
+            return _uploadToServer(
+              serverUrl: serverUrl,
+              source: source,
+              fileHash: fileHash,
+              fileSize: fileSize,
+              contentType: contentType,
+              onProgress: onProgress,
+            );
+          },
+          maxAttempts: maxAttempts,
+          debugContext: 'uploadImage($serverUrl)',
+        );
+
+        if (result.success) {
+          // Construct canonical Blossom URL from server + hash
+          final canonicalUrl = '$_defaultServerUrl/$fileHash';
+
+          Log.info(
+            'Image uploaded to: $serverUrl',
+            name: 'BlossomUploadService',
+            category: LogCategory.video,
+          );
+          Log.info(
+            '  Canonical URL: $canonicalUrl',
+            name: 'BlossomUploadService',
+            category: LogCategory.video,
+          );
+
+          return BlossomUploadResult(
+            success: true,
+            url: canonicalUrl,
+            fallbackUrl: canonicalUrl,
+            videoId: fileHash,
+          );
+        }
+
+        lastError = result;
+        Log.warning(
+          'Upload to $serverUrl failed: '
+          '${result.errorMessage}, '
+          'trying next server...',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        // coverage:ignore-start
+      } on Object catch (e) {
+        final statusCode = e is DioException ? e.response?.statusCode : null;
+        lastError = BlossomUploadResult(
+          success: false,
+          statusCode: statusCode,
+          errorMessage: 'Upload to $serverUrl failed: $e',
+          failureReason: _classifyUploadException(e),
+        );
+        Log.warning(
+          'Upload to $serverUrl failed: $e, '
+          'trying next server...',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        continue;
+        // coverage:ignore-end
+      }
+    }
+
+    // All servers failed
+    Log.error(
+      'All ${serverUrls.length} servers failed '
+      'for image upload',
+      name: 'BlossomUploadService',
+      category: LogCategory.video,
+    );
+
+    return lastError ??
+        const BlossomUploadResult(
+          success: false,
+          errorMessage: 'All servers failed',
+          failureReason: BlossomUploadFailureReason.unknown,
+        );
   }
 
   /// Upload a bug report file (text/plain) to the configured
@@ -2020,7 +2205,7 @@ class BlossomUploadService {
 
           final result = await _uploadToServer(
             serverUrl: serverUrl,
-            file: bugReportFile,
+            source: _FileUploadSource(bugReportFile),
             fileHash: fileHash,
             fileSize: fileSize,
             contentType: 'text/plain',
@@ -2211,7 +2396,7 @@ class BlossomUploadService {
 
           final result = await _uploadToServer(
             serverUrl: serverUrl,
-            file: audioFile,
+            source: _FileUploadSource(audioFile),
             fileHash: fileHash,
             fileSize: fileSize,
             contentType: mimeType,

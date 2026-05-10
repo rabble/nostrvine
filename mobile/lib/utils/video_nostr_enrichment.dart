@@ -54,6 +54,12 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
     for (final event in nostrEvents) {
       try {
         final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
+        Log.info(
+          'enrichVideos: parsed Nostr event ${parsed.id} '
+          'blurhash=${parsed.blurhash} '
+          'rawTags.len=${parsed.rawTags.length}',
+          name: callerName,
+        );
         if (parsed.rawTags.isNotEmpty) {
           nostrEventsMap[parsed.id] = parsed;
         }

@@ -32,6 +32,7 @@ class UserProfile {
     this.nip05,
     this.lud16,
     this.lud06,
+    this.rawTags = const [],
   });
 
   /// Create UserProfile from a Nostr kind 0 event
@@ -58,6 +59,9 @@ class UserProfile {
         lud16: content['lud16']?.toString(),
         lud06: content['lud06']?.toString(),
         rawData: content,
+        rawTags: List<List<String>>.unmodifiable(
+          event.tags.map(List<String>.unmodifiable),
+        ),
         createdAt: event.createdAtDateTime,
         eventId: event.id,
       );
@@ -73,24 +77,35 @@ class UserProfile {
   }
 
   /// Create profile from JSON
-  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
-    pubkey: json['pubkey'] as String,
-    name: json['name'] as String?,
-    displayName: json['display_name'] as String?,
-    about: json['about'] as String?,
-    picture: json['picture'] as String?,
-    banner: json['banner'] as String?,
-    website: json['website'] as String?,
-    nip05: json['nip05'] as String?,
-    lud16: json['lud16'] as String?,
-    lud06: json['lud06'] as String?,
-    rawData: json['raw_data'] as Map<String, dynamic>? ?? {},
-    createdAt: DateTime.fromMillisecondsSinceEpoch(
-      json['created_at'] as int,
-      isUtc: true,
-    ),
-    eventId: json['event_id'] as String,
-  );
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    final rawTagsJson = json['raw_tags'] as List<dynamic>?;
+    final parsedRawTags = rawTagsJson == null
+        ? const <List<String>>[]
+        : List<List<String>>.unmodifiable(
+            rawTagsJson.cast<List<dynamic>>().map(
+              (tag) => List<String>.unmodifiable(tag.cast<String>()),
+            ),
+          );
+    return UserProfile(
+      pubkey: json['pubkey'] as String,
+      name: json['name'] as String?,
+      displayName: json['display_name'] as String?,
+      about: json['about'] as String?,
+      picture: json['picture'] as String?,
+      banner: json['banner'] as String?,
+      website: json['website'] as String?,
+      nip05: json['nip05'] as String?,
+      lud16: json['lud16'] as String?,
+      lud06: json['lud06'] as String?,
+      rawData: json['raw_data'] as Map<String, dynamic>? ?? {},
+      rawTags: parsedRawTags,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(
+        json['created_at'] as int,
+        isUtc: true,
+      ),
+      eventId: json['event_id'] as String,
+    );
+  }
 
   /// Creates a [UserProfile] from a typed [UserProfileFound] result.
   ///
@@ -160,6 +175,13 @@ class UserProfile {
   final Map<String, dynamic> rawData;
   final DateTime createdAt;
   final String eventId;
+
+  /// Raw tags from the source kind 0 event, preserved for callers that need
+  /// to inspect them (e.g. NIP-39 `i` identity claim parsing).
+  ///
+  /// Defaults to an empty list when the profile was constructed from a source
+  /// that doesn't carry tags (REST API, Drift cache row, malformed event).
+  final List<List<String>> rawTags;
 
   /// Get shortened pubkey for display
   String get shortPubkey {
@@ -397,6 +419,7 @@ class UserProfile {
     'created_at': createdAt.millisecondsSinceEpoch,
     'event_id': eventId,
     'raw_data': rawData,
+    'raw_tags': rawTags,
   };
 
   /// Create copy with updated fields
@@ -411,6 +434,7 @@ class UserProfile {
     String? lud16,
     String? lud06,
     Map<String, dynamic>? rawData,
+    List<List<String>>? rawTags,
   }) => UserProfile(
     pubkey: pubkey,
     name: name ?? this.name,
@@ -423,6 +447,7 @@ class UserProfile {
     lud16: lud16 ?? this.lud16,
     lud06: lud06 ?? this.lud06,
     rawData: rawData ?? this.rawData,
+    rawTags: rawTags ?? this.rawTags,
     createdAt: createdAt,
     eventId: eventId,
   );

@@ -3320,6 +3320,111 @@ final class ProfileRepositoryProvider
 
 String _$profileRepositoryHash() => r'150346c88eeee57501b7dfac4c5e5904d99f0e56';
 
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+
+@ProviderFor(verifierClient)
+const verifierClientProvider = VerifierClientProvider._();
+
+/// Provider for [VerifierClient] pointed at the current environment's
+/// verifier base URL. Stateless — every call hits the network.
+
+final class VerifierClientProvider
+    extends $FunctionalProvider<VerifierClient, VerifierClient, VerifierClient>
+    with $Provider<VerifierClient> {
+  /// Provider for [VerifierClient] pointed at the current environment's
+  /// verifier base URL. Stateless — every call hits the network.
+  const VerifierClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'verifierClientProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$verifierClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<VerifierClient> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  VerifierClient create(Ref ref) {
+    return verifierClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VerifierClient value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VerifierClient>(value),
+    );
+  }
+}
+
+String _$verifierClientHash() => r'1d6966c5483814cd7fa203e7e9e198dc5c9c232d';
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+
+@ProviderFor(identityClaimsRepository)
+const identityClaimsRepositoryProvider = IdentityClaimsRepositoryProvider._();
+
+/// Provider for [IdentityClaimsRepository] composing the verifier client
+/// with NIP-39 i tag parsing.
+
+final class IdentityClaimsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          IdentityClaimsRepository,
+          IdentityClaimsRepository,
+          IdentityClaimsRepository
+        >
+    with $Provider<IdentityClaimsRepository> {
+  /// Provider for [IdentityClaimsRepository] composing the verifier client
+  /// with NIP-39 i tag parsing.
+  const IdentityClaimsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'identityClaimsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$identityClaimsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<IdentityClaimsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  IdentityClaimsRepository create(Ref ref) {
+    return identityClaimsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(IdentityClaimsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<IdentityClaimsRepository>(value),
+    );
+  }
+}
+
+String _$identityClaimsRepositoryHash() =>
+    r'451c65b551cddcf8cf2ef3d23ac862ab0ae1441d';
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
 @ProviderFor(notificationServiceEnhanced)

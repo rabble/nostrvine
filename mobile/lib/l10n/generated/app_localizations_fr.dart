@@ -908,6 +908,39 @@ class AppLocalizationsFr extends AppLocalizations {
       'Utilise le champ nom d\'utilisateur ci-dessus pour divine.video';
 
   @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
+
+  @override
   String get profileSetupProfilePicturePreview =>
       'Aperçu de la photo de profil';
 
@@ -5180,8 +5213,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryWrestling => 'Catch';
 
   @override
-  String get profileSetupUploadSuccess =>
-      'Photo de profil importée avec succès !';
+  String get profileSetupUploadStaged =>
+      'Importée — touchez Enregistrer pour appliquer';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -7114,4 +7147,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Réponse à la vidéo';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Compte $platform vérifié : $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Comptes vérifiés';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Vérifie-toi';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Connecte tes réseaux sociaux pour que les gens sachent que c\'est vraiment toi.';
 }

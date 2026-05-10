@@ -68,6 +68,16 @@ class ProfileFeed extends _$ProfileFeed {
   /// Guard against duplicate listener registration from retained-state path.
   bool _listenersRegistered = false;
 
+  /// True while a cold-load initial fetch is in flight. Cleared when any
+  /// source produces a definitive answer (videos arrive, REST settles
+  /// success-or-empty) or [initialLoadHardTimeout] fires. Drives the
+  /// `isInitialLoad` flag emitted on [VideoFeedState] so the videos tab
+  /// stays in its loading state during the cold-start window — see
+  /// #4164.
+  bool _initialLoadPending = false;
+
+  Timer? _initialLoadTimer;
+
   /// Cached [VideoEventService] captured at build() time.
   ///
   /// Both [videoEventServiceProvider] and this notifier are keepAlive, so
@@ -81,6 +91,7 @@ class ProfileFeed extends _$ProfileFeed {
     // Reset REST pagination state at start of build to ensure clean state.
     _nextOffset = null;
     _listenersRegistered = false;
+    _completeInitialLoad();
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
@@ -126,6 +137,10 @@ class ProfileFeed extends _$ProfileFeed {
 
     authorVideos = _relayVideosSnapshot();
 
+    if (authorVideos.isEmpty) {
+      _beginInitialLoadTracking();
+    }
+
     unawaited(
       Future(() async {
         await _refreshFromNostrSource();
@@ -162,6 +177,53 @@ class ProfileFeed extends _$ProfileFeed {
   /// Staleness threshold — data older than this triggers a background refresh.
   @visibleForTesting
   static Duration staleTtl = const Duration(seconds: 30);
+
+  /// Hard ceiling on how long [_initialLoadPending] stays true if no source
+  /// settles. Aligned with [_restApiTimeout] so REST has a chance to
+  /// complete (success / empty / error) under normal connectivity, while
+  /// guaranteeing the loading spinner can't strand if both sources hang.
+  @visibleForTesting
+  static Duration initialLoadHardTimeout = const Duration(seconds: 10);
+
+  void _beginInitialLoadTracking() {
+    _initialLoadPending = true;
+    _initialLoadTimer?.cancel();
+    _initialLoadTimer = Timer(initialLoadHardTimeout, _onInitialLoadTimeout);
+  }
+
+  void _completeInitialLoad() {
+    if (!_initialLoadPending) {
+      _initialLoadTimer?.cancel();
+      _initialLoadTimer = null;
+      return;
+    }
+    _initialLoadPending = false;
+    _initialLoadTimer?.cancel();
+    _initialLoadTimer = null;
+  }
+
+  void _onInitialLoadTimeout() {
+    if (!_initialLoadPending) return;
+    _initialLoadPending = false;
+    _initialLoadTimer = null;
+    if (!ref.mounted) return;
+    final current = state.asData?.value;
+    if (current != null && current.isInitialLoad) {
+      _emitState(current.copyWith(isInitialLoad: false));
+    }
+  }
+
+  /// Whether [VideoFeedState.isInitialLoad] should remain `true` for an
+  /// emission with the given pending and videos-empty inputs. Extracted
+  /// as a pure function so call sites stay one-liners and the rule is
+  /// pinned by a unit test (#4164).
+  @visibleForTesting
+  static bool shouldKeepInitialLoad({
+    required bool initialLoadPending,
+    required bool videosEmpty,
+  }) {
+    return initialLoadPending && videosEmpty;
+  }
 
   /// Refresh in the background if cached data is stale.
   /// Returns immediately — UI keeps showing cached data, updates when done.
@@ -281,6 +343,7 @@ class ProfileFeed extends _$ProfileFeed {
       category: LogCategory.video,
     );
 
+    _completeInitialLoad();
     _emitState(
       currentState.copyWith(
         videos: updatedVideos,
@@ -312,6 +375,10 @@ class ProfileFeed extends _$ProfileFeed {
       _nextOffset = result.nextOffset ?? apiVideos.length;
 
       if (apiVideos.isNotEmpty) {
+        // REST returned videos — initial load is settled regardless of
+        // whether Nostr events have arrived yet (#4164).
+        _completeInitialLoad();
+
         final relayVideos = _relayVideosSnapshot();
         final authorVideos = _mergeVideoLists(
           relayVideos,
@@ -333,7 +400,10 @@ class ProfileFeed extends _$ProfileFeed {
               (apiVideos.length >= AppConstants.paginationBatchSize),
           totalVideoCount: _totalVideoCount,
           isRefreshing: false,
-          isInitialLoad: false,
+          isInitialLoad: shouldKeepInitialLoad(
+            initialLoadPending: _initialLoadPending,
+            videosEmpty: filteredVideos.isEmpty,
+          ),
           mergeWithCurrent: false,
         );
 
@@ -351,7 +421,10 @@ class ProfileFeed extends _$ProfileFeed {
                   (apiVideos.length >= AppConstants.paginationBatchSize),
               totalVideoCount: _totalVideoCount,
               isRefreshing: false,
-              isInitialLoad: false,
+              isInitialLoad: shouldKeepInitialLoad(
+                initialLoadPending: _initialLoadPending,
+                videosEmpty: enrichedVideos.isEmpty,
+              ),
               mergeWithCurrent: false,
             );
           },
@@ -364,6 +437,9 @@ class ProfileFeed extends _$ProfileFeed {
           category: LogCategory.video,
         );
       } else {
+        // REST is authoritative for "user has no videos" — settle the
+        // initial-load tracker so the empty state can render (#4164).
+        _completeInitialLoad();
         _mergeSourceVideos(
           const <VideoEvent>[],
           hasMoreContent: false,
@@ -852,6 +928,13 @@ class ProfileFeed extends _$ProfileFeed {
         return;
       }
 
+      // Relay events arrived — settle initial-load tracker so the cold-load
+      // spinner clears (#4164). Only when videos are actually present;
+      // otherwise REST or [initialLoadHardTimeout] decides.
+      if (updatedVideos.isNotEmpty) {
+        _completeInitialLoad();
+      }
+
       _emitState(
         currentState.copyWith(
           videos: updatedVideos,
@@ -859,7 +942,10 @@ class ProfileFeed extends _$ProfileFeed {
               ? currentState.hasMoreContent
               : updatedVideos.length >= AppConstants.hasMoreContentThreshold,
           isRefreshing: false,
-          isInitialLoad: false,
+          isInitialLoad: shouldKeepInitialLoad(
+            initialLoadPending: _initialLoadPending,
+            videosEmpty: updatedVideos.isEmpty,
+          ),
           lastUpdated: DateTime.now(),
         ),
       );
@@ -890,6 +976,8 @@ class ProfileFeed extends _$ProfileFeed {
     ref.onDispose(() {
       unregisterUpdate();
       unregisterNew();
+      _initialLoadTimer?.cancel();
+      _initialLoadTimer = null;
     });
   }
 
@@ -899,6 +987,15 @@ class ProfileFeed extends _$ProfileFeed {
       if (!ref.mounted) return;
 
       final relayVideos = _relayVideosSnapshot();
+      // `subscribeToUserVideos` returns when the subscription is registered,
+      // not when EVENT messages arrive. If the snapshot is still empty here
+      // we must keep `isInitialLoad: true` until either the relay listener
+      // produces videos, REST settles, or [initialLoadHardTimeout] fires —
+      // otherwise the videos tab flashes "No videos" during the cold-start
+      // fetch window (#4164).
+      if (relayVideos.isNotEmpty) {
+        _completeInitialLoad();
+      }
       final currentState = state.asData?.value;
       _mergeSourceVideos(
         relayVideos,
@@ -907,7 +1004,10 @@ class ProfileFeed extends _$ProfileFeed {
             : relayVideos.length >= AppConstants.hasMoreContentThreshold,
         totalVideoCount: currentState?.totalVideoCount,
         isRefreshing: false,
-        isInitialLoad: false,
+        isInitialLoad: shouldKeepInitialLoad(
+          initialLoadPending: _initialLoadPending,
+          videosEmpty: relayVideos.isEmpty,
+        ),
         isFetchingTotalCount: currentState?.isFetchingTotalCount ?? false,
       );
     } catch (error, stackTrace) {

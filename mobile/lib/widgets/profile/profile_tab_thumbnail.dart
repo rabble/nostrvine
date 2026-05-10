@@ -52,8 +52,9 @@ class _Fallback extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (blurhash != null && blurhash!.isNotEmpty) {
-      return BlurhashDisplay(blurhash: blurhash!);
+    final blurhashValue = blurhash;
+    if (blurhashValue != null && blurhashValue.isNotEmpty) {
+      return BlurhashDisplay(blurhash: blurhashValue);
     }
     return const ProfileTabThumbnailPlaceholder();
   }

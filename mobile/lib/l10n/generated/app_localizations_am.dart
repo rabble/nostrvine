@@ -859,6 +859,39 @@ class AppLocalizationsAm extends AppLocalizations {
       'ለdivine.video ከላይ ያለውን የተጠቃሚ ስም መስክ ይጠቀሙ';
 
   @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
+
+  @override
   String get profileSetupProfilePicturePreview => 'የመገለጫ ስዕል ቅድመ እይታ';
 
   @override
@@ -5003,7 +5036,7 @@ class AppLocalizationsAm extends AppLocalizations {
   String get categoryWrestling => 'ትግል';
 
   @override
-  String get profileSetupUploadSuccess => 'የመገለጫ ስዕል በተሳካ ሁኔታ ተሰቅሏል!';
+  String get profileSetupUploadStaged => 'ተሰቅሏል — ለመተግበር አስቀምጥን ጠቅ ያድርጉ';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -6846,4 +6879,19 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'ምላሽ ለ ቪዲዮ';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'የተረጋገጠ $platform መለያ: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'የተረጋገጡ መለያዎች';
+
+  @override
+  String get profileEditGetVerifiedCta => 'ተረጋግጥ';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'ሰዎች በእርግጥ አንተ መሆንህን እንዲያውቁ የማህበራዊ ሚዲያ መለያዎችህን አገናኝ።';
 }
