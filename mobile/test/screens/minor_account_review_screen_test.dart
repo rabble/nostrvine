@@ -119,8 +119,8 @@ void main() {
         find.text('If the account belongs to someone 13 to 15'),
         findsOneWidget,
       );
-      expect(find.text('What to include'), findsOneWidget);
-      expect(find.text('What happens next'), findsOneWidget);
+      expect(find.text('What the video should show'), findsOneWidget);
+      expect(find.text('How to send it'), findsOneWidget);
       expect(
         find.text('Email Divine support', skipOffstage: false),
         findsOneWidget,
