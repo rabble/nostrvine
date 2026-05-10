@@ -248,7 +248,8 @@ class _ConversationContent extends StatelessWidget {
       ConversationState,
       ({ConversationStatus status, List<DmMessage> messages})
     >(
-      selector: (state) => (status: state.status, messages: state.messages),
+      selector: (state) =>
+          (status: state.status, messages: state.displayedMessages),
       builder: (context, selected) {
         return switch (selected.status) {
           ConversationStatus.initial ||

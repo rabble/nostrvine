@@ -220,6 +220,47 @@ void main() {
         expect(find.text('Hello there!'), findsOneWidget);
       });
 
+      // Regression for #4193 — the user-visible bubble list reads from
+      // `state.displayedMessages`, which projects pending optimistic rows
+      // on top of the persisted ones. When the watchMessages stream
+      // hasn't yet delivered the persisted row (the freshly-searched
+      // conversation case, or the microsecond gap between the persistence
+      // transaction commit and the watch tick), the optimistic in
+      // `pendingOptimistic` is the only thing the user has — and it must
+      // be visible.
+      testWidgets(
+        'renders $MessageBubble when only pendingOptimistic is populated '
+        '(regression for #4193)',
+        (tester) async {
+          final optimistic = DmMessage(
+            id: 'pending-test-uuid',
+            conversationId:
+                'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            senderPubkey: currentPubkey,
+            content: 'Optimistic in flight',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            giftWrapId: 'pending-test-uuid',
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: ConversationState(
+                status: ConversationStatus.loaded,
+                pendingOptimistic: {'pending-test-uuid': optimistic},
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(MessageBubble), findsOneWidget);
+          expect(find.text('Optimistic in flight'), findsOneWidget);
+          // EmptyConversation must NOT render — `messages.isEmpty` alone
+          // is not enough to declare the conversation empty when an
+          // optimistic is in flight.
+          expect(find.byType(EmptyConversation), findsNothing);
+        },
+      );
+
       testWidgets('renders display name from profile in app bar', (
         tester,
       ) async {

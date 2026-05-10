@@ -214,22 +214,34 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.displayedMessages.first.content,
                   'optimistic message content',
                   'Hello',
                 )
                 .having(
-                  (s) => s.messages.first.senderPubkey,
+                  (s) => s.displayedMessages.first.senderPubkey,
                   'optimistic message sender',
                   senderPubkey,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic carries the in-flight row',
+                  1,
                 ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sent — '
+                  'the watch tick brings the persisted row (#4193)',
+                  isEmpty,
+                ),
           ],
         );
 
@@ -255,24 +267,40 @@ void main() {
             ),
           ),
           expect: () => [
-            // Sending: optimistic added.
+            // Sending: optimistic added to the pendingOptimistic slice.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend cleared on new attempt',
                   isNull,
                 ),
-            // Failed: optimistic stripped, lastFailedSend populated so the
-            // UI can offer a retry. Without the strip, the optimistic
-            // would survive in bloc memory until pop, then vanish on
-            // re-entry — the "looks sent, then disappeared" bug.
+            // Failed: pendingOptimistic stripped, lastFailedSend populated
+            // so the UI can offer a retry. Without the strip, the
+            // optimistic would survive in bloc memory until pop, then
+            // vanish on re-entry — the "looks sent, then disappeared" bug
+            // (#3902 / #3908).
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
                 .having(
-                  (s) => s.messages,
-                  'messages',
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.displayedMessages,
+                  'displayedMessages',
                   isEmpty,
                 )
                 .having(
@@ -287,6 +315,133 @@ void main() {
                 ),
           ],
           errors: () => [isA<Exception>()],
+        );
+
+        // Regression for #4193 — sent DM does not appear until app restart.
+        //
+        // Pre-fix the optimistic lived in `state.messages`, which the
+        // `_onStarted.emit.forEach.onData` callback replaces wholesale on
+        // every watchMessages tick. For a freshly-searched conversation
+        // the watch's first tick is `[]`, so the optimistic was wiped the
+        // moment the watch subscription took effect — exactly when the
+        // user looks at the conversation right after tapping send.
+        //
+        // Post-fix the optimistic lives in `state.pendingOptimistic`,
+        // which the watch path never touches. This test drives a real
+        // `StreamController<List<DmMessage>>` so the empty tick happens
+        // mid-send, and pins that the user-visible row (via
+        // `state.displayedMessages`) survives.
+        blocTest<ConversationBloc, ConversationState>(
+          'optimistic survives a watchMessages tick that arrives mid-send '
+          '(regression for #4193)',
+          setUp: () {
+            final controller = StreamController<List<DmMessage>>();
+            when(
+              () => mockDmRepository.markConversationAsRead(conversationId),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockDmRepository.watchMessages(conversationId),
+            ).thenAnswer((_) => controller.stream);
+            when(
+              () => mockDmRepository.sendMessage(
+                recipientPubkey: recipientPubkey,
+                content: 'Hello',
+              ),
+            ).thenAnswer((_) async {
+              // Models the production race: the watch tick's empty list
+              // (a freshly-searched conversation has no rows yet) lands
+              // while sendMessage is still awaiting the relay round-trip,
+              // BEFORE the persistence transaction commits. Pre-#4193
+              // this tick wiped the optimistic from `state.messages`.
+              controller.add(const <DmMessage>[]);
+              await Future<void>.delayed(Duration.zero);
+              return NIP17SendResult.success(
+                rumorEventId: sentEventId,
+                messageEventId: sentEventId,
+                recipientPubkey: recipientPubkey,
+              );
+            });
+          },
+          build: buildBloc,
+          act: (bloc) async {
+            bloc.add(const ConversationStarted());
+            // Yield once so emit.forEach is subscribed before the send
+            // dispatches its optimistic emit. This is the production
+            // ordering when the user opens the page and types fast.
+            await Future<void>.delayed(Duration.zero);
+            bloc.add(
+              const ConversationMessageSent(
+                recipientPubkeys: [recipientPubkey],
+                content: 'Hello',
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 30),
+          // Pin the state-stream invariant: while the send is in flight
+          // and the watch tick lands empty, `displayedMessages` keeps the
+          // optimistic. Pre-#4193 the in-flight states had
+          // `displayedMessages.isEmpty` — the load-bearing bug.
+          expect: () => [
+            // ConversationStarted: loading. Watch hasn't emitted yet
+            // (the StreamController is open with no buffered values).
+            isA<ConversationState>()
+                .having((s) => s.status, 'status', ConversationStatus.loading)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic',
+                  isEmpty,
+                ),
+            // _onMessageSent fires before the watch emits anything (the
+            // controller is empty). status stays loading; optimistic
+            // lands in pendingOptimistic.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length while sending',
+                  1,
+                )
+                .having(
+                  (s) => s.displayedMessages.first.content,
+                  'displayedMessages.first.content while sending',
+                  'Hello',
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic carries the in-flight row',
+                  1,
+                ),
+            // Mid-send: the empty watchMessages tick lands. Pre-#4193 the
+            // optimistic lived in `state.messages` and was wiped here —
+            // this state would observe `displayedMessages.isEmpty` while
+            // `sendStatus == sending`. Post-fix the watch tick updates
+            // `messages` only; `pendingOptimistic` and therefore
+            // `displayedMessages` still carry the optimistic.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
+                .having((s) => s.status, 'status', ConversationStatus.loaded)
+                .having((s) => s.messages, 'messages from watch', isEmpty)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages survives empty watch tick (#4193)',
+                  1,
+                )
+                .having(
+                  (s) => s.displayedMessages.first.content,
+                  'optimistic content preserved',
+                  'Hello',
+                ),
+            // Sent: status flips, pending stripped. In production a watch
+            // tick with the persisted row arrives microseconds after the
+            // transaction commits — not modelled in this unit test.
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic',
+                  isEmpty,
+                ),
+          ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
@@ -321,15 +476,31 @@ void main() {
             ),
           ),
           expect: () => [
-            // New attempt: optimistic added, lastFailedSend cleared so a
-            // stale SnackBar can't refire from a previous failure.
+            // New attempt: optimistic added to pendingOptimistic,
+            // lastFailedSend cleared so a stale SnackBar can't refire
+            // from a previous failure.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1)
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                )
                 .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
-            // Success: status flips, lastFailedSend stays null.
+            // Success: status flips, pending stripped, lastFailedSend
+            // stays null.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sent',
+                  isEmpty,
+                )
                 .having((s) => s.lastFailedSend, 'lastFailedSend', isNull),
           ],
         );
@@ -360,16 +531,27 @@ void main() {
             ),
           ),
           // Partial-delivery: the recipient got the message and the local
-          // DB persist already happened inside DmRepository.sendMessage,
-          // so the optimistic stays — stripping it would race with the
-          // watchMessages re-emit and cause a brief disappearance.
-          // lastPartialSend records the rumor id whose self-wrap failed,
-          // so the SnackBar's Retry can recover via the self-wrap-only
-          // path without redelivering to the recipient (#4102).
+          // DB persist already happened inside DmRepository.sendMessage.
+          // The pendingOptimistic entry is stripped on sentPartial (same
+          // as sent) — the watch tick brings the persisted row, so the
+          // user-visible bubble is sourced from `messages`, not from the
+          // pending. lastPartialSend records the rumor id whose self-wrap
+          // failed, so the SnackBar's Retry can recover via the
+          // self-wrap-only path without redelivering to the recipient
+          // (#4102).
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
             isA<ConversationState>()
                 .having(
                   (s) => s.sendStatus,
@@ -377,9 +559,10 @@ void main() {
                   SendStatus.sentPartial,
                 )
                 .having(
-                  (s) => s.messages.length,
-                  'optimistic preserved',
-                  1,
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sentPartial — '
+                  'the persisted row arrives via watchMessages',
+                  isEmpty,
                 )
                 .having(
                   (s) => s.lastPartialSend,
@@ -428,15 +611,22 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.first.content,
                   'optimistic message content',
                   'Group hello',
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
                 ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
-            ),
+            isA<ConversationState>()
+                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped on sent',
+                  isEmpty,
+                ),
           ],
         );
 
@@ -466,10 +656,29 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages', isEmpty)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.displayedMessages,
+                  'displayedMessages',
+                  isEmpty,
+                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -578,10 +787,24 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages', isEmpty)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -617,10 +840,24 @@ void main() {
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.pendingOptimistic.length,
+                  'pendingOptimistic.length',
+                  1,
+                ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages, 'messages', isEmpty)
+                .having((s) => s.messages, 'messages untouched', isEmpty)
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped',
+                  isEmpty,
+                )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend',
@@ -658,14 +895,34 @@ void main() {
             ),
           ),
           expect: () => [
+            // Sending: optimistic on top of the seeded persisted message.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 2),
+                .having(
+                  (s) => s.displayedMessages.length,
+                  'displayedMessages.length',
+                  2,
+                )
+                .having(
+                  (s) => s.messages,
+                  'messages slice untouched (still just the seeded row)',
+                  equals(const [testMessage]),
+                ),
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
                 .having(
                   (s) => s.messages,
                   'messages preserves existing testMessage',
+                  equals(const [testMessage]),
+                )
+                .having(
+                  (s) => s.pendingOptimistic,
+                  'pendingOptimistic stripped (failed attempt only)',
+                  isEmpty,
+                )
+                .having(
+                  (s) => s.displayedMessages,
+                  'displayedMessages == messages once pending is gone',
                   equals(const [testMessage]),
                 ),
           ],
@@ -673,115 +930,77 @@ void main() {
         );
       });
 
-      // Regression for #3908 review feedback. The failure cleanup strips by
-      // `m.id != pendingId`, so the contract relies on every optimistic row
-      // having a unique id. The original implementation derived `pendingId`
-      // from a second-resolution timestamp; two sends within the same second
-      // collided, and the second one's failure stripped the first one's row
-      // along with its own. The fix replaces the timestamp with a UUID v4
-      // and exposes a test-only [ConversationBloc.pendingIdFactory] hook so
-      // this regression can be pinned without depending on real wall-clock
-      // timing.
+      // Regression for #3908 review feedback. The pendingId-UUID contract
+      // (vs second-resolution timestamps) is what lets the strip target a
+      // single attempt without trampling a sibling. Pre-#4193 the strip
+      // was a list-walk on `state.messages`, so sibling collision was
+      // observable; post-#4193 the optimistic lives in
+      // `state.pendingOptimistic` (a Map keyed by pendingId), so strip is
+      // a `Map.remove(pendingId)` and a UUID still guarantees the two
+      // attempts get distinct keys.
       group('pendingId uniqueness', () {
         blocTest<ConversationBloc, ConversationState>(
-          "failure cleanup strips only the failing attempt's optimistic "
-          'when a sibling optimistic from a prior send is still in state',
+          'failure strip removes only the failing pendingId — '
+          'a sibling pending entry from a prior context is preserved',
+          // Seed state with a sibling pending entry to model the contract
+          // directly. With the `sequential()` transformer real production
+          // never has two pendings alive at once, but the strip semantics
+          // (key-based, not list-walk) are what the contract enforces.
+          seed: () => const ConversationState(
+            pendingOptimistic: {
+              'pending-sibling': DmMessage(
+                id: 'pending-sibling',
+                conversationId: conversationId,
+                senderPubkey: senderPubkey,
+                content: 'sibling',
+                createdAt: 1700000000,
+                giftWrapId: 'pending-sibling',
+              ),
+            },
+          ),
           setUp: () {
-            var callCount = 0;
             when(
               () => mockDmRepository.sendMessage(
                 recipientPubkey: recipientPubkey,
-                content: any(named: 'content'),
+                content: 'Failing send',
               ),
-            ).thenAnswer((_) async {
-              callCount++;
-              if (callCount == 1) {
-                // First send resolves successfully but `watchMessages`
-                // stays silent — this models the production window where
-                // the DB write has committed but the stream emission has
-                // not yet reached the bloc, so the optimistic row from
-                // the first send is still present in `state.messages`.
-                return NIP17SendResult.success(
-                  rumorEventId: sentEventId,
-                  messageEventId: sentEventId,
-                  recipientPubkey: recipientPubkey,
-                );
-              }
-              return const NIP17SendResult.failure('Relay timeout');
-            });
+            ).thenThrow(Exception('Relay timeout'));
           },
           build: () {
-            var counter = 0;
-            return buildBloc(
-              pendingIdFactory: () => 'pending-${++counter}',
-            );
+            return buildBloc(pendingIdFactory: () => 'pending-failing');
           },
-          act: (bloc) async {
-            bloc.add(
-              const ConversationMessageSent(
-                recipientPubkeys: [recipientPubkey],
-                content: 'First',
-              ),
-            );
-            // Sequential() already serialises the two events; the explicit
-            // wait makes the timeline observable in the captured states.
-            await Future<void>.delayed(const Duration(milliseconds: 5));
-            bloc.add(
-              const ConversationMessageSent(
-                recipientPubkeys: [recipientPubkey],
-                content: 'Second',
-              ),
-            );
-          },
-          wait: const Duration(milliseconds: 30),
-          expect: () => [
-            // First attempt: optimistic added with pending-1.
-            isA<ConversationState>()
-                .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 1)
-                .having(
-                  (s) => s.messages.first.id,
-                  'first attempt pending id',
-                  'pending-1',
-                ),
-            isA<ConversationState>().having(
-              (s) => s.sendStatus,
-              'sendStatus',
-              SendStatus.sent,
+          act: (bloc) => bloc.add(
+            const ConversationMessageSent(
+              recipientPubkeys: [recipientPubkey],
+              content: 'Failing send',
             ),
-            // Second attempt starts before the watch stream has cleared
-            // the first's optimistic — both rows coexist, with distinct
-            // ids so the upcoming strip can target the right one.
+          ),
+          expect: () => [
+            // Sending: failing attempt's pending is added alongside the
+            // pre-existing sibling.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
-                .having((s) => s.messages.length, 'messages.length', 2)
                 .having(
-                  (s) => s.messages.first.id,
-                  'second attempt pending id',
-                  'pending-2',
-                )
-                .having(
-                  (s) => s.messages.last.id,
-                  'first attempt sibling still present',
-                  'pending-1',
+                  (s) => s.pendingOptimistic.keys.toSet(),
+                  'pendingOptimistic carries both keys',
+                  {'pending-sibling', 'pending-failing'},
                 ),
-            // Second attempt fails. Cleanup strips pending-2 only; the
-            // sibling pending-1 row remains. Under the old timestamp-
-            // based id this state would be `messages: isEmpty`.
+            // Failed: only the failing attempt's key is removed; the
+            // sibling pending is untouched. Under the old list-walk
+            // strip an off-by-one or shared id would have removed both.
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.failed)
-                .having((s) => s.messages.length, 'messages.length', 1)
                 .having(
-                  (s) => s.messages.single.id,
-                  'sibling optimistic preserved',
-                  'pending-1',
+                  (s) => s.pendingOptimistic.keys.toSet(),
+                  'sibling pending preserved, failing pending stripped',
+                  {'pending-sibling'},
                 )
                 .having(
                   (s) => s.lastFailedSend,
                   'lastFailedSend records the failing attempt only',
                   equals(
                     const FailedSend(
-                      content: 'Second',
+                      content: 'Failing send',
                       recipientPubkeys: [recipientPubkey],
                     ),
                   ),
@@ -842,7 +1061,7 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.first.content,
                   'content',
                   'First message',
                 ),
@@ -856,7 +1075,7 @@ void main() {
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
                 .having(
-                  (s) => s.messages.first.content,
+                  (s) => s.displayedMessages.first.content,
                   'content',
                   'Second message',
                 ),
@@ -1301,8 +1520,126 @@ void main() {
           SendStatus.idle,
           null,
           null,
+          <String, DmMessage>{},
         ]),
       );
+    });
+
+    test(
+      'pendingOptimistic defaults to empty and participates in equality',
+      () {
+        expect(
+          const ConversationState().pendingOptimistic,
+          equals(<String, DmMessage>{}),
+        );
+        const optimistic = DmMessage(
+          id: 'pending-test',
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: 'Hi',
+          createdAt: 1700000000,
+          giftWrapId: 'pending-test',
+        );
+        // Maps with structurally-equal contents compare equal via Equatable.
+        expect(
+          const ConversationState(
+            pendingOptimistic: {'pending-test': optimistic},
+          ),
+          equals(
+            const ConversationState(
+              pendingOptimistic: {'pending-test': optimistic},
+            ),
+          ),
+        );
+        expect(
+          const ConversationState(),
+          isNot(
+            equals(
+              const ConversationState(
+                pendingOptimistic: {'pending-test': optimistic},
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    group('displayedMessages projection', () {
+      const persisted1 = DmMessage(
+        id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: 'persisted-1',
+        // Newer than the optimistic below.
+        createdAt: 1700000010,
+        giftWrapId:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      );
+      const persisted0 = DmMessage(
+        id: 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: 'persisted-0',
+        // Older than the optimistic below.
+        createdAt: 1699999990,
+        giftWrapId:
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+      );
+      const optimistic = DmMessage(
+        id: 'pending-x',
+        conversationId: conversationId,
+        senderPubkey: senderPubkey,
+        content: 'in-flight',
+        createdAt: 1700000000,
+        giftWrapId: 'pending-x',
+      );
+
+      test('returns messages identity when pendingOptimistic is empty', () {
+        const state = ConversationState(messages: [persisted1, persisted0]);
+        expect(state.displayedMessages, same(state.messages));
+      });
+
+      test('puts in-flight pending above older persisted, below newer', () {
+        const state = ConversationState(
+          messages: [persisted1, persisted0],
+          pendingOptimistic: {'pending-x': optimistic},
+        );
+        // Newest first: persisted1 (1700000010) > optimistic (1700000000)
+        // > persisted0 (1699999990).
+        expect(
+          state.displayedMessages,
+          equals([persisted1, optimistic, persisted0]),
+        );
+      });
+
+      test('drops pending whose id collides with a persisted row', () {
+        // Defensive — production pending ids are `pending-<uuid>` and
+        // persisted ids are 64-char hex, but Equatable compares structurally
+        // and id collision must let the persisted row win.
+        const collidingPersisted = DmMessage(
+          id: 'pending-x',
+          conversationId: conversationId,
+          senderPubkey: senderPubkey,
+          content: 'persisted-version',
+          createdAt: 1700000000,
+          giftWrapId:
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+        );
+        const state = ConversationState(
+          messages: [collidingPersisted],
+          pendingOptimistic: {'pending-x': optimistic},
+        );
+        expect(state.displayedMessages, equals([collidingPersisted]));
+      });
+
+      test('returns an unmodifiable view when merge runs', () {
+        const state = ConversationState(
+          messages: [persisted1],
+          pendingOptimistic: {'pending-x': optimistic},
+        );
+        final view = state.displayedMessages;
+        expect(() => view.add(optimistic), throwsUnsupportedError);
+      });
     });
 
     test('states with different lastPartialSend are not equal', () {
