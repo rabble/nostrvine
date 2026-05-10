@@ -13479,13 +13479,13 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13Cta.
   ///
   /// In en, this message translates to:
-  /// **'Under 13: parent or guardian emails support'**
+  /// **'Under 13'**
   String get minorAccountReviewUnder13Cta;
 
   /// No description provided for @minorAccountReviewTeenCta.
   ///
   /// In en, this message translates to:
-  /// **'13 to 15: parent or guardian contacts support'**
+  /// **'Age 13-15'**
   String get minorAccountReviewTeenCta;
 
   /// No description provided for @minorAccountReviewFamilyResourcesTitle.
