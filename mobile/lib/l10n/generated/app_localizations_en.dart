@@ -7296,7 +7296,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentBody =>
-      'If parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.\n\nOtherwise, a parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.';
+      'A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.';
 
   @override
   String get minorAccountReviewParentConsentChecklist =>
