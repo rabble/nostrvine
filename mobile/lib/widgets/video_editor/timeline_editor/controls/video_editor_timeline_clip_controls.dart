@@ -47,9 +47,9 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
         onDone: isExtractingAudio
             ? null
             : () {
-                context
-                    .read<ClipEditorBloc>()
-                    .add(const ClipEditorEditingStopped());
+                context.read<ClipEditorBloc>().add(
+                  const ClipEditorEditingStopped(),
+                );
               },
       ),
     );
