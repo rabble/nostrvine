@@ -161,6 +161,44 @@ void main() {
         expect(richTextFinder, findsOneWidget);
       });
 
+      testWidgets(
+        'shows terms notice below the auth buttons and above the under-16 link',
+        (tester) async {
+          await tester.binding.setSurfaceSize(const Size(800, 1200));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(createTestWidget());
+          await tester.pumpAndSettle();
+
+          final createButton = find.text('Create a new Divine account');
+          final loginButton = find.text('Sign in with a different account');
+          final under16Link = find.text(
+            "Not 16 yet? That's OK. Here's what you can do.",
+          );
+          final termsNotice = find.byWidgetPredicate((widget) {
+            if (widget is RichText) {
+              final text = widget.text.toPlainText();
+              return text.contains('By selecting an option above') &&
+                  text.contains('Terms of Service');
+            }
+            return false;
+          });
+
+          expect(createButton, findsOneWidget);
+          expect(loginButton, findsOneWidget);
+          expect(termsNotice, findsOneWidget);
+          expect(under16Link, findsOneWidget);
+
+          final createBottom = tester.getBottomLeft(createButton).dy;
+          final loginBottom = tester.getBottomLeft(loginButton).dy;
+          final termsTop = tester.getTopLeft(termsNotice).dy;
+          final under16Top = tester.getTopLeft(under16Link).dy;
+
+          expect(termsTop, greaterThan(createBottom));
+          expect(termsTop, greaterThan(loginBottom));
+          expect(under16Top, greaterThan(termsTop));
+        },
+      );
+
       testWidgets('tapping create account calls acceptTerms and navigates', (
         tester,
       ) async {

@@ -13,6 +13,7 @@ import 'package:openvine/blocs/welcome/welcome_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -249,6 +250,18 @@ class _NewUserLayout extends StatelessWidget {
           const SizedBox(height: 20),
         ],
         const _TermsNotice(),
+
+        if (!isLoading) ...[
+          const SizedBox(height: 12),
+
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: VineTheme.whiteText,
+            ),
+            onPressed: () => context.push(MinorAccountReviewScreen.pathFor()),
+            child: Text(context.l10n.minorAccountReviewWelcomeCta),
+          ),
+        ],
 
         const SizedBox(height: 32),
       ],

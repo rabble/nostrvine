@@ -22,7 +22,7 @@ void main() {
           'state': 'restricted_pending_support_email',
           'suspectedAgeBand': 'under_13',
           'allowedResolution': 'support_email_only',
-          'supportEmail': 'support@divine.video',
+          'supportEmail': 'contact@divine.video',
           'moderationConversationPubkey': 'abc123',
           'instructions': {
             'title': 'Account review required',

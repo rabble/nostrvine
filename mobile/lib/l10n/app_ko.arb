@@ -188,10 +188,6 @@
     "profileSetupUploadFileTooLarge": "파일이 너무 커요: 더 작은 이미지를 고르세요 (최대 10MB).",
     "profileSetupUploadServerError": "이미지를 올리지 못했어요. 서버가 일시적으로 사용할 수 없어요. 잠시 후 다시 시도해주세요.",
     "profileSetupUploadUnsupportedOnWeb": "프로필 사진 업로드는 아직 웹에서 사용할 수 없어요. iOS나 Android 앱을 사용하거나 이미지 URL을 붙여넣어 주세요.",
-    "profileSetupBannerSectionTitle": "배너",
-    "profileSetupBannerUploadButton": "사진 업로드",
-    "profileSetupBannerClearButton": "배너 지우기",
-    "profileSetupBannerUploadSuccess": "배너가 업데이트되었어요",
     "profileSetupUsernameChecking": "사용 가능 여부 확인 중...",
     "profileSetupUsernameAvailable": "사용 가능한 이름이에요!",
     "profileSetupUsernameTakenIndicator": "이미 사용 중인 이름이에요",
@@ -537,7 +533,6 @@
     "notificationSettingsMarkAllAsRead": "모두 읽음으로 표시",
     "notificationSettingsMarkAllAsReadSubtitle": "모든 알림을 읽음으로 표시",
     "notificationSettingsAllMarkedAsRead": "모든 알림을 읽음으로 표시했어요",
-    "notificationSettingsMarkAllAsReadFailed": "모두 읽음으로 표시하지 못했어요",
     "notificationSettingsResetToDefaults": "설정이 기본값으로 되돌아갔어요",
     "notificationSettingsAbout": "알림 안내",
     "notificationSettingsAboutDescription": "알림은 Nostr 프로토콜로 구동돼요. 실시간 업데이트는 Nostr 릴레이에의 연결에 따라 달라져요. 일부 알림은 지연될 수 있어요.",
@@ -621,7 +616,7 @@
     "analyticsDiagnosticsUseFixture": "고정 데이터 사용",
     "analyticsNa": "N/A",
     "authCreateNewAccount": "새 Divine 계정 만들기",
-    "authSignInDifferentAccount": "기존 계정으로 로그인",
+    "authSignInDifferentAccount": "다른 계정으로 로그인",
     "authSignBackIn": "다시 로그인",
     "authTermsPrefix": "위에서 옵션을 선택하면 만 16세 이상임을 확인하고 다음 내용에 동의하는 것이에요: ",
     "authTermsOfService": "이용약관",
@@ -1228,6 +1223,7 @@
     "reportReasonSexualContent": "성적이거나 성인용 콘텐츠",
     "reportReasonCopyright": "저작권 침해",
     "reportReasonFalseInfo": "허위 정보",
+    "reportReasonCsam": "아동 안전 위반",
     "reportReasonAiGenerated": "AI 생성 콘텐츠",
     "reportReasonOther": "기타 정책 위반",
     "reportFailed": "콘텐츠 신고에 실패했어요: {error}",
@@ -2106,11 +2102,6 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "선택한 클립 분할",
-    "videoEditorExtractAudioLabel": "오디오 추출",
-    "videoEditorClipAudioTitle": "클립 오디오",
-    "videoEditorExtractAudioFromClipSemanticLabel": "클립에서 오디오를 추출하고 원본을 음소거",
-    "videoEditorExtractAudioNoLocalFile": "오디오를 추출할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.",
-    "videoEditorExtractAudioFailed": "오디오를 추출할 수 없었습니다. 다시 시도해 주세요.",
     "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",
     "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",
@@ -2841,6 +2832,7 @@
     "reportReasonSexualContentSubtitle": "노출, 포르노 또는 노골적인 콘텐츠",
     "reportReasonCopyrightSubtitle": "지적 재산권의 무단 사용",
     "reportReasonFalseInfoSubtitle": "오해의 소지가 있거나 허위 주장",
+    "reportReasonCsamSubtitle": "미성년자를 착취하거나 위험에 빠뜨리는 콘텐츠",
     "reportReasonAiGeneratedSubtitle": "AI 생성으로 의심되는 콘텐츠",
     "reportReasonOtherSubtitle": "위에 나열되지 않은 위반",
     "reportLearnMoreAt": "자세한 내용은",
@@ -2855,73 +2847,153 @@
         }
     },
     "notificationsVideoThumbnail": "동영상 썸네일",
-    "videoPlayerTapHint": "탭하여 재생하거나 일시정지하세요. 이중 탭으로 좋아요.",
-    "videoCollaboratorPendingDecoration": "Pending",
-    "@videoCollaboratorPendingDecoration": {
-        "description": "Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted."
-    },
-    "videoCollaboratorPendingSemanticLabel": "Pending collaborator",
-    "@videoCollaboratorPendingSemanticLabel": {
-        "description": "Screen reader label for a dimmed pending collaborator avatar on the creator's own video."
-    },
-    "videoCollaboratorWithPendingSuffix": "{label} ({pending} pending)",
-    "@videoCollaboratorWithPendingSuffix": {
-        "description": "Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.",
+    "minorAccountReviewWelcomePageTitle": "Family guide",
+    "minorAccountReviewWelcomeCta": "Not 16 yet? That's OK. Here's what you can do.",
+    "minorAccountReviewWelcomeTitle": "Not 16 yet? That's OK.",
+    "minorAccountReviewWelcomeBody": "Rules for people under 16 vary depending on where you live. At Divine, we want families to talk it through together and decide what healthy social media use looks like.",
+    "minorAccountReviewModerationTitle": "We need one more step",
+    "minorAccountReviewModerationBody": "We were asked to take a closer look at this account because it may belong to someone under 16. This flow keeps the next steps private and points you to the right path for your age.",
+    "minorAccountReviewRulesTitle": "The rules are not the same everywhere",
+    "minorAccountReviewRulesBody": "Different countries and regions treat teen social media use differently. That is why we ask families to slow down, check the facts, and choose the next step together.",
+    "minorAccountReviewApproachTitle": "How Divine thinks about it",
+    "minorAccountReviewApproachBody": "We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.",
+    "minorAccountReviewChooseAgeBandTitle": "Choose the path that fits",
+    "minorAccountReviewUnder13Cta": "Under 13: parent or guardian emails support",
+    "minorAccountReviewTeenCta": "13 to 15: parent consent video steps",
+    "minorAccountReviewFooter": "If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.",
+    "minorAccountReviewTitle": "Account Review",
+    "minorAccountReviewCheckingStatusTitle": "Checking account status...",
+    "minorAccountReviewCheckingStatusBody": "Please wait while we confirm this account's current review status.",
+    "minorAccountReviewDefaultTitle": "Account review required",
+    "minorAccountReviewDefaultBody": "We need to review this account before it can use Divine normally.",
+    "minorAccountReviewCaseId": "Case ID: {caseId}",
+    "@minorAccountReviewCaseId": {
         "placeholders": {
-            "label": {
-                "type": "String"
-            },
-            "pending": {
-                "type": "int"
-            }
-        }
-    },
-    "profileChipTapHint": "{name}. Tap to view profile.",
-    "@profileChipTapHint": {
-        "description": "Screen reader hint announced when a user-chip in the metadata sheet is focused. {name} is the user's display name.",
-        "placeholders": {
-            "name": {
+            "caseId": {
                 "type": "String"
             }
         }
     },
-    "bugReportAttachImages": "Attach images",
-    "bugReportImagesCount": "{count} of {max} images selected",
-    "@bugReportImagesCount": {
+    "minorAccountReviewCaseIdShortLabel": "Case ID",
+    "minorAccountReviewRestrictionsTitle": "What is restricted right now",
+    "minorAccountReviewRestrictionPosting": "Posting and publishing are paused",
+    "minorAccountReviewRestrictionEngagement": "Comments, likes, reposts, and follows are paused",
+    "minorAccountReviewRestrictionMessaging": "Starting or replying to regular messages is paused",
+    "minorAccountReviewRestrictionSupport": "Support and your moderation message remain available",
+    "minorAccountReviewOpenSupportCenter": "Open Support Center",
+    "minorAccountReviewOpenModerationMessage": "Open Moderation Message",
+    "minorAccountReviewCheckAgain": "Check Again",
+    "minorAccountReviewLogOut": "Log out",
+    "minorAccountReviewNextStepTitle": "Next step",
+    "minorAccountReviewNextStepBody": "Open the support center or your moderation message if you need help with this review.",
+    "minorAccountReviewInProgressTitle": "Review in progress",
+    "minorAccountReviewInProgressBody": "We have what we need for now. Our team is reviewing this case before restoring normal account access.",
+    "minorAccountReviewUnder13Title": "Under-13 accounts",
+    "minorAccountReviewUnder13Body": "If this account belongs to someone under 13, a parent or guardian must email {supportEmail} and include the case ID.",
+    "@minorAccountReviewUnder13Body": {
         "placeholders": {
-            "count": {
-                "type": "int"
-            },
-            "max": {
-                "type": "int"
-            }
-        }
-    },
-    "bugReportRemoveImage": "Remove image",
-    "bugReportUploadFailed": "We couldn't upload the selected image. Try again or send the report without it.",
-    "videoMetadataEditCoverTitle": "커버 편집",
-    "videoMetadataEditCoverCloseSemanticLabel": "커버 편집기 닫기",
-    "videoMetadataEditCoverConfirmSemanticLabel": "커버 선택 확인",
-    "videoMetadataEditCoverStripSemanticLabel": "커버 프레임 선택을 위해 동영상 탐색",
-    "userPickerRemoveSelectionSemantics": "{name} 제거",
-    "@userPickerRemoveSelectionSemantics": {
-        "placeholders": {
-            "name": {
+            "supportEmail": {
                 "type": "String"
             }
         }
     },
-    "videoMetadataEditCoverFailedSnackbar": "커버를 업데이트하지 못했습니다. 다시 시도하세요.",
-    "videoMetadataEditCoverSuccessAnnouncement": "커버 업데이트됨",
-    "videoMetadataTagsPickerSearchHint": "태그 검색 또는 추가",
-    "videoMetadataTagsPickerEmptyHint": "사람들이 동영상을 발견할 수 있도록 태그를 추가하세요",
-    "videoMetadataTagsPickerNoResults": "일치하는 태그 없음",
-    "videoMetadataTagsPickerAddTag": "\"#{tag}\" 추가",
-    "@videoMetadataTagsPickerAddTag": {
+    "minorAccountReviewUnder13PublicTitle": "Under-13 accounts",
+  "minorAccountReviewUnder13PublicBody": "If this account belongs to someone under 13, a parent or guardian should email Divine so our team can review what help is available.",
+  "minorAccountReviewUnder13EmailTitle": "Email Divine support",
+  "minorAccountReviewUnder13ParentTitle": "What the parent or guardian should include",
+  "minorAccountReviewUnder13ParentBody": "Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.",
+  "minorAccountReviewUnder13EmailCta": "Email Divine support",
+  "minorAccountReviewUnder13PublicEmailSubject": "Under-13 account review help",
+  "minorAccountReviewUnder13PublicEmailBody": "Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.",
+  "minorAccountReviewTeenBody": "If this account belongs to someone 13 to 15, use the moderation message or support path to follow the parental consent instructions.",
+  "minorAccountReviewParentConsentTitle": "If the account belongs to someone 13 to 15",
+  "minorAccountReviewParentConsentBody": "A parent or guardian should email Divine support so we can help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, contact Divine support and let us know. Our team can review the situation and explain what to do next.",
+  "minorAccountReviewParentConsentChecklist": "What to include",
+  "minorAccountReviewParentConsentChecklistKid": "The teen's age",
+  "minorAccountReviewParentConsentChecklistPermission": "How you're related to them, if relevant",
+  "minorAccountReviewParentConsentChecklistSupervision": "Any context that would help our team understand the situation",
+  "minorAccountReviewParentConsentPrivacy": "What happens next",
+  "minorAccountReviewParentConsentNeverPost": "Our team will review the message and reply with next steps",
+  "minorAccountReviewParentConsentDoNotSave": "If parent or guardian contact is not possible or would put someone at risk, say that in the email",
+  "minorAccountReviewParentConsentOneMove": "Please don't post private personal details publicly in the app",
+  "minorAccountReviewParentConsentEmailCta": "Email Divine support",
+  "minorAccountReviewParentConsentEmailSubject": "13-15 account review help",
+  "minorAccountReviewParentConsentEmailBody": "Hi Divine support,\n\nI am contacting Divine about an account for a teen who is 13 to 15.\n\nThe teen's age:\nMy relationship to them:\nHelpful context:\n\nThanks.",
+    "minorAccountReviewParentSupportInstructions": "Parent Support Instructions",
+    "minorAccountReviewContinue": "Continue",
+    "minorAccountReviewErrorTitle": "We could not load your account review status.",
+    "minorAccountReviewTryAgain": "Try Again",
+    "minorAccountReviewParentContactTitle": "Parent Contact",
+    "minorAccountReviewParentContactHeading": "Add a parent or guardian email",
+    "minorAccountReviewParentContactBody": "We will use this address for the parental consent review on case {caseId}.",
+    "@minorAccountReviewParentContactBody": {
         "placeholders": {
-            "tag": {
+            "caseId": {
                 "type": "String"
             }
         }
-    }
+    },
+    "minorAccountReviewParentContactFieldLabel": "Parent or guardian email",
+    "minorAccountReviewSubmitting": "Submitting...",
+    "minorAccountReviewSubmitEmail": "Submit Email",
+    "minorAccountReviewBackToReview": "Back to Account Review",
+    "minorAccountReviewSubmissionReceivedTitle": "Email submitted",
+    "minorAccountReviewSubmissionReceivedBody": "We submitted {email} for review. We'll email this address to confirm. Once your parent or guardian responds, your case will move forward. Use Check Again from the account review screen for updates.",
+    "@minorAccountReviewSubmissionReceivedBody": {
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "minorAccountReviewSubmissionReceivedLocalBody": "We received the parent or guardian contact for this account. Our team will review it before restoring access.",
+    "minorAccountReviewMissingCase": "We could not find an active review case for this account.",
+    "minorAccountReviewParentContactError": "Could not submit the parent email. Please try again.",
+    "minorAccountReviewUnder13SupportTitle": "Parent Support",
+    "minorAccountReviewUnder13Heading": "A parent or guardian must contact Divine",
+    "minorAccountReviewUnder13SupportBody": "For likely under-13 accounts, the next step is parent or guardian contact by email.",
+    "minorAccountReviewSupportEmailLabel": "Support email",
+    "minorAccountReviewSupportEmailCopied": "Support email copied",
+    "minorAccountReviewCaseIdCopied": "Case ID copied",
+    "minorAccountReviewUnavailable": "Unavailable",
+    "minorAccountReviewUnder13Instructions": "Ask the parent or guardian to include the case ID and explain that they are contacting Divine about this account review.",
+    "minorAccountReviewUnder13EmailSubject": "Under-13 account review for case {caseId}",
+    "@minorAccountReviewUnder13EmailSubject": {
+        "placeholders": {
+            "caseId": {
+                "type": "String"
+            }
+        }
+    },
+    "minorAccountReviewUnder13EmailBody": "Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review case {caseId}.\n\nThanks.",
+    "@minorAccountReviewUnder13EmailBody": {
+        "placeholders": {
+            "caseId": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsMinorReviewSimulationTitle": "Minor Account Review Simulation",
+    "devOptionsMinorReviewCurrentStateLabel": "Current state",
+    "devOptionsMinorReviewStateRestricted": "Restricted ({state})",
+    "@devOptionsMinorReviewStateRestricted": {
+        "placeholders": {
+            "state": {
+                "type": "String"
+            }
+        }
+    },
+    "devOptionsMinorReviewStateActive": "Active",
+    "devOptionsMinorReviewStateLoading": "Loading...",
+    "devOptionsMinorReviewStateError": "Error loading state",
+    "devOptionsMinorReviewClearTitle": "Clear simulation override",
+    "devOptionsMinorReviewClearSubtitle": "Use backend or default active state again",
+    "devOptionsMinorReviewTeenTitle": "Simulate 13-15 review case",
+    "devOptionsMinorReviewTeenSubtitle": "Restricted account with parent contact path",
+    "devOptionsMinorReviewUnder13Title": "Simulate under-13 support case",
+    "devOptionsMinorReviewUnder13Subtitle": "Restricted account with parent-email-only instructions",
+    "devOptionsMinorReviewClearedToast": "Minor account review simulation cleared",
+    "devOptionsMinorReviewTeenEnabledToast": "Simulated 13-15 review case enabled",
+    "devOptionsMinorReviewUnder13EnabledToast": "Simulated under-13 support case enabled"
+
 }

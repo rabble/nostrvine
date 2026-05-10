@@ -44,6 +44,7 @@ void main() {
       ],
     );
     addTearDown(container.dispose);
+    await container.read(currentMinorAccountReviewStatusProvider.future);
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
@@ -102,6 +103,7 @@ void main() {
         ],
       );
       addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -157,6 +159,7 @@ void main() {
         ],
       );
       addTearDown(container.dispose);
+      await container.read(currentMinorAccountReviewStatusProvider.future);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(

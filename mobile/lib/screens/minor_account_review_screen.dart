@@ -11,18 +11,37 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/minor_account_review_parent_consent_screen.dart';
 import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart';
+import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+
+enum MinorAccountReviewEntryPoint { welcome, moderation }
 
 class MinorAccountReviewScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review';
   static const path = '/account-review';
+  static const welcomePath = '/account-review/welcome';
 
-  const MinorAccountReviewScreen({super.key});
+  static String pathFor({
+    MinorAccountReviewEntryPoint entryPoint =
+        MinorAccountReviewEntryPoint.welcome,
+  }) => entryPoint == MinorAccountReviewEntryPoint.welcome ? welcomePath : path;
+
+  const MinorAccountReviewScreen({
+    this.entryPoint = MinorAccountReviewEntryPoint.moderation,
+    super.key,
+  });
+
+  final MinorAccountReviewEntryPoint entryPoint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (entryPoint == MinorAccountReviewEntryPoint.welcome) {
+      return const _WelcomeEntryView();
+    }
+
     final statusAsync = ref.watch(currentMinorAccountReviewStatusProvider);
 
     return Scaffold(
@@ -42,6 +61,78 @@ class MinorAccountReviewScreen extends ConsumerWidget {
                 onRetry: () =>
                     ref.invalidate(currentMinorAccountReviewStatusProvider),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WelcomeEntryView extends StatelessWidget {
+  const _WelcomeEntryView();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Scaffold(
+      appBar: DiVineAppBar(
+        title: l10n.minorAccountReviewWelcomePageTitle,
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).maybePop(),
+      ),
+      backgroundColor: VineTheme.backgroundColor,
+      body: SafeArea(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 640),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+              children: [
+                _HeroCard(
+                  title: l10n.minorAccountReviewWelcomeTitle,
+                  body: l10n.minorAccountReviewWelcomeBody,
+                ),
+                const SizedBox(height: 24),
+                _InfoCard(
+                  title: l10n.minorAccountReviewRulesTitle,
+                  body: l10n.minorAccountReviewRulesBody,
+                ),
+                const SizedBox(height: 16),
+                _InfoCard(
+                  title: l10n.minorAccountReviewApproachTitle,
+                  body: l10n.minorAccountReviewApproachBody,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.minorAccountReviewChooseAgeBandTitle,
+                  style: VineTheme.titleMediumFont(),
+                ),
+                const SizedBox(height: 12),
+                DivineButton(
+                  label: l10n.minorAccountReviewUnder13Cta,
+                  expanded: true,
+                  onPressed: () =>
+                      context.push(MinorAccountReviewUnder13Screen.path),
+                ),
+                const SizedBox(height: 12),
+                DivineButton(
+                  label: l10n.minorAccountReviewTeenCta,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () =>
+                      context.push(MinorAccountReviewParentConsentScreen.path),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.minorAccountReviewFooter,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.secondaryText,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -317,6 +408,38 @@ class _MinorReviewPrimaryAction {
 
   final String label;
   final void Function(BuildContext context) onPressed;
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.title, required this.body});
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: VineTheme.vineGreen.withValues(alpha: .2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: VineTheme.headlineMediumFont()),
+          const SizedBox(height: 12),
+          Text(
+            body,
+            style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _RestrictionLine extends StatelessWidget {

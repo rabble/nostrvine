@@ -10,10 +10,13 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
+import 'package:openvine/services/support_email_composer.dart';
 
 class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review-under13-support';
   static const path = '/account-review/under-13-support';
+
+  static final _supportEmailComposer = SupportEmailComposer();
 
   const MinorAccountReviewUnder13SupportScreen({super.key});
 
@@ -55,6 +58,12 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
                     reviewCase?.supportEmail ?? AppConstants.supportEmail;
                 final caseId =
                     reviewCase?.id ?? l10n.minorAccountReviewUnavailable;
+                final emailSubject = l10n.minorAccountReviewUnder13EmailSubject(
+                  caseId,
+                );
+                final emailBody = l10n.minorAccountReviewUnder13EmailBody(
+                  caseId,
+                );
 
                 return Padding(
                   padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
@@ -99,6 +108,18 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
                           color: VineTheme.lightText,
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      DivineButton(
+                        label: l10n.authOpenEmailApp,
+                        expanded: true,
+                        onPressed: () => _openEmailApp(
+                          context: context,
+                          supportEmail: supportEmail,
+                          subject: emailSubject,
+                          body: emailBody,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       const Spacer(),
                       DivineButton(
                         label: l10n.minorAccountReviewBackToReview,
@@ -127,6 +148,28 @@ class MinorAccountReviewUnder13SupportScreen extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(DivineSnackbarContainer.snackBar(successMessage));
+  }
+
+  Future<void> _openEmailApp({
+    required BuildContext context,
+    required String supportEmail,
+    required String subject,
+    required String body,
+  }) async {
+    try {
+      await _supportEmailComposer.compose(
+        toEmail: supportEmail,
+        subject: subject,
+        body: body,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        DivineSnackbarContainer.snackBar(
+          context.l10n.authCouldNotOpenEmail(supportEmail),
+        ),
+      );
+    }
   }
 }
 

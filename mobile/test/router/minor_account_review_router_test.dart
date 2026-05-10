@@ -51,6 +51,16 @@ void main() {
       await tester.pumpAndSettle();
     }
 
+    void registerContainerTearDown(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) {
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+      });
+    }
+
     MinorAccountReviewStatus restrictedStatus({
       MinorReviewCaseState state =
           MinorReviewCaseState.restrictedPendingUserResponse,
@@ -70,7 +80,7 @@ void main() {
             title: 'Account review required',
             body: 'We need parental consent information.',
           ),
-          supportEmail: 'support@divine.video',
+          supportEmail: 'contact@divine.video',
           moderationConversationPubkey: 'moderation-pubkey',
           moderationConversationId: moderationConversationId,
         ),
@@ -89,7 +99,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await pumpRouter(tester, container);
 
@@ -113,7 +123,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await pumpRouter(tester, container);
 
@@ -138,7 +148,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await pumpRouter(tester, container);
 
@@ -168,7 +178,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await pumpRouter(tester, container);
 
@@ -196,7 +206,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await pumpRouter(tester, container);
 
@@ -222,7 +232,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await container.read(currentMinorAccountReviewStatusProvider.future);
       await pumpRouter(tester, container);
 
@@ -249,7 +259,7 @@ void main() {
           ),
         ],
       );
-      addTearDown(container.dispose);
+      registerContainerTearDown(tester, container);
       await pumpRouter(tester, container);
 
       final routeUri = container

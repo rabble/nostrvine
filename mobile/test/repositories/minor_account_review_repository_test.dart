@@ -19,20 +19,22 @@ void main() {
     test('returns parsed restricted status from API', () async {
       when(
         () => apiService.getMinorAccountReviewStatus(),
-      ).thenAnswer((_) async => {
-        'restriction': {'status': 'restricted_minor_review'},
-        'minorReviewCase': {
-          'id': 'mar_123',
-          'state': 'restricted_pending_user_response',
-          'suspectedAgeBand': 'age_13_15',
-          'allowedResolution': 'parent_video_or_email',
-          'supportEmail': 'support@divine.video',
-          'instructions': {
-            'title': 'We need to review this account',
-            'body': 'Follow the parental consent steps.',
+      ).thenAnswer(
+        (_) async => {
+          'restriction': {'status': 'restricted_minor_review'},
+          'minorReviewCase': {
+            'id': 'mar_123',
+            'state': 'restricted_pending_user_response',
+            'suspectedAgeBand': 'age_13_15',
+            'allowedResolution': 'parent_video_or_email',
+            'supportEmail': 'contact@divine.video',
+            'instructions': {
+              'title': 'We need to review this account',
+              'body': 'Follow the parental consent steps.',
+            },
           },
         },
-      });
+      );
 
       final result = await repository.fetchCurrentStatus();
 
