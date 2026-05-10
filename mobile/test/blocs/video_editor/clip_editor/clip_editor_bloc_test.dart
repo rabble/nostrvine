@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ClipEditorBloc - clip CRUD, editing mode,
 // ABOUTME: trimming, and split operations.
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1139,6 +1141,61 @@ void main() {
               ),
         ],
         errors: () => [isA<AudioExtractionException>()],
+      );
+
+      // Regression test for Fix 1: the handler must re-read `state.clips` after
+      // the await and abort when the source clip no longer exists.
+      test(
+        'discards extraction result and emits ClipAudioExtractionNoLocalFile '
+        'when source clip is removed during in-flight extraction',
+        () async {
+          final completer = Completer<AudioExtractionResult>();
+          when(() => mockService.extractAudio(any()))
+              .thenAnswer((_) => completer.future);
+
+          final clip = _createClipWithFile();
+          final bloc = buildBloc(audioExtractionService: mockService);
+
+          // Bring bloc to the expected initial state via event.
+          bloc.add(ClipEditorInitialized([clip]));
+          await Future<void>.delayed(Duration.zero);
+
+          bloc.add(
+            const ClipEditorAudioExtractionRequested(clipTitle: 'Test'),
+          );
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.isExtractingAudio, isTrue);
+
+          // Remove the clip while extraction is awaiting the service.
+          bloc.add(ClipEditorClipRemoved(clip.id));
+          await Future<void>.delayed(Duration.zero);
+          expect(bloc.state.clips, isEmpty);
+
+          // Complete the service call — bloc must discard the stale result.
+          completer.complete(
+            const AudioExtractionResult(
+              audioFilePath: '/tmp/audio.m4a',
+              duration: 5,
+              fileSize: 12345,
+              sha256Hash: 'abc123',
+              mimeType: 'audio/mp4',
+            ),
+          );
+          await Future<void>.delayed(Duration.zero);
+
+          expect(bloc.state.isExtractingAudio, isFalse);
+          expect(
+            bloc.state.clips,
+            isEmpty,
+            reason: 'deleted clip must not be resurrected by the result',
+          );
+          expect(
+            bloc.state.lastAudioExtraction,
+            isA<ClipAudioExtractionNoLocalFile>(),
+          );
+
+          await bloc.close();
+        },
       );
     });
   });

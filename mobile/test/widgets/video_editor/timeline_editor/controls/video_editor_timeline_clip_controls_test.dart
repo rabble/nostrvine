@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_clip_controls.dart';
+import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 
 class _MockClipEditorBloc extends MockBloc<ClipEditorEvent, ClipEditorState>
     implements ClipEditorBloc {}
@@ -65,5 +66,27 @@ void main() {
 
       verify(() => bloc.add(const ClipEditorEditingStopped())).called(1);
     });
+
+    // Regression test for Fix 2: Done button must be disabled while audio
+    // extraction is running so the BlocListener in TimelineClipControls
+    // stays mounted for the full duration of the extraction.
+    testWidgets(
+      'Done button passes null onDone to controls while isExtractingAudio',
+      (tester) async {
+        when(() => bloc.state)
+            .thenReturn(const ClipEditorState(isExtractingAudio: true));
+        await tester.pumpWidget(build());
+
+        final controls = tester.widget<VideoEditorTimelineControls>(
+          find.byType(VideoEditorTimelineControls),
+        );
+        expect(
+          controls.onDone,
+          isNull,
+          reason:
+              'onDone must be null while extracting so Done cannot be tapped',
+        );
+      },
+    );
   });
 }
