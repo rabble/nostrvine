@@ -37,6 +37,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -90,6 +91,7 @@ import 'package:openvine/services/notification_preferences_service.dart';
 import 'package:openvine/services/notification_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
+import 'package:openvine/services/outgoing_dm_retry_service.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
@@ -311,6 +313,78 @@ PendingActionService? pendingActionService(Ref ref) {
       error: e,
     );
   });
+
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Auto-sweep service for the durable `outgoing_dms` queue.
+///
+/// Listens to app-foreground transitions and re-publishes the missing
+/// self-wrap for any row in `recipient: sent / self: failed` state via
+/// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+/// SnackBar-only manual retry from PR #4106 — see issue #4124.
+///
+/// The service is keepAlive but has no UI consumer, so it is read
+/// eagerly at app shell startup (`main.dart`) so the foreground
+/// subscription is wired up.
+///
+/// Returns null when the user is not authenticated or when
+/// [isNostrReadyProvider] hasn't flipped yet — the underlying
+/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+/// run, and gating here is cleaner than catching `StateError` in
+/// every sweep pass.
+@Riverpod(keepAlive: true)
+OutgoingDmRetryService? outgoingDmRetryService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild on sign-in / sign-out / account switch.
+  ref.watch(currentAuthStateProvider);
+
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) return null;
+
+  // Gate on Nostr readiness so DmRepository.setCredentials has run by
+  // the time the service's first foreground sweep fires.
+  if (!ref.watch(isNostrReadyProvider)) return null;
+
+  final dmRepository = ref.watch(dmRepositoryProvider);
+  final db = ref.watch(databaseProvider);
+
+  // Bridge the synchronous AppForeground notifier into a Stream<bool>
+  // so the service's contract stays free of Riverpod types and is easy
+  // to drive from unit tests.
+  final foregroundController = StreamController<bool>();
+  ref.onDispose(foregroundController.close);
+
+  final service = OutgoingDmRetryService(
+    dmRepository: dmRepository,
+    outgoingDmsDao: db.outgoingDmsDao,
+    userPubkey: userPubkey,
+    appForegroundStream: foregroundController.stream,
+  );
+
+  // initialize() subscribes to the controller's stream synchronously
+  // (no await before the .listen call), so it is safe to register the
+  // ref.listen below afterwards — fireImmediately will reach the
+  // service's subscriber.
+  service.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize OutgoingDmRetryService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.listen<bool>(
+    appForegroundProvider,
+    (_, next) {
+      if (!foregroundController.isClosed) {
+        foregroundController.add(next);
+      }
+    },
+    fireImmediately: true,
+  );
 
   ref.onDispose(service.dispose);
   return service;

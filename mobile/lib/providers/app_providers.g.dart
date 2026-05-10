@@ -166,6 +166,104 @@ final class PendingActionServiceProvider
 String _$pendingActionServiceHash() =>
     r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
+/// Auto-sweep service for the durable `outgoing_dms` queue.
+///
+/// Listens to app-foreground transitions and re-publishes the missing
+/// self-wrap for any row in `recipient: sent / self: failed` state via
+/// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+/// SnackBar-only manual retry from PR #4106 — see issue #4124.
+///
+/// The service is keepAlive but has no UI consumer, so it is read
+/// eagerly at app shell startup (`main.dart`) so the foreground
+/// subscription is wired up.
+///
+/// Returns null when the user is not authenticated or when
+/// [isNostrReadyProvider] hasn't flipped yet — the underlying
+/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+/// run, and gating here is cleaner than catching `StateError` in
+/// every sweep pass.
+
+@ProviderFor(outgoingDmRetryService)
+const outgoingDmRetryServiceProvider = OutgoingDmRetryServiceProvider._();
+
+/// Auto-sweep service for the durable `outgoing_dms` queue.
+///
+/// Listens to app-foreground transitions and re-publishes the missing
+/// self-wrap for any row in `recipient: sent / self: failed` state via
+/// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+/// SnackBar-only manual retry from PR #4106 — see issue #4124.
+///
+/// The service is keepAlive but has no UI consumer, so it is read
+/// eagerly at app shell startup (`main.dart`) so the foreground
+/// subscription is wired up.
+///
+/// Returns null when the user is not authenticated or when
+/// [isNostrReadyProvider] hasn't flipped yet — the underlying
+/// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+/// run, and gating here is cleaner than catching `StateError` in
+/// every sweep pass.
+
+final class OutgoingDmRetryServiceProvider
+    extends
+        $FunctionalProvider<
+          OutgoingDmRetryService?,
+          OutgoingDmRetryService?,
+          OutgoingDmRetryService?
+        >
+    with $Provider<OutgoingDmRetryService?> {
+  /// Auto-sweep service for the durable `outgoing_dms` queue.
+  ///
+  /// Listens to app-foreground transitions and re-publishes the missing
+  /// self-wrap for any row in `recipient: sent / self: failed` state via
+  /// [DmRepository.recoverSelfWrap]. Closes the gap left by the
+  /// SnackBar-only manual retry from PR #4106 — see issue #4124.
+  ///
+  /// The service is keepAlive but has no UI consumer, so it is read
+  /// eagerly at app shell startup (`main.dart`) so the foreground
+  /// subscription is wired up.
+  ///
+  /// Returns null when the user is not authenticated or when
+  /// [isNostrReadyProvider] hasn't flipped yet — the underlying
+  /// [DmRepository.recoverSelfWrap] requires `setCredentials` to have
+  /// run, and gating here is cleaner than catching `StateError` in
+  /// every sweep pass.
+  const OutgoingDmRetryServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'outgoingDmRetryServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$outgoingDmRetryServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<OutgoingDmRetryService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  OutgoingDmRetryService? create(Ref ref) {
+    return outgoingDmRetryService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(OutgoingDmRetryService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<OutgoingDmRetryService?>(value),
+    );
+  }
+}
+
+String _$outgoingDmRetryServiceHash() =>
+    r'ddd46e4ed60540af76e8f0df321d8f3b4d4073e7';
+
 /// Relay capability service for detecting NIP-11 Divine extensions
 
 @ProviderFor(relayCapabilityService)

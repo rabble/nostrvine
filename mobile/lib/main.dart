@@ -1598,6 +1598,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       isFeatureEnabledProvider(FeatureFlag.curatedLists),
     );
 
+    // Eagerly create the outgoing-DM retry service so its foreground
+    // subscription is wired up at app shell setup. The service has no
+    // UI consumer (it operates on the durable outgoing_dms queue), so
+    // without an explicit read it would never be created. See #4124.
+    ref.watch(outgoingDmRetryServiceProvider);
+
     // Wrap with geo-blocking check first, then lifecycle handler
     Widget wrapped = MultiRepositoryProvider(
       providers: [
