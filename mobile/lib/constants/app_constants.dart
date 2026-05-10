@@ -32,6 +32,12 @@ class AppConstants {
   /// Support email used by account-review and support flows.
   static const String supportEmail = 'contact@divine.video';
 
+  /// Divine-hosted family guidance hub for parents and guardians.
+  static const String familyResourcesUrl = 'https://family.divine.video';
+
+  /// Divine-hosted flagged-account review page for age-review cases.
+  static const String ageReviewUrl = 'https://age-review.divine.video';
+
   // ============================================================================
   // FEED CONFIGURATION
   // ============================================================================

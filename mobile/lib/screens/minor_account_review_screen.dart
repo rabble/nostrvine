@@ -16,6 +16,7 @@ import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 enum MinorAccountReviewEntryPoint { welcome, moderation }
 
@@ -124,6 +125,22 @@ class _WelcomeEntryView extends StatelessWidget {
                   expanded: true,
                   onPressed: () =>
                       context.push(MinorAccountReviewParentConsentScreen.path),
+                ),
+                const SizedBox(height: 24),
+                _InfoCard(
+                  title: l10n.minorAccountReviewFamilyResourcesTitle,
+                  body: l10n.minorAccountReviewFamilyResourcesBody,
+                ),
+                const SizedBox(height: 12),
+                DivineButton(
+                  label: l10n.minorAccountReviewFamilyResourcesCta,
+                  type: DivineButtonType.secondary,
+                  expanded: true,
+                  onPressed: () => _openExternalPage(
+                    context,
+                    AppConstants.familyResourcesUrl,
+                    'family.divine.video',
+                  ),
                 ),
               ],
             ),
@@ -242,6 +259,22 @@ class _LoadedView extends ConsumerWidget {
         ].map(_RestrictionLine.new),
         const SizedBox(height: 24),
         _InfoCard(title: infoCard.title, body: infoCard.body),
+        const SizedBox(height: 24),
+        _InfoCard(
+          title: l10n.minorAccountReviewModerationTitle,
+          body: l10n.minorAccountReviewModerationBody,
+        ),
+        const SizedBox(height: 12),
+        DivineButton(
+          label: l10n.minorAccountReviewOpenReviewPage,
+          type: DivineButtonType.secondary,
+          expanded: true,
+          onPressed: () => _openExternalPage(
+            context,
+            AppConstants.ageReviewUrl,
+            'age-review.divine.video',
+          ),
+        ),
         const SizedBox(height: 24),
         if (primaryAction != null) ...[
           DivineButton(
@@ -384,6 +417,24 @@ class _LoadedView extends ConsumerWidget {
         context.push(SupportCenterScreen.path);
     }
   }
+}
+
+Future<void> _openExternalPage(
+  BuildContext context,
+  String url,
+  String pageName,
+) async {
+  final uri = Uri.parse(url);
+  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (launched || !context.mounted) {
+    return;
+  }
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    DivineSnackbarContainer.snackBar(
+      context.l10n.supportCouldNotOpenPage(pageName),
+    ),
+  );
 }
 
 class _MinorReviewInfoCardCopy {

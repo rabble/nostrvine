@@ -27,6 +27,14 @@ void main() {
 
       expect(find.text('Family guide'), findsOneWidget);
       expect(find.text("Not 16 yet? That's OK."), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Helpful for families'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Helpful for families'), findsOneWidget);
+      expect(find.text('Open family resources'), findsOneWidget);
       expect(
         find.text(
           'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.',
@@ -153,7 +161,20 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Account review required'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Next step'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('Next step'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('Open review page'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Open review page'), findsOneWidget);
       expect(find.text('Continue', skipOffstage: false), findsOneWidget);
     });
 
@@ -198,6 +219,12 @@ void main() {
           find.text('Parent Support Instructions', skipOffstage: false),
           findsNothing,
         );
+        await tester.scrollUntilVisible(
+          find.text('Open Support Center'),
+          200,
+          scrollable: find.byType(Scrollable),
+        );
+        await tester.pumpAndSettle();
         expect(find.text('Open Support Center'), findsOneWidget);
       },
     );
