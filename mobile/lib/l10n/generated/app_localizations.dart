@@ -13485,8 +13485,26 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewTeenCta.
   ///
   /// In en, this message translates to:
-  /// **'13 to 15: parent consent video steps'**
+  /// **'13 to 15: parent or guardian contacts support'**
   String get minorAccountReviewTeenCta;
+
+  /// No description provided for @minorAccountReviewFamilyResourcesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Helpful for families'**
+  String get minorAccountReviewFamilyResourcesTitle;
+
+  /// No description provided for @minorAccountReviewFamilyResourcesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.'**
+  String get minorAccountReviewFamilyResourcesBody;
+
+  /// No description provided for @minorAccountReviewFamilyResourcesCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Open family resources'**
+  String get minorAccountReviewFamilyResourcesCta;
 
   /// No description provided for @minorAccountReviewFooter.
   ///
@@ -13577,6 +13595,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Moderation Message'**
   String get minorAccountReviewOpenModerationMessage;
+
+  /// No description provided for @minorAccountReviewOpenReviewPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open review page'**
+  String get minorAccountReviewOpenReviewPage;
 
   /// No description provided for @minorAccountReviewCheckAgain.
   ///

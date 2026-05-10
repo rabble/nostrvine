@@ -7753,7 +7753,17 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get minorAccountReviewTeenCta =>
-      '13 to 15: parent consent video steps';
+      '13 to 15: parent or guardian contacts support';
+
+  @override
+  String get minorAccountReviewFamilyResourcesTitle => 'Helpful for families';
+
+  @override
+  String get minorAccountReviewFamilyResourcesBody =>
+      'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.';
+
+  @override
+  String get minorAccountReviewFamilyResourcesCta => 'Open family resources';
 
   @override
   String get minorAccountReviewFooter =>
@@ -7811,6 +7821,9 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get minorAccountReviewOpenModerationMessage =>
       'Open Moderation Message';
+
+  @override
+  String get minorAccountReviewOpenReviewPage => 'Open review page';
 
   @override
   String get minorAccountReviewCheckAgain => 'Check Again';
