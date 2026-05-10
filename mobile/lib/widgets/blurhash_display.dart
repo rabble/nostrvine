@@ -90,11 +90,13 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
         future: imageFuture,
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data != null) {
-            return CustomPaint(
-              painter: _BlurhashImagePainter(snapshot.data!),
-              size: Size(
-                widget.width ?? double.infinity,
-                widget.height ?? double.infinity,
+            return RepaintBoundary(
+              child: CustomPaint(
+                painter: _BlurhashImagePainter(snapshot.data!),
+                size: Size(
+                  widget.width ?? double.infinity,
+                  widget.height ?? double.infinity,
+                ),
               ),
             );
           }
@@ -181,10 +183,10 @@ class _BlurhashImagePainter extends CustomPainter {
   _BlurhashImagePainter(this.image);
 
   final ui.Image image;
+  final _paint = Paint()..filterQuality = FilterQuality.low;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..filterQuality = FilterQuality.low;
 
     // Scale the image to fit the widget size
     final src = Rect.fromLTWH(
@@ -195,7 +197,7 @@ class _BlurhashImagePainter extends CustomPainter {
     );
     final dst = Rect.fromLTWH(0, 0, size.width, size.height);
 
-    canvas.drawImageRect(image, src, dst, paint);
+    canvas.drawImageRect(image, src, dst, _paint);
   }
 
   @override
