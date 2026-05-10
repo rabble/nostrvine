@@ -13,9 +13,10 @@ import 'package:skeletonizer/skeletonizer.dart';
 /// fallback or identicon — become visible. This avoids an indefinite shimmer
 /// for users whose Kind 0 profile genuinely never resolves (classic Viners).
 ///
-/// The state-mutating side effect is scheduled in a post-frame callback so
-/// `build()` itself stays pure. Repeated rebuilds with the same [isLoading]
-/// value are no-ops; the timer only restarts when [isLoading] flips.
+/// The fallthrough timer is reconciled in `initState` and `didUpdateWidget`,
+/// so `build()` is a pure function of [isLoading] and the expired flag.
+/// Repeated rebuilds with the same [isLoading] value are no-ops; the timer
+/// only restarts when [isLoading] flips.
 ///
 /// Static chrome inside the wrapped subtree (timestamps, "You" pills, link
 /// affordances) should be wrapped in `Skeleton.keep` so it stays interactive
@@ -54,6 +55,18 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
   bool? _wasLoading;
 
   @override
+  void initState() {
+    super.initState();
+    _syncTimer(isLoading: widget.isLoading);
+  }
+
+  @override
+  void didUpdateWidget(IdentitySkeletonizer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncTimer(isLoading: widget.isLoading);
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
@@ -73,10 +86,6 @@ class _IdentitySkeletonizerState extends State<IdentitySkeletonizer> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _syncTimer(isLoading: widget.isLoading);
-    });
-
     return Skeletonizer(
       enabled: widget.isLoading && !_timeoutExpired,
       enableSwitchAnimation: true,

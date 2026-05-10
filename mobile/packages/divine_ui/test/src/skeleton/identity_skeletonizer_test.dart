@@ -31,8 +31,6 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject(isLoading: false));
-      // Flush the post-frame timer-sync.
-      await tester.pump();
 
       expect(findSkeletonizer(tester).enabled, isFalse);
       expect(find.byKey(const Key('child')), findsOneWidget);
@@ -42,7 +40,6 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject(isLoading: true));
-      await tester.pump();
 
       expect(findSkeletonizer(tester).enabled, isTrue);
     });
@@ -58,8 +55,6 @@ void main() {
             fallthroughTimeout: const Duration(seconds: 3),
           ),
         );
-        // Allow the post-frame callback to schedule the timer.
-        await tester.pump();
         expect(findSkeletonizer(tester).enabled, isTrue);
 
         // Advance past the timeout.
@@ -76,11 +71,9 @@ void main() {
       'isLoading flipping true -> false cancels the pending timer',
       (tester) async {
         await tester.pumpWidget(buildSubject(isLoading: true));
-        await tester.pump();
         expect(findSkeletonizer(tester).enabled, isTrue);
 
         await tester.pumpWidget(buildSubject(isLoading: false));
-        await tester.pump();
         expect(findSkeletonizer(tester).enabled, isFalse);
 
         // No timer should fire after the cancel — advance well past the
@@ -99,7 +92,6 @@ void main() {
             fallthroughTimeout: const Duration(seconds: 3),
           ),
         );
-        await tester.pump();
 
         // Advance halfway through the timeout window.
         await tester.pump(const Duration(seconds: 2));
@@ -114,7 +106,6 @@ void main() {
             fallthroughTimeout: const Duration(seconds: 3),
           ),
         );
-        await tester.pump();
 
         // Advance just past the original 3 s deadline.
         await tester.pump(const Duration(seconds: 2));
@@ -133,7 +124,6 @@ void main() {
           fallthroughTimeout: const Duration(seconds: 3),
         ),
       );
-      await tester.pump();
       expect(findSkeletonizer(tester).enabled, isTrue);
 
       // Replace the subtree before the timer fires — the State's dispose
@@ -148,7 +138,6 @@ void main() {
 
     testWidgets('default fallthroughTimeout is 7 seconds', (tester) async {
       await tester.pumpWidget(buildSubject(isLoading: true));
-      await tester.pump();
       expect(findSkeletonizer(tester).enabled, isTrue);
 
       // Just before 7 s — still shimmering.
