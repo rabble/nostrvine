@@ -917,6 +917,39 @@ class AppLocalizationsRo extends AppLocalizations {
       'Folosește câmpul de nume de utilizator de mai sus pentru divine.video';
 
   @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
+
+  @override
   String get profileSetupProfilePicturePreview =>
       'Previzualizare poză de profil';
 
@@ -4457,6 +4490,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get supportExportLogsFailed => 'N-am putut exporta jurnalele';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Chatul de asistență nu e disponibil';
 
   @override
@@ -5252,8 +5293,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryWrestling => 'Wrestling';
 
   @override
-  String get profileSetupUploadSuccess =>
-      'Fotografia de profil a fost încărcată cu succes!';
+  String get profileSetupUploadStaged =>
+      'Încărcată — apasă pe Salvează pentru a aplica';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -7177,4 +7218,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Răspuns la videoclip';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Cont $platform verificat: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Conturi verificate';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifică-te';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Conectează-ți conturile de social media ca lumea să știe că ești tu.';
 }

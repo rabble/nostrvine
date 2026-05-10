@@ -2455,7 +2455,7 @@
     "libraryWebUnavailableDescription": "Bozze e clip sono salvate sul dispositivo: apri Divine sul telefono per gestirle.",
     "libraryWebUnavailableHeadline": "La libreria è nell’app mobile",
     "notificationFollowBack": "Segui a tua volta",
-    "profileSetupUploadSuccess": "Foto profilo caricata con successo!",
+    "profileSetupUploadStaged": "Caricata — tocca Salva per applicare",
     "proofmodeCheckAiGenerated": "Verifica se generato dall'IA",
     "dmSendFailedMessage": "Impossibile inviare il messaggio",
     "dmSendFailedRetry": "Riprova",
@@ -3120,6 +3120,16 @@
     "profileSetupImagesTypeGroup": "immagini",
     "profileSetupExternalNip05InvalidFormat": "Formato NIP-05 non valido (es. nome@dominio.com)",
     "profileSetupExternalNip05DivineDomain": "Usa il campo nome utente qui sopra per divine.video",
+"nostrSettingsNip05Address": "NIP-05 address",
+"nostrSettingsNip05AddressSubtitle": "Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.",
+"nostrSettingsNip05AddressHint": "you@example.com",
+"nostrSettingsNip05SaveAction": "Save NIP-05",
+"nostrSettingsNip05Saved": "NIP-05 saved",
+"nostrSettingsNip05SaveFailed": "Couldn't save NIP-05. Please try again.",
+"profileSetupNip05ConfirmTitle": "Use your own NIP-05?",
+"profileSetupNip05ConfirmBody": "NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it's wrong, people can't find you and your verified handle disappears. Continue only if you've set this up.",
+"profileSetupNip05ConfirmContinue": "Continue",
+"profileSetupNip05ConfirmCancel": "Cancel",
     "contentWarningReportContentTooltip": "Segnala contenuto",
     "contentWarningBlockUserTooltip": "Blocca utente",
     "contentWarningBlockedTitle": "Contenuto bloccato",
@@ -3233,6 +3243,26 @@
     "profileEditPublicKeyLink": "Vedi la tua chiave pubblica",
     "@profileEditPublicKeyLink": {
         "description": "Secondary link on the edit profile screen that navigates to the key management screen where the user's npub lives."
+    },
+    "verifiedAccountChipSemanticLabel": "Account {platform} verificato: {identity}",
+    "@verifiedAccountChipSemanticLabel": {
+        "description": "Screen reader label for a verified-account chip on a user's profile.",
+        "placeholders": {
+            "platform": { "type": "String" },
+            "identity": { "type": "String" }
+        }
+    },
+    "profileEditVerifiedAccountsTitle": "Account verificati",
+    "@profileEditVerifiedAccountsTitle": {
+        "description": "Section header on the edit profile screen above the verified-accounts chip row and the Get verified CTA."
+    },
+    "profileEditGetVerifiedCta": "Fatti verificare",
+    "@profileEditGetVerifiedCta": {
+        "description": "Primary CTA tile on edit profile that opens the verifyer integrated-app sandbox."
+    },
+    "profileEditGetVerifiedSubtitle": "Collega i tuoi profili social così tutti sanno che sei davvero tu.",
+    "@profileEditGetVerifiedSubtitle": {
+        "description": "Subtitle under the Get verified tile, harmonized with verifyer.divine.video landing copy."
     },
     "soundUntitled": "Audio senza titolo",
     "soundStopPreview": "Ferma anteprima",

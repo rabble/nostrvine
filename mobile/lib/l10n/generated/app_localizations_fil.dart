@@ -894,11 +894,44 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid NIP-05 format (e.g., name@domain.com)';
+      'Invalid na NIP-05 format (hal. name@domain.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
-      'Use the username field above for divine.video';
+      'Gamitin ang username field sa itaas para sa divine.video';
+
+  @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Gamitin ang divine.video username mo, o ituro ang handle mo sa isang NIP-05 address sa domain na kontrolado mo.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'I-save ang NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'Naisave ang NIP-05';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Hindi na-save ang NIP-05. Pakisubukan ulit.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Gamitin ang sarili mong NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'Ini-uugnay ng NIP-05 ang pangalang gaya ng you@yourdomain.com sa iyong Nostr identity. Kailangan mong kontrolado ang domain at naka-host ang verification file sa tamang path. Kapag mali ito, hindi ka mahahanap ng mga tao at mawawala ang verified handle mo. Magpatuloy lang kung na-set up mo na ito.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Magpatuloy';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Kanselahin';
 
   @override
   String get profileSetupProfilePicturePreview => 'Preview ng profile picture';
@@ -4384,6 +4417,14 @@ class AppLocalizationsFil extends AppLocalizations {
   String get supportExportLogsFailed => 'Hindi na-export ang logs';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Hindi available ang support chat';
 
   @override
@@ -5165,8 +5206,8 @@ class AppLocalizationsFil extends AppLocalizations {
   String get categoryWrestling => 'Wrestling';
 
   @override
-  String get profileSetupUploadSuccess =>
-      'Matagumpay na na-upload ang profile picture!';
+  String get profileSetupUploadStaged =>
+      'Na-upload na — i-tap ang I-save para ilapat';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -7071,4 +7112,19 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Reply sa video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Na-verify na $platform account: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Mga na-verify na account';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Magpa-verify';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.';
 }

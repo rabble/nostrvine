@@ -11,7 +11,40 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 
 import '../mocks/mock_path_provider_platform.dart';
 
-@Tags(['skip_very_good_optimization'])
+/// Wires up a mock handler for `flutter/assets` so [rootBundle] reads return
+/// [manifestPayload] for the seed-media manifest path and [videoPayload] for
+/// any `.mp4` asset path. Returning [Uint8List] from a single source-of-truth
+/// here keeps the handler stable across [setUp] / test-body boundaries — see
+/// the `seed_data_preload_service_test.dart` pattern.
+void _mockSeedMediaAssets({
+  required String manifestPayload,
+  Uint8List? videoBytes,
+  bool Function(String assetName)? videoMatcher,
+}) {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMessageHandler('flutter/assets', (ByteData? message) async {
+        if (message == null) return null;
+        final assetName = utf8.decode(message.buffer.asUint8List());
+
+        if (assetName == 'assets/seed_media/manifest.json') {
+          final bytes = Uint8List.fromList(utf8.encode(manifestPayload));
+          return ByteData.sublistView(bytes);
+        }
+
+        if (videoBytes != null &&
+            (videoMatcher?.call(assetName) ?? assetName.endsWith('.mp4'))) {
+          return ByteData.sublistView(videoBytes);
+        }
+
+        return null;
+      });
+}
+
+void _clearAssetMock() {
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMessageHandler('flutter/assets', null);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -20,47 +53,40 @@ void main() {
     late MockPathProviderPlatform mockPathProvider;
 
     setUp(() async {
-      // Create real temporary directory for testing
       tempDir = Directory.systemTemp.createTempSync('seed_media_test_');
 
-      // Setup mock path provider
       mockPathProvider = MockPathProviderPlatform();
       mockPathProvider.setTemporaryPath(tempDir.path);
       PathProviderPlatform.instance = mockPathProvider;
 
-      // Clear any cached service instance
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', null);
+      // rootBundle caches across tests in the merged VGV runner. Drop any
+      // cached payloads so the per-test asset mock is always observed.
+      rootBundle.clear();
+      _clearAssetMock();
     });
 
     tearDown(() async {
-      // Clean up temp directory
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
 
-      // Clear mock asset handler
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMessageHandler('flutter/assets', null);
+      rootBundle.clear();
+      _clearAssetMock();
     });
 
     test(
       'loadSeedMediaIfNeeded skips load when cache already populated',
       () async {
-        // Setup: Pre-populate cache directory with a marker file
         final cacheDir = Directory(
           path.join(tempDir.path, 'openvine_video_cache'),
         );
         await cacheDir.create(recursive: true);
 
-        // Create a marker file to simulate existing cache
         final markerFile = File(path.join(cacheDir.path, '.seed_media_loaded'));
         await markerFile.writeAsString('loaded');
 
-        // Act: Try to load seed media
         await SeedMediaPreloadService.loadSeedMediaIfNeeded();
 
-        // Assert: Should skip loading (verified by no errors and fast execution)
         expect(
           markerFile.existsSync(),
           isTrue,
@@ -72,7 +98,6 @@ void main() {
     test(
       'loadSeedMediaIfNeeded copies bundled videos to cache when empty',
       () async {
-        // Setup: Mock manifest.json asset
         final manifestJson = jsonEncode({
           'videos': [
             {
@@ -88,41 +113,13 @@ void main() {
           'generatedAt': '2025-11-10T00:00:00.000000',
         });
 
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMessageHandler('flutter/assets', (ByteData? message) async {
-              if (message == null) return null;
+        _mockSeedMediaAssets(
+          manifestPayload: manifestJson,
+          videoBytes: Uint8List.fromList([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]),
+        );
 
-              // Message is the asset name as UTF-8 bytes
-              final assetName = utf8.decode(message.buffer.asUint8List());
-
-              if (assetName.contains('manifest.json')) {
-                // Return manifest JSON as bytes
-                final bytes = Uint8List.fromList(utf8.encode(manifestJson));
-                return ByteData.sublistView(bytes);
-              } else if (assetName.contains('.mp4')) {
-                // Return fake video bytes
-                final bytes = Uint8List.fromList([
-                  0,
-                  1,
-                  2,
-                  3,
-                  4,
-                  5,
-                  6,
-                  7,
-                  8,
-                  9,
-                ]);
-                return ByteData.sublistView(bytes);
-              }
-
-              return null;
-            });
-
-        // Act: Load seed media
         await SeedMediaPreloadService.loadSeedMediaIfNeeded();
 
-        // Assert: Check marker file created
         final cacheDir = Directory(
           path.join(tempDir.path, 'openvine_video_cache'),
         );
@@ -133,23 +130,14 @@ void main() {
           reason: 'Marker file should be created after load',
         );
       },
-      // TODO(#3137): Flaky under merged VGV runner — the flutter/assets mock
-      // handler set inside the test body is sometimes observed as null by
-      // rootBundle.loadString before the service can read the manifest,
-      // causing the marker file to never be written. Same pattern as the
-      // already-skipped test below (line 247). Re-enable after the asset
-      // mock is moved into setUpAll or a dedicated AssetBundle override.
-      skip: true,
     );
 
     test('loadSeedMediaIfNeeded handles missing manifest gracefully', () async {
-      // Setup: Mock manifest not found by returning null
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMessageHandler('flutter/assets', (message) async {
-            return null; // Simulate asset not found
+            return null;
           });
 
-      // Act & Assert: Should not throw, just log error
       expect(
         () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
         returnsNormally,
@@ -160,17 +148,13 @@ void main() {
     test(
       'loadSeedMediaIfNeeded handles corrupted manifest gracefully',
       () async {
-        // Setup: Mock invalid JSON
         TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMessageHandler('flutter/assets', (ByteData? message) async {
               if (message == null) return null;
-
-              // Return invalid JSON
               final bytes = Uint8List.fromList(utf8.encode('not valid json'));
               return ByteData.sublistView(bytes);
             });
 
-        // Act & Assert: Should not throw
         expect(
           () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
           returnsNormally,
@@ -182,10 +166,9 @@ void main() {
     test(
       'loadSeedMediaIfNeeded uses eventId as filename in cache directory',
       () async {
-        // Setup: Mock manifest with specific eventId
         const testEventId =
             'unique0000test1111cafe2222beef3333dead4444face5555abcd6666ef0012345678';
-        const testFilename = '$testEventId.mp4'; // Filename matches eventId
+        const testFilename = '$testEventId.mp4';
         final manifestJson = jsonEncode({
           'videos': [
             {
@@ -208,30 +191,16 @@ void main() {
           0x45,
         ]);
 
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMessageHandler('flutter/assets', (ByteData? message) async {
-              if (message == null) return null;
+        _mockSeedMediaAssets(
+          manifestPayload: manifestJson,
+          videoBytes: testVideoBytes,
+          videoMatcher: (assetName) =>
+              assetName.contains('unique0000test1111') &&
+              assetName.endsWith('.mp4'),
+        );
 
-              // Message is the asset name as UTF-8 bytes
-              final assetName = utf8.decode(message.buffer.asUint8List());
-
-              if (assetName.contains('manifest.json')) {
-                // Return manifest JSON as bytes
-                final bytes = Uint8List.fromList(utf8.encode(manifestJson));
-                return ByteData.sublistView(bytes);
-              } else if (assetName.contains('unique0000test1111') &&
-                  assetName.contains('.mp4')) {
-                // Return fake video bytes if unique string is in the path
-                return ByteData.sublistView(testVideoBytes);
-              }
-
-              return null;
-            });
-
-        // Act: Load seed media
         await SeedMediaPreloadService.loadSeedMediaIfNeeded();
 
-        // Assert: File should exist in cache directory with eventId as filename
         final cacheDir = Directory(
           path.join(tempDir.path, 'openvine_video_cache'),
         );
@@ -243,7 +212,6 @@ void main() {
           reason: 'Video file should exist with eventId as filename',
         );
 
-        // Verify file content matches
         final fileBytes = await videoFile.readAsBytes();
         expect(
           fileBytes,
@@ -251,8 +219,6 @@ void main() {
           reason: 'File content should match asset bytes',
         );
       },
-      // TODO(any): Fix and re-enable this test
-      skip: true,
     );
   });
 }

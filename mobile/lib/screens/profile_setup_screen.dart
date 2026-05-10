@@ -4,7 +4,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
@@ -16,38 +15,41 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/apps/nostr_app_sandbox_screen.dart';
+import 'package:openvine/screens/apps/web_iframe_sandbox_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
-import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:openvine/utils/nostr_apps_platform_support.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
+import 'package:openvine/widgets/profile/verified_accounts_row.dart';
+import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 import 'package:openvine/widgets/user_avatar.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Maps a [BlossomUploadFailureReason] from the upload service to the
-/// localized message shown to the user when an avatar upload fails.
+/// Maps an [AvatarUploadError] case to its localized snackbar string.
 ///
-/// `null` (no reason supplied — defensive for older paths or unmapped
-/// failures) falls through to the generic "upload failed" copy.
+/// The bloc classifies upload failures; the UI just picks the right l10n key.
+/// Keeping this here colocates UI copy with the screen that shows it.
 String profileSetupUploadErrorMessage(
   AppLocalizations l10n,
-  BlossomUploadFailureReason? reason,
+  AvatarUploadError error,
 ) {
-  return switch (reason) {
-    BlossomUploadFailureReason.network => l10n.profileSetupUploadNetworkError,
-    BlossomUploadFailureReason.auth => l10n.profileSetupUploadAuthError,
-    BlossomUploadFailureReason.fileTooLarge =>
-      l10n.profileSetupUploadFileTooLarge,
-    BlossomUploadFailureReason.server => l10n.profileSetupUploadServerError,
-    BlossomUploadFailureReason.unknown ||
-    null => l10n.profileSetupUploadFailedGeneric,
+  return switch (error) {
+    AvatarUploadError.network => l10n.profileSetupUploadNetworkError,
+    AvatarUploadError.auth => l10n.profileSetupUploadAuthError,
+    AvatarUploadError.fileTooLarge => l10n.profileSetupUploadFileTooLarge,
+    AvatarUploadError.server => l10n.profileSetupUploadServerError,
+    AvatarUploadError.generic => l10n.profileSetupUploadFailedGeneric,
   };
 }
 
@@ -71,7 +73,11 @@ class ProfileSetupScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
+    final blossomUploadService = ref.watch(blossomUploadServiceProvider);
     final authService = ref.watch(authServiceProvider);
+    final identityClaimsRepository = ref.watch(
+      identityClaimsRepositoryProvider,
+    );
 
     final pubkey = authService.currentPublicKeyHex;
 
@@ -83,8 +89,16 @@ class ProfileSetupScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<ProfileEditorBloc>(
+          // Riverpod-into-BlocProvider bridge: rebuild the bloc when any
+          // captured dependency's identity changes (auth flip, account
+          // switch). Record-typed key compares per-field with `==`; the
+          // captured classes do not override `==`, so equality falls
+          // through to identity — exactly the semantics this needs.
+          // See `state_management.md`.
+          key: ValueKey((profileRepository, blossomUploadService, pubkey)),
           create: (context) => ProfileEditorBloc(
             profileRepository: profileRepository,
+            blossomUploadService: blossomUploadService,
             hasExistingProfile: authService.hasExistingProfile,
             currentUserPubkey: pubkey,
           ),
@@ -94,6 +108,7 @@ class ProfileSetupScreen extends ConsumerWidget {
             final bloc = MyProfileBloc(
               profileRepository: profileRepository,
               pubkey: pubkey,
+              identityClaimsRepository: identityClaimsRepository,
             );
             if (!isNewUser) bloc.add(const MyProfileLoadRequested());
             return bloc;
@@ -120,18 +135,24 @@ class _ProfileSetupScreenViewState
   final _bioController = TextEditingController();
   final _pictureController = TextEditingController();
   final _nip05Controller = TextEditingController();
-  final _externalNip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   // Focus nodes for tracking field focus state
   final _nameFocusNode = FocusNode();
   final _bioFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
-  final _externalNip05FocusNode = FocusNode();
 
-  bool _isUploadingImage = false;
+  // Local-preview state for the brief window between picking and the
+  // bloc receiving the staged URL. The bloc's `pendingPictureUrl` takes
+  // over once `pendingAvatarStatus == staged`. Cleared on the next pick
+  // or on `ProfilePictureUploadCleared`.
+  //
+  // Native picks: file path flows through the platform-channel EXIF
+  // stripper inside the upload service. Web picks: `image_picker` returns
+  // a blob URL `dart:io File` cannot open, so the bytes drive both the
+  // preview and the bytes-based upload path.
   File? _selectedImage;
-  String? _uploadedImageUrl;
+  Uint8List? _selectedImageBytes;
   Color? _selectedProfileColor;
 
   @override
@@ -143,7 +164,6 @@ class _ProfileSetupScreenViewState
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
     _usernameFocusNode.addListener(_onFocusChange);
-    _externalNip05FocusNode.addListener(_onFocusChange);
   }
 
   void _onFocusChange() {
@@ -157,15 +177,12 @@ class _ProfileSetupScreenViewState
     _bioController.dispose();
     _pictureController.dispose();
     _nip05Controller.dispose();
-    _externalNip05Controller.dispose();
     _nameFocusNode.removeListener(_onFocusChange);
     _bioFocusNode.removeListener(_onFocusChange);
     _usernameFocusNode.removeListener(_onFocusChange);
-    _externalNip05FocusNode.removeListener(_onFocusChange);
     _nameFocusNode.dispose();
     _bioFocusNode.dispose();
     _usernameFocusNode.dispose();
-    _externalNip05FocusNode.dispose();
 
     super.dispose();
   }
@@ -194,16 +211,19 @@ class _ProfileSetupScreenViewState
               if (extractedUsername != null) {
                 _nip05Controller.text = extractedUsername;
               }
-              if (externalNip05 != null) {
-                _externalNip05Controller.text = externalNip05;
-              }
             });
 
             final editorBloc = context.read<ProfileEditorBloc>();
+            // Seed bloc with the persisted picture so the avatar widget can
+            // render `pendingPictureUrl ?? persistedPictureUrl` purely from
+            // state, no widget-local fallback for the existing avatar.
+            editorBloc.add(InitialPersistedPictureSet(profile.picture));
             if (extractedUsername != null) {
               editorBloc.add(InitialUsernameSet(extractedUsername));
             }
             if (externalNip05 != null) {
+              // External NIP-05 now lives on Settings -> Nostr -> NIP-05.
+              // Seed editor state here so Save from Edit Profile preserves it.
               editorBloc
                 ..add(InitialExternalNip05Set(externalNip05))
                 ..add(const Nip05ModeChanged(Nip05Mode.external_))
@@ -338,9 +358,7 @@ class _ProfileSetupScreenViewState
                 case ProfileEditorError.noRelaysConnected:
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        context.l10n.profileSetupNoRelaysConnected,
-                      ),
+                      content: Text(context.l10n.profileSetupNoRelaysConnected),
                       backgroundColor: VineTheme.error,
                       duration: const Duration(seconds: 6),
                       action: pubkey == null
@@ -348,10 +366,8 @@ class _ProfileSetupScreenViewState
                           : SnackBarAction(
                               label: context.l10n.profileSetupRetryLabel,
                               textColor: VineTheme.whiteText,
-                              onPressed: () => _retryAfterRelayReconnect(
-                                context,
-                                pubkey,
-                              ),
+                              onPressed: () =>
+                                  _retryAfterRelayReconnect(context, pubkey),
                             ),
                     ),
                   );
@@ -359,6 +375,75 @@ class _ProfileSetupScreenViewState
                   break;
               }
             }
+          },
+        ),
+        BlocListener<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) =>
+              prev.pendingAvatarStatus != curr.pendingAvatarStatus,
+          listener: (context, state) {
+            switch (state.pendingAvatarStatus) {
+              case PendingAvatarStatus.staged:
+                // Avatar preview has already swapped (BlocBuilder is rebuilding
+                // from `effectivePictureUrl`). The snackbar makes the staged
+                // contract explicit: bytes uploaded, not yet published.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(context.l10n.profileSetupUploadStaged),
+                    backgroundColor: VineTheme.vineGreen,
+                  ),
+                );
+              case PendingAvatarStatus.failed:
+                final classified =
+                    state.avatarUploadError ?? AvatarUploadError.generic;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      profileSetupUploadErrorMessage(context.l10n, classified),
+                    ),
+                    backgroundColor: VineTheme.error,
+                  ),
+                );
+              case PendingAvatarStatus.idle:
+              case PendingAvatarStatus.uploading:
+                break;
+            }
+          },
+        ),
+        BlocListener<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) =>
+              prev.verifierStatus != curr.verifierStatus &&
+              curr.verifierStatus == VerifierStatus.launchRequested,
+          listener: (context, state) async {
+            final editorBloc = context.read<ProfileEditorBloc>();
+            final myProfileBloc = context.read<MyProfileBloc>();
+            final verifyer = preloadedNostrApps.firstWhere(
+              (app) => app.slug == 'verifyer',
+            );
+            if (nostrAppsSandboxSupported) {
+              // Native (iOS / Android / macOS): full webview_flutter
+              // sandbox with NIP-07 bridge injection.
+              await context.push(
+                NostrAppSandboxScreen.pathForAppId(verifyer.id),
+                extra: verifyer,
+              );
+            } else if (kIsWeb) {
+              // Flutter web: webview_flutter is unavailable, but we can
+              // host the verifyer in an <iframe> with a postMessage
+              // NIP-07 bridge to Divine's web signer.
+              await context.push(
+                WebIframeSandboxScreen.pathForAppId(verifyer.id),
+                extra: verifyer,
+              );
+            } else {
+              // Last-resort fallback for any future platform without
+              // either capability — open in the system browser.
+              await launchUrl(
+                Uri.parse(verifyer.launchUrl),
+                mode: LaunchMode.externalApplication,
+              );
+            }
+            editorBloc.add(const VerifierWebViewDismissed());
+            myProfileBloc.add(const MyProfileFetchRequested());
           },
         ),
       ],
@@ -431,168 +516,196 @@ class _ProfileSetupScreenViewState
                                   // 144 avatar + 20 (half of 40px buttons extending below)
                                   height: 164,
                                   width: 144,
-                                  child: Stack(
-                                    clipBehavior: Clip.none,
-                                    children: [
-                                      // Profile picture preview
-                                      UserAvatar(
-                                        imageProvider:
-                                            _buildProfilePictureProvider(),
-                                        name: _nameController.text.trim(),
-                                        placeholderSeed: pubkey,
-                                        size: 144,
-                                        semanticLabel: context
-                                            .l10n
-                                            .profileSetupProfilePicturePreview,
-                                      ),
-                                      // Upload progress indicator
-                                      if (_isUploadingImage)
-                                        Positioned(
-                                          top: 0,
-                                          left: 0,
-                                          width: 144,
-                                          height: 144,
-                                          child: DecoratedBox(
-                                            decoration: BoxDecoration(
-                                              borderRadius:
-                                                  BorderRadius.circular(56),
-                                              color: VineTheme.backgroundColor
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                            child: const Center(
-                                              child: CircularProgressIndicator(
-                                                color: VineTheme.vineGreen,
-                                                strokeWidth: 3,
+                                  child: BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
+                                    buildWhen: (prev, curr) =>
+                                        prev.pendingAvatarStatus !=
+                                            curr.pendingAvatarStatus ||
+                                        prev.pendingPictureUrl !=
+                                            curr.pendingPictureUrl ||
+                                        prev.persistedPictureUrl !=
+                                            curr.persistedPictureUrl,
+                                    builder: (context, editorState) {
+                                      final isUploadingImage =
+                                          editorState.pendingAvatarStatus ==
+                                          PendingAvatarStatus.uploading;
+                                      return Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          // Profile picture preview
+                                          UserAvatar(
+                                            imageProvider:
+                                                _buildProfilePictureProvider(
+                                                  editorState,
+                                                ),
+                                            name: _nameController.text.trim(),
+                                            placeholderSeed: pubkey,
+                                            size: 144,
+                                            semanticLabel: context
+                                                .l10n
+                                                .profileSetupProfilePicturePreview,
+                                          ),
+                                          // Upload progress indicator
+                                          if (isUploadingImage)
+                                            Positioned(
+                                              top: 0,
+                                              left: 0,
+                                              width: 144,
+                                              height: 144,
+                                              child: DecoratedBox(
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(56),
+                                                  color: VineTheme
+                                                      .backgroundColor
+                                                      .withValues(alpha: 0.7),
+                                                ),
+                                                child: const Center(
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        color:
+                                                            VineTheme.vineGreen,
+                                                        strokeWidth: 3,
+                                                      ),
+                                                ),
                                               ),
+                                            ),
+                                          // Image source buttons - overlapping bottom of avatar
+                                          Positioned(
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                // Show camera button on mobile only
+                                                if (!_isDesktopPlatform()) ...[
+                                                  GestureDetector(
+                                                    onTap: isUploadingImage
+                                                        ? null
+                                                        : () => _pickImage(
+                                                            ImageSource.camera,
+                                                          ),
+                                                    child: Container(
+                                                      width: 40,
+                                                      height: 40,
+                                                      decoration: BoxDecoration(
+                                                        color: VineTheme
+                                                            .surfaceContainer,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              16,
+                                                            ),
+                                                        border: Border.all(
+                                                          color: VineTheme
+                                                              .outlineMuted,
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      child: Center(
+                                                        child: SvgPicture.asset(
+                                                          DivineIconName
+                                                              .cameraPlus
+                                                              .assetPath,
+                                                          width: 24,
+                                                          height: 24,
+                                                          colorFilter:
+                                                              const ColorFilter.mode(
+                                                                VineTheme
+                                                                    .primary,
+                                                                BlendMode.srcIn,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                ],
+                                                GestureDetector(
+                                                  onTap: isUploadingImage
+                                                      ? null
+                                                      : () => _pickImage(
+                                                          ImageSource.gallery,
+                                                        ),
+                                                  child: Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      color: VineTheme
+                                                          .surfaceContainer,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: VineTheme
+                                                            .outlineMuted,
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: SvgPicture.asset(
+                                                        DivineIconName
+                                                            .imagesSquare
+                                                            .assetPath,
+                                                        width: 24,
+                                                        height: 24,
+                                                        colorFilter:
+                                                            const ColorFilter.mode(
+                                                              VineTheme.primary,
+                                                              BlendMode.srcIn,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                // URL input button
+                                                GestureDetector(
+                                                  onTap: isUploadingImage
+                                                      ? null
+                                                      : () =>
+                                                            _showImageUrlSheet(
+                                                              context,
+                                                            ),
+                                                  child: Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      color: VineTheme
+                                                          .surfaceContainer,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            16,
+                                                          ),
+                                                      border: Border.all(
+                                                        color: VineTheme
+                                                            .outlineMuted,
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: SvgPicture.asset(
+                                                        DivineIconName
+                                                            .linkSimple
+                                                            .assetPath,
+                                                        width: 24,
+                                                        height: 24,
+                                                        colorFilter:
+                                                            const ColorFilter.mode(
+                                                              VineTheme.primary,
+                                                              BlendMode.srcIn,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
-                                        ),
-                                      // Image source buttons - overlapping bottom of avatar
-                                      Positioned(
-                                        bottom: 0,
-                                        left: 0,
-                                        right: 0,
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            // Show camera button on mobile only
-                                            if (!_isDesktopPlatform()) ...[
-                                              GestureDetector(
-                                                onTap: _isUploadingImage
-                                                    ? null
-                                                    : () => _pickImage(
-                                                        ImageSource.camera,
-                                                      ),
-                                                child: Container(
-                                                  width: 40,
-                                                  height: 40,
-                                                  decoration: BoxDecoration(
-                                                    color: VineTheme
-                                                        .surfaceContainer,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          16,
-                                                        ),
-                                                    border: Border.all(
-                                                      color: VineTheme
-                                                          .outlineMuted,
-                                                      width: 2,
-                                                    ),
-                                                  ),
-                                                  child: Center(
-                                                    child: SvgPicture.asset(
-                                                      DivineIconName
-                                                          .cameraPlus
-                                                          .assetPath,
-                                                      width: 24,
-                                                      height: 24,
-                                                      colorFilter:
-                                                          const ColorFilter.mode(
-                                                            VineTheme.primary,
-                                                            BlendMode.srcIn,
-                                                          ),
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                            ],
-                                            GestureDetector(
-                                              onTap: _isUploadingImage
-                                                  ? null
-                                                  : () => _pickImage(
-                                                      ImageSource.gallery,
-                                                    ),
-                                              child: Container(
-                                                width: 40,
-                                                height: 40,
-                                                decoration: BoxDecoration(
-                                                  color: VineTheme
-                                                      .surfaceContainer,
-                                                  borderRadius:
-                                                      BorderRadius.circular(16),
-                                                  border: Border.all(
-                                                    color:
-                                                        VineTheme.outlineMuted,
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                child: Center(
-                                                  child: SvgPicture.asset(
-                                                    DivineIconName
-                                                        .imagesSquare
-                                                        .assetPath,
-                                                    width: 24,
-                                                    height: 24,
-                                                    colorFilter:
-                                                        const ColorFilter.mode(
-                                                          VineTheme.primary,
-                                                          BlendMode.srcIn,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            // URL input button
-                                            GestureDetector(
-                                              onTap: () =>
-                                                  _showImageUrlSheet(context),
-                                              child: Container(
-                                                width: 40,
-                                                height: 40,
-                                                decoration: BoxDecoration(
-                                                  color: VineTheme
-                                                      .surfaceContainer,
-                                                  borderRadius:
-                                                      BorderRadius.circular(16),
-                                                  border: Border.all(
-                                                    color:
-                                                        VineTheme.outlineMuted,
-                                                    width: 2,
-                                                  ),
-                                                ),
-                                                child: Center(
-                                                  child: SvgPicture.asset(
-                                                    DivineIconName
-                                                        .linkSimple
-                                                        .assetPath,
-                                                    width: 24,
-                                                    height: 24,
-                                                    colorFilter:
-                                                        const ColorFilter.mode(
-                                                          VineTheme.primary,
-                                                          BlendMode.srcIn,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
@@ -763,6 +876,8 @@ class _ProfileSetupScreenViewState
                               ),
                               const SizedBox(height: 16),
 
+                              const _VerifiedAccountsSection(),
+
                               const _PublicKeyLink(),
                               const SizedBox(height: 16),
 
@@ -916,13 +1031,6 @@ class _ProfileSetupScreenViewState
                                   );
                                 },
                               ),
-
-                              // External NIP-05 section
-                              _ExternalNip05Section(
-                                controller: _externalNip05Controller,
-                                focusNode: _externalNip05FocusNode,
-                              ),
-
                               const SizedBox(height: 24),
 
                               // Profile Color (optional)
@@ -1031,8 +1139,12 @@ class _ProfileSetupScreenViewState
                                 displayName: _nameController.text,
                                 about: _bioController.text,
                                 username: _nip05Controller.text,
-                                externalNip05: _externalNip05Controller.text,
-                                picture: _pictureController.text,
+                                // Picture is owned by bloc state
+                                // (`pendingPictureUrl ?? persistedPictureUrl`).
+                                // Don't pass `_pictureController.text` here —
+                                // it's only used as the URL-entry sheet
+                                // text field and is staged separately via
+                                // `ProfilePictureUrlSet`.
                                 banner: _selectedProfileColor != null
                                     ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
                                     : null,
@@ -1068,8 +1180,7 @@ class _ProfileSetupScreenViewState
         displayName: _nameController.text,
         about: _bioController.text,
         username: _nip05Controller.text,
-        externalNip05: _externalNip05Controller.text,
-        picture: _pictureController.text,
+        // Picture sourced from bloc state (see ProfileSaved dispatch above).
         banner: _selectedProfileColor != null
             ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
             : null,
@@ -1077,83 +1188,105 @@ class _ProfileSetupScreenViewState
     );
   }
 
-  ImageProvider<Object>? _buildProfilePictureProvider() {
-    // Priority: selected image > uploaded URL > manual URL > placeholder
-    if (_selectedImage != null) {
-      return FileImage(_selectedImage!);
+  ImageProvider<Object>? _buildProfilePictureProvider(
+    ProfileEditorState editorState,
+  ) {
+    // Priority:
+    //   1. Local pick preview (only relevant during upload — the bloc has
+    //      no URL yet).
+    //   2. Staged picture from bloc state (post-upload or manual URL).
+    //   3. Persisted picture from bloc state (current kind 0 value).
+    //   4. Placeholder.
+    if (editorState.pendingAvatarStatus == PendingAvatarStatus.uploading) {
+      if (_selectedImageBytes != null) return MemoryImage(_selectedImageBytes!);
+      if (_selectedImage != null) return FileImage(_selectedImage!);
     }
 
-    if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) {
-      return NetworkImage(_uploadedImageUrl!);
+    final pending = editorState.pendingPictureUrl;
+    if (pending != null && pending.isNotEmpty) {
+      return NetworkImage(pending);
     }
 
-    if (_pictureController.text.isNotEmpty) {
-      return NetworkImage(_pictureController.text);
+    final persisted = editorState.persistedPictureUrl;
+    if (persisted != null && persisted.isNotEmpty) {
+      return NetworkImage(persisted);
     }
 
     return null;
   }
 
-  /// Platform-aware image selection
+  /// Platform-aware image selection.
+  ///
+  /// Native (mobile + desktop): selects an [XFile] with a real filesystem
+  /// path, wraps it in `dart:io File`, and routes through
+  /// `BlossomUploadService.uploadImage` so the platform-channel EXIF
+  /// stripper runs.
+  ///
+  /// Web: `image_picker` returns an [XFile] whose `.path` is a blob URL
+  /// that `dart:io` cannot resolve, so we read the bytes directly and
+  /// route through `BlossomUploadService.uploadImageBytes`, which strips
+  /// EXIF in pure Dart and uploads from memory.
   Future<void> _pickImage(ImageSource source) async {
-    // TODO(#3887): Remove when the upload pipeline accepts bytes / XFile.
-    // The current path constructs `dart:io File` from `image_picker`, which
-    // hands back a blob URL on web and fails at the first I/O call.
-    if (kIsWeb) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.profileSetupUploadUnsupportedOnWeb),
-            backgroundColor: VineTheme.error,
-            duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: context.l10n.profileSetupGotItButton,
-              textColor: VineTheme.whiteText,
-              onPressed: () {},
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
     try {
       Log.info(
-        '🖼️ Attempting to pick image from ${source.name} on ${defaultTargetPlatform.name}',
+        '🖼️ Attempting to pick image from ${source.name} on '
+        '${kIsWeb ? "web" : defaultTargetPlatform.name}',
         name: 'ProfileSetupScreen',
         category: LogCategory.ui,
       );
 
-      File? selectedFile;
-
-      // Use different methods based on platform and source
-      if (source == ImageSource.gallery && _isDesktopPlatform()) {
-        // Use file_selector for desktop gallery/file browsing
-        selectedFile = await _pickImageFromDesktop();
-      } else {
-        // Use image_picker for mobile or camera
-        selectedFile = await _pickImageFromMobile(source);
-      }
-
-      if (selectedFile != null) {
-        Log.info(
-          '✅ Image picked successfully: ${selectedFile.path}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        setState(() {
-          _selectedImage = selectedFile;
-          _uploadedImageUrl = null; // Clear previous upload
-          _pictureController.clear(); // Clear manual URL
-        });
-
-        // Upload the image
-        await _uploadImage();
-      } else {
+      final picked = await _pickXFile(source);
+      if (picked == null) {
         Log.info(
           '❌ No image selected',
           name: 'ProfileSetupScreen',
           category: LogCategory.ui,
+        );
+        return;
+      }
+      Log.info(
+        '✅ Image picked: ${picked.name}',
+        name: 'ProfileSetupScreen',
+        category: LogCategory.ui,
+      );
+
+      final pubkey = ref.read(authServiceProvider).currentPublicKeyHex;
+      if (pubkey == null) {
+        Log.error(
+          'Cannot upload avatar: no public key available',
+          name: 'ProfileSetupScreen',
+          category: LogCategory.ui,
+        );
+        return;
+      }
+
+      if (kIsWeb) {
+        // Resolve the blob synchronously here — once we navigate away from
+        // the picker the URL can be revoked.
+        final bytes = await picked.readAsBytes();
+        if (!mounted) return;
+        setState(() {
+          _selectedImage = null;
+          _selectedImageBytes = bytes;
+          _pictureController.clear();
+        });
+        context.read<ProfileEditorBloc>().add(
+          ProfilePictureUploadRequested(
+            pubkey: pubkey,
+            bytes: bytes,
+            filename: picked.name,
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        final file = File(picked.path);
+        setState(() {
+          _selectedImage = file;
+          _selectedImageBytes = null;
+          _pictureController.clear();
+        });
+        context.read<ProfileEditorBloc>().add(
+          ProfilePictureUploadRequested(pubkey: pubkey, file: file),
         );
       }
     } catch (e) {
@@ -1185,14 +1318,51 @@ class _ProfileSetupScreenViewState
     }
   }
 
-  /// Check if running on desktop platform
-  bool _isDesktopPlatform() =>
-      defaultTargetPlatform == TargetPlatform.macOS ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux;
+  /// Picks a single image, returning the picker's [XFile] without resolving
+  /// it to a `dart:io File`. The returned XFile may have a blob-URL `path`
+  /// on web; callers must use [XFile.readAsBytes] there rather than
+  /// constructing a `File`.
+  Future<XFile?> _pickXFile(ImageSource source) async {
+    // image_picker handles both gallery and camera on web, mobile, and
+    // (since plugin updates) desktop camera. file_selector is only
+    // preferred for native desktop gallery, where it provides a richer
+    // file-type filter UX.
+    if (!kIsWeb && source == ImageSource.gallery && _isDesktopPlatform()) {
+      return _pickXFileFromDesktop();
+    }
 
-  /// Use file_selector for desktop platforms
-  Future<File?> _pickImageFromDesktop() async {
+    try {
+      return await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
+    } catch (e) {
+      Log.error(
+        'image_picker error: $e',
+        name: 'ProfileSetupScreen',
+        category: LogCategory.ui,
+      );
+      rethrow;
+    }
+  }
+
+  /// Check if running on desktop platform.
+  ///
+  /// Always returns false on web — `defaultTargetPlatform` reports the
+  /// host OS in a desktop browser, but a browser is not desktop for
+  /// picker-routing purposes (no real filesystem access).
+  bool _isDesktopPlatform() {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.macOS ||
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux;
+  }
+
+  /// Use file_selector for native desktop platforms.
+  Future<XFile?> _pickXFileFromDesktop() async {
     try {
       Log.info(
         '🖥️ Starting desktop file picker...',
@@ -1205,187 +1375,31 @@ class _ProfileSetupScreenViewState
         extensions: const <String>['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
       );
 
-      Log.info(
-        '🖥️ Opening file dialog with type group: ${typeGroup.label}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-
       final file = await openFile(acceptedTypeGroups: <XTypeGroup>[typeGroup]);
 
-      if (file != null) {
-        Log.info(
-          '✅ Desktop file selected: ${file.path}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '📁 File name: ${file.name}',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        Log.info(
-          '📁 File size: ${await file.length()} bytes',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        return File(file.path);
-      } else {
+      if (file == null) {
         Log.info(
           '❌ Desktop file picker: User cancelled or no file selected',
           name: 'ProfileSetupScreen',
           category: LogCategory.ui,
         );
+        return null;
       }
-      return null;
+
+      Log.info(
+        '✅ Desktop file selected: ${file.name}',
+        name: 'ProfileSetupScreen',
+        category: LogCategory.ui,
+      );
+      return file;
     } catch (e) {
       Log.error(
         'Desktop file picker error: $e',
         name: 'ProfileSetupScreen',
         category: LogCategory.ui,
       );
-      Log.error(
-        'Error type: ${e.runtimeType}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.error(
-        'Stack trace: ${StackTrace.current}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
       rethrow;
     }
-  }
-
-  /// Use image_picker for mobile platforms and camera
-  Future<File?> _pickImageFromMobile(ImageSource source) async {
-    try {
-      final image = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-        requestFullMetadata: false,
-      );
-
-      if (image != null) {
-        return File(image.path);
-      }
-      return null;
-    } catch (e) {
-      Log.error(
-        'Mobile image picker error: $e',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> _uploadImage() async {
-    if (_selectedImage == null) return;
-    final l10n = context.l10n;
-
-    setState(() {
-      _isUploadingImage = true;
-    });
-
-    try {
-      final authService = ref.read(authServiceProvider);
-      final uploadService = ref.read(blossomUploadServiceProvider);
-
-      if (authService.currentPublicKeyHex == null) {
-        // No signed-in identity: classify as auth so the user sees the
-        // sign-in-again copy rather than a generic "upload failed".
-        _showUploadFailureSnackBar(l10n, BlossomUploadFailureReason.auth);
-        return;
-      }
-
-      final result = await uploadService.uploadImage(
-        imageFile: _selectedImage!,
-        nostrPubkey: authService.currentPublicKeyHex!,
-        onProgress: (progress) {
-          // Only log at major milestones to reduce noise
-          if (progress == 1.0 || progress == 0.0) {
-            Log.debug(
-              'Upload ${progress == 1.0 ? "completed" : "started"}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-          }
-        },
-      );
-
-      if (result.success && result.cdnUrl != null) {
-        setState(() {
-          _uploadedImageUrl = result.cdnUrl;
-          _pictureController.text = result.cdnUrl!;
-        });
-
-        // Dismiss keyboard after programmatically setting text field value
-        if (mounted) {
-          FocusScope.of(context).unfocus();
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.profileSetupUploadSuccess),
-              backgroundColor: VineTheme.success,
-            ),
-          );
-        }
-      } else {
-        Log.error(
-          'Image upload failed: ${result.errorMessage} '
-          '(reason: ${result.failureReason}, status: ${result.statusCode})',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-        _showUploadFailureSnackBar(l10n, result.failureReason);
-      }
-    } catch (e) {
-      // Defensive: uploadImage normally returns a result rather than
-      // throwing, so anything reaching here is unexpected (file IO,
-      // provider lookup). Surface the generic copy.
-      Log.error(
-        'Unexpected error uploading image: $e',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      Log.error(
-        'Upload error type: ${e.runtimeType}',
-        name: 'ProfileSetupScreen',
-        category: LogCategory.ui,
-      );
-      _showUploadFailureSnackBar(l10n, null);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isUploadingImage = false;
-        });
-      }
-    }
-  }
-
-  void _showUploadFailureSnackBar(
-    AppLocalizations l10n,
-    BlossomUploadFailureReason? reason,
-  ) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(profileSetupUploadErrorMessage(l10n, reason)),
-        backgroundColor: VineTheme.error,
-        duration: const Duration(seconds: 5),
-        action: SnackBarAction(
-          label: l10n.profileSetupGotItButton,
-          textColor: VineTheme.whiteText,
-          onPressed: () {},
-        ),
-      ),
-    );
   }
 
   void _showNostrInfoSheet(BuildContext context) {
@@ -1447,265 +1461,15 @@ class _ProfileSetupScreenViewState
         ),
       ],
     ).then((_) {
-      // Unfocus after sheet is dismissed to prevent auto-focus on form fields
+      // Stage the URL the user typed so the avatar widget previews it and
+      // Save can publish it. Empty string clears any prior staged change.
       if (context.mounted) {
+        context.read<ProfileEditorBloc>().add(
+          ProfilePictureUrlSet(_pictureController.text),
+        );
         FocusScope.of(context).unfocus();
       }
     });
-  }
-}
-
-/// Displays username availability status (checking, available, taken, reserved, error)
-class UsernameStatusIndicator extends StatelessWidget {
-  const UsernameStatusIndicator({
-    required this.status,
-    this.error,
-    this.formatMessage,
-    super.key,
-  });
-
-  final UsernameStatus status;
-  final UsernameValidationError? error;
-
-  /// Custom message from the server for format validation errors.
-  final String? formatMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    String? errorText;
-    if (error != null) {
-      errorText = switch (error) {
-        UsernameValidationError.invalidFormat =>
-          formatMessage ?? context.l10n.profileSetupUsernameInvalidFormat,
-        UsernameValidationError.invalidLength =>
-          context.l10n.profileSetupUsernameInvalidLength,
-        UsernameValidationError.networkError =>
-          context.l10n.profileSetupUsernameNetworkError,
-        null => null,
-      };
-    }
-    return switch (status) {
-      UsernameStatus.idle => const SizedBox.shrink(),
-      UsernameStatus.checking => const _UsernameCheckingIndicator(),
-      UsernameStatus.available => const _UsernameAvailableIndicator(),
-      UsernameStatus.taken => const _UsernameTakenIndicator(),
-      UsernameStatus.reserved => const _UsernameReservedIndicator(),
-      UsernameStatus.burned => const _UsernameBurnedIndicator(),
-      UsernameStatus.invalidFormat => _UsernameErrorIndicator(
-        message:
-            errorText ?? context.l10n.profileSetupUsernameInvalidFormatGeneric,
-      ),
-      UsernameStatus.error => _UsernameErrorIndicator(
-        message: errorText ?? context.l10n.profileSetupUsernameCheckFailed,
-      ),
-    };
-  }
-}
-
-/// Lowercases input text on every edit.
-///
-/// Composes with `FilteringTextInputFormatter` on the username field so that
-/// typed capital letters are normalized in place rather than triggering the
-/// lowercase-only validator. Lowercasing ASCII is a 1:1 character mapping so
-/// the existing selection offsets remain valid.
-class LowercaseTextInputFormatter extends TextInputFormatter {
-  const LowercaseTextInputFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final lowered = newValue.text.toLowerCase();
-    if (lowered == newValue.text) return newValue;
-    return newValue.copyWith(text: lowered);
-  }
-}
-
-class _UsernameCheckingIndicator extends StatelessWidget {
-  const _UsernameCheckingIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameChecking,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameAvailableIndicator extends StatelessWidget {
-  const _UsernameAvailableIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameAvailable,
-            style: const TextStyle(color: VineTheme.vineGreen, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameTakenIndicator extends StatelessWidget {
-  const _UsernameTakenIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.cancel, color: VineTheme.error, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameTakenIndicator,
-            style: const TextStyle(color: VineTheme.error, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameReservedIndicator extends StatelessWidget {
-  const _UsernameReservedIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.lock, color: VineTheme.warning, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                context.l10n.profileSetupUsernameReserved,
-                style: const TextStyle(
-                  color: VineTheme.warning,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () {
-                  final username = context
-                      .read<ProfileEditorBloc>()
-                      .state
-                      .username;
-                  showDialog<void>(
-                    context: context,
-                    builder: (dialogContext) => BlocProvider.value(
-                      value: context.read<ProfileEditorBloc>(),
-                      child: UsernameReservedDialog(username),
-                    ),
-                  );
-                },
-                child: Text(
-                  context.l10n.profileSetupContactSupport,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              GestureDetector(
-                onTap: () => context.read<ProfileEditorBloc>().add(
-                  const UsernameRechecked(),
-                ),
-                child: Text(
-                  context.l10n.profileSetupCheckAgain,
-                  style: const TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 12,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameBurnedIndicator extends StatelessWidget {
-  const _UsernameBurnedIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.block, color: VineTheme.warning, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            context.l10n.profileSetupUsernameBurned,
-            style: const TextStyle(color: VineTheme.warning, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsernameErrorIndicator extends StatelessWidget {
-  const _UsernameErrorIndicator({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, color: VineTheme.warning, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            message,
-            style: const TextStyle(color: VineTheme.warning, fontSize: 12),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -1756,157 +1520,6 @@ class _SaveButton extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-    );
-  }
-}
-
-@visibleForTesting
-class UsernameReservedDialog extends StatefulWidget {
-  const UsernameReservedDialog(this.username, {super.key});
-
-  final String username;
-
-  @override
-  State<UsernameReservedDialog> createState() => _UsernameReservedDialogState();
-}
-
-class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
-  final _reasonController = TextEditingController();
-  bool _submitting = false;
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _contactSupport() async {
-    final reason = _reasonController.text.trim();
-    if (reason.isEmpty) return;
-
-    setState(() => _submitting = true);
-
-    final npub = ZendeskSupportService.userNpub;
-    final created = await ZendeskSupportService.createTicketViaApi(
-      subject: 'Reserved username request: ${widget.username}',
-      description:
-          'Username requested: ${widget.username}\n'
-          '${npub != null ? 'Nostr npub: $npub\n' : ''}\n'
-          'Why this name should be mine:\n$reason',
-      requesterName: ZendeskSupportService.userName,
-      requesterEmail: ZendeskSupportService.userEmail,
-      tags: ['reserved_username', 'name_request'],
-    );
-
-    if (!mounted) return;
-
-    setState(() => _submitting = false);
-
-    if (created) {
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.profileSetupSupportRequestSent),
-          backgroundColor: VineTheme.vineGreen,
-        ),
-      );
-    } else {
-      // Fallback to email if Zendesk is unavailable
-      final encodedReason = Uri.encodeComponent(reason);
-      final launched = await launchUrl(
-        Uri.parse(
-          'mailto:names@divine.video?subject=Reserved username request: '
-          '${widget.username}&body=Username requested: ${widget.username}'
-          '%0A%0AWhy this name should be mine:%0A$encodedReason',
-        ),
-      );
-      if (!launched && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.profileSetupCouldntOpenEmail),
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: Text(
-        context.l10n.profileSetupUsernameReservedTitle,
-        style: const TextStyle(color: VineTheme.whiteText),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.profileSetupUsernameReservedBody(widget.username),
-            style: const TextStyle(color: VineTheme.secondaryText),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _reasonController,
-            maxLines: 3,
-            style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: context.l10n.profileSetupUsernameReservedHint,
-              hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-              border: const OutlineInputBorder(),
-              enabledBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.surfaceContainer),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(color: VineTheme.vineGreen),
-              ),
-              contentPadding: const EdgeInsets.all(12),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.l10n.profileSetupUsernameReservedCheckHint,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text(
-            context.l10n.commonClose,
-            style: const TextStyle(color: VineTheme.lightText),
-          ),
-        ),
-        TextButton(
-          onPressed: () {
-            context.read<ProfileEditorBloc>().add(const UsernameRechecked());
-            Navigator.of(context).pop();
-          },
-          child: Text(
-            context.l10n.profileSetupCheckAgain,
-            style: const TextStyle(color: VineTheme.vineGreen),
-          ),
-        ),
-        FilledButton(
-          onPressed: _submitting ? null : _contactSupport,
-          style: FilledButton.styleFrom(backgroundColor: VineTheme.vineGreen),
-          child: _submitting
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.whiteText,
-                  ),
-                )
-              : Text(context.l10n.profileSetupSendRequest),
-        ),
-      ],
     );
   }
 }
@@ -2086,142 +1699,6 @@ class _CustomColorButton extends StatelessWidget {
   }
 }
 
-/// Collapsible section for entering an external NIP-05 identifier.
-///
-/// Shows a toggle to switch between divine.video username mode and external
-/// NIP-05 mode. When expanded, displays a text field for entering the
-/// external NIP-05 (e.g., `alice@example.com`).
-class _ExternalNip05Section extends StatelessWidget {
-  const _ExternalNip05Section({
-    required this.controller,
-    required this.focusNode,
-  });
-
-  final TextEditingController controller;
-  final FocusNode focusNode;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
-      buildWhen: (prev, curr) =>
-          prev.nip05Mode != curr.nip05Mode ||
-          prev.externalNip05Error != curr.externalNip05Error,
-      builder: (context, state) {
-        final isExternal = state.nip05Mode == Nip05Mode.external_;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            // Toggle button
-            GestureDetector(
-              onTap: () {
-                final newMode = isExternal
-                    ? Nip05Mode.divine
-                    : Nip05Mode.external_;
-                context.read<ProfileEditorBloc>()
-                  ..add(Nip05ModeChanged(newMode))
-                  ..add(
-                    ExternalNip05Changed(
-                      newMode == Nip05Mode.external_ ? controller.text : '',
-                    ),
-                  );
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isExternal
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: isExternal
-                          ? VineTheme.vineGreen
-                          : VineTheme.onSurfaceMuted,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        context.l10n.profileSetupUseOwnNip05,
-                        style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // External NIP-05 input field (visible when toggled)
-            if (isExternal) ...[
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsetsDirectional.only(start: 16),
-                child: Text(
-                  context.l10n.profileSetupNip05AddressLabel,
-                  style: VineTheme.labelMediumFont(
-                    color: focusNode.hasFocus
-                        ? VineTheme.primary
-                        : VineTheme.onSurfaceMuted,
-                  ),
-                ),
-              ),
-              TextFormField(
-                controller: controller,
-                focusNode: focusNode,
-                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-                decoration: InputDecoration(
-                  isCollapsed: true,
-                  hintText: 'you@example.com',
-                  hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
-                  border: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  enabledBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  focusedBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  errorBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  focusedErrorBorder: const UnderlineInputBorder(
-                    borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: VineTheme.neutral10),
-                  ),
-                  contentPadding: const EdgeInsets.all(16),
-                  errorMaxLines: 2,
-                  errorText: switch (state.externalNip05Error) {
-                    ExternalNip05ValidationError.invalidFormat =>
-                      context.l10n.profileSetupExternalNip05InvalidFormat,
-                    ExternalNip05ValidationError.divineDomain =>
-                      context.l10n.profileSetupExternalNip05DivineDomain,
-                    null => null,
-                  },
-                ),
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                onChanged: (value) => context.read<ProfileEditorBloc>().add(
-                  ExternalNip05Changed(value),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-}
-
 class _PublicKeyLink extends StatelessWidget {
   const _PublicKeyLink();
 
@@ -2236,6 +1713,70 @@ class _PublicKeyLink extends StatelessWidget {
           l10n.profileEditPublicKeyLink,
           style: VineTheme.labelMediumFont(color: VineTheme.primary),
         ),
+      ),
+    );
+  }
+}
+
+class _VerifiedAccountsSection extends StatelessWidget {
+  const _VerifiedAccountsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final claims = context.select<MyProfileBloc, List<IdentityClaim>>((bloc) {
+      final state = bloc.state;
+      if (state is MyProfileLoaded) return state.verifiedClaims;
+      if (state is MyProfileUpdated) return state.verifiedClaims;
+      return const [];
+    });
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, bottom: 8),
+            child: Text(
+              l10n.profileEditVerifiedAccountsTitle,
+              style: VineTheme.labelMediumFont(color: VineTheme.lightText),
+            ),
+          ),
+          if (claims.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: VerifiedAccountsRow(claims: claims),
+            ),
+            const SizedBox(height: 8),
+          ],
+          const _GetVerifiedTile(),
+        ],
+      ),
+    );
+  }
+}
+
+class _GetVerifiedTile extends StatelessWidget {
+  const _GetVerifiedTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    return ListTile(
+      title: Text(
+        l10n.profileEditGetVerifiedCta,
+        style: VineTheme.titleMediumFont(),
+      ),
+      subtitle: Text(
+        l10n.profileEditGetVerifiedSubtitle,
+        style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: VineTheme.lightText,
+      ),
+      onTap: () => context.read<ProfileEditorBloc>().add(
+        const VerifierLaunchRequested(),
       ),
     );
   }

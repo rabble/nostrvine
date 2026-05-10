@@ -762,5 +762,179 @@ void main() {
         },
       );
     });
+
+    group('publishSelfWrap', () {
+      // The recovery primitive: re-publish only the sender
+      // self-addressed gift wrap for a rumor whose recipient publish
+      // already landed. The full sendRumor path would publish a second
+      // recipient wrap and double-deliver — these tests pin that
+      // publishSelfWrap never builds or publishes the recipient wrap.
+      late NIP17MessageService realKeyService;
+
+      setUp(() {
+        // Use a sender pubkey derived from the signer so the self-wrap
+        // NIP-44 ECDH actually runs end-to-end (the synthetic
+        // _testPublicKey is not a valid secp256k1 point).
+        realKeyService = NIP17MessageService(
+          signer: LocalNostrSigner(_testPrivateKey),
+          senderPublicKey: getPublicKey(_testPrivateKey),
+          nostrService: mockNostrClient,
+        );
+      });
+
+      test(
+        'returns success when the self-wrap publish succeeds and '
+        'never publishes a recipient wrap',
+        () async {
+          final captured = <Event>[];
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer(
+            (invocation) async {
+              final event = invocation.positionalArguments[0] as Event;
+              captured.add(event);
+              return PublishSuccess(event: event);
+            },
+          );
+
+          final rumor = realKeyService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'recovery smoke test',
+          );
+
+          final result = await realKeyService.publishSelfWrap(
+            rumorEvent: rumor,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.selfWrapPublished, isTrue);
+          expect(
+            result.rumorEventId,
+            equals(rumor.id),
+            reason:
+                'rumor id must be preserved across recovery — receiver-side '
+                'gift-wrap dedup keys on it',
+          );
+          expect(
+            result.recipientPubkey,
+            equals(getPublicKey(_testPrivateKey)),
+            reason:
+                'recovery republishes a self-addressed wrap; the result '
+                "exposes the sender's pubkey in the recipientPubkey slot",
+          );
+          expect(
+            captured,
+            hasLength(1),
+            reason:
+                'publishSelfWrap must NOT republish the recipient wrap — '
+                'doing so would double-deliver the message',
+          );
+          expect(captured.single.kind, equals(EventKind.giftWrap));
+        },
+      );
+
+      test(
+        'returns failure when the self-wrap publish returns '
+        'PublishFailed without throwing',
+        () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final rumor = realKeyService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'PublishFailed path',
+          );
+
+          final result = await realKeyService.publishSelfWrap(
+            rumorEvent: rumor,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          expect(result.selfWrapPublished, isNull);
+          verify(() => mockNostrClient.publishEvent(any())).called(1);
+        },
+      );
+
+      test(
+        'returns failure when the gift-wrap builder returns null',
+        () async {
+          final nullBuilderService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async => null,
+          );
+
+          final rumor = nullBuilderService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'null builder path',
+          );
+
+          final result = await nullBuilderService.publishSelfWrap(
+            rumorEvent: rumor,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test(
+        'returns failure when the gift-wrap builder throws',
+        () async {
+          final throwingBuilderService = NIP17MessageService(
+            signer: LocalNostrSigner(_testPrivateKey),
+            senderPublicKey: getPublicKey(_testPrivateKey),
+            nostrService: mockNostrClient,
+            giftWrapBuilder: (_, _, _) async {
+              throw Exception('builder boom');
+            },
+          );
+
+          final rumor = throwingBuilderService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'throwing builder path',
+          );
+
+          final result = await throwingBuilderService.publishSelfWrap(
+            rumorEvent: rumor,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+
+      test(
+        'returns failure when the signer throws during key refresh',
+        () async {
+          final mockSigner = _MockNostrSigner();
+          when(
+            mockSigner.getPublicKey,
+          ).thenThrow(Exception('signer unavailable'));
+
+          final brokenService = NIP17MessageService(
+            signer: mockSigner,
+            senderPublicKey: _testPublicKey,
+            nostrService: mockNostrClient,
+          );
+
+          final rumor = realKeyService.buildRumor(
+            recipientPubkey: _recipientPubkey,
+            content: 'signer-key-failure path',
+          );
+
+          final result = await brokenService.publishSelfWrap(
+            rumorEvent: rumor,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          verifyNever(() => mockNostrClient.publishEvent(any()));
+        },
+      );
+    });
   });
 }

@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
+import 'package:funnelcake_api_client/src/leaderboard_period.dart';
 import 'package:funnelcake_api_client/src/models/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
@@ -458,6 +459,79 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch watching videos: $e');
+    }
+  }
+
+  /// Fetches the top videos for a given leaderboard time window.
+  ///
+  /// Backed by funnelcake's `/api/leaderboard/videos?period=…` endpoint
+  /// (see api.divine.video/docs/llm-guide → Leaderboards). Items are ranked
+  /// server-side by views/loops within the window. Results are sorted by
+  /// rank, not by `created_at` — the caller should not re-sort.
+  ///
+  /// Endpoint uses a `{period, entries}` envelope rather than the standard
+  /// `{data, pagination}` shape, so `_unwrapListResponse` does not apply.
+  ///
+  /// [period] is the time window: day / week / month / alltime.
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [offset] is the optional offset for pagination (in items, not timestamps).
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getLeaderboardVideos({
+    required LeaderboardPeriod period,
+    int limit = 50,
+    int? offset,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = <String, String>{
+      'period': period.wireValue,
+      'limit': limit.toString(),
+    };
+    if (offset != null) {
+      queryParams['offset'] = offset.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/leaderboard/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is! Map<String, dynamic>) {
+          return const [];
+        }
+        final entries = decoded['entries'];
+        if (entries is! List) {
+          return const [];
+        }
+        return entries
+            .whereType<Map<String, dynamic>>()
+            .map(VideoStats.fromJson)
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      }
+
+      throw FunnelcakeApiException(
+        message: 'Failed to fetch leaderboard videos',
+        statusCode: response.statusCode,
+        url: uri.toString(),
+      );
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch leaderboard videos: $e');
     }
   }
 

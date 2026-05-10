@@ -3,15 +3,58 @@
 // ABOUTME: and start offset calculation using mocktail AudioClipPlayer mocks.
 
 import 'dart:async';
+import 'dart:ui' show Size;
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_editor/audio_timing/audio_timing_cubit.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
 
 class _MockAudioClipPlayer extends Mock implements AudioClipPlayer {}
+
+/// Mock [ProVideoEditor] that returns canned metadata. Allows overriding
+/// the duration returned by [getMetadata] per test.
+class _MockProVideoEditor extends ProVideoEditor {
+  _MockProVideoEditor({
+    this.metadataDuration = const Duration(seconds: 30),
+    this.throwOnGetMetadata = false,
+  });
+
+  final Duration metadataDuration;
+  final bool throwOnGetMetadata;
+
+  int getMetadataCallCount = 0;
+  EditorVideo? lastMetadataSource;
+
+  @override
+  void initializeStream() {
+    // Intentional no-op: testing stub for ProVideoEditor.
+  }
+
+  @override
+  Future<VideoMetadata> getMetadata(
+    EditorVideo value, {
+    bool checkStreamingOptimization = false,
+    NativeLogLevel? nativeLogLevel,
+  }) async {
+    getMetadataCallCount++;
+    lastMetadataSource = value;
+    if (throwOnGetMetadata) {
+      throw Exception('mock failure');
+    }
+    return VideoMetadata(
+      duration: metadataDuration,
+      extension: 'mp3',
+      fileSize: 1024,
+      resolution: Size.zero,
+      rotation: 0,
+      bitrate: 128000,
+    );
+  }
+}
 
 /// Creates a test [AudioEvent] with optional overrides.
 AudioEvent _createTestSound({
@@ -55,9 +98,11 @@ void main() {
 
   group(AudioTimingCubit, () {
     late _MockAudioClipPlayer mockClipPlayer;
+    late _MockProVideoEditor mockProVideoEditor;
 
     setUp(() {
       mockClipPlayer = _MockAudioClipPlayer();
+      mockProVideoEditor = _MockProVideoEditor();
       when(
         () => mockClipPlayer.completionStream,
       ).thenAnswer((_) => const Stream.empty());
@@ -69,10 +114,14 @@ void main() {
       when(() => mockClipPlayer.dispose()).thenAnswer((_) async {});
     });
 
-    AudioTimingCubit buildCubit({AudioEvent? sound}) {
+    AudioTimingCubit buildCubit({
+      AudioEvent? sound,
+      ProVideoEditor? proVideoEditor,
+    }) {
       return AudioTimingCubit(
         sound: sound ?? _createTestSound(),
         clipPlayer: mockClipPlayer,
+        proVideoEditor: proVideoEditor ?? mockProVideoEditor,
       );
     }
 
@@ -147,7 +196,11 @@ void main() {
 
       blocTest<AudioTimingCubit, AudioTimingState>(
         'handles null duration gracefully',
-        build: () => buildCubit(sound: _createTestSound(duration: null)),
+        build: () => buildCubit(
+          sound: _createTestSound(duration: null),
+          // Force resolution to fail so audioDuration stays at 0.
+          proVideoEditor: _MockProVideoEditor(throwOnGetMetadata: true),
+        ),
         act: (cubit) => cubit.initialize(),
         expect: () => [
           isA<AudioTimingState>()
@@ -161,6 +214,66 @@ void main() {
             isTrue,
           ),
         ],
+      );
+
+      blocTest<AudioTimingCubit, AudioTimingState>(
+        'resolves missing duration via ProVideoEditor.getMetadata',
+        build: () => buildCubit(
+          sound: _createTestSound(duration: null),
+          proVideoEditor: _MockProVideoEditor(
+            metadataDuration: const Duration(seconds: 25),
+          ),
+        ),
+        act: (cubit) => cubit.initialize(),
+        expect: () => [
+          isA<AudioTimingState>()
+              .having((s) => s.audioDuration, 'audioDuration', 25)
+              .having((s) => s.startOffset, 'startOffset', 0),
+          isA<AudioTimingState>().having(
+            (s) => s.isPlaying,
+            'isPlaying',
+            isTrue,
+          ),
+        ],
+      );
+
+      blocTest<AudioTimingCubit, AudioTimingState>(
+        'falls back to 0 duration when ProVideoEditor.getMetadata throws',
+        build: () => buildCubit(
+          sound: _createTestSound(duration: null),
+          proVideoEditor: _MockProVideoEditor(throwOnGetMetadata: true),
+        ),
+        act: (cubit) => cubit.initialize(),
+        expect: () => [
+          isA<AudioTimingState>()
+              .having((s) => s.audioDuration, 'audioDuration', 0)
+              .having((s) => s.startOffset, 'startOffset', 0),
+          // Still emits isPlaying since play() is called even though
+          // setClippedAudioSource bails early for zero duration
+          isA<AudioTimingState>().having(
+            (s) => s.isPlaying,
+            'isPlaying',
+            isTrue,
+          ),
+        ],
+      );
+
+      test(
+        'skips ProVideoEditor lookup when sound has neither url nor asset',
+        () async {
+          final editor = _MockProVideoEditor();
+          final cubit = buildCubit(
+            sound: _createTestSound(duration: null, url: null),
+            proVideoEditor: editor,
+          );
+
+          await cubit.initialize();
+
+          expect(editor.getMetadataCallCount, equals(0));
+          expect(cubit.state.audioDuration, equals(0));
+
+          await cubit.close();
+        },
       );
 
       blocTest<AudioTimingCubit, AudioTimingState>(

@@ -40,7 +40,7 @@ class BlurhashService {
   static const int _portraitComponentX = 4;
   static const int _portraitComponentY = 7;
 
-  /// Components for 1:1 square videos (balanced).
+  /// Components for 1:1 square and landscape videos (balanced).
   static const int _squareComponentX = 4;
   static const int _squareComponentY = 4;
 
@@ -51,7 +51,7 @@ class BlurhashService {
   static const double defaultPunch = 1;
 
   /// Returns component counts suited to the image's aspect ratio.
-  /// Supports 9:16 portrait and 1:1 square; falls back to portrait.
+  /// Supports 9:16 portrait, 1:1 square, and landscape; falls back to portrait.
   static (int compX, int compY) _componentsForAspectRatio(
     int width,
     int height,
@@ -60,7 +60,7 @@ class BlurhashService {
       return (_portraitComponentX, _portraitComponentY);
     }
     final ratio = width / height;
-    // Square: ratio ≥ 0.9 (covers 1:1 with rounding tolerance)
+    // Square or landscape: ratio ≥ 0.9 (covers 1:1 and any wider format)
     if (ratio >= 0.9) return (_squareComponentX, _squareComponentY);
     // Portrait 9:16 (and any other tall format)
     return (_portraitComponentX, _portraitComponentY);
@@ -173,6 +173,49 @@ class BlurhashService {
     return 'L6Pj0^jE.AyE_3t7t7R**0o#DgR4';
   }
 
+  /// Derive a [VineContentType] from free-form metadata strings.
+  ///
+  /// Returns `null` when no keyword matches; callers can then fall back to
+  /// [getDefaultVineBlurhash]. Comparison is case-insensitive.
+  static VineContentType? deriveContentType({
+    Iterable<String> hashtags = const [],
+    String? group,
+    String? title,
+    String? content,
+  }) {
+    final tokens = <String>[
+      ...hashtags.map((h) => h.toLowerCase()),
+      group?.toLowerCase() ?? '',
+      title?.toLowerCase() ?? '',
+      content?.toLowerCase() ?? '',
+    ].join(' ');
+
+    bool hasAny(List<String> keywords) => keywords.any(tokens.contains);
+
+    if (hasAny(['dance', 'choreo'])) return VineContentType.dance;
+    if (hasAny(['nature', 'outdoor', 'wildlife'])) {
+      return VineContentType.nature;
+    }
+    if (hasAny(['food', 'recipe', 'cooking'])) return VineContentType.food;
+    if (hasAny(['music', 'song', 'beat'])) return VineContentType.music;
+    if (hasAny(['tech', 'coding', 'code', 'dev'])) {
+      return VineContentType.tech;
+    }
+    if (hasAny(['art', 'design', 'drawing'])) return VineContentType.art;
+    if (hasAny(['sport', 'fitness', 'workout', 'soccer', 'football'])) {
+      return VineContentType.sports;
+    }
+    if (hasAny(['lifestyle', 'daily', 'vlog'])) {
+      return VineContentType.lifestyle;
+    }
+    if (hasAny(['meme', 'shitpost', 'funny'])) return VineContentType.meme;
+    if (hasAny(['tutorial', 'howto', 'how-to'])) {
+      return VineContentType.tutorial;
+    }
+
+    return null;
+  }
+
   /// Get common vine blurhashes for different content
   /// types.
   static String getBlurhashForContentType(
@@ -220,10 +263,6 @@ class BlurhashService {
   /// Validate blurhash format.
   static bool _isValidBlurhash(String blurhash) {
     if (blurhash.length < 6) return false;
-
-    // Basic validation - should start with 'L'
-    // and contain valid base83 characters
-    if (!blurhash.startsWith('L')) return false;
 
     final validChars = RegExp(r'^[0-9A-Za-z#$%*+,-.:;=?@\[\]^_{|}~]+$');
     return validChars.hasMatch(blurhash);

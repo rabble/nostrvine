@@ -4080,19 +4080,40 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
     return null;
   }
 
-  /// Preserve original timestamp when updating video events
-  /// This maintains the original creation time for older events that may not have 'published_at'
-  VideoEvent _preserveOriginalTimestamp(
+  /// Merges an incoming [updatedVideo] (parsed from a freshly published Nostr
+  /// event) with the [existingVideo] already held in the service, carrying
+  /// forward fields that are not stored in Nostr event tags and therefore
+  /// cannot survive a round-trip through [VideoEvent.fromNostrEvent].
+  ///
+  /// **Timestamp preservation** — when neither version has a `published_at`
+  /// tag (common for classic Vine imports), the original `createdAt` /
+  /// `timestamp` values are kept so the video retains its chronological
+  /// position in feeds.
+  ///
+  /// **Runtime like-count carry-forward** — [VideoEvent.nostrLikeCount] is
+  /// injected at runtime after a relay batch query; it is never written into
+  /// the Nostr event body.  Without this carry-forward a metadata edit (e.g.
+  /// changing hashtags) drops the displayed count to zero until the next
+  /// batch re-fetch completes.  The relay-fetched count will overwrite this
+  /// carried value once the batch fires, so there is no risk of a stale
+  /// count persisting indefinitely.
+  VideoEvent _mergeUpdatedVideo(
     VideoEvent existingVideo,
     VideoEvent updatedVideo,
   ) {
-    return (existingVideo.publishedAt == null &&
-            updatedVideo.publishedAt == null)
+    var merged =
+        (existingVideo.publishedAt == null && updatedVideo.publishedAt == null)
         ? updatedVideo.copyWith(
             createdAt: existingVideo.createdAt,
             timestamp: existingVideo.timestamp,
           )
         : updatedVideo;
+
+    if (merged.nostrLikeCount == null && existingVideo.nostrLikeCount != null) {
+      merged = merged.copyWith(nostrLikeCount: existingVideo.nostrLikeCount);
+    }
+
+    return merged;
   }
 
   /// Check if an error is connection-related
@@ -5309,12 +5330,9 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       if (existingIndex != -1) {
         final existingVideo = eventList[existingIndex];
 
-        // Preserve original post time when editing metadata.
-        // This is important for older events that may not have 'published_at'.
-        final mergedVideo = _preserveOriginalTimestamp(
-          existingVideo,
-          updatedVideo,
-        );
+        // Merge updated video: preserve original timestamps and live counts.
+        // See _mergeUpdatedVideo for details.
+        final mergedVideo = _mergeUpdatedVideo(existingVideo, updatedVideo);
 
         eventList[existingIndex] = mergedVideo;
         foundAny = true;
@@ -5340,10 +5358,7 @@ class VideoEventService extends ChangeNotifier implements VideoEventCache {
       );
       if (bucketIndex != -1) {
         final existingVideo = authorBucket[bucketIndex];
-        final mergedVideo = _preserveOriginalTimestamp(
-          existingVideo,
-          updatedVideo,
-        );
+        final mergedVideo = _mergeUpdatedVideo(existingVideo, updatedVideo);
         authorBucket[bucketIndex] = mergedVideo;
         foundAny = true;
       }

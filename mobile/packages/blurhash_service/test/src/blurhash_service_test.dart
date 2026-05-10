@@ -104,6 +104,15 @@ void main() {
         expect(hash!.length, equals(36));
       });
 
+      test('accepts valid square hashes that do not start with L', () async {
+        final bytes = _makeJpeg(width: 100, height: 100);
+        final hash = await BlurhashService.generateBlurhash(bytes);
+
+        expect(hash, isNotNull);
+        expect(hash!.startsWith('L'), isFalse);
+        expect(BlurhashService.decodeBlurhash(hash), isNotNull);
+      });
+
       test('real fixture (720×1280) uses portrait components', () async {
         final thumbnailFile = File('test/fixtures/test_thumbnail.jpg');
         if (!thumbnailFile.existsSync()) {
@@ -185,6 +194,61 @@ void main() {
           );
         },
       );
+    });
+
+    group('deriveContentType', () {
+      test('returns null when no metadata is provided', () {
+        expect(BlurhashService.deriveContentType(), isNull);
+      });
+
+      test('returns null when nothing matches a known keyword', () {
+        expect(
+          BlurhashService.deriveContentType(
+            hashtags: const ['random'],
+            title: 'plain title',
+            content: 'nothing of interest',
+          ),
+          isNull,
+        );
+      });
+
+      test('matches keywords case-insensitively in hashtags', () {
+        expect(
+          BlurhashService.deriveContentType(hashtags: const ['Dance']),
+          equals(VineContentType.dance),
+        );
+      });
+
+      test('matches keywords inside title and content', () {
+        expect(
+          BlurhashService.deriveContentType(title: 'My recipe video'),
+          equals(VineContentType.food),
+        );
+        expect(
+          BlurhashService.deriveContentType(
+            content: 'Watch this football clip',
+          ),
+          equals(VineContentType.sports),
+        );
+      });
+
+      test('matches keywords inside group field', () {
+        expect(
+          BlurhashService.deriveContentType(group: 'tech-talk'),
+          equals(VineContentType.tech),
+        );
+      });
+
+      test('first matching category wins', () {
+        // dance is checked before music, so a clip tagged with both
+        // returns dance.
+        expect(
+          BlurhashService.deriveContentType(
+            hashtags: const ['music', 'dance'],
+          ),
+          equals(VineContentType.dance),
+        );
+      });
     });
 
     group('BlurhashData', () {

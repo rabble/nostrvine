@@ -147,46 +147,16 @@ class NIP17MessageService {
 
       // NIP-17: publish a self-addressed gift wrap so our own sent
       // messages are recoverable from relays after reinstall or data
-      // loss. Three independent failure modes — track them separately
-      // so the result can distinguish recipient-only delivery from
-      // full delivery. Re-publishing the recipient wrap would
-      // double-deliver, so any future retry handling must target only
-      // the self-wrap (see #3909).
-      var selfWrapPublished = false;
-      try {
-        final selfWrapEvent = await _giftWrapBuilder(
-          nostr,
-          rumorEvent,
-          _senderPublicKey,
-        );
-        if (selfWrapEvent == null) {
-          Log.warning(
-            'Self-wrap creation returned null — recipient was '
-            'delivered, but the sender will not see this message on '
-            'other devices or after a reinstall.',
-            category: LogCategory.system,
-          );
-        } else {
-          final published = await _nostrService.publishEvent(selfWrapEvent);
-          if (published is! PublishSuccess) {
-            Log.warning(
-              'Self-wrap publish failed — recipient was '
-              'delivered, but the sender will not see this message on '
-              'other devices or after a reinstall.',
-              category: LogCategory.system,
-            );
-          } else {
-            selfWrapPublished = true;
-          }
-        }
-      } on Object catch (e) {
-        Log.error(
-          'Self-wrap failed (non-fatal): recipient was delivered, but '
-          'the sender will not see this message on other devices or '
-          'after a reinstall: $e',
-          category: LogCategory.system,
-        );
-      }
+      // loss. The recipient already received the message at this
+      // point, so a self-wrap failure must never bubble up — the
+      // helper catches everything and reports the per-wrap status
+      // separately. Re-publishing the recipient wrap would
+      // double-deliver, so the recovery path uses [publishSelfWrap]
+      // to retry only the missing self-wrap.
+      final selfWrapPublished = await _publishSelfWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+      );
 
       Log.info(
         'Successfully published NIP-17 message '
@@ -207,6 +177,103 @@ class NIP17MessageService {
         stackTrace: stackTrace,
       );
       return NIP17SendResult.failure('Failed to send message: $e');
+    }
+  }
+
+  /// Publish only the sender self-addressed gift wrap for an
+  /// already-sent [rumorEvent].
+  ///
+  /// Used by the recovery path when a previous [sendRumor] delivered
+  /// to the recipient (the recipient kind 1059 wrap landed) but the
+  /// self-addressed wrap did not. Re-running [sendRumor] would publish
+  /// the recipient wrap a second time and double-deliver, so the
+  /// recovery path goes through this method instead. Receiver-side
+  /// dedup keys on the rumor event id, so callers must pass the same
+  /// rumor that was published originally — rebuilding it from the
+  /// queue's `rumor_event_json` preserves the id, minting a fresh
+  /// rumor would not.
+  ///
+  /// Returns [NIP17SendResult.success] on a successful self-wrap
+  /// publish (the `messageEventId` slot carries the rumor id since no
+  /// new recipient-wrap event id is produced on this path) or
+  /// [NIP17SendResult.failure] when the self-wrap could not be built
+  /// or did not reach a relay.
+  Future<NIP17SendResult> publishSelfWrap({required Event rumorEvent}) async {
+    try {
+      Log.info(
+        'Publishing self-addressed NIP-17 gift wrap for rumor recovery',
+        category: LogCategory.system,
+      );
+
+      final nostr = Nostr(_signer, [], _dummyRelayGenerator);
+      await nostr.refreshPublicKey();
+
+      final published = await _publishSelfWrap(
+        nostr: nostr,
+        rumorEvent: rumorEvent,
+      );
+      if (!published) {
+        return const NIP17SendResult.failure('Self-wrap publish failed');
+      }
+      return NIP17SendResult.success(
+        rumorEventId: rumorEvent.id,
+        messageEventId: rumorEvent.id,
+        recipientPubkey: _senderPublicKey,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'Failed to publish self-wrap recovery: $e',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return NIP17SendResult.failure('Failed to publish self-wrap: $e');
+    }
+  }
+
+  /// Build and publish the sender self-addressed gift wrap for
+  /// [rumorEvent]. Returns `true` when the wrap reached at least one
+  /// relay.
+  ///
+  /// Catches every error — used by both the happy-path send (where the
+  /// recipient has already received the message and an exception must
+  /// not crash the result) and the recovery path (where an exception
+  /// is just another failure mode the caller surfaces).
+  Future<bool> _publishSelfWrap({
+    required Nostr nostr,
+    required Event rumorEvent,
+  }) async {
+    try {
+      final selfWrapEvent = await _giftWrapBuilder(
+        nostr,
+        rumorEvent,
+        _senderPublicKey,
+      );
+      if (selfWrapEvent == null) {
+        Log.warning(
+          'Self-wrap creation returned null — the sender will not see '
+          'this message on other devices or after a reinstall.',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+      final published = await _nostrService.publishEvent(selfWrapEvent);
+      if (published is! PublishSuccess) {
+        Log.warning(
+          'Self-wrap publish failed — the sender will not see this '
+          'message on other devices or after a reinstall.',
+          category: LogCategory.system,
+        );
+        return false;
+      }
+      return true;
+    } on Object catch (e) {
+      Log.error(
+        'Self-wrap failed (non-fatal): the sender will not see this '
+        'message on other devices or after a reinstall: $e',
+        category: LogCategory.system,
+      );
+      return false;
     }
   }
 

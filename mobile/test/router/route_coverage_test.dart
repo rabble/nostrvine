@@ -24,6 +24,8 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings/invites_screen.dart';
+import 'package:openvine/screens/settings/nip05_settings_screen.dart';
+import 'package:openvine/screens/settings/nostr_settings_screen.dart';
 import 'package:openvine/screens/settings/settings_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
@@ -122,6 +124,30 @@ void main() {
       test('${BadgesScreen.path} is treated as a non-tab route', () {
         expect(tabIndexFromLocation(BadgesScreen.path), -1);
       });
+
+      test(
+        '${NostrSettingsScreen.path} parses to RouteType.nostrSettings',
+        () {
+          final context = parseRoute(NostrSettingsScreen.path);
+          expect(context.type, RouteType.nostrSettings);
+        },
+      );
+
+      test(
+        '${Nip05SettingsScreen.path} parses to RouteType.nip05Settings',
+        () {
+          final context = parseRoute(Nip05SettingsScreen.path);
+          expect(context.type, RouteType.nip05Settings);
+        },
+      );
+
+      test(
+        '${Nip05SettingsScreen.path} round-trips through buildRoute(parseRoute())',
+        () {
+          final canonical = buildRoute(parseRoute(Nip05SettingsScreen.path));
+          expect(canonical, Nip05SettingsScreen.path);
+        },
+      );
     });
 
     group('Profile editing routes parse to RouteType.editProfile', () {

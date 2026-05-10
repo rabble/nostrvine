@@ -80,6 +80,34 @@ sendPostPublishCollaboratorInvites({
   return results;
 }
 
+/// Tag names that carry engagement counts on Vine-imported video events.
+///
+/// These are baked into the Nostr event body and must survive a metadata
+/// edit; without that, `originalLoops` / `originalLikes` / `originalComments`
+/// get permanently zeroed on the replacement event.
+/// See [extractEngagementCountTags].
+const _engagementCountTagNames = {
+  'loops',
+  'likes',
+  'reposts',
+  'views',
+  'comments',
+};
+
+/// Returns the subset of [tags] that carry engagement counts (loops, likes,
+/// reposts, views, comments) on Vine-imported video events.
+///
+/// Tags missing a value are skipped — `tag.length >= 2` already implies
+/// the tag is non-empty.
+@visibleForTesting
+List<List<String>> extractEngagementCountTags(List<List<String>> tags) {
+  return tags
+      .where(
+        (tag) => tag.length >= 2 && _engagementCountTagNames.contains(tag[0]),
+      )
+      .toList();
+}
+
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();
 
@@ -1516,6 +1544,10 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       for (final label in _contentWarningLabels) {
         tags.add(['l', label.value, 'content-warning']);
       }
+
+      // Preserve engagement count tags so a metadata edit doesn't zero
+      // originalLoops / originalLikes for Vine-imported videos.
+      tags.addAll(extractEngagementCountTags(widget.video.nostrEventTags));
 
       // Preserve other original tags that shouldn't be changed
       if (widget.video.publishedAt != null) {

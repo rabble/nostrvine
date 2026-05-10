@@ -14,9 +14,14 @@ enum SendStatus { idle, sending, sent, sentPartial, failed }
 
 /// Snapshot of the most recent send attempt that did not reach the relay.
 ///
-/// Carried in [ConversationState] so the UI can offer a retry action without
-/// re-collecting the input from the user. Cleared on the next send attempt
-/// (success or failure path both replace it).
+/// Carried in [ConversationState] so the UI can offer a full-resend retry
+/// action without re-collecting the input from the user. Cleared on the
+/// next send attempt (success or failure path both replace it).
+///
+/// Distinct from [PartialSend], which carries the rumor ids needed for a
+/// self-wrap-only recovery on a [SendStatus.sentPartial] outcome — that
+/// path must NOT republish to recipients, and so cannot use [content] +
+/// [recipientPubkeys].
 class FailedSend extends Equatable {
   const FailedSend({required this.content, required this.recipientPubkeys});
 
@@ -30,30 +35,65 @@ class FailedSend extends Equatable {
   List<Object?> get props => [content, recipientPubkeys];
 }
 
+/// Snapshot of the rumor ids whose recipient publish landed but whose
+/// self-addressed gift wrap did not, on the most recent send attempt.
+///
+/// Drives the self-wrap-only recovery path: tapping Retry on the
+/// `sentPartial` SnackBar dispatches [ConversationSelfWrapRecoveryRequested]
+/// with [rumorIds], so only the missing self-wraps are republished and
+/// recipients are never re-delivered to. Lives separately from
+/// [FailedSend] because the data the recovery needs (rumor ids) is not
+/// the data a full resend needs (content + recipientPubkeys).
+class PartialSend extends Equatable {
+  const PartialSend({required this.rumorIds});
+
+  /// Rumor event ids whose self-wrap publish did not land. One id for a
+  /// 1:1 partial; one or more ids for a group partial (only the
+  /// per-recipient sends with `selfWrapPublished == false`).
+  final List<String> rumorIds;
+
+  @override
+  List<Object?> get props => [rumorIds];
+}
+
 class ConversationState extends Equatable {
   const ConversationState({
     this.status = ConversationStatus.initial,
     this.messages = const [],
     this.sendStatus = SendStatus.idle,
     this.lastFailedSend,
+    this.lastPartialSend,
   });
 
   final ConversationStatus status;
   final List<DmMessage> messages;
   final SendStatus sendStatus;
 
-  /// The last send attempt that failed and has not yet been retried.
+  /// The last send attempt that failed (recipient never received it) and
+  /// has not yet been retried.
   ///
   /// `null` when the most recent transition was a successful send, when no
   /// send has been attempted, or once the user has retried.
   final FailedSend? lastFailedSend;
+
+  /// The last send attempt that delivered to recipients but failed to
+  /// publish the sender self-addressed gift wrap, paired with the rumor
+  /// ids the recovery path must replay.
+  ///
+  /// `null` outside a [SendStatus.sentPartial] state. The retry SnackBar
+  /// reads this to dispatch [ConversationSelfWrapRecoveryRequested]
+  /// instead of a full [ConversationMessageSent], so recipients are
+  /// never re-delivered to.
+  final PartialSend? lastPartialSend;
 
   ConversationState copyWith({
     ConversationStatus? status,
     List<DmMessage>? messages,
     SendStatus? sendStatus,
     FailedSend? lastFailedSend,
+    PartialSend? lastPartialSend,
     bool clearLastFailedSend = false,
+    bool clearLastPartialSend = false,
   }) {
     return ConversationState(
       status: status ?? this.status,
@@ -62,9 +102,18 @@ class ConversationState extends Equatable {
       lastFailedSend: clearLastFailedSend
           ? null
           : (lastFailedSend ?? this.lastFailedSend),
+      lastPartialSend: clearLastPartialSend
+          ? null
+          : (lastPartialSend ?? this.lastPartialSend),
     );
   }
 
   @override
-  List<Object?> get props => [status, messages, sendStatus, lastFailedSend];
+  List<Object?> get props => [
+    status,
+    messages,
+    sendStatus,
+    lastFailedSend,
+    lastPartialSend,
+  ];
 }

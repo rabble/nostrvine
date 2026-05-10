@@ -7,7 +7,6 @@ import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/publish_result.dart';
 import 'package:nostr_client/src/relay_manager.dart';
-import 'package:nostr_client/src/send_profile_result.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 
@@ -837,14 +836,14 @@ class NostrClient {
   /// retry, caching, and statistics. Kind 0 is replaceable, so it is cached
   /// only on successful publish (not optimistically).
   ///
-  /// Returns a [SendProfileResult] that callers can switch exhaustively over:
-  /// - [SendProfileSuccess] — the event was broadcast to at least one relay.
-  /// - [SendProfileNoRelays] — no relays were connected even after retry.
-  /// - [SendProfileFailed] — the relay pool was reachable but the send
+  /// Returns a [PublishResult] that callers can switch exhaustively over:
+  /// - [PublishSuccess] — the event was broadcast to at least one relay.
+  /// - [PublishNoRelays] — no relays were connected even after retry.
+  /// - [PublishFailed] — the relay pool was reachable but the send
   ///   returned null (e.g. a serialisation error).
-  Future<SendProfileResult> sendProfile({
+  Future<PublishResult> sendProfile({
     required Map<String, dynamic> profileContent,
-  }) async {
+  }) {
     final event = Event(
       publicKey,
       EventKind.metadata,
@@ -852,11 +851,7 @@ class NostrClient {
       jsonEncode(profileContent),
     );
 
-    return switch (await publishEvent(event)) {
-      PublishSuccess(:final event) => SendProfileSuccess(event: event),
-      PublishNoRelays() => const SendProfileNoRelays(),
-      PublishFailed() => const SendProfileFailed(),
-    };
+    return publishEvent(event);
   }
 
   /// Sends a repost

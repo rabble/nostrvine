@@ -871,6 +871,39 @@ class AppLocalizationsId extends AppLocalizations {
       'Pakai kolom username di atas untuk divine.video';
 
   @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
+
+  @override
   String get profileSetupProfilePicturePreview => 'Pratinjau foto profil';
 
   @override
@@ -4303,6 +4336,14 @@ class AppLocalizationsId extends AppLocalizations {
   String get supportExportLogsFailed => 'Gagal mengekspor log';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => 'Chat dukungan tidak tersedia';
 
   @override
@@ -5079,7 +5120,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get categoryWrestling => 'Gulat';
 
   @override
-  String get profileSetupUploadSuccess => 'Foto profil berhasil diunggah!';
+  String get profileSetupUploadStaged =>
+      'Diunggah — ketuk Simpan untuk menerapkan';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -6970,4 +7012,19 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => 'Balas video';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return 'Akun $platform terverifikasi: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => 'Akun terverifikasi';
+
+  @override
+  String get profileEditGetVerifiedCta => 'Verifikasi diri';
+
+  @override
+  String get profileEditGetVerifiedSubtitle =>
+      'Hubungkan akun media sosialmu biar orang tahu ini memang kamu.';
 }

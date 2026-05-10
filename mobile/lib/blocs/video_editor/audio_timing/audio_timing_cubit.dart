@@ -7,6 +7,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:sound_service/sound_service.dart';
 import 'package:unified_logger/unified_logger.dart';
 
@@ -27,13 +28,20 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
   ///
   /// The [sound] is the audio event to edit timing for.
   /// An optional [clipPlayer] can be injected for testing.
-  AudioTimingCubit({required AudioEvent sound, AudioClipPlayer? clipPlayer})
-    : _sound = sound,
-      _clipPlayer = clipPlayer ?? AudioClipPlayer(),
-      super(const AudioTimingState());
+  /// An optional [proVideoEditor] can be injected for testing; defaults to
+  /// [ProVideoEditor.instance].
+  AudioTimingCubit({
+    required AudioEvent sound,
+    AudioClipPlayer? clipPlayer,
+    ProVideoEditor? proVideoEditor,
+  }) : _sound = sound,
+       _clipPlayer = clipPlayer ?? AudioClipPlayer(),
+       _proVideoEditor = proVideoEditor ?? ProVideoEditor.instance,
+       super(const AudioTimingState());
 
   final AudioEvent _sound;
   final AudioClipPlayer _clipPlayer;
+  final ProVideoEditor _proVideoEditor;
   StreamSubscription<void>? _completionSubscription;
 
   static const _logName = 'AudioTimingCubit';
@@ -56,7 +64,13 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
   /// Should be called once after the cubit is created, typically in
   /// a post-frame callback.
   Future<void> initialize() async {
-    final audioDuration = _sound.duration ?? 0;
+    // Sounds from Nostr sometimes don't carry a duration tag — fall back to
+    // probing the audio source via ProVideoEditor.getMetadata so the timeline
+    // selector still works.
+    var audioDuration = _sound.duration ?? 0;
+    if (audioDuration <= 0) {
+      audioDuration = await _resolveAudioDurationSecs();
+    }
 
     // Restore previous selection offset (normalized 0-1)
     var initialOffset = 0.0;
@@ -126,6 +140,35 @@ class AudioTimingCubit extends Cubit<AudioTimingState> {
   Future<void> _onPlaybackCompleted() async {
     await _clipPlayer.seek(Duration.zero);
     await _clipPlayer.play();
+  }
+
+  /// Resolves the audio duration in seconds via [ProVideoEditor.getMetadata]
+  /// when the [AudioEvent] does not carry a duration value.
+  ///
+  /// Returns 0 if the audio source is unavailable or metadata extraction
+  /// fails.
+  Future<double> _resolveAudioDurationSecs() async {
+    final EditorVideo source;
+    if (_sound.isBundled && _sound.assetPath != null) {
+      source = EditorVideo.asset(_sound.assetPath!);
+    } else if (_sound.url != null && _sound.url!.isNotEmpty) {
+      source = EditorVideo.network(_sound.url!);
+    } else {
+      return 0;
+    }
+
+    try {
+      final metadata = await _proVideoEditor.getMetadata(source);
+      return metadata.duration.inMilliseconds / 1000.0;
+    } catch (e, s) {
+      Log.error(
+        'Failed to resolve audio duration for ${_sound.id}: $e',
+        name: _logName,
+        error: e,
+        stackTrace: s,
+      );
+      return 0;
+    }
   }
 
   /// Loads the selected audio and starts looped playback.

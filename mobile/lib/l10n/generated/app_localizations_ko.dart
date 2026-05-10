@@ -825,6 +825,39 @@ class AppLocalizationsKo extends AppLocalizations {
       'divine.video는 위의 사용자명 필드를 사용해주세요';
 
   @override
+  String get nostrSettingsNip05Address => 'NIP-05 address';
+
+  @override
+  String get nostrSettingsNip05AddressSubtitle =>
+      'Use your divine.video username, or point your handle at a NIP-05 address on a domain you control.';
+
+  @override
+  String get nostrSettingsNip05AddressHint => 'you@example.com';
+
+  @override
+  String get nostrSettingsNip05SaveAction => 'Save NIP-05';
+
+  @override
+  String get nostrSettingsNip05Saved => 'NIP-05 saved';
+
+  @override
+  String get nostrSettingsNip05SaveFailed =>
+      'Couldn\'t save NIP-05. Please try again.';
+
+  @override
+  String get profileSetupNip05ConfirmTitle => 'Use your own NIP-05?';
+
+  @override
+  String get profileSetupNip05ConfirmBody =>
+      'NIP-05 maps a name like you@yourdomain.com to your Nostr identity. You need to control the domain and host a verification file at the right path. If it\'s wrong, people can\'t find you and your verified handle disappears. Continue only if you\'ve set this up.';
+
+  @override
+  String get profileSetupNip05ConfirmContinue => 'Continue';
+
+  @override
+  String get profileSetupNip05ConfirmCancel => 'Cancel';
+
+  @override
   String get profileSetupProfilePicturePreview => '프로필 사진 미리보기';
 
   @override
@@ -4141,6 +4174,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get supportExportLogsFailed => '로그 내보내기에 실패했어요';
 
   @override
+  String supportLogsSavedTo(String path) {
+    return 'Logs saved to $path';
+  }
+
+  @override
+  String get supportRevealLogsAction => 'Show in folder';
+
+  @override
   String get supportChatNotAvailable => '지원 채팅을 사용할 수 없어요';
 
   @override
@@ -4909,7 +4950,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get categoryWrestling => '레슬링';
 
   @override
-  String get profileSetupUploadSuccess => '프로필 사진이 성공적으로 업로드되었어요!';
+  String get profileSetupUploadStaged => '업로드됐어요 — 적용하려면 저장을 탭하세요';
 
   @override
   String inboxReportedUser(String displayName) {
@@ -6735,4 +6776,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get commentsReplyParentFallbackLabel => '영상에 답글';
+
+  @override
+  String verifiedAccountChipSemanticLabel(String platform, String identity) {
+    return '인증된 $platform 계정: $identity';
+  }
+
+  @override
+  String get profileEditVerifiedAccountsTitle => '인증된 계정';
+
+  @override
+  String get profileEditGetVerifiedCta => '인증 받기';
+
+  @override
+  String get profileEditGetVerifiedSubtitle => '소셜 미디어 계정을 연결해서 진짜 너인 걸 알려줘.';
 }

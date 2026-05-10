@@ -264,84 +264,87 @@ void main() {
       });
     });
 
-    group('stripMetadataWeb', () {
-      late Directory tempDir;
+    group('stripMetadataBytes', () {
+      test('strips JPEG EXIF and preserves orientation', () {
+        final input = _jpegWithExif();
 
-      setUp(() async {
-        tempDir = await Directory.systemTemp.createTemp(
-          'image_metadata_stripper_web_test_',
-        );
-      });
-
-      tearDown(() async {
-        if (tempDir.existsSync()) {
-          await tempDir.delete(recursive: true);
-        }
-      });
-
-      test('strips EXIF from JPEG and preserves orientation', () async {
-        final inputFile = File('${tempDir.path}/with_exif.jpg')
-          ..writeAsBytesSync(_jpegWithExif());
-        final outputPath = '${tempDir.path}/output.jpg';
-
-        await ImageMetadataStripper.stripMetadataWeb(
-          inputPath: inputFile.path,
-          outputPath: outputPath,
+        final result = ImageMetadataStripper.stripMetadataBytes(
+          bytes: input,
+          filename: 'photo.jpg',
         );
 
-        final outputFile = File(outputPath);
-        expect(outputFile.existsSync(), isTrue);
-
-        final exif = img.decodeJpgExif(outputFile.readAsBytesSync());
+        expect(result.filename, equals('photo.jpg'));
+        final exif = img.decodeJpgExif(result.bytes);
         expect(exif?.imageIfd.orientation, equals(6));
         expect(exif?.gpsIfd['GPSLatitudeRef'], isNull);
       });
 
-      test('handles .jpeg extension', () async {
-        final inputFile = File('${tempDir.path}/photo.jpeg')
-          ..writeAsBytesSync(_jpegWithExif());
-        final outputPath = '${tempDir.path}/output.jpeg';
-
-        await ImageMetadataStripper.stripMetadataWeb(
-          inputPath: inputFile.path,
-          outputPath: outputPath,
+      test('handles .jpeg extension', () {
+        final result = ImageMetadataStripper.stripMetadataBytes(
+          bytes: _jpegWithExif(),
+          filename: 'photo.jpeg',
         );
 
-        expect(File(outputPath).existsSync(), isTrue);
+        expect(result.filename, equals('photo.jpeg'));
+        expect(
+          img.decodeJpgExif(result.bytes)?.gpsIfd['GPSLatitudeRef'],
+          isNull,
+        );
       });
 
-      test('re-encodes PNG', () async {
-        final inputFile = File('${tempDir.path}/test.png')
-          ..writeAsBytesSync(_pngBytes());
-        final outputPath = '${tempDir.path}/output.png';
-
-        await ImageMetadataStripper.stripMetadataWeb(
-          inputPath: inputFile.path,
-          outputPath: outputPath,
+      test('re-encodes PNG and keeps the .png extension', () {
+        final result = ImageMetadataStripper.stripMetadataBytes(
+          bytes: _pngBytes(),
+          filename: 'avatar.png',
         );
 
-        final outputFile = File(outputPath);
-        expect(outputFile.existsSync(), isTrue);
-
-        final decoded = img.decodePng(outputFile.readAsBytesSync());
+        expect(result.filename, equals('avatar.png'));
+        final decoded = img.decodePng(result.bytes);
         expect(decoded, isNotNull);
         expect(decoded!.width, equals(2));
       });
 
-      test('copies unsupported format as-is', () async {
-        final bmp = _bmpBytes();
-        final inputFile = File('${tempDir.path}/test.bmp')
-          ..writeAsBytesSync(bmp);
-        final outputPath = '${tempDir.path}/output.bmp';
+      test(
+        'falls back to JPEG re-encode for recognised non-JPEG/PNG formats',
+        () {
+          final input = _bmpBytes();
 
-        await ImageMetadataStripper.stripMetadataWeb(
-          inputPath: inputFile.path,
-          outputPath: outputPath,
+          final result = ImageMetadataStripper.stripMetadataBytes(
+            bytes: input,
+            filename: 'photo.bmp',
+          );
+
+          // BMP is decoded then re-encoded as JPEG; extension switches.
+          expect(result.filename, equals('photo.jpg'));
+          // The first two bytes of a JPEG SOI marker.
+          expect(result.bytes[0], equals(0xFF));
+          expect(result.bytes[1], equals(0xD8));
+        },
+      );
+
+      test('returns bytes unchanged when decoding fails entirely', () {
+        final input = Uint8List.fromList([0x00, 0x01, 0x02]);
+
+        final result = ImageMetadataStripper.stripMetadataBytes(
+          bytes: input,
+          filename: 'broken.xyz',
         );
 
-        final outputFile = File(outputPath);
-        expect(outputFile.existsSync(), isTrue);
-        expect(outputFile.readAsBytesSync(), equals(bmp));
+        expect(result.bytes, same(input));
+        expect(result.filename, equals('broken.xyz'));
+      });
+
+      test('case-insensitive on the filename extension', () {
+        final result = ImageMetadataStripper.stripMetadataBytes(
+          bytes: _jpegWithExif(),
+          filename: 'PHOTO.JPG',
+        );
+
+        expect(result.filename, equals('PHOTO.JPG'));
+        expect(
+          img.decodeJpgExif(result.bytes)?.gpsIfd['GPSLatitudeRef'],
+          isNull,
+        );
       });
     });
 

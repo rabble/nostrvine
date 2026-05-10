@@ -7,11 +7,15 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/screens/video_editor/video_audio_editor_timing_screen.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:sound_service/sound_service.dart';
+
+class _MockAudioClipPlayer extends Mock implements AudioClipPlayer {}
 
 /// Mock ProVideoEditor to prevent calls to native platform.
 class _MockProVideoEditor extends ProVideoEditor {
@@ -92,6 +96,10 @@ AudioEvent _createTestAudioEvent({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    registerFallbackValue(const AudioSourceConfig.network(''));
+  });
+
   group('AudioTimingResult', () {
     test('$AudioTimingConfirmed holds updated sound', () {
       final sound = _createTestAudioEvent(title: 'Test Sound');
@@ -142,10 +150,20 @@ void main() {
 
   group(VideoAudioEditorTimingScreen, () {
     late _MockProVideoEditor mockEditor;
+    late _MockAudioClipPlayer mockClipPlayer;
 
     setUp(() {
       mockEditor = _MockProVideoEditor();
       ProVideoEditor.instance = mockEditor;
+      mockClipPlayer = _MockAudioClipPlayer();
+      when(
+        () => mockClipPlayer.completionStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(() => mockClipPlayer.setClip(any())).thenAnswer((_) async {});
+      when(() => mockClipPlayer.play()).thenAnswer((_) async {});
+      when(() => mockClipPlayer.pause()).thenAnswer((_) async {});
+      when(() => mockClipPlayer.stop()).thenAnswer((_) async {});
+      when(() => mockClipPlayer.dispose()).thenAnswer((_) async {});
     });
 
     Widget buildWidget({AudioEvent? sound, Locale? locale}) {
@@ -157,7 +175,10 @@ void main() {
           locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: VideoAudioEditorTimingScreen(sound: testSound),
+          home: VideoAudioEditorTimingScreen(
+            sound: testSound,
+            clipPlayer: mockClipPlayer,
+          ),
         ),
       );
     }

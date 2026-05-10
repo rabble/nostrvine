@@ -17,6 +17,7 @@ import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/stereo_waveform_painter.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
+import 'package:sound_service/sound_service.dart';
 
 /// Result of the audio timing screen.
 ///
@@ -55,6 +56,7 @@ class VideoAudioEditorTimingScreen extends StatefulWidget {
   const VideoAudioEditorTimingScreen({
     required this.sound,
     this.enableDeleteButton = true,
+    @visibleForTesting this.clipPlayer,
     super.key,
   });
 
@@ -63,6 +65,10 @@ class VideoAudioEditorTimingScreen extends StatefulWidget {
 
   /// Whether the delete button is shown in the toolbar.
   final bool enableDeleteButton;
+
+  /// Optional audio clip player override for tests.
+  @visibleForTesting
+  final AudioClipPlayer? clipPlayer;
 
   /// Route name for navigation.
   static const routeName = 'video-audio-timing';
@@ -91,7 +97,10 @@ class _VideoAudioEditorTimingScreenState
     _waveformBloc = SoundWaveformBloc();
     _flingController = AnimationController.unbounded(vsync: this);
     _flingController.addListener(_onFlingUpdate);
-    _audioTimingCubit = AudioTimingCubit(sound: widget.sound);
+    _audioTimingCubit = AudioTimingCubit(
+      sound: widget.sound,
+      clipPlayer: widget.clipPlayer,
+    );
 
     // Delay initialization until after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -185,7 +194,14 @@ class _VideoAudioEditorTimingScreenState
   Future<void> _confirmSelection() async {
     await _audioTimingCubit.stopPlayback();
     final startOffset = _audioTimingCubit.calculateStartOffset();
-    final updatedSound = widget.sound.copyWith(startOffset: startOffset);
+    // Persist the resolved duration when the source AudioEvent did not
+    // carry one (common for sounds coming from Nostr).
+    final resolvedDuration =
+        widget.sound.duration ?? _audioTimingCubit.state.audioDuration;
+    final updatedSound = widget.sound.copyWith(
+      startOffset: startOffset,
+      duration: resolvedDuration,
+    );
     if (mounted) {
       context.pop<AudioTimingResult>(AudioTimingConfirmed(updatedSound));
     }

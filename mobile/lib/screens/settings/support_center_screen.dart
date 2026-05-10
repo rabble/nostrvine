@@ -135,16 +135,39 @@ class SupportCenterScreen extends ConsumerWidget {
       ),
     );
 
-    final success = await bugReportService.exportLogsToFile(
+    final result = await bugReportService.exportLogsToFile(
       currentScreen: 'SupportCenterScreen',
       userPubkey: userPubkey,
     );
+    if (!context.mounted) return;
 
-    if (!success && context.mounted) {
+    if (result.cancelled) {
+      // User dismissed the Save As dialog; nothing to report.
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      return;
+    }
+
+    if (!result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(context.l10n.supportExportLogsFailed),
           backgroundColor: VineTheme.error,
+        ),
+      );
+      return;
+    }
+
+    final filePath = result.filePath;
+    if (filePath != null) {
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.supportLogsSavedTo(filePath)),
+          duration: const Duration(seconds: 8),
+          action: SnackBarAction(
+            label: context.l10n.supportRevealLogsAction,
+            onPressed: () => bugReportService.revealExportedFile(filePath),
+          ),
         ),
       );
     }

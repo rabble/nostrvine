@@ -99,6 +99,26 @@ void main() {
         expect(image.fadeInDuration, equals(Duration.zero));
         expect(image.fadeOutDuration, equals(Duration.zero));
       });
+
+      // Caps decoded thumbnail size so a 50+ tile profile grid stays under
+      // Flutter's default ImageCache budget. Without it the cache thrashes
+      // on cold-load and stalls the first paint by ~1s (#4190).
+      testWidgets(
+        '$VineCachedImage forwards a memCacheWidth that caps decoded size',
+        (tester) async {
+          await tester.pumpWidget(
+            buildSubject(thumbnailUrl: 'https://example.com/thumb.jpg'),
+          );
+
+          final image = tester.widget<VineCachedImage>(
+            find.byType(VineCachedImage),
+          );
+          expect(image.memCacheWidth, equals(400));
+          // memCacheHeight is intentionally unset so BoxFit.cover scales
+          // proportionally rather than skewing aspect-sensitive crops.
+          expect(image.memCacheHeight, isNull);
+        },
+      );
     });
 
     group('blurhash fallback', () {

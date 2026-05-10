@@ -14,10 +14,6 @@ enum FeatureFlag {
     'Detailed usage tracking and insights',
   ),
   newProfileLayout('New Profile Layout', 'Redesigned user profile screen'),
-  livestreamingBeta(
-    'Livestreaming Beta',
-    'Live video streaming feature (beta)',
-  ),
   debugTools('Debug Tools', 'Developer debugging utilities and diagnostics'),
   routerDrivenHome(
     'Router-Driven Home Screen',

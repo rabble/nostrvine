@@ -335,7 +335,7 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending with optimistic, sentPartial with lastFailedSend] '
+          'emits [sending with optimistic, sentPartial with lastPartialSend] '
           'when sendMessage succeeds but the self-wrap was not published',
           setUp: () {
             when(
@@ -363,7 +363,9 @@ void main() {
           // DB persist already happened inside DmRepository.sendMessage,
           // so the optimistic stays — stripping it would race with the
           // watchMessages re-emit and cause a brief disappearance.
-          // lastFailedSend is recorded so the UI can offer retry.
+          // lastPartialSend records the rumor id whose self-wrap failed,
+          // so the SnackBar's Retry can recover via the self-wrap-only
+          // path without redelivering to the recipient (#4102).
           expect: () => [
             isA<ConversationState>()
                 .having((s) => s.sendStatus, 'sendStatus', SendStatus.sending)
@@ -380,14 +382,15 @@ void main() {
                   1,
                 )
                 .having(
+                  (s) => s.lastPartialSend,
+                  'lastPartialSend',
+                  equals(const PartialSend(rumorIds: [sentEventId])),
+                )
+                .having(
                   (s) => s.lastFailedSend,
-                  'lastFailedSend',
-                  equals(
-                    const FailedSend(
-                      content: 'Hello',
-                      recipientPubkeys: [recipientPubkey],
-                    ),
-                  ),
+                  'lastFailedSend stays null on partial — it drives '
+                  'a different recovery path',
+                  isNull,
                 ),
           ],
         );
@@ -482,9 +485,17 @@ void main() {
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, sentPartial] when any successful per-recipient '
-          'sendGroupMessage had its self-wrap unpublished',
+          'emits [sending, sentPartial with only the failing rumor id] '
+          'when one per-recipient sendGroupMessage has self-wrap unpublished',
           setUp: () {
+            // Each per-recipient send produces its own rumor id.
+            // recipient1 fully delivers, recipient2 partial — only the
+            // partial one should land in lastPartialSend.rumorIds, so
+            // the recovery path republishes only that self-wrap.
+            const rumorIdRecipient1 =
+                '7777777777777777777777777777777777777777777777777777777777777777';
+            const rumorIdRecipient2 =
+                '8888888888888888888888888888888888888888888888888888888888888888';
             when(
               () => mockDmRepository.sendGroupMessage(
                 recipientPubkeys: [recipientPubkey, recipientPubkey2],
@@ -493,13 +504,13 @@ void main() {
             ).thenAnswer(
               (_) async => [
                 NIP17SendResult.success(
-                  rumorEventId: sentEventId,
-                  messageEventId: sentEventId,
+                  rumorEventId: rumorIdRecipient1,
+                  messageEventId: rumorIdRecipient1,
                   recipientPubkey: recipientPubkey,
                 ),
                 NIP17SendResult.success(
-                  rumorEventId: sentEventId,
-                  messageEventId: sentEventId,
+                  rumorEventId: rumorIdRecipient2,
+                  messageEventId: rumorIdRecipient2,
                   recipientPubkey: recipientPubkey2,
                   selfWrapPublished: false,
                 ),
@@ -526,14 +537,20 @@ void main() {
                   SendStatus.sentPartial,
                 )
                 .having(
-                  (s) => s.lastFailedSend,
-                  'lastFailedSend',
+                  (s) => s.lastPartialSend,
+                  'lastPartialSend',
                   equals(
-                    const FailedSend(
-                      content: 'Group hello',
-                      recipientPubkeys: [recipientPubkey, recipientPubkey2],
+                    const PartialSend(
+                      rumorIds: [
+                        '8888888888888888888888888888888888888888888888888888888888888888',
+                      ],
                     ),
                   ),
+                )
+                .having(
+                  (s) => s.lastFailedSend,
+                  'lastFailedSend stays null on partial',
+                  isNull,
                 ),
           ],
         );
@@ -1052,6 +1069,191 @@ void main() {
       });
     });
 
+    group(ConversationSelfWrapRecoveryRequested, () {
+      // The principled recovery path for #4102: tapping Retry on a
+      // sentPartial SnackBar must republish only the missing self-wrap
+      // — never the recipient wrap, which would double-deliver.
+      const rumorId1 =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      const rumorId2 =
+          '8888888888888888888888888888888888888888888888888888888888888888';
+
+      blocTest<ConversationBloc, ConversationState>(
+        'emits [sending, sent] and clears lastPartialSend when every '
+        'recoverSelfWrap returns success',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(
+              rumorId: any(named: 'rumorId'),
+            ),
+          ).thenAnswer(
+            (inv) async => NIP17SendResult.success(
+              rumorEventId: inv.namedArguments[#rumorId] as String,
+              messageEventId: inv.namedArguments[#rumorId] as String,
+              recipientPubkey: senderPubkey,
+            ),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1, rumorId2]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(
+            rumorIds: [rumorId1, rumorId2],
+          ),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having((s) => s.sendStatus, 'sendStatus', SendStatus.sent)
+              .having(
+                (s) => s.lastPartialSend,
+                'lastPartialSend cleared on full recovery',
+                isNull,
+              ),
+        ],
+        verify: (_) {
+          // Every rumor in the event payload was passed to
+          // recoverSelfWrap (with no recipient publish in sight).
+          verify(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).called(1);
+          verify(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId2),
+          ).called(1);
+          // Pin the no-duplicate-recipient-publish contract from #4102.
+          verifyNever(
+            () => mockDmRepository.sendMessage(
+              recipientPubkey: any(named: 'recipientPubkey'),
+              content: any(named: 'content'),
+            ),
+          );
+          verifyNever(
+            () => mockDmRepository.sendGroupMessage(
+              recipientPubkeys: any(named: 'recipientPubkeys'),
+              content: any(named: 'content'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'reduces lastPartialSend.rumorIds to the still-failing rumors '
+        'when one of two recoveries fails',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).thenAnswer(
+            (_) async => NIP17SendResult.success(
+              rumorEventId: rumorId1,
+              messageEventId: rumorId1,
+              recipientPubkey: senderPubkey,
+            ),
+          );
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId2),
+          ).thenAnswer(
+            (_) async => const NIP17SendResult.failure('relay timeout'),
+          );
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1, rumorId2]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(
+            rumorIds: [rumorId1, rumorId2],
+          ),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having(
+                (s) => s.sendStatus,
+                'sendStatus',
+                SendStatus.sentPartial,
+              )
+              .having(
+                (s) => s.lastPartialSend,
+                'lastPartialSend reduced to still-failing ids only',
+                equals(const PartialSend(rumorIds: [rumorId2])),
+              ),
+        ],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'reports thrown errors via addError and treats the rumor as '
+        'still-failing',
+        setUp: () {
+          when(
+            () => mockDmRepository.recoverSelfWrap(rumorId: rumorId1),
+          ).thenThrow(StateError('queue DAO not wired'));
+        },
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: [rumorId1]),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [rumorId1]),
+        ),
+        expect: () => [
+          isA<ConversationState>().having(
+            (s) => s.sendStatus,
+            'sendStatus',
+            SendStatus.sending,
+          ),
+          isA<ConversationState>()
+              .having(
+                (s) => s.sendStatus,
+                'sendStatus',
+                SendStatus.sentPartial,
+              )
+              .having(
+                (s) => s.lastPartialSend?.rumorIds,
+                'still-failing rumor preserved on throw',
+                equals([rumorId1]),
+              ),
+        ],
+        errors: () => [isA<StateError>()],
+      );
+
+      blocTest<ConversationBloc, ConversationState>(
+        'is a no-op when rumorIds is empty',
+        seed: () => const ConversationState(
+          status: ConversationStatus.loaded,
+          sendStatus: SendStatus.sentPartial,
+          lastPartialSend: PartialSend(rumorIds: []),
+        ),
+        build: buildBloc,
+        act: (bloc) => bloc.add(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: []),
+        ),
+        expect: () => const <ConversationState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockDmRepository.recoverSelfWrap(
+              rumorId: any(named: 'rumorId'),
+            ),
+          );
+        },
+      );
+    });
+
     group('ConversationMessageDeleted', () {
       blocTest<ConversationBloc, ConversationState>(
         'calls deleteMessageForEveryone on the repository',
@@ -1098,9 +1300,49 @@ void main() {
           <DmMessage>[],
           SendStatus.idle,
           null,
+          null,
         ]),
       );
     });
+
+    test('states with different lastPartialSend are not equal', () {
+      expect(
+        const ConversationState(),
+        isNot(
+          equals(
+            const ConversationState(
+              lastPartialSend: PartialSend(rumorIds: [messageId]),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'copyWith carries lastPartialSend forward when not overridden',
+      () {
+        const partial = PartialSend(rumorIds: [messageId]);
+        const seeded = ConversationState(lastPartialSend: partial);
+
+        expect(
+          seeded.copyWith(sendStatus: SendStatus.sending).lastPartialSend,
+          equals(partial),
+        );
+      },
+    );
+
+    test(
+      'copyWith(clearLastPartialSend: true) wipes lastPartialSend',
+      () {
+        const partial = PartialSend(rumorIds: [messageId]);
+        const seeded = ConversationState(lastPartialSend: partial);
+
+        expect(
+          seeded.copyWith(clearLastPartialSend: true).lastPartialSend,
+          isNull,
+        );
+      },
+    );
 
     test('states with different lastFailedSend are not equal', () {
       expect(
@@ -1294,6 +1536,41 @@ void main() {
         expect(
           const ConversationMessageDeleted(rumorId: messageId).props,
           equals([messageId]),
+        );
+      });
+    });
+
+    group(ConversationSelfWrapRecoveryRequested, () {
+      test('supports value equality', () {
+        expect(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [messageId]),
+          equals(
+            const ConversationSelfWrapRecoveryRequested(rumorIds: [messageId]),
+          ),
+        );
+      });
+
+      test('events with different rumorIds are not equal', () {
+        expect(
+          const ConversationSelfWrapRecoveryRequested(rumorIds: [messageId]),
+          isNot(
+            equals(
+              const ConversationSelfWrapRecoveryRequested(
+                rumorIds: [giftWrapId],
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('props are correct', () {
+        expect(
+          const ConversationSelfWrapRecoveryRequested(
+            rumorIds: [messageId, giftWrapId],
+          ).props,
+          equals([
+            const [messageId, giftWrapId],
+          ]),
         );
       });
     });

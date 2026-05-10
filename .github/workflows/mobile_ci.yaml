@@ -148,6 +148,107 @@ jobs:
             exit 1
           fi
           echo "✅ VGV tag count OK: current=$current, baseline=$baseline"
+  runner-tests:
+    name: iOS Runner Tests
+    # Gates the security-sensitive Swift code added in #3979:
+    # NostrBridgeAttestationPolicy (single-instance attach/detach state
+    # machine) and FrameAttestingScriptMessageHandler.eventPayload (pinned
+    # contract that the Dart-bound payload contains exactly
+    # {message, isMainFrame} and no origin host/port/scheme fields).
+    # Without this lane, regressions in those types pass CI and ship.
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile/
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🍎 Setup Xcode
+        # Pinned to 26.3: pro_video_editor 1.15.0's
+        # CompositionBuilder.swift references
+        # `AVVideoCompositionLayerInstruction.Configuration`, an iOS 26
+        # SDK type. The reference is runtime-gated by
+        # `if #available(iOS 26.0, *)`, but Swift still type-checks
+        # both branches at compile time, so the type has to exist in
+        # the SDK. Xcode 16.x ships iOS 17/18 SDKs and the build fails
+        # with "type 'AVVideoCompositionLayerInstruction' has no
+        # member 'Configuration'" before tests can run. The same file
+        # also needs the iOS 18 SDK shape (`[String: any Sendable]`)
+        # for AVVideoCompositing — Xcode 26 satisfies both.
+        # macos-15-arm64 ships 26.3 alongside 26.2 / 26.1.1 / 26.0.1
+        # but defaults to 16.4, so the explicit pin is required and
+        # protects against the runner image's default drifting.
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "26.3"
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          channel: "stable"
+          cache: true
+      - name: 📦 Enable Swift Package Manager
+        # c2pa_flutter (declared in pubspec.yaml as a git dependency)
+        # ships a CocoaPods stub whose only Swift file is a `#error`
+        # directive demanding SPM — its podspec exists only to satisfy
+        # Flutter's plugin validation. Locally SPM is enabled by
+        # `flutter config --enable-swift-package-manager`, so pub_get
+        # registers the plugin via FlutterGeneratedPluginSwiftPackage
+        # and `pod install` skips it. CI runners start with SPM off,
+        # so without this step pub_get installs c2pa_flutter as a Pod
+        # and `xcodebuild test` compiles the stub → ** TEST FAILED **.
+        # Setting must happen before any flutter command that touches
+        # iOS plugin setup (pub get, precache, build).
+        run: flutter config --enable-swift-package-manager
+      - name: 📥 Precache iOS artifacts
+        run: flutter precache --ios
+      - name: 📦 Install dependencies
+        run: flutter pub get
+      - name: 🔧 Generate iOS Flutter config
+        # `--config-only` writes mobile/ios/Flutter/Generated.xcconfig
+        # which the Podfile reads to resolve FLUTTER_ROOT. Without it,
+        # `pod install` fails. `--config-only` skips Dart compilation;
+        # `--no-codesign` is belt-and-suspenders since this lane never
+        # archives.
+        run: flutter build ios --config-only --no-codesign
+      - name: 🍫 Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            mobile/ios/Pods
+            ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('mobile/ios/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+      - name: 🥘 Install CocoaPods
+        working-directory: mobile/ios
+        run: pod install
+      - name: 🧪 Run RunnerTests
+        # Code signing is disabled because simulator unit tests don't
+        # need a provisioning profile; with it on, GitHub-hosted runners
+        # without Apple credentials fail with "no profile". `iPhone 16`
+        # is the default preinstalled simulator on macos-15 with
+        # Xcode 16.4 (iPhone 15 was dropped from the default set);
+        # OS=latest is safe because the tests are pure Swift unit tests
+        # with no version-gated APIs.
+        working-directory: mobile/ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -only-testing:RunnerTests \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -configuration Debug \
+            -resultBundlePath build/RunnerTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            | xcpretty
+      - name: 📤 Upload xcresult on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RunnerTests.xcresult
+          path: mobile/ios/build/RunnerTests.xcresult
   mobile-ci:
     name: Mobile CI
     if: ${{ always() }}
@@ -157,6 +258,7 @@ jobs:
       - analyze
       - tests
       - vgv-tag-gate
+      - runner-tests
     runs-on: ubuntu-latest
     steps:
       - name: Verify upstream jobs
@@ -166,18 +268,21 @@ jobs:
           ANALYZE_RESULT: ${{ needs.analyze.result }}
           TESTS_RESULT: ${{ needs.tests.result }}
           VGV_TAG_GATE_RESULT: ${{ needs.vgv-tag-gate.result }}
+          RUNNER_TESTS_RESULT: ${{ needs.runner-tests.result }}
         run: |
           echo "generated-files: ${GENERATED_FILES_RESULT}"
           echo "format: ${FORMAT_RESULT}"
           echo "analyze: ${ANALYZE_RESULT}"
           echo "tests: ${TESTS_RESULT}"
           echo "vgv-tag-gate: ${VGV_TAG_GATE_RESULT}"
+          echo "runner-tests: ${RUNNER_TESTS_RESULT}"
 
           if [[ "${GENERATED_FILES_RESULT}" != "success" || \
                 "${FORMAT_RESULT}" != "success" || \
                 "${ANALYZE_RESULT}" != "success" || \
                 "${TESTS_RESULT}" != "success" || \
-                "${VGV_TAG_GATE_RESULT}" != "success" ]]; then
+                "${VGV_TAG_GATE_RESULT}" != "success" || \
+                "${RUNNER_TESTS_RESULT}" != "success" ]]; then
             echo "One or more Mobile CI jobs failed."
             exit 1
           fi

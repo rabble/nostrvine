@@ -70,6 +70,9 @@ void main() {
           content: '',
         ),
       );
+      registerFallbackValue(
+        const ConversationSelfWrapRecoveryRequested(rumorIds: <String>[]),
+      );
     });
 
     setUp(() {
@@ -781,9 +784,13 @@ void main() {
       // The recipient-only partial-delivery path: NIP17MessageService
       // returned `success: true, selfWrapPublished: false`, so the bloc
       // emits SendStatus.sentPartial. The UI must show distinct copy
-      // (the message *was* delivered) while still offering retry, so the
-      // sender can attempt to re-publish their self-wrap and restore
-      // cross-device sync. Pinned per PR #3908 review feedback.
+      // (the message *was* delivered) while still offering retry, and
+      // the retry MUST go through the self-wrap-only recovery path so
+      // recipients are not re-delivered to (#4102).
+      const partialRumorId =
+          '7777777777777777777777777777777777777777777777777777777777777777';
+      const partialSend = PartialSend(rumorIds: [partialRumorId]);
+
       testWidgets(
         'shows the partial-delivery SnackBar copy when sendStatus '
         'transitions to sentPartial',
@@ -795,7 +802,7 @@ void main() {
               ConversationState(
                 status: ConversationStatus.loaded,
                 sendStatus: SendStatus.sentPartial,
-                lastFailedSend: failedSend,
+                lastPartialSend: partialSend,
               ),
             ]),
             initialState: const ConversationState(
@@ -834,6 +841,75 @@ void main() {
           );
           expect(find.text(l10n.dmSendFailedMessage), findsNothing);
           expect(find.text(l10n.dmSendFailedRetry), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'tapping Retry on the partial-delivery SnackBar dispatches '
+        'ConversationSelfWrapRecoveryRequested with the rumor ids — '
+        'never ConversationMessageSent (#4102: no duplicate recipient '
+        'publish)',
+        (tester) async {
+          whenListen(
+            mockBloc,
+            Stream<ConversationState>.fromIterable(const [
+              ConversationState(status: ConversationStatus.loaded),
+              ConversationState(
+                status: ConversationStatus.loaded,
+                sendStatus: SendStatus.sentPartial,
+                lastPartialSend: partialSend,
+              ),
+            ]),
+            initialState: const ConversationState(
+              status: ConversationStatus.loaded,
+            ),
+          );
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              mockAuthService: mockAuthService,
+              additionalOverrides: [
+                fetchUserProfileProvider(
+                  otherPubkey,
+                ).overrideWith((ref) async => null),
+              ],
+              home: BlocProvider<ConversationBloc>.value(
+                value: mockBloc,
+                child: BlocProvider<CollaboratorInviteActionsCubit>.value(
+                  value: mockInviteActionsCubit,
+                  child: const ConversationView(
+                    participantPubkeys: [otherPubkey],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          await tester.tap(find.text(l10n.dmSendFailedRetry));
+          await tester.pump();
+
+          final captured = verify(() => mockBloc.add(captureAny())).captured;
+          expect(captured, isNotEmpty);
+          final retryEvent = captured.last;
+          expect(
+            retryEvent,
+            isA<ConversationSelfWrapRecoveryRequested>().having(
+              (e) => e.rumorIds,
+              'rumorIds',
+              equals(const [partialRumorId]),
+            ),
+          );
+          // The pinning contract from #4102: no recipient republish on
+          // partial recovery.
+          expect(
+            captured.whereType<ConversationMessageSent>(),
+            isEmpty,
+            reason:
+                'partial recovery must NOT redispatch ConversationMessageSent '
+                '— that would re-deliver to the recipient',
+          );
         },
       );
     });

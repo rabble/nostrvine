@@ -106,7 +106,7 @@ android {
             // Handle duplicate OSGI manifests from BouncyCastle
             pickFirsts.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
         }
-        // Handle duplicate libc++_shared.so from c2pa-android and ffmpeg-kit
+        // Handle duplicate libc++_shared.so from c2pa-android
         jniLibs {
             pickFirsts.add("lib/arm64-v8a/libc++_shared.so")
             pickFirsts.add("lib/armeabi-v7a/libc++_shared.so")
@@ -120,11 +120,7 @@ flutter {
     source = "../.."
 }
 
-// Exclude FFmpeg native libraries on Android (not needed - using continuous recording)
 configurations.all {
-    exclude(group = "com.arthenica.ffmpegkit", module = "flutter")
-    exclude(group = "com.arthenica.ffmpegkit", module = "ffmpeg-kit-android")
-    exclude(group = "com.arthenica.ffmpegkit", module = "ffmpeg-kit-android-min")
     // Exclude older BouncyCastle jdk15to18 versions to avoid conflicts with c2pa's jdk18on versions
     exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
     exclude(group = "org.bouncycastle", module = "bcpkix-jdk15to18")
