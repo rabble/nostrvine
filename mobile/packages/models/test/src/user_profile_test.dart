@@ -236,6 +236,58 @@ void main() {
       });
     });
 
+    group('fromUserProfileFound', () {
+      test(
+        'mirrors typed REST fields into rawData so a profile round-trip '
+        'through Funnelcake does not silently drop them on the next publish '
+        '(#4175)',
+        () {
+          const result = UserProfileFound(
+            profile: UserProfileData(
+              pubkey: testPubkey,
+              name: 'alice',
+              displayName: 'Alice',
+              about: 'A bio',
+              picture: 'https://example.com/p.png',
+              banner: 'https://example.com/b.png',
+              website: 'https://alice.example',
+              nip05: 'alice@example.com',
+              lud16: 'alice@strike.me',
+            ),
+          );
+
+          final profile = UserProfile.fromUserProfileFound(result);
+
+          expect(profile.rawData, {
+            'name': 'alice',
+            'display_name': 'Alice',
+            'about': 'A bio',
+            'picture': 'https://example.com/p.png',
+            'banner': 'https://example.com/b.png',
+            'website': 'https://alice.example',
+            'nip05': 'alice@example.com',
+            'lud16': 'alice@strike.me',
+          });
+        },
+      );
+
+      test('omits null typed fields from rawData', () {
+        const result = UserProfileFound(
+          profile: UserProfileData(
+            pubkey: testPubkey,
+            displayName: 'Alice',
+            // every other field null
+          ),
+        );
+
+        final profile = UserProfile.fromUserProfileFound(result);
+
+        expect(profile.rawData, equals({'display_name': 'Alice'}));
+        expect(profile.rawData.containsKey('lud16'), isFalse);
+        expect(profile.rawData.containsKey('website'), isFalse);
+      });
+    });
+
     group('fromJson', () {
       test('parses JSON correctly', () {
         final json = {

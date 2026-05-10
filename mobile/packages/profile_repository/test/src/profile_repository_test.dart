@@ -1276,7 +1276,6 @@ void main() {
               'about': 'New bio',
               'nip05': '_@newuser.divine.video',
               'picture': 'https://example.com/new.png',
-              'banner': null,
             },
           ),
         ).called(1);
@@ -1293,10 +1292,7 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
-              'about': null,
               'nip05': '_@alice.divine.video',
-              'picture': null,
-              'banner': null,
             },
           ),
         ).called(1);
@@ -1312,10 +1308,7 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
-              'about': null,
               'nip05': '_@alice.divine.video',
-              'picture': null,
-              'banner': null,
             },
           ),
         ).called(1);
@@ -1335,10 +1328,7 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
-              'about': null,
               'nip05': 'alice@example.com',
-              'picture': null,
-              'banner': null,
             },
           ),
         ).called(1);
@@ -1359,29 +1349,20 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test',
-              'about': null,
               'nip05': 'alice@example.com',
-              'picture': null,
-              'banner': null,
             },
           ),
         ).called(1);
       });
 
       test(
-        'sends explicit nulls for unset about/picture/banner '
-        'so relays clear them',
+        'omits unset about/picture/banner keys instead of writing nulls',
         () async {
           await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
           verify(
             () => mockNostrClient.sendProfile(
-              profileContent: {
-                'display_name': 'Only Name',
-                'about': null,
-                'picture': null,
-                'banner': null,
-              },
+              profileContent: {'display_name': 'Only Name'},
             ),
           ).called(1);
         },
@@ -1414,8 +1395,6 @@ void main() {
           () => mockNostrClient.sendProfile(
             profileContent: {
               'display_name': 'Test User',
-              'about': null,
-              'picture': null,
               'banner': '0x33ccbf',
             },
           ),
@@ -1477,9 +1456,6 @@ void main() {
                 'website': 'https://old.com',
                 'lud16': 'user@wallet.com',
                 'custom_field': 'preserved',
-                'about': null,
-                'picture': null,
-                'banner': null,
               },
             ),
           ).called(1);
@@ -1505,22 +1481,20 @@ void main() {
                 'display_name': 'New Name',
                 'nip05': '_@newuser.divine.video',
                 'about': 'New bio',
-                'picture': null,
-                'banner': null,
               },
             ),
           ).called(1);
         });
 
         test(
-          'clears about/picture/banner from rawData '
-          'when null is explicitly passed',
+          'clears about/picture/banner when null is explicitly passed',
           () async {
             // The editor surface fills its form fields from the current
             // profile and then sends them as-is. A user clearing their bio,
             // avatar, or banner shows up here as `about: null` /
-            // `picture: null` / `banner: null`. The repository must overwrite
-            // the rawData spread so the cleared values reach the relays.
+            // `picture: null` / `banner: null`. The repository must remove
+            // those keys from the seed so the cleared values reach the
+            // relays.
             final currentProfile = await createCurrentProfile({
               'display_name': 'Old Name',
               'about': 'Old bio',
@@ -1535,12 +1509,7 @@ void main() {
 
             verify(
               () => mockNostrClient.sendProfile(
-                profileContent: {
-                  'display_name': 'New Name',
-                  'about': null,
-                  'picture': null,
-                  'banner': null,
-                },
+                profileContent: {'display_name': 'New Name'},
               ),
             ).called(1);
           },
@@ -1564,9 +1533,6 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'alice@example.com',
-                  'about': null,
-                  'picture': null,
-                  'banner': null,
                 },
               ),
             ).called(1);
@@ -1592,25 +1558,27 @@ void main() {
               profileContent: {
                 'display_name': 'New Name',
                 'about': 'Bio',
-                'picture': null,
-                'banner': null,
               },
             ),
           ).called(1);
         });
 
         test(
-          'preserves nip05 from currentProfile.nip05 when rawData is empty '
-          '(Funnelcake REST API profile with rawData: {})',
+          'preserves nip05 from currentProfile.rawData when sourced from '
+          'Funnelcake REST (post-#4175 fromUserProfileFound mirrors typed '
+          'fields into rawData)',
           () async {
-            // Funnelcake profiles have rawData: {} but nip05 on the object.
-            // saveProfileEvent must fall back to the field so editing bio/photo
-            // doesn't silently strip the verified divine.video handle.
+            // After #4175, fromUserProfileFound populates rawData from
+            // typed REST fields. Construct a profile in that shape and
+            // assert nip05 survives a profile edit unchanged.
             final funnelcakeProfile = UserProfile(
               pubkey: testPubkey,
               displayName: 'Old Name',
               nip05: '_@ike.divine.video',
-              rawData: const {}, // empty — simulates fromUserProfileFound
+              rawData: const {
+                'display_name': 'Old Name',
+                'nip05': '_@ike.divine.video',
+              },
               createdAt: DateTime.now(),
               eventId: 'rest-$testPubkey',
             );
@@ -1632,9 +1600,6 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': '_@ike.divine.video',
-                  'about': null,
-                  'picture': null,
-                  'banner': null,
                 },
               ),
             ).called(1);
@@ -1642,14 +1607,17 @@ void main() {
         );
 
         test(
-          'clearNip05 removes nip05 even when sourced from Funnelcake profile '
-          '(rawData: {} but nip05 field set)',
+          'clearNip05 removes nip05 even when sourced from a '
+          'post-#4175 Funnelcake profile',
           () async {
             final funnelcakeProfile = UserProfile(
               pubkey: testPubkey,
               displayName: 'Old Name',
               nip05: '_@ike.divine.video',
-              rawData: const {},
+              rawData: const {
+                'display_name': 'Old Name',
+                'nip05': '_@ike.divine.video',
+              },
               createdAt: DateTime.now(),
               eventId: 'rest-$testPubkey',
             );
@@ -1662,12 +1630,7 @@ void main() {
 
             verify(
               () => mockNostrClient.sendProfile(
-                profileContent: {
-                  'display_name': 'New Name',
-                  'about': null,
-                  'picture': null,
-                  'banner': null,
-                },
+                profileContent: {'display_name': 'New Name'},
               ),
             ).called(1);
           },
@@ -1700,9 +1663,124 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'nip05': 'new@example.com',
-                  'about': null,
-                  'picture': null,
-                  'banner': null,
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'preserves arbitrary unknown fields when seeded from a '
+          'relay-fetched Kind 0 (the load-bearing invariant from #4175)',
+          () async {
+            // Sets up the relay seed path: fetchProfile returns a Kind 0
+            // event whose content carries fields the typed UserProfile
+            // model does not know about (custom client keys, NIP-39 i
+            // tags, bot, future NIPs). Editing display_name must publish
+            // an event with all those fields preserved byte-identical.
+            final freshContent = {
+              'display_name': 'Old Name',
+              'about': 'Existing bio',
+              'picture': 'https://example.com/p.png',
+              'banner': '0x000000',
+              'nip05': 'alice@example.com',
+              'lud16': 'alice@strike.me',
+              'lud06': 'lnurl1abc',
+              'website': 'https://alice.example',
+              'bot': true,
+              'i': ['github:alice', 'twitter:alice'],
+              'weird_future_field': {'nested': 'value'},
+            };
+            final freshEvent = MockEvent();
+            when(() => freshEvent.kind).thenReturn(0);
+            when(() => freshEvent.pubkey).thenReturn(testPubkey);
+            when(() => freshEvent.id).thenReturn('relay-event-id');
+            when(
+              () => freshEvent.createdAt,
+            ).thenReturn(DateTime.now().millisecondsSinceEpoch ~/ 1000);
+            when(() => freshEvent.content).thenReturn(jsonEncode(freshContent));
+            when(
+              () => mockNostrClient.fetchProfile(
+                testPubkey,
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenAnswer((_) async => freshEvent);
+
+            // currentProfile from REST has sparse rawData — the relay seed
+            // wins because it has more keys.
+            final currentProfile = UserProfile(
+              pubkey: testPubkey,
+              displayName: 'Old Name',
+              nip05: 'alice@example.com',
+              rawData: const {
+                'display_name': 'Old Name',
+                'nip05': 'alice@example.com',
+              },
+              createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+              eventId: 'rest-$testPubkey',
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              about: 'Existing bio',
+              picture: 'https://example.com/p.png',
+              banner: '0x000000',
+              currentProfile: currentProfile,
+            );
+
+            final captured =
+                verify(
+                      () => mockNostrClient.sendProfile(
+                        profileContent: captureAny(named: 'profileContent'),
+                      ),
+                    ).captured.single
+                    as Map<String, dynamic>;
+
+            // The user changed display_name only. Every other key should
+            // be byte-identical with the relay seed.
+            expect(captured['display_name'], equals('New Name'));
+            for (final key in freshContent.keys) {
+              if (key == 'display_name') continue;
+              expect(
+                captured[key],
+                equals(freshContent[key]),
+                reason: 'Field $key was modified by an unrelated edit',
+              );
+            }
+            // No extra keys leaked in.
+            expect(captured.keys.toSet(), equals(freshContent.keys.toSet()));
+          },
+        );
+
+        test(
+          'falls back to currentProfile when relay seed fetch fails',
+          () async {
+            // createCurrentProfile uses fetchProfile internally; build the
+            // profile first, THEN stub fetchProfile to throw so only the
+            // saveProfileEvent-time seed fetch fails.
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'lud16': 'alice@strike.me',
+              'website': 'https://alice.example',
+            });
+            when(
+              () => mockNostrClient.fetchProfile(
+                testPubkey,
+                useCache: any(named: 'useCache'),
+              ),
+            ).thenThrow(Exception('relay down'));
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'lud16': 'alice@strike.me',
+                  'website': 'https://alice.example',
                 },
               ),
             ).called(1);

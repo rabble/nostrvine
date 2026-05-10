@@ -111,11 +111,29 @@ class UserProfile {
   ///
   /// Use [eventIdPrefix] to distinguish the source (defaults to `'rest'`;
   /// batch callers pass `'rest-bulk'`).
+  ///
+  /// `rawData` is populated from the typed REST fields so a profile
+  /// round-trip through the REST API does not silently drop them on
+  /// the next publish. The Funnelcake REST API does not expose the
+  /// raw Kind 0 event JSON, so unknown fields (custom client keys,
+  /// future NIP additions) cannot be recovered by this factory and
+  /// must be re-seeded by `ProfileRepository.saveProfileEvent` from a
+  /// relay query before publishing.
   factory UserProfile.fromUserProfileFound(
     UserProfileFound result, {
     String? eventIdPrefix,
   }) {
     final p = result.profile;
+    final rawData = <String, dynamic>{
+      if (p.name != null) 'name': p.name,
+      if (p.displayName != null) 'display_name': p.displayName,
+      if (p.about != null) 'about': p.about,
+      if (p.picture != null) 'picture': p.picture,
+      if (p.banner != null) 'banner': p.banner,
+      if (p.website != null) 'website': p.website,
+      if (p.nip05 != null) 'nip05': p.nip05,
+      if (p.lud16 != null) 'lud16': p.lud16,
+    };
     return UserProfile(
       pubkey: p.pubkey,
       name: p.name,
@@ -126,7 +144,7 @@ class UserProfile {
       website: p.website,
       nip05: p.nip05,
       lud16: p.lud16,
-      rawData: const {},
+      rawData: rawData,
       createdAt: DateTime.now(),
       eventId: '${eventIdPrefix ?? 'rest'}-${p.pubkey}',
     );
