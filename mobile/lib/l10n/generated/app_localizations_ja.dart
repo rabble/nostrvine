@@ -515,12 +515,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get profileErrorLoadingReposts => 'リポスト動画の読み込みに失敗';
 
   @override
-  String get profileLoadingTitle => 'プロフィールを読み込み中...';
-
-  @override
-  String get profileLoadingSubtitle => 'ちょっと待ってね';
-
-  @override
   String get profileLoadingVideos => '動画を読み込み中...';
 
   @override

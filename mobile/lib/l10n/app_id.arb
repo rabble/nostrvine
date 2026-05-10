@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "Video yang kamu repost akan muncul di sini",
     "profileRepostsOtherEmpty": "Video yang mereka repost akan muncul di sini",
     "profileErrorLoadingReposts": "Gagal memuat video yang di-repost",
-    "profileLoadingTitle": "Memuat profil...",
-    "profileLoadingSubtitle": "Ini mungkin butuh beberapa saat",
     "profileLoadingVideos": "Memuat video...",
     "profileNoVideosTitle": "Belum Ada Video",
     "profileNoVideosOwnSubtitle": "Bagikan video pertamamu untuk melihatnya di sini",

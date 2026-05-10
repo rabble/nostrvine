@@ -577,12 +577,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Erreur de chargement des vidéos repostées';
 
   @override
-  String get profileLoadingTitle => 'Chargement du profil...';
-
-  @override
-  String get profileLoadingSubtitle => 'Ça peut prendre un moment';
-
-  @override
   String get profileLoadingVideos => 'Chargement des vidéos...';
 
   @override

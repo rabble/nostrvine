@@ -542,12 +542,6 @@ class AppLocalizationsAm extends AppLocalizations {
   String get profileErrorLoadingReposts => 'እንደገና የተለጠፉ ቪዲዮዎችን መጫን ላይ ስህተት';
 
   @override
-  String get profileLoadingTitle => 'መገለጫን በመጫን ላይ...';
-
-  @override
-  String get profileLoadingSubtitle => 'ይሄ ጥቂት ጊዜ ሊወስድ ይችላል።';
-
-  @override
   String get profileLoadingVideos => 'ቪዲዮዎችን በመጫን ላይ...';
 
   @override

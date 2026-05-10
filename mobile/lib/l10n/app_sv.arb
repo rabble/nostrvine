@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "Videor du återpublicerar visas här",
     "profileRepostsOtherEmpty": "Videor de återpublicerar visas här",
     "profileErrorLoadingReposts": "Fel vid inläsning av återpublicerade videor",
-    "profileLoadingTitle": "Läser in profil...",
-    "profileLoadingSubtitle": "Det här kan ta en liten stund",
     "profileLoadingVideos": "Läser in videor...",
     "profileNoVideosTitle": "Inga videor än",
     "profileNoVideosOwnSubtitle": "Dela din första video för att se den här",

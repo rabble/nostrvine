@@ -128,8 +128,6 @@
     "profileRepostsOwnEmpty": "May nakita kang dapat ipasa? I-repost mo at lalabas ito dito.",
     "profileRepostsOtherEmpty": "Wala pa silang ipinasang content. Pag may inipasa, lalabas dito.",
     "profileErrorLoadingReposts": "May error sa pag-load ng mga reposted video",
-    "profileLoadingTitle": "Naglo-load ang profile...",
-    "profileLoadingSubtitle": "Maaaring tumagal nang ilang sandali",
     "profileLoadingVideos": "Naglo-load ang mga video...",
     "profileNoVideosTitle": "Wala pang video",
     "profileNoVideosOwnSubtitle": "Handa na ang stage mo. Magsimula nang mag-post at maglalagi rito ang mga video mo.",

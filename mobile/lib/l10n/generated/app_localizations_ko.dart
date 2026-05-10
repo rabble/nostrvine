@@ -516,12 +516,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get profileErrorLoadingReposts => '리포스트 영상을 불러오지 못했어요';
 
   @override
-  String get profileLoadingTitle => '프로필을 불러오는 중...';
-
-  @override
-  String get profileLoadingSubtitle => '잠시 걸릴 수 있어요';
-
-  @override
   String get profileLoadingVideos => '영상을 불러오는 중...';
 
   @override

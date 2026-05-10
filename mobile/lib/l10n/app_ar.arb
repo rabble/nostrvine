@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "ستظهر هنا الفيديوهات التي تعيد نشرها",
     "profileRepostsOtherEmpty": "ستظهر هنا الفيديوهات التي يعيد نشرها",
     "profileErrorLoadingReposts": "خطأ في تحميل الفيديوهات المعاد نشرها",
-    "profileLoadingTitle": "جاري تحميل الملف الشخصي...",
-    "profileLoadingSubtitle": "قد يستغرق هذا بضع لحظات",
     "profileLoadingVideos": "جاري تحميل الفيديوهات...",
     "profileNoVideosTitle": "لا توجد فيديوهات بعد",
     "profileNoVideosOwnSubtitle": "شارك أول فيديو لك ليظهر هنا",

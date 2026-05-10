@@ -548,12 +548,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Fel vid inläsning av återpublicerade videor';
 
   @override
-  String get profileLoadingTitle => 'Läser in profil...';
-
-  @override
-  String get profileLoadingSubtitle => 'Det här kan ta en liten stund';
-
-  @override
   String get profileLoadingVideos => 'Läser in videor...';
 
   @override

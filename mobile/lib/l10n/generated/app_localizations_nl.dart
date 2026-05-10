@@ -564,12 +564,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get profileErrorLoadingReposts => 'Fout bij laden van reposts';
 
   @override
-  String get profileLoadingTitle => 'Profiel laden...';
-
-  @override
-  String get profileLoadingSubtitle => 'Dit kan even duren';
-
-  @override
   String get profileLoadingVideos => 'Video\'s laden...';
 
   @override

@@ -545,12 +545,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Yeniden paylaşılan videolar yüklenirken hata';
 
   @override
-  String get profileLoadingTitle => 'Profil yükleniyor...';
-
-  @override
-  String get profileLoadingSubtitle => 'Bu birkaç saniye sürebilir';
-
-  @override
   String get profileLoadingVideos => 'Videolar yükleniyor...';
 
   @override

@@ -541,12 +541,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'خطأ في تحميل الفيديوهات المعاد نشرها';
 
   @override
-  String get profileLoadingTitle => 'جاري تحميل الملف الشخصي...';
-
-  @override
-  String get profileLoadingSubtitle => 'قد يستغرق هذا بضع لحظات';
-
-  @override
   String get profileLoadingVideos => 'جاري تحميل الفيديوهات...';
 
   @override

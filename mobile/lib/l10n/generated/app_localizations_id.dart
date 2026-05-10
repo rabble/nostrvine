@@ -546,12 +546,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileErrorLoadingReposts => 'Gagal memuat video yang di-repost';
 
   @override
-  String get profileLoadingTitle => 'Memuat profil...';
-
-  @override
-  String get profileLoadingSubtitle => 'Ini mungkin butuh beberapa saat';
-
-  @override
   String get profileLoadingVideos => 'Memuat video...';
 
   @override

@@ -570,12 +570,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Error al cargar los videos reposteados';
 
   @override
-  String get profileLoadingTitle => 'Cargando perfil...';
-
-  @override
-  String get profileLoadingSubtitle => 'Esto puede tardar unos segundos';
-
-  @override
   String get profileLoadingVideos => 'Cargando videos...';
 
   @override

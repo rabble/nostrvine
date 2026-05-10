@@ -1054,18 +1054,6 @@ abstract class AppLocalizations {
   /// **'Error loading reposted videos'**
   String get profileErrorLoadingReposts;
 
-  /// No description provided for @profileLoadingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading profile...'**
-  String get profileLoadingTitle;
-
-  /// No description provided for @profileLoadingSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'This may take a few moments'**
-  String get profileLoadingSubtitle;
-
   /// No description provided for @profileLoadingVideos.
   ///
   /// In en, this message translates to:

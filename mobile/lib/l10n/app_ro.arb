@@ -267,8 +267,6 @@
     "profileRepostsOwnEmpty": "Videoclipurile pe care le redistribui vor apărea aici",
     "profileRepostsOtherEmpty": "Videoclipurile pe care le redistribuie vor apărea aici",
     "profileErrorLoadingReposts": "Eroare la încărcarea videoclipurilor redistribuite",
-    "profileLoadingTitle": "Se încarcă profilul...",
-    "profileLoadingSubtitle": "Poate dura câteva momente",
     "profileLoadingVideos": "Se încarcă videoclipurile...",
     "profileNoVideosTitle": "Încă niciun videoclip",
     "profileNoVideosOwnSubtitle": "Distribuie primul tău videoclip ca să-l vezi aici",
