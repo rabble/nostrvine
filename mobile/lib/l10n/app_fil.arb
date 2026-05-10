@@ -2068,7 +2068,7 @@
     "soundsRemoveSavedSound": "Alisin ang sound",
     "soundsRemovedFromLibrary": "Naalis sa Sounds",
     "supportLogsSavedTo": "Na-save ang logs sa {path}",
-    "supportRevealLogsAction": "Ipakita sa folder"
+    "supportRevealLogsAction": "Ipakita sa folder",
     "verifiedAccountChipSemanticLabel": "Na-verify na {platform} account: {identity}",
     "@verifiedAccountChipSemanticLabel": {
         "description": "Semantic label for a verified account chip",
