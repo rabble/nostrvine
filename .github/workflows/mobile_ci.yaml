@@ -163,7 +163,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 🍎 Setup Xcode
-        # Pinned to 26.3: pro_video_editor 1.15.0's
+        # Pinned to 26.2 (NOT 26.3): pro_video_editor 1.15.0's
         # CompositionBuilder.swift references
         # `AVVideoCompositionLayerInstruction.Configuration`, an iOS 26
         # SDK type. The reference is runtime-gated by
@@ -173,13 +173,21 @@ jobs:
         # with "type 'AVVideoCompositionLayerInstruction' has no
         # member 'Configuration'" before tests can run. The same file
         # also needs the iOS 18 SDK shape (`[String: any Sendable]`)
-        # for AVVideoCompositing — Xcode 26 satisfies both.
-        # macos-15-arm64 ships 26.3 alongside 26.2 / 26.1.1 / 26.0.1
-        # but defaults to 16.4, so the explicit pin is required and
+        # for AVVideoCompositing — any Xcode 26.x satisfies both.
+        #
+        # Xcode 26.3 specifically has an SPM workspace-load race in
+        # `IDESPMWorkspaceDelegate.dependencyPackagesDidUpdate` that
+        # crashes `xcodebuild` with "count of array (53) differs from
+        # count of index set (52)" before tests can run. The crash
+        # reproduces on `main` independent of any PR diff. 26.2 ships
+        # the same iOS 26 SDK without the SPM race, so we pin there.
+        #
+        # macos-15-arm64 ships 26.3 / 26.2 / 26.1.1 / 26.0.1 but
+        # defaults to 16.4, so the explicit pin is required and
         # protects against the runner image's default drifting.
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: "26.3"
+          xcode-version: "26.2"
       - name: 🐦 Setup Flutter
         uses: subosito/flutter-action@v2
         with:
