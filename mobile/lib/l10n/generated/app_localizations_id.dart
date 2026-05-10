@@ -546,12 +546,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get profileErrorLoadingReposts => 'Gagal memuat video yang di-repost';
 
   @override
-  String get profileLoadingTitle => 'Memuat profil...';
-
-  @override
-  String get profileLoadingSubtitle => 'Ini mungkin butuh beberapa saat';
-
-  @override
   String get profileLoadingVideos => 'Memuat video...';
 
   @override
@@ -1101,16 +1095,16 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoPlayerEditVideoTooltip => 'Ubah video';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Buka pengaturan pemutaran';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Tutup pengaturan pemutaran';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Aktifkan teks';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Nonaktifkan teks';
 
   @override
   String get contentWarningLabel => 'Peringatan Konten';
@@ -1419,10 +1413,10 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionShareLabel => 'Bagikan';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Laporkan';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Laporkan video';
 
   @override
   String get videoActionEditLabel => 'Edit';
@@ -3815,32 +3809,32 @@ class AppLocalizationsId extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Coba istilah pencarian lain';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Disimpan ke Suara';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Sudah ada di Suara';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Suara Saya';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Belum ada suara yang tersimpan';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Ketuk Gunakan Suara pada video untuk menyimpannya di sini.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Pribadi';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'Komunitas';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Hapus suara';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Dihapus dari Suara';
 
   @override
   String get soundsFailedToLoad => 'Gagal memuat suara';
@@ -4333,11 +4327,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Log disimpan ke $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Tampilkan di folder';
 
   @override
   String get supportChatNotAvailable => 'Chat dukungan tidak tersedia';
@@ -4392,61 +4386,63 @@ class AppLocalizationsId extends AppLocalizations {
   String get reportReasonSpam => 'Spam atau Konten Tidak Diinginkan';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle =>
+      'Konten yang tidak diinginkan atau berulang';
 
   @override
   String get reportReasonHarassment => 'Pelecehan, Perundungan, atau Ancaman';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Balasan atau sebutan berbahaya dan tidak diinginkan';
 
   @override
   String get reportReasonViolence => 'Konten Kekerasan atau Ekstremis';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Konten kekerasan, ekstremis, atau berbahaya';
 
   @override
   String get reportReasonSexualContent => 'Konten Seksual atau Dewasa';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Ketelanjangan, porno, atau konten eksplisit';
 
   @override
   String get reportReasonCopyright => 'Pelanggaran Hak Cipta';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Penggunaan kekayaan intelektual tanpa izin';
 
   @override
   String get reportReasonFalseInfo => 'Informasi Salah';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'Klaim menyesatkan atau palsu';
 
   @override
   String get reportReasonCsam => 'Pelanggaran Keamanan Anak';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Konten yang mengeksploitasi atau membahayakan anak di bawah umur';
 
   @override
   String get reportReasonAiGenerated => 'Konten Dihasilkan AI';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Konten yang diduga dibuat oleh AI';
 
   @override
   String get reportReasonOther => 'Pelanggaran Kebijakan Lainnya';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle =>
+      'Pelanggaran yang tidak tercantum di atas';
 
   @override
   String reportFailed(Object error) {
@@ -4468,7 +4464,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get reportLearnMore => 'Pelajari Lebih Lanjut';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Pelajari lebih lanjut di';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6571,18 +6567,18 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Komunitas';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Unggulan';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Suara Saya';
 
   @override
   String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+      'Suara unggulan segera hadir';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Kami akan menambahkan suara unggulan di sini setelah siap.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Alat panah';
@@ -6774,11 +6770,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Selesai';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Publikasikan suara ini';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Izinkan orang lain menyimpan dan menggunakan kembali audio video ini.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Kolaborator';

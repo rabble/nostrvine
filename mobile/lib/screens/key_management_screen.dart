@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/extensions/safe_pop_extension.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -42,7 +43,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       appBar: DiVineAppBar(
         title: context.l10n.keyManagementTitle,
         showBackButton: true,
-        onBackPressed: context.pop,
+        onBackPressed: context.safePop,
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: Align(
@@ -446,8 +447,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
           ),
         );
 
-        // Pop back to settings after successful import
-        context.pop();
+        context.safePop();
       }
     } catch (e) {
       if (context.mounted) {
@@ -547,8 +547,8 @@ class _NpubDisplayBlock extends ConsumerWidget {
     final l10n = context.l10n;
     await Clipboard.setData(ClipboardData(text: npub));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.keyManagementPublicKeyCopied)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.keyManagementPublicKeyCopied)));
   }
 }

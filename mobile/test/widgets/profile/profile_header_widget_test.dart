@@ -22,7 +22,9 @@ import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
+import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -414,11 +416,17 @@ void main() {
         expect(find.text('Loops'), findsOneWidget);
         expect(find.text('—'), findsNWidgets(4));
 
-        // Skeleton must be disabled after timeout — data is shown as-is.
+        // Stats Skeletonizer (the closest one above a stat label) must
+        // be disabled after timeout — data is shown as-is.
         // bySubtype is required because Skeletonizer is abstract; the
         // concrete widget in the tree is the private _Skeletonizer subclass.
         final s = tester.widget<Skeletonizer>(
-          find.bySubtype<Skeletonizer>(),
+          find
+              .ancestor(
+                of: find.text('Followers'),
+                matching: find.bySubtype<Skeletonizer>(),
+              )
+              .first,
         );
         expect(s.enabled, isFalse);
       },
@@ -447,11 +455,17 @@ void main() {
           expect(find.text('Likes'), findsOneWidget);
           expect(find.text('Loops'), findsOneWidget);
 
-          // Skeleton must be active — not just present in the tree.
+          // Stats Skeletonizer (the closest one above a stat label) must
+          // be active — not just present in the tree.
           // bySubtype is required because Skeletonizer is abstract; the
           // concrete widget in the tree is the private _Skeletonizer subclass.
           final s = tester.widget<Skeletonizer>(
-            find.bySubtype<Skeletonizer>(),
+            find
+                .ancestor(
+                  of: find.text('Followers'),
+                  matching: find.bySubtype<Skeletonizer>(),
+                )
+                .first,
           );
           expect(s.enabled, isTrue);
         },
@@ -1033,58 +1047,40 @@ void main() {
       );
     });
 
-    group('Profile content fade-in', () {
-      // The fade-in AnimatedOpacity wraps the avatar/name/bio/stats column
-      // and uses an 80ms duration. Other AnimatedOpacity widgets in the
-      // subtree (e.g. action label pill at 150ms) are filtered out by
-      // matching on duration.
-      AnimatedOpacity readFadeOpacity(WidgetTester tester) {
+    group('Identity skeleton (#4163)', () {
+      // Asserts the wiring contract from `_ProfileHeaderWidgetState.build`:
+      // when the profile is still loading and there is no cached fallback,
+      // the avatar + name/bio block is wrapped in an enabled Skeletonizer.
+      // Static chrome (stats row, action buttons, people-list pill) sits
+      // OUTSIDE the identity Skeletonizer so it stays both visible and
+      // interactive during the loading window — pinned at the end of this
+      // group.
+      //
+      // The header subtree always contains 2 Skeletonizers at runtime: the
+      // identity one (over avatar + name/bio) and the stats one (inside
+      // _ProfileStatsRow, gated on profileStats == null). The identity
+      // Skeletonizer is the first one encountered in widget order.
+
+      Skeletonizer findIdentitySkeletonizer(WidgetTester tester) {
         final matches = tester
-            .widgetList<AnimatedOpacity>(
+            .widgetList<Skeletonizer>(
               find.descendant(
                 of: find.byType(ProfileHeaderWidget),
-                matching: find.byType(AnimatedOpacity),
+                matching: find.bySubtype<Skeletonizer>(),
               ),
             )
-            .where((w) => w.duration == const Duration(milliseconds: 80))
             .toList();
         expect(
           matches,
-          hasLength(1),
-          reason: 'Expected exactly one fade-in AnimatedOpacity (80ms)',
+          isNotEmpty,
+          reason: 'Expected at least one Skeletonizer in the header subtree',
         );
-        return matches.single;
+        return matches.first;
       }
 
-      testWidgets('opens immediately when profile is already available', (
-        tester,
-      ) async {
-        final testProfile = createTestProfile(displayName: 'Fade Target');
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-          ),
-        );
-
-        // First frame — _profileVisible is still false, but profile is
-        // non-null so the AnimatedOpacity opens at full opacity.
-        final opacity = readFadeOpacity(tester);
-        expect(opacity.opacity, equals(1.0));
-        expect(opacity.duration, equals(const Duration(milliseconds: 80)));
-
-        await tester.pumpAndSettle();
-        expect(find.text('Fade Target'), findsOneWidget);
-      });
-
       testWidgets(
-        'stays visible once the post-frame callback flips _profileVisible',
+        'own profile + MyProfileInitial → Skeletonizer.enabled = true',
         (tester) async {
-          // Start without profile data — the post-frame callback should
-          // still flip _profileVisible to true so the header reveals even
-          // when the upstream state never carries a profile.
           await tester.pumpWidget(
             buildTestWidget(
               userIdHex: testUserHex,
@@ -1092,13 +1088,182 @@ void main() {
               myProfileState: const MyProfileInitial(),
             ),
           );
-
-          // Pump enough frames for the post-frame callback to run.
-          await tester.pump();
           await tester.pump();
 
-          final opacity = readFadeOpacity(tester);
-          expect(opacity.opacity, equals(1.0));
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileLoading(profile: null) → '
+        'Skeletonizer.enabled = true',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileLoading(),
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileLoading(profile: cached) → '
+        'Skeletonizer.enabled = false (we have data to show, do not skeleton)',
+        (tester) async {
+          final cached = createTestProfile(displayName: 'Cached Display Name');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoading(profile: cached),
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileError(notFound) → Skeletonizer.enabled = false '
+        '(steady-state generated fallback path is preserved)',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileError(
+                errorType: MyProfileErrorType.notFound,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        },
+      );
+
+      testWidgets(
+        'own profile + MyProfileLoaded(profile) → Skeletonizer.enabled = false',
+        (tester) async {
+          final loaded = createTestProfile(displayName: 'Loaded Display Name');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: MyProfileLoaded(profile: loaded, isFresh: true),
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        },
+      );
+
+      testWidgets(
+        'other profile + suppliedProfile non-null → '
+        'Skeletonizer.enabled = false (caller already has data)',
+        (tester) async {
+          final supplied = createTestProfile(displayName: 'Bob');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: false,
+              suppliedProfile: supplied,
+            ),
+          );
+          await tester.pump();
+
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        },
+      );
+
+      testWidgets(
+        'skeleton dissolves to fallback after the 7s timeout — even when '
+        'the parent still says loading',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileInitial(),
+            ),
+          );
+          await tester.pump();
+
+          // Before timeout — Skeletonizer is enabled.
+          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+
+          // Advance past the 7-second skeleton timeout (mirrors the
+          // pattern used by _ProfileStatsRow's existing test).
+          await tester.pump(const Duration(seconds: 8));
+          await tester.pumpAndSettle();
+
+          // After timeout — Skeletonizer flips back to disabled even
+          // though the bloc is still in an initial state. This is what
+          // lets users who genuinely have no Kind 0 still see the
+          // generated-name fallback rather than an infinite shimmer.
+          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+        },
+      );
+
+      testWidgets(
+        'stats row and action buttons sit outside the identity '
+        'Skeletonizer so they stay tappable during the loading window',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              myProfileState: const MyProfileInitial(),
+            ),
+          );
+          await tester.pump();
+
+          // The identity Skeletonizer is the first descendant of the
+          // header. Anything that should stay interactive during the
+          // loading window must NOT be a descendant of it.
+          final identitySkeletonizer = find
+              .descendant(
+                of: find.byType(ProfileHeaderWidget),
+                matching: find.bySubtype<Skeletonizer>(),
+              )
+              .first;
+
+          expect(
+            find.descendant(
+              of: identitySkeletonizer,
+              matching: find.byType(ProfileActionButtons),
+            ),
+            findsNothing,
+            reason:
+                'ProfileActionButtons (Library/edit/share) must live outside '
+                'the identity Skeletonizer so the buttons remain tappable '
+                'during the loading window (#4183 review).',
+          );
+
+          // _ProfileStatsRow is private; the stat columns it renders are
+          // the proxy. Their location relative to the identity skeleton
+          // is what matters.
+          expect(
+            find.descendant(
+              of: identitySkeletonizer,
+              matching: find.byType(ProfileStatColumn),
+            ),
+            findsNothing,
+            reason:
+                'Stats columns must live outside the identity Skeletonizer '
+                'so the followers/following/likes/loops counts remain '
+                'tappable during the loading window (#4183 review).',
+          );
         },
       );
     });

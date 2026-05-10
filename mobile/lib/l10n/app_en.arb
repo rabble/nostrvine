@@ -306,8 +306,6 @@
   "profileRepostsOwnEmpty": "See something worth sharing? Repost it and it'll appear here.",
   "profileRepostsOtherEmpty": "They haven't passed anything on yet. When they do, it'll show up here.",
   "profileErrorLoadingReposts": "Error loading reposted videos",
-  "profileLoadingTitle": "Loading profile...",
-  "profileLoadingSubtitle": "This may take a few moments",
   "profileLoadingVideos": "Loading videos...",
   "profileNoVideosTitle": "No videos yet",
   "profileNoVideosOwnSubtitle": "Your stage is set. Start posting and your videos will live here.",

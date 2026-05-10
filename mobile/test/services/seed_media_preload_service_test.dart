@@ -51,10 +51,12 @@ void main() {
   group('SeedMediaPreloadService', () {
     late Directory tempDir;
     late MockPathProviderPlatform mockPathProvider;
+    late PathProviderPlatform originalPathProviderInstance;
 
     setUp(() async {
       tempDir = Directory.systemTemp.createTempSync('seed_media_test_');
 
+      originalPathProviderInstance = PathProviderPlatform.instance;
       mockPathProvider = MockPathProviderPlatform();
       mockPathProvider.setTemporaryPath(tempDir.path);
       PathProviderPlatform.instance = mockPathProvider;
@@ -66,6 +68,8 @@ void main() {
     });
 
     tearDown(() async {
+      PathProviderPlatform.instance = originalPathProviderInstance;
+
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
