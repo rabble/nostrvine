@@ -862,8 +862,9 @@ void main() {
           routerLocationStreamProvider.overrideWith(
             (ref) => Stream.value('/home'),
           ),
-          isFeatureEnabledProvider(FeatureFlag.nativeFeedPlayer)
-              .overrideWithValue(true),
+          isFeatureEnabledProvider(
+            FeatureFlag.nativeFeedPlayer,
+          ).overrideWithValue(true),
         ],
         home: MultiBlocProvider(
           providers: [
