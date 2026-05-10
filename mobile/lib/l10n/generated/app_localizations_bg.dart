@@ -1145,16 +1145,16 @@ class AppLocalizationsBg extends AppLocalizations {
       'Докоснете за пускане или пауза. Докоснете два пъти, за да харесате.';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Отвори настройките за възпроизвеждане';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Затвори настройките за възпроизвеждане';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Включи субтитрите';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Изключи субтитрите';
 
   @override
   String get contentWarningLabel => 'Предупреждение за съдържание';
@@ -1469,16 +1469,16 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionShareLabel => 'Сподели';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Сигнал';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Подай сигнал за видеото';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Редактирай';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Редактирай видеото';
 
   @override
   String get videoActionAboutLabel => 'Инфо';
@@ -3894,32 +3894,32 @@ class AppLocalizationsBg extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Пробвай с друго търсене';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Запазен в Звуци';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Вече е в Звуци';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Моите звуци';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Все още няма запазени звуци';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Натисни Използвай звук във видео, за да го запазиш тук.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Личен';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'Общност';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Премахни звука';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Премахнат от Звуци';
 
   @override
   String get soundsFailedToLoad => 'Не успяхме да заредим звуците';
@@ -4410,11 +4410,11 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Логовете са запазени в $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Покажи в папка';
 
   @override
   String get supportChatNotAvailable => 'Чатът за поддръжка не е наличен';
@@ -4470,21 +4470,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportReasonSpam => 'Спам или нежелано съдържание';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'Нежелано или повтарящо се съдържание';
 
   @override
   String get reportReasonHarassment => 'Тормоз, малтретиране или заплахи';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Вредни и нежелани отговори или споменавания';
 
   @override
   String get reportReasonViolence => 'Насилствено или екстремистко съдържание';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Насилствено, екстремистко или вредно съдържание';
 
   @override
   String get reportReasonSexualContent =>
@@ -4492,40 +4492,42 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Голота, порнография или откровено съдържание';
 
   @override
   String get reportReasonCopyright => 'Нарушаване на авторски права';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Неоторизирано използване на интелектуална собственост';
 
   @override
   String get reportReasonFalseInfo => 'Невярна информация';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle =>
+      'Подвеждащи или неверни твърдения';
 
   @override
   String get reportReasonCsam => 'Нарушение на безопасността на детето';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Съдържание, което експлоатира или застрашава непълнолетни';
 
   @override
   String get reportReasonAiGenerated => 'AI-генерирано съдържание';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Съдържание, за което се подозира, че е генерирано от ИИ';
 
   @override
   String get reportReasonOther => 'Друго нарушение на правилата';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle =>
+      'Нарушения, които не са изброени по-горе';
 
   @override
   String reportFailed(Object error) {
@@ -4547,7 +4549,7 @@ class AppLocalizationsBg extends AppLocalizations {
   String get reportLearnMore => 'Научи повече';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Научи повече на';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6674,18 +6676,18 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Общност';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Препоръчани';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Моите звуци';
 
   @override
   String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+      'Препоръчаните звуци идват скоро';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Ще пуснем препоръчани звуци тук, щом са готови.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Инструмент със стрелка';
@@ -6882,11 +6884,11 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Готово';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Публикувай този звук';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Позволи на другите да запазват и използват повторно звука на това видео.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Сътрудници';

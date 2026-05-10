@@ -1134,16 +1134,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Tik om af te spelen of te pauzeren. Dubbel tikken om te liken.';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Afspeelinstellingen openen';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Afspeelinstellingen sluiten';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Ondertiteling inschakelen';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Ondertiteling uitschakelen';
 
   @override
   String get contentWarningLabel => 'Inhoudswaarschuwing';
@@ -1444,7 +1444,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionAutoLabel => 'Auto';
 
   @override
-  String get videoActionLikeLabel => 'Like';
+  String get videoActionLikeLabel => 'Liken';
 
   @override
   String get videoActionReplyLabel => 'Reageren';
@@ -1456,16 +1456,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionShareLabel => 'Delen';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Rapporteren';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Video rapporteren';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Bewerken';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Video bewerken';
 
   @override
   String get videoActionAboutLabel => 'Over';
@@ -1872,12 +1872,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String relaySettingsSubscriptionsSummary(int count) {
-    return '$count subs';
+    return '$count abonnementen';
   }
 
   @override
   String relaySettingsEventsSummary(String count) {
-    return '$count events';
+    return '$count gebeurtenissen';
   }
 
   @override
@@ -3863,32 +3863,32 @@ class AppLocalizationsNl extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Probeer een andere zoekterm';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Opgeslagen in Sounds';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Al in Sounds';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Mijn sounds';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Nog geen opgeslagen sounds';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Tik op Sound gebruiken in een video om die hier op te slaan.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Privé';
 
   @override
   String get soundsAvailabilityCommunity => 'Community';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Sound verwijderen';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Verwijderd uit Sounds';
 
   @override
   String get soundsFailedToLoad => 'Laden van geluiden mislukt';
@@ -4381,11 +4381,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Logs opgeslagen in $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Tonen in map';
 
   @override
   String get supportChatNotAvailable => 'Supportchat niet beschikbaar';
@@ -4440,21 +4440,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get reportReasonSpam => 'Spam of ongewenste inhoud';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'Ongewenste of repetitieve content';
 
   @override
   String get reportReasonHarassment => 'Intimidatie, pesten of bedreigingen';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Schadelijke en ongewenste reacties of vermeldingen';
 
   @override
   String get reportReasonViolence => 'Gewelddadige of extremistische inhoud';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Gewelddadige, extremistische of schadelijke content';
 
   @override
   String get reportReasonSexualContent =>
@@ -4462,40 +4462,42 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Naaktheid, porno of expliciete content';
 
   @override
   String get reportReasonCopyright => 'Auteursrechtschending';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Ongeoorloofd gebruik van intellectueel eigendom';
 
   @override
   String get reportReasonFalseInfo => 'Valse informatie';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle =>
+      'Misleidende of onware beweringen';
 
   @override
   String get reportReasonCsam => 'Schending kinderveiligheid';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Content die minderjarigen uitbuit of in gevaar brengt';
 
   @override
   String get reportReasonAiGenerated => 'AI-gegenereerde inhoud';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Vermoedelijk door AI gegenereerde content';
 
   @override
   String get reportReasonOther => 'Andere beleidsschending';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle =>
+      'Overtredingen die hierboven niet staan';
 
   @override
   String reportFailed(Object error) {
@@ -4517,7 +4519,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get reportLearnMore => 'Meer info';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Meer info op';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -4776,7 +4778,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String soundPreviewSemanticLabel(String title) {
-    return 'Preview $title';
+    return 'Voorbeeld van $title';
   }
 
   @override
@@ -6634,18 +6636,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Gemeenschap';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Uitgelicht';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Mijn sounds';
 
   @override
   String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+      'Uitgelichte sounds komen eraan';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'We droppen hier uitgelichte sounds zodra ze klaar zijn.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Pijlgereedschap';
@@ -6837,11 +6839,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Gereed';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Publiceer deze sound';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Laat anderen de audio van deze video opslaan en hergebruiken.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Samenwerkers';

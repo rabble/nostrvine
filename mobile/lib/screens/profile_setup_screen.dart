@@ -457,20 +457,17 @@ class _ProfileSetupScreenViewState
               showBackButton: true,
               backButtonSemanticLabel: context.l10n.profileSetupBackLabel,
               onBackPressed: () {
-                // Try to pop using context.pop() which GoRouter intercepts
-                // This should work even if canPop() returns false
-                try {
+                if (context.canPop()) {
                   context.pop();
-                } catch (e) {
-                  // If pop fails, navigate to profile or home as fallback
-                  final authService = ref.read(authServiceProvider);
-                  final currentPubkey = authService.currentPublicKeyHex;
-                  if (currentPubkey != null) {
-                    final npub = authService.currentNpub;
-                    context.go('/profile/$npub');
-                  } else {
-                    context.go('/home/0');
-                  }
+                  return;
+                }
+                final authService = ref.read(authServiceProvider);
+                final currentPubkey = authService.currentPublicKeyHex;
+                if (currentPubkey != null) {
+                  final npub = authService.currentNpub;
+                  context.go('/profile/$npub');
+                } else {
+                  context.go('/home/0');
                 }
               },
               style: const DiVineAppBarStyle(
@@ -1708,7 +1705,7 @@ class _PublicKeyLink extends StatelessWidget {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: TextButton(
-        onPressed: () => context.goNamed(KeyManagementScreen.routeName),
+        onPressed: () => context.pushNamed(KeyManagementScreen.routeName),
         child: Text(
           l10n.profileEditPublicKeyLink,
           style: VineTheme.labelMediumFont(color: VineTheme.primary),

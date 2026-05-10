@@ -1161,16 +1161,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Atinge pentru a reda sau întrerupe. Atinge de două ori pentru a aprecia.';
 
   @override
-  String get videoSettingsMenuOpen => 'Open playback settings';
+  String get videoSettingsMenuOpen => 'Deschide setările de redare';
 
   @override
-  String get videoSettingsMenuClose => 'Close playback settings';
+  String get videoSettingsMenuClose => 'Închide setările de redare';
 
   @override
-  String get videoSettingsCaptionsEnable => 'Enable captions';
+  String get videoSettingsCaptionsEnable => 'Activează subtitrările';
 
   @override
-  String get videoSettingsCaptionsDisable => 'Disable captions';
+  String get videoSettingsCaptionsDisable => 'Dezactivează subtitrările';
 
   @override
   String get contentWarningLabel => 'Atenționare de conținut';
@@ -1483,16 +1483,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoActionShareLabel => 'Partajează';
 
   @override
-  String get videoActionReportLabel => 'Report';
+  String get videoActionReportLabel => 'Raportează';
 
   @override
-  String get videoActionReport => 'Report video';
+  String get videoActionReport => 'Raportează videoclipul';
 
   @override
-  String get videoActionEditLabel => 'Edit';
+  String get videoActionEditLabel => 'Editează';
 
   @override
-  String get videoActionEdit => 'Edit video';
+  String get videoActionEdit => 'Editează videoclipul';
 
   @override
   String get videoActionAboutLabel => 'Despre';
@@ -3964,32 +3964,32 @@ class AppLocalizationsRo extends AppLocalizations {
   String get soundsNoSoundsFoundDescription => 'Încearcă alt termen de căutare';
 
   @override
-  String get soundsSavedToLibrary => 'Saved to Sounds';
+  String get soundsSavedToLibrary => 'Salvat în Sunete';
 
   @override
-  String get soundsAlreadySavedToLibrary => 'Already in Sounds';
+  String get soundsAlreadySavedToLibrary => 'Deja în Sunete';
 
   @override
-  String get soundsSavedLibraryTitle => 'My Sounds';
+  String get soundsSavedLibraryTitle => 'Sunetele mele';
 
   @override
-  String get soundsSavedEmptyTitle => 'No saved sounds yet';
+  String get soundsSavedEmptyTitle => 'Niciun sunet salvat încă';
 
   @override
   String get soundsSavedEmptyDescription =>
-      'Tap Use Sound on a video to save it here.';
+      'Atinge Folosește sunetul pe un videoclip pentru a-l salva aici.';
 
   @override
-  String get soundsAvailabilityPrivate => 'Private';
+  String get soundsAvailabilityPrivate => 'Privat';
 
   @override
-  String get soundsAvailabilityCommunity => 'Community';
+  String get soundsAvailabilityCommunity => 'Comunitate';
 
   @override
-  String get soundsRemoveSavedSound => 'Remove sound';
+  String get soundsRemoveSavedSound => 'Elimină sunetul';
 
   @override
-  String get soundsRemovedFromLibrary => 'Removed from Sounds';
+  String get soundsRemovedFromLibrary => 'Eliminat din Sunete';
 
   @override
   String get soundsFailedToLoad => 'N-am putut încărca sunetele';
@@ -4491,11 +4491,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String supportLogsSavedTo(String path) {
-    return 'Logs saved to $path';
+    return 'Jurnale salvate în $path';
   }
 
   @override
-  String get supportRevealLogsAction => 'Show in folder';
+  String get supportRevealLogsAction => 'Arată în dosar';
 
   @override
   String get supportChatNotAvailable => 'Chatul de asistență nu e disponibil';
@@ -4551,61 +4551,62 @@ class AppLocalizationsRo extends AppLocalizations {
   String get reportReasonSpam => 'Spam sau conținut nedorit';
 
   @override
-  String get reportReasonSpamSubtitle => 'Unwanted or repetitive content';
+  String get reportReasonSpamSubtitle => 'Conținut nedorit sau repetitiv';
 
   @override
   String get reportReasonHarassment => 'Hărțuire, bullying sau amenințări';
 
   @override
   String get reportReasonHarassmentSubtitle =>
-      'Harmful and unwanted replies or mentions';
+      'Răspunsuri sau mențiuni dăunătoare și nedorite';
 
   @override
   String get reportReasonViolence => 'Conținut violent sau extremist';
 
   @override
   String get reportReasonViolenceSubtitle =>
-      'Violent, extremist, or harmful content';
+      'Conținut violent, extremist sau dăunător';
 
   @override
   String get reportReasonSexualContent => 'Conținut sexual sau pentru adulți';
 
   @override
   String get reportReasonSexualContentSubtitle =>
-      'Nudity, porn, or explicit content';
+      'Nuditate, pornografie sau conținut explicit';
 
   @override
   String get reportReasonCopyright => 'Încălcarea dreptului de autor';
 
   @override
   String get reportReasonCopyrightSubtitle =>
-      'Unauthorized use of intellectual property';
+      'Utilizarea neautorizată a proprietății intelectuale';
 
   @override
   String get reportReasonFalseInfo => 'Informații false';
 
   @override
-  String get reportReasonFalseInfoSubtitle => 'Misleading or false claims';
+  String get reportReasonFalseInfoSubtitle => 'Afirmații înșelătoare sau false';
 
   @override
   String get reportReasonCsam => 'Încălcarea siguranței copiilor';
 
   @override
   String get reportReasonCsamSubtitle =>
-      'Content that exploits or endangers minors';
+      'Conținut care exploatează sau pune în pericol minorii';
 
   @override
   String get reportReasonAiGenerated => 'Conținut generat de AI';
 
   @override
   String get reportReasonAiGeneratedSubtitle =>
-      'Suspected AI-generated content';
+      'Conținut suspectat că este generat de IA';
 
   @override
   String get reportReasonOther => 'Altă încălcare a politicii';
 
   @override
-  String get reportReasonOtherSubtitle => 'Violations not listed above';
+  String get reportReasonOtherSubtitle =>
+      'Încălcări care nu sunt listate mai sus';
 
   @override
   String reportFailed(Object error) {
@@ -4627,7 +4628,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get reportLearnMore => 'Află mai multe';
 
   @override
-  String get reportLearnMoreAt => 'Learn more at';
+  String get reportLearnMoreAt => 'Află mai multe la';
 
   @override
   String get reportSafetyUrl => 'divine.video/safety';
@@ -6772,18 +6773,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoEditorAudioCategoryCommunity => 'Comunitate';
 
   @override
-  String get videoEditorAudioCategoryFeatured => 'Featured';
+  String get videoEditorAudioCategoryFeatured => 'Recomandate';
 
   @override
-  String get videoEditorAudioCategoryMySounds => 'My Sounds';
+  String get videoEditorAudioCategoryMySounds => 'Sunetele mele';
 
   @override
   String get videoEditorAudioFeaturedEmptyTitle =>
-      'Featured sounds coming soon';
+      'Sunete recomandate în curând';
 
   @override
   String get videoEditorAudioFeaturedEmptySubtitle =>
-      'We’ll drop featured sounds here once they’re ready.';
+      'Vom adăuga sunete recomandate aici imediat ce sunt gata.';
 
   @override
   String get videoEditorDrawToolArrowSemanticLabel => 'Instrument săgeată';
@@ -6976,11 +6977,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get videoMetadataContentWarningDoneButton => 'Gata';
 
   @override
-  String get videoMetadataAudioReuseTitle => 'Publish this sound';
+  String get videoMetadataAudioReuseTitle => 'Publică acest sunet';
 
   @override
   String get videoMetadataAudioReuseSubtitle =>
-      'Let others save and reuse this video\'s audio.';
+      'Permite altora să salveze și să reutilizeze audio-ul acestui videoclip.';
 
   @override
   String get videoMetadataCollaboratorsLabel => 'Colaboratori';

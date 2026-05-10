@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_actions/conversation_actions_cubit.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/blocs/dm/conversation_mute/conversation_mute_cubit.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/mixins/scroll_pagination_mixin.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
@@ -59,8 +60,11 @@ class _InboxViewState extends ConsumerState<InboxView> {
       }
     });
 
-    // Watch notification unread count for the badge.
+    // Watch unread counts for both segments. Without a Messages-side badge
+    // users had no signal that a still-lit bottom-nav inbox dot was caused
+    // by unread DMs rather than notifications they thought they'd cleared.
     final notificationCount = ref.watch(relayNotificationUnreadCountProvider);
+    final messageCount = context.watch<DmUnreadCountCubit>().state;
     final currentPubkey = ref.read(authServiceProvider).currentPublicKeyHex;
 
     return ColoredBox(
@@ -74,6 +78,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
               selected: _selectedTab,
               onChanged: (tab) => setState(() => _selectedTab = tab),
               notificationCount: notificationCount,
+              messageCount: messageCount,
             ),
             // Content area with rounded top corners
             Expanded(

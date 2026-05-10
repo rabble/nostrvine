@@ -1,6 +1,6 @@
 // ABOUTME: Messages/Notifications segmented toggle for the inbox screen.
 // ABOUTME: Matches the Figma design with primary green active state,
-// ABOUTME: muted inactive state, and a notification badge on the left tab.
+// ABOUTME: muted inactive state, and unread-count badges on each tab.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -18,12 +18,14 @@ class InboxSegmentedToggle extends StatelessWidget {
     required this.selected,
     required this.onChanged,
     this.notificationCount = 0,
+    this.messageCount = 0,
     super.key,
   });
 
   final InboxTab selected;
   final ValueChanged<InboxTab> onChanged;
   final int notificationCount;
+  final int messageCount;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,7 @@ class InboxSegmentedToggle extends StatelessWidget {
               label: 'Messages',
               isSelected: selected == InboxTab.messages,
               onTap: () => onChanged(InboxTab.messages),
+              badgeCount: messageCount,
             ),
           ),
         ],
