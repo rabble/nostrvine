@@ -13,6 +13,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/profile_editor/username_status_indicator.dart';
 
 const _divineVideoDomainSuffix = '.divine.video';
@@ -70,7 +71,7 @@ class _Nip05SettingsLoadingScreen extends StatelessWidget {
       ),
       backgroundColor: VineTheme.backgroundColor,
       body: const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+        child: BrandedLoadingIndicator(size: 60),
       ),
     );
   }
@@ -147,7 +148,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
             return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
               builder: (context, editorState) {
                 if (myProfileState is MyProfileError) {
-                  return _buildLoadError(context);
+                  return const _Nip05SettingsLoadError();
                 }
 
                 return Align(
@@ -155,11 +156,7 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 600),
                     child: currentProfile == null
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                              color: VineTheme.vineGreen,
-                            ),
-                          )
+                        ? const Center(child: BrandedLoadingIndicator(size: 60))
                         : ListView(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             children: [
@@ -194,40 +191,6 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
       child: Text(
         context.l10n.nostrSettingsNip05AddressSubtitle,
         style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
-      ),
-    );
-  }
-
-  Widget _buildLoadError(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          spacing: 16,
-          children: [
-            const DivineIcon(
-              icon: DivineIconName.warningCircle,
-              color: VineTheme.secondaryText,
-              size: 48,
-            ),
-            Text(
-              context.l10n.profilePleaseTryAgain,
-              textAlign: TextAlign.center,
-              style: VineTheme.titleSmallFont(),
-            ),
-            DivineButton(
-              type: DivineButtonType.secondary,
-              size: DivineButtonSize.small,
-              label: context.l10n.profileRetryButton,
-              onPressed: () {
-                context.read<MyProfileBloc>().add(
-                  const MyProfileLoadRequested(),
-                );
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -578,6 +541,45 @@ class _Nip05SettingsViewState extends State<Nip05SettingsView> {
         normalizedExternal != initialExternal ||
             editorState.initialUsername != null,
     };
+  }
+}
+
+class _Nip05SettingsLoadError extends StatelessWidget {
+  const _Nip05SettingsLoadError();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 16,
+          children: [
+            const DivineIcon(
+              icon: DivineIconName.warningCircle,
+              color: VineTheme.secondaryText,
+              size: 48,
+            ),
+            Text(
+              context.l10n.profilePleaseTryAgain,
+              textAlign: TextAlign.center,
+              style: VineTheme.titleSmallFont(),
+            ),
+            DivineButton(
+              type: DivineButtonType.secondary,
+              size: DivineButtonSize.small,
+              label: context.l10n.profileRetryButton,
+              onPressed: () {
+                context.read<MyProfileBloc>().add(
+                  const MyProfileLoadRequested(),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

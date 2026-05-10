@@ -94,6 +94,7 @@ void main() {
         ),
       ],
     );
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     await tester.pumpWidget(
       ProviderScope(
@@ -121,7 +122,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('NIP-05 address'));
+    await tester.tap(find.text(l10n.nostrSettingsNip05Address));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
