@@ -608,8 +608,9 @@ void main() {
                   videos: videos,
                 ),
                 additionalOverrides: [
-                  isFeatureEnabledProvider(FeatureFlag.nativeFeedPlayer)
-                      .overrideWithValue(true),
+                  isFeatureEnabledProvider(
+                    FeatureFlag.nativeFeedPlayer,
+                  ).overrideWithValue(true),
                 ],
               ),
             );
