@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -208,5 +209,49 @@ void main() {
     expect(capturedExtra?.initialVideo?.title, comment.content);
     expect(capturedExtra?.initialVideo?.isVideoReply, isTrue);
     expect(capturedExtra?.initialVideo?.replyRootRouteId, _testRootEventId);
+  });
+
+  group('Identity skeleton (#4163 follow-up)', () {
+    testWidgets(
+      'wraps the author row in IdentitySkeletonizer with isLoading=true '
+      'while the profile has not resolved',
+      (tester) async {
+        final mockCommentsBloc = _MockCommentsBloc();
+        when(() => mockCommentsBloc.state).thenReturn(
+          const CommentsState(
+            rootEventId: _testRootEventId,
+            rootAuthorPubkey: _testRootAuthorPubkey,
+            status: CommentsStatus.success,
+          ),
+        );
+
+        await tester.pumpWidget(buildTestWidget('hello', mockCommentsBloc));
+        await tester.pump();
+
+        // No profile override — userProfileReactiveProvider yields null
+        // until a Kind 0 arrives, so the comment row should be in its
+        // loading state.
+        final skeletonizer = tester.widget<IdentitySkeletonizer>(
+          find.byType(IdentitySkeletonizer),
+        );
+        expect(
+          skeletonizer.isLoading,
+          isTrue,
+          reason:
+              'profile is null → IdentitySkeletonizer.isLoading should be true',
+        );
+
+        // The placeholder name renders behind the shimmer.
+        expect(
+          find.text(UserProfile.generatedNameFor(_testHexPubkey)),
+          findsOneWidget,
+        );
+
+        // Past the 7s fallthrough — let the timer fire and the switch
+        // animation settle so no pending timers leak into the next test.
+        await tester.pump(const Duration(seconds: 8));
+        await tester.pumpAndSettle();
+      },
+    );
   });
 }
