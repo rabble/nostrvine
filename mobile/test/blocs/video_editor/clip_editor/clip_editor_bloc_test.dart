@@ -1150,8 +1150,9 @@ void main() {
         'when source clip is removed during in-flight extraction',
         () async {
           final completer = Completer<AudioExtractionResult>();
-          when(() => mockService.extractAudio(any()))
-              .thenAnswer((_) => completer.future);
+          when(
+            () => mockService.extractAudio(any()),
+          ).thenAnswer((_) => completer.future);
 
           final clip = _createClipWithFile();
           final bloc = buildBloc(audioExtractionService: mockService);

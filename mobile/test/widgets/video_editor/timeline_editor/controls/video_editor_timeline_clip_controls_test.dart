@@ -73,8 +73,9 @@ void main() {
     testWidgets(
       'Done button passes null onDone to controls while isExtractingAudio',
       (tester) async {
-        when(() => bloc.state)
-            .thenReturn(const ClipEditorState(isExtractingAudio: true));
+        when(
+          () => bloc.state,
+        ).thenReturn(const ClipEditorState(isExtractingAudio: true));
         await tester.pumpWidget(build());
 
         final controls = tester.widget<VideoEditorTimelineControls>(
