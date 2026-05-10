@@ -173,8 +173,13 @@ class _ProfileHeaderWidgetState extends ConsumerState<ProfileHeaderWidget> {
       isLoadingIdentity = asyncProfile.isLoading && asyncProfile.value == null;
     }
 
-    _syncIdentitySkeletonTimer(isLoading: isLoadingIdentity);
     final showIdentitySkeleton = isLoadingIdentity && !_identityTimeoutExpired;
+    // Drive the skeleton timeout timer from a post-frame callback rather
+    // than mutating timer state during build. The `_wasLoadingIdentity`
+    // guard inside `_syncIdentitySkeletonTimer` keeps this idempotent.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncIdentitySkeletonTimer(isLoading: isLoadingIdentity);
+    });
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
@@ -418,10 +423,7 @@ class _ProfileNameAndBio extends StatelessWidget {
     return Column(
       children: [
         if (profile != null)
-          UserName.fromUserProfile(
-            profile!,
-            style: VineTheme.titleLargeFont(),
-          )
+          UserName.fromUserProfile(profile!, style: VineTheme.titleLargeFont())
         else
           UserName.fromPubKey(
             userIdHex,
