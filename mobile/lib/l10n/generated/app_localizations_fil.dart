@@ -895,7 +895,7 @@ class AppLocalizationsFil extends AppLocalizations {
 
   @override
   String get profileSetupExternalNip05InvalidFormat =>
-      'Invalid na NIP-05 format (hal. name@domain.com)';
+      'Invalid NIP-05 format (hal., name@domain.com)';
 
   @override
   String get profileSetupExternalNip05DivineDomain =>
