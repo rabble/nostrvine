@@ -1650,7 +1650,7 @@ class DmRepository {
   Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
     return _conversationsDao
         .watchAcceptedConversations(limit: limit, ownerPubkey: _ownerPubkey)
-        .map((rows) => rows.map(_conversationFromRow).toList());
+        .asyncMap(_overlayLatestMessages);
   }
 
   /// Watch conversations where the user has never sent a message.
@@ -1661,7 +1661,41 @@ class DmRepository {
   Stream<List<DmConversation>> watchPotentialRequests() {
     return _conversationsDao
         .watchPotentialRequestConversations(ownerPubkey: _ownerPubkey)
-        .map((rows) => rows.map(_conversationFromRow).toList());
+        .asyncMap(_overlayLatestMessages);
+  }
+
+  /// Replaces each row's denormalized last-message fields with the actual
+  /// latest message from `direct_messages`, then re-sorts by that
+  /// timestamp. The conversations table's `lastMessageContent` /
+  /// `lastMessageTimestamp` columns can drift out of sync (e.g. an older
+  /// gift wrap arriving after a newer one writes back during backfill),
+  /// so the messages table is the source of truth for the inbox preview.
+  Future<List<DmConversation>> _overlayLatestMessages(
+    List<ConversationRow> rows,
+  ) async {
+    final overlaid = await Future.wait(
+      rows.map((row) async {
+        final base = _conversationFromRow(row);
+        final latest = (await _directMessagesDao.getMessagesForConversation(
+          row.id,
+          limit: 1,
+          ownerPubkey: _ownerPubkey,
+        )).firstOrNull;
+        if (latest == null) return base;
+        final preview = latest.messageKind == EventKind.fileMessage
+            ? _filePreviewText(latest.fileType)
+            : latest.content;
+        return base.copyWith(
+          lastMessageContent: preview,
+          lastMessageTimestamp: latest.createdAt,
+          lastMessageSenderPubkey: latest.senderPubkey,
+        );
+      }),
+    );
+    overlaid.sort(
+      (a, b) => b.effectiveTimestamp.compareTo(a.effectiveTimestamp),
+    );
+    return overlaid;
   }
 
   /// Classifies potential request conversations by follow state.
