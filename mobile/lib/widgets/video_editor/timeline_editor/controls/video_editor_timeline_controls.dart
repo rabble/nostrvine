@@ -21,7 +21,7 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onSplit;
   final VoidCallback? onExtractAudio;
   final bool isExtractingAudio;
-  final VoidCallback onDone;
+  final VoidCallback? onDone;
 
   @override
   Widget build(BuildContext context) {

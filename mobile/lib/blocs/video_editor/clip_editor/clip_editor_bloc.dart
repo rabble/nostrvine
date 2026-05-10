@@ -437,14 +437,41 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
 
     emit(state.copyWith(isExtractingAudio: true));
 
-    // Compute the absolute start position of this clip in the timeline.
-    var clipStart = Duration.zero;
-    for (var i = 0; i < state.currentClipIndex; i++) {
-      clipStart += clips[i].trimmedDuration;
-    }
-
     try {
       final result = await _audioExtractionService.extractAudio(videoPath);
+
+      // Reconcile against current state after the async gap.
+      // Other event handlers (remove, split, insert) may have mutated
+      // the clip list while extraction was running. Using the pre-await
+      // snapshot would overwrite newer state or resurrect deleted clips.
+      final currentClips = state.clips;
+      final currentIndex = currentClips.indexWhere((c) => c.id == clip.id);
+      if (currentIndex == -1) {
+        // Source clip was removed while extraction was in progress —
+        // discard the result to avoid resurrecting a deleted clip.
+        Log.warning(
+          '⚠️ Audio extraction result discarded: clip ${clip.id} '
+          'no longer exists in the timeline',
+          name: 'ClipEditorBloc',
+          category: LogCategory.video,
+        );
+        emit(
+          state.copyWith(
+            isExtractingAudio: false,
+            lastAudioExtraction: ClipAudioExtractionNoLocalFile(),
+          ),
+        );
+        return;
+      }
+
+      final currentClip = currentClips[currentIndex];
+
+      // Recompute absolute start from current state so clips inserted
+      // or removed before this one are accounted for.
+      var clipStart = Duration.zero;
+      for (var i = 0; i < currentIndex; i++) {
+        clipStart += currentClips[i].trimmedDuration;
+      }
 
       final audioEvent = AudioEvent(
         id: 'local_extracted_${DateTime.now().microsecondsSinceEpoch}',
@@ -454,20 +481,19 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         mimeType: result.mimeType,
         sha256: result.sha256Hash,
         fileSize: result.fileSize,
-        duration: clip.duration.inMilliseconds / 1000,
+        duration: currentClip.duration.inMilliseconds / 1000,
         title: event.clipTitle,
-        startOffset: clip.trimStart,
+        startOffset: currentClip.trimStart,
         startTime: clipStart,
-        endTime: clipStart + clip.trimmedDuration,
+        endTime: clipStart + currentClip.trimmedDuration,
       );
 
       // Mute the source clip now that its audio has been extracted.
-      final index = clips.indexWhere((c) => c.id == clip.id);
-      final newClips = List<DivineVideoClip>.of(clips)
-        ..[index] = clip.copyWith(volume: 0);
+      final newClips = List<DivineVideoClip>.of(currentClips)
+        ..[currentIndex] = currentClip.copyWith(volume: 0);
 
       Log.info(
-        '🎵 Audio extracted for clip ${clip.id}',
+        '🎵 Audio extracted for clip ${currentClip.id}',
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );

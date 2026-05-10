@@ -296,9 +296,11 @@ internal class DivineVideoPlayerInstance(
         exoPlayer.setMediaItems(mediaItems, startIndex, startLocalMs)
         exoPlayer.prepare()
         isResettingPlayer = false
-        // Apply the first clip's per-clip volume immediately so the correct
-        // level is audible as soon as the decoder is ready.
-        exoPlayer.volume = (clipVolumes.firstOrNull() ?: 1.0f) * volume.toFloat()
+        // Apply the starting clip's per-clip volume immediately so the correct
+        // level is audible as soon as the decoder is ready. Use startIndex
+        // (not 0) so a resume mid-playlist doesn't play clip 0's volume
+        // before onMediaItemTransition can correct it.
+        exoPlayer.volume = clipVolumes.getOrElse(startIndex) { 1.0f } * volume.toFloat()
         // While ExoPlayer buffers to the seek position, report the target
         // position so the timeline doesn't show intermediate values.
         pendingGlobalStartMs = globalStartMs

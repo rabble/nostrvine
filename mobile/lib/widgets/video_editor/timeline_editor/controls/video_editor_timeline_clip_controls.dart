@@ -42,9 +42,15 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
         onSplit: () => _splitClip(context),
         onExtractAudio: () => _requestExtractAudio(context),
         isExtractingAudio: isExtractingAudio,
-        onDone: () {
-          context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped());
-        },
+        // Blocked while extraction is in progress so TimelineClipControls
+        // stays mounted and its BlocListener can handle the result.
+        onDone: isExtractingAudio
+            ? null
+            : () {
+                context
+                    .read<ClipEditorBloc>()
+                    .add(const ClipEditorEditingStopped());
+              },
       ),
     );
   }
