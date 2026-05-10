@@ -170,7 +170,7 @@ void main() {
         expect(capturedEvent, isNotNull);
         final timeDiff = (capturedEvent!.createdAt - beforeSend).abs();
         expect(timeDiff, lessThanOrEqualTo(60 * 60 * 24 * 2));
-        expect(capturedEvent!.createdAt, lessThan(afterSend));
+        expect(capturedEvent!.createdAt, lessThanOrEqualTo(afterSend));
       });
 
       test(
