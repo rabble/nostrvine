@@ -32,10 +32,8 @@ class ProfileTabThumbnail extends StatelessWidget {
       return LayoutBuilder(
         builder: (context, constraints) {
           final rawWidth = constraints.maxWidth;
-          // Only memCacheWidth is set. ResizeImage scales proportionally from
-          // the width, so a portrait thumbnail (e.g. 9:16) is decoded at
-          // tile_width × taller_pixels. BoxFit.cover then crops the excess
-          // height — no upscaling, no quality loss.
+          // Decode at tile_width × DPR so the profile grid stays under the
+          // default ImageCache budget without upscaling. See PR #4220 (#4190).
           final memCacheWidth = rawWidth.isFinite && rawWidth > 0
               ? (rawWidth * MediaQuery.devicePixelRatioOf(context)).round()
               : null;
