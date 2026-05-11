@@ -75,6 +75,37 @@ void main() {
       await expectLater(stream, emitsError(isA<StateError>()));
     });
 
+    // UX contract: when a refresh fails the caller already received stale data
+    // and should keep showing it. The cache entry must survive the error so the
+    // next caller can serve the stale value again rather than a blank screen.
+    test(
+      'emits stale cached value then error when cache has data '
+      'and fetch fails — stale entry survives',
+      () async {
+        await dao.write(key: 'stale:err', payload: '99');
+
+        final stream = CacheSync.watchOne<int>(
+          key: 'stale:err',
+          fetch: () async => throw StateError('network down'),
+          fromJson: int.parse,
+          toJson: (v) => '$v',
+        );
+
+        await expectLater(
+          stream,
+          emitsInOrder([
+            isA<CacheResult<int>>()
+                .having((r) => r.isStale, 'isStale', isTrue)
+                .having((r) => r.data, 'data', equals(99)),
+            emitsError(isA<StateError>()),
+          ]),
+        );
+
+        // Cache entry must NOT be wiped after a failed refresh.
+        expect(dao.rawRead('stale:err'), equals('99'));
+      },
+    );
+
     test('cacheOnly policy never calls fetch', () async {
       await dao.write(key: 'only:key', payload: '5');
       var fetchCalled = false;

@@ -75,6 +75,37 @@ void main() {
       await expectLater(stream, emitsError(isA<StateError>()));
     });
 
+    // UX contract: when the source fails the caller already received stale data
+    // and should keep showing it. The cache entry must survive the error so the
+    // next caller can serve the stale value again rather than a blank screen.
+    test(
+      'emits stale cached value then error when cache has data '
+      'and source fails — stale entry survives',
+      () async {
+        await dao.write(key: 'ws:stale:err', payload: '77');
+
+        final stream = CacheSync.watchStream<int>(
+          key: 'ws:stale:err',
+          source: () => Stream<int>.error(StateError('relay disconnected')),
+          fromJson: int.parse,
+          toJson: (v) => '$v',
+        );
+
+        await expectLater(
+          stream,
+          emitsInOrder([
+            isA<CacheResult<int>>()
+                .having((r) => r.isStale, 'isStale', isTrue)
+                .having((r) => r.data, 'data', equals(77)),
+            emitsError(isA<StateError>()),
+          ]),
+        );
+
+        // Cache entry must NOT be wiped after a failed source — no data loss.
+        expect(dao.rawRead('ws:stale:err'), equals('77'));
+      },
+    );
+
     test('cacheOnly policy never subscribes to source', () async {
       await dao.write(key: 'ws:only', payload: '5');
       var subscribed = false;
