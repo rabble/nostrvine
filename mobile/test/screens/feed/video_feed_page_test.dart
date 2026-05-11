@@ -359,9 +359,7 @@ void main() {
       clearInteractions(videoFeedBloc);
       clearInteractions(videoFeedController);
 
-      tester.binding.handleAppLifecycleStateChanged(
-        AppLifecycleState.resumed,
-      );
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
 
       verify(
@@ -769,36 +767,33 @@ void main() {
       },
     );
 
-    testWidgets(
-      'wraps the loaded feed in a RefreshIndicator that dispatches '
-      'VideoFeedRefreshRequested on pull',
-      (tester) async {
-        final testVideo = createTestVideoEvent();
-        final state = VideoFeedState(
-          status: VideoFeedStatus.success,
-          videos: [testVideo],
-        );
+    testWidgets('wraps the loaded feed in a RefreshIndicator that dispatches '
+        'VideoFeedRefreshRequested on pull', (tester) async {
+      final testVideo = createTestVideoEvent();
+      final state = VideoFeedState(
+        status: VideoFeedStatus.success,
+        videos: [testVideo],
+      );
 
-        stubControllerForVideo(testVideo);
+      stubControllerForVideo(testVideo);
 
-        await tester.pumpWidget(buildSubject(state));
-        await tester.pump();
+      await tester.pumpWidget(buildSubject(state));
+      await tester.pump();
 
-        expect(find.byType(RefreshIndicator), findsOneWidget);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
 
-        final indicator = tester.widget<RefreshIndicator>(
-          find.byType(RefreshIndicator),
-        );
-        // _refreshFeed awaits bloc.stream which the mock never emits, so
-        // we don't await — the event is added synchronously.
-        unawaited(indicator.onRefresh());
-        await tester.pump();
+      final indicator = tester.widget<RefreshIndicator>(
+        find.byType(RefreshIndicator),
+      );
+      // _refreshFeed awaits bloc.stream which the mock never emits, so
+      // we don't await — the event is added synchronously.
+      unawaited(indicator.onRefresh());
+      await tester.pump();
 
-        verify(
-          () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
-        ).called(1);
-      },
-    );
+      verify(
+        () => videoFeedBloc.add(const VideoFeedRefreshRequested()),
+      ).called(1);
+    });
 
     testWidgets(
       'forces always-scrollable physics so Android produces the start-edge '
@@ -819,10 +814,7 @@ void main() {
           find.byType(PooledVideoFeed),
         );
 
-        expect(
-          pooledVideoFeed.physics,
-          isA<AlwaysScrollableScrollPhysics>(),
-        );
+        expect(pooledVideoFeed.physics, isA<AlwaysScrollableScrollPhysics>());
       },
     );
   });
@@ -854,7 +846,7 @@ void main() {
       InfiniteVideoFeed.debugIsSupportedOverride = false;
     });
 
-    Widget buildSubject(VideoFeedState state) {
+    Widget buildSubject(VideoFeedState state, {bool nativeFeedEnabled = true}) {
       when(() => videoFeedBloc.state).thenReturn(state);
 
       return testMaterialApp(
@@ -864,7 +856,7 @@ void main() {
           ),
           isFeatureEnabledProvider(
             FeatureFlag.nativeFeedPlayer,
-          ).overrideWithValue(true),
+          ).overrideWithValue(nativeFeedEnabled),
         ],
         home: MultiBlocProvider(
           providers: [
@@ -895,6 +887,23 @@ void main() {
       expect(find.byType(PooledVideoFeed), findsNothing);
       expect(find.byType(WebVideoFeed), findsNothing);
     });
+
+    testWidgets(
+      'renders PooledVideoFeed when supported but flag is off',
+      (tester) async {
+        final state = VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: [createTestVideoEvent()],
+        );
+
+        await tester.pumpWidget(buildSubject(state, nativeFeedEnabled: false));
+        await tester.pump();
+
+        expect(find.byType(PooledVideoFeed), findsOneWidget);
+        expect(find.byType(InfiniteVideoFeed), findsNothing);
+        expect(find.byType(WebVideoFeed), findsNothing);
+      },
+    );
   });
 
   group('VideoFeedView auto advance', () {
@@ -1028,10 +1037,7 @@ void main() {
 
       // Open the popover and confirm the playback-mode toggle renders.
       await _openSettingsMenu(tester);
-      expect(
-        find.bySemanticsLabel('Enable auto advance'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Enable auto advance'), findsOneWidget);
     });
 
     testWidgets('advances to the next home video after one completed play', (

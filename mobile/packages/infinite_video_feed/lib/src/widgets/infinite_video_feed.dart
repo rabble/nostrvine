@@ -65,6 +65,7 @@ class InfiniteVideoFeed extends StatefulWidget {
   static bool? _isSupportedOverrideForTesting;
 
   // coverage:ignore-start
+  // Test hook used by app-layer widget tests outside this package.
   /// Current test override for [isSupported].
   @visibleForTesting
   static bool? get debugIsSupportedOverride => _isSupportedOverrideForTesting;
@@ -321,10 +322,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     late final double page;
     if (_pageController.hasClients) {
       page = _pageController.page ?? _currentIndex.toDouble();
-      // coverage:ignore-start
     } else {
       page = _currentIndex.toDouble();
-      // coverage:ignore-end
     }
     if ((_pagePosition.value - page).abs() < 0.0001) return;
     _pagePosition.value = page;
@@ -345,17 +344,13 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _prefetcher = DiskPrefetcher(cache: widget.cache, log: _log);
     _watchdog = LoadWatchdog(
       threshold: widget.slowLoadThreshold,
-      // coverage:ignore-start
       onSlowLoad: (index) => unawaited(_retryWithNextSource(index)),
       log: _log,
-      // coverage:ignore-end
     );
     _staleDetector = StalePlaybackDetector(
       onSeekRecovery: _seekKick,
-      // coverage:ignore-start
       onSourceFailover: (index) => unawaited(_retryWithNextSource(index)),
       log: _log,
-      // coverage:ignore-end
     );
     _subscriptions = ControllerSubscriptions();
 
@@ -459,10 +454,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     if (mounted) setState(() {});
   }
 
-  // coverage:ignore-start
   String? _resolveUrl(VideoEvent video) =>
       widget.urlResolver?.call(video) ?? video.videoUrl;
-  // coverage:ignore-end
 
   // ─── Index change → window + prefetch ───────────────────────────────────
 
@@ -506,10 +499,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
     if (widget.keepPreviousAlive &&
         index - 1 >= 0 &&
-        // coverage:ignore-start
         !_controllers.containsKey(index - 1)) {
       unawaited(_initController(index - 1));
-      // coverage:ignore-end
     }
 
     if (widget.keepNextAlive &&
@@ -542,7 +533,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   Future<void> _runPrefetch(int index) async {
     if (widget.prefetchCount <= 0) return;
 
-    // coverage:ignore-start
     final lastIndex = widget.videos.length - 1;
     final prefetchStart = widget.keepNextAlive ? index + 2 : index + 1;
     final prefetchEnd = (index + widget.prefetchCount).clamp(0, lastIndex);
@@ -570,7 +560,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
         // but HLS playback needs re-streaming the manifest + segments.
       ).where((url) => !isHlsManifest(url)).toList(),
     );
-    // coverage:ignore-end
   }
 
   void _teardownAllControllers() {
@@ -595,6 +584,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }
 
   // coverage:ignore-start
+  // Disposal is driven by live controller-window churn. Widget tests can
+  // cover the call sites, but the native-controller disposal path itself is
+  // not observable in package tests without platform players.
   void _disposeAt(int index) {
     _log('Disposing player at index $index');
     _subscriptions.unsubscribe(index);
@@ -608,7 +600,6 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _errorTypes.remove(index);
     _sources.remove(index);
     unawaited(_controllers.remove(index)?.dispose());
-    // coverage:ignore-end
   }
 
   // ─── Controller init / retry ────────────────────────────────────────────
@@ -647,6 +638,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       await controller.initialize();
 
       // coverage:ignore-start
+      // Native controller initialization and source selection require the
+      // platform player. Package tests cover the surrounding window/update
+      // orchestration, but not the end-to-end texture-backed init flow.
       // Always resolve network sources. They are used as runtime fallbacks
       // even when the video is loaded from disk cache (in case the cached
       // file is corrupt or unreadable).
@@ -747,10 +741,11 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     }
 
     _rebuild();
-    // coverage:ignore-end
   }
 
   // coverage:ignore-start
+  // Manual retry delegates back into native controller init, which is not
+  // executable in package tests without platform players.
   Future<void> _retryController(int index) async {
     _errors.remove(index);
     _errorTypes.remove(index);
@@ -770,6 +765,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // ─── Source failover (called by watchdog + stale detector) ──────────────
 
   // coverage:ignore-start
+  // Source failover depends on runtime native playback errors and source
+  // switching on an initialized controller, which package tests cannot
+  // simulate without the platform player backend.
   Future<void> _retryWithNextSource(int index) async {
     if (!_sources.hasSources(index)) {
       _log('No sources to retry for index $index');
@@ -823,6 +821,8 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // coverage:ignore-end
 
   // coverage:ignore-start
+  // Stall recovery is only reached from watchdog / stale-detector callbacks
+  // tied to native playback state streams.
   void _onVideoStalled(int index) {
     _log('Video stalled index $index — marking error');
     _stopAndMarkError(index, VideoErrorType.generic);
@@ -863,16 +863,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // ─── Subscription wiring ────────────────────────────────────────────────
 
   // coverage:ignore-start
-  void _attachSubscriptions(
-    int index,
-    DivineVideoPlayerController controller,
-  ) {
+  // Subscription callbacks are driven by native controller streams. Package
+  // tests cover the builder/callback contract around them, but not the
+  // platform-emitted stream traffic itself.
+  void _attachSubscriptions(int index, DivineVideoPlayerController controller) {
     _subscriptions
-      ..subscribeToDimensions(
-        index,
-        controller,
-        onDimensionsReady: _rebuild,
-      )
+      ..subscribeToDimensions(index, controller, onDimensionsReady: _rebuild)
       ..subscribeToPlaybackErrors(
         index,
         controller,
@@ -952,6 +948,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // ─── Page changes ───────────────────────────────────────────────────────
 
   // coverage:ignore-start
+  // Page-change side effects are coupled to controller readiness on native
+  // players. Existing tests cover page replacement and callback wiring, but
+  // not pause/play against real initialized platform controllers.
   void _onPageChanged(int index) {
     final previousIndex = _currentIndex;
     _log('Page changed: $previousIndex → $index');
@@ -1006,11 +1005,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   bool _isSquareVideo(DivineVideoPlayerController? controller) {
     if (controller == null) return false;
     final state = controller.state;
-    // coverage:ignore-start
     return state.videoWidth > 0 &&
         state.videoHeight > 0 &&
         state.videoWidth == state.videoHeight;
-    // coverage:ignore-end
   }
 
   // ─── Build ──────────────────────────────────────────────────────────────
@@ -1053,29 +1050,21 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
               ),
 
             if (!hasError && hasVideoSize)
-              // coverage:ignore-start
-              widget.videoBuilder?.call(
-                    context,
-                    index,
-                    controller,
-                  ) ??
+              widget.videoBuilder?.call(context, index, controller) ??
                   VideoItemWidget(
                     controller: controller,
                     shouldPortraitExpand: widget.shouldPortraitExpand,
                   ),
-            // coverage:ignore-end
             // Overlay layer — consumer-provided controls, progress, etc.
             ?overlay,
 
             if (hasError)
-              // coverage:ignore-start
               ?widget.errorBuilder?.call(
                 context,
                 index,
                 () => unawaited(_retryController(index)),
                 _errorTypes[index] ?? VideoErrorType.generic,
               ),
-            // coverage:ignore-end
           ],
         );
       },

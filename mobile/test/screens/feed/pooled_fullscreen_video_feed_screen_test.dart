@@ -596,8 +596,34 @@ void main() {
           InfiniteVideoFeed.debugIsSupportedOverride = false;
         });
 
+        testWidgets('renders FeedVideos + InfiniteVideoFeed when supported', (
+          tester,
+        ) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+              additionalOverrides: [
+                isFeatureEnabledProvider(
+                  FeatureFlag.nativeFeedPlayer,
+                ).overrideWithValue(true),
+              ],
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(FeedVideos), findsOneWidget);
+          expect(find.byType(InfiniteVideoFeed), findsOneWidget);
+          expect(find.byType(PooledVideoFeed), findsNothing);
+          expect(find.byType(WebVideoFeed), findsNothing);
+        });
+
         testWidgets(
-          'renders FeedVideos + InfiniteVideoFeed when supported',
+          'renders PooledVideoFeed when supported but flag is off',
           (tester) async {
             final videos = createTestVideos();
 
@@ -610,15 +636,14 @@ void main() {
                 additionalOverrides: [
                   isFeatureEnabledProvider(
                     FeatureFlag.nativeFeedPlayer,
-                  ).overrideWithValue(true),
+                  ).overrideWithValue(false),
                 ],
               ),
             );
             await tester.pump();
 
-            expect(find.byType(FeedVideos), findsOneWidget);
-            expect(find.byType(InfiniteVideoFeed), findsOneWidget);
-            expect(find.byType(PooledVideoFeed), findsNothing);
+            expect(find.byType(PooledVideoFeed), findsOneWidget);
+            expect(find.byType(InfiniteVideoFeed), findsNothing);
             expect(find.byType(WebVideoFeed), findsNothing);
           },
         );
