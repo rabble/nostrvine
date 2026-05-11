@@ -20,11 +20,53 @@
 |---|---|---|
 | `mobile/lib/widgets/video_feed_item/feed_playback_toggles_pill.dart` | **Create** | Public widget: scrim-30 capsule with three toggles (auto-advance, mute, captions) + the shared `_PopoverToggle` chip. Reads `FeedAutoAdvanceCubit`, `VideoVolumeCubit`, `subtitleVisibilityProvider` directly — no constructor params. |
 | `mobile/lib/screens/feed/feed_settings_menu.dart` | **Modify** | `_FeedSettingsOverlay` renders `FeedPlaybackTogglesPill` instead of the inlined widget. Delete `_PlaybackSettingsPopover`, `_PlaybackModeToggle`, `_AudioToggle`, `_CaptionsToggle`, `_PopoverToggle`. |
-| `mobile/lib/widgets/video_feed_item/paused_video_play_overlay.dart` | **Modify** | (1) Render `FeedPlaybackTogglesPill` above the play icon in `_PausedAffordance`. (2) Drop `_hasStartedPlayback` field + `_subscribeToPlayback` latching logic + `didUpdateWidget` latch reset (`_pausedAt` / unpause-feedback logic stays). (3) Drop `onToggleMuteState` constructor param. (4) Change `shouldShowPlay` to `!isPlaying && !isBuffering`. (5) Drop the `_PausedAffordance.onToggleMuteState` field and the single mute toggle inside it. |
-| `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart` | **Modify** | Replace the "keeps play affordance visible when remounted" test (which asserts the old latch behavior) with new tests that assert (a) pause icon shows immediately when `isPlaying==false && isBuffering==false`, (b) pause icon stays hidden during buffering, (c) the pill renders above the play icon when paused. Migrate test fixture: drop `onToggleMuteState: () {}` and provide `FeedAutoAdvanceCubit` + `VideoVolumeCubit` + `ProviderScope` so the pill renders without throwing. Update the existing unpause-feedback tests' fixture identically. |
+| `mobile/lib/widgets/video_feed_item/paused_video_play_overlay.dart` | **Modify** | (1) Render `FeedPlaybackTogglesPill` above the play icon in `_PausedAffordance`. (2) Drop `_hasStartedPlayback` field + `_subscribeToPlayback` latching logic + `didUpdateWidget` latch reset (`_pausedAt` / unpause-feedback logic stays). (3) Drop `onToggleMuteState` constructor param. (4) Change `shouldShowPlay` to `!isPlaying && !isBuffering`. (5) Drop the `_PausedAffordance.onToggleMuteState` field and the single mute toggle inside it. (6) Drop the now-unused `StreamBuilder<double>` (volume stream) wrapper inside `_PausedVideoPlayOverlayState.build`. |
+| `mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart` | **Modify** | Remove the now-stale 3-line comment at lines 1287–1289 ("Mute toggle intentionally omitted: the popover in the app bar's customActions slot is now the sole entry point, matching the home feed."). After this change, the mute toggle is back inside the pill rendered by the paused overlay; leaving the comment violates the "comments go stale" rule. No code change at the call site (already doesn't pass `onToggleMuteState`). |
+| `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart` | **Modify** | Replace the "keeps play affordance visible when remounted" test (which asserts the old latch behavior) with new tests that assert (a) pause icon shows immediately when `isPlaying==false && isBuffering==false`, (b) pause icon stays hidden during buffering, (c) the pill renders above the play icon when paused. Migrate test fixture: drop `onToggleMuteState: () {}` and provide `FeedAutoAdvanceCubit` + `VideoVolumeCubit` + `ProviderScope` (with `sharedPreferencesProvider` overridden via `createMockSharedPreferences()`) so the pill renders without throwing. Update the existing unpause-feedback tests' fixture identically. |
 | `mobile/test/widgets/video_feed_item/feed_playback_toggles_pill_test.dart` | **Create** | New tests for `FeedPlaybackTogglesPill`: each of the three toggles renders, reflects current state, and dispatches the right side effect on tap. Mirrors what's currently inlined in the popover. |
 
-No other call sites pass `onToggleMuteState` (verified: `grep -n onToggleMuteState mobile/lib/screens/feed/feed_video_overlay.dart mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart` returns nothing — they construct `PausedVideoPlayOverlay` without that param today), so removing it does not require edits at `feed_video_overlay.dart` or `pooled_fullscreen_video_feed_screen.dart`.
+No other call sites pass `onToggleMuteState` (verified: `grep -n onToggleMuteState mobile/lib/screens/feed/feed_video_overlay.dart mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart` returns nothing — they construct `PausedVideoPlayOverlay` without that param today), so removing it does not require code edits at those files (only the stale comment at `pooled_fullscreen_video_feed_screen.dart:1287–1289`).
+
+## Test-fixture invariants (apply to every widget test in this PR)
+
+Both `FeedPlaybackTogglesPill` and `PausedVideoPlayOverlay`-with-pill pump
+`_CaptionsToggle`, which calls `ref.watch(subtitleVisibilityProvider)`. That
+provider's notifier reads `ref.read(sharedPreferencesProvider)`, which
+**throws `UnimplementedError` by default** (`mobile/lib/providers/shared_preferences_provider.dart:4–9`).
+Every `ProviderScope` / `ProviderContainer` in this PR's tests therefore
+needs an override:
+
+```dart
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../helpers/test_provider_overrides.dart';
+// adjust relative path: from test/widgets/video_feed_item/ it's ../../helpers/
+
+late SharedPreferences mockPrefs;
+
+setUp(() {
+  mockPrefs = createMockSharedPreferences();
+  // …other setup…
+});
+
+// Inside buildSubject / each test that creates a ProviderScope or ProviderContainer:
+ProviderScope(
+  overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+  child: …,
+)
+```
+
+`createMockSharedPreferences()` (in `test/helpers/test_provider_overrides.dart`)
+returns a stub where `getBool(any()) → null`, so
+`subtitleVisibilityProvider`'s initial value resolves to `prefs.getBool(...) ?? true = true`
+(see `mobile/lib/providers/subtitle_providers.dart` — the default is `true`,
+**not** `false`; an initial-state assertion of `isFalse` is wrong).
+
+**Do NOT** add `import 'package:openvine/blocs/video_volume/video_volume_state.dart';`
+to any test file. `video_volume_state.dart` is a `part of 'video_volume_cubit.dart';`
+file (first line of the source); importing a part file directly is a Dart
+compile error. `VideoVolumeState` is exported transitively through
+`import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';`.
 
 ---
 
@@ -367,6 +409,13 @@ EOF
 
 - [ ] **Step 1: Write the new test file**
 
+This test uses semantic-label finders (resolved from `AppLocalizations`)
+instead of `find.byType(GestureDetector)`. The pill renders three
+`GestureDetector`s today, but the surrounding test scaffold also creates
+incidental `GestureDetector`s (Material's tap-catchers), so counting by
+type is fragile. Each toggle has a unique `Semantics(label: …)` wrapper,
+which makes `find.bySemanticsLabel` precise and refactor-resistant.
+
 ```dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -374,11 +423,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
-import 'package:openvine/blocs/video_volume/video_volume_state.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockVideoVolumeCubit extends Mock implements VideoVolumeCubit {}
 
@@ -386,6 +438,9 @@ void main() {
   group(FeedPlaybackTogglesPill, () {
     late FeedAutoAdvanceCubit autoAdvanceCubit;
     late VideoVolumeCubit volumeCubit;
+    late SharedPreferences mockPrefs;
+
+    final l10n = lookupAppLocalizations(const Locale('en'));
 
     setUp(() {
       autoAdvanceCubit = FeedAutoAdvanceCubit();
@@ -393,26 +448,40 @@ void main() {
       when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
       when(() => volumeCubit.stream)
           .thenAnswer((_) => const Stream<VideoVolumeState>.empty());
+      mockPrefs = createMockSharedPreferences();
     });
 
     tearDown(() async {
       await autoAdvanceCubit.close();
     });
 
-    Widget buildSubject({bool reducedMotion = false}) {
+    Widget buildSubject({
+      bool reducedMotion = false,
+      bool provideAutoAdvance = true,
+    }) {
+      Widget pill = const Scaffold(body: FeedPlaybackTogglesPill());
+
+      pill = provideAutoAdvance
+          ? MultiBlocProvider(
+              providers: [
+                BlocProvider<FeedAutoAdvanceCubit>.value(value: autoAdvanceCubit),
+                BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
+              ],
+              child: pill,
+            )
+          : BlocProvider<VideoVolumeCubit>.value(
+              value: volumeCubit,
+              child: pill,
+            );
+
       return ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: MediaQuery(
             data: MediaQueryData(disableAnimations: reducedMotion),
-            child: MultiBlocProvider(
-              providers: [
-                BlocProvider<FeedAutoAdvanceCubit>.value(value: autoAdvanceCubit),
-                BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
-              ],
-              child: const Scaffold(body: FeedPlaybackTogglesPill()),
-            ),
+            child: pill,
           ),
         ),
       );
@@ -421,25 +490,42 @@ void main() {
     testWidgets('renders all three toggles when cubits are in scope',
         (tester) async {
       await tester.pumpWidget(buildSubject());
-      // 3 _PopoverToggle = 3 GestureDetectors inside the pill body.
+      // subtitleVisibilityProvider defaults to true (prefs.getBool ?? true),
+      // so the captions toggle's initial label is the "disable" variant.
       expect(
-        find.byType(GestureDetector),
-        findsNWidgets(3),
-        reason: 'expected 3 toggles in the pill',
+        find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel(l10n.videoPlayerMute), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(l10n.videoSettingsCaptionsDisable),
+        findsOneWidget,
       );
     });
 
     testWidgets('hides the compilations toggle under reduced motion',
         (tester) async {
       await tester.pumpWidget(buildSubject(reducedMotion: true));
-      expect(find.byType(GestureDetector), findsNWidgets(2));
+      expect(
+        find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel(l10n.videoActionDisableAutoAdvance),
+        findsNothing,
+      );
+      // Mute + CC still present.
+      expect(find.bySemanticsLabel(l10n.videoPlayerMute), findsOneWidget);
     });
 
     testWidgets('tapping the captions toggle flips subtitle visibility',
         (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+      );
       addTearDown(container.dispose);
-      expect(container.read(subtitleVisibilityProvider), isFalse);
+      // Default getBool(any()) → null, falls through to `?? true`.
+      expect(container.read(subtitleVisibilityProvider), isTrue);
 
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -458,10 +544,11 @@ void main() {
         ),
       );
 
-      // Tap the CC toggle (last GestureDetector in the row).
-      await tester.tap(find.byType(GestureDetector).last);
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoSettingsCaptionsDisable),
+      );
       await tester.pump();
-      expect(container.read(subtitleVisibilityProvider), isTrue);
+      expect(container.read(subtitleVisibilityProvider), isFalse);
     });
 
     testWidgets(
@@ -471,9 +558,7 @@ void main() {
           .thenReturn(const VideoVolumeState(volume: 1));
       await tester.pumpWidget(buildSubject());
 
-      // Mute toggle is the middle GestureDetector (index 1) when
-      // compilations is visible.
-      await tester.tap(find.byType(GestureDetector).at(1));
+      await tester.tap(find.bySemanticsLabel(l10n.videoPlayerMute));
       await tester.pump();
 
       verify(() => volumeCubit.onPlaybackVolumeChanged(0)).called(1);
@@ -485,7 +570,9 @@ void main() {
       expect(autoAdvanceCubit.state.enabled, isFalse);
       await tester.pumpWidget(buildSubject());
 
-      await tester.tap(find.byType(GestureDetector).first);
+      await tester.tap(
+        find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+      );
       await tester.pump();
 
       expect(autoAdvanceCubit.state.enabled, isTrue);
@@ -493,21 +580,13 @@ void main() {
 
     testWidgets('renders without the compilations toggle when '
         'FeedAutoAdvanceCubit is not provided', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: BlocProvider<VideoVolumeCubit>.value(
-              value: volumeCubit,
-              child: const Scaffold(body: FeedPlaybackTogglesPill()),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildSubject(provideAutoAdvance: false));
 
-      // 2 toggles (mute + CC), no compilations.
-      expect(find.byType(GestureDetector), findsNWidgets(2));
+      expect(
+        find.bySemanticsLabel(l10n.videoActionEnableAutoAdvance),
+        findsNothing,
+      );
+      expect(find.bySemanticsLabel(l10n.videoPlayerMute), findsOneWidget);
     });
   });
 }
@@ -521,7 +600,9 @@ cd mobile && mise exec -- flutter test test/widgets/video_feed_item/feed_playbac
 
 Expected: 6/6 passing.
 
-If a test fails on the `VideoVolumeState` constructor or `volume` field name, **stop**: open `mobile/lib/blocs/video_volume/video_volume_state.dart` and adjust the test to use whatever the real constructor / property shape is. The plan uses `const VideoVolumeState()` and `VideoVolumeState(volume: 1)` as best guesses given current usage at `feed_settings_menu.dart:215` and `main.dart:1648`.
+If a test fails on the `VideoVolumeState` constructor or `volume` field name, **stop**: open `mobile/lib/blocs/video_volume/video_volume_state.dart` and adjust the test to use whatever the real constructor / property shape is. The plan uses `const VideoVolumeState()` and `VideoVolumeState(volume: 1)` based on the verified source — `class VideoVolumeState extends Equatable` with `this.volume = 1.0` default and `final double volume`. Implicit `int→double` conversion in const contexts is supported, so `volume: 1` and `volume: 1.0` are both valid.
+
+If a test fails with `UnimplementedError` from `sharedPreferencesProvider`, you missed the `overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)]` on one of the `ProviderScope`/`ProviderContainer` constructions. Every Riverpod scope in this file must override it.
 
 - [ ] **Step 3: Commit**
 
@@ -554,14 +635,18 @@ icon. Driven from the existing tests that need to be updated first
 
 In `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart`:
 
-1. Add the imports the test will need for cubits + Riverpod:
+1. Add the imports the test will need (do NOT import
+   `video_volume_state.dart` — it's a `part of video_volume_cubit.dart`):
    ```dart
    import 'package:flutter_bloc/flutter_bloc.dart';
    import 'package:flutter_riverpod/flutter_riverpod.dart';
    import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
-   import 'package:openvine/blocs/video_volume/video_volume_state.dart';
+   import 'package:openvine/providers/shared_preferences_provider.dart';
    import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
    import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
+   import 'package:shared_preferences/shared_preferences.dart';
+
+   import '../../helpers/test_provider_overrides.dart';
    ```
 2. Add a private mock:
    ```dart
@@ -571,6 +656,7 @@ In `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart`:
    ```dart
    late FeedAutoAdvanceCubit autoAdvanceCubit;
    late VideoVolumeCubit volumeCubit;
+   late SharedPreferences mockPrefs;
    ```
    In `setUp`, initialize them:
    ```dart
@@ -579,16 +665,21 @@ In `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart`:
    when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
    when(() => volumeCubit.stream)
        .thenAnswer((_) => const Stream<VideoVolumeState>.empty());
+   mockPrefs = createMockSharedPreferences();
    ```
    In `tearDown`, close the cubit:
    ```dart
    await autoAdvanceCubit.close();
    ```
-4. Replace the `buildSubject` body with the version below (wraps the
-   overlay in cubit providers + `ProviderScope`, drops `onToggleMuteState`):
+4. Replace the `buildSubject` body with the version below. It wraps the
+   overlay in `ProviderScope` (with the required `sharedPreferencesProvider`
+   override — without it the pill's captions toggle throws), the two
+   cubit providers, drops `onToggleMuteState`, and keeps everything else
+   the same:
    ```dart
    Widget buildSubject({Key? key}) {
      return ProviderScope(
+       overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
        child: MultiBlocProvider(
          providers: [
            BlocProvider<FeedAutoAdvanceCubit>.value(value: autoAdvanceCubit),
@@ -609,6 +700,10 @@ In `mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart`:
      );
    }
    ```
+   The unpause-feedback tests pump a second `MaterialApp` mid-test (the
+   "swap to SizedBox.shrink" pattern). Those interim pumps don't need
+   the provider wrapper because they don't pump `PausedVideoPlayOverlay`.
+   Verify by running the suite at Step 3 below.
 
 - [ ] **Step 2: Replace the "keeps the play affordance visible when remounted" test**
 
@@ -656,6 +751,19 @@ testWidgets(
 
     expect(find.byType(FeedPlaybackTogglesPill), findsOneWidget);
     expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
+
+    // "Above" means: smaller y coordinate. If a future regression
+    // moves the pill below the play icon (e.g. Row instead of Column),
+    // this assertion catches it.
+    final pillCenter =
+        tester.getCenter(find.byType(FeedPlaybackTogglesPill));
+    final playCenter =
+        tester.getCenter(find.byKey(const ValueKey('paused-play')));
+    expect(
+      pillCenter.dy,
+      lessThan(playCenter.dy),
+      reason: 'pill should sit above the play icon',
+    );
   },
 );
 ```
@@ -693,10 +801,23 @@ Apply these changes:
    Remove the now-unused `package:flutter/semantics.dart` import — the
    only `SemanticsService.sendAnnouncement` call was inside
    `_PausedAffordance`'s mute toggle, which is being deleted.
-2. **Constructor.** Remove the `onToggleMuteState` named parameter and
-   field. Update the doc comment block above
-   `PausedVideoPlayOverlay` (currently mentions
-   "in-pause mute toggle") to describe the new pill placement.
+2. **Constructor & doc comments.** Remove the `onToggleMuteState` named
+   parameter and field (and its associated doc comment, currently
+   `paused_video_play_overlay.dart` lines 28–33). Then rewrite the doc
+   comment on the `_PausedAffordance` class (currently lines 316–319,
+   which describes "optional mute toggle (non-web) above the large play
+   icon" and the `onToggleMuteState == null` branch) to describe the
+   new composition:
+   ```dart
+   /// The paused-state stack: the playback-toggles pill
+   /// ([FeedPlaybackTogglesPill]) above the large play icon. The pill
+   /// reads its own state from app-wide cubits/providers, so this widget
+   /// takes no callbacks.
+   ```
+   Leave the top-of-file doc comment on `PausedVideoPlayOverlay` (lines
+   12–14) alone — it still describes the widget's purpose accurately
+   ("Large centered play affordance shown when a pooled video is
+   paused, plus a brief 'unpause' feedback…").
 3. **State.** In `_PausedVideoPlayOverlayState`:
    - Delete the `bool _hasStartedPlayback = false;` field and its doc
      comment.
@@ -762,9 +883,11 @@ Apply these changes:
      }
    }
    ```
-   Update the `_PlaybackChrome.shouldShowPlay` branch:
+   Update the `_PlaybackChrome.shouldShowPlay` branch — note the
+   `const` constructor call (preserves the const-ness the existing
+   code relied on for the `ValueKey('paused-play')` literal):
    ```dart
-   child = _PausedAffordance(key: const ValueKey('paused-play'));
+   child = const _PausedAffordance(key: ValueKey('paused-play'));
    ```
    The two `_PausedAffordance.isMuted`/`onToggleMuteState` arguments
    in the existing call disappear. Also drop the `isMuted` and
@@ -785,10 +908,27 @@ Apply these changes:
    > callback on the controller forwards player volume back into the
    > cubit). Cubit and player stay in sync.
 
-- [ ] **Step 2: Run analyze on the changed file**
+- [ ] **Step 1b: Remove the stale comment at the fullscreen call site**
+
+In `mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart`,
+delete the 3-line comment at lines 1287–1289:
+
+```dart
+// Mute toggle intentionally omitted: the popover in
+// the app bar's customActions slot is now the sole
+// entry point, matching the home feed.
+```
+
+The call site itself doesn't change — it already doesn't pass
+`onToggleMuteState`. Only the comment is wrong after the refactor (the
+mute toggle is back inside the pill rendered by the paused overlay).
+
+- [ ] **Step 2: Run analyze on the changed files**
 
 ```bash
-cd mobile && mise exec -- flutter analyze lib/widgets/video_feed_item/paused_video_play_overlay.dart
+cd mobile && mise exec -- flutter analyze \
+  lib/widgets/video_feed_item/paused_video_play_overlay.dart \
+  lib/screens/feed/pooled_fullscreen_video_feed_screen.dart
 ```
 
 Expected: clean.
@@ -803,10 +943,11 @@ Expected: 5/5 passing (3 new + 2 existing unpause-feedback).
 
 If the unpause-feedback tests fail with a missing `FeedPlaybackTogglesPill` provider error, double-check Task 2.1 Step 1 wrapped `buildSubject` in `ProviderScope` + the two `BlocProvider.value`s.
 
-- [ ] **Step 4: Commit (both files together)**
+- [ ] **Step 4: Commit (all three files together)**
 
 ```bash
 git add mobile/lib/widgets/video_feed_item/paused_video_play_overlay.dart \
+        mobile/lib/screens/feed/pooled_fullscreen_video_feed_screen.dart \
         mobile/test/widgets/video_feed_item/paused_video_play_overlay_test.dart
 git commit -m "$(cat <<'EOF'
 feat(video): show pause icon reliably and surface toggles when paused
@@ -816,10 +957,13 @@ prior play before showing the pause icon — pausing during initial load
 or before first-play now renders the affordance. Buffering still hides
 it to avoid loop-restart blips.
 
-Replaces the optional single mute toggle inside the paused affordance
-with the full FeedPlaybackTogglesPill (compilations / mute / CC), so
-the three controls are discoverable contextually on every video
-surface that uses PausedVideoPlayOverlay.
+Adds the three contextual toggles (compilations / mute / CC) above the
+play icon via the shared FeedPlaybackTogglesPill. Today, the paused
+affordance renders no toggles at either call site (home feed and
+fullscreen pooled feed both pass nothing for onToggleMuteState).
+
+Also removes the now-stale "mute toggle intentionally omitted" comment
+at pooled_fullscreen_video_feed_screen.dart.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -917,6 +1061,28 @@ On a flaky network (Network Link Conditioner or airplane-mode toggle
 mid-load), pause a video that's still buffering. Verify the pause icon
 **does not** flash during buffer; it appears once buffering completes
 and the player is paused.
+
+- [ ] **Step 5: Smoke test the preload-flicker regression**
+
+The dropped `_hasStartedPlayback` latch was originally introduced to
+prevent a flicker on preloaded videos: during preload a pooled player
+is *played muted for buffering then paused* — under the new logic the
+brief paused window between `isPlaying=false` and the player resuming
+will render the play icon, then immediately swap to playing through the
+180 ms `AnimatedSwitcher`.
+
+To exercise:
+
+1. On the home feed, swipe quickly between 4–5 consecutive videos
+   without lingering. Each swipe lands on a preloaded item.
+2. Watch the center of the screen at the moment a new video appears.
+   Verify the play icon does **not** flash before playback starts.
+
+If it does flash, the contingency from the spec applies: introduce a
+short debounce (~100 ms) before showing `_PausedAffordance`. Do NOT
+reintroduce the full `_hasStartedPlayback` latch — that defeats the
+whole change. Log it as a follow-up issue if the flash is borderline,
+or block the PR if it's obvious.
 
 ### Task 3.3: Rebase, push, open PR
 
