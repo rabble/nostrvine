@@ -1,0 +1,125 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group('MinorAccountReviewUnder13SupportScreen', () {
+    testWidgets('shows copy affordances and copies values', (tester) async {
+      String? copiedText;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copiedText =
+                  (call.arguments as Map<Object?, Object?>)['text'] as String?;
+            }
+            return null;
+          });
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null);
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'case-under13',
+                  state: MinorReviewCaseState.restrictedPendingSupportEmail,
+                  suspectedAgeBand: SuspectedAgeBand.under13,
+                  allowedResolution: MinorReviewResolutionType.supportEmailOnly,
+                  instructions: MinorReviewInstructions(
+                    title: 'Under-13 review',
+                    body: 'Parent support is required.',
+                  ),
+                  supportEmail: 'contact@divine.video',
+                ),
+              );
+            }),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewUnder13SupportScreen(),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Copy support email'), findsOneWidget);
+      expect(find.byTooltip('Copy case ID'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Copy support email'));
+      await tester.pumpAndSettle();
+
+      expect(copiedText, 'contact@divine.video');
+    });
+
+    testWidgets('opens email with the prepared under-13 guidance', (
+      tester,
+    ) async {
+      String? sentToEmail;
+      String? sentSubject;
+      String? sentBody;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentMinorAccountReviewStatusProvider.overrideWith((ref) async {
+              return const MinorAccountReviewStatus(
+                restrictionStatus:
+                    AccountRestrictionStatus.restrictedMinorReview,
+                currentCase: MinorReviewCase(
+                  id: 'case-under13',
+                  state: MinorReviewCaseState.restrictedPendingSupportEmail,
+                  suspectedAgeBand: SuspectedAgeBand.under13,
+                  allowedResolution: MinorReviewResolutionType.supportEmailOnly,
+                  instructions: MinorReviewInstructions(
+                    title: 'Under-13 review',
+                    body: 'Parent support is required.',
+                  ),
+                  supportEmail: 'contact@divine.video',
+                ),
+              );
+            }),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MinorAccountReviewUnder13SupportScreen(
+              composeEmail:
+                  ({
+                    required String toEmail,
+                    required String subject,
+                    required String body,
+                  }) async {
+                    sentToEmail = toEmail;
+                    sentSubject = subject;
+                    sentBody = body;
+                  },
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open email app'));
+      await tester.pumpAndSettle();
+
+      expect(sentToEmail, 'contact@divine.video');
+      expect(sentSubject, 'Under-13 account review for case case-under13');
+      expect(sentBody, contains('I am the parent or guardian'));
+    });
+  });
+}

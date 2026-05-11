@@ -33,11 +33,7 @@ void main() {
       },
     );
 
-    await composer.compose(
-      toEmail: toEmail,
-      subject: subject,
-      body: body,
-    );
+    await composer.compose(toEmail: toEmail, subject: subject, body: body);
 
     expect(launchedUri, isNotNull);
     expect(launchedUri!.scheme, 'mailto');
@@ -66,11 +62,7 @@ void main() {
       },
     );
 
-    await composer.compose(
-      toEmail: toEmail,
-      subject: subject,
-      body: body,
-    );
+    await composer.compose(toEmail: toEmail, subject: subject, body: body);
 
     expect(launchedUri, isNotNull);
     expect(launchedUri!.scheme, 'mailto');
@@ -97,13 +89,11 @@ void main() {
         },
       );
 
-      await composer.compose(
-        toEmail: toEmail,
-        subject: subject,
-        body: body,
-      );
+      await composer.compose(toEmail: toEmail, subject: subject, body: body);
 
-      expect(sharedText, toEmail);
+      expect(sharedText, contains(toEmail));
+      expect(sharedText, contains(subject));
+      expect(sharedText, contains(body));
       expect(sharedSubject, subject);
     },
   );
@@ -122,12 +112,10 @@ void main() {
       },
     );
 
-    await composer.compose(
-      toEmail: toEmail,
-      subject: subject,
-      body: body,
-    );
+    await composer.compose(toEmail: toEmail, subject: subject, body: body);
 
-    expect(sharedText, toEmail);
+    expect(sharedText, contains(toEmail));
+    expect(sharedText, contains(subject));
+    expect(sharedText, contains(body));
   });
 }

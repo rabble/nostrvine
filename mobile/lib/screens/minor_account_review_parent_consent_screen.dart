@@ -5,13 +5,37 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/support_email_composer.dart';
 
+typedef MinorAccountReviewComposeEmail =
+    Future<void> Function({
+      required String toEmail,
+      required String subject,
+      required String body,
+    });
+
+final _defaultMinorAccountReviewSupportEmailComposer = SupportEmailComposer();
+
+Future<void> _composeMinorAccountReviewSupportEmail({
+  required String toEmail,
+  required String subject,
+  required String body,
+}) {
+  return _defaultMinorAccountReviewSupportEmailComposer.compose(
+    toEmail: toEmail,
+    subject: subject,
+    body: body,
+  );
+}
+
 class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
   static const routeName = 'minor-account-review-parent-consent';
   static const path = '/account-review/parent-consent';
 
-  static final _supportEmailComposer = SupportEmailComposer();
+  const MinorAccountReviewParentConsentScreen({
+    super.key,
+    this.composeEmail = _composeMinorAccountReviewSupportEmail,
+  });
 
-  const MinorAccountReviewParentConsentScreen({super.key});
+  final MinorAccountReviewComposeEmail composeEmail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,7 +118,7 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
 
   Future<void> _emailSupport(BuildContext context) async {
     try {
-      await _supportEmailComposer.compose(
+      await composeEmail(
         toEmail: AppConstants.supportEmail,
         subject: context.l10n.minorAccountReviewParentConsentEmailSubject,
         body: context.l10n.minorAccountReviewParentConsentEmailBody,
@@ -137,10 +161,12 @@ class _ChecklistCard extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.only(top: 4),
-                    child: Icon(
-                      Icons.check_circle_outline,
-                      size: 16,
-                      color: VineTheme.vineGreen,
+                    child: ExcludeSemantics(
+                      child: DivineIcon(
+                        icon: DivineIconName.checkCircle,
+                        size: 16,
+                        color: VineTheme.vineGreen,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),

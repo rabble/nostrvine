@@ -16,6 +16,7 @@ import 'package:openvine/screens/minor_account_review_parent_contact_screen.dart
 import 'package:openvine/screens/minor_account_review_under13_screen.dart';
 import 'package:openvine/screens/minor_account_review_under13_support_screen.dart';
 import 'package:openvine/screens/settings/support_center_screen.dart';
+import 'package:unified_logger/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum MinorAccountReviewEntryPoint { welcome, moderation }
@@ -57,11 +58,17 @@ class MinorAccountReviewScreen extends ConsumerWidget {
               data: (status) => _LoadedView(status: status),
               loading: () =>
                   const Center(child: PartialCircleSpinner(progress: 0.33)),
-              error: (error, _) => _ErrorView(
-                error: error,
-                onRetry: () =>
-                    ref.invalidate(currentMinorAccountReviewStatusProvider),
-              ),
+              error: (error, _) {
+                Log.error(
+                  'Failed to load account review status: $error',
+                  name: 'MinorAccountReviewScreen',
+                  category: LogCategory.ui,
+                );
+                return _ErrorView(
+                  onRetry: () =>
+                      ref.invalidate(currentMinorAccountReviewStatusProvider),
+                );
+              },
             ),
           ),
         ),
@@ -475,9 +482,7 @@ class _HeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: VineTheme.vineGreen.withValues(alpha: .2),
-        ),
+        border: Border.all(color: VineTheme.vineGreen.withValues(alpha: .2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,10 +513,12 @@ class _RestrictionLine extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 4),
-            child: Icon(
-              Icons.remove_circle_outline,
-              size: 16,
-              color: VineTheme.vineGreen,
+            child: ExcludeSemantics(
+              child: DivineIcon(
+                icon: DivineIconName.prohibit,
+                size: 16,
+                color: VineTheme.vineGreen,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -557,9 +564,8 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.error, required this.onRetry});
+  const _ErrorView({required this.onRetry});
 
-  final Object error;
   final VoidCallback onRetry;
 
   @override
@@ -576,7 +582,7 @@ class _ErrorView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            '$error',
+            context.l10n.minorAccountReviewErrorBody,
             style: VineTheme.bodySmallFont(color: VineTheme.secondaryText),
             textAlign: TextAlign.center,
           ),

@@ -11,6 +11,7 @@ import 'package:openvine/models/minor_account_review_status.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/minor_account_review_screen.dart';
 import 'package:openvine/utils/validators.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 class MinorAccountReviewParentContactScreen extends ConsumerStatefulWidget {
   static const routeName = 'minor-account-review-parent-contact';
@@ -56,94 +57,29 @@ class _MinorAccountReviewParentContactScreenState
             child: statusAsync.when(
               loading: () =>
                   const Center(child: PartialCircleSpinner(progress: 0.33)),
-              error: (error, _) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    '$error',
-                    style: VineTheme.bodyMediumFont(
-                      color: VineTheme.secondaryText,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+              error: (error, _) {
+                Log.error(
+                  'Failed to load parent-contact review state: $error',
+                  name: 'MinorAccountReviewParentContactScreen',
+                  category: LogCategory.ui,
+                );
+                return _ParentContactLoadErrorView(
+                  onRetry: () =>
+                      ref.invalidate(currentMinorAccountReviewStatusProvider),
+                );
+              },
+              data: (status) => _ParentContactBody(
+                status: status,
+                isSubmitting: _isSubmitting,
+                formKey: _formKey,
+                emailController: _emailController,
+                errorMessage: _errorMessage,
+                submittedEmail: _submittedEmail,
+                onSubmit: _submit,
+                onCheckAgain: () =>
+                    ref.invalidate(currentMinorAccountReviewStatusProvider),
               ),
-              data: (status) => _buildBody(context, status),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBody(BuildContext context, MinorAccountReviewStatus status) {
-    final l10n = context.l10n;
-    final validationMessages = AuthValidationMessages.fromL10n(l10n);
-    final reviewCase = status.currentCase;
-    if (reviewCase == null) {
-      return const _MissingCaseView();
-    }
-
-    if (_submittedEmail != null) {
-      return _SuccessView(
-        email: _submittedEmail!,
-        onCheckAgain: () =>
-            ref.invalidate(currentMinorAccountReviewStatusProvider),
-      );
-    }
-
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.minorAccountReviewParentContactHeading,
-                style: VineTheme.headlineMediumFont(),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.minorAccountReviewParentContactBody(reviewCase.id),
-                style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
-              ),
-              const SizedBox(height: 24),
-              DivineAuthTextField(
-                label: l10n.minorAccountReviewParentContactFieldLabel,
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                autocorrect: false,
-                validator: (value) => Validators.validateEmail(
-                  value,
-                  messages: validationMessages,
-                ),
-              ),
-              if (_errorMessage != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _errorMessage!,
-                  style: VineTheme.bodyMediumFont(color: VineTheme.error),
-                ),
-              ],
-              const SizedBox(height: 24),
-              DivineButton(
-                label: _isSubmitting
-                    ? l10n.minorAccountReviewSubmitting
-                    : l10n.minorAccountReviewSubmitEmail,
-                expanded: true,
-                onPressed: _isSubmitting ? null : () => _submit(reviewCase),
-              ),
-              const SizedBox(height: 12),
-              DivineButton(
-                label: l10n.minorAccountReviewBackToReview,
-                type: DivineButtonType.secondary,
-                expanded: true,
-                onPressed: _isSubmitting ? null : context.pop,
-              ),
-            ],
           ),
         ),
       ),
@@ -204,6 +140,99 @@ class _MinorAccountReviewParentContactScreenState
         setState(() => _isSubmitting = false);
       }
     }
+  }
+}
+
+class _ParentContactBody extends StatelessWidget {
+  const _ParentContactBody({
+    required this.status,
+    required this.isSubmitting,
+    required this.formKey,
+    required this.emailController,
+    required this.errorMessage,
+    required this.submittedEmail,
+    required this.onSubmit,
+    required this.onCheckAgain,
+  });
+
+  final MinorAccountReviewStatus status;
+  final bool isSubmitting;
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final String? errorMessage;
+  final String? submittedEmail;
+  final Future<void> Function(MinorReviewCase reviewCase) onSubmit;
+  final VoidCallback onCheckAgain;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final validationMessages = AuthValidationMessages.fromL10n(l10n);
+    final reviewCase = status.currentCase;
+    if (reviewCase == null) {
+      return const _MissingCaseView();
+    }
+
+    if (submittedEmail != null) {
+      return _SuccessView(email: submittedEmail!, onCheckAgain: onCheckAgain);
+    }
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.minorAccountReviewParentContactHeading,
+                style: VineTheme.headlineMediumFont(),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.minorAccountReviewParentContactBody(reviewCase.id),
+                style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
+              ),
+              const SizedBox(height: 24),
+              DivineAuthTextField(
+                label: l10n.minorAccountReviewParentContactFieldLabel,
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                validator: (value) => Validators.validateEmail(
+                  value,
+                  messages: validationMessages,
+                ),
+              ),
+              if (errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  errorMessage!,
+                  style: VineTheme.bodyMediumFont(color: VineTheme.error),
+                ),
+              ],
+              const SizedBox(height: 24),
+              DivineButton(
+                label: isSubmitting
+                    ? l10n.minorAccountReviewSubmitting
+                    : l10n.minorAccountReviewSubmitEmail,
+                expanded: true,
+                onPressed: isSubmitting ? null : () => onSubmit(reviewCase),
+              ),
+              const SizedBox(height: 12),
+              DivineButton(
+                label: l10n.minorAccountReviewBackToReview,
+                type: DivineButtonType.secondary,
+                expanded: true,
+                onPressed: isSubmitting ? null : context.pop,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -276,6 +305,41 @@ class _MissingCaseView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ParentContactLoadErrorView extends StatelessWidget {
+  const _ParentContactLoadErrorView({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            context.l10n.minorAccountReviewErrorTitle,
+            style: VineTheme.titleMediumFont(),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            context.l10n.minorAccountReviewErrorBody,
+            style: VineTheme.bodyMediumFont(color: VineTheme.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          DivineButton(
+            label: context.l10n.minorAccountReviewTryAgain,
+            expanded: true,
+            onPressed: onRetry,
+          ),
+        ],
       ),
     );
   }

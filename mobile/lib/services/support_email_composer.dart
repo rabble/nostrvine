@@ -9,6 +9,16 @@ typedef AndroidChooserLauncher = Future<void> Function(Uri uri, String title);
 typedef ShareTextLauncher =
     Future<void> Function(String text, {String? subject});
 
+String _buildFallbackShareText({
+  required String toEmail,
+  required String subject,
+  required String body,
+}) {
+  return 'To: $toEmail\n'
+      'Subject: $subject\n\n'
+      '$body';
+}
+
 /// Launches a support email compose flow with platform-appropriate handoff.
 ///
 /// On Android, this uses an explicit chooser around `ACTION_SENDTO` so the
@@ -78,6 +88,9 @@ class SupportEmailComposer {
       );
     }
 
-    await _shareTextLauncher(toEmail, subject: subject);
+    await _shareTextLauncher(
+      _buildFallbackShareText(toEmail: toEmail, subject: subject, body: body),
+      subject: subject,
+    );
   }
 }
