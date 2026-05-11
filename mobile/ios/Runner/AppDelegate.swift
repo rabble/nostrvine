@@ -372,9 +372,11 @@ extension FlutterError: @retroactive Error {}
           self.uploadAttachments(attachmentPaths) { uploadResult in
             switch uploadResult {
             case .success(let uploadResponses):
-              createRequest.attachments = uploadResponses
-              NSLog("🎫 Zendesk: All \(uploadResponses.count) attachments uploaded, creating ticket")
-              submitRequest()
+              DispatchQueue.main.async {
+                createRequest.attachments = uploadResponses
+                NSLog("🎫 Zendesk: All \(uploadResponses.count) attachments uploaded, creating ticket")
+                submitRequest()
+              }
             case .failure(let error):
               DispatchQueue.main.async {
                 result(error)

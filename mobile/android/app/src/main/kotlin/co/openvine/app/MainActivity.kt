@@ -554,14 +554,18 @@ class MainActivity : FlutterActivity() {
 
         fun uploadNext(index: Int) {
             if (index >= paths.size) {
-                onComplete(Result.success(tokens))
+                mainHandler.post {
+                    onComplete(Result.success(tokens))
+                }
                 return
             }
 
             val path = paths[index]
             val file = File(path)
             if (!file.exists()) {
-                onComplete(Result.failure(Exception("Could not read the selected image")))
+                mainHandler.post {
+                    onComplete(Result.failure(Exception("Could not read the selected image")))
+                }
                 return
             }
 
