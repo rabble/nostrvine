@@ -614,6 +614,9 @@ void main() {
   // ---------------------------------------------------------------------------
   group(MetadataCollaboratorsSection, () {
     testWidgets('renders collaborator chips when present', (tester) async {
+      final video = _makeVideo(
+        collaboratorPubkeys: const [_collaborator1, _collaborator2],
+      );
       await tester.pumpWidget(
         buildSubject(
           providerOverrides: [
@@ -624,26 +627,25 @@ void main() {
               (ref) async => _makeProfile(_collaborator2, 'Dan Spurgin'),
             ),
           ],
-          child: const MetadataCollaboratorsSection(
-            collaboratorPubkeys: [_collaborator1, _collaborator2],
-          ),
+          child: MetadataCollaboratorsSection(video: video),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Collaborators'), findsOneWidget);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataCollaboratorsSectionLabel), findsOneWidget);
       expect(find.text('Josh Musick'), findsOneWidget);
       expect(find.text('Dan Spurgin'), findsOneWidget);
     });
 
     testWidgets('hides when no collaborators', (tester) async {
+      final video = _makeVideo();
       await tester.pumpWidget(
-        buildSubject(
-          child: const MetadataCollaboratorsSection(collaboratorPubkeys: []),
-        ),
+        buildSubject(child: MetadataCollaboratorsSection(video: video)),
       );
 
-      expect(find.text('Collaborators'), findsNothing);
+      final l10n = _l10n(tester);
+      expect(find.text(l10n.metadataCollaboratorsSectionLabel), findsNothing);
     });
   });
 

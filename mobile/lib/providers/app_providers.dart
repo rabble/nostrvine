@@ -7,6 +7,7 @@ import 'dart:core';
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
 import 'package:categories_repository/categories_repository.dart';
+import 'package:collaborator_repository/collaborator_repository.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:content_blocklist_repository/content_blocklist_repository.dart';
 import 'package:content_policy/content_policy.dart';
@@ -62,6 +63,7 @@ import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/cawg_verifier_client.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/collaborator_invite_local_state_adapter.dart';
 import 'package:openvine/services/collaborator_invite_state_store.dart';
 import 'package:openvine/services/collaborator_response_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
@@ -182,6 +184,29 @@ final collaboratorInviteStateStoreProvider =
       return CollaboratorInviteStateStore(
         prefs: ref.watch(sharedPreferencesProvider),
       );
+    });
+
+/// Per-video collaborator confirmation status. Returns `null` until
+/// [isNostrReadyProvider] flips, so consumers render a safe fallback
+/// instead of capturing a stale Nostr client.
+final collaboratorConfirmationRepositoryProvider =
+    Provider<CollaboratorConfirmationRepository?>((ref) {
+      if (!ref.watch(isNostrReadyProvider)) return null;
+      final authService = ref.watch(authServiceProvider);
+      final currentUserPubkey = authService.currentPublicKeyHex;
+      if (currentUserPubkey == null || currentUserPubkey.isEmpty) {
+        return null;
+      }
+
+      final nostrClient = ref.watch(nostrServiceProvider);
+      final localStore = ref.watch(collaboratorInviteStateStoreProvider);
+      final repo = CollaboratorConfirmationRepository(
+        nostrClient: nostrClient,
+        localStateReader: CollaboratorInviteLocalStateAdapter(localStore),
+        currentUserPubkey: currentUserPubkey,
+      );
+      ref.onDispose(repo.close);
+      return repo;
     });
 
 final pushNotificationServiceProvider = Provider<PushNotificationService>((

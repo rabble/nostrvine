@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/video_collaborator_status/video_collaborator_status_cubit.dart';
+import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -24,7 +27,7 @@ class MetadataCreatorSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MetadataSection(
-      label: 'Creator',
+      label: context.l10n.metadataCreatorSectionLabel,
       child: _TappableUserChip(pubkey: pubkey),
     );
   }
@@ -32,27 +35,124 @@ class MetadataCreatorSection extends StatelessWidget {
 
 /// Collaborators section showing tappable user chips in a wrapping layout.
 ///
-/// Returns [SizedBox.shrink] when the video has no collaborators.
-class MetadataCollaboratorsSection extends StatelessWidget {
-  const MetadataCollaboratorsSection({
-    required this.collaboratorPubkeys,
-    super.key,
+/// Hides the current user's chip when their local invite store says
+/// `ignored` for this video. Pending collaborator chips are dimmed when
+/// the current user is the video's creator.
+///
+/// Returns [SizedBox.shrink] when the resulting list is empty.
+class MetadataCollaboratorsSection extends ConsumerWidget {
+  const MetadataCollaboratorsSection({required this.video, super.key});
+
+  final VideoEvent video;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!video.hasCollaborators) return const SizedBox.shrink();
+
+    final pubkeys = video.collaboratorPubkeys;
+    final repo = ref.watch(collaboratorConfirmationRepositoryProvider);
+    final currentUserPubkey =
+        ref.watch(authServiceProvider).currentPublicKeyHex ?? '';
+    final videoAddress = video.addressableId;
+
+    if (repo == null || videoAddress == null || currentUserPubkey.isEmpty) {
+      return _CollaboratorsSectionBody(
+        pubkeys: pubkeys,
+        statusByPubkey: const {},
+        currentUserPubkey: currentUserPubkey,
+        isInviterView: false,
+      );
+    }
+
+    return BlocProvider<VideoCollaboratorStatusCubit>(
+      key: ValueKey((repo, videoAddress)),
+      create: (_) => VideoCollaboratorStatusCubit(
+        repository: repo,
+        videoAddress: videoAddress,
+        creatorPubkey: video.pubkey,
+        taggedPubkeys: pubkeys,
+      ),
+      child: _CollaboratorsSectionStatusAware(
+        video: video,
+        pubkeys: pubkeys,
+        currentUserPubkey: currentUserPubkey,
+      ),
+    );
+  }
+}
+
+class _CollaboratorsSectionStatusAware extends StatelessWidget {
+  const _CollaboratorsSectionStatusAware({
+    required this.video,
+    required this.pubkeys,
+    required this.currentUserPubkey,
   });
 
-  final List<String> collaboratorPubkeys;
+  final VideoEvent video;
+  final List<String> pubkeys;
+  final String currentUserPubkey;
 
   @override
   Widget build(BuildContext context) {
-    if (collaboratorPubkeys.isEmpty) return const SizedBox.shrink();
+    final statusByPubkey = context.select(
+      (VideoCollaboratorStatusCubit c) => c.state.statusByPubkey,
+    );
+    final isInviterView = currentUserPubkey == video.pubkey;
+    return _CollaboratorsSectionBody(
+      pubkeys: pubkeys,
+      statusByPubkey: statusByPubkey,
+      currentUserPubkey: currentUserPubkey,
+      isInviterView: isInviterView,
+    );
+  }
+}
+
+class _CollaboratorsSectionBody extends StatelessWidget {
+  const _CollaboratorsSectionBody({
+    required this.pubkeys,
+    required this.statusByPubkey,
+    required this.currentUserPubkey,
+    required this.isInviterView,
+  });
+
+  final List<String> pubkeys;
+  final Map<String, CollaboratorStatus> statusByPubkey;
+  final String currentUserPubkey;
+  final bool isInviterView;
+
+  CollaboratorStatus _statusOf(String pubkey) =>
+      statusByPubkey[pubkey] ?? CollaboratorStatus.pending;
+
+  bool _shouldRender(String pubkey) {
+    if (statusByPubkey.isEmpty) return true;
+    if (pubkey == currentUserPubkey &&
+        _statusOf(pubkey) == CollaboratorStatus.ignored) {
+      return false;
+    }
+    return true;
+  }
+
+  bool _isPendingForInviter(String pubkey) {
+    if (!isInviterView) return false;
+    return _statusOf(pubkey) == CollaboratorStatus.pending;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final visible = pubkeys.where(_shouldRender).toList(growable: false);
+    if (visible.isEmpty) return const SizedBox.shrink();
 
     return MetadataSection(
-      label: 'Collaborators',
+      label: context.l10n.metadataCollaboratorsSectionLabel,
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
         children: [
-          for (final pubkey in collaboratorPubkeys)
-            _TappableUserChip(pubkey: pubkey),
+          for (final pubkey in visible)
+            _TappableUserChip(
+              pubkey: pubkey,
+              isPending: _isPendingForInviter(pubkey),
+            ),
         ],
       ),
     );
@@ -73,7 +173,7 @@ class MetadataInspiredBySection extends StatelessWidget {
     if (pubkey == null) return const SizedBox.shrink();
 
     return MetadataSection(
-      label: 'Inspired by',
+      label: context.l10n.metadataInspiredBySectionLabel,
       child: _TappableUserChip(pubkey: pubkey),
     );
   }
@@ -122,7 +222,7 @@ class _RepostedByContent extends StatelessWidget {
     if (pubkeys.isEmpty) return const SizedBox.shrink();
 
     return MetadataSection(
-      label: 'Reposted by',
+      label: context.l10n.metadataRepostedBySectionLabel,
       child: Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -139,9 +239,10 @@ class _RepostedByContent extends StatelessWidget {
 /// Reuses the same visual style as [VideoMetadataUserChip] but without the
 /// remove button, and adds tap-to-navigate behavior.
 class _TappableUserChip extends ConsumerWidget {
-  const _TappableUserChip({required this.pubkey});
+  const _TappableUserChip({required this.pubkey, this.isPending = false});
 
   final String pubkey;
+  final bool isPending;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -150,37 +251,48 @@ class _TappableUserChip extends ConsumerWidget {
         profileAsync.value?.bestDisplayName ??
         UserProfile.defaultDisplayNameFor(pubkey);
 
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: VineTheme.surfaceContainer,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 8,
+        children: [
+          UserAvatar(
+            imageUrl: profileAsync.value?.picture,
+            name: name,
+            size: 24,
+          ),
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VineTheme.titleSmallFont(),
+            ),
+          ),
+          if (isPending)
+            Text(
+              context.l10n.videoCollaboratorPendingDecoration,
+              style: VineTheme.labelSmallFont(
+                color: VineTheme.onSurfaceMuted,
+              ),
+            ),
+        ],
+      ),
+    );
+
+    final styled = isPending ? Opacity(opacity: 0.7, child: chip) : chip;
+
     return Semantics(
       button: true,
       label: '$name. Tap to view profile.',
       child: GestureDetector(
         onTap: () => _navigateToProfile(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: VineTheme.surfaceContainer,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: 8,
-            children: [
-              UserAvatar(
-                imageUrl: profileAsync.value?.picture,
-                name: name,
-                size: 24,
-              ),
-              Flexible(
-                child: Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: VineTheme.titleSmallFont(),
-                ),
-              ),
-            ],
-          ),
-        ),
+        child: styled,
       ),
     );
   }

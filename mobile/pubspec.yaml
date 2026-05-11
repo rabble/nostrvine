@@ -28,6 +28,7 @@ workspace:
   - packages/blossom_upload_service
   - packages/blurhash_service
   - packages/categories_repository
+  - packages/collaborator_repository
   - packages/comments_repository
   - packages/content_blocklist_repository
   - packages/content_policy
@@ -168,6 +169,9 @@ dependencies:
 
   # Categories Repository - Video categories from Funnelcake API
   categories_repository:
+
+  # Collaborator Repository - Per-video pending/confirmed collaborator status
+  collaborator_repository:
 
   # Content Blocklist Repository - Blocked users, mutual mutes, kind 30000 sync
   content_blocklist_repository:

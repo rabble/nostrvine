@@ -107,9 +107,7 @@ class _MetadataContent extends StatelessWidget {
         MetadataVerificationSection(video: video),
         MetadataCreatorSection(pubkey: video.pubkey),
         MetadataTagsSection(video: video),
-        MetadataCollaboratorsSection(
-          collaboratorPubkeys: video.collaboratorPubkeys,
-        ),
+        MetadataCollaboratorsSection(video: video),
         MetadataInspiredBySection(video: video),
         MetadataRepostedBySection(video: video),
         MetadataSoundsSection(video: video),

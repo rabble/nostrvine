@@ -55,6 +55,9 @@ class RequestPreviewPage extends ConsumerWidget {
             stateStore: ref.watch(collaboratorInviteStateStoreProvider),
             responseService: ref.watch(collaboratorResponseServiceProvider),
             currentUserPubkey: currentPubkey,
+            confirmationRepository: ref.watch(
+              collaboratorConfirmationRepositoryProvider,
+            ),
           ),
         ),
       ],

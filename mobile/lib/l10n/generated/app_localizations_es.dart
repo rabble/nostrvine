@@ -1381,6 +1381,29 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get videoCollaboratorPendingDecoration => 'Pending';
+
+  @override
+  String get videoCollaboratorPendingSemanticLabel => 'Pending collaborator';
+
+  @override
+  String videoCollaboratorWithPendingSuffix(String label, int pending) {
+    return '$label ($pending pending)';
+  }
+
+  @override
+  String get metadataCreatorSectionLabel => 'Creator';
+
+  @override
+  String get metadataCollaboratorsSectionLabel => 'Collaborators';
+
+  @override
+  String get metadataInspiredBySectionLabel => 'Inspired by';
+
+  @override
+  String get metadataRepostedBySectionLabel => 'Reposted by';
+
+  @override
   String get listAttributionFallback => 'Lista';
 
   @override

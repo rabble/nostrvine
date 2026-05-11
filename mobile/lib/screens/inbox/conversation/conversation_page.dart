@@ -45,6 +45,9 @@ class ConversationPage extends ConsumerWidget {
     final inviteResponseService = ref.watch(
       collaboratorResponseServiceProvider,
     );
+    final confirmationRepository = ref.watch(
+      collaboratorConfirmationRepositoryProvider,
+    );
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
@@ -77,12 +80,14 @@ class ConversationPage extends ConsumerWidget {
           key: ValueKey((
             inviteStateStore,
             inviteResponseService,
+            confirmationRepository,
             currentPubkey,
           )),
           create: (_) => CollaboratorInviteActionsCubit(
             stateStore: inviteStateStore,
             responseService: inviteResponseService,
             currentUserPubkey: currentPubkey,
+            confirmationRepository: confirmationRepository,
           ),
         ),
       ],

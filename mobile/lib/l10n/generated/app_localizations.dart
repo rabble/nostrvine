@@ -2452,6 +2452,48 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 collaborator} other{{count} collaborators}}. Tap to view profile.'**
   String videoCollaboratorCountLabel(int count);
 
+  /// Small badge next to a collaborator's name or avatar when the creator (viewing their own video) has invited them but they have not yet accepted.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get videoCollaboratorPendingDecoration;
+
+  /// Screen reader label for a dimmed pending collaborator avatar on the creator's own video.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending collaborator'**
+  String get videoCollaboratorPendingSemanticLabel;
+
+  /// Appends a pending count to the collaborator label on the creator's own video. {label} is the existing 'with @name' / 'with @name +N' phrase.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({pending} pending)'**
+  String videoCollaboratorWithPendingSuffix(String label, int pending);
+
+  /// Section label in the video metadata sheet introducing the author chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator'**
+  String get metadataCreatorSectionLabel;
+
+  /// Section label in the video metadata sheet introducing the collaborator chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Collaborators'**
+  String get metadataCollaboratorsSectionLabel;
+
+  /// Section label in the video metadata sheet introducing the inspired-by attribution chip.
+  ///
+  /// In en, this message translates to:
+  /// **'Inspired by'**
+  String get metadataInspiredBySectionLabel;
+
+  /// Section label in the video metadata sheet introducing the reposter chips.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposted by'**
+  String get metadataRepostedBySectionLabel;
+
   /// No description provided for @listAttributionFallback.
   ///
   /// In en, this message translates to:
