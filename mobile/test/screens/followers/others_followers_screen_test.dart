@@ -69,9 +69,7 @@ void main() {
       when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
       when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
       when(() => mockNostrClient.publicKey).thenReturn(currentUserPubkey);
-      when(
-        () => mockFollowRepository.watchMyFollowingCached(),
-      ).thenAnswer(
+      when(() => mockFollowRepository.watchMyFollowingCached()).thenAnswer(
         (_) => Stream.value(
           const CacheResult.live(
             FollowingSnapshot(pubkeys: <String>[], count: 0),
@@ -80,47 +78,41 @@ void main() {
       );
     });
 
-    testWidgets(
-      'renders follower tiles after followers load',
-      (tester) async {
-        when(
-          () => mockFollowRepository.watchOthersFollowersCached(
-            targetPubkey,
-            forceRefresh: any(named: 'forceRefresh'),
+    testWidgets('renders follower tiles after followers load', (tester) async {
+      when(
+        () => mockFollowRepository.watchOthersFollowersCached(
+          targetPubkey,
+          forceRefresh: any(named: 'forceRefresh'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.value(
+          const CacheResult.live(
+            FollowersSnapshot(pubkeys: [followerPubkey], count: 1),
           ),
-        ).thenAnswer(
-          (_) => Stream.value(
-            const CacheResult.live(
-              FollowersSnapshot(
-                pubkeys: [followerPubkey],
-                count: 1,
-              ),
-            ),
-          ),
-        );
+        ),
+      );
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            home: const OthersFollowersScreen(
-              pubkey: targetPubkey,
-              displayName: 'Alice',
-            ),
-            mockProfileRepository: createMockProfileRepository(),
-            mockNostrService: mockNostrClient,
-            additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(mockFollowRepository),
-              contentBlocklistRepositoryProvider.overrideWithValue(
-                mockBlocklistRepository,
-              ),
-            ],
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: const OthersFollowersScreen(
+            pubkey: targetPubkey,
+            displayName: 'Alice',
           ),
-        );
-        await tester.pump();
-        await tester.pump();
+          mockProfileRepository: createMockProfileRepository(),
+          mockNostrService: mockNostrClient,
+          mockFollowRepository: mockFollowRepository,
+          additionalOverrides: [
+            contentBlocklistRepositoryProvider.overrideWithValue(
+              mockBlocklistRepository,
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
 
-        expect(find.byType(UserProfileTile), findsOneWidget);
-        expect(find.byType(CircularProgressIndicator), findsNothing);
-      },
-    );
+      expect(find.byType(UserProfileTile), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
   });
 }

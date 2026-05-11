@@ -126,11 +126,9 @@ void main() {
                 child: const InboxPage(),
               ),
               mockAuthService: mockAuthService,
+              mockFollowRepository: mockFollowRepository,
               additionalOverrides: [
                 dmRepositoryProvider.overrideWithValue(mockDmRepository),
-                followRepositoryProvider.overrideWithValue(
-                  mockFollowRepository,
-                ),
                 contentBlocklistRepositoryProvider.overrideWithValue(
                   mockBlocklistRepository,
                 ),
@@ -170,9 +168,9 @@ void main() {
               child: const InboxPage(),
             ),
             mockAuthService: mockAuthService,
+            mockFollowRepository: mockFollowRepository,
             additionalOverrides: [
               dmRepositoryProvider.overrideWithValue(mockDmRepository),
-              followRepositoryProvider.overrideWithValue(mockFollowRepository),
               contentBlocklistRepositoryProvider.overrideWithValue(
                 mockBlocklistRepository,
               ),

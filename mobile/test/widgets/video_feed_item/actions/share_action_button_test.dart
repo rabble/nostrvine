@@ -265,10 +265,7 @@ void main() {
         final labelRect = tester.getRect(copyLabel);
 
         await tester.tapAt(
-          Offset(
-            iconRect.center.dx,
-            (iconRect.bottom + labelRect.top) / 2,
-          ),
+          Offset(iconRect.center.dx, (iconRect.bottom + labelRect.top) / 2),
         );
         await tester.pumpAndSettle();
 
@@ -287,13 +284,13 @@ void main() {
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(mockFollowRepository),
               videoSharingServiceProvider.overrideWith(
                 (ref) => mockVideoSharingService,
               ),
             ],
             mockAuthService: mockAuth,
             mockProfileRepository: mockProfileRepository,
+            mockFollowRepository: mockFollowRepository,
           ),
         );
 

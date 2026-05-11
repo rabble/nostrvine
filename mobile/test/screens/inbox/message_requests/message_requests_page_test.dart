@@ -73,9 +73,9 @@ void main() {
           testMaterialApp(
             home: const MessageRequestsPage(),
             mockAuthService: mockAuthService,
+            mockFollowRepository: mockFollowRepository,
             additionalOverrides: [
               dmRepositoryProvider.overrideWithValue(mockDmRepository),
-              followRepositoryProvider.overrideWithValue(mockFollowRepository),
               goRouterProvider.overrideWithValue(mockGoRouter),
             ],
           ),

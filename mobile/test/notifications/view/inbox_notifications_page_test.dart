@@ -15,7 +15,6 @@ import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/inbox_notifications_page.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
-import 'package:openvine/providers/app_providers.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -52,11 +51,11 @@ void main() {
 
     Widget buildSubject() {
       return testMaterialApp(
+        mockFollowRepository: mockFollowRepo,
         additionalOverrides: [
           notificationRepositoryProvider.overrideWithValue(
             mockNotificationRepo,
           ),
-          followRepositoryProvider.overrideWithValue(mockFollowRepo),
         ],
         home: BlocProvider<InviteStatusCubit>.value(
           value: mockInviteCubit,
@@ -65,18 +64,17 @@ void main() {
       );
     }
 
-    testWidgets(
-      'opens the bloc via NotificationFeedStarted on first build',
-      (tester) async {
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+    testWidgets('opens the bloc via NotificationFeedStarted on first build', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        verifyInOrder([
-          () => mockNotificationRepo.refresh(),
-          () => mockNotificationRepo.markAllAsRead(),
-        ]);
-      },
-    );
+      verifyInOrder([
+        () => mockNotificationRepo.refresh(),
+        () => mockNotificationRepo.markAllAsRead(),
+      ]);
+    });
 
     testWidgets(
       'does not fan out refresh + markAllAsRead across the five filter tabs',

@@ -250,9 +250,7 @@ void main() {
             BlocProvider<OthersFollowersBloc>.value(
               value: mockOthersFollowersBloc,
             ),
-            BlocProvider<PeopleListsBloc>.value(
-              value: mockPeopleListsBloc,
-            ),
+            BlocProvider<PeopleListsBloc>.value(value: mockPeopleListsBloc),
           ],
           child: header,
         );
@@ -264,6 +262,7 @@ void main() {
             mockNostrService: mockNostrClient,
             mockSharedPreferences: sharedPreferences,
             mockNip05VerificationService: createMockNip05VerificationService(),
+            mockFollowRepository: mockFollowRepository,
           ),
           fetchUserProfileProvider(userIdHex).overrideWith(
             profileIsLoading
@@ -275,7 +274,6 @@ void main() {
                 ? Stream.value(profileStats)
                 : const Stream<ProfileStats?>.empty(),
           ),
-          followRepositoryProvider.overrideWithValue(mockFollowRepository),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -314,37 +312,36 @@ void main() {
       expect(find.byType(UserAvatar), findsOneWidget);
     });
 
-    testWidgets(
-      'avatar lightbox seeds placeholder with the pubkey so the '
-      'fallback colour matches the rest of the app when the image fails',
-      (tester) async {
-        final testProfile = createTestProfile(
-          displayName: 'Test User',
-          picture: 'https://example.com/broken.jpg',
-        );
+    testWidgets('avatar lightbox seeds placeholder with the pubkey so the '
+        'fallback colour matches the rest of the app when the image fails', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(
+        displayName: 'Test User',
+        picture: 'https://example.com/broken.jpg',
+      );
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profile: testProfile,
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profile: testProfile,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        // Only the header avatar is in the tree before the lightbox opens.
-        expect(find.byType(UserAvatar), findsOneWidget);
+      // Only the header avatar is in the tree before the lightbox opens.
+      expect(find.byType(UserAvatar), findsOneWidget);
 
-        await tester.tap(find.byType(UserAvatar));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byType(UserAvatar));
+      await tester.pumpAndSettle();
 
-        // After opening, the lightbox adds a second UserAvatar at size 288.
-        final lightboxAvatar = tester
-            .widgetList<UserAvatar>(find.byType(UserAvatar))
-            .firstWhere((avatar) => avatar.size == 288);
-        expect(lightboxAvatar.placeholderSeed, equals(testUserHex));
-      },
-    );
+      // After opening, the lightbox adds a second UserAvatar at size 288.
+      final lightboxAvatar = tester
+          .widgetList<UserAvatar>(find.byType(UserAvatar))
+          .firstWhere((avatar) => avatar.size == 288);
+      expect(lightboxAvatar.placeholderSeed, equals(testUserHex));
+    });
 
     testWidgets(
       'uses parent-supplied profile for other users while fallback provider is unresolved',
@@ -629,24 +626,23 @@ void main() {
       expect(find.text('Complete your profile'), findsNothing);
     });
 
-    testWidgets(
-      'renders PeopleListMembershipIndicator for other users',
-      (tester) async {
-        final testProfile = createTestProfile(displayName: 'Other User');
+    testWidgets('renders PeopleListMembershipIndicator for other users', (
+      tester,
+    ) async {
+      final testProfile = createTestProfile(displayName: 'Other User');
 
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: false,
-            suppliedProfile: testProfile,
-            curatedListsEnabled: true,
-          ),
-        );
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: false,
+          suppliedProfile: testProfile,
+          curatedListsEnabled: true,
+        ),
+      );
+      await tester.pumpAndSettle();
 
-        expect(find.byType(PeopleListMembershipIndicator), findsOneWidget);
-      },
-    );
+      expect(find.byType(PeopleListMembershipIndicator), findsOneWidget);
+    });
 
     testWidgets(
       'does not render PeopleListMembershipIndicator for own profile',
@@ -1121,22 +1117,19 @@ void main() {
         },
       );
 
-      testWidgets(
-        'own profile + MyProfileLoading(profile: null) → '
-        'Skeletonizer.enabled = true',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: const MyProfileLoading(),
-            ),
-          );
-          await tester.pump();
+      testWidgets('own profile + MyProfileLoading(profile: null) → '
+          'Skeletonizer.enabled = true', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: const MyProfileLoading(),
+          ),
+        );
+        await tester.pump();
 
-          expect(findIdentitySkeletonizer(tester).enabled, isTrue);
-        },
-      );
+        expect(findIdentitySkeletonizer(tester).enabled, isTrue);
+      });
 
       testWidgets(
         'own profile + MyProfileLoading(profile: cached) → '
@@ -1194,24 +1187,23 @@ void main() {
         },
       );
 
-      testWidgets(
-        'other profile + suppliedProfile non-null → '
-        'Skeletonizer.enabled = false (caller already has data)',
-        (tester) async {
-          final supplied = createTestProfile(displayName: 'Bob');
+      testWidgets('other profile + suppliedProfile non-null → '
+          'Skeletonizer.enabled = false (caller already has data)', (
+        tester,
+      ) async {
+        final supplied = createTestProfile(displayName: 'Bob');
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: false,
-              suppliedProfile: supplied,
-            ),
-          );
-          await tester.pump();
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            suppliedProfile: supplied,
+          ),
+        );
+        await tester.pump();
 
-          expect(findIdentitySkeletonizer(tester).enabled, isFalse);
-        },
-      );
+        expect(findIdentitySkeletonizer(tester).enabled, isFalse);
+      });
 
       testWidgets(
         'skeleton dissolves to fallback after the 7s timeout — even when '
@@ -1242,57 +1234,56 @@ void main() {
         },
       );
 
-      testWidgets(
-        'stats row and action buttons sit outside the identity '
-        'Skeletonizer so they stay tappable during the loading window',
-        (tester) async {
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              myProfileState: const MyProfileInitial(),
-            ),
-          );
-          await tester.pump();
+      testWidgets('stats row and action buttons sit outside the identity '
+          'Skeletonizer so they stay tappable during the loading window', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            myProfileState: const MyProfileInitial(),
+          ),
+        );
+        await tester.pump();
 
-          // The identity Skeletonizer is the first descendant of the
-          // header. Anything that should stay interactive during the
-          // loading window must NOT be a descendant of it.
-          final identitySkeletonizer = find
-              .descendant(
-                of: find.byType(ProfileHeaderWidget),
-                matching: find.bySubtype<Skeletonizer>(),
-              )
-              .first;
+        // The identity Skeletonizer is the first descendant of the
+        // header. Anything that should stay interactive during the
+        // loading window must NOT be a descendant of it.
+        final identitySkeletonizer = find
+            .descendant(
+              of: find.byType(ProfileHeaderWidget),
+              matching: find.bySubtype<Skeletonizer>(),
+            )
+            .first;
 
-          expect(
-            find.descendant(
-              of: identitySkeletonizer,
-              matching: find.byType(ProfileActionButtons),
-            ),
-            findsNothing,
-            reason:
-                'ProfileActionButtons (Library/edit/share) must live outside '
-                'the identity Skeletonizer so the buttons remain tappable '
-                'during the loading window (#4183 review).',
-          );
+        expect(
+          find.descendant(
+            of: identitySkeletonizer,
+            matching: find.byType(ProfileActionButtons),
+          ),
+          findsNothing,
+          reason:
+              'ProfileActionButtons (Library/edit/share) must live outside '
+              'the identity Skeletonizer so the buttons remain tappable '
+              'during the loading window (#4183 review).',
+        );
 
-          // _ProfileStatsRow is private; the stat columns it renders are
-          // the proxy. Their location relative to the identity skeleton
-          // is what matters.
-          expect(
-            find.descendant(
-              of: identitySkeletonizer,
-              matching: find.byType(ProfileStatColumn),
-            ),
-            findsNothing,
-            reason:
-                'Stats columns must live outside the identity Skeletonizer '
-                'so the followers/following/likes/loops counts remain '
-                'tappable during the loading window (#4183 review).',
-          );
-        },
-      );
+        // _ProfileStatsRow is private; the stat columns it renders are
+        // the proxy. Their location relative to the identity skeleton
+        // is what matters.
+        expect(
+          find.descendant(
+            of: identitySkeletonizer,
+            matching: find.byType(ProfileStatColumn),
+          ),
+          findsNothing,
+          reason:
+              'Stats columns must live outside the identity Skeletonizer '
+              'so the followers/following/likes/loops counts remain '
+              'tappable during the loading window (#4183 review).',
+        );
+      });
     });
   });
 

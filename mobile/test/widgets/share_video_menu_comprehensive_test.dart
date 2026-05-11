@@ -425,9 +425,9 @@ void main() {
       ).thenReturn([testContact]);
 
       return testProviderScope(
+        mockFollowRepository: mockFollowRepository,
         additionalOverrides: [
           profileRepositoryProvider.overrideWithValue(mockProfileRepository),
-          followRepositoryProvider.overrideWithValue(mockFollowRepository),
           bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
           videoSharingServiceProvider.overrideWith(
             (ref) => mockVideoSharingService,
@@ -571,9 +571,7 @@ void main() {
 
     setUp(() {
       peopleListsBloc = _MockPeopleListsBloc();
-      when(
-        () => peopleListsBloc.state,
-      ).thenReturn(const PeopleListsState());
+      when(() => peopleListsBloc.state).thenReturn(const PeopleListsState());
       mockAuthService = createMockAuthService();
     });
 

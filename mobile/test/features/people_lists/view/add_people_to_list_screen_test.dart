@@ -18,7 +18,6 @@ import 'package:openvine/features/people_lists/models/people_list_candidate.dart
 import 'package:openvine/features/people_lists/view/add_people_to_list_screen.dart';
 import 'package:openvine/features/people_lists/view/widgets/person_pickable_row.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
-import 'package:openvine/providers/app_providers.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -135,10 +134,7 @@ void main() {
     }
 
     test('exposes route name and path constants', () {
-      expect(
-        AddPeopleToListScreen.routeName,
-        equals('people-list-add-people'),
-      );
+      expect(AddPeopleToListScreen.routeName, equals('people-list-add-people'));
       expect(
         AddPeopleToListScreen.path,
         equals('/people-lists/:listId/add-people'),
@@ -169,25 +165,24 @@ void main() {
       },
     );
 
-    testWidgets(
-      'shows spinner when status is $AddPeopleToListStatus.loading',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('shows spinner when status is $AddPeopleToListStatus.loading', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        await tester.pumpWidget(
-          buildViewSubject(
-            userList: list,
-            cubitState: const AddPeopleToListState(
-              status: AddPeopleToListStatus.loading,
-            ),
+      await tester.pumpWidget(
+        buildViewSubject(
+          userList: list,
+          cubitState: const AddPeopleToListState(
+            status: AddPeopleToListStatus.loading,
           ),
-        );
+        ),
+      );
 
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.byType(PersonPickableRow), findsNothing);
-      },
-    );
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(PersonPickableRow), findsNothing);
+    });
 
     testWidgets(
       'shows retry view when status is $AddPeopleToListStatus.failure',
@@ -272,135 +267,128 @@ void main() {
       },
     );
 
-    testWidgets(
-      'typing in the search field forwards the query to the cubit',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('typing in the search field forwards the query to the cubit', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        await tester.pumpWidget(
-          buildViewSubject(
-            userList: list,
-            cubitState: AddPeopleToListState(
-              status: AddPeopleToListStatus.ready,
-              candidates: [
-                _candidate(_candidateA, displayName: 'Alice'),
-                _candidate(_candidateB, displayName: 'Bob'),
-              ],
-            ),
+      await tester.pumpWidget(
+        buildViewSubject(
+          userList: list,
+          cubitState: AddPeopleToListState(
+            status: AddPeopleToListStatus.ready,
+            candidates: [
+              _candidate(_candidateA, displayName: 'Alice'),
+              _candidate(_candidateB, displayName: 'Bob'),
+            ],
           ),
-        );
+        ),
+      );
 
-        await tester.enterText(find.byType(TextField), 'ali');
-        await tester.pump();
+      await tester.enterText(find.byType(TextField), 'ali');
+      await tester.pump();
 
-        verify(() => cubit.queryChanged('ali')).called(1);
-      },
-    );
+      verify(() => cubit.queryChanged('ali')).called(1);
+    });
 
-    testWidgets(
-      'visibleCandidates drives the rendered row set',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('visibleCandidates drives the rendered row set', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        // Query 'alice' so only Alice's candidate survives the filter.
-        await tester.pumpWidget(
-          buildViewSubject(
-            userList: list,
-            cubitState: AddPeopleToListState(
-              status: AddPeopleToListStatus.ready,
-              query: 'alice',
-              candidates: [
-                _candidate(_candidateA, displayName: 'Alice'),
-                _candidate(_candidateB, displayName: 'Bob'),
-              ],
-            ),
+      // Query 'alice' so only Alice's candidate survives the filter.
+      await tester.pumpWidget(
+        buildViewSubject(
+          userList: list,
+          cubitState: AddPeopleToListState(
+            status: AddPeopleToListStatus.ready,
+            query: 'alice',
+            candidates: [
+              _candidate(_candidateA, displayName: 'Alice'),
+              _candidate(_candidateB, displayName: 'Bob'),
+            ],
           ),
-        );
+        ),
+      );
 
-        final rows = tester
-            .widgetList<PersonPickableRow>(find.byType(PersonPickableRow))
-            .toList();
-        expect(rows, hasLength(1));
-        expect(rows.single.pubkey, equals(_candidateA));
-      },
-    );
+      final rows = tester
+          .widgetList<PersonPickableRow>(find.byType(PersonPickableRow))
+          .toList();
+      expect(rows, hasLength(1));
+      expect(rows.single.pubkey, equals(_candidateA));
+    });
 
-    testWidgets(
-      'tapping a candidate row calls candidateToggled on the cubit',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('tapping a candidate row calls candidateToggled on the cubit', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        await tester.pumpWidget(
-          buildViewSubject(
-            userList: list,
-            cubitState: AddPeopleToListState(
-              status: AddPeopleToListStatus.ready,
-              candidates: [
-                _candidate(_candidateA, displayName: 'Alice'),
-                _candidate(_candidateB, displayName: 'Bob'),
-              ],
-            ),
+      await tester.pumpWidget(
+        buildViewSubject(
+          userList: list,
+          cubitState: AddPeopleToListState(
+            status: AddPeopleToListStatus.ready,
+            candidates: [
+              _candidate(_candidateA, displayName: 'Alice'),
+              _candidate(_candidateB, displayName: 'Bob'),
+            ],
           ),
-        );
+        ),
+      );
 
-        await tester.tap(find.byType(PersonPickableRow).first);
-        await tester.pump();
+      await tester.tap(find.byType(PersonPickableRow).first);
+      await tester.pump();
 
-        verify(() => cubit.candidateToggled(_candidateA)).called(1);
-      },
-    );
+      verify(() => cubit.candidateToggled(_candidateA)).called(1);
+    });
 
-    testWidgets(
-      'Add button is disabled when no candidates are selected',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('Add button is disabled when no candidates are selected', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        await tester.pumpWidget(
-          buildViewSubject(
-            userList: list,
-            cubitState: AddPeopleToListState(
-              status: AddPeopleToListStatus.ready,
-              candidates: [
-                _candidate(_candidateA, displayName: 'Alice'),
-              ],
-            ),
+      await tester.pumpWidget(
+        buildViewSubject(
+          userList: list,
+          cubitState: AddPeopleToListState(
+            status: AddPeopleToListStatus.ready,
+            candidates: [_candidate(_candidateA, displayName: 'Alice')],
           ),
-        );
+        ),
+      );
 
-        final addButton = tester.widget<DivineButton>(
-          find.widgetWithText(DivineButton, 'Add'),
-        );
-        expect(addButton.onPressed, isNull);
-      },
-    );
+      final addButton = tester.widget<DivineButton>(
+        find.widgetWithText(DivineButton, 'Add'),
+      );
+      expect(addButton.onPressed, isNull);
+    });
 
-    testWidgets(
-      'Add button reflects selection count from cubit state',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('Add button reflects selection count from cubit state', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        await tester.pumpWidget(
-          buildViewSubject(
-            userList: list,
-            cubitState: AddPeopleToListState(
-              status: AddPeopleToListStatus.ready,
-              candidates: [
-                _candidate(_candidateA, displayName: 'Alice'),
-                _candidate(_candidateB, displayName: 'Bob'),
-              ],
-              selectedPubkeys: const {_candidateA},
-            ),
+      await tester.pumpWidget(
+        buildViewSubject(
+          userList: list,
+          cubitState: AddPeopleToListState(
+            status: AddPeopleToListStatus.ready,
+            candidates: [
+              _candidate(_candidateA, displayName: 'Alice'),
+              _candidate(_candidateB, displayName: 'Bob'),
+            ],
+            selectedPubkeys: const {_candidateA},
           ),
-        );
+        ),
+      );
 
-        expect(find.widgetWithText(DivineButton, 'Add 1'), findsOneWidget);
-      },
-    );
+      expect(find.widgetWithText(DivineButton, 'Add 1'), findsOneWidget);
+    });
 
     testWidgets(
       'tapping Add dispatches $PeopleListsPubkeyAddRequested for each '
@@ -471,51 +459,42 @@ void main() {
       ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(
         mockFollowRepository.watchMyFollowers,
-      ).thenAnswer(
-        (_) => const Stream<FollowersSnapshot>.empty(),
-      );
+      ).thenAnswer((_) => const Stream<FollowersSnapshot>.empty());
     });
 
     tearDown(() async {
       await bloc.close();
     });
 
-    testWidgets(
-      'renders network candidates seeded from FollowRepository',
-      (tester) async {
-        final list = _buildList(id: 'list-1', name: 'Close Friends');
-        when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
+    testWidgets('renders network candidates seeded from FollowRepository', (
+      tester,
+    ) async {
+      final list = _buildList(id: 'list-1', name: 'Close Friends');
+      when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
 
-        when(
-          () => mockFollowRepository.followingPubkeys,
-        ).thenReturn([_candidateA, _candidateB]);
-        when(
-          () => mockFollowRepository.followingStream,
-        ).thenAnswer(
-          (_) => Stream<List<String>>.fromIterable([
-            [_candidateA, _candidateB],
-          ]),
-        );
+      when(
+        () => mockFollowRepository.followingPubkeys,
+      ).thenReturn([_candidateA, _candidateB]);
+      when(() => mockFollowRepository.followingStream).thenAnswer(
+        (_) => Stream<List<String>>.fromIterable([
+          [_candidateA, _candidateB],
+        ]),
+      );
 
-        await tester.pumpWidget(
-          testMaterialApp(
-            home: BlocProvider<PeopleListsBloc>.value(
-              value: bloc,
-              child: AddPeopleToListScreen(listId: list.id),
-            ),
-            additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(
-                mockFollowRepository,
-              ),
-            ],
+      await tester.pumpWidget(
+        testMaterialApp(
+          home: BlocProvider<PeopleListsBloc>.value(
+            value: bloc,
+            child: AddPeopleToListScreen(listId: list.id),
           ),
-        );
-        await tester.pump();
-        await tester.pump();
+          mockFollowRepository: mockFollowRepository,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
 
-        expect(find.byType(PersonPickableRow), findsNWidgets(2));
-      },
-    );
+      expect(find.byType(PersonPickableRow), findsNWidgets(2));
+    });
 
     testWidgets(
       'empty state is shown only when both follow sources are empty',
@@ -529,11 +508,7 @@ void main() {
               value: bloc,
               child: AddPeopleToListScreen(listId: list.id),
             ),
-            additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(
-                mockFollowRepository,
-              ),
-            ],
+            mockFollowRepository: mockFollowRepository,
           ),
         );
         await tester.pump();
@@ -555,11 +530,7 @@ void main() {
               value: bloc,
               child: const AddPeopleToListScreen(listId: 'missing-id'),
             ),
-            additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(
-                mockFollowRepository,
-              ),
-            ],
+            mockFollowRepository: mockFollowRepository,
           ),
         );
         await tester.pump();
@@ -585,9 +556,7 @@ void main() {
         ).thenAnswer((_) => const Stream<List<String>>.empty());
         when(
           mockFollowRepository.watchMyFollowers,
-        ).thenAnswer(
-          (_) => const Stream<FollowersSnapshot>.empty(),
-        );
+        ).thenAnswer((_) => const Stream<FollowersSnapshot>.empty());
 
         final list = _buildList(id: 'routed-list', name: 'Routed');
         when(() => bloc.state).thenReturn(_stateWith(lists: [list]));
@@ -614,11 +583,7 @@ void main() {
 
         await tester.pumpWidget(
           testProviderScope(
-            additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(
-                mockFollowRepository,
-              ),
-            ],
+            mockFollowRepository: mockFollowRepository,
             child: BlocProvider<PeopleListsBloc>.value(
               value: bloc,
               child: MaterialApp.router(

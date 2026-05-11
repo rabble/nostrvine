@@ -9,7 +9,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_page.dart';
-import 'package:openvine/providers/app_providers.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
@@ -71,38 +70,34 @@ void main() {
 
       Widget buildSubject() {
         return testMaterialApp(
+          mockFollowRepository: mockFollowRepo,
           additionalOverrides: [
             notificationRepositoryProvider.overrideWithValue(
               mockNotificationRepo,
             ),
-            followRepositoryProvider.overrideWithValue(mockFollowRepo),
           ],
           home: const NotificationsPage(),
         );
       }
 
-      testWidgets(
-        'calls repository.refresh() once on open',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+      testWidgets('calls repository.refresh() once on open', (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
 
-          verify(() => mockNotificationRepo.refresh()).called(1);
-        },
-      );
+        verify(() => mockNotificationRepo.refresh()).called(1);
+      });
 
-      testWidgets(
-        'calls repository.markAllAsRead() after refresh succeeds',
-        (tester) async {
-          await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+      testWidgets('calls repository.markAllAsRead() after refresh succeeds', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
 
-          verifyInOrder([
-            () => mockNotificationRepo.refresh(),
-            () => mockNotificationRepo.markAllAsRead(),
-          ]);
-        },
-      );
+        verifyInOrder([
+          () => mockNotificationRepo.refresh(),
+          () => mockNotificationRepo.markAllAsRead(),
+        ]);
+      });
     });
   });
 }

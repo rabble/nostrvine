@@ -89,12 +89,12 @@ void main() {
     Widget buildSubject({String videoId = 'test_video_id'}) {
       return testMaterialApp(
         mockNostrService: mockNostrClient,
+        mockFollowRepository: mockFollowRepository,
         additionalOverrides: [
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistRepositoryProvider.overrideWithValue(
             mockBlocklistRepository,
           ),
-          followRepositoryProvider.overrideWithValue(mockFollowRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
         ],
         home: VideoDetailScreen(
@@ -123,57 +123,49 @@ void main() {
     });
 
     group('video found', () {
-      testWidgets(
-        'renders supplied route video without fetching it again',
-        (tester) async {
-          final initialVideo = createTestVideoEvent(
-            id: 'reply_video_id',
-            pubkey: 'reply_pubkey',
-            title: 'Reply Video',
-            videoUrl: 'https://example.com/reply.mp4',
-          );
+      testWidgets('renders supplied route video without fetching it again', (
+        tester,
+      ) async {
+        final initialVideo = createTestVideoEvent(
+          id: 'reply_video_id',
+          pubkey: 'reply_pubkey',
+          title: 'Reply Video',
+          videoUrl: 'https://example.com/reply.mp4',
+        );
 
-          VideoEvent? capturedVideo;
+        VideoEvent? capturedVideo;
 
-          await tester.pumpWidget(
-            testMaterialApp(
-              mockNostrService: mockNostrClient,
-              additionalOverrides: [
-                videoEventServiceProvider.overrideWithValue(
-                  mockVideoEventService,
-                ),
-                contentBlocklistRepositoryProvider.overrideWithValue(
-                  mockBlocklistRepository,
-                ),
-                followRepositoryProvider.overrideWithValue(
-                  mockFollowRepository,
-                ),
-                videosRepositoryProvider.overrideWithValue(
-                  mockVideosRepository,
-                ),
-              ],
-              home: VideoDetailScreen(
-                videoId: 'reply_video_id',
-                initialVideo: initialVideo,
-                videoFeedBuilder: (video) {
-                  capturedVideo = video;
-                  return const SizedBox(key: Key('video-feed-placeholder'));
-                },
+        await tester.pumpWidget(
+          testMaterialApp(
+            mockNostrService: mockNostrClient,
+            mockFollowRepository: mockFollowRepository,
+            additionalOverrides: [
+              videoEventServiceProvider.overrideWithValue(
+                mockVideoEventService,
               ),
+              contentBlocklistRepositoryProvider.overrideWithValue(
+                mockBlocklistRepository,
+              ),
+              videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+            ],
+            home: VideoDetailScreen(
+              videoId: 'reply_video_id',
+              initialVideo: initialVideo,
+              videoFeedBuilder: (video) {
+                capturedVideo = video;
+                return const SizedBox(key: Key('video-feed-placeholder'));
+              },
             ),
-          );
-          await tester.pump();
+          ),
+        );
+        await tester.pump();
 
-          expect(
-            find.byKey(const Key('video-feed-placeholder')),
-            findsOneWidget,
-          );
-          expect(capturedVideo, same(initialVideo));
-          verifyNever(
-            () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
-          );
-        },
-      );
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+        expect(capturedVideo, same(initialVideo));
+        verifyNever(
+          () => mockVideosRepository.fetchVideoWithStatsForRouteId(any()),
+        );
+      });
 
       testWidgets(
         'renders player once fetchVideoWithStatsForRouteId resolves',
@@ -225,15 +217,13 @@ void main() {
           await tester.pumpWidget(
             testMaterialApp(
               mockNostrService: mockNostrClient,
+              mockFollowRepository: mockFollowRepository,
               additionalOverrides: [
                 videoEventServiceProvider.overrideWithValue(
                   mockVideoEventService,
                 ),
                 contentBlocklistRepositoryProvider.overrideWithValue(
                   mockBlocklistRepository,
-                ),
-                followRepositoryProvider.overrideWithValue(
-                  mockFollowRepository,
                 ),
                 videosRepositoryProvider.overrideWithValue(
                   mockVideosRepository,
@@ -288,6 +278,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             mockNostrService: mockNostrClient,
+            mockFollowRepository: mockFollowRepository,
             additionalOverrides: [
               videoEventServiceProvider.overrideWithValue(
                 mockVideoEventService,
@@ -295,12 +286,7 @@ void main() {
               contentBlocklistRepositoryProvider.overrideWithValue(
                 mockBlocklistRepository,
               ),
-              followRepositoryProvider.overrideWithValue(
-                mockFollowRepository,
-              ),
-              videosRepositoryProvider.overrideWithValue(
-                mockVideosRepository,
-              ),
+              videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             ],
             home: VideoDetailScreen(
               videoId: 'first_video_id',
@@ -318,6 +304,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             mockNostrService: mockNostrClient,
+            mockFollowRepository: mockFollowRepository,
             additionalOverrides: [
               videoEventServiceProvider.overrideWithValue(
                 mockVideoEventService,
@@ -325,12 +312,7 @@ void main() {
               contentBlocklistRepositoryProvider.overrideWithValue(
                 mockBlocklistRepository,
               ),
-              followRepositoryProvider.overrideWithValue(
-                mockFollowRepository,
-              ),
-              videosRepositoryProvider.overrideWithValue(
-                mockVideosRepository,
-              ),
+              videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             ],
             home: VideoDetailScreen(
               videoId: 'second_video_id',
@@ -369,12 +351,12 @@ void main() {
         (tester) async {
           var connectedRelayCount = 0;
           var isInitialized = false;
-          when(() => mockNostrClient.isInitialized).thenAnswer(
-            (_) => isInitialized,
-          );
-          when(() => mockNostrClient.connectedRelayCount).thenAnswer(
-            (_) => connectedRelayCount,
-          );
+          when(
+            () => mockNostrClient.isInitialized,
+          ).thenAnswer((_) => isInitialized);
+          when(
+            () => mockNostrClient.connectedRelayCount,
+          ).thenAnswer((_) => connectedRelayCount);
 
           final video = createTestVideoEvent(
             id: 'cold_start_video',
@@ -463,9 +445,7 @@ void main() {
         expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
       });
 
-      testWidgets('renders player when author has blocked us', (
-        tester,
-      ) async {
+      testWidgets('renders player when author has blocked us', (tester) async {
         final video = createTestVideoEvent(
           id: 'blocked_video_id',
           pubkey: 'blocked_pubkey',
