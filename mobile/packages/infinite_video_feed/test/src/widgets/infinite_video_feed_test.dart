@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:infinite_video_feed/src/widgets/infinite_video_feed.dart';
+import 'package:infinite_video_feed/src/widgets/video_item.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -343,6 +344,82 @@ void main() {
 
         expect(find.text('loading'), findsOneWidget);
         expect(find.text('video'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          eventChannelName,
+          null,
+        );
+      });
+
+      testWidgets('renders default VideoItemWidget when video size is ready', (
+        tester,
+      ) async {
+        DivineVideoPlayerController.resetIdCounterForTesting();
+        const globalChannel = MethodChannel('divine_video_player');
+        const playerChannel = MethodChannel('divine_video_player/player_0');
+        const eventChannelName = 'divine_video_player/player_0/events';
+        const methodCodec = StandardMethodCodec();
+
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          globalChannel,
+          (call) async {
+            if (call.method == 'create') return <Object?, Object?>{};
+            return null;
+          },
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          playerChannel,
+          (_) async => null,
+        );
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          eventChannelName,
+          (message) async {
+            final call = methodCodec.decodeMethodCall(message);
+            if (call.method == 'listen') {
+              scheduleMicrotask(() async {
+                await tester.binding.defaultBinaryMessenger
+                    .handlePlatformMessage(
+                      eventChannelName,
+                      methodCodec.encodeSuccessEnvelope(<Object?, Object?>{
+                        'status': 'ready',
+                        'videoWidth': 1280,
+                        'videoHeight': 720,
+                        'isFirstFrameRendered': true,
+                      }),
+                      (_) {},
+                    );
+              });
+            }
+            return methodCodec.encodeSuccessEnvelope(null);
+          },
+        );
+
+        await tester.pumpWidget(
+          _wrapFeed(
+            InfiniteVideoFeed(
+              videos: [_makeVideo('default_video_builder')],
+              cache: cache,
+              prefetchCount: 0,
+              preloadGracePeriod: Duration.zero,
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(VideoItemWidget), findsOneWidget);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pumpAndSettle();
