@@ -281,12 +281,31 @@ class FollowRepository {
 
   /// Cache-backed stream of the current user's followers.
   ///
-  /// Emits cached data immediately when present, then live updates from
-  /// [watchMyFollowers]. See [CacheSync.watchStream].
+  /// Emits a [CacheResult.cached] if disk-cached data exists, then a single
+  /// [CacheResult.live] once the network fetch resolves.
+  ///
+  /// Uses [CacheSync.watchOne] rather than [CacheSync.watchStream] so that
+  /// [CacheSync] is the single owner of the stale/live boundary. Wrapping
+  /// [watchMyFollowers] with [CacheSync.watchStream] created two cache layers:
+  /// CacheSync emitted the disk entry as [CacheResult.cached], but
+  /// [watchMyFollowers]'s own in-memory phase then emitted an additional
+  /// snapshot that CacheSync incorrectly tagged as [CacheResult.live] before
+  /// the real network fetch had completed, breaking [CacheResult.isLive]
+  /// semantics.
   Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached() {
-    return CacheSync.watchStream<FollowersSnapshot>(
+    return CacheSync.watchOne<FollowersSnapshot>(
       key: _myFollowersCacheKey(_nostrClient.publicKey),
-      source: watchMyFollowers,
+      fetch: () async {
+        final results = await Future.wait([
+          getMyFollowers(),
+          getMyFollowerCount(),
+        ]);
+        final pubkeys = results[0] as List<String>;
+        final countFromService = results[1] as int;
+        final count = max(pubkeys.length, countFromService);
+        _cachedMyFollowerCount = count;
+        return FollowersSnapshot(pubkeys: pubkeys, count: count);
+      },
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
     );
