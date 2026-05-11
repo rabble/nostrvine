@@ -725,6 +725,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       _errorTypes.remove(index);
 
       _attachSubscriptions(index, controller);
+      // coverage:ignore-end
     } on Object catch (e, stackTrace) {
       _log('Error loading index $index (${video.id}): $e');
       developer.log(
