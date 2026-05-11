@@ -433,9 +433,7 @@ class _ProfileSetupScreenViewState
               case PendingBannerStatus.staged:
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(
-                      context.l10n.profileSetupBannerUploadSuccess,
-                    ),
+                    content: Text(context.l10n.profileSetupBannerUploadSuccess),
                     backgroundColor: VineTheme.vineGreen,
                   ),
                 );
@@ -1582,9 +1580,7 @@ class _BannerEditingBlock extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               l10n.profileSetupBannerSectionTitle,
-              style: VineTheme.labelMediumFont(
-                color: VineTheme.onSurfaceMuted,
-              ),
+              style: VineTheme.labelMediumFont(color: VineTheme.onSurfaceMuted),
             ),
           ),
           const _BannerPreview(),
@@ -1596,10 +1592,7 @@ class _BannerEditingBlock extends StatelessWidget {
             runSpacing: 12,
             children: [
               for (var i = 0; i < _bannerSwatchPalette.length; i++)
-                _BannerColorSwatch(
-                  index: i,
-                  color: _bannerSwatchPalette[i],
-                ),
+                _BannerColorSwatch(index: i, color: _bannerSwatchPalette[i]),
             ],
           ),
         ],
@@ -1651,10 +1644,7 @@ class _BannerPreview extends StatelessWidget {
     } else if (pendingColor != null) {
       previewKey = const ValueKey('profile_banner_color_preview');
       child = DecoratedBox(
-        decoration: BoxDecoration(
-          color: pendingColor,
-          borderRadius: radius,
-        ),
+        decoration: BoxDecoration(color: pendingColor, borderRadius: radius),
       );
     } else {
       previewKey = const ValueKey('profile_banner_empty_preview');
@@ -1669,11 +1659,7 @@ class _BannerPreview extends StatelessWidget {
 
     return Stack(
       children: [
-        AspectRatio(
-          key: previewKey,
-          aspectRatio: 3,
-          child: child,
-        ),
+        AspectRatio(key: previewKey, aspectRatio: 3, child: child),
         if (isUploading)
           Positioned.fill(
             child: DecoratedBox(
@@ -1697,6 +1683,10 @@ class _BannerPreview extends StatelessWidget {
 class _BannerActionRow extends StatelessWidget {
   const _BannerActionRow();
 
+  static const _maxBannerImageWidth = 1500.0;
+  static const _maxBannerImageHeight = 500.0;
+  static const _bannerImageQuality = 85;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -1718,10 +1708,7 @@ class _BannerActionRow extends StatelessWidget {
             onPressed: isUploading ? null : () => _pickBannerImage(context),
             style: OutlinedButton.styleFrom(
               foregroundColor: VineTheme.vineGreen,
-              side: const BorderSide(
-                color: VineTheme.outlineMuted,
-                width: 2,
-              ),
+              side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -1743,10 +1730,7 @@ class _BannerActionRow extends StatelessWidget {
                   ),
             style: OutlinedButton.styleFrom(
               foregroundColor: VineTheme.lightText,
-              side: const BorderSide(
-                color: VineTheme.outlineMuted,
-                width: 2,
-              ),
+              side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -1773,8 +1757,9 @@ class _BannerActionRow extends StatelessWidget {
     try {
       picked = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1500,
-        imageQuality: 85,
+        maxWidth: _maxBannerImageWidth,
+        maxHeight: _maxBannerImageHeight,
+        imageQuality: _bannerImageQuality,
         requestFullMetadata: false,
       );
     } catch (e) {
@@ -1786,9 +1771,11 @@ class _BannerActionRow extends StatelessWidget {
       return;
     }
     if (picked == null) return;
+    if (!context.mounted) return;
 
     if (kIsWeb) {
       final bytes = await picked.readAsBytes();
+      if (!context.mounted) return;
       editorBloc.add(
         ProfileBannerUploadRequested(
           pubkey: pk,
@@ -1798,10 +1785,7 @@ class _BannerActionRow extends StatelessWidget {
       );
     } else {
       editorBloc.add(
-        ProfileBannerUploadRequested(
-          pubkey: pk,
-          file: File(picked.path),
-        ),
+        ProfileBannerUploadRequested(pubkey: pk, file: File(picked.path)),
       );
     }
   }
@@ -1918,10 +1902,7 @@ class _GetVerifiedTile extends StatelessWidget {
         l10n.profileEditGetVerifiedSubtitle,
         style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
       ),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: VineTheme.lightText,
-      ),
+      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
       onTap: () => context.read<ProfileEditorBloc>().add(
         const VerifierLaunchRequested(),
       ),

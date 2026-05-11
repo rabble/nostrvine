@@ -687,95 +687,85 @@ void main() {
     }
 
     group('banner block', () {
-      testWidgets(
-        'pre-filled hex banner shows color preview',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              persistedBanner: '0x33ccbf',
-              pendingBannerColor: Color(0xFF33CCBF),
-            ),
-          );
+      testWidgets('pre-filled hex banner shows color preview', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: '0x33ccbf',
+            pendingBannerColor: Color(0xFF33CCBF),
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_color_preview')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_color_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsNothing,
+        );
+      });
 
-      testWidgets(
-        'pre-filled URL banner shows image preview',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              persistedBanner: 'https://cdn.example.com/banner.jpg',
-            ),
-          );
+      testWidgets('pre-filled URL banner shows image preview', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            persistedBanner: 'https://cdn.example.com/banner.jpg',
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('profile_banner_color_preview')),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_color_preview')),
+          findsNothing,
+        );
+      });
 
-      testWidgets(
-        'staged pendingBannerUrl shows image preview from that URL',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              pendingBannerStatus: PendingBannerStatus.staged,
-              pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
-            ),
-          );
+      testWidgets('staged pendingBannerUrl shows image preview from that URL', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            pendingBannerStatus: PendingBannerStatus.staged,
+            pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
+          ),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'staged pendingBannerColor shows color preview, no image',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              pendingBannerColor: Color(0xFFFF0000),
-            ),
-          );
+      testWidgets('staged pendingBannerColor shows color preview, no image', (
+        tester,
+      ) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(pendingBannerColor: Color(0xFFFF0000)),
+        );
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          expect(
-            find.byKey(const ValueKey('profile_banner_color_preview')),
-            findsOneWidget,
-          );
-          expect(
-            find.byKey(const ValueKey('profile_banner_image_preview')),
-            findsNothing,
-          );
-        },
-      );
+        expect(
+          find.byKey(const ValueKey('profile_banner_color_preview')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('profile_banner_image_preview')),
+          findsNothing,
+        );
+      });
 
       testWidgets(
         'tapping a color swatch dispatches ProfileBannerColorSelected',
@@ -795,67 +785,99 @@ void main() {
               captureAny(that: isA<ProfileBannerColorSelected>()),
             ),
           ).captured;
-          expect(
-            captured.whereType<ProfileBannerColorSelected>(),
-            isNotEmpty,
-          );
+          expect(captured.whereType<ProfileBannerColorSelected>(), isNotEmpty);
         },
       );
 
-      testWidgets(
-        'tapping Clear when a banner is staged dispatches '
-        '$ProfileBannerCleared',
-        (tester) async {
-          when(() => mockEditorBloc.state).thenReturn(
-            const ProfileEditorState(
-              pendingBannerStatus: PendingBannerStatus.staged,
-              pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
-            ),
-          );
+      testWidgets('tapping Upload requests a bounded banner image pick', (
+        tester,
+      ) async {
+        const imagePickerChannel = MethodChannel(
+          'plugins.flutter.io/image_picker',
+        );
+        final imagePickerCalls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(imagePickerChannel, (call) async {
+              imagePickerCalls.add(call);
+              return switch (call.method) {
+                'pickImage' => '/tmp/test_banner_image.jpg',
+                'pickMultiImage' => <String>['/tmp/test_picker_image.jpg'],
+                'pickVideo' => '/tmp/test_picker_video.mp4',
+                'pickMedia' => <String>['/tmp/test_picker_image.jpg'],
+                _ => null,
+              };
+            });
 
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          final clearButton = find.text(l10n.profileSetupBannerClearButton);
-          await tester.ensureVisible(clearButton);
-          await tester.tap(clearButton);
-          await tester.pumpAndSettle();
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final uploadButton = find.text(l10n.profileSetupBannerUploadButton);
+        await tester.ensureVisible(uploadButton);
+        await tester.tap(uploadButton);
+        await tester.pumpAndSettle();
 
-          verify(
-            () => mockEditorBloc.add(const ProfileBannerCleared()),
-          ).called(1);
-        },
-      );
+        final pickImageCall = imagePickerCalls.singleWhere(
+          (call) => call.method == 'pickImage',
+        );
+        final arguments = pickImageCall.arguments as Map<Object?, Object?>;
+        expect(arguments['maxWidth'], equals(1500.0));
+        expect(arguments['maxHeight'], equals(500.0));
+        expect(arguments['imageQuality'], equals(85));
+        expect(arguments['requestFullMetadata'], isFalse);
 
-      testWidgets(
-        'Save dispatches $ProfileSaved without legacy banner field — '
-        'bloc resolves it from state.effectiveBanner',
-        (tester) async {
-          await pumpScreen(tester);
-          await tester.pumpAndSettle();
+        final captured = verify(
+          () => mockEditorBloc.add(
+            captureAny(that: isA<ProfileBannerUploadRequested>()),
+          ),
+        ).captured;
+        final event = captured.whereType<ProfileBannerUploadRequested>().last;
+        expect(event.pubkey, equals(testPubkeyHex));
+        expect(event.file?.path, equals('/tmp/test_banner_image.jpg'));
+      });
 
-          // Provide a display name so the save proceeds.
-          await tester.enterText(
-            find.byType(TextFormField).first,
-            'Test User',
-          );
-          await tester.pumpAndSettle();
+      testWidgets('tapping Clear when a banner is staged dispatches '
+          '$ProfileBannerCleared', (tester) async {
+        when(() => mockEditorBloc.state).thenReturn(
+          const ProfileEditorState(
+            pendingBannerStatus: PendingBannerStatus.staged,
+            pendingBannerUrl: 'https://cdn.example.com/uploaded.jpg',
+          ),
+        );
 
-          final l10n = lookupAppLocalizations(const Locale('en'));
-          await tester.tap(find.text(l10n.profileSetupSaveButton));
-          await tester.pumpAndSettle();
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
 
-          final captured = verify(
-            () => mockEditorBloc.add(captureAny(that: isA<ProfileSaved>())),
-          ).captured;
-          expect(captured.whereType<ProfileSaved>(), isNotEmpty);
-          expect(
-            captured.whereType<ProfileSaved>().last.banner,
-            isNull,
-          );
-        },
-      );
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final clearButton = find.text(l10n.profileSetupBannerClearButton);
+        await tester.ensureVisible(clearButton);
+        await tester.tap(clearButton);
+        await tester.pumpAndSettle();
+
+        verify(
+          () => mockEditorBloc.add(const ProfileBannerCleared()),
+        ).called(1);
+      });
+
+      testWidgets('Save dispatches $ProfileSaved without legacy banner field — '
+          'bloc resolves it from state.effectiveBanner', (tester) async {
+        await pumpScreen(tester);
+        await tester.pumpAndSettle();
+
+        // Provide a display name so the save proceeds.
+        await tester.enterText(find.byType(TextFormField).first, 'Test User');
+        await tester.pumpAndSettle();
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        await tester.tap(find.text(l10n.profileSetupSaveButton));
+        await tester.pumpAndSettle();
+
+        final captured = verify(
+          () => mockEditorBloc.add(captureAny(that: isA<ProfileSaved>())),
+        ).captured;
+        expect(captured.whereType<ProfileSaved>(), isNotEmpty);
+        expect(captured.whereType<ProfileSaved>().last.banner, isNull);
+      });
     });
   });
 }
