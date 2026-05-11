@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
-import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
+import 'package:openvine/widgets/video_feed_item/paused_affordance.dart';
 
 /// Large centered play affordance shown when a pooled video is paused, plus a
 /// brief "unpause" feedback that flashes the pause icon right after playback
@@ -216,7 +215,7 @@ class _PlaybackChrome extends StatelessWidget {
 
     final Widget child;
     if (shouldShowPlay) {
-      child = const _PausedAffordance(key: ValueKey('paused-play'));
+      child = const PausedAffordance(key: ValueKey('paused-play'));
     } else if (shouldShowUnpauseFeedback) {
       // No ValueKey: AnimatedSwitcher already differentiates this
       // IgnorePointer from the Center-rooted play affordance and the
@@ -248,33 +247,6 @@ class _PlaybackChrome extends StatelessWidget {
         );
       },
       child: child,
-    );
-  }
-}
-
-/// The paused-state stack: the playback-toggles pill
-/// ([FeedPlaybackTogglesPill]) above the large play icon. The pill
-/// reads its own state from app-wide cubits/providers, so this widget
-/// takes no callbacks.
-class _PausedAffordance extends StatelessWidget {
-  const _PausedAffordance({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 16,
-        children: [
-          const FeedPlaybackTogglesPill(),
-          IgnorePointer(
-            child: CenterPlaybackControl(
-              state: CenterPlaybackControlState.play,
-              semanticsLabel: context.l10n.videoPlayerPlayVideo,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

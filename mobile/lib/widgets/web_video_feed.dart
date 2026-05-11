@@ -9,6 +9,7 @@ import 'package:hls_auth_web_player/hls_auth_web_player.dart'
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/screens/feed/feed_auto_advance_policy.dart';
+import 'package:openvine/widgets/video_feed_item/web_paused_video_play_overlay.dart';
 import 'package:openvine/widgets/web_video_player.dart';
 import 'package:video_player/video_player.dart';
 
@@ -417,18 +418,35 @@ class _WebVideoFeedItem extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        WebVideoPlayer(
-          key: playerKey,
-          url: videoUrl,
-          autoPlay: isActive,
-          headers: headers,
-          controllerFactory: controllerFactory,
-          authHeaderProvider: authHeaderProvider,
-          hlsFallbackUrl: hlsFallbackUrl,
-          onInitialized: onInitialized,
-          onDisposed: onDisposed,
-          onError: onError,
-          onRequiresAuth: onRequiresAuth,
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => playerKey.currentState?.togglePlayPause(),
+          child: WebVideoPlayer(
+            key: playerKey,
+            url: videoUrl,
+            autoPlay: isActive,
+            headers: headers,
+            controllerFactory: controllerFactory,
+            authHeaderProvider: authHeaderProvider,
+            hlsFallbackUrl: hlsFallbackUrl,
+            onInitialized: onInitialized,
+            onDisposed: onDisposed,
+            onError: onError,
+            onRequiresAuth: onRequiresAuth,
+          ),
+        ),
+        ValueListenableBuilder<Map<int, VideoPlayerController>>(
+          valueListenable: controllersListenable,
+          builder: (context, controllers, _) {
+            final tracked = controllers[index];
+            final controller = (tracked != null && tracked.value.isInitialized)
+                ? tracked
+                : null;
+            return WebPausedVideoPlayOverlay(
+              controller: controller,
+              isVisible: isActive,
+            );
+          },
         ),
         if (itemBuilder != null)
           ValueListenableBuilder<Map<int, VideoPlayerController>>(
