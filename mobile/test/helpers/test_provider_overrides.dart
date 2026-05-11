@@ -2,8 +2,10 @@
 // ABOUTME: Provides mock implementations of all providers that throw UnimplementedError in production
 
 import 'package:blossom_upload_service/blossom_upload_service.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:follow_repository/follow_repository.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -42,6 +44,8 @@ class MockProfileRepository extends Mock implements ProfileRepository {}
 
 class MockNip05VerificationService extends Mock
     implements Nip05VerificationService {}
+
+class MockFollowRepository extends Mock implements FollowRepository {}
 
 class MockModerationLabelService extends Mock
     implements ModerationLabelService {}
@@ -236,6 +240,38 @@ MockNip05VerificationService createMockNip05VerificationService() {
   return mockService;
 }
 
+/// Creates a properly stubbed MockFollowRepository for testing
+///
+/// Stubs all getters and the [watchMyFollowingCached] stream so widgets that
+/// embed [VideoFollowButton] do not crash with [LateInitializationError] from
+/// the real [CacheSync] DAO.
+MockFollowRepository createMockFollowRepository({
+  List<String> followingPubkeys = const [],
+}) {
+  final mock = MockFollowRepository();
+
+  when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  when(() => mock.isInitialized).thenReturn(true);
+  when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  when(
+    () => mock.followingStream,
+  ).thenAnswer((_) => Stream.value(followingPubkeys));
+  when(() => mock.isFollowing(any())).thenReturn(false);
+  when(
+    () => mock.watchMyFollowingCached(),
+  ).thenAnswer(
+    (_) => Stream<CacheResult<FollowingSnapshot>>.empty(),
+  );
+  when(
+    () => mock.watchOthersFollowingCached(
+      any(),
+      forceRefresh: any(named: 'forceRefresh'),
+    ),
+  ).thenAnswer((_) => Stream<CacheResult<FollowingSnapshot>>.empty());
+
+  return mock;
+}
+
 /// Creates a properly stubbed MockModerationLabelService for testing
 ///
 /// This mock avoids the real NIP-05 HTTP call that
@@ -287,6 +323,7 @@ List<dynamic> getStandardTestOverrides({
   ProfileRepository? mockProfileRepository,
   Nip05VerificationService? mockNip05VerificationService,
   ModerationLabelService? mockModerationLabelService,
+  FollowRepository? mockFollowRepository,
 }) {
   final mockPrefs = mockSharedPreferences ?? createMockSharedPreferences();
   final mockAuth = mockAuthService ?? createMockAuthService();
@@ -300,6 +337,7 @@ List<dynamic> getStandardTestOverrides({
       mockNip05VerificationService ?? createMockNip05VerificationService();
   final mockModeration =
       mockModerationLabelService ?? createMockModerationLabelService();
+  final mockFollow = mockFollowRepository ?? createMockFollowRepository();
 
   return [
     // Override sharedPreferencesProvider which throws in production
@@ -324,6 +362,11 @@ List<dynamic> getStandardTestOverrides({
     // Override NIP-05 verification service to avoid opening Drift/SQLite in
     // widget tests that only care about badge presence, not verification.
     nip05VerificationServiceProvider.overrideWithValue(mockNip05),
+
+    // Always override FollowRepository to prevent LateInitializationError from
+    // CacheSync._dao (uninitialized Drift DAO) when VideoFollowButton calls
+    // MyFollowingBloc which calls watchMyFollowingCached().
+    followRepositoryProvider.overrideWithValue(mockFollow),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
@@ -363,6 +406,7 @@ Widget testProviderScope({
   ProfileRepository? mockProfileRepository,
   Nip05VerificationService? mockNip05VerificationService,
   ModerationLabelService? mockModerationLabelService,
+  FollowRepository? mockFollowRepository,
 }) {
   return ProviderScope(
     overrides: [
@@ -377,6 +421,7 @@ Widget testProviderScope({
         mockProfileRepository: mockProfileRepository,
         mockNip05VerificationService: mockNip05VerificationService,
         mockModerationLabelService: mockModerationLabelService,
+        mockFollowRepository: mockFollowRepository,
       ),
       ...?additionalOverrides,
     ],
@@ -413,6 +458,7 @@ Widget testMaterialApp({
   ProfileRepository? mockProfileRepository,
   Nip05VerificationService? mockNip05VerificationService,
   ModerationLabelService? mockModerationLabelService,
+  FollowRepository? mockFollowRepository,
   ThemeData? theme,
 }) {
   return testProviderScope(
@@ -427,6 +473,7 @@ Widget testMaterialApp({
     mockProfileRepository: mockProfileRepository,
     mockNip05VerificationService: mockNip05VerificationService,
     mockModerationLabelService: mockModerationLabelService,
+    mockFollowRepository: mockFollowRepository,
     child: MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
