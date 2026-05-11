@@ -119,7 +119,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text('If the account belongs to someone 13 to 15'),
+        find.text('If the account will belong to someone 13 to 15'),
         findsOneWidget,
       );
       expect(
@@ -129,6 +129,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('What the video should show'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.text('How to send it'),
+        200,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
       expect(find.text('How to send it'), findsOneWidget);
       expect(
         find.text('Email Divine support', skipOffstage: false),

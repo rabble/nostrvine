@@ -7910,7 +7910,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get minorAccountReviewUnder13FamilyBody =>
-      'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together is welcome.';
+      'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together are welcome.';
 
   @override
   String get minorAccountReviewUnder13ComeBackTitle => 'When you turn 13';
@@ -7925,7 +7925,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get minorAccountReviewParentConsentTitle =>
-      'If the account belongs to someone 13 to 15';
+      'If the account will belong to someone 13 to 15';
 
   @override
   String get minorAccountReviewParentConsentBody =>
