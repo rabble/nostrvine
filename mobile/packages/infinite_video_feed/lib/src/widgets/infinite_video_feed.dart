@@ -457,8 +457,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   }
 
   String? _resolveUrl(VideoEvent video) =>
-      widget.urlResolver?.call(video) ??
-      video.videoUrl; // coverage:ignore-line
+      widget.urlResolver?.call(video) ?? video.videoUrl; // coverage:ignore-line
 
   // ─── Index change → window + prefetch ───────────────────────────────────
 
@@ -1078,7 +1077,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
                 () => unawaited(_retryController(index)),
                 _errorTypes[index] ?? VideoErrorType.generic,
               ),
-              // coverage:ignore-end
+            // coverage:ignore-end
           ],
         );
       },
