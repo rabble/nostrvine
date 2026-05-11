@@ -70,7 +70,10 @@ void main() {
       });
 
       test('different pubkey values are not equal', () {
-        const other = FollowingSnapshot(pubkeys: ['aabbcc', 'zzzzzz'], count: 42);
+        const other = FollowingSnapshot(
+          pubkeys: ['aabbcc', 'zzzzzz'],
+          count: 42,
+        );
 
         expect(snapshot, isNot(equals(other)));
       });

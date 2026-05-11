@@ -1012,32 +1012,33 @@ void main() {
     });
 
     group('watchMyFollowing', () {
-      test('emits FollowingSnapshot when following list is initialized',
-          () async {
-        // Pre-populate SharedPreferences so initialize() loads a non-empty
-        // following list without needing to call follow() and mock
-        // sendContactList.
-        SharedPreferences.setMockInitialValues({
-          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
-        });
-        repository = FollowRepository(
-          nostrClient: mockNostrClient,
-          isCacheInitialized: () => cacheIsInitialized,
-          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
-          cacheUserEvent: cachedUserEvents.add,
-          indexerRelayUrls: const [],
-        );
+      test(
+        'emits FollowingSnapshot when following list is initialized',
+        () async {
+          // Pre-populate SharedPreferences so initialize() loads a non-empty
+          // following list without needing to call follow() and mock
+          // sendContactList.
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+          });
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            isCacheInitialized: () => cacheIsInitialized,
+            getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+            cacheUserEvent: cachedUserEvents.add,
+            indexerRelayUrls: const [],
+          );
 
-        await repository.initialize();
+          await repository.initialize();
 
-        final emission = await repository.watchMyFollowing().first;
+          final emission = await repository.watchMyFollowing().first;
 
-        expect(emission.pubkeys, contains(testTargetPubkey));
-        expect(emission.count, equals(1));
-      });
+          expect(emission.pubkeys, contains(testTargetPubkey));
+          expect(emission.count, equals(1));
+        },
+      );
 
-      test('emits FollowingSnapshot with empty list when no follows',
-          () async {
+      test('emits FollowingSnapshot with empty list when no follows', () async {
         await repository.initialize();
 
         final emission = await repository.watchMyFollowing().first;
@@ -1049,8 +1050,9 @@ void main() {
 
     group('getOthersFollowing', () {
       test('returns empty snapshot when no events found', () async {
-        when(() => mockNostrClient.queryEvents(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
 
         final snapshot = await repository.getOthersFollowing(testTargetPubkey);
 
@@ -1070,8 +1072,9 @@ void main() {
           createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         );
 
-        when(() => mockNostrClient.queryEvents(any()))
-            .thenAnswer((_) async => [event]);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final snapshot = await repository.getOthersFollowing(testTargetPubkey);
 
@@ -1093,8 +1096,9 @@ void main() {
           createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         );
 
-        when(() => mockNostrClient.queryEvents(any()))
-            .thenAnswer((_) async => [event]);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final snapshot = await repository.getOthersFollowing(testTargetPubkey);
 
@@ -1115,8 +1119,9 @@ void main() {
           createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         );
 
-        when(() => mockNostrClient.queryEvents(any()))
-            .thenAnswer((_) async => [event]);
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final snapshot = await repository.getOthersFollowing(testTargetPubkey);
 
