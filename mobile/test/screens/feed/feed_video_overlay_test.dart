@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:cache_sync/cache_sync.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,6 +58,30 @@ class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
 
 class _FakeBuildContext extends Fake implements BuildContext {}
 
+class _FakeCacheDao implements CacheDao {
+  @override
+  Future<String?> read(String key) async => null;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String payload,
+    Duration? ttl,
+  }) async {}
+
+  @override
+  Future<void> delete(String key) async {}
+
+  @override
+  Future<void> deleteAll() async {}
+
+  @override
+  Future<int> totalPayloadBytes() async => 0;
+
+  @override
+  Future<void> evictOldest(int bytesToFree) async {}
+}
+
 // Full 64-character test IDs (never truncate Nostr IDs)
 const _testVideoId =
     'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
@@ -96,7 +121,8 @@ void main() {
       registerFallbackValue(<String, String>{});
     });
 
-    setUp(() {
+    setUp(() async {
+      await CacheSync.init(dao: _FakeCacheDao());
       mockInteractionsBloc = _MockVideoInteractionsBloc();
       mockVolumeCubit = _MockVideoVolumeCubit();
       when(() => mockVolumeCubit.state).thenReturn(const VideoVolumeState());
