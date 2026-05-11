@@ -5,6 +5,7 @@ import 'dart:async' show FutureOr;
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,6 +55,41 @@ typedef _ActiveUpload = ({
   String? title,
   String? thumbnailPath,
 });
+
+/// Equatable wrapper over the list of active uploads consumed by
+/// [_ProfileVideosGridState.build]. Exists because `context.select`
+/// compares its selected value with `==`, and a raw `List<_ActiveUpload>`
+/// — even one of structurally-equal records — falls through to identity
+/// equality and would mark the consumer dirty on every progress tick.
+/// Equatable's deep `iterableEquals` over records gives the selector the
+/// progress-insensitive comparison the optimization needs.
+@visibleForTesting
+class ActiveUploadsView extends Equatable {
+  @visibleForTesting
+  const ActiveUploadsView(this.uploads);
+
+  // Public field uses the record type inline so the private [_ActiveUpload]
+  // typedef alias doesn't leak through the public API surface
+  // (avoids `library_private_types_in_public_api`).
+  final List<({String draftId, String? title, String? thumbnailPath})> uploads;
+
+  /// Projects the bloc's [BackgroundPublishState] into the shape the grid
+  /// renders. Used as the selector callback in [_ProfileVideosGridState.build].
+  static ActiveUploadsView fromState(BackgroundPublishState state) {
+    return ActiveUploadsView([
+      for (final upload in state.uploads)
+        if (upload.result == null)
+          (
+            draftId: upload.draft.id,
+            title: upload.draft.title,
+            thumbnailPath: upload.draft.clips.firstOrNull?.thumbnailPath,
+          ),
+    ]);
+  }
+
+  @override
+  List<Object?> get props => [uploads];
+}
 
 /// Grid widget displaying user's videos on their profile
 class ProfileVideosGrid extends ConsumerStatefulWidget {
@@ -195,19 +231,18 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     // thumbnailPath per upload). Progress is intentionally excluded so that
     // per-tick progress emissions don't rebuild the grid — each upload
     // tile subscribes to its own progress in [_VideoGridUploadingTile].
+    //
+    // The selector returns [ActiveUploadsView] (Equatable) rather than a raw
+    // [List]: `context.select` compares its result with `==`, and `List`
+    // equality is identity-based — without the wrapper, a freshly-built list
+    // every tick would defeat the optimization regardless of record equality
+    // inside it.
     final activeUploads = isOwnProfile
-        ? context.select<BackgroundPublishBloc, List<_ActiveUpload>>(
-            (bloc) => [
-              for (final upload in bloc.state.uploads)
-                if (upload.result == null)
-                  (
-                    draftId: upload.draft.id,
-                    title: upload.draft.title,
-                    thumbnailPath:
-                        upload.draft.clips.firstOrNull?.thumbnailPath,
-                  ),
-            ],
-          )
+        ? context
+              .select<BackgroundPublishBloc, ActiveUploadsView>(
+                (bloc) => ActiveUploadsView.fromState(bloc.state),
+              )
+              .uploads
         : const <_ActiveUpload>[];
 
     // De-duplicate relay-delivered videos against active uploads.
@@ -370,11 +405,17 @@ class _VideoGridUploadingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // Subscribe to this specific upload's progress so the tile rebuilds on
     // every progress tick without the surrounding grid having to.
+    //
+    // Fallback returns 1.0 (not 0): this branch is reached only after the
+    // bloc removes the upload from state on [PublishSuccess]. If the tile
+    // renders one frame before the parent grid prunes it, animating the
+    // spinner forward to full is correct; animating backward to empty
+    // would briefly snap the spinner across a 200ms animation.
     final progress = context.select<BackgroundPublishBloc, double>((bloc) {
       for (final upload in bloc.state.uploads) {
         if (upload.draft.id == draftId) return upload.progress;
       }
-      return 0;
+      return 1.0;
     });
     final path = thumbnailPath;
 
