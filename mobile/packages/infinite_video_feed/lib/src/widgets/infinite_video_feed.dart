@@ -601,6 +601,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _sources.remove(index);
     unawaited(_controllers.remove(index)?.dispose());
   }
+  // coverage:ignore-end
 
   // ─── Controller init / retry ────────────────────────────────────────────
 
