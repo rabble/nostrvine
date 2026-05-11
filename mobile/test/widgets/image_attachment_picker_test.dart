@@ -92,6 +92,29 @@ void main() {
       }
     });
 
+    testWidgets('shows an error snackbar when image picker throws', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      try {
+        when(
+          () => mockPicker.pickMultiImage(
+            maxWidth: any(named: 'maxWidth'),
+            imageQuality: any(named: 'imageQuality'),
+          ),
+        ).thenThrow(Exception('picker failed'));
+
+        await tester.pumpWidget(buildTestWidget());
+
+        await tester.tap(find.bySemanticsLabel(l10n.bugReportAttachImages));
+        await tester.pump();
+
+        expect(find.text(l10n.bugReportUploadFailed), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('truncates selection to remaining slots', (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
       try {

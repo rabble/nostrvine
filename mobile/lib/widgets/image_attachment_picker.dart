@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:unified_logger/unified_logger.dart';
 
 // ABOUTME: Mobile-only image attachment picker for bug reports.
 // ABOUTME: Limits the selection count, announces changes for accessibility,
@@ -43,10 +44,28 @@ class _ImageAttachmentPickerState extends State<ImageAttachmentPicker> {
     final remaining = widget.maxImages - _images.length;
     if (remaining <= 0) return;
 
-    final picked = await ImageAttachmentPicker.imagePicker.pickMultiImage(
-      maxWidth: 1920,
-      imageQuality: 80,
-    );
+    List<XFile> picked;
+    try {
+      picked = await ImageAttachmentPicker.imagePicker.pickMultiImage(
+        maxWidth: 1920,
+        imageQuality: 80,
+      );
+    } catch (error, stackTrace) {
+      Log.error(
+        'Failed to pick bug report attachments: $error',
+        category: LogCategory.ui,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.bugReportUploadFailed),
+          backgroundColor: VineTheme.error,
+        ),
+      );
+      return;
+    }
 
     if (!mounted) return;
     if (picked.isEmpty) return;

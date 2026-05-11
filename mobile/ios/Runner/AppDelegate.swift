@@ -417,7 +417,7 @@ extension FlutterError: @retroactive Error {}
       }
 
       let filename = (path as NSString).lastPathComponent
-      let contentType = filename.hasSuffix(".png") ? "image/png" : "image/jpeg"
+      let contentType = attachmentContentType(for: filename)
 
       uploadProvider.uploadAttachment(data, withFilename: filename, andContentType: contentType) {
         uploadResponse, error in
@@ -448,5 +448,24 @@ extension FlutterError: @retroactive Error {}
     }
 
     uploadNext(index: 0)
+  }
+
+  private func attachmentContentType(for filename: String) -> String {
+    switch (filename as NSString).pathExtension.lowercased() {
+    case "png":
+      return "image/png"
+    case "jpg", "jpeg":
+      return "image/jpeg"
+    case "heic":
+      return "image/heic"
+    case "heif":
+      return "image/heif"
+    case "webp":
+      return "image/webp"
+    case "gif":
+      return "image/gif"
+    default:
+      return "image/jpeg"
+    }
   }
 }

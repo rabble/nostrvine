@@ -570,7 +570,7 @@ class MainActivity : FlutterActivity() {
             }
 
             val filename = file.name
-            val contentType = if (filename.endsWith(".png")) "image/png" else "image/jpeg"
+            val contentType = attachmentContentType(filename)
 
             uploadProvider.uploadAttachment(filename, file, contentType, object : ZendeskCallback<UploadResponse>() {
                 override fun onSuccess(response: UploadResponse?) {
@@ -597,6 +597,18 @@ class MainActivity : FlutterActivity() {
         }
 
         uploadNext(0)
+    }
+
+    private fun attachmentContentType(filename: String): String {
+        return when (filename.substringAfterLast('.', "").lowercase()) {
+            "png" -> "image/png"
+            "jpg", "jpeg" -> "image/jpeg"
+            "heic" -> "image/heic"
+            "heif" -> "image/heif"
+            "webp" -> "image/webp"
+            "gif" -> "image/gif"
+            else -> "image/jpeg"
+        }
     }
 }
 
