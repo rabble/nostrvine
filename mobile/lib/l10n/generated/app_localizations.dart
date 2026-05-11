@@ -13473,13 +13473,13 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewLearnMoreTitle.
   ///
   /// In en, this message translates to:
-  /// **'Read more'**
+  /// **'More for families'**
   String get minorAccountReviewLearnMoreTitle;
 
   /// No description provided for @minorAccountReviewKidsPolicyCta.
   ///
   /// In en, this message translates to:
-  /// **'Open kids policy'**
+  /// **'Read Divine\'s kids policy'**
   String get minorAccountReviewKidsPolicyCta;
 
   /// No description provided for @minorAccountReviewChooseAgeBandTitle.
@@ -13515,7 +13515,7 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewFamilyResourcesCta.
   ///
   /// In en, this message translates to:
-  /// **'Open family resources'**
+  /// **'Get family guides and tips'**
   String get minorAccountReviewFamilyResourcesCta;
 
   /// No description provided for @minorAccountReviewFooter.
