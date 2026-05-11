@@ -408,20 +408,24 @@ class ProfileFeed extends _$ProfileFeed {
         );
 
         // Enrich with full Nostr event data in the background.
-        // mergeWithCurrent is intentionally true (default) here: relay
-        // events can update replaceable events (e.g. adding a collaborator
-        // p-tag) during the ~5s enrichment window, and replacing state
-        // would overwrite the newer relay version (#3705). The enriched
-        // list carries the pre-update snapshot, but _mergeVideo selects
-        // by createdAt so the relay version's tags win regardless.
+        // Replace only this REST snapshot's keys: relay events can update
+        // replaceable events (e.g. adding a collaborator p-tag) during the
+        // ~5s enrichment window, so these keys must merge against current
+        // state instead of clobbering it (#3705). But if enrichment causes
+        // a video to be filtered out, that key must disappear rather than
+        // preserving the stale pre-enrichment copy.
+        final enrichmentKeys = {
+          for (final video in authorVideos) _canonicalVideoKey(video),
+        };
         enrichVideosInBackground(
           authorVideos,
           nostrService: ref.read(nostrServiceProvider),
           onEnriched: (enriched) {
             if (!ref.mounted) return;
             final enrichedVideos = _videoEventService.filterVideoList(enriched);
-            _mergeSourceVideos(
+            _mergeEnrichedRestVideos(
               enrichedVideos,
+              sourceKeys: enrichmentKeys,
               hasMoreContent:
                   result.hasMore ??
                   (apiVideos.length >= AppConstants.paginationBatchSize),
@@ -1093,6 +1097,79 @@ class ProfileFeed extends _$ProfileFeed {
     _emitState(nextState);
   }
 
+  void _mergeEnrichedRestVideos(
+    List<VideoEvent> incoming, {
+    required Set<String> sourceKeys,
+    required bool hasMoreContent,
+    required bool isRefreshing,
+    required bool isInitialLoad,
+    int? totalVideoCount,
+    bool isFetchingTotalCount = false,
+  }) {
+    final currentState = state.asData?.value;
+    final mergedVideos = _mergeVideosReplacingCurrentKeys(
+      current: currentState?.videos ?? const <VideoEvent>[],
+      sourceKeys: sourceKeys,
+      incoming: incoming,
+    );
+
+    final nextState =
+        (currentState ??
+                const VideoFeedState(
+                  videos: <VideoEvent>[],
+                  hasMoreContent: false,
+                ))
+            .copyWith(
+              videos: mergedVideos,
+              hasMoreContent: hasMoreContent,
+              isLoadingMore: false,
+              isRefreshing: isRefreshing,
+              isInitialLoad: isInitialLoad,
+              isFetchingTotalCount: isFetchingTotalCount,
+              lastUpdated: DateTime.now(),
+              totalVideoCount: totalVideoCount ?? currentState?.totalVideoCount,
+              error: null,
+            );
+
+    if (currentState != null &&
+        _sameVideoSequence(currentState.videos, nextState.videos) &&
+        currentState.hasMoreContent == nextState.hasMoreContent &&
+        currentState.totalVideoCount == nextState.totalVideoCount &&
+        currentState.isRefreshing == nextState.isRefreshing &&
+        currentState.isInitialLoad == nextState.isInitialLoad &&
+        currentState.isFetchingTotalCount == nextState.isFetchingTotalCount) {
+      return;
+    }
+
+    _emitState(nextState);
+  }
+
+  List<VideoEvent> _mergeVideosReplacingCurrentKeys({
+    required List<VideoEvent> current,
+    required Set<String> sourceKeys,
+    required List<VideoEvent> incoming,
+  }) {
+    if (sourceKeys.isEmpty) return _mergeVideoLists(current, incoming);
+
+    final currentByKey = {
+      for (final video in current)
+        if (sourceKeys.contains(_canonicalVideoKey(video)))
+          _canonicalVideoKey(video): video,
+    };
+    final keepFromCurrent = current
+        .where((video) => !sourceKeys.contains(_canonicalVideoKey(video)))
+        .toList();
+    final mergedSourceVideos = incoming.map((video) {
+      final key = _canonicalVideoKey(video);
+      final currentVideo = currentByKey[key];
+      return currentVideo == null
+          ? video
+          : _mergeEnrichmentIntoCurrent(currentVideo, video);
+    }).toList();
+
+    return _mergeVideoLists(keepFromCurrent, mergedSourceVideos);
+  }
+
   List<VideoEvent> _mergeVideoLists(
     List<VideoEvent> current,
     List<VideoEvent> incoming,
@@ -1123,6 +1200,70 @@ class ProfileFeed extends _$ProfileFeed {
   /// #3384).
   VideoEvent _mergeVideo(VideoEvent existing, VideoEvent incoming) {
     return mergeTwoProfileVideos(existing, incoming);
+  }
+
+  VideoEvent _mergeEnrichmentIntoCurrent(
+    VideoEvent current,
+    VideoEvent enriched,
+  ) {
+    return current.copyWith(
+      publishedAt:
+          (current.publishedAt != null && current.publishedAt!.isNotEmpty)
+          ? current.publishedAt
+          : enriched.publishedAt,
+      rawTags: mergeRawTagsForVideoMerge(current.rawTags, enriched.rawTags),
+      contentWarningLabels: current.contentWarningLabels.isNotEmpty
+          ? current.contentWarningLabels
+          : enriched.contentWarningLabels,
+      title: current.title ?? enriched.title,
+      videoUrl: current.videoUrl ?? enriched.videoUrl,
+      thumbnailUrl: current.thumbnailUrl ?? enriched.thumbnailUrl,
+      duration: current.duration ?? enriched.duration,
+      dimensions: current.dimensions ?? enriched.dimensions,
+      mimeType: current.mimeType ?? enriched.mimeType,
+      sha256: current.sha256 ?? enriched.sha256,
+      fileSize: current.fileSize ?? enriched.fileSize,
+      hashtags: current.hashtags.isNotEmpty
+          ? current.hashtags
+          : enriched.hashtags,
+      vineId: current.vineId ?? enriched.vineId,
+      group: current.group ?? enriched.group,
+      altText: current.altText ?? enriched.altText,
+      blurhash: current.blurhash ?? enriched.blurhash,
+      originalLoops: mergeProfileEngagementCount(
+        current.originalLoops,
+        enriched.originalLoops,
+      ),
+      originalLikes: mergeProfileEngagementCount(
+        current.originalLikes,
+        enriched.originalLikes,
+      ),
+      originalComments: mergeProfileEngagementCount(
+        current.originalComments,
+        enriched.originalComments,
+      ),
+      originalReposts: mergeProfileEngagementCount(
+        current.originalReposts,
+        enriched.originalReposts,
+      ),
+      audioEventId: current.audioEventId ?? enriched.audioEventId,
+      audioEventRelay: current.audioEventRelay ?? enriched.audioEventRelay,
+      collaboratorPubkeys: current.collaboratorPubkeys.isNotEmpty
+          ? current.collaboratorPubkeys
+          : enriched.collaboratorPubkeys,
+      inspiredByVideo: current.inspiredByVideo ?? enriched.inspiredByVideo,
+      textTrackRef: current.textTrackRef ?? enriched.textTrackRef,
+      textTrackContent: current.textTrackContent ?? enriched.textTrackContent,
+      nostrEventTags: current.nostrEventTags.isNotEmpty
+          ? current.nostrEventTags
+          : enriched.nostrEventTags,
+      authorName: current.authorName ?? enriched.authorName,
+      authorAvatar: current.authorAvatar ?? enriched.authorAvatar,
+      nostrLikeCount: mergeProfileEngagementCount(
+        current.nostrLikeCount,
+        enriched.nostrLikeCount,
+      ),
+    );
   }
 
   /// Same logic as [_mergeVideo], exposed for tests (#3384).

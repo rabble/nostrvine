@@ -7,6 +7,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -134,12 +135,16 @@ void main() {
     late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late _MockVideoEventService mockVideoEventService;
     late _MockNostrClient mockNostrClient;
+    late void Function() onNostrVideosChanged;
+    late List<VideoEvent> relayVideos;
 
     setUp(() {
       _controlledFunnelcakeAvailability = false;
       mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
+      relayVideos = [];
+      onNostrVideosChanged = () {};
 
       when(
         () => mockFunnelcakeApiClient.getBulkVideoStats(any()),
@@ -153,7 +158,12 @@ void main() {
       when(
         () => mockVideoEventService.addVideoUpdateListener(any()),
       ).thenReturn(() {});
-      when(() => mockVideoEventService.addListener(any())).thenReturn(null);
+      when(() => mockVideoEventService.addListener(any())).thenAnswer((
+        invocation,
+      ) {
+        onNostrVideosChanged =
+            invocation.positionalArguments.single as void Function();
+      });
       when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(
         () => mockVideoEventService.addNewVideoListener(any()),
@@ -161,7 +171,9 @@ void main() {
       when(
         () => mockVideoEventService.subscribeToUserVideos(userId),
       ).thenAnswer((_) async {});
-      when(() => mockVideoEventService.authorVideos(userId)).thenReturn([]);
+      when(
+        () => mockVideoEventService.authorVideos(userId),
+      ).thenAnswer((_) => relayVideos);
       when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
         invocation,
       ) {
@@ -275,6 +287,202 @@ void main() {
 
         expect(state.videos.map((v) => v.id), ['relay-head']);
         expect(state.isInitialLoad, isFalse);
+      },
+    );
+
+    test(
+      'enrichment callback keeps newer relay replaceable event updates',
+      () async {
+        const collaboratorPubkey =
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+        final staleEnrichmentEvent = Event(
+          userId,
+          34236,
+          [
+            ['url', 'https://example.com/stale.mp4'],
+            ['title', 'REST snapshot'],
+            ['d', 'video-0'],
+          ],
+          'REST snapshot',
+          createdAt: DateTime(2026, 3, 30, 12).millisecondsSinceEpoch ~/ 1000,
+        );
+        final enrichmentCompleter = Completer<List<Event>>();
+
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [
+              _videoStat(
+                id: staleEnrichmentEvent.id,
+                pubkey: userId,
+                stableId: 'video-0',
+                createdAt: DateTime(2026, 3, 30, 12),
+              ),
+            ],
+          ),
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) => enrichmentCompleter.future);
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+        await container.read(profileFeedProvider(userId).future);
+
+        final restHydrated = Completer<void>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 1 &&
+                value.videos.single.id == staleEnrichmentEvent.id &&
+                !restHydrated.isCompleted) {
+              restHydrated.complete();
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await restHydrated.future.timeout(const Duration(milliseconds: 200));
+
+        relayVideos = [
+          _relayVideo(
+            id: 'relay-video-0',
+            pubkey: userId,
+            stableId: 'video-0',
+            createdAt: DateTime(2026, 3, 30, 12, 0, 30),
+          ).copyWith(collaboratorPubkeys: [collaboratorPubkey]),
+        ];
+        onNostrVideosChanged();
+
+        final relayHydrated = Completer<void>();
+        final relaySubscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 1 &&
+                value.videos.single.id == 'relay-video-0' &&
+                value.videos.single.collaboratorPubkeys.contains(
+                  collaboratorPubkey,
+                ) &&
+                !relayHydrated.isCompleted) {
+              relayHydrated.complete();
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(relaySubscription.close);
+        await relayHydrated.future.timeout(const Duration(milliseconds: 200));
+
+        enrichmentCompleter.complete([staleEnrichmentEvent]);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final finalState = container
+            .read(profileFeedProvider(userId))
+            .requireValue;
+        expect(finalState.videos, hasLength(1));
+        expect(finalState.videos.single.id, 'relay-video-0');
+        expect(
+          finalState.videos.single.collaboratorPubkeys,
+          contains(collaboratorPubkey),
+        );
+      },
+    );
+
+    test(
+      'enrichment callback removes videos hidden by enriched labels',
+      () async {
+        final hideEvent = Event(
+          userId,
+          34236,
+          [
+            ['url', 'https://example.com/hidden.mp4'],
+            ['d', 'video-1'],
+            ['content-warning', 'nudity'],
+            ['L', 'content-warning'],
+            ['l', 'nudity', 'content-warning'],
+          ],
+          'Hidden after enrichment',
+          createdAt: DateTime(2026, 3, 30, 12).millisecondsSinceEpoch ~/ 1000,
+        );
+        final enrichmentCompleter = Completer<List<Event>>();
+
+        when(
+          () => mockFunnelcakeApiClient.getVideosByAuthor(pubkey: userId),
+        ).thenAnswer(
+          (_) async => VideosByAuthorResponse(
+            videos: [
+              _videoStat(
+                id: hideEvent.id,
+                pubkey: userId,
+                stableId: 'video-1',
+                createdAt: DateTime(2026, 3, 30, 12),
+              ),
+            ],
+          ),
+        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) => enrichmentCompleter.future);
+        when(() => mockVideoEventService.filterVideoList(any())).thenAnswer((
+          invocation,
+        ) {
+          final videos =
+              invocation.positionalArguments.single as List<VideoEvent>;
+          return videos
+              .where((video) => !video.contentWarningLabels.contains('nudity'))
+              .toList();
+        });
+
+        final container = createContainer();
+        await container.read(funnelcakeAvailableProvider.future);
+        await container.read(profileFeedProvider(userId).future);
+
+        final restHydrated = Completer<void>();
+        final subscription = container.listen<AsyncValue<VideoFeedState>>(
+          profileFeedProvider(userId),
+          (previous, next) {
+            final value = next.asData?.value;
+            if (value != null &&
+                value.videos.length == 1 &&
+                value.videos.single.id == hideEvent.id &&
+                !restHydrated.isCompleted) {
+              restHydrated.complete();
+            }
+          },
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+        await restHydrated.future.timeout(const Duration(milliseconds: 200));
+
+        final removed = Completer<void>();
+        final removalSubscription = container
+            .listen<AsyncValue<VideoFeedState>>(profileFeedProvider(userId), (
+              previous,
+              next,
+            ) {
+              final previousValue = previous?.asData?.value;
+              final nextValue = next.asData?.value;
+              if (previousValue != null &&
+                  previousValue.videos.length == 1 &&
+                  nextValue != null &&
+                  nextValue.videos.isEmpty &&
+                  !removed.isCompleted) {
+                removed.complete();
+              }
+            });
+        addTearDown(removalSubscription.close);
+
+        enrichmentCompleter.complete([hideEvent]);
+        await removed.future.timeout(const Duration(milliseconds: 200));
+
+        final finalState = container
+            .read(profileFeedProvider(userId))
+            .requireValue;
+        expect(finalState.videos, isEmpty);
       },
     );
 
