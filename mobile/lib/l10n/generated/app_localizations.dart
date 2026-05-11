@@ -13470,6 +13470,18 @@ abstract class AppLocalizations {
   /// **'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.'**
   String get minorAccountReviewApproachBody;
 
+  /// No description provided for @minorAccountReviewLearnMoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read more'**
+  String get minorAccountReviewLearnMoreTitle;
+
+  /// No description provided for @minorAccountReviewKidsPolicyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Open kids policy'**
+  String get minorAccountReviewKidsPolicyCta;
+
   /// No description provided for @minorAccountReviewChooseAgeBandTitle.
   ///
   /// In en, this message translates to:

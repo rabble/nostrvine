@@ -7817,6 +7817,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
 
   @override
+  String get minorAccountReviewLearnMoreTitle => 'Read more';
+
+  @override
+  String get minorAccountReviewKidsPolicyCta => 'Open kids policy';
+
+  @override
   String get minorAccountReviewChooseAgeBandTitle =>
       'Choose the path that fits';
 

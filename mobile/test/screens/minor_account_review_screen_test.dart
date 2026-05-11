@@ -27,13 +27,8 @@ void main() {
 
       expect(find.text('Family guide'), findsOneWidget);
       expect(find.text("Not 16 yet? That's OK."), findsOneWidget);
-      await tester.scrollUntilVisible(
-        find.text('Helpful for families'),
-        200,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Helpful for families'), findsOneWidget);
+      expect(find.text('Read more'), findsOneWidget);
+      expect(find.text('Open kids policy'), findsOneWidget);
       expect(find.text('Open family resources'), findsOneWidget);
       expect(
         find.text(
