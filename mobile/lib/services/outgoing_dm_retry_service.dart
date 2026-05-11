@@ -166,9 +166,7 @@ class OutgoingDmRetryService {
           // State A: recipient delivered, self-wrap missing. The
           // canonical case #4124 is closing.
           try {
-            final result = await _dmRepository.recoverSelfWrap(
-              rumorId: row.id,
-            );
+            final result = await _dmRepository.recoverSelfWrap(rumorId: row.id);
             if (result.success) {
               // recoverSelfWrap deleted the row on success. The bumped
               // retryCount would be moot anyway, so skip incrementRetry.
@@ -238,6 +236,14 @@ class OutgoingDmRetryService {
         'aborted-not-ready=$abortedNotReady',
         name: 'OutgoingDmRetryService',
         category: LogCategory.system,
+      );
+    } on Object catch (e, stackTrace) {
+      Log.error(
+        'sweep failed: $e',
+        name: 'OutgoingDmRetryService',
+        category: LogCategory.system,
+        error: e,
+        stackTrace: stackTrace,
       );
     } finally {
       _isSweeping = false;

@@ -376,6 +376,27 @@ void main() {
 
     group('error handling', () {
       test(
+        'contains a top-level DAO failure and clears the in-progress flag',
+        () async {
+          when(
+            () => dao.getRetryableForOwner(
+              ownerPubkey: any(named: 'ownerPubkey'),
+              maxRetries: any(named: 'maxRetries'),
+            ),
+          ).thenThrow(Exception('database locked'));
+
+          final service = buildService();
+
+          await expectLater(service.sweep(), completes);
+          expect(service.isSweeping, isFalse);
+          verifyNever(
+            () => dmRepository.recoverSelfWrap(rumorId: any(named: 'rumorId')),
+          );
+          verifyNever(() => dao.incrementRetry(any()));
+        },
+      );
+
+      test(
         'StateError aborts the pass; remaining rows are not dispatched',
         () async {
           // Two rows; the first throws StateError. The loop must not advance to
