@@ -39,6 +39,21 @@ class MinorAccountReviewParentConsentScreen extends ConsumerWidget {
                   style: VineTheme.bodyMediumFont(color: VineTheme.lightText),
                 ),
                 const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: VineTheme.accentLimeBackground,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: VineTheme.accentLime.withValues(alpha: .35),
+                    ),
+                  ),
+                  child: Text(
+                    context.l10n.minorAccountReviewParentConsentPauseNote,
+                    style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _ChecklistCard(
                   title: context.l10n.minorAccountReviewParentConsentChecklist,
                   items: [

@@ -12795,50 +12795,38 @@ abstract class AppLocalizations {
   /// No description provided for @minorAccountReviewUnder13PublicTitle.
   ///
   /// In en, this message translates to:
-  /// **'Under-13 accounts'**
+  /// **'We\'re sorry — we can\'t give you a Divine account today.'**
   String get minorAccountReviewUnder13PublicTitle;
 
   /// No description provided for @minorAccountReviewUnder13PublicBody.
   ///
   /// In en, this message translates to:
-  /// **'If this account belongs to someone under 13, a parent or guardian should email Divine so our team can review what help is available.'**
+  /// **'Divine isn\'t built for people under 13. The rules mean we would have to ask for things from your parents that we are not willing to ask for, so we don\'t host accounts for kids your age.'**
   String get minorAccountReviewUnder13PublicBody;
 
-  /// No description provided for @minorAccountReviewUnder13EmailTitle.
+  /// No description provided for @minorAccountReviewUnder13FamilyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Email Divine support'**
-  String get minorAccountReviewUnder13EmailTitle;
+  /// **'What your family can do instead'**
+  String get minorAccountReviewUnder13FamilyTitle;
 
-  /// No description provided for @minorAccountReviewUnder13ParentTitle.
+  /// No description provided for @minorAccountReviewUnder13FamilyBody.
   ///
   /// In en, this message translates to:
-  /// **'What the parent or guardian should include'**
-  String get minorAccountReviewUnder13ParentTitle;
+  /// **'A parent or guardian can hold the account, do the posting, and you can appear in videos with them. Families enjoying Divine together is welcome.'**
+  String get minorAccountReviewUnder13FamilyBody;
 
-  /// No description provided for @minorAccountReviewUnder13ParentBody.
+  /// No description provided for @minorAccountReviewUnder13ComeBackTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tell us the account belongs to someone under 13 and share the details needed for our team to review the situation.'**
-  String get minorAccountReviewUnder13ParentBody;
+  /// **'When you turn 13'**
+  String get minorAccountReviewUnder13ComeBackTitle;
 
-  /// No description provided for @minorAccountReviewUnder13EmailCta.
+  /// No description provided for @minorAccountReviewUnder13ComeBackBody.
   ///
   /// In en, this message translates to:
-  /// **'Email Divine support'**
-  String get minorAccountReviewUnder13EmailCta;
-
-  /// No description provided for @minorAccountReviewUnder13PublicEmailSubject.
-  ///
-  /// In en, this message translates to:
-  /// **'Under-13 account review help'**
-  String get minorAccountReviewUnder13PublicEmailSubject;
-
-  /// No description provided for @minorAccountReviewUnder13PublicEmailBody.
-  ///
-  /// In en, this message translates to:
-  /// **'Hi Divine support,\n\nI am the parent or guardian for a child under 13 and I am contacting Divine about account review help.\n\nThanks.'**
-  String get minorAccountReviewUnder13PublicEmailBody;
+  /// **'You can come back and create your own account with a quick step where a parent or guardian confirms they know about it.'**
+  String get minorAccountReviewUnder13ComeBackBody;
 
   /// No description provided for @minorAccountReviewTeenBody.
   ///
@@ -12857,6 +12845,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A parent or guardian should email Divine support with a short private video so our team can review the account and help with next steps.\n\nIf parent or guardian contact is not possible or would put someone at risk, email Divine support and let us know.'**
   String get minorAccountReviewParentConsentBody;
+
+  /// No description provided for @minorAccountReviewParentConsentPauseNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a pause, not a dead end. The account is not active until Divine support reviews the video.'**
+  String get minorAccountReviewParentConsentPauseNote;
 
   /// No description provided for @minorAccountReviewParentConsentChecklist.
   ///
