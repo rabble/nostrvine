@@ -35,6 +35,9 @@ class AppConstants {
   /// Divine-hosted family guidance hub for parents and guardians.
   static const String familyResourcesUrl = 'https://family.divine.video';
 
+  /// Divine-hosted kids policy page for under-16 account rules.
+  static const String kidsPolicyUrl = 'https://kids.divine.video';
+
   /// Divine-hosted flagged-account review page for age-review cases.
   static const String ageReviewUrl = 'https://age-review.divine.video';
 
