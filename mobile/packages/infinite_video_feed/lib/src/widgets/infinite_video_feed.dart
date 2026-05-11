@@ -261,6 +261,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
   // detect that the user scrolled away mid-load.
   int _playerWindowGeneration = 0;
 
+  // Per-index generation token used by _initController to cancel stale
+  // async work when ownership changes while awaits are in flight.
+  final _controllerInitGenerations = <int, int>{};
+
   // ─── Services ───────────────────────────────────────────────────────────
 
   late final PlaybackSourceRegistry _sources;
@@ -447,6 +451,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       unawaited(controller.dispose());
     }
     _controllers.clear();
+    _controllerInitGenerations.clear();
     super.dispose();
   }
 
@@ -593,6 +598,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       unawaited(controller.dispose());
     }
     _controllers.clear();
+    _controllerInitGenerations.clear();
   }
 
   // coverage:ignore-start
@@ -611,6 +617,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     _loadedFromCache.remove(index);
     _errorTypes.remove(index);
     _sources.remove(index);
+    _controllerInitGenerations.remove(index);
     unawaited(_controllers.remove(index)?.dispose());
   }
   // coverage:ignore-end
@@ -619,6 +626,9 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
   Future<void> _initController(int index, {bool skipCache = false}) async {
     if (index < 0 || index >= widget.videos.length) return;
+
+    final initGeneration = (_controllerInitGenerations[index] ?? 0) + 1;
+    _controllerInitGenerations[index] = initGeneration;
 
     final video = widget.videos[index];
     final cachedFile = skipCache
@@ -647,8 +657,27 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     );
     _controllers[index] = controller;
 
+    bool ownsInit() {
+      return mounted &&
+          _controllerInitGenerations[index] == initGeneration &&
+          identical(_controllers[index], controller);
+    }
+
+    bool guardInitOwnership(String step) {
+      if (ownsInit()) return true;
+      _log(
+        'Abort stale init at index $index (${video.id}) during $step',
+      );
+      if (identical(_controllers[index], controller)) {
+        _controllers.remove(index);
+      }
+      unawaited(controller.dispose());
+      return false;
+    }
+
     try {
       await controller.initialize();
+      if (!guardInitOwnership('initialize')) return;
 
       // coverage:ignore-start
       // Native controller initialization and source selection require the
@@ -665,6 +694,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       if (fromCache) {
         try {
           await controller.setSource(VideoClip.file(cachedFile.path));
+          if (!guardInitOwnership('setSource(cache)')) return;
           _loadedFromCache.add(index);
           // Register network sources with prestart so a runtime parseError
           // on the cached file can still fall over to network URLs.
@@ -699,6 +729,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
             sources: playbackSources,
             log: _log,
           );
+          if (!guardInitOwnership('setSourceWithFallbacks(cache)')) return;
           _sources.register(index, playbackSources, openedSourceIdx);
           _log(
             'Network fallback source selected index $index (${video.id}): '
@@ -716,6 +747,7 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
           sources: playbackSources,
           log: _log,
         );
+        if (!guardInitOwnership('setSourceWithFallbacks(network)')) return;
         _sources.register(index, playbackSources, openedSourceIdx);
         _log(
           'Source selected index $index (${video.id}): '
@@ -724,11 +756,14 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
       }
 
       await controller.setLooping(looping: true);
+      if (!guardInitOwnership('setLooping')) return;
       await controller.setVolume(_volume);
+      if (!guardInitOwnership('setVolume')) return;
 
       if (index == _currentIndex) {
         _log('Playing index $index (${video.id})');
         await controller.play();
+        if (!guardInitOwnership('play')) return;
         _watchdog.start(index, controller);
         _staleDetector.start(index, controller);
       }
@@ -738,6 +773,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
 
       _attachSubscriptions(index, controller);
     } on Object catch (e, stackTrace) {
+      if (!ownsInit()) {
+        guardInitOwnership('error handling');
+        return;
+      }
       _log('Error loading index $index (${video.id}): $e');
       developer.log(
         'Player init failed',
@@ -754,6 +793,10 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     }
     // coverage:ignore-end
 
+    if (!ownsInit()) {
+      guardInitOwnership('rebuild');
+      return;
+    }
     _rebuild();
   }
 

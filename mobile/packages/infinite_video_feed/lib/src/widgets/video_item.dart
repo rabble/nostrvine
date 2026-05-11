@@ -70,6 +70,7 @@ class _VideoItemWidgetState extends State<VideoItemWidget> {
     _subscription = controller.stateStream.listen((state) {
       final newRatio = state.aspectRatio;
       if (newRatio != _aspectRatio && newRatio > 0) {
+        if (!mounted) return;
         setState(() => _aspectRatio = newRatio);
       }
     });

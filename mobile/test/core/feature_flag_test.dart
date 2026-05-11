@@ -42,6 +42,21 @@ void main() {
       expect(FeatureFlag.integratedApps.description.length, greaterThan(10));
     });
 
+    test('nativeFeedPlayer flag should have correct metadata', () {
+      expect(
+        FeatureFlag.nativeFeedPlayer.displayName,
+        equals('Native Feed Player'),
+      );
+      expect(
+        FeatureFlag.nativeFeedPlayer.description,
+        equals(
+          'Use the native platform video player in the feed '
+          '(iOS, Android, macOS). Disable to fall back to the legacy '
+          'pooled player. Has no effect on web.',
+        ),
+      );
+    });
+
     test('should provide meaningful descriptions', () {
       for (final flag in FeatureFlag.values) {
         expect(

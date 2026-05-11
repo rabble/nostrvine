@@ -203,5 +203,26 @@ void main() {
       expect(find.byType(DivineVideoPlayer), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
+
+    testWidgets('ignores late stream updates after unmount', (tester) async {
+      final controller = FakeController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: VideoItemWidget(controller: controller),
+        ),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      controller.pushState(
+        const DivineVideoPlayerState(videoWidth: 1920, videoHeight: 1080),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }

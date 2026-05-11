@@ -426,6 +426,34 @@ void main() {
         expect(find.byType(ContentWarningBlurOverlay), findsNothing);
       },
     );
+
+    testWidgets('exposes localized semantics label and hint', (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        InfiniteVideoFeed.debugIsSupportedOverride = true;
+
+        final video = _makeVideo();
+        final cubit = _MockVideoPlaybackStatusCubit()
+          ..stub(PlaybackStatus.ready, video.id);
+
+        await _pumpFeedVideos(
+          tester,
+          videos: [video],
+          videoPlaybackStatusCubit: cubit,
+        );
+        await tester.pump(const Duration(seconds: 4));
+
+        final l10n = lookupAppLocalizations(const Locale('en'));
+        final surfaceFinder = find.bySemanticsLabel(l10n.videoPlayerPlayVideo);
+
+        expect(surfaceFinder, findsOneWidget);
+        final semanticsNode = tester.getSemantics(surfaceFinder);
+        expect(semanticsNode.flagsCollection.isButton, isTrue);
+        expect(semanticsNode.hint, equals(l10n.videoPlayerTapHint));
+      } finally {
+        semantics.dispose();
+      }
+    });
   });
 
   // -------------------------------------------------------------------------

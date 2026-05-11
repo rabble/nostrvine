@@ -268,6 +268,12 @@ void main() {
         );
       });
 
+      test('setVolume updates controller state immediately', () async {
+        await controller.setVolume(0.5);
+
+        expect(controller.state.volume, equals(0.5));
+      });
+
       test('setVolume clamps below 0', () async {
         await controller.setVolume(-1);
 
