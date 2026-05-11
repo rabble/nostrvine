@@ -27,9 +27,9 @@ void main() {
 
       expect(find.text('Family guide'), findsOneWidget);
       expect(find.text("Not 16 yet? That's OK."), findsOneWidget);
-      expect(find.text('Read more'), findsOneWidget);
-      expect(find.text('Open kids policy'), findsOneWidget);
-      expect(find.text('Open family resources'), findsOneWidget);
+      expect(find.text('More for families'), findsOneWidget);
+      expect(find.text("Read Divine's kids policy"), findsOneWidget);
+      expect(find.text('Get family guides and tips'), findsOneWidget);
       expect(
         find.text(
           'If you are 16 or older and got sent here by mistake, contact Divine support so a real person can review it.',

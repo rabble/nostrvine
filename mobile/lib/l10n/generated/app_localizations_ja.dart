@@ -6863,10 +6863,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'We think healthy tech habits come from pausing, reflecting, and redirecting attention toward better things, not from spying on kids or turning parents into hall monitors. Research backs that up too.';
 
   @override
-  String get minorAccountReviewLearnMoreTitle => 'Read more';
+  String get minorAccountReviewLearnMoreTitle => 'More for families';
 
   @override
-  String get minorAccountReviewKidsPolicyCta => 'Open kids policy';
+  String get minorAccountReviewKidsPolicyCta => 'Read Divine\'s kids policy';
 
   @override
   String get minorAccountReviewChooseAgeBandTitle =>
@@ -6886,7 +6886,8 @@ class AppLocalizationsJa extends AppLocalizations {
       'Visit the Divine family guide for practical tips, conversation tools, and resources for helping teens use social media more safely.';
 
   @override
-  String get minorAccountReviewFamilyResourcesCta => 'Open family resources';
+  String get minorAccountReviewFamilyResourcesCta =>
+      'Get family guides and tips';
 
   @override
   String get minorAccountReviewFooter =>
