@@ -160,6 +160,7 @@ void main() {
       const email = 'first.last+tag@example.com';
 
       expect(
+        // This locks the crash-report fallback to the same mask shape as logs.
         sanitizeForCrashReport('auth failed for $email'),
         'auth failed for ${redactEmailForLogs(email)}',
       );

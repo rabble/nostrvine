@@ -83,6 +83,7 @@ String sanitizeForCrashReport(String input) {
       .replaceAll(_nsecPattern, 'nsec1<redacted>')
       .replaceAllMapped(
         _emailPattern,
+        // Reuse the log helper here so both redaction surfaces stay aligned.
         (match) => redactEmailForLogs(match.group(0)!),
       );
 }
