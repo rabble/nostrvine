@@ -354,6 +354,11 @@
     "videoActionMoreOptions": "더 많은 옵션",
     "videoActionHideSubtitles": "자막 숨기기",
     "videoActionShowSubtitles": "자막 표시",
+    "videoEngagementLikersTitle": "좋아요한 사용자",
+    "videoEngagementRepostersTitle": "리포스트한 사용자",
+    "videoEngagementLikersEmpty": "아직 좋아요가 없습니다",
+    "videoEngagementRepostersEmpty": "아직 리포스트가 없습니다",
+    "videoEngagementLoadFailed": "목록을 불러올 수 없습니다",
     "videoDescriptionLoops": "루프 {count}회",
     "metadataBadgeNotDivine": "Divine 아님",
     "metadataBadgeHumanMade": "사람 제작",
@@ -2098,6 +2103,11 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "선택한 클립 분할",
+    "videoEditorExtractAudioLabel": "오디오 추출",
+    "videoEditorClipAudioTitle": "클립 오디오",
+    "videoEditorExtractAudioFromClipSemanticLabel": "클립에서 오디오를 추출하고 원본을 음소거",
+    "videoEditorExtractAudioNoLocalFile": "오디오를 추출할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.",
+    "videoEditorExtractAudioFailed": "오디오를 추출할 수 없었습니다. 다시 시도해 주세요.",
     "videoEditorStickersDivineOriginals": "Divine 오리지널",
     "videoEditorStickerSearchHint": "스티커 검색...",
     "videoEditorTextAlignmentSemanticLabel": "텍스트 정렬",
@@ -2833,5 +2843,14 @@
     "reportReasonOtherSubtitle": "위에 나열되지 않은 위반",
     "reportLearnMoreAt": "자세한 내용은",
     "supportLogsSavedTo": "{path}에 로그 저장됨",
-    "supportRevealLogsAction": "폴더에서 보기"
+    "supportRevealLogsAction": "폴더에서 보기",
+    "notificationsVideoThumbnailFor": "{title} 동영상 썸네일",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "동영상 썸네일"
 }

@@ -604,6 +604,11 @@
     "videoActionMoreOptions": "Mai multe opțiuni",
     "videoActionHideSubtitles": "Ascunde subtitrările",
     "videoActionShowSubtitles": "Arată subtitrările",
+    "videoEngagementLikersTitle": "Apreciat de",
+    "videoEngagementRepostersTitle": "Repostat de",
+    "videoEngagementLikersEmpty": "Niciun like încă",
+    "videoEngagementRepostersEmpty": "Niciun repost încă",
+    "videoEngagementLoadFailed": "Lista nu a putut fi încărcată",
     "videoDescriptionLoops": "{count} bucle",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2799,6 +2804,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Duplichează elementul selectat",
     "videoEditorSplitLabel": "Împarte",
     "videoEditorSplitSelectedClipSemanticLabel": "Împarte clipul selectat",
+    "videoEditorExtractAudioLabel": "Extrage audio",
+    "videoEditorClipAudioTitle": "Audio clip",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Extrage audio din clip și dezactivează sunetul originalului",
+    "videoEditorExtractAudioNoLocalFile": "Nu se poate extrage audio: clipul nu este disponibil local.",
+    "videoEditorExtractAudioFailed": "Nu s-a putut extrage audio. Vă rugăm să încercați din nou.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Finalizează editarea cronologiei",
     "videoEditorAudioPlayPreviewSemanticLabel": "Redă previzualizarea",
     "videoEditorAudioPausePreviewSemanticLabel": "Pune previzualizarea pe pauză",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Încălcări care nu sunt listate mai sus",
     "reportLearnMoreAt": "Află mai multe la",
     "supportLogsSavedTo": "Jurnale salvate în {path}",
-    "supportRevealLogsAction": "Arată în dosar"
+    "supportRevealLogsAction": "Arată în dosar",
+    "notificationsVideoThumbnailFor": "Miniatură video pentru {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniatură video"
 }

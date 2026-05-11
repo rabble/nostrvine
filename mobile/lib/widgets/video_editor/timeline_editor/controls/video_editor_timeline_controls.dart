@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/l10n/l10n.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 class VideoEditorTimelineControls extends StatelessWidget {
   const VideoEditorTimelineControls({
@@ -9,6 +10,8 @@ class VideoEditorTimelineControls extends StatelessWidget {
     this.onEdit,
     this.onDuplicated,
     this.onSplit,
+    this.onExtractAudio,
+    this.isExtractingAudio = false,
     super.key,
   });
 
@@ -16,7 +19,9 @@ class VideoEditorTimelineControls extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDuplicated;
   final VoidCallback? onSplit;
-  final VoidCallback onDone;
+  final VoidCallback? onExtractAudio;
+  final bool isExtractingAudio;
+  final VoidCallback? onDone;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +85,16 @@ class VideoEditorTimelineControls extends StatelessWidget {
                           .videoEditorSplitSelectedClipSemanticLabel,
                       onPressed: onSplit,
                     ),
+                  if (onExtractAudio != null)
+                    _ControlButton(
+                      icon: .waveform,
+                      label: context.l10n.videoEditorExtractAudioLabel,
+                      semanticLabel: context
+                          .l10n
+                          .videoEditorExtractAudioFromClipSemanticLabel,
+                      onPressed: isExtractingAudio ? null : onExtractAudio,
+                      isLoading: isExtractingAudio,
+                    ),
                   _ControlButton(
                     icon: .check,
                     label: context.l10n.videoEditorDoneLabel,
@@ -105,6 +120,7 @@ class _ControlButton extends StatelessWidget {
     required this.semanticLabel,
     required this.onPressed,
     this.type = .secondary,
+    this.isLoading = false,
   });
 
   final DivineIconName icon;
@@ -112,19 +128,28 @@ class _ControlButton extends StatelessWidget {
   final String semanticLabel;
   final VoidCallback? onPressed;
   final DivineIconButtonType type;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       spacing: 8,
       children: [
-        DivineIconButton(
-          icon: icon,
-          semanticLabel: semanticLabel,
-          onPressed: onPressed,
-          type: type,
-          size: .small,
-        ),
+        if (isLoading)
+          const SizedBox.square(
+            dimension: 52,
+            child: Center(
+              child: BrandedLoadingIndicator(size: 32),
+            ),
+          )
+        else
+          DivineIconButton(
+            icon: icon,
+            semanticLabel: semanticLabel,
+            onPressed: onPressed,
+            type: type,
+            size: .small,
+          ),
         Text(label, style: VineTheme.bodySmallFont()),
       ],
     );

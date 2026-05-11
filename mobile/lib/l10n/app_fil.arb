@@ -386,6 +386,11 @@
     "videoActionMoreOptions": "Iba pang options",
     "videoActionHideSubtitles": "Itago ang subtitles",
     "videoActionShowSubtitles": "Ipakita ang subtitles",
+    "videoEngagementLikersTitle": "Nag-like",
+    "videoEngagementRepostersTitle": "Nag-repost",
+    "videoEngagementLikersEmpty": "Wala pang nag-like",
+    "videoEngagementRepostersEmpty": "Wala pang nag-repost",
+    "videoEngagementLoadFailed": "Hindi ma-load ang listahan",
     "videoDescriptionLoops": "{count} loops",
     "videoFeedLoopCountLine": "{compactCount} {count, plural, =1{loop} other{loops}}",
     "metadataBadgeNotDivine": "Hindi Divine",
@@ -1664,6 +1669,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "I-duplicate ang napiling item",
     "videoEditorSplitLabel": "I-split",
     "videoEditorSplitSelectedClipSemanticLabel": "I-split ang napiling clip",
+    "videoEditorExtractAudioLabel": "I-extract ang Audio",
+    "videoEditorClipAudioTitle": "Clip Audio",
+    "videoEditorExtractAudioFromClipSemanticLabel": "I-extract ang audio mula sa clip at i-mute ang orihinal",
+    "videoEditorExtractAudioNoLocalFile": "Hindi ma-extract ang audio: hindi available ang clip nang lokal.",
+    "videoEditorExtractAudioFailed": "Hindi na-extract ang audio. Pakisubukang muli.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Tapusin ang pag-edit ng timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "I-play ang preview",
     "videoEditorAudioPausePreviewSemanticLabel": "I-pause ang preview",
@@ -2091,5 +2101,14 @@
     "profileEditGetVerifiedSubtitle": "I-link ang iyong mga social media account para malaman ng mga tao na ikaw talaga ito.",
     "@profileEditGetVerifiedSubtitle": {
         "description": "Subtitle explaining the verified accounts call to action in the profile editor"
-    }
+    },
+    "notificationsVideoThumbnailFor": "Thumbnail ng video para sa {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Thumbnail ng video"
 }

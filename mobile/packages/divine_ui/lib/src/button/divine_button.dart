@@ -37,16 +37,35 @@ enum DivineButtonType {
 
 /// The size of a [DivineButton].
 ///
-/// Both sizes have the same 48px total outer height for consistent touch
-/// targets. The [small] variant wraps the visible button in 4px padding,
-/// making it appear 40px tall while keeping the 48px tap area.
+/// [base] (48px) and [small] (40px visible / 48px tap target) keep a
+/// 48px minimum tap target — small wraps the visible chip in 4px of
+/// outer padding so the tap area stays at 48 even though the chip
+/// renders shorter. [tiny] (32px) explicitly does NOT — its outer
+/// bounds equal its visible bounds so it can sit on the same baseline
+/// as a 32px avatar / type icon without inflating the surrounding row
+/// height. Use [tiny] only where the layout's grid module is the
+/// constraint and the surrounding context can absorb the smaller tap
+/// area.
 enum DivineButtonSize {
+  /// Tiny button: no outer tap-padding, 12px horizontal / 6px vertical
+  /// inner padding, 12.8px border radius (= 32 × 0.4, matches a 32px
+  /// `UserAvatar`'s rounded square so the button rhymes visually with
+  /// the avatar it usually sits next to), 14px `titleSmallFont` text
+  /// (Bricolage Grotesque 800 — heavier than the Inter `labelLargeFont`
+  /// used elsewhere so the small chip still reads as a primary action),
+  /// 20px icon. Visual height and tap target both 32px (deliberately
+  /// flush with the avatar / type-icon module so the row's intrinsic
+  /// height matches whether the button is present or not).
+  tiny,
+
   /// Small button: 4px outer padding, 16px horizontal / 8px vertical
-  /// inner padding, 16px border radius. Visual height 40px, tap target 48px.
+  /// inner padding, 16px border radius, 16px `titleMediumFont` text,
+  /// 24px icon. Visual height 40px, tap target 48px.
   small,
 
   /// Base/medium button: 24px horizontal / 12px vertical padding, 20px
-  /// border radius. Total height 48px.
+  /// border radius, 16px `titleMediumFont` text, 24px icon. Total
+  /// height 48px.
   base,
 }
 
@@ -160,8 +179,13 @@ class _DivineButtonContent extends StatelessWidget {
 
   bool get _isEnabled => onPressed != null && !isLoading;
 
-  /// Icon size is 24px for both variants.
-  static const double _iconSize = 24;
+  /// Icon size scales with [size]: tiny uses a smaller 20px icon to fit
+  /// inside the 32px visible chip, small/base use 24px.
+  double get _iconSize => switch (size) {
+    DivineButtonSize.tiny => 20,
+    DivineButtonSize.small => 24,
+    DivineButtonSize.base => 24,
+  };
 
   /// Whether the button has no text label (icon-only mode).
   ///
@@ -174,11 +198,16 @@ class _DivineButtonContent extends StatelessWidget {
     if (_noLabel) {
       // Match DivineIconButton padding for icon-only mode.
       return switch (size) {
+        DivineButtonSize.tiny => const EdgeInsets.all(6),
         DivineButtonSize.small => const EdgeInsets.all(8),
         DivineButtonSize.base => const EdgeInsets.all(12),
       };
     }
     return switch (size) {
+      DivineButtonSize.tiny => const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 6,
+      ),
       DivineButtonSize.small => const EdgeInsets.symmetric(
         horizontal: 16,
         vertical: 8,
@@ -191,6 +220,10 @@ class _DivineButtonContent extends StatelessWidget {
   }
 
   double get _borderRadius => switch (size) {
+    // 32 × 0.4 — same factor `UserAvatar` uses for non-tiny avatars, so
+    // a tiny button sitting next to a 32px avatar shares its corner
+    // curvature exactly.
+    DivineButtonSize.tiny => 12.8,
     DivineButtonSize.small => 16,
     DivineButtonSize.base => 20,
   };
@@ -232,6 +265,15 @@ class _DivineButtonContent extends StatelessWidget {
         decorationColor: VineTheme.primary,
         decorationThickness: 2,
       );
+    }
+
+    // Tiny buttons use Bricolage `titleSmallFont` (800 14/20/0.1) — same
+    // 14/20 dimensions as `labelLargeFont` so 6px vertical padding × 2
+    // + 20px line-height still totals exactly 32px, but the heavier
+    // weight and brand font keep the small chip reading as a primary
+    // action.
+    if (size == DivineButtonSize.tiny) {
+      return VineTheme.titleSmallFont(color: _foregroundColor);
     }
 
     return VineTheme.titleMediumFont(color: _foregroundColor);
@@ -279,6 +321,7 @@ class _DivineButtonContent extends StatelessWidget {
           DivineIcon(
             icon: leadingIcon!,
             color: _foregroundColor,
+            size: _iconSize,
           ),
         if (!_noLabel)
           Flexible(
@@ -294,6 +337,7 @@ class _DivineButtonContent extends StatelessWidget {
           DivineIcon(
             icon: trailingIcon!,
             color: _foregroundColor,
+            size: _iconSize,
           ),
       ],
     );
@@ -328,8 +372,10 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    // Small variant: wrap in 4px padding so the visible button is 40px
-    // tall but the tap target remains 48px.
+    // Small variant only: wrap in extra outer padding so the visible
+    // chip is 40px while the tap target stays at 48px. Tiny deliberately
+    // skips this — its outer == inner == 32px so it can sit flush with a
+    // 32px avatar / type icon without inflating the row's height.
     if (size == DivineButtonSize.small) {
       button = Padding(padding: const EdgeInsets.all(4), child: button);
     }

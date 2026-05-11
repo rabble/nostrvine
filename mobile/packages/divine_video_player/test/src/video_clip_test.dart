@@ -15,6 +15,7 @@ void main() {
         expect(clip.uri, equals('/path/to/video.mp4'));
         expect(clip.start, equals(Duration.zero));
         expect(clip.end, isNull);
+        expect(clip.volume, equals(1.0));
       });
 
       test('accepts start and end', () {
@@ -36,6 +37,7 @@ void main() {
         expect(clip.uri, equals('/local/file.mp4'));
         expect(clip.start, equals(Duration.zero));
         expect(clip.end, isNull);
+        expect(clip.volume, equals(1.0));
       });
 
       test('accepts start and end', () {
@@ -57,6 +59,7 @@ void main() {
         expect(clip.uri, equals('https://example.com/video.mp4'));
         expect(clip.start, equals(Duration.zero));
         expect(clip.end, isNull);
+        expect(clip.volume, equals(1.0));
       });
 
       test('accepts start and end', () {
@@ -82,6 +85,7 @@ void main() {
         expect(map['uri'], equals('/path/video.mp4'));
         expect(map['startMs'], equals(5000));
         expect(map['endMs'], isNull);
+        expect(map['volume'], equals(1.0));
       });
 
       test('serializes with end', () {
@@ -95,6 +99,7 @@ void main() {
         expect(map['uri'], equals('/path/video.mp4'));
         expect(map['startMs'], equals(2000));
         expect(map['endMs'], equals(10000));
+        expect(map['volume'], equals(1.0));
       });
 
       test('serializes zero start', () {
@@ -102,6 +107,21 @@ void main() {
         final map = clip.toMap();
 
         expect(map['startMs'], isZero);
+        expect(map['volume'], equals(1.0));
+      });
+
+      test('serializes custom volume', () {
+        const clip = VideoClip(uri: 'test.mp4', volume: 0.5);
+        final map = clip.toMap();
+
+        expect(map['volume'], equals(0.5));
+      });
+
+      test('serializes muted clip', () {
+        const clip = VideoClip(uri: 'test.mp4', volume: 0);
+        final map = clip.toMap();
+
+        expect(map['volume'], equals(0.0));
       });
     });
 

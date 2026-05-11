@@ -1502,6 +1502,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get videoActionShowSubtitles => 'Untertitel anzeigen';
 
   @override
+  String get videoEngagementLikersTitle => 'Geliket von';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Repostet von';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Noch keine Likes';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Noch keine Reposts';
+
+  @override
+  String get videoEngagementLoadFailed => 'Liste konnte nicht geladen werden';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Videodetails öffnen';
 
   @override
@@ -4006,6 +4021,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Profile öffnen';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Videovorschaubild für $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Videovorschaubild';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6641,6 +6664,24 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get videoEditorSplitSelectedClipSemanticLabel =>
       'Ausgewählten Clip teilen';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Audio extrahieren';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Clip-Audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Audio aus Clip extrahieren und Original stummschalten';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Audio kann nicht extrahiert werden: Clip ist lokal nicht verfügbar.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Audio konnte nicht extrahiert werden. Bitte erneut versuchen.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

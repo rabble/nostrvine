@@ -604,6 +604,11 @@
     "videoActionMoreOptions": "Meer opties",
     "videoActionHideSubtitles": "Ondertiteling verbergen",
     "videoActionShowSubtitles": "Ondertiteling tonen",
+    "videoEngagementLikersTitle": "Geliket door",
+    "videoEngagementRepostersTitle": "Gerepost door",
+    "videoEngagementLikersEmpty": "Nog geen likes",
+    "videoEngagementRepostersEmpty": "Nog geen reposts",
+    "videoEngagementLoadFailed": "Kon die lijst niet laden",
     "videoDescriptionLoops": "{count} loops",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2799,6 +2804,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Geselecteerd item dupliceren",
     "videoEditorSplitLabel": "Splitsen",
     "videoEditorSplitSelectedClipSemanticLabel": "Geselecteerde clip splitsen",
+    "videoEditorExtractAudioLabel": "Audio extraheren",
+    "videoEditorClipAudioTitle": "Clip-audio",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Audio uit clip extraheren en origineel dempen",
+    "videoEditorExtractAudioNoLocalFile": "Kan audio niet extraheren: clip is niet lokaal beschikbaar.",
+    "videoEditorExtractAudioFailed": "Kon audio niet extraheren. Probeer het opnieuw.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Bewerken van tijdlijn voltooien",
     "videoEditorAudioPlayPreviewSemanticLabel": "Voorbeeld afspelen",
     "videoEditorAudioPausePreviewSemanticLabel": "Voorbeeld pauzeren",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Overtredingen die hierboven niet staan",
     "reportLearnMoreAt": "Meer info op",
     "supportLogsSavedTo": "Logs opgeslagen in {path}",
-    "supportRevealLogsAction": "Tonen in map"
+    "supportRevealLogsAction": "Tonen in map",
+    "notificationsVideoThumbnailFor": "Videominiatuur van {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videominiatuur"
 }

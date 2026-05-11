@@ -1456,6 +1456,21 @@ class AppLocalizationsId extends AppLocalizations {
   String get videoActionShowSubtitles => 'Tampilkan subtitle';
 
   @override
+  String get videoEngagementLikersTitle => 'Disukai oleh';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Direpost oleh';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Belum ada suka';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Belum ada repost';
+
+  @override
+  String get videoEngagementLoadFailed => 'Tidak dapat memuat daftar';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Buka detail video';
 
   @override
@@ -3927,6 +3942,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Lihat profil';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Thumbnail video untuk $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Thumbnail video';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6529,6 +6552,24 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get videoEditorSplitSelectedClipSemanticLabel =>
       'Bagi klip yang dipilih';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Ekstrak audio';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Audio klip';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Ekstrak audio dari klip dan bisukan aslinya';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Tidak dapat mengekstrak audio: klip tidak tersedia secara lokal.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Tidak dapat mengekstrak audio. Silakan coba lagi.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

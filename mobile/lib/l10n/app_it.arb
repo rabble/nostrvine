@@ -604,6 +604,11 @@
     "videoActionMoreOptions": "Altre opzioni",
     "videoActionHideSubtitles": "Nascondi sottotitoli",
     "videoActionShowSubtitles": "Mostra sottotitoli",
+    "videoEngagementLikersTitle": "Piaciuto a",
+    "videoEngagementRepostersTitle": "Repostato da",
+    "videoEngagementLikersEmpty": "Ancora nessun mi piace",
+    "videoEngagementRepostersEmpty": "Ancora nessun repost",
+    "videoEngagementLoadFailed": "Impossibile caricare l'elenco",
     "videoDescriptionLoops": "{count} loop",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2799,6 +2804,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Duplica elemento selezionato",
     "videoEditorSplitLabel": "Dividi",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividi clip selezionato",
+    "videoEditorExtractAudioLabel": "Estrai audio",
+    "videoEditorClipAudioTitle": "Audio clip",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Estrai audio dal clip e silenzia l'originale",
+    "videoEditorExtractAudioNoLocalFile": "Impossibile estrarre l'audio: il clip non è disponibile localmente.",
+    "videoEditorExtractAudioFailed": "Impossibile estrarre l'audio. Riprova.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Termina modifica timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "Riproduci anteprima",
     "videoEditorAudioPausePreviewSemanticLabel": "Metti in pausa anteprima",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Violazioni non elencate sopra",
     "reportLearnMoreAt": "Scopri di più su",
     "supportLogsSavedTo": "Log salvati in {path}",
-    "supportRevealLogsAction": "Mostra nella cartella"
+    "supportRevealLogsAction": "Mostra nella cartella",
+    "notificationsVideoThumbnailFor": "Anteprima del video {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Anteprima del video"
 }

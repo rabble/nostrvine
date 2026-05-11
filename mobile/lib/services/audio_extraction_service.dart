@@ -89,15 +89,17 @@ class AudioExtractionService {
   static const String _logName = 'AudioExtractionService';
   static const LogCategory _logCategory = LogCategory.video;
 
-  /// MIME type for M4A audio files.
-  static const String _aacMimeType = 'audio/m4a';
+  /// MIME type for WAV audio files.
+  static const String _wavMimeType = 'audio/wav';
 
   /// Tracks temporary audio files created by this service for cleanup.
   final List<String> _temporaryFiles = [];
 
   /// Extracts the audio track from a video file.
   ///
-  /// The audio is extracted as an M4A.
+  /// The audio is extracted as a WAV to ensure compatibility with all source
+  /// codecs. The M4A passthrough path fails on macOS when the source audio
+  /// cannot be copied without re-encoding (e.g. LPCM).
   ///
   /// [videoPath] - Path to the source video file.
   ///
@@ -150,10 +152,10 @@ class AudioExtractionService {
       );
     }
 
-    // Generate output path
+    // Generate output path — extension must match AudioFormat.wav
     final tempDir = await getTemporaryDirectory();
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final outputPath = '${tempDir.path}/extracted_audio_$timestamp.aac';
+    final outputPath = '${tempDir.path}/extracted_audio_$timestamp.wav';
 
     Log.debug(
       'Extracting audio to: $outputPath',
@@ -165,7 +167,7 @@ class AudioExtractionService {
         outputPath,
         AudioExtractConfigs(
           video: EditorVideo.file(videoPath),
-          format: AudioFormat.m4a,
+          format: AudioFormat.wav,
         ),
       );
     } on AudioNoTrackException {
@@ -219,7 +221,7 @@ class AudioExtractionService {
       duration: videoDuration,
       fileSize: hashResult.size,
       sha256Hash: hashResult.hash,
-      mimeType: _aacMimeType,
+      mimeType: _wavMimeType,
     );
   }
 

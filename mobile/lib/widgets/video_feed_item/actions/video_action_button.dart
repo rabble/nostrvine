@@ -31,6 +31,7 @@ class VideoActionButton extends StatelessWidget {
     required this.semanticIdentifier,
     required this.semanticLabel,
     this.onPressed,
+    this.onLongPress,
     this.iconColor = VineTheme.whiteText,
     this.count = 0,
     this.isLoading = false,
@@ -50,6 +51,10 @@ class VideoActionButton extends StatelessWidget {
 
   /// Called when the button is tapped. Null disables the button.
   final VoidCallback? onPressed;
+
+  /// Called when the button is long-pressed. Optional secondary affordance —
+  /// e.g. opens the list of users who reacted/reposted.
+  final VoidCallback? onLongPress;
 
   /// Color applied to the SVG icon. Defaults to white.
   final Color iconColor;
@@ -81,6 +86,7 @@ class VideoActionButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: isLoading ? null : onPressed,
+        onLongPress: isLoading ? null : onLongPress,
         child: SizedBox(
           width: 48,
           child: ConstrainedBox(

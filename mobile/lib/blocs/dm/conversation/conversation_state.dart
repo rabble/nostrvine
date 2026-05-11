@@ -63,9 +63,14 @@ class ConversationState extends Equatable {
     this.sendStatus = SendStatus.idle,
     this.lastFailedSend,
     this.lastPartialSend,
+    this.pendingOptimistic = const <String, DmMessage>{},
   });
 
   final ConversationStatus status;
+
+  /// Persisted messages emitted by `DmRepository.watchMessages` — the
+  /// reactive projection of `direct_messages` rows for this conversation.
+  /// Replaced wholesale on every watch tick.
   final List<DmMessage> messages;
   final SendStatus sendStatus;
 
@@ -86,12 +91,47 @@ class ConversationState extends Equatable {
   /// never re-delivered to.
   final PartialSend? lastPartialSend;
 
+  /// In-flight optimistic rows keyed by `pendingId`. Lives outside
+  /// [messages] so a watch-stream tick that fires between the optimistic
+  /// emit and `sendMessage`'s persistence transaction commit cannot wipe
+  /// the bubble (#4193). Stripped on the success / sentPartial / failed
+  /// transition for the matching `pendingId`.
+  final Map<String, DmMessage> pendingOptimistic;
+
+  /// Merged user-visible message list: in-flight optimistic rows on top
+  /// of persisted ones from [messages], sorted newest first.
+  ///
+  /// Returns [messages] unchanged when there are no in-flight optimistics
+  /// (the hot path — every conversation that isn't actively mid-send).
+  /// Defends against the otherwise-impossible collision where a
+  /// `pendingOptimistic` value's id appears in [messages] by letting the
+  /// persisted row win.
+  List<DmMessage> get displayedMessages {
+    if (pendingOptimistic.isEmpty) return messages;
+    final persistedIds = messages.map((m) => m.id).toSet();
+    final pendings = pendingOptimistic.values.where(
+      (m) => !persistedIds.contains(m.id),
+    );
+    final merged = <DmMessage>[...pendings, ...messages]
+      ..sort((a, b) {
+        final byTime = b.createdAt.compareTo(a.createdAt);
+        if (byTime != 0) return byTime;
+        // Stable tiebreak when two rows share `createdAt` (second
+        // resolution collides on rapid sends): lex-sort by id so the
+        // pending row (`pending-<uuid>`) lands deterministically next
+        // to the persisted row (64-char hex).
+        return a.id.compareTo(b.id);
+      });
+    return List.unmodifiable(merged);
+  }
+
   ConversationState copyWith({
     ConversationStatus? status,
     List<DmMessage>? messages,
     SendStatus? sendStatus,
     FailedSend? lastFailedSend,
     PartialSend? lastPartialSend,
+    Map<String, DmMessage>? pendingOptimistic,
     bool clearLastFailedSend = false,
     bool clearLastPartialSend = false,
   }) {
@@ -105,6 +145,7 @@ class ConversationState extends Equatable {
       lastPartialSend: clearLastPartialSend
           ? null
           : (lastPartialSend ?? this.lastPartialSend),
+      pendingOptimistic: pendingOptimistic ?? this.pendingOptimistic,
     );
   }
 
@@ -115,5 +156,6 @@ class ConversationState extends Equatable {
     sendStatus,
     lastFailedSend,
     lastPartialSend,
+    pendingOptimistic,
   ];
 }

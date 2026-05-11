@@ -601,6 +601,11 @@
     "videoActionMoreOptions": "Opsi lainnya",
     "videoActionHideSubtitles": "Sembunyikan subtitle",
     "videoActionShowSubtitles": "Tampilkan subtitle",
+    "videoEngagementLikersTitle": "Disukai oleh",
+    "videoEngagementRepostersTitle": "Direpost oleh",
+    "videoEngagementLikersEmpty": "Belum ada suka",
+    "videoEngagementRepostersEmpty": "Belum ada repost",
+    "videoEngagementLoadFailed": "Tidak dapat memuat daftar",
     "videoDescriptionLoops": "{count} loop",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2809,6 +2814,11 @@
         }
     },
     "videoEditorSplitSelectedClipSemanticLabel": "Bagi klip yang dipilih",
+    "videoEditorExtractAudioLabel": "Ekstrak audio",
+    "videoEditorClipAudioTitle": "Audio klip",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Ekstrak audio dari klip dan bisukan aslinya",
+    "videoEditorExtractAudioNoLocalFile": "Tidak dapat mengekstrak audio: klip tidak tersedia secara lokal.",
+    "videoEditorExtractAudioFailed": "Tidak dapat mengekstrak audio. Silakan coba lagi.",
     "videoEditorStickersDivineOriginals": "Divine Orisinal",
     "videoEditorStickerSearchHint": "Cari stiker...",
     "videoEditorTextAlignmentSemanticLabel": "Perataan teks",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Pelanggaran yang tidak tercantum di atas",
     "reportLearnMoreAt": "Pelajari lebih lanjut di",
     "supportLogsSavedTo": "Log disimpan ke {path}",
-    "supportRevealLogsAction": "Tampilkan di folder"
+    "supportRevealLogsAction": "Tampilkan di folder",
+    "notificationsVideoThumbnailFor": "Thumbnail video untuk {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Thumbnail video"
 }

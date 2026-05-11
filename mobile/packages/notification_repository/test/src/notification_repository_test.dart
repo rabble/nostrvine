@@ -880,8 +880,10 @@ void main() {
       });
 
       test(
-        'comment kind on video is a $VideoNotification (no commentText)',
+        'comment kind on video is a $VideoNotification with commentText',
         () async {
+          // The repository carries the comment body through to the row
+          // so it can quote the most recent comment under the message.
           stubNotifications([
             makeNotification(
               notificationType: 'comment',
@@ -892,7 +894,45 @@ void main() {
           stubProfiles({});
 
           final page = await repository.getNotifications();
-          expect(page.items.single, isA<VideoNotification>());
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.comment));
+          expect(item.commentText, equals('Short comment'));
+        },
+      );
+
+      test(
+        'truncates a long comment on $VideoNotification (50 chars + ellipsis)',
+        () async {
+          final longComment = 'A' * 60;
+          stubNotifications([
+            makeNotification(
+              notificationType: 'comment',
+              sourceKind: 1,
+              content: longComment,
+            ),
+          ]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          // Reuses _truncateComment: caps at 50 chars and appends "..."
+          // so the row never tries to render an unbounded comment body.
+          expect(item.commentText, equals('${'A' * 50}...'));
+        },
+      );
+
+      test(
+        'like / repost on video leaves commentText null (no body text)',
+        () async {
+          // Default makeNotification is a reaction (kind 7) on a video,
+          // which the repository maps to NotificationKind.like.
+          stubNotifications([makeNotification()]);
+          stubProfiles({});
+
+          final page = await repository.getNotifications();
+          final item = page.items.single as VideoNotification;
+          expect(item.type, equals(NotificationKind.like));
+          expect(item.commentText, isNull);
         },
       );
     });

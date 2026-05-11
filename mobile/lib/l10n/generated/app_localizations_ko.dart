@@ -1398,6 +1398,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get videoActionShowSubtitles => '자막 표시';
 
   @override
+  String get videoEngagementLikersTitle => '좋아요한 사용자';
+
+  @override
+  String get videoEngagementRepostersTitle => '리포스트한 사용자';
+
+  @override
+  String get videoEngagementLikersEmpty => '아직 좋아요가 없습니다';
+
+  @override
+  String get videoEngagementRepostersEmpty => '아직 리포스트가 없습니다';
+
+  @override
+  String get videoEngagementLoadFailed => '목록을 불러올 수 없습니다';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => '영상 세부 정보 열기';
 
   @override
@@ -3778,6 +3793,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => '프로필 보기';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return '$title 동영상 썸네일';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => '동영상 썸네일';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6304,6 +6327,23 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get videoEditorSplitSelectedClipSemanticLabel => '선택한 클립 분할';
+
+  @override
+  String get videoEditorExtractAudioLabel => '오디오 추출';
+
+  @override
+  String get videoEditorClipAudioTitle => '클립 오디오';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      '클립에서 오디오를 추출하고 원본을 음소거';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      '오디오를 추출할 수 없습니다: 클립이 로컬에서 사용할 수 없습니다.';
+
+  @override
+  String get videoEditorExtractAudioFailed => '오디오를 추출할 수 없었습니다. 다시 시도해 주세요.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel => '타임라인 편집 완료';

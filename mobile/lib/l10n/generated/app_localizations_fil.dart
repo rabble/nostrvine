@@ -1507,6 +1507,21 @@ class AppLocalizationsFil extends AppLocalizations {
   String get videoActionShowSubtitles => 'Ipakita ang subtitles';
 
   @override
+  String get videoEngagementLikersTitle => 'Nag-like';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Nag-repost';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Wala pang nag-like';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Wala pang nag-repost';
+
+  @override
+  String get videoEngagementLoadFailed => 'Hindi ma-load ang listahan';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Buksan ang video details';
 
   @override
@@ -4015,6 +4030,14 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get notificationsViewProfilesSemanticLabel =>
       'Tingnan ang mga profile';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Thumbnail ng video para sa $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Thumbnail ng video';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6641,6 +6664,24 @@ class AppLocalizationsFil extends AppLocalizations {
   @override
   String get videoEditorSplitSelectedClipSemanticLabel =>
       'I-split ang napiling clip';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'I-extract ang Audio';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Clip Audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'I-extract ang audio mula sa clip at i-mute ang orihinal';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Hindi ma-extract ang audio: hindi available ang clip nang lokal.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Hindi na-extract ang audio. Pakisubukang muli.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

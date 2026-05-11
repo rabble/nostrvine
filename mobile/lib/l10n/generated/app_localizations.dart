@@ -2680,6 +2680,36 @@ abstract class AppLocalizations {
   /// **'Show subtitles'**
   String get videoActionShowSubtitles;
 
+  /// Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it.
+  ///
+  /// In en, this message translates to:
+  /// **'Liked by'**
+  String get videoEngagementLikersTitle;
+
+  /// Title of the screen shown when the video owner taps the Repost button on their own video — lists the users who reposted it.
+  ///
+  /// In en, this message translates to:
+  /// **'Reposted by'**
+  String get videoEngagementRepostersTitle;
+
+  /// Empty-state message on the likers list screen when no one has liked the video yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No likes yet'**
+  String get videoEngagementLikersEmpty;
+
+  /// Empty-state message on the reposters list screen when no one has reposted the video yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No reposts yet'**
+  String get videoEngagementRepostersEmpty;
+
+  /// Error-state heading on the engagement list screen when the relay query fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load that list'**
+  String get videoEngagementLoadFailed;
+
   /// Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget.
   ///
   /// In en, this message translates to:
@@ -6955,6 +6985,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View profiles'**
   String get notificationsViewProfilesSemanticLabel;
+
+  /// Screen-reader label for the video thumbnail on a video-anchored notification row when the video title is known.
+  ///
+  /// In en, this message translates to:
+  /// **'Video thumbnail for {title}'**
+  String notificationsVideoThumbnailFor(String title);
+
+  /// Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing.
+  ///
+  /// In en, this message translates to:
+  /// **'Video thumbnail'**
+  String get notificationsVideoThumbnail;
 
   /// No description provided for @notificationsLoadingType.
   ///
@@ -11563,6 +11605,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Split selected clip'**
   String get videoEditorSplitSelectedClipSemanticLabel;
+
+  /// No description provided for @videoEditorExtractAudioLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract Audio'**
+  String get videoEditorExtractAudioLabel;
+
+  /// No description provided for @videoEditorClipAudioTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clip Audio'**
+  String get videoEditorClipAudioTitle;
+
+  /// No description provided for @videoEditorExtractAudioFromClipSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Extract audio from clip and mute original'**
+  String get videoEditorExtractAudioFromClipSemanticLabel;
+
+  /// No description provided for @videoEditorExtractAudioNoLocalFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot extract audio: clip is not locally available.'**
+  String get videoEditorExtractAudioNoLocalFile;
+
+  /// No description provided for @videoEditorExtractAudioFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not extract audio. Please try again.'**
+  String get videoEditorExtractAudioFailed;
 
   /// No description provided for @videoEditorFinishTimelineEditingSemanticLabel.
   ///

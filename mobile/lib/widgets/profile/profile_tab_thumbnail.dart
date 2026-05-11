@@ -6,16 +6,6 @@ import 'package:openvine/widgets/blurhash_display.dart';
 import 'package:openvine/widgets/profile/profile_tab_thumbnail_placeholder.dart';
 import 'package:openvine/widgets/vine_cached_image.dart';
 
-/// Decoded width cap for profile-tab grid thumbnails.
-///
-/// Three-column tiles render at ≈125dp on a 6.1-inch phone; 400 covers
-/// >3× pixel ratio with headroom and keeps each decoded entry small enough
-/// that a 50+ tile grid stays well under Flutter's default `ImageCache`
-/// budget. Without this cap, `cached_network_image` decodes at native CDN
-/// resolution (~3 MB / image), which thrashes the cache and stalls the
-/// first paint of large profile feeds. See #4190.
-const int _profileTabMemCacheWidth = 400;
-
 /// Cached thumbnail for profile grid tiles.
 ///
 /// Shows a [VineCachedImage] when [thumbnailUrl] is non-empty, falling back
@@ -39,17 +29,27 @@ class ProfileTabThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) {
-      return VineCachedImage(
-        imageUrl: thumbnailUrl!,
-        memCacheWidth: _profileTabMemCacheWidth,
-        fadeInDuration: isPrecached
-            ? Duration.zero
-            : const Duration(milliseconds: 500),
-        fadeOutDuration: isPrecached
-            ? Duration.zero
-            : const Duration(milliseconds: 1000),
-        placeholder: (context, url) => _Fallback(blurhash: blurhash),
-        errorWidget: (context, url, error) => _Fallback(blurhash: blurhash),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final rawWidth = constraints.maxWidth;
+          // Decode at tile_width × DPR so the profile grid stays under the
+          // default ImageCache budget without upscaling. See PR #4220 (#4190).
+          final memCacheWidth = rawWidth.isFinite && rawWidth > 0
+              ? (rawWidth * MediaQuery.devicePixelRatioOf(context)).round()
+              : null;
+          return VineCachedImage(
+            imageUrl: thumbnailUrl!,
+            memCacheWidth: memCacheWidth,
+            fadeInDuration: isPrecached
+                ? Duration.zero
+                : const Duration(milliseconds: 500),
+            fadeOutDuration: isPrecached
+                ? Duration.zero
+                : const Duration(milliseconds: 1000),
+            placeholder: (context, url) => _Fallback(blurhash: blurhash),
+            errorWidget: (context, url, error) => _Fallback(blurhash: blurhash),
+          );
+        },
       );
     }
     return _Fallback(blurhash: blurhash);

@@ -1508,6 +1508,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get videoActionShowSubtitles => 'Afficher les sous-titres';
 
   @override
+  String get videoEngagementLikersTitle => 'Aimé par';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Reposté par';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Aucun j\'aime pour l\'instant';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Aucun repost pour l\'instant';
+
+  @override
+  String get videoEngagementLoadFailed => 'Impossible de charger la liste';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle =>
       'Ouvrir les détails de la vidéo';
 
@@ -4017,6 +4032,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Voir les profils';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Miniature de la vidéo $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Miniature de la vidéo';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6655,6 +6678,24 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get videoEditorSplitSelectedClipSemanticLabel =>
       'Scinder le clip sélectionné';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Extraire l\'audio';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Audio du clip';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Extraire l\'audio du clip et couper le son de l\'original';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Impossible d\'extraire l\'audio : le clip n\'est pas disponible localement.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Impossible d\'extraire l\'audio. Veuillez réessayer.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

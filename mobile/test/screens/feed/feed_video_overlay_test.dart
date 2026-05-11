@@ -14,8 +14,10 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -50,6 +52,9 @@ class _MockMediaAuthInterceptor extends Mock implements MediaAuthInterceptor {}
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
+
 class _FakeBuildContext extends Fake implements BuildContext {}
 
 // Full 64-character test IDs (never truncate Nostr IDs)
@@ -70,6 +75,8 @@ AppLocalizations _l10n(WidgetTester tester) =>
 void main() {
   group(FeedVideoOverlay, () {
     late VideoInteractionsBloc mockInteractionsBloc;
+    late VideoVolumeCubit mockVolumeCubit;
+    late FeedAutoAdvanceCubit feedAutoAdvanceCubit;
     late Player mockPlayer;
     late PlayerStream mockStream;
     late PlayerState mockPlayerState;
@@ -91,6 +98,9 @@ void main() {
 
     setUp(() {
       mockInteractionsBloc = _MockVideoInteractionsBloc();
+      mockVolumeCubit = _MockVideoVolumeCubit();
+      when(() => mockVolumeCubit.state).thenReturn(const VideoVolumeState());
+      feedAutoAdvanceCubit = FeedAutoAdvanceCubit();
       mockPlayer = _MockPlayer();
       mockStream = _MockPlayerStream();
       mockPlayerState = _MockPlayerState();
@@ -146,6 +156,7 @@ void main() {
     tearDown(() async {
       await playingController.close();
       await bufferingController.close();
+      await feedAutoAdvanceCubit.close();
       pagePosition.dispose();
     });
 
@@ -189,6 +200,10 @@ void main() {
               ),
               BlocProvider<VideoPlaybackStatusCubit>(
                 create: (_) => VideoPlaybackStatusCubit(),
+              ),
+              BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+              BlocProvider<FeedAutoAdvanceCubit>.value(
+                value: feedAutoAdvanceCubit,
               ),
             ],
             child: feedController == null

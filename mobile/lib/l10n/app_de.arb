@@ -604,6 +604,11 @@
     "videoActionMoreOptions": "Weitere Optionen",
     "videoActionHideSubtitles": "Untertitel ausblenden",
     "videoActionShowSubtitles": "Untertitel anzeigen",
+    "videoEngagementLikersTitle": "Geliket von",
+    "videoEngagementRepostersTitle": "Repostet von",
+    "videoEngagementLikersEmpty": "Noch keine Likes",
+    "videoEngagementRepostersEmpty": "Noch keine Reposts",
+    "videoEngagementLoadFailed": "Liste konnte nicht geladen werden",
     "videoDescriptionLoops": "{count} Loops",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2799,6 +2804,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Ausgewähltes Element duplizieren",
     "videoEditorSplitLabel": "Teilen",
     "videoEditorSplitSelectedClipSemanticLabel": "Ausgewählten Clip teilen",
+    "videoEditorExtractAudioLabel": "Audio extrahieren",
+    "videoEditorClipAudioTitle": "Clip-Audio",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Audio aus Clip extrahieren und Original stummschalten",
+    "videoEditorExtractAudioNoLocalFile": "Audio kann nicht extrahiert werden: Clip ist lokal nicht verfügbar.",
+    "videoEditorExtractAudioFailed": "Audio konnte nicht extrahiert werden. Bitte erneut versuchen.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Timeline-Bearbeitung abschließen",
     "videoEditorAudioPlayPreviewSemanticLabel": "Vorschau abspielen",
     "videoEditorAudioPausePreviewSemanticLabel": "Vorschau pausieren",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Verstöße, die oben nicht aufgeführt sind",
     "reportLearnMoreAt": "Mehr erfahren unter",
     "supportLogsSavedTo": "Logs gespeichert unter {path}",
-    "supportRevealLogsAction": "Im Ordner anzeigen"
+    "supportRevealLogsAction": "Im Ordner anzeigen",
+    "notificationsVideoThumbnailFor": "Videovorschaubild für {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Videovorschaubild"
 }

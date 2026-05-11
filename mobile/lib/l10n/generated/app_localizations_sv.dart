@@ -1477,6 +1477,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get videoActionShowSubtitles => 'Visa undertexter';
 
   @override
+  String get videoEngagementLikersTitle => 'Gillat av';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Repostat av';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Inga gillningar än';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Inga reposts än';
+
+  @override
+  String get videoEngagementLoadFailed => 'Det gick inte att läsa in listan';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Öppna videodetaljer';
 
   @override
@@ -3954,6 +3969,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Visa profiler';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Videominiatyr för $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Videominiatyr';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6557,6 +6580,24 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get videoEditorSplitSelectedClipSemanticLabel => 'Dela valt klipp';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Extrahera ljud';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Klippljud';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Extrahera ljud från klipp och tysta originalet';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Kan inte extrahera ljud: klippet är inte tillgängligt lokalt.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Kunde inte extrahera ljud. Försök igen.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

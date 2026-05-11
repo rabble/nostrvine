@@ -1,19 +1,32 @@
 import 'dart:async';
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/l10n/generated/app_localizations.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
+import 'package:openvine/widgets/video_feed_item/feed_playback_toggles_pill.dart';
 import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../helpers/test_provider_overrides.dart';
 
 class _MockPlayer extends Mock implements Player {}
 
 class _MockPlayerState extends Mock implements PlayerState {}
 
 class _MockPlayerStream extends Mock implements PlayerStream {}
+
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
 
 void main() {
   group('PausedVideoPlayOverlay', () {
@@ -22,6 +35,9 @@ void main() {
     late PlayerStream mockPlayerStream;
     late StreamController<bool> playingController;
     late StreamController<bool> bufferingController;
+    late FeedAutoAdvanceCubit autoAdvanceCubit;
+    late VideoVolumeCubit volumeCubit;
+    late SharedPreferences mockPrefs;
 
     setUp(() {
       mockPlayer = _MockPlayer();
@@ -34,76 +50,95 @@ void main() {
       when(() => mockPlayer.stream).thenReturn(mockPlayerStream);
       when(() => mockPlayerState.playing).thenReturn(false);
       when(() => mockPlayerState.buffering).thenReturn(false);
-      when(() => mockPlayerState.volume).thenReturn(100.0);
       when(
         () => mockPlayerStream.playing,
       ).thenAnswer((_) => playingController.stream);
       when(
         () => mockPlayerStream.buffering,
       ).thenAnswer((_) => bufferingController.stream);
-      when(
-        () => mockPlayerStream.volume,
-      ).thenAnswer((_) => const Stream<double>.empty());
+
+      autoAdvanceCubit = FeedAutoAdvanceCubit();
+      volumeCubit = _MockVideoVolumeCubit();
+      when(() => volumeCubit.state).thenReturn(const VideoVolumeState());
+      mockPrefs = createMockSharedPreferences();
     });
 
     tearDown(() async {
       await playingController.close();
       await bufferingController.close();
+      await autoAdvanceCubit.close();
     });
 
     Widget buildSubject({Key? key}) {
-      return MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: PausedVideoPlayOverlay(
-            key: key,
-            player: mockPlayer,
-            firstFrameFuture: Future<void>.value(),
-            onToggleMuteState: () {},
+      return ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<FeedAutoAdvanceCubit>.value(value: autoAdvanceCubit),
+            BlocProvider<VideoVolumeCubit>.value(value: volumeCubit),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: PausedVideoPlayOverlay(
+                key: key,
+                player: mockPlayer,
+                firstFrameFuture: Future<void>.value(),
+              ),
+            ),
           ),
         ),
       );
     }
 
     testWidgets(
-      'keeps the play affordance visible when remounted with the same paused player after playback was observed',
+      'shows the play affordance immediately when the player is paused, '
+      'even before any play has been observed',
       (tester) async {
-        await tester.pumpWidget(buildSubject(key: const ValueKey('first')));
-        await tester.pump();
-
-        playingController.add(true);
-        await tester.pump();
-        playingController.add(false);
+        await tester.pumpWidget(buildSubject());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
         expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
+      },
+    );
 
-        await tester.pumpWidget(
-          const MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: SizedBox.shrink(),
-          ),
-        );
+    testWidgets(
+      'hides the play affordance while the player is buffering',
+      (tester) async {
+        when(() => mockPlayerState.buffering).thenReturn(true);
+        await tester.pumpWidget(buildSubject());
         await tester.pump();
-
-        await tester.pumpWidget(buildSubject(key: const ValueKey('second')));
+        bufferingController.add(true);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
-        // After remount _hasStartedPlayback resets, so the overlay is hidden
-        // until the player transitions through playing again.
         expect(find.byKey(const ValueKey('paused-play')), findsNothing);
+      },
+    );
 
-        playingController.add(true);
-        await tester.pump();
-        playingController.add(false);
+    testWidgets(
+      'renders the playback toggles pill above the play icon when paused',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
+        expect(find.byType(FeedPlaybackTogglesPill), findsOneWidget);
         expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
+
+        final pillCenter = tester.getCenter(
+          find.byType(FeedPlaybackTogglesPill),
+        );
+        final playCenter = tester.getCenter(
+          find.byKey(const ValueKey('paused-play')),
+        );
+        expect(
+          pillCenter.dy,
+          lessThan(playCenter.dy),
+          reason: 'pill should sit above the play icon',
+        );
       },
     );
 
@@ -124,10 +159,13 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pump();
 
-          // Latch: first paused -> playing transition enables future
-          // feedback for this widget + player.
+          // Start from playing so the next paused->playing transition is
+          // observable. Fully settle the AnimatedSwitcher's transition of
+          // the initial paused-play affordance out of the tree before we
+          // re-enter the paused state; without this, AnimatedSwitcher
+          // accumulates outgoing entries across the bounce.
           playingController.add(true);
-          await tester.pump();
+          await tester.pumpAndSettle();
 
           // Pause for longer than the 150 ms feedback threshold.
           playingController.add(false);
@@ -145,7 +183,7 @@ void main() {
 
           // User taps to resume.
           playingController.add(true);
-          // Let AnimatedSwitcher settle after the transition kicks in.
+          // Let AnimatedSwitcher kick the transition off.
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 220));
 
@@ -169,9 +207,12 @@ void main() {
             await tester.pumpWidget(buildSubject());
             await tester.pump();
 
-            // Latch first.
+            // Start from playing so the next paused->playing transition
+            // is observable. Fully settle the AnimatedSwitcher's transition
+            // of the initial paused-play affordance out of the tree before
+            // we re-enter the paused state.
             playingController.add(true);
-            await tester.pump();
+            await tester.pumpAndSettle();
 
             // Simulate a loop-restart blip: paused -> playing within a
             // handful of milliseconds (well below the 150 ms threshold).

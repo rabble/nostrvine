@@ -10,23 +10,51 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 import 'package:openvine/widgets/video_editor/timeline_editor/controls/video_editor_timeline_controls.dart';
 
 /// Controls shown when a clip is in editing mode: Delete, Copy, Split, Done.
-class TimelineClipControls extends ConsumerWidget {
+class TimelineClipControls extends ConsumerStatefulWidget {
   const TimelineClipControls({required this.playheadPosition, super.key});
 
   final ValueNotifier<Duration> playheadPosition;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimelineClipControls> createState() =>
+      _TimelineClipControlsState();
+}
+
+class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
+  @override
+  Widget build(BuildContext context) {
     final clips = context.select((ClipEditorBloc b) => b.state.clips);
     final isLastClip = clips.length <= 1;
+    final isExtractingAudio = context.select(
+      (ClipEditorBloc b) => b.state.isExtractingAudio,
+    );
 
     return VideoEditorTimelineControls(
       onDelete: isLastClip ? null : () => _deleteClip(context, ref),
       onDuplicated: () => _duplicateClip(context, ref),
       onSplit: () => _splitClip(context),
-      onDone: () {
-        context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped());
-      },
+      onExtractAudio: () => _requestExtractAudio(context),
+      isExtractingAudio: isExtractingAudio,
+      // Done is gated while extraction is in flight purely as a UX cue —
+      // the success/failure side effect itself is handled by an editor-
+      // session-level listener in [VideoEditorScaffold], so it survives
+      // even if the user Deletes/Duplicates/Splits the clip (which exits
+      // edit mode and unmounts these controls) before extraction returns.
+      onDone: isExtractingAudio
+          ? null
+          : () {
+              context.read<ClipEditorBloc>().add(
+                const ClipEditorEditingStopped(),
+              );
+            },
+    );
+  }
+
+  void _requestExtractAudio(BuildContext context) {
+    context.read<ClipEditorBloc>().add(
+      ClipEditorAudioExtractionRequested(
+        clipTitle: context.l10n.videoEditorClipAudioTitle,
+      ),
     );
   }
 
@@ -91,7 +119,7 @@ class TimelineClipControls extends ConsumerWidget {
     // Compute the split position relative to the current clip.
     // The playhead shows a global timeline position — convert to the local
     // offset within the selected clip.
-    final globalPosition = playheadPosition.value;
+    final globalPosition = widget.playheadPosition.value;
     var clipStart = Duration.zero;
     for (var i = 0; i < state.currentClipIndex; i++) {
       clipStart += state.clips[i].trimmedDuration;

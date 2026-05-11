@@ -9,6 +9,8 @@ import 'package:openvine/notifications/widgets/actor_notification_row.dart';
 import 'package:openvine/notifications/widgets/notification_list_item.dart';
 import 'package:openvine/notifications/widgets/video_notification_row.dart';
 
+final AppLocalizations _l10n = lookupAppLocalizations(const Locale('en'));
+
 const _alice = ActorInfo(
   pubkey: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   displayName: 'Alice',
@@ -131,7 +133,7 @@ void main() {
           onFollowBack: () => tapped = true,
         );
 
-        await tester.tap(find.text('Follow back'));
+        await tester.tap(find.text(_l10n.notificationFollowBack));
         await tester.pump();
 
         expect(tapped, isTrue);

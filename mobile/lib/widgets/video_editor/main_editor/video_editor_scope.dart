@@ -96,7 +96,7 @@ class VideoEditorScope extends InheritedWidget {
   /// Use this in gesture handlers and callbacks where the editor is expected
   /// to exist. Provides a clear message instead of a bare null-check failure.
   ProImageEditorState get requireEditor {
-    final state = editorKey.currentState;
+    final state = editor;
     assert(
       state != null,
       'VideoEditorScope.requireEditor called but '

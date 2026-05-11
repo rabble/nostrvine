@@ -1504,6 +1504,21 @@ class AppLocalizationsBg extends AppLocalizations {
   String get videoActionShowSubtitles => 'Покажи субтитрите';
 
   @override
+  String get videoEngagementLikersTitle => 'Харесано от';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Споделено от';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Още няма харесвания';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Още няма споделяния';
+
+  @override
+  String get videoEngagementLoadFailed => 'Списъкът не можа да се зареди';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle =>
       'Отвори подробностите за видеото';
 
@@ -4002,6 +4017,14 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Преглед на профили';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Миниатюра на видео за $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Миниатюра на видео';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6627,6 +6650,24 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get videoEditorSplitSelectedClipSemanticLabel =>
       'Разделете избрания клип';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Извличане на аудио';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Аудио от клип';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Извлечи аудио от клип и заглуши оригинала';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Не може да се извлече аудио: клипът не е наличен локално.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Не можа да се извлече аудио. Моля, опитайте отново.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

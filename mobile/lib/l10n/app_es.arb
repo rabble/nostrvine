@@ -604,6 +604,11 @@
     "videoActionMoreOptions": "Más opciones",
     "videoActionHideSubtitles": "Ocultar subtítulos",
     "videoActionShowSubtitles": "Mostrar subtítulos",
+    "videoEngagementLikersTitle": "Le gustó a",
+    "videoEngagementRepostersTitle": "Reposteado por",
+    "videoEngagementLikersEmpty": "Aún no hay me gusta",
+    "videoEngagementRepostersEmpty": "Aún no hay reposts",
+    "videoEngagementLoadFailed": "No se pudo cargar la lista",
     "videoDescriptionLoops": "{count} loops",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2807,6 +2812,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicar elemento seleccionado",
     "videoEditorSplitLabel": "Dividir",
     "videoEditorSplitSelectedClipSemanticLabel": "Dividir clip seleccionado",
+    "videoEditorExtractAudioLabel": "Extraer audio",
+    "videoEditorClipAudioTitle": "Audio del clip",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Extraer audio del clip y silenciar el original",
+    "videoEditorExtractAudioNoLocalFile": "No se puede extraer el audio: el clip no está disponible localmente.",
+    "videoEditorExtractAudioFailed": "No se pudo extraer el audio. Por favor, inténtalo de nuevo.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminar edición de la línea de tiempo",
     "videoEditorAudioPlayPreviewSemanticLabel": "Reproducir vista previa",
     "videoEditorAudioPausePreviewSemanticLabel": "Pausar vista previa",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Infracciones no listadas arriba",
     "reportLearnMoreAt": "Más información en",
     "supportLogsSavedTo": "Registros guardados en {path}",
-    "supportRevealLogsAction": "Mostrar en carpeta"
+    "supportRevealLogsAction": "Mostrar en carpeta",
+    "notificationsVideoThumbnailFor": "Miniatura del video {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniatura del video"
 }

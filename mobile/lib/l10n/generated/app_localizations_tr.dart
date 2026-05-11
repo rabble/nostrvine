@@ -1463,6 +1463,21 @@ class AppLocalizationsTr extends AppLocalizations {
   String get videoActionShowSubtitles => 'Altyazıları göster';
 
   @override
+  String get videoEngagementLikersTitle => 'Beğenenler';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Repost edenler';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Henüz beğeni yok';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Henüz repost yok';
+
+  @override
+  String get videoEngagementLoadFailed => 'Liste yüklenemedi';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Video detaylarını aç';
 
   @override
@@ -3937,6 +3952,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Profilleri görüntüle';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return '$title için video küçük resmi';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Video küçük resmi';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6528,6 +6551,24 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get videoEditorSplitSelectedClipSemanticLabel => 'Seçili klibi böl';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Sesi çıkar';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Klip sesi';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Klipten sesi çıkar ve orijinali sessize al';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Ses çıkarılamıyor: klip yerel olarak kullanılamıyor.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Ses çıkarılamadı. Lütfen tekrar deneyin.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

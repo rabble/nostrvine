@@ -718,6 +718,26 @@
   "videoActionMoreOptions": "More options",
   "videoActionHideSubtitles": "Hide subtitles",
   "videoActionShowSubtitles": "Show subtitles",
+  "videoEngagementLikersTitle": "Liked by",
+  "@videoEngagementLikersTitle": {
+    "description": "Title of the screen shown when the video owner taps the Like button on their own video — lists the users who liked it."
+  },
+  "videoEngagementRepostersTitle": "Reposted by",
+  "@videoEngagementRepostersTitle": {
+    "description": "Title of the screen shown when the video owner taps the Repost button on their own video — lists the users who reposted it."
+  },
+  "videoEngagementLikersEmpty": "No likes yet",
+  "@videoEngagementLikersEmpty": {
+    "description": "Empty-state message on the likers list screen when no one has liked the video yet."
+  },
+  "videoEngagementRepostersEmpty": "No reposts yet",
+  "@videoEngagementRepostersEmpty": {
+    "description": "Empty-state message on the reposters list screen when no one has reposted the video yet."
+  },
+  "videoEngagementLoadFailed": "Couldn't load that list",
+  "@videoEngagementLoadFailed": {
+    "description": "Error-state heading on the engagement list screen when the relay query fails."
+  },
   "videoOverlayOpenMetadataFromTitle": "Open video details",
   "@videoOverlayOpenMetadataFromTitle": {
     "description": "Screen-reader label for the tappable title row on the video overlay. Action-oriented: describes what tapping does (opens the metadata sheet), not the title text itself — that's already read aloud by the underlying Text widget."
@@ -2072,6 +2092,19 @@
   "notificationsViewProfilesSemanticLabel": "View profiles",
   "@notificationsViewProfilesSemanticLabel": {
     "description": "Screen-reader label for a grouped notification's avatar stack, which opens the list of involved profiles."
+  },
+  "notificationsVideoThumbnailFor": "Video thumbnail for {title}",
+  "@notificationsVideoThumbnailFor": {
+    "description": "Screen-reader label for the video thumbnail on a video-anchored notification row when the video title is known.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationsVideoThumbnail": "Video thumbnail",
+  "@notificationsVideoThumbnail": {
+    "description": "Screen-reader fallback label for the video thumbnail on a video-anchored notification row when the title is missing."
   },
   "notificationsLoadingType": "Loading {type} notifications...",
   "@notificationsLoadingType": {
@@ -3568,6 +3601,11 @@
   "videoEditorDuplicateSelectedItemSemanticLabel": "Duplicate selected item",
   "videoEditorSplitLabel": "Split",
   "videoEditorSplitSelectedClipSemanticLabel": "Split selected clip",
+  "videoEditorExtractAudioLabel": "Extract Audio",
+  "videoEditorClipAudioTitle": "Clip Audio",
+  "videoEditorExtractAudioFromClipSemanticLabel": "Extract audio from clip and mute original",
+  "videoEditorExtractAudioNoLocalFile": "Cannot extract audio: clip is not locally available.",
+  "videoEditorExtractAudioFailed": "Could not extract audio. Please try again.",
   "videoEditorFinishTimelineEditingSemanticLabel": "Finish timeline editing",
   "videoEditorAudioPlayPreviewSemanticLabel": "Play preview",
   "videoEditorAudioPausePreviewSemanticLabel": "Pause preview",

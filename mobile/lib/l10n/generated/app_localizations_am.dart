@@ -1443,6 +1443,21 @@ class AppLocalizationsAm extends AppLocalizations {
   String get videoActionShowSubtitles => 'የትርጉም ጽሑፎችን አሳይ';
 
   @override
+  String get videoEngagementLikersTitle => 'የወደዱት';
+
+  @override
+  String get videoEngagementRepostersTitle => 'እንደገና ያጋሩት';
+
+  @override
+  String get videoEngagementLikersEmpty => 'እስካሁን ምንም ምልክት የለም';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'እስካሁን ምንም ድጋሚ ጋራ የለም';
+
+  @override
+  String get videoEngagementLoadFailed => 'ዝርዝሩን መጫን አልተቻለም';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'የቪዲዮ ዝርዝሮችን ይክፈቱ';
 
   @override
@@ -3870,6 +3885,14 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'መገለጫዎችን ይመልከቱ';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'የ$title ቪዲዮ ድንክዬ';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'የቪዲዮ ድንክዬ';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6415,6 +6438,23 @@ class AppLocalizationsAm extends AppLocalizations {
 
   @override
   String get videoEditorSplitSelectedClipSemanticLabel => 'የተመረጠውን ቅንጥብ ክፈል።';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'ኦዲዮ ያውጡ';
+
+  @override
+  String get videoEditorClipAudioTitle => 'ክሊፕ ኦዲዮ';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'ከቅንጥብ ኦዲዮ ያውጡ እና ኦሪጅናሉን ያጥፉ';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'ድምፅ ማዎጣት አልተቻለም፤ ቅንጥቡ በሀገር ዉስጥ አይገኝም።';
+
+  @override
+  String get videoEditorExtractAudioFailed => 'ድምፅ ማዎጣት አልተቻለም። እንደገና ሞክር።';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

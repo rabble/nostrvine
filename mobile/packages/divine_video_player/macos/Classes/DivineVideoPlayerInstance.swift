@@ -149,7 +149,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         Task { @MainActor [weak self] in
             guard let self else { return }
             do {
-                let (composition, videoComposition, offsets, durations) =
+                let (composition, videoComposition, offsets, durations, audioMix) =
                     try await self.buildComposition(from: clipsRaw)
                 self.clipOffsets = offsets
                 self.clipDurations = durations
@@ -161,6 +161,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                 if let videoComposition {
                     playerItem.videoComposition = videoComposition
                 }
+                if let audioMix { playerItem.audioMix = audioMix }
                 guard (videoComposition?.renderSize ?? composition.naturalSize).isPositive else {
                     throw CompositionError.invalidRenderSize
                 }
@@ -213,7 +214,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
     private func buildComposition(
         from clipsRaw: [[String: Any]]
-    ) async throws -> (AVMutableComposition, AVVideoComposition?, [Double], [Double]) {
+    ) async throws -> (AVMutableComposition, AVVideoComposition?, [Double], [Double], AVMutableAudioMix?) {
         let composition = AVMutableComposition()
         guard let videoTrack = composition.addMutableTrack(
             withMediaType: .video,
@@ -231,11 +232,13 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
         var durations: [Double] = []
         var videoComposition: AVMutableVideoComposition?
         var layerInstruction: AVMutableVideoCompositionLayerInstruction?
+        var clipVolumes: [Float] = []
 
         for clipMap in clipsRaw {
             guard let uri = clipMap["uri"] as? String else { continue }
             let startMs = (clipMap["startMs"] as? NSNumber)?.int64Value ?? 0
             let endMs = clipMap["endMs"] as? NSNumber
+            let clipVol = (clipMap["volume"] as? NSNumber)?.floatValue ?? 1.0
 
             let url: URL
             if uri.hasPrefix("/") {
@@ -299,6 +302,7 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
 
             offsets.append(CMTimeGetSeconds(insertTime))
             durations.append(CMTimeGetSeconds(clipDuration))
+            clipVolumes.append(clipVol)
             insertTime = CMTimeAdd(insertTime, clipDuration)
         }
 
@@ -312,7 +316,31 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
             videoComposition.instructions = [instruction]
         }
 
-        return (composition, videoComposition, offsets, durations)
+        // Build an AVAudioMix that applies per-clip volume using time ranges on
+        // the single composition audio track. AVQueuePlayer.volume multiplies on
+        // top automatically, so 0.0 here = muted for that clip regardless of the
+        // global volume.
+        var audioMix: AVMutableAudioMix?
+        if let audioTrack {
+            let params = AVMutableAudioMixInputParameters(track: audioTrack)
+            var t = CMTime.zero
+            for (i, dur) in durations.enumerated() {
+                let clipDuration = CMTime(seconds: dur, preferredTimescale: 600)
+                let range = CMTimeRange(start: t, duration: clipDuration)
+                let vol = clipVolumes[i]
+                params.setVolumeRamp(
+                    fromStartVolume: vol,
+                    toEndVolume: vol,
+                    timeRange: range
+                )
+                t = CMTimeAdd(t, clipDuration)
+            }
+            let mix = AVMutableAudioMix()
+            mix.inputParameters = [params]
+            audioMix = mix
+        }
+
+        return (composition, videoComposition, offsets, durations, audioMix)
     }
 
     // MARK: - Seek

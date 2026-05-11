@@ -604,6 +604,11 @@
     "videoActionMoreOptions": "Plus d'options",
     "videoActionHideSubtitles": "Masquer les sous-titres",
     "videoActionShowSubtitles": "Afficher les sous-titres",
+    "videoEngagementLikersTitle": "Aimé par",
+    "videoEngagementRepostersTitle": "Reposté par",
+    "videoEngagementLikersEmpty": "Aucun j'aime pour l'instant",
+    "videoEngagementRepostersEmpty": "Aucun repost pour l'instant",
+    "videoEngagementLoadFailed": "Impossible de charger la liste",
     "videoDescriptionLoops": "{count} loops",
     "@videoDescriptionLoops": {
         "placeholders": {
@@ -2799,6 +2804,11 @@
     "videoEditorDuplicateSelectedItemSemanticLabel": "Dupliquer l'élément sélectionné",
     "videoEditorSplitLabel": "Scinder",
     "videoEditorSplitSelectedClipSemanticLabel": "Scinder le clip sélectionné",
+    "videoEditorExtractAudioLabel": "Extraire l'audio",
+    "videoEditorClipAudioTitle": "Audio du clip",
+    "videoEditorExtractAudioFromClipSemanticLabel": "Extraire l'audio du clip et couper le son de l'original",
+    "videoEditorExtractAudioNoLocalFile": "Impossible d'extraire l'audio : le clip n'est pas disponible localement.",
+    "videoEditorExtractAudioFailed": "Impossible d'extraire l'audio. Veuillez réessayer.",
     "videoEditorFinishTimelineEditingSemanticLabel": "Terminer l'édition de la timeline",
     "videoEditorAudioPlayPreviewSemanticLabel": "Lire l'aperçu",
     "videoEditorAudioPausePreviewSemanticLabel": "Mettre l'aperçu en pause",
@@ -3537,5 +3547,14 @@
     "reportReasonOtherSubtitle": "Infractions non listées ci-dessus",
     "reportLearnMoreAt": "En savoir plus sur",
     "supportLogsSavedTo": "Journaux enregistrés dans {path}",
-    "supportRevealLogsAction": "Afficher dans le dossier"
+    "supportRevealLogsAction": "Afficher dans le dossier",
+    "notificationsVideoThumbnailFor": "Miniature de la vidéo {title}",
+    "@notificationsVideoThumbnailFor": {
+        "placeholders": {
+            "title": {
+                "type": "String"
+            }
+        }
+    },
+    "notificationsVideoThumbnail": "Miniature de la vidéo"
 }

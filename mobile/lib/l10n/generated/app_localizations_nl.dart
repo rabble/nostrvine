@@ -1490,6 +1490,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get videoActionShowSubtitles => 'Ondertiteling tonen';
 
   @override
+  String get videoEngagementLikersTitle => 'Geliket door';
+
+  @override
+  String get videoEngagementRepostersTitle => 'Gerepost door';
+
+  @override
+  String get videoEngagementLikersEmpty => 'Nog geen likes';
+
+  @override
+  String get videoEngagementRepostersEmpty => 'Nog geen reposts';
+
+  @override
+  String get videoEngagementLoadFailed => 'Kon die lijst niet laden';
+
+  @override
   String get videoOverlayOpenMetadataFromTitle => 'Videodetails openen';
 
   @override
@@ -3971,6 +3986,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get notificationsViewProfilesSemanticLabel => 'Profielen bekijken';
+
+  @override
+  String notificationsVideoThumbnailFor(String title) {
+    return 'Videominiatuur van $title';
+  }
+
+  @override
+  String get notificationsVideoThumbnail => 'Videominiatuur';
 
   @override
   String notificationsLoadingType(String type) {
@@ -6588,6 +6611,24 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get videoEditorSplitSelectedClipSemanticLabel =>
       'Geselecteerde clip splitsen';
+
+  @override
+  String get videoEditorExtractAudioLabel => 'Audio extraheren';
+
+  @override
+  String get videoEditorClipAudioTitle => 'Clip-audio';
+
+  @override
+  String get videoEditorExtractAudioFromClipSemanticLabel =>
+      'Audio uit clip extraheren en origineel dempen';
+
+  @override
+  String get videoEditorExtractAudioNoLocalFile =>
+      'Kan audio niet extraheren: clip is niet lokaal beschikbaar.';
+
+  @override
+  String get videoEditorExtractAudioFailed =>
+      'Kon audio niet extraheren. Probeer het opnieuw.';
 
   @override
   String get videoEditorFinishTimelineEditingSemanticLabel =>

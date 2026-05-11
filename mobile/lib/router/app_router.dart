@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show AudioEvent, VideoCategory, VideoEvent;
 import 'package:nostr_app_bridge_repository/nostr_app_bridge_repository.dart';
+import 'package:openvine/blocs/video_engagement/video_engagement_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/people_lists/view/add_people_to_list_screen.dart';
@@ -77,6 +78,7 @@ import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_engagement/video_engagement_list_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -1135,6 +1137,41 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           return RouteErrorScreen(message: ctx.l10n.routeNoVideosToDisplay);
+        },
+      ),
+      // Engagement lists for own videos: who liked / reposted this video.
+      // Reached when the video owner taps the Like or Repost button on
+      // their own video.
+      GoRoute(
+        path: '/video/:eventId/likers',
+        name: VideoEngagementListScreen.likersRouteName,
+        builder: (ctx, st) {
+          final eventId = st.pathParameters['eventId'];
+          if (eventId == null || eventId.isEmpty) {
+            return RouteErrorScreen(message: ctx.l10n.routeNoVideosToDisplay);
+          }
+          final addressableId = st.uri.queryParameters['a'];
+          return VideoEngagementListScreen(
+            eventId: eventId,
+            type: VideoEngagementType.likers,
+            addressableId: addressableId,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/video/:eventId/reposters',
+        name: VideoEngagementListScreen.repostersRouteName,
+        builder: (ctx, st) {
+          final eventId = st.pathParameters['eventId'];
+          if (eventId == null || eventId.isEmpty) {
+            return RouteErrorScreen(message: ctx.l10n.routeNoVideosToDisplay);
+          }
+          final addressableId = st.uri.queryParameters['a'];
+          return VideoEngagementListScreen(
+            eventId: eventId,
+            type: VideoEngagementType.reposters,
+            addressableId: addressableId,
+          );
         },
       ),
       // Other user's profile screen (no bottom nav, pushed from feeds/search)

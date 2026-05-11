@@ -32,6 +32,20 @@ definitions:
     - &setup_code_signing_xcode
       name: Set up code signing settings on Xcode project
       script: xcode-project use-profiles
+    - &clean_ios_workspace_state
+      name: Clean stale Xcode/SPM workspace state
+      script: |
+        # Xcode 16 + Flutter SPM workspaces occasionally crash the
+        # archive step with `INTERNAL ERROR: Unable to load workspace
+        # 'Runner.xcworkspace'` and `count of array (N) differs from
+        # count of index set (N-1)` from IDESwiftPackageCore. The
+        # cause is an out-of-sync swiftpm workspace-state.json from a
+        # prior step in the same build. Wiping DerivedData and the
+        # workspace's swiftpm/xcuserdata state forces a fresh resolve.
+        rm -rf "$HOME/Library/Developer/Xcode/DerivedData"
+        rm -rf ios/Pods ios/.symlinks
+        rm -rf ios/Runner.xcworkspace/xcuserdata
+        rm -rf ios/Runner.xcworkspace/xcshareddata/swiftpm
     - &install_flutterfire
       name: Install FlutterFire CLI
       script: dart pub global activate flutterfire_cli
@@ -374,6 +388,7 @@ workflows:
       events: []
     scripts:
       - *setup_code_signing_xcode
+      - *clean_ios_workspace_state
       - *install_flutterfire
       - *enable_spm
       - *prepare_ios_spm_packages
@@ -428,6 +443,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *clean_ios_workspace_state
       - *install_flutterfire
       - *enable_spm
       - *flutter_pub_get
@@ -560,6 +576,7 @@ workflows:
     triggering:
       events: []
     scripts:
+      - *clean_ios_workspace_state
       - *install_flutterfire
       - *enable_spm
       - *flutter_pub_get

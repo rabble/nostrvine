@@ -22,6 +22,7 @@ class VideoNotification extends NotificationItem {
     this.videoThumbnailUrl,
     this.videoTitle,
     this.videoAddressableId,
+    this.commentText,
   }) : assert(
          type == NotificationKind.like ||
              type == NotificationKind.likeComment ||
@@ -62,6 +63,13 @@ class VideoNotification extends NotificationItem {
   /// [actors]).
   final int totalCount;
 
+  /// Optional excerpt of the most recent comment when [type] is
+  /// [NotificationKind.comment]. Truncated by the repository so a long
+  /// comment doesn't blow out the row layout. Other kinds (like, repost,
+  /// likeComment) leave this null because they have no associated body
+  /// text.
+  final String? commentText;
+
   /// Returns a copy with the given fields replaced.
   VideoNotification copyWith({
     String? id,
@@ -74,6 +82,7 @@ class VideoNotification extends NotificationItem {
     int? totalCount,
     DateTime? timestamp,
     bool? isRead,
+    String? commentText,
   }) {
     return VideoNotification(
       id: id ?? this.id,
@@ -86,6 +95,7 @@ class VideoNotification extends NotificationItem {
       totalCount: totalCount ?? this.totalCount,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
+      commentText: commentText ?? this.commentText,
     );
   }
 
@@ -101,5 +111,6 @@ class VideoNotification extends NotificationItem {
     totalCount,
     timestamp,
     isRead,
+    commentText,
   ];
 }

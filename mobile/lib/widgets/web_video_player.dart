@@ -193,6 +193,17 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
     await _controller?.pause();
   }
 
+  /// Toggles between play and pause based on current controller state.
+  Future<void> togglePlayPause() async {
+    final controller = _controller;
+    if (controller == null || !_isInitialized) return;
+    if (controller.value.isPlaying) {
+      await controller.pause();
+    } else {
+      await controller.play();
+    }
+  }
+
   /// Seeks to the given position.
   Future<void> seekTo(Duration position) async {
     await _controller?.seekTo(position);

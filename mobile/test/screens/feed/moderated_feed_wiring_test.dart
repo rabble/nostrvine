@@ -14,7 +14,9 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_cubit.dart';
 import 'package:openvine/blocs/video_playback_status/video_playback_status_state.dart';
+import 'package:openvine/blocs/video_volume/video_volume_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/feed/feed_auto_advance_cubit.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/moderated_content_overlay.dart';
 
@@ -33,6 +35,9 @@ class _MockPlayerState extends Mock implements PlayerState {}
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
 
+class _MockVideoVolumeCubit extends MockCubit<VideoVolumeState>
+    implements VideoVolumeCubit {}
+
 // Full 64-character Nostr IDs — never truncate.
 const _testVideoId =
     'fe1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd';
@@ -42,6 +47,8 @@ const _testPubkey =
 void main() {
   group('FeedVideoOverlay moderated-content wiring', () {
     late VideoInteractionsBloc mockInteractionsBloc;
+    late VideoVolumeCubit mockVolumeCubit;
+    late FeedAutoAdvanceCubit feedAutoAdvanceCubit;
     late Player mockPlayer;
     late PlayerStream mockStream;
     late PlayerState mockPlayerState;
@@ -60,6 +67,9 @@ void main() {
 
     setUp(() {
       mockInteractionsBloc = _MockVideoInteractionsBloc();
+      mockVolumeCubit = _MockVideoVolumeCubit();
+      when(() => mockVolumeCubit.state).thenReturn(const VideoVolumeState());
+      feedAutoAdvanceCubit = FeedAutoAdvanceCubit();
       mockPlayer = _MockPlayer();
       mockStream = _MockPlayerStream();
       mockPlayerState = _MockPlayerState();
@@ -108,6 +118,7 @@ void main() {
       await bufferingController.close();
       pagePosition.dispose();
       await cubit.close();
+      await feedAutoAdvanceCubit.close();
     });
 
     Widget buildSubject() {
@@ -126,6 +137,10 @@ void main() {
                 value: mockInteractionsBloc,
               ),
               BlocProvider<VideoPlaybackStatusCubit>.value(value: cubit),
+              BlocProvider<VideoVolumeCubit>.value(value: mockVolumeCubit),
+              BlocProvider<FeedAutoAdvanceCubit>.value(
+                value: feedAutoAdvanceCubit,
+              ),
             ],
             child: FeedVideoOverlay(
               video: testVideo,
