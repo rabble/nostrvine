@@ -347,14 +347,12 @@ class InfiniteVideoFeedState extends State<InfiniteVideoFeed> {
     // but not counted in optimized widget coverage.
     _watchdog = LoadWatchdog(
       threshold: widget.slowLoadThreshold,
-      onSlowLoad: (index) =>
-          unawaited(_retryWithNextSource(index)),
+      onSlowLoad: (index) => unawaited(_retryWithNextSource(index)),
       log: _log,
     );
     _staleDetector = StalePlaybackDetector(
       onSeekRecovery: _seekKick,
-      onSourceFailover: (index) =>
-          unawaited(_retryWithNextSource(index)),
+      onSourceFailover: (index) => unawaited(_retryWithNextSource(index)),
       log: _log,
     );
     // coverage:ignore-end
