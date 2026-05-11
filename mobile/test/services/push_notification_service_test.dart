@@ -268,6 +268,58 @@ void main() {
         verifyNever(() => mockNostrClient.publishEvent(any()));
         service.dispose();
       });
+
+      test(
+        'completes without error when registration publish returns PublishNoRelays',
+        () async {
+          when(
+            () => mockNostrSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
+
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => const PublishNoRelays());
+
+          final service = buildService();
+          await expectLater(service.register(testPubkey), completes);
+          service.dispose();
+        },
+      );
+
+      test(
+        'completes without error when registration publish returns PublishFailed',
+        () async {
+          when(
+            () => mockNostrSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
+
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final service = buildService();
+          await expectLater(service.register(testPubkey), completes);
+          service.dispose();
+        },
+      );
     });
 
     group('deregister', () {
@@ -315,6 +367,50 @@ void main() {
         verifyNever(() => mockNostrClient.publishEvent(any()));
         service.dispose();
       });
+
+      test(
+        'completes without error when deregistration publish returns PublishNoRelays',
+        () async {
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => const PublishNoRelays());
+
+          final service = buildService();
+          await expectLater(service.deregister(testPubkey), completes);
+          service.dispose();
+        },
+      );
+
+      test(
+        'completes without error when deregistration publish returns PublishFailed',
+        () async {
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final service = buildService();
+          await expectLater(service.deregister(testPubkey), completes);
+          service.dispose();
+        },
+      );
     });
 
     group('updatePreferences', () {
@@ -399,6 +495,62 @@ void main() {
               tags: any(named: 'tags'),
             ),
           );
+          service.dispose();
+        },
+      );
+
+      test(
+        'completes without error when preferences publish returns PublishNoRelays',
+        () async {
+          const prefs = NotificationPreferences();
+
+          when(
+            () => mockNostrSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
+
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => const PublishNoRelays());
+
+          final service = buildService();
+          await expectLater(service.updatePreferences(prefs), completes);
+          service.dispose();
+        },
+      );
+
+      test(
+        'completes without error when preferences publish returns PublishFailed',
+        () async {
+          const prefs = NotificationPreferences();
+
+          when(
+            () => mockNostrSigner.nip44Encrypt(any(), any()),
+          ).thenAnswer((_) async => encryptedPayload);
+
+          final fakeEvent = _FakeEvent();
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async => fakeEvent);
+
+          when(
+            () => mockNostrClient.publishEvent(fakeEvent),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final service = buildService();
+          await expectLater(service.updatePreferences(prefs), completes);
           service.dispose();
         },
       );

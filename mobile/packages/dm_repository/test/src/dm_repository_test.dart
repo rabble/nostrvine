@@ -7079,6 +7079,212 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 50));
         },
       );
+
+      test(
+        'NIP-17 send succeeds even when NIP-04 fallback gets PublishNoRelays',
+        () async {
+          // The NIP-04 fallback is fire-and-forget; PublishNoRelays must not
+          // bubble up and fail the overall sendMessage result.
+          final mockSigner = _MockNostrSigner();
+          when(mockSigner.getPublicKey).thenAnswer(
+            (_) async => _validPubkeyA,
+          );
+          when(
+            () => mockSigner.encrypt(any(), any()),
+          ).thenAnswer((_) async => 'encrypted-content');
+          when(
+            () => mockSigner.signEvent(any()),
+          ).thenAnswer((inv) async {
+            final e = inv.positionalArguments.first as Event;
+            return e
+              ..id = 'nip04-event-id-no-relays'
+              ..sig = 'sig';
+          });
+
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishNoRelays());
+
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            messageService: mockMessageService,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+            userPubkey: _validPubkeyA,
+            signer: mockSigner,
+          );
+
+          final result = await repo.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello',
+          );
+
+          // NIP-17 succeeded; NIP-04 fallback silently got PublishNoRelays.
+          expect(result.success, isTrue);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+      );
+
+      test(
+        'NIP-17 send succeeds even when NIP-04 fallback gets PublishFailed',
+        () async {
+          // The NIP-04 fallback is fire-and-forget; PublishFailed must not
+          // bubble up and fail the overall sendMessage result.
+          final mockSigner = _MockNostrSigner();
+          when(mockSigner.getPublicKey).thenAnswer(
+            (_) async => _validPubkeyA,
+          );
+          when(
+            () => mockSigner.encrypt(any(), any()),
+          ).thenAnswer((_) async => 'encrypted-content');
+          when(
+            () => mockSigner.signEvent(any()),
+          ).thenAnswer((inv) async {
+            final e = inv.positionalArguments.first as Event;
+            return e
+              ..id = 'nip04-event-id-send-error'
+              ..sig = 'sig';
+          });
+
+          stubSendRumor(
+            (_, recipientPubkey) async => NIP17SendResult.success(
+              rumorEventId: _rumorEventId,
+              messageEventId: _giftWrapEventId,
+              recipientPubkey: recipientPubkey,
+            ),
+          );
+
+          when(
+            () => mockDirectMessagesDao.insertMessage(
+              id: any(named: 'id'),
+              conversationId: any(named: 'conversationId'),
+              senderPubkey: any(named: 'senderPubkey'),
+              content: any(named: 'content'),
+              createdAt: any(named: 'createdAt'),
+              giftWrapId: any(named: 'giftWrapId'),
+              messageKind: any(named: 'messageKind'),
+              replyToId: any(named: 'replyToId'),
+              subject: any(named: 'subject'),
+              fileType: any(named: 'fileType'),
+              encryptionAlgorithm: any(named: 'encryptionAlgorithm'),
+              decryptionKey: any(named: 'decryptionKey'),
+              decryptionNonce: any(named: 'decryptionNonce'),
+              fileHash: any(named: 'fileHash'),
+              originalFileHash: any(named: 'originalFileHash'),
+              fileSize: any(named: 'fileSize'),
+              dimensions: any(named: 'dimensions'),
+              blurhash: any(named: 'blurhash'),
+              thumbnailUrl: any(named: 'thumbnailUrl'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              tagsJson: any(named: 'tagsJson'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockConversationsDao.upsertConversation(
+              id: any(named: 'id'),
+              participantPubkeys: any(named: 'participantPubkeys'),
+              isGroup: any(named: 'isGroup'),
+              createdAt: any(named: 'createdAt'),
+              lastMessageContent: any(named: 'lastMessageContent'),
+              lastMessageTimestamp: any(named: 'lastMessageTimestamp'),
+              lastMessageSenderPubkey: any(named: 'lastMessageSenderPubkey'),
+              subject: any(named: 'subject'),
+              isRead: any(named: 'isRead'),
+              currentUserHasSent: any(named: 'currentUserHasSent'),
+              ownerPubkey: any(named: 'ownerPubkey'),
+              dmProtocol: any(named: 'dmProtocol'),
+            ),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockConversationsDao.getConversation(
+              any(),
+              ownerPubkey: any(named: 'ownerPubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => const PublishFailed());
+
+          final repo = DmRepository(
+            nostrClient: mockNostrClient,
+            messageService: mockMessageService,
+            directMessagesDao: mockDirectMessagesDao,
+            conversationsDao: mockConversationsDao,
+            userPubkey: _validPubkeyA,
+            signer: mockSigner,
+          );
+
+          final result = await repo.sendMessage(
+            recipientPubkey: _validPubkeyB,
+            content: 'Hello',
+          );
+
+          // NIP-17 succeeded; NIP-04 fallback silently got PublishFailed.
+          expect(result.success, isTrue);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        },
+      );
     });
 
     group('sendMessage preserves existing conversation metadata', () {

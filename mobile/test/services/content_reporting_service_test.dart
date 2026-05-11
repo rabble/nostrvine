@@ -420,6 +420,47 @@ void main() {
       expect(service.reportHistory, isNotEmpty);
     });
 
+    test(
+      'reportContent() saves report locally when PublishNoRelays',
+      () async {
+        // Arrange
+        final reportEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1984,
+          tags: [],
+          content: 'Spam content',
+        );
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => reportEvent);
+
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        // Act
+        final result = await service.reportContent(
+          eventId: 'event_no_relays',
+          authorPubkey: 'author_456',
+          reason: ContentFilterReason.spam,
+          details: 'Spam content',
+        );
+
+        // Assert — report is still saved locally regardless of relay state
+        expect(result.success, isTrue);
+        expect(result.error, isNull);
+        expect(service.reportHistory, isNotEmpty);
+      },
+    );
+
     test('reportContent() stores report in history on success', () async {
       // Arrange
       final reportEvent = createTestEvent(

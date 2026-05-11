@@ -182,6 +182,7 @@ class ContentReportingService {
         reportEvent,
         targetRelays: [_moderationRelayUrl],
       );
+      // Always continue to local save regardless of publish outcome.
       switch (sentEvent) {
         case PublishSuccess():
           Log.info(
@@ -195,14 +196,12 @@ class ContentReportingService {
             name: 'ContentReportingService',
             category: LogCategory.system,
           );
-        // Still save locally even if publish fails
         case PublishFailed():
           Log.error(
             'Failed to publish report: send error',
             name: 'ContentReportingService',
             category: LogCategory.system,
           );
-        // Still save locally even if publish fails
       }
 
       // Create Zendesk ticket silently for moderation tracking

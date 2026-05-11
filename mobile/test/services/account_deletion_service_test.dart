@@ -242,6 +242,40 @@ void main() {
       expect(result.error, contains('Failed to publish'));
     });
 
+    test(
+      'deleteAccount returns failure with no-relays message when PublishNoRelays',
+      () async {
+        // Arrange
+        final expectedEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'User requested account deletion via Divine app',
+        );
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => expectedEvent);
+
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => const PublishNoRelays());
+
+        // Act
+        final result = await service.deleteAccount();
+
+        // Assert
+        expect(result.success, isFalse);
+        expect(result.error, contains('No relays connected'));
+      },
+    );
+
     test('deleteAccount should fail when not authenticated', () async {
       // Arrange
       when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -548,6 +582,138 @@ void main() {
         expect(result.deletedEventsCount, equals(0));
         verify(() => mockNostrService.publishEvent(any())).called(1);
       });
+
+      test(
+        'batch deletion does not count events when PublishNoRelays',
+        () async {
+          // Arrange
+          final userEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1,
+            tags: [],
+            content: 'note',
+            id: 'note_1',
+          );
+          final kind5Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', 'note_1'],
+              ['k', '1'],
+            ],
+            content: 'deletion',
+          );
+          final nip62Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          );
+
+          when(
+            () => mockNostrService.queryEvents(any()),
+          ).thenAnswer((_) async => [userEvent]);
+
+          var createCallCount = 0;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async {
+            createCallCount++;
+            if (createCallCount == 1) return kind5Event;
+            return nip62Event;
+          });
+
+          var publishCallCount = 0;
+          when(
+            () => mockNostrService.publishEvent(any()),
+          ).thenAnswer((_) async {
+            publishCallCount++;
+            // First publish is the batch kind-5; second is NIP-62.
+            if (publishCallCount == 1) return const PublishNoRelays();
+            return PublishSuccess(event: nip62Event);
+          });
+
+          // Act
+          final result = await service.deleteAccount();
+
+          // Assert — NIP-62 still succeeds; batch counted 0 because relay
+          // was unreachable for kind-5.
+          expect(result.success, isTrue);
+          expect(result.deletedEventsCount, equals(0));
+        },
+      );
+
+      test(
+        'batch deletion does not count events when PublishFailed',
+        () async {
+          // Arrange
+          final userEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 1,
+            tags: [],
+            content: 'note',
+            id: 'note_2',
+          );
+          final kind5Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', 'note_2'],
+              ['k', '1'],
+            ],
+            content: 'deletion',
+          );
+          final nip62Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'deletion',
+          );
+
+          when(
+            () => mockNostrService.queryEvents(any()),
+          ).thenAnswer((_) async => [userEvent]);
+
+          var createCallCount = 0;
+          when(
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
+            ),
+          ).thenAnswer((_) async {
+            createCallCount++;
+            if (createCallCount == 1) return kind5Event;
+            return nip62Event;
+          });
+
+          var publishCallCount = 0;
+          when(
+            () => mockNostrService.publishEvent(any()),
+          ).thenAnswer((_) async {
+            publishCallCount++;
+            // First publish is the batch kind-5; second is NIP-62.
+            if (publishCallCount == 1) return const PublishFailed();
+            return PublishSuccess(event: nip62Event);
+          });
+
+          // Act
+          final result = await service.deleteAccount();
+
+          // Assert — NIP-62 still succeeds; batch counted 0 because send
+          // failed.
+          expect(result.success, isTrue);
+          expect(result.deletedEventsCount, equals(0));
+        },
+      );
     });
   });
 }
