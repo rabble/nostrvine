@@ -64,6 +64,7 @@ class WebVideoFeed extends StatefulWidget {
     this.endThreshold = FeedAutoAdvanceDefaults.endThreshold,
     this.controllerFactory = defaultWebVideoPlayerControllerFactory,
     this.authHeaderProvider,
+    this.initialVolume = 1.0,
     super.key,
   });
 
@@ -120,6 +121,11 @@ class WebVideoFeed extends StatefulWidget {
   /// `kIsWeb && FeatureFlag.hlsAuthWebPlayer`.
   final AuthHeaderProvider? authHeaderProvider;
 
+  /// Volume to apply to each [WebVideoPlayer] when it initialises. Callers
+  /// can update the volume of all live players at runtime via
+  /// [WebVideoFeedState.setVolume].
+  final double initialVolume;
+
   @override
   State<WebVideoFeed> createState() => WebVideoFeedState();
 }
@@ -127,6 +133,20 @@ class WebVideoFeed extends StatefulWidget {
 class WebVideoFeedState extends State<WebVideoFeed> {
   late PageController _pageController;
   int _currentIndex = 0;
+
+  /// Current volume applied to every player on init and on [setVolume].
+  late double _currentVolume = widget.initialVolume;
+
+  /// Applies [volume] to every live [WebVideoPlayer] and remembers it for
+  /// future players that initialise later. Called by the host screens from
+  /// their `BlocListener<VideoVolumeCubit>` so the cubit is the single
+  /// source of truth across native and web feed surfaces.
+  void setVolume(double volume) {
+    _currentVolume = volume;
+    for (final key in _playerKeys.values) {
+      key.currentState?.setVolume(volume);
+    }
+  }
 
   // Track web player keys to control playback.
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
@@ -362,6 +382,9 @@ class WebVideoFeedState extends State<WebVideoFeed> {
           hlsFallbackUrl: video.getFallbackUrl(),
           onInitialized: (controller) {
             if (!mounted) return;
+            // Apply the current cubit-sourced volume so newly-initialised
+            // players honour mute state set before they mounted.
+            unawaited(controller.setVolume(_currentVolume));
             setState(() {
               _attachCompletionListener(index, controller);
             });

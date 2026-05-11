@@ -494,9 +494,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
         child: MultiBlocListener(
           listeners: [
             // Sync volume when hardware buttons change system volume.
+            // Also forward to the web feed so the in-pause mute toggle in
+            // the paused overlay reaches WebVideoPlayer instances.
             BlocListener<VideoVolumeCubit, VideoVolumeState>(
               listener: (_, state) {
                 controller?.setVolume(state.volume);
+                _webFeedKey.currentState?.setVolume(state.volume);
               },
             ),
             // Reset controller when mode changes so a fresh one is
@@ -613,6 +616,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                             widget.webControllerFactory ??
                             defaultWebVideoPlayerControllerFactory,
                         authHeaderProvider: webAuthHeaderProvider,
+                        initialVolume: context
+                            .read<VideoVolumeCubit>()
+                            .state
+                            .volume,
                         onActiveVideoChanged: (video, index) {
                           _currentWebIndex = index;
                           _pagePosition.value = index.toDouble();
