@@ -165,6 +165,63 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        // Companion to the non-addressable case above: production notification
+        // taps for Kind 34236 videos pass both eventId and addressableId to
+        // getLikeCount(), so the relay query must still fire even when the
+        // count was pre-seeded and an addressableId is present.
+        'always fetches relay like count when seeded with initialLikeCount '
+        'and addressableId',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 75);
+          when(
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
+          ).thenAnswer((_) async => 3);
+          when(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).thenAnswer((_) async => 2);
+        },
+        build: () => createBloc(
+          addressableId: testAddressableId,
+          initialLikeCount: 50,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 50,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 75, // Updated to relay count, not the stale REST seed.
+            repostCount: 2,
+            commentCount: 3,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'emits [loading, success] when video is not liked',
         setUp: () {
           when(
