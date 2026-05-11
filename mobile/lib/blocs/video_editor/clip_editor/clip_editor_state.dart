@@ -167,5 +167,11 @@ final class ClipAudioExtractionSuccess extends ClipAudioExtractionResult {
 /// Extraction was attempted but the clip has no locally available file.
 final class ClipAudioExtractionNoLocalFile extends ClipAudioExtractionResult {}
 
+/// Extraction completed but the source clip was removed from the timeline
+/// while the async extraction was in flight. The widget should silently
+/// ignore this — there is no clip to attach the result to and no user
+/// action that warrants a snackbar.
+final class ClipAudioExtractionDiscarded extends ClipAudioExtractionResult {}
+
 /// Extraction failed; widget should show a snackbar.
 final class ClipAudioExtractionFailure extends ClipAudioExtractionResult {}

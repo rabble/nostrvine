@@ -67,9 +67,10 @@ void main() {
       verify(() => bloc.add(const ClipEditorEditingStopped())).called(1);
     });
 
-    // Regression test for Fix 2: Done button must be disabled while audio
-    // extraction is running so the BlocListener in TimelineClipControls
-    // stays mounted for the full duration of the extraction.
+    // Regression test for Fix 2: Done button is disabled while audio
+    // extraction is running so the user cannot dismiss the busy state
+    // mid-flight. The result side effect itself lives on
+    // VideoEditorScaffold and survives even after this widget unmounts.
     testWidgets(
       'Done button passes null onDone to controls while isExtractingAudio',
       (tester) async {

@@ -2,10 +2,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/timeline_overlay/timeline_overlay_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
@@ -15,6 +17,7 @@ import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_actions_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/timeline_editor/video_editor_timeline.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
@@ -40,26 +43,115 @@ class VideoEditorScaffold extends StatelessWidget {
         backgroundColor: VineTheme.backgroundCamera,
         resizeToAvoidBottomInset: false,
         floatingActionButton: const _AddElementFab(),
-        body: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                fit: .expand,
-                clipBehavior: .none,
-                children: [
-                  if (isLoading)
-                    const BrandedLoadingScaffold()
-                  else
-                    const VideoEditorCanvas(),
-
-                  const _OverlayControls(),
-                ],
-              ),
-            ),
-            const _TimelineSection(),
-          ],
+        body: _AudioExtractionResultListener(
+          child: _ScaffoldBody(isLoading: isLoading),
         ),
       ),
+    );
+  }
+}
+
+class _ScaffoldBody extends StatelessWidget {
+  const _ScaffoldBody({required this.isLoading});
+
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            fit: .expand,
+            clipBehavior: .none,
+            children: [
+              if (isLoading)
+                const BrandedLoadingScaffold()
+              else
+                const VideoEditorCanvas(),
+
+              const _OverlayControls(),
+            ],
+          ),
+        ),
+        const _TimelineSection(),
+      ],
+    );
+  }
+}
+
+/// Listens to [ClipEditorBloc.state.lastAudioExtraction] from a widget that
+/// stays mounted for the entire editor session, so the success/failure
+/// side effect (history write or snackbar) survives the user leaving edit
+/// mode, switching clips, or unmounting the timeline-level controls while
+/// extraction is in flight.
+class _AudioExtractionResultListener extends StatelessWidget {
+  const _AudioExtractionResultListener({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ClipEditorBloc, ClipEditorState>(
+      listenWhen: (prev, curr) =>
+          !identical(prev.lastAudioExtraction, curr.lastAudioExtraction) &&
+          curr.lastAudioExtraction != null,
+      listener: _onAudioExtractionResult,
+      child: child,
+    );
+  }
+
+  void _onAudioExtractionResult(
+    BuildContext context,
+    ClipEditorState state,
+  ) {
+    final result = state.lastAudioExtraction;
+    if (result == null) return;
+
+    switch (result) {
+      case ClipAudioExtractionNoLocalFile():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorExtractAudioNoLocalFile,
+          ),
+        );
+      case ClipAudioExtractionDiscarded():
+        // Source clip was removed during the async gap — nothing to
+        // attach the extracted track to and no user action that
+        // warrants a snackbar.
+        break;
+      case ClipAudioExtractionSuccess(:final audioEvent):
+        _writeAudioExtractionHistory(context, state, audioEvent);
+      case ClipAudioExtractionFailure():
+        ScaffoldMessenger.of(context).showSnackBar(
+          DivineSnackbarContainer.snackBar(
+            context.l10n.videoEditorExtractAudioFailed,
+          ),
+        );
+    }
+  }
+
+  void _writeAudioExtractionHistory(
+    BuildContext context,
+    ClipEditorState state,
+    AudioEvent audioEvent,
+  ) {
+    final editor = VideoEditorScope.of(context).requireEditor;
+
+    // state.clips already reflects the muted clip applied by the bloc;
+    // combine with the new audio track for a single atomic history entry
+    // so undo/redo reverts both the mute and the added track together.
+    final updatedTracks = [...editor.stateManager.audioTracks, audioEvent];
+    editor.addHistory(
+      meta: {
+        ...editor.stateManager.activeMeta,
+        VideoEditorConstants.clipsStateHistoryKey: state.clips
+            .map((c) => c.toJson())
+            .toList(),
+        VideoEditorConstants.audioStateHistoryKey: updatedTracks
+            .map((e) => e.toJson())
+            .toList(),
+      },
     );
   }
 }

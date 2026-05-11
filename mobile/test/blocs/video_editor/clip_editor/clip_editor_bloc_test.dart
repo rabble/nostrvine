@@ -1146,7 +1146,7 @@ void main() {
       // Regression test for Fix 1: the handler must re-read `state.clips` after
       // the await and abort when the source clip no longer exists.
       test(
-        'discards extraction result and emits ClipAudioExtractionNoLocalFile '
+        'discards extraction result and emits ClipAudioExtractionDiscarded '
         'when source clip is removed during in-flight extraction',
         () async {
           final completer = Completer<AudioExtractionResult>();
@@ -1192,7 +1192,7 @@ void main() {
           );
           expect(
             bloc.state.lastAudioExtraction,
-            isA<ClipAudioExtractionNoLocalFile>(),
+            isA<ClipAudioExtractionDiscarded>(),
           );
 
           await bloc.close();

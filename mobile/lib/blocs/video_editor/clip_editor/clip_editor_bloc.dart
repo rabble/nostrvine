@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/constants/video_editor_timeline_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/observability/reportable_error.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:unified_logger/unified_logger.dart';
@@ -458,7 +459,7 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         emit(
           state.copyWith(
             isExtractingAudio: false,
-            lastAudioExtraction: ClipAudioExtractionNoLocalFile(),
+            lastAudioExtraction: ClipAudioExtractionDiscarded(),
           ),
         );
         return;
@@ -530,7 +531,10 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         stackTrace: stackTrace,
         category: LogCategory.video,
       );
-      addError(e, stackTrace);
+      addError(
+        Reportable(e, context: '_onAudioExtractionRequested'),
+        stackTrace,
+      );
       emit(
         state.copyWith(
           isExtractingAudio: false,

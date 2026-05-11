@@ -2,10 +2,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart' show AudioEvent;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/extensions/video_editor_history_extensions.dart';
 import 'package:openvine/l10n/l10n.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -31,27 +29,24 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
       (ClipEditorBloc b) => b.state.isExtractingAudio,
     );
 
-    return BlocListener<ClipEditorBloc, ClipEditorState>(
-      listenWhen: (prev, curr) =>
-          !identical(prev.lastAudioExtraction, curr.lastAudioExtraction) &&
-          curr.lastAudioExtraction != null,
-      listener: _onAudioExtractionResult,
-      child: VideoEditorTimelineControls(
-        onDelete: isLastClip ? null : () => _deleteClip(context, ref),
-        onDuplicated: () => _duplicateClip(context, ref),
-        onSplit: () => _splitClip(context),
-        onExtractAudio: () => _requestExtractAudio(context),
-        isExtractingAudio: isExtractingAudio,
-        // Blocked while extraction is in progress so TimelineClipControls
-        // stays mounted and its BlocListener can handle the result.
-        onDone: isExtractingAudio
-            ? null
-            : () {
-                context.read<ClipEditorBloc>().add(
-                  const ClipEditorEditingStopped(),
-                );
-              },
-      ),
+    return VideoEditorTimelineControls(
+      onDelete: isLastClip ? null : () => _deleteClip(context, ref),
+      onDuplicated: () => _duplicateClip(context, ref),
+      onSplit: () => _splitClip(context),
+      onExtractAudio: () => _requestExtractAudio(context),
+      isExtractingAudio: isExtractingAudio,
+      // Done is gated while extraction is in flight purely as a UX cue —
+      // the success/failure side effect itself is handled by an editor-
+      // session-level listener in [VideoEditorScaffold], so it survives
+      // even if the user Deletes/Duplicates/Splits the clip (which exits
+      // edit mode and unmounts these controls) before extraction returns.
+      onDone: isExtractingAudio
+          ? null
+          : () {
+              context.read<ClipEditorBloc>().add(
+                const ClipEditorEditingStopped(),
+              );
+            },
     );
   }
 
@@ -60,55 +55,6 @@ class _TimelineClipControlsState extends ConsumerState<TimelineClipControls> {
       ClipEditorAudioExtractionRequested(
         clipTitle: context.l10n.videoEditorClipAudioTitle,
       ),
-    );
-  }
-
-  void _onAudioExtractionResult(
-    BuildContext context,
-    ClipEditorState state,
-  ) {
-    final result = state.lastAudioExtraction;
-    if (result == null) return;
-
-    switch (result) {
-      case ClipAudioExtractionNoLocalFile():
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.videoEditorExtractAudioNoLocalFile,
-          ),
-        );
-      case ClipAudioExtractionSuccess(:final audioEvent):
-        _writeAudioExtractionHistory(context, state, audioEvent);
-      case ClipAudioExtractionFailure():
-        ScaffoldMessenger.of(context).showSnackBar(
-          DivineSnackbarContainer.snackBar(
-            context.l10n.videoEditorExtractAudioFailed,
-          ),
-        );
-    }
-  }
-
-  void _writeAudioExtractionHistory(
-    BuildContext context,
-    ClipEditorState state,
-    AudioEvent audioEvent,
-  ) {
-    final editor = VideoEditorScope.of(context).requireEditor;
-
-    // state.clips already reflects the muted clip applied by the bloc;
-    // combine with the new audio track for a single atomic history entry
-    // so undo/redo reverts both the mute and the added track together.
-    final updatedTracks = [...editor.stateManager.audioTracks, audioEvent];
-    editor.addHistory(
-      meta: {
-        ...editor.stateManager.activeMeta,
-        VideoEditorConstants.clipsStateHistoryKey: state.clips
-            .map((c) => c.toJson())
-            .toList(),
-        VideoEditorConstants.audioStateHistoryKey: updatedTracks
-            .map((e) => e.toJson())
-            .toList(),
-      },
     );
   }
 
