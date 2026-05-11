@@ -33,9 +33,15 @@ class PeopleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = context.select((UserSearchBloc bloc) => bloc.state.status);
     final results = context.select((UserSearchBloc bloc) => bloc.state.results);
+    final isDegradedEmpty = context.select(
+      (UserSearchBloc bloc) => bloc.state.isDegradedEmpty,
+    );
 
-    // In the All tab, hide entire section when results are empty and loaded.
-    if (!showAll && status == .success && results.isEmpty) {
+    // In the All tab, hide entire section when truly empty. A degraded
+    // empty (some source failed) still shows so the user gets a retry
+    // affordance instead of an invisible section that looks like the
+    // friend they searched for "doesn't exist". See #3791.
+    if (!showAll && status == .success && results.isEmpty && !isDegradedEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
@@ -83,12 +89,19 @@ class _PeopleContent extends StatelessWidget {
     final status = context.select((UserSearchBloc bloc) => bloc.state.status);
     final results = context.select((UserSearchBloc bloc) => bloc.state.results);
     final query = context.select((UserSearchBloc bloc) => bloc.state.query);
+    final isDegradedEmpty = context.select(
+      (UserSearchBloc bloc) => bloc.state.isDegradedEmpty,
+    );
 
     if ((status == .initial || status == .loading) && results.isEmpty) {
       return const _PeopleSkeletonLoader();
     }
 
-    if (status == .failure) {
+    // Degraded-empty: every source we consulted reported failure (or
+    // outer-timeout promoted them all to failure) AND we have nothing
+    // to show. Surface the retry affordance instead of a misleading
+    // "No results found for X" — this is the #3791 fix.
+    if (status == .failure || isDegradedEmpty) {
       return SearchSectionErrorState(
         onRetry: () =>
             context.read<UserSearchBloc>().add(UserSearchQueryChanged(query)),

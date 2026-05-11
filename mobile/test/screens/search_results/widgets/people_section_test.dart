@@ -13,6 +13,7 @@ import 'package:openvine/screens/search_results/widgets/people_section.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_empty_state.dart';
 import 'package:openvine/screens/search_results/widgets/search_section_error_state.dart';
 import 'package:openvine/screens/search_results/widgets/section_header.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
@@ -202,6 +203,89 @@ void main() {
 
         expect(find.byType(SearchSectionErrorState), findsOneWidget);
       });
+    });
+
+    group('degraded-empty (#3791)', () {
+      const failedRelay = UserSearchState(
+        status: UserSearchStatus.success,
+        query: 'friend-name',
+        sourceOutcomes: {
+          SearchSource.nip50Relay: SearchSourceFailed(
+            reason: SearchSourceFailureReason.timeout,
+            latencyMs: 5000,
+          ),
+        },
+      );
+
+      const allSucceeded = UserSearchState(
+        status: UserSearchStatus.success,
+        query: 'friend-name',
+        sourceOutcomes: {
+          SearchSource.localCache: SearchSourceSuccess(
+            resultCount: 0,
+            latencyMs: 1,
+          ),
+          SearchSource.funnelcakeApi: SearchSourceSuccess(
+            resultCount: 0,
+            latencyMs: 50,
+          ),
+          SearchSource.nip50Relay: SearchSourceSuccess(
+            resultCount: 0,
+            latencyMs: 500,
+          ),
+        },
+      );
+
+      testWidgets(
+        'renders $SearchSectionErrorState when results empty AND a source '
+        'failed (degraded-empty)',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(failedRelay);
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(SearchSectionErrorState), findsOneWidget);
+          expect(find.byType(SearchSectionEmptyState), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'renders $SearchSectionEmptyState when results empty AND all '
+        'sources succeeded (true empty)',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(allSucceeded);
+
+          await tester.pumpWidget(buildSubject(showAll: true));
+
+          expect(find.byType(SearchSectionEmptyState), findsOneWidget);
+          expect(find.byType(SearchSectionErrorState), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows section header and error in All tab preview when '
+        'degraded-empty (so user sees retry instead of hidden section)',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(failedRelay);
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SectionHeader), findsOneWidget);
+          expect(find.byType(SearchSectionErrorState), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'hides section entirely in All tab preview when truly empty',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(allSucceeded);
+
+          await tester.pumpWidget(buildSubject());
+
+          expect(find.byType(SectionHeader), findsNothing);
+          expect(find.byType(SearchSectionErrorState), findsNothing);
+        },
+      );
     });
 
     testWidgets('retry dispatches $UserSearchQueryChanged with current query', (
