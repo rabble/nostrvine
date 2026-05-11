@@ -155,12 +155,15 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
-      final likeCountFuture = state.likeCount != null
-          ? Future.value(state.likeCount)
-          : _likesRepository.getLikeCount(
-              _eventId,
-              addressableId: _addressableId,
-            );
+      // Always fetch a fresh count from relay. When initialLikeCount was
+      // seeded from Funnelcake REST (e.g. notification tap), the cached REST
+      // value may lag behind real-time relay data and show a stale (lower)
+      // count. The initial state already shows the seeded value immediately;
+      // this round-trip updates it to the accurate relay count once it arrives.
+      final likeCountFuture = _likesRepository.getLikeCount(
+        _eventId,
+        addressableId: _addressableId,
+      );
 
       final results = await Future.wait([
         likeCountFuture,
