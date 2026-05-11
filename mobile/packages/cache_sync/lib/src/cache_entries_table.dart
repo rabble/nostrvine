@@ -1,4 +1,5 @@
 // coverage:ignore-file
+// ignore_for_file: public_member_api_docs // internal Drift table definition, not re-exported by the package
 import 'package:drift/drift.dart';
 
 /// Drift table for persisting cache entries.

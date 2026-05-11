@@ -26,10 +26,6 @@ abstract final class CacheSync {
   /// Pass to [init] as `maxSizeBytes` or override with your own value.
   static const int defaultMaxSizeBytes = 100 * 1024 * 1024;
 
-  // ---------------------------------------------------------------------------
-  // Initialisation
-  // ---------------------------------------------------------------------------
-
   /// Initialises the cache.
   ///
   /// - [maxSizeBytes] caps the total payload size; when exceeded the oldest
@@ -51,10 +47,6 @@ abstract final class CacheSync {
     _dao = CacheDaoImpl(db, maxSizeBytes: maxSizeBytes);
     // coverage:ignore-end
   }
-
-  // ---------------------------------------------------------------------------
-  // watch — wraps a Future fetch
-  // ---------------------------------------------------------------------------
 
   /// Watches a single value backed by a [Future] fetch.
   ///
@@ -90,10 +82,6 @@ abstract final class CacheSync {
     return controller.stream;
   }
 
-  // ---------------------------------------------------------------------------
-  // watchStream — wraps a Stream source
-  // ---------------------------------------------------------------------------
-
   /// Watches a value backed by a [Stream] source.
   ///
   /// Behaves like [watchOne] but the fetch is an ongoing [Stream] rather than
@@ -124,10 +112,6 @@ abstract final class CacheSync {
     return controller.stream;
   }
 
-  // ---------------------------------------------------------------------------
-  // Cache management
-  // ---------------------------------------------------------------------------
-
   /// Removes the cached entry for [key].
   static Future<void> invalidate(String key) => _dao.delete(key);
 
@@ -138,10 +122,6 @@ abstract final class CacheSync {
   /// await CacheSync.invalidateAll();
   /// ```
   static Future<void> invalidateAll() => _dao.deleteAll();
-
-  // ---------------------------------------------------------------------------
-  // Internal helpers
-  // ---------------------------------------------------------------------------
 
   static Future<void> _driveWatchOne<T>({
     required StreamController<CacheResult<T>> controller,

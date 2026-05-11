@@ -1,6 +1,4 @@
-import 'package:cache_sync/cache_sync.dart';
-
-/// Controls how [CacheSync] balances freshness vs. latency.
+/// Controls how CacheSync balances freshness vs. latency.
 enum CacheFetchPolicy {
   /// Emit cached data first (if present and not expired), then fetch from the
   /// network and emit the fresh result.

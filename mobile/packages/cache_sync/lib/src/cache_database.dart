@@ -1,3 +1,4 @@
+// ignore_for_file: public_member_api_docs // internal implementation, not re-exported by the package
 import 'package:cache_sync/src/cache_entries_table.dart';
 import 'package:cache_sync/src/connection/connection.dart';
 import 'package:drift/drift.dart';
