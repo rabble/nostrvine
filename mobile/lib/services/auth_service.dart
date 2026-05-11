@@ -743,13 +743,14 @@ class AuthService implements BackgroundAwareService, BlockListSigner {
   Future<void> clearPendingDivineOAuthSession() async {
     try {
       await _clearKeycastSessionAndTokens();
-    } catch (e, stack) {
+    } catch (e) {
       Log.warning(
         'Failed to clear pending Divine OAuth session: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      _reportStorageError(e, stack, 'clearPendingDivineOAuthSession()');
+      // Invite activation failures can legitimately leave no session to clear.
+      // Keep local visibility without sending expected cleanup noise upstream.
     }
   }
 
