@@ -92,9 +92,9 @@ class VideoInteractionsBloc
           if (isLiked == state.isLiked) return state;
 
           // Sync like status only — count is owned by _onLikeToggled.
-          // External sources (cross-device sync via the repo's reaction
-          // subscription) can flip isLiked here, but likeCount is left
-          // alone; cross-device count drift is tracked as a follow-up.
+          // This stream conveys membership of the liked set, not an
+          // authoritative count snapshot, so external flips update
+          // isLiked here without rewriting likeCount.
           return state.copyWith(isLiked: isLiked);
         },
       ),
