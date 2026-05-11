@@ -21,6 +21,7 @@ import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
+import 'package:openvine/widgets/report_content_dialog.dart';
 
 /// View for a single DM conversation.
 ///
@@ -321,12 +322,10 @@ class _MessageList extends StatelessWidget {
         );
       case MessageAction.report:
         if (!context.mounted) return;
-        await showDialog<void>(
-          context: context,
-          builder: (_) => ReportMessageDialog(
-            messageId: message.id,
-            senderPubkey: message.senderPubkey,
-          ),
+        await ReportContentDialog.showForMessage(
+          context,
+          messageId: message.id,
+          senderPubkey: message.senderPubkey,
         );
     }
   }
