@@ -85,6 +85,32 @@ void main() {
         },
       );
 
+      test(
+        'discards a persisted verifier with a bare `nsec1` substring '
+        '(no leading dot) — defense-in-depth against variant shapes',
+        () async {
+          // The documented legacy shape was `<random>.<nsec1...>`, but the
+          // load() guard intentionally matches `nsec1` anywhere so any
+          // historical variant is caught. Pure-random base64url verifiers
+          // do not contain the 5-char literal `nsec1` at meaningful
+          // probability.
+          stubReads(
+            deviceCode: 'device-123',
+            verifier: 'nsec1abc123secret_no_separator',
+            email: 'user@example.com',
+            createdAt: DateTime.now().toIso8601String(),
+            inviteCode: null,
+          );
+
+          final result = await service.load();
+
+          expect(result, isNull);
+          verify(
+            () => storage.delete(key: 'pending_verification_verifier'),
+          ).called(1);
+        },
+      );
+
       test('returns parsed value for a clean (random-only) verifier', () async {
         final now = DateTime.now().toIso8601String();
         stubReads(

@@ -105,10 +105,15 @@ class PendingVerificationService {
       }
 
       // Phase 1 of divinevideo/divine-mobile#3359: discard any persisted
-      // verifier that still carries the legacy `<random>.<nsec1...>` shape.
-      // Replaying it through OAuth code exchange would re-leak the user's
-      // nsec to the server. Clearing forces a clean re-registration.
-      if (verifier.contains('.nsec1')) {
+      // verifier that still carries an embedded `nsec1...`. The legacy
+      // shape was `<random>.<nsec1...>` with a literal `.` separator, but
+      // we match on the bare prefix as defense-in-depth against any
+      // historical variant. A random base64url verifier contains the
+      // 5-char literal `nsec1` only at ~1e-7 probability, so false
+      // positives are negligible. Replaying a tainted verifier through
+      // OAuth code exchange would re-leak the user's nsec to the server;
+      // clearing forces a clean re-registration.
+      if (verifier.contains('nsec1')) {
         Log.warning(
           'Discarding pre-fix pending verification for $email '
           '(legacy nsec-bearing verifier).',
