@@ -90,7 +90,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.value(
-            CacheResult.live(
+            const CacheResult.live(
               FollowersSnapshot(
                 pubkeys: [followerPubkey],
                 count: 1,
