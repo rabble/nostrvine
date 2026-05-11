@@ -38,8 +38,8 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/models/minor_account_review_status.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
