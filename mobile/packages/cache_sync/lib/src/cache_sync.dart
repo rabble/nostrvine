@@ -97,6 +97,7 @@ abstract final class CacheSync {
     Duration? ttl,
     CacheFetchPolicy policy = CacheFetchPolicy.cacheAndNetwork,
   }) {
+    StreamIterator<T>? iterator;
     late final StreamController<CacheResult<T>> controller;
     controller = StreamController<CacheResult<T>>(
       onListen: () => _driveWatchStream(
@@ -107,7 +108,11 @@ abstract final class CacheSync {
         toJson: toJson,
         ttl: ttl,
         policy: policy,
+        registerIterator: (value) => iterator = value,
       ),
+      onCancel: () async {
+        await iterator?.cancel();
+      },
     );
     return controller.stream;
   }
@@ -177,6 +182,7 @@ abstract final class CacheSync {
     required String Function(T value) toJson,
     required Duration? ttl,
     required CacheFetchPolicy policy,
+    required void Function(StreamIterator<T> iterator) registerIterator,
   }) async {
     // 1. Serve from cache when applicable.
     if (policy != CacheFetchPolicy.networkOnly) {
@@ -198,20 +204,26 @@ abstract final class CacheSync {
     // 2. Subscribe to source stream.
     if (controller.isClosed) return;
 
+    final iterator = StreamIterator<T>(source());
+    registerIterator(iterator);
+
     try {
-      await for (final value in source()) {
-        if (controller.isClosed) break;
+      while (!controller.isClosed && await iterator.moveNext()) {
+        final value = iterator.current;
         final payload = toJson(value);
         if (payload.isNotEmpty) {
           await _dao.write(key: key, payload: payload, ttl: ttl);
         }
-        controller.add(CacheResult.live(value));
+        if (!controller.isClosed) {
+          controller.add(CacheResult.live(value));
+        }
       }
     } on Object catch (e, st) {
       if (!controller.isClosed) {
         controller.addError(e, st);
       }
     } finally {
+      await iterator.cancel();
       if (!controller.isClosed) await controller.close();
     }
   }

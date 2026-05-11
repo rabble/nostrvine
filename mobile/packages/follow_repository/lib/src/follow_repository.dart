@@ -272,8 +272,8 @@ class FollowRepository {
   // repository — changing them invalidates every cached entry on every user's
   // device.
 
-  static const _kMyFollowersCacheKey = 'my_followers';
-  static const _kMyFollowingCacheKey = 'my_following';
+  static String _myFollowersCacheKey(String pubkey) => 'my_followers_$pubkey';
+  static String _myFollowingCacheKey(String pubkey) => 'my_following_$pubkey';
   static String _othersFollowersCacheKey(String pubkey) =>
       'others_followers_$pubkey';
   static String _othersFollowingCacheKey(String pubkey) =>
@@ -285,7 +285,7 @@ class FollowRepository {
   /// [watchMyFollowers]. See [CacheSync.watchStream].
   Stream<CacheResult<FollowersSnapshot>> watchMyFollowersCached() {
     return CacheSync.watchStream<FollowersSnapshot>(
-      key: _kMyFollowersCacheKey,
+      key: _myFollowersCacheKey(_nostrClient.publicKey),
       source: watchMyFollowers,
       fromJson: FollowersSnapshot.fromJson,
       toJson: (s) => s.toJson(),
@@ -298,7 +298,7 @@ class FollowRepository {
   /// [watchMyFollowing]. See [CacheSync.watchStream].
   Stream<CacheResult<FollowingSnapshot>> watchMyFollowingCached() {
     return CacheSync.watchStream<FollowingSnapshot>(
-      key: _kMyFollowingCacheKey,
+      key: _myFollowingCacheKey(_nostrClient.publicKey),
       source: watchMyFollowing,
       fromJson: FollowingSnapshot.fromJson,
       toJson: (s) => s.toJson(),

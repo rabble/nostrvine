@@ -148,16 +148,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           (account) => _AccountSwitchTile(
             account: account,
             isCurrentAccount: account.pubkeyHex == accountState.currentPubkey,
-            onTap: () {
+            onTap: () async {
               Navigator.of(context).pop();
-              _accountCubit.switchToAccount(account.pubkeyHex);
+              await _accountCubit.switchToAccount(account.pubkeyHex);
             },
           ),
         ),
         _AddAccountTile(
-          onTap: () {
+          onTap: () async {
             Navigator.of(context).pop();
-            _accountCubit.addNewAccount();
+            await _accountCubit.addNewAccount();
           },
         ),
       ],

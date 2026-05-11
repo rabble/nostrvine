@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for SettingsAccountCubit
 // ABOUTME: Covers load, switchToAccount, addNewAccount, and state helpers
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:cache_sync/cache_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +33,21 @@ class _FakeCacheDao implements CacheDao {
   Future<int> totalPayloadBytes() async => 0;
   @override
   Future<void> evictOldest(int bytesToFree) async {}
+}
+
+class _BlockingCacheDao extends _FakeCacheDao {
+  final deleteAllStarted = Completer<void>();
+  final allowDeleteAll = Completer<void>();
+  bool deleteAllCompleted = false;
+
+  @override
+  Future<void> deleteAll() async {
+    if (!deleteAllStarted.isCompleted) {
+      deleteAllStarted.complete();
+    }
+    await allowDeleteAll.future;
+    deleteAllCompleted = true;
+  }
 }
 
 void main() {
@@ -162,7 +179,8 @@ void main() {
           when(() => mockAuthService.signOut()).thenAnswer((_) async {});
         },
         build: buildCubit,
-        act: (cubit) => cubit.switchToAccount(testAccounts.last.pubkeyHex),
+        act: (cubit) async =>
+            cubit.switchToAccount(testAccounts.last.pubkeyHex),
         verify: (_) {
           verify(
             () => mockAuthService.pendingAccountSwitchPubkey =
@@ -180,11 +198,30 @@ void main() {
           currentPubkey: testAccounts.first.pubkeyHex,
         ),
         build: buildCubit,
-        act: (cubit) => cubit.switchToAccount(testAccounts.first.pubkeyHex),
+        act: (cubit) async =>
+            cubit.switchToAccount(testAccounts.first.pubkeyHex),
         verify: (_) {
           verifyNever(() => mockAuthService.signOut());
         },
       );
+
+      test('waits for cache eviction before signing out', () async {
+        final blockingDao = _BlockingCacheDao();
+        await CacheSync.init(dao: blockingDao);
+        when(() => mockAuthService.signOut()).thenAnswer((_) async {});
+
+        final cubit = buildCubit();
+        final future = cubit.switchToAccount(testAccounts.last.pubkeyHex);
+
+        await blockingDao.deleteAllStarted.future;
+        verifyNever(() => mockAuthService.signOut());
+
+        blockingDao.allowDeleteAll.complete();
+        await future;
+
+        expect(blockingDao.deleteAllCompleted, isTrue);
+        verify(() => mockAuthService.signOut()).called(1);
+      });
     });
 
     group('addNewAccount', () {
@@ -194,12 +231,30 @@ void main() {
           when(() => mockAuthService.signOut()).thenAnswer((_) async {});
         },
         build: buildCubit,
-        act: (cubit) => cubit.addNewAccount(),
+        act: (cubit) async => cubit.addNewAccount(),
         verify: (_) {
           verify(() => mockAuthService.signOut()).called(1);
           verifyNever(() => mockAuthService.pendingAccountSwitchPubkey = any());
         },
       );
+
+      test('waits for cache eviction before sign-out', () async {
+        final blockingDao = _BlockingCacheDao();
+        await CacheSync.init(dao: blockingDao);
+        when(() => mockAuthService.signOut()).thenAnswer((_) async {});
+
+        final cubit = buildCubit();
+        final future = cubit.addNewAccount();
+
+        await blockingDao.deleteAllStarted.future;
+        verifyNever(() => mockAuthService.signOut());
+
+        blockingDao.allowDeleteAll.complete();
+        await future;
+
+        expect(blockingDao.deleteAllCompleted, isTrue);
+        verify(() => mockAuthService.signOut()).called(1);
+      });
     });
 
     group('state helpers', () {

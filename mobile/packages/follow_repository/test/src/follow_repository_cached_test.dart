@@ -60,6 +60,7 @@ void main() {
     dao = FakeCacheDao();
     await CacheSync.init(dao: dao);
     mockNostrClient = _MockNostrClient();
+    when(() => mockNostrClient.publicKey).thenReturn('current-user');
   });
 
   group('FollowRepository.watchMyFollowersCached', () {
@@ -87,7 +88,7 @@ void main() {
 
     test('emits cached then live when cache is populated', () async {
       await dao.write(
-        key: 'my_followers',
+        key: 'my_followers_current-user',
         payload: const FollowersSnapshot(
           pubkeys: ['cached'],
           count: 1,
@@ -115,6 +116,36 @@ void main() {
       expect(events[1].isLive, isTrue);
       expect(events[1].data.pubkeys, ['live']);
     });
+
+    test('uses current-user scoped cache key', () async {
+      await dao.write(
+        key: 'my_followers_alice',
+        payload: const FollowersSnapshot(
+          pubkeys: ['alice_cached'],
+          count: 1,
+        ).toJson(),
+      );
+      when(() => mockNostrClient.publicKey).thenReturn('bob');
+
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowersStream: Stream.value(
+          const FollowersSnapshot(pubkeys: ['bob_live'], count: 1),
+        ),
+        myFollowingStream: const Stream.empty(),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: [],
+          count: 0,
+        ),
+      );
+
+      final events = await repo.watchMyFollowersCached().take(1).toList();
+
+      expect(events, hasLength(1));
+      expect(events[0].isLive, isTrue);
+      expect(events[0].data.pubkeys, ['bob_live']);
+    });
   });
 
   group('FollowRepository.watchMyFollowingCached', () {
@@ -137,6 +168,36 @@ void main() {
       expect(events, hasLength(1));
       expect(events[0].isLive, isTrue);
       expect(events[0].data.pubkeys, ['x']);
+    });
+
+    test('uses current-user scoped cache key', () async {
+      await dao.write(
+        key: 'my_following_alice',
+        payload: const FollowingSnapshot(
+          pubkeys: ['alice_cached'],
+          count: 1,
+        ).toJson(),
+      );
+      when(() => mockNostrClient.publicKey).thenReturn('bob');
+
+      final repo = _TestableFollowRepository(
+        nostrClient: mockNostrClient,
+        myFollowersStream: const Stream.empty(),
+        myFollowingStream: Stream.value(
+          const FollowingSnapshot(pubkeys: ['bob_live'], count: 1),
+        ),
+        othersFollowersResult: const [],
+        othersFollowingResult: const FollowingSnapshot(
+          pubkeys: [],
+          count: 0,
+        ),
+      );
+
+      final events = await repo.watchMyFollowingCached().take(1).toList();
+
+      expect(events, hasLength(1));
+      expect(events[0].isLive, isTrue);
+      expect(events[0].data.pubkeys, ['bob_live']);
     });
   });
 

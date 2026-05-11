@@ -1,8 +1,6 @@
 // ABOUTME: Cubit managing account list, draft warnings, and account switching
 // ABOUTME: for the settings screen account-switcher bottom sheet.
 
-import 'dart:async';
-
 import 'package:cache_sync/cache_sync.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,20 +43,18 @@ class SettingsAccountCubit extends Cubit<SettingsAccountState> {
 
   /// Switches to an existing account by signing out and setting the pending
   /// account switch pubkey so WelcomeBloc pre-selects it.
-  void switchToAccount(String pubkeyHex) {
+  Future<void> switchToAccount(String pubkeyHex) async {
     if (pubkeyHex == state.currentPubkey) return;
-    // Fire-and-forget: cache eviction must not block the sign-out path.
-    // A failure here only leaves stale rows that the next account's
-    // stale-while-revalidate fetch will overwrite anyway.
-    unawaited(CacheSync.invalidateAll());
+    // Clear all cache rows before sign-out so the next account cannot hydrate
+    // from stale entries while startup races with asynchronous eviction.
+    await CacheSync.invalidateAll();
     _authService.pendingAccountSwitchPubkey = pubkeyHex;
-    _authService.signOut();
+    await _authService.signOut();
   }
 
   /// Signs out to add a new account (no pending switch pubkey).
-  void addNewAccount() {
-    // Fire-and-forget: see [switchToAccount] for rationale.
-    unawaited(CacheSync.invalidateAll());
-    _authService.signOut();
+  Future<void> addNewAccount() async {
+    await CacheSync.invalidateAll();
+    await _authService.signOut();
   }
 }

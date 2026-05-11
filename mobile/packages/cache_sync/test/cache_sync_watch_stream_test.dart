@@ -179,5 +179,38 @@ void main() {
       // Corrupted entry was deleted and replaced with the live value.
       expect(dao.rawRead('ws:corrupt'), equals('42'));
     });
+
+    test(
+      'cancelling outer subscription cancels source stream immediately',
+      () async {
+        final sourceCanceled = Completer<void>();
+        final source = StreamController<int>(
+          onCancel: () {
+            if (!sourceCanceled.isCompleted) {
+              sourceCanceled.complete();
+            }
+          },
+        );
+
+        final subscription = CacheSync.watchStream<int>(
+          key: 'ws:cancel',
+          source: () => source.stream,
+          fromJson: int.parse,
+          toJson: (v) => '$v',
+        ).listen((_) {});
+
+        source.add(1);
+        await Future<void>.delayed(Duration.zero);
+        await subscription.cancel();
+
+        await expectLater(sourceCanceled.future, completes);
+
+        source.add(2);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(dao.rawRead('ws:cancel'), equals('1'));
+        await source.close();
+      },
+    );
   });
 }
