@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/observability/reportable_error.dart';
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
 
 void main() {
   group(Reportable, () {
@@ -152,6 +153,15 @@ void main() {
       expect(
         sanitizeForCrashReport(input),
         contains('@gmail.com'),
+      );
+    });
+
+    test('uses the shared email redactor so masking stays aligned', () {
+      const email = 'first.last+tag@example.com';
+
+      expect(
+        sanitizeForCrashReport('auth failed for $email'),
+        'auth failed for ${redactEmailForLogs(email)}',
       );
     });
   });

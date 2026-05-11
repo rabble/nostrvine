@@ -1,6 +1,8 @@
 // ABOUTME: Marker interface + wrapper + PII sanitizer used to gate Bloc errors
 // ABOUTME: forwarded to Crashlytics. See .claude/rules/error_handling.md.
 
+import 'package:openvine/utils/sensitive_uri_for_logs.dart';
+
 /// Marker interface signalling that an error is worth reporting to Crashlytics.
 ///
 /// Errors that flow through `addError(error, st)` only reach the crash reporter
@@ -72,16 +74,15 @@ final RegExp _emailPattern = RegExp(
 ///   event/profile pointers, not secrets, and removing them removes triage
 ///   value. Call sites that need to redact those should do so explicitly
 ///   before constructing the error message.
-/// - Email: any RFC-5321-ish local@host.tld pattern. Replaced with a
-///   first-char-preserving partial mask so domain-level correlation survives.
+/// - Email: any RFC-5321-ish local@host.tld pattern. Replacement delegates to
+///   [redactEmailForLogs] so log redaction and crash-report redaction stay in
+///   lockstep.
 String sanitizeForCrashReport(String input) {
   return input
       .replaceAll(_npubPattern, 'npub1<redacted>')
       .replaceAll(_nsecPattern, 'nsec1<redacted>')
-      .replaceAllMapped(_emailPattern, (match) {
-        final email = match.group(0)!;
-        final atIndex = email.indexOf('@');
-        // _emailPattern guarantees atIndex > 0 and a domain follows.
-        return '${email.substring(0, 1)}***@${email.substring(atIndex + 1)}';
-      });
+      .replaceAllMapped(
+        _emailPattern,
+        (match) => redactEmailForLogs(match.group(0)!),
+      );
 }
