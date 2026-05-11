@@ -42,7 +42,7 @@ void main() {
                     title: 'Under-13 review',
                     body: 'Parent support is required.',
                   ),
-                  supportEmail: 'contact@divine.video',
+                  supportEmail: 'support@divine.video',
                 ),
               );
             }),
@@ -63,7 +63,7 @@ void main() {
       await tester.tap(find.byTooltip('Copy support email'));
       await tester.pumpAndSettle();
 
-      expect(copiedText, 'contact@divine.video');
+      expect(copiedText, 'support@divine.video');
     });
 
     testWidgets('opens email with the prepared under-13 guidance', (
@@ -89,7 +89,7 @@ void main() {
                     title: 'Under-13 review',
                     body: 'Parent support is required.',
                   ),
-                  supportEmail: 'contact@divine.video',
+                  supportEmail: 'support@divine.video',
                 ),
               );
             }),
@@ -117,7 +117,7 @@ void main() {
       await tester.tap(find.text('Open email app'));
       await tester.pumpAndSettle();
 
-      expect(sentToEmail, 'contact@divine.video');
+      expect(sentToEmail, 'support@divine.video');
       expect(sentSubject, 'Under-13 account review for case case-under13');
       expect(sentBody, contains('I am the parent or guardian'));
     });

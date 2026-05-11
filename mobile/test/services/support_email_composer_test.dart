@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/support_email_composer.dart';
 
 void main() {
-  const toEmail = 'contact@divine.video';
+  const toEmail = 'support@divine.video';
   const subject = 'Subject Line';
   const body = 'Body text here';
 

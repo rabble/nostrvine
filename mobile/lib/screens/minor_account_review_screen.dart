@@ -116,7 +116,7 @@ class _WelcomeEntryView extends StatelessWidget {
                   onPressed: () => _openExternalPage(
                     context,
                     AppConstants.kidsPolicyUrl,
-                    'kids.divine.video',
+                    'divine.video/kids',
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -127,7 +127,7 @@ class _WelcomeEntryView extends StatelessWidget {
                   onPressed: () => _openExternalPage(
                     context,
                     AppConstants.familyResourcesUrl,
-                    'family.divine.video',
+                    'divine.video/family',
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -287,7 +287,7 @@ class _LoadedView extends ConsumerWidget {
           onPressed: () => _openExternalPage(
             context,
             AppConstants.ageReviewUrl,
-            'age-review.divine.video',
+            'divine.video/age-review',
           ),
         ),
         const SizedBox(height: 24),

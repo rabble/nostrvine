@@ -28,7 +28,7 @@ void main() {
         when(() => mockInviteApiClient.getClientConfig()).thenAnswer(
           (_) async => const InviteClientConfig(
             mode: OnboardingMode.inviteCodeRequired,
-            supportEmail: 'contact@divine.video',
+            supportEmail: 'support@divine.video',
           ),
         );
       },
@@ -40,7 +40,7 @@ void main() {
           configStatus: InviteGateConfigStatus.success,
           config: InviteClientConfig(
             mode: OnboardingMode.inviteCodeRequired,
-            supportEmail: 'contact@divine.video',
+            supportEmail: 'support@divine.video',
           ),
         ),
       ],
