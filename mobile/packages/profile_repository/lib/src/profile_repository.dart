@@ -32,6 +32,12 @@ const _nameServerHttpTimeout = Duration(seconds: 10);
 // which still carries the typed REST fields after #4175.
 const _publishSeedRelayTimeout = Duration(seconds: 4);
 
+// Caps the NIP-50 user search query. On timeout the bloc still receives
+// the accumulated partial result, with the relay source marked as
+// SearchSourceFailed(reason: timeout) so the UI can surface a retry
+// affordance when nothing else contributed.
+const _nip50SearchTimeout = Duration(seconds: 5);
+
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
@@ -994,17 +1000,22 @@ class ProfileRepository {
 
   /// Progressively streams user profile search results.
   ///
-  /// Yields accumulated results as each source completes:
-  /// 1. Local cached profiles (instant)
-  /// 2. Funnelcake REST API results merged with local (fast)
-  /// 3. NIP-50 WebSocket results merged with all (first page only)
+  /// Each yield carries a [ProgressiveSearchResult] envelope containing:
+  /// - the accumulated, deduplicated, filter+boost-applied profile list
+  /// - a per-source outcome map ([ProgressiveSearchResult.sources])
+  /// - an [ProgressiveSearchResult.isComplete] flag on the terminal yield
   ///
-  /// Each yield contains the full deduplicated list so far — not just the
-  /// new batch. This matches the progressive pattern used by
-  /// `VideosRepository.searchVideos()`.
+  /// Consults three sources in order:
+  /// 1. Local cached profiles (instant, first page only)
+  /// 2. Funnelcake REST API (fast)
+  /// 3. NIP-50 WebSocket (first page only, with [_nip50SearchTimeout])
   ///
-  /// Parameters match [searchUsers]. When [offset] > 0 the local and NIP-50
-  /// phases are skipped (only the API phase runs).
+  /// On [offset] > 0 the local and NIP-50 phases are recorded as
+  /// [SearchSourceSkipped]. When Funnelcake is unconfigured it is also
+  /// recorded as [SearchSourceSkipped]. Any phase that throws (REST as
+  /// an [Exception], NIP-50 as an [Object] since WebSocket errors
+  /// surface as [Error]) is recorded as [SearchSourceFailed]; the stream
+  /// continues to consult later sources.
   ///
   /// When [boostPubkeys] is non-empty, profiles whose pubkey is in the set
   /// are promoted to the front of each emission while preserving the
@@ -1013,7 +1024,7 @@ class ProfileRepository {
   /// the initial search page. Callers should omit [boostPubkeys] on
   /// load-more requests so already-visible positions stay stable as the
   /// user scrolls.
-  Stream<List<UserProfile>> searchUsersProgressive({
+  Stream<ProgressiveSearchResult> searchUsersProgressive({
     required String query,
     int limit = 200,
     int offset = 0,
@@ -1025,27 +1036,63 @@ class ProfileRepository {
     if (trimmed.isEmpty) return;
 
     final resultMap = <String, UserProfile>{};
+    final sources = <SearchSource, SearchSourceStatus>{};
     final useServerSort = sortBy != null;
+
+    ProgressiveSearchResult snapshot({
+      required bool isComplete,
+      List<UserProfile>? enriched,
+    }) {
+      final profiles =
+          enriched ??
+          _applyFilter(
+            trimmed,
+            resultMap.values.toList(),
+            useServerSort,
+            boostPubkeys,
+          );
+      return ProgressiveSearchResult(
+        profiles: profiles,
+        sources: Map.unmodifiable(sources),
+        isComplete: isComplete,
+      );
+    }
 
     // Phase 1: Local cache (instant, first page only)
     if (offset == 0) {
-      final local = await searchUsersLocally(query: trimmed);
-      for (final profile in local) {
-        resultMap[profile.pubkey] = profile;
-      }
-      if (resultMap.isNotEmpty) {
-        yield _applyFilter(
-          trimmed,
-          resultMap.values.toList(),
-          useServerSort,
-          boostPubkeys,
+      final phase1Watch = Stopwatch()..start();
+      final preCount = resultMap.length;
+      try {
+        final local = await searchUsersLocally(query: trimmed);
+        for (final profile in local) {
+          resultMap[profile.pubkey] = profile;
+        }
+        sources[SearchSource.localCache] = SearchSourceSuccess(
+          resultCount: resultMap.length - preCount,
+          latencyMs: phase1Watch.elapsedMilliseconds,
+        );
+      } on Object catch (e) {
+        sources[SearchSource.localCache] = SearchSourceFailed(
+          reason: SearchSourceFailureReason.other,
+          latencyMs: phase1Watch.elapsedMilliseconds,
+        );
+        Log.warning(
+          'Local cache search failed: $e',
+          name: 'ProfileRepository.searchUsersProgressive',
+          category: LogCategory.api,
         );
       }
+      if (resultMap.isNotEmpty) {
+        yield snapshot(isComplete: false);
+      }
+    } else {
+      sources[SearchSource.localCache] = const SearchSourceSkipped();
     }
 
     // Phase 2: Funnelcake REST API (fast)
     final prevCount = resultMap.length;
     if (_funnelcakeApiClient?.isAvailable ?? false) {
+      final phase2Watch = Stopwatch()..start();
       try {
         final restResults = await _funnelcakeApiClient!.searchProfiles(
           query: trimmed,
@@ -1057,42 +1104,65 @@ class ProfileRepository {
         for (final result in restResults) {
           resultMap[result.pubkey] = result.toUserProfile();
         }
+        sources[SearchSource.funnelcakeApi] = SearchSourceSuccess(
+          resultCount: restResults.length,
+          latencyMs: phase2Watch.elapsedMilliseconds,
+        );
       } on Exception catch (e) {
+        sources[SearchSource.funnelcakeApi] = SearchSourceFailed(
+          reason: SearchSourceFailureReason.network,
+          latencyMs: phase2Watch.elapsedMilliseconds,
+        );
         Log.warning(
           'REST search failed: $e',
           name: 'ProfileRepository.searchUsersProgressive',
           category: LogCategory.api,
         );
       }
+    } else {
+      sources[SearchSource.funnelcakeApi] = const SearchSourceSkipped();
     }
 
     // Yield after Phase 2 if new results were added.
     // Skips enrichment for faster progressive display; the final Phase 3
     // yield enriches all results from cache.
     if (resultMap.length > prevCount) {
-      yield _applyFilter(
-        trimmed,
-        resultMap.values.toList(),
-        useServerSort,
-        boostPubkeys,
-      );
+      yield snapshot(isComplete: false);
     }
 
     // Phase 3: NIP-50 WebSocket (first page only)
     if (offset == 0) {
       final preWsCount = resultMap.length;
+      final phase3Watch = Stopwatch()..start();
       try {
         final events = await _nostrClient
             .queryUsers(trimmed, limit: limit)
-            .timeout(const Duration(seconds: 5));
+            .timeout(_nip50SearchTimeout);
         for (final event in events) {
           final profile = UserProfile.fromNostrEvent(event);
           resultMap.putIfAbsent(profile.pubkey, () => profile);
         }
+        sources[SearchSource.nip50Relay] = SearchSourceSuccess(
+          resultCount: resultMap.length - preWsCount,
+          latencyMs: phase3Watch.elapsedMilliseconds,
+        );
+      } on TimeoutException {
+        sources[SearchSource.nip50Relay] = SearchSourceFailed(
+          reason: SearchSourceFailureReason.timeout,
+          latencyMs: phase3Watch.elapsedMilliseconds,
+        );
+        Log.warning(
+          'NIP-50 search timed out after ${_nip50SearchTimeout.inSeconds}s',
+          name: 'ProfileRepository.searchUsersProgressive',
+          category: LogCategory.relay,
+        );
       } on Object catch (e) {
-        // Intentionally catches Object: WebSocket failures surface as
-        // StateError (an Error, not Exception), unlike the REST phase above.
-        // TimeoutException is also caught here when NIP-50 relays are slow.
+        // WebSocket failures surface as StateError (an Error, not
+        // Exception), so we catch Object.
+        sources[SearchSource.nip50Relay] = SearchSourceFailed(
+          reason: SearchSourceFailureReason.other,
+          latencyMs: phase3Watch.elapsedMilliseconds,
+        );
         Log.warning(
           'NIP-50 search failed: $e',
           name: 'ProfileRepository.searchUsersProgressive',
@@ -1100,18 +1170,30 @@ class ProfileRepository {
         );
       }
 
-      // Only enrich + yield again if WS added new profiles
       if (resultMap.length > preWsCount) {
         final enriched = await _enrichFromCache(resultMap.values.toList());
-        yield _applyFilter(trimmed, enriched, useServerSort, boostPubkeys);
+        yield snapshot(
+          isComplete: true,
+          enriched: _applyFilter(
+            trimmed,
+            enriched,
+            useServerSort,
+            boostPubkeys,
+          ),
+        );
         return;
       }
+    } else {
+      sources[SearchSource.nip50Relay] = const SearchSourceSkipped();
     }
 
     // Final yield: enriched + filtered (when WS didn't add anything or
     // was skipped due to offset > 0)
     final enriched = await _enrichFromCache(resultMap.values.toList());
-    yield _applyFilter(trimmed, enriched, useServerSort, boostPubkeys);
+    yield snapshot(
+      isComplete: true,
+      enriched: _applyFilter(trimmed, enriched, useServerSort, boostPubkeys),
+    );
   }
 
   /// Applies the configured search filter or falls back to name matching,
