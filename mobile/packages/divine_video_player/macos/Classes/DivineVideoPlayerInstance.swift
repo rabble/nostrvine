@@ -165,20 +165,11 @@ final class DivineVideoPlayerInstance: NSObject, FlutterStreamHandler {
                     throw CompositionError.invalidRenderSize
                 }
                 self.templateItem = playerItem
-                self.textureOutput?.attach(to: playerItem)
 
                 let startPositionMs = (args["startPositionMs"] as? NSNumber)?.int64Value ?? 0
                 let startTime = startPositionMs > 0
                     ? CMTime(value: startPositionMs, timescale: 1000)
                     : CMTime.zero
-
-                // Skip the leading black frame produced by the encoder
-                // before the first real I-frame. See iOS
-                // DivineVideoPlayerInstance.handleSetClips for the full
-                // diagnosis (#3242). Same pragmatic workaround applied
-                // here for parity until the backend trims leading
-                // black frames during transcoding.
-                let leadingBlackFrameSkip = CMTime(value: 1, timescale: 30)
 
                 if let existing = self.player {
                     self.configureQueue(with: playerItem)

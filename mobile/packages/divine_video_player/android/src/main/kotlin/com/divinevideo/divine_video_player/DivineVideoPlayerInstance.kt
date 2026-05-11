@@ -592,10 +592,15 @@ internal class DivineVideoPlayerInstance(
                     val status = (error.cause as? androidx.media3.datasource.HttpDataSource.InvalidResponseCodeException)?.responseCode ?: 0
                     if (status in 400..499) "http_client_error" else "http_server_error"
                 }
+                PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND,
+                PlaybackException.ERROR_CODE_IO_INVALID_HTTP_CONTENT_TYPE,
+                PlaybackException.ERROR_CODE_IO_NO_PERMISSION -> "http_client_error"
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "network_error"
                 PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT -> "timeout"
+                in 2000..2999 -> "decoder_error"
                 in 3000..3999 -> "parse_error"
                 in 4000..4999 -> "decoder_error"
+                in 6000..6999 -> "decoder_error"
                 else -> "unknown"
             }
         }
