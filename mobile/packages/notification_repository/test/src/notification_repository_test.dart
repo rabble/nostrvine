@@ -6,7 +6,6 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:notification_repository/notification_repository.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:test/test.dart';
@@ -17,13 +16,10 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockNotificationsDao extends Mock implements NotificationsDao {}
 
-class _MockNostrClient extends Mock implements NostrClient {}
-
 void main() {
   late _MockFunnelcakeApiClient funnelcakeApiClient;
   late _MockProfileRepository profileRepository;
   late _MockNotificationsDao notificationsDao;
-  late _MockNostrClient nostrClient;
   late NotificationRepository repository;
 
   const userPubkey = 'user1234567890abcdef';
@@ -32,7 +28,6 @@ void main() {
     funnelcakeApiClient = _MockFunnelcakeApiClient();
     profileRepository = _MockProfileRepository();
     notificationsDao = _MockNotificationsDao();
-    nostrClient = _MockNostrClient();
     when(
       () => funnelcakeApiClient.notificationsUri(
         pubkey: any(named: 'pubkey'),
@@ -64,7 +59,6 @@ void main() {
       profileRepository: profileRepository,
       notificationsDao: notificationsDao,
       userPubkey: userPubkey,
-      nostrClient: nostrClient,
     );
   });
 
@@ -185,7 +179,6 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          nostrClient: nostrClient,
           authHeadersProvider: (url, method) async {
             signedUrl = url;
             signedMethod = method;
@@ -215,7 +208,6 @@ void main() {
           profileRepository: profileRepository,
           notificationsDao: notificationsDao,
           userPubkey: userPubkey,
-          nostrClient: nostrClient,
           authHeadersProvider: (url, method) async {
             signedUrl = url;
             return {'Authorization': 'Nostr test-token'};
@@ -335,7 +327,6 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            nostrClient: nostrClient,
             authHeadersProvider: (url, method) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
@@ -372,7 +363,6 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            nostrClient: nostrClient,
             authHeadersProvider: (url, method) async {
               signedUrl = url;
               return {'Authorization': 'Nostr test-token'};
@@ -1010,7 +1000,6 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            nostrClient: nostrClient,
             authHeadersProvider: (url, method) async {
               if (method == 'POST') {
                 throw Exception('signer unavailable');
@@ -1093,7 +1082,6 @@ void main() {
             profileRepository: profileRepository,
             notificationsDao: notificationsDao,
             userPubkey: userPubkey,
-            nostrClient: nostrClient,
             authHeadersProvider: (url, method) async {
               if (method == 'POST') {
                 throw Exception('signer unavailable');

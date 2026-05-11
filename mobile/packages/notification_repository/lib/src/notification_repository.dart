@@ -9,7 +9,6 @@ import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:notification_repository/src/blocked_notification_filter.dart';
 import 'package:notification_repository/src/notification_page.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -42,7 +41,6 @@ class NotificationRepository {
     required ProfileRepository profileRepository,
     required NotificationsDao notificationsDao,
     required String userPubkey,
-    NostrClient? nostrClient,
     BlockedNotificationFilter? blockFilter,
     Future<Map<String, String>> Function(String url, String method)?
     authHeadersProvider,
@@ -50,7 +48,6 @@ class NotificationRepository {
        _profileRepository = profileRepository,
        _notificationsDao = notificationsDao,
        _userPubkey = userPubkey,
-       _nostrClient = nostrClient,
        _blockFilter = blockFilter,
        _authHeadersProvider = authHeadersProvider;
 
@@ -58,10 +55,6 @@ class NotificationRepository {
   final ProfileRepository _profileRepository;
   final NotificationsDao _notificationsDao;
   final String _userPubkey;
-
-  /// Reserved for future WebSocket real-time support.
-  // ignore: unused_field
-  final NostrClient? _nostrClient;
   final BlockedNotificationFilter? _blockFilter;
   final Future<Map<String, String>> Function(String url, String method)?
   _authHeadersProvider;
