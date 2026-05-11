@@ -1599,15 +1599,22 @@ class DmRepository {
     }
 
     final publishResult = await _nostrClient.publishEvent(signed);
-    if (publishResult is! PublishSuccess) {
-      return const NIP17SendResult.failure('NIP-04 publish failed');
+    switch (publishResult) {
+      case PublishSuccess():
+        return NIP17SendResult.success(
+          rumorEventId: publishResult.event.id,
+          messageEventId: publishResult.event.id,
+          recipientPubkey: recipientPubkey,
+        );
+      case PublishNoRelays():
+        return const NIP17SendResult.failure(
+          'NIP-04 publish failed: no relays connected',
+        );
+      case PublishFailed():
+        return const NIP17SendResult.failure(
+          'NIP-04 publish failed: send error',
+        );
     }
-
-    return NIP17SendResult.success(
-      rumorEventId: publishResult.event.id,
-      messageEventId: publishResult.event.id,
-      recipientPubkey: recipientPubkey,
-    );
   }
 
   // -------------------------------------------------------------------------

@@ -182,19 +182,27 @@ class ContentReportingService {
         reportEvent,
         targetRelays: [_moderationRelayUrl],
       );
-      if (sentEvent is! PublishSuccess) {
-        Log.error(
-          'Failed to publish report to relays',
-          name: 'ContentReportingService',
-          category: LogCategory.system,
-        );
+      switch (sentEvent) {
+        case PublishSuccess():
+          Log.info(
+            'Report published to relays',
+            name: 'ContentReportingService',
+            category: LogCategory.system,
+          );
+        case PublishNoRelays():
+          Log.error(
+            'Failed to publish report: no relays connected',
+            name: 'ContentReportingService',
+            category: LogCategory.system,
+          );
         // Still save locally even if publish fails
-      } else {
-        Log.info(
-          'Report published to relays',
-          name: 'ContentReportingService',
-          category: LogCategory.system,
-        );
+        case PublishFailed():
+          Log.error(
+            'Failed to publish report: send error',
+            name: 'ContentReportingService',
+            category: LogCategory.system,
+          );
+        // Still save locally even if publish fails
       }
 
       // Create Zendesk ticket silently for moderation tracking

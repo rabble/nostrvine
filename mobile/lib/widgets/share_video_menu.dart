@@ -1604,8 +1604,15 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // Publish the updated event
       final nostrService = ref.read(nostrServiceProvider);
       final publishResult = await nostrService.publishEvent(event);
-      if (publishResult is! PublishSuccess) {
-        throw Exception('Failed to publish updated event');
+      switch (publishResult) {
+        case PublishSuccess():
+          break;
+        case PublishNoRelays():
+          throw Exception(
+            'Failed to publish updated event: no relays connected',
+          );
+        case PublishFailed():
+          throw Exception('Failed to publish updated event: send error');
       }
       final publishedEvent = publishResult.event;
 

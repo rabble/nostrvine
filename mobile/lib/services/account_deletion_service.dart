@@ -103,15 +103,27 @@ class AccountDeletionService {
 
       final sentEvent = await _nostrService.publishEvent(event);
 
-      if (sentEvent is! PublishSuccess) {
-        Log.error(
-          'Failed to publish NIP-62 deletion request to any relay',
-          name: 'AccountDeletionService',
-          category: LogCategory.system,
-        );
-        return DeleteAccountResult.failure(
-          'Failed to publish deletion request to relays',
-        );
+      switch (sentEvent) {
+        case PublishSuccess():
+          break;
+        case PublishNoRelays():
+          Log.error(
+            'Failed to publish NIP-62 deletion request: no relays connected',
+            name: 'AccountDeletionService',
+            category: LogCategory.system,
+          );
+          return DeleteAccountResult.failure(
+            'No relays connected — deletion request not sent',
+          );
+        case PublishFailed():
+          Log.error(
+            'Failed to publish NIP-62 deletion request: send error',
+            name: 'AccountDeletionService',
+            category: LogCategory.system,
+          );
+          return DeleteAccountResult.failure(
+            'Failed to publish deletion request to relays',
+          );
       }
 
       Log.info(
@@ -186,13 +198,26 @@ class AccountDeletionService {
 
       if (deleteEvent != null) {
         final sentEvent = await _nostrService.publishEvent(deleteEvent);
-        if (sentEvent is PublishSuccess) {
-          successCount += kindEvents.length;
-          Log.debug(
-            'Published batch deletion for ${kindEvents.length} kind $kind events',
-            name: 'AccountDeletionService',
-            category: LogCategory.system,
-          );
+        switch (sentEvent) {
+          case PublishSuccess():
+            successCount += kindEvents.length;
+            Log.debug(
+              'Published batch deletion for ${kindEvents.length} kind $kind events',
+              name: 'AccountDeletionService',
+              category: LogCategory.system,
+            );
+          case PublishNoRelays():
+            Log.warning(
+              'Batch deletion for kind $kind skipped: no relays connected',
+              name: 'AccountDeletionService',
+              category: LogCategory.system,
+            );
+          case PublishFailed():
+            Log.warning(
+              'Batch deletion for kind $kind failed: send error',
+              name: 'AccountDeletionService',
+              category: LogCategory.system,
+            );
         }
       }
 
