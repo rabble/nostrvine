@@ -123,16 +123,22 @@ class _ConversationViewState extends ConsumerState<ConversationView> {
               onOptions: () => _onOptions(otherPubkey, displayName),
             ),
             Expanded(
-              child: _ConversationContent(
-                currentPubkey: currentPubkey,
-                otherPubkey: otherPubkey,
-                displayName: displayName,
-                imageUrl: profile?.picture,
-                nip05: profile?.shortDisplayNip05,
-                onViewProfile: () {
-                  final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                  context.push('${OtherProfileScreen.path}/$npub');
-                },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: ColoredBox(
+                  color: VineTheme.surfaceContainerHigh,
+                  child: _ConversationContent(
+                    currentPubkey: currentPubkey,
+                    otherPubkey: otherPubkey,
+                    displayName: displayName,
+                    imageUrl: profile?.picture,
+                    nip05: profile?.shortDisplayNip05,
+                    onViewProfile: () {
+                      final npub = NostrKeyUtils.encodePubKey(otherPubkey);
+                      context.push('${OtherProfileScreen.path}/$npub');
+                    },
+                  ),
+                ),
               ),
             ),
             _SendBar(participantPubkeys: widget.participantPubkeys),
