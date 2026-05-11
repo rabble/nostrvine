@@ -1011,6 +1011,120 @@ void main() {
       });
     });
 
+    group('watchMyFollowing', () {
+      test('emits FollowingSnapshot when following list is initialized',
+          () async {
+        // Pre-populate SharedPreferences so initialize() loads a non-empty
+        // following list without needing to call follow() and mock
+        // sendContactList.
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          isCacheInitialized: () => cacheIsInitialized,
+          getCachedEventsByKind: (kind) => getCachedEventsByKind(kind),
+          cacheUserEvent: cachedUserEvents.add,
+          indexerRelayUrls: const [],
+        );
+
+        await repository.initialize();
+
+        final emission = await repository.watchMyFollowing().first;
+
+        expect(emission.pubkeys, contains(testTargetPubkey));
+        expect(emission.count, equals(1));
+      });
+
+      test('emits FollowingSnapshot with empty list when no follows',
+          () async {
+        await repository.initialize();
+
+        final emission = await repository.watchMyFollowing().first;
+
+        expect(emission.pubkeys, isEmpty);
+        expect(emission.count, equals(0));
+      });
+    });
+
+    group('getOthersFollowing', () {
+      test('returns empty snapshot when no events found', () async {
+        when(() => mockNostrClient.queryEvents(any()))
+            .thenAnswer((_) async => []);
+
+        final snapshot = await repository.getOthersFollowing(testTargetPubkey);
+
+        expect(snapshot.pubkeys, isEmpty);
+        expect(snapshot.count, equals(0));
+      });
+
+      test('returns following list from Kind 3 event p-tags', () async {
+        final event = Event(
+          testTargetPubkey,
+          3,
+          [
+            ['p', testTargetPubkey2],
+            ['p', testCurrentUserPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+
+        when(() => mockNostrClient.queryEvents(any()))
+            .thenAnswer((_) async => [event]);
+
+        final snapshot = await repository.getOthersFollowing(testTargetPubkey);
+
+        expect(snapshot.pubkeys, hasLength(2));
+        expect(snapshot.pubkeys, contains(testTargetPubkey2));
+        expect(snapshot.pubkeys, contains(testCurrentUserPubkey));
+        expect(snapshot.count, equals(2));
+      });
+
+      test('deduplicates repeated pubkeys in tags', () async {
+        final event = Event(
+          testTargetPubkey,
+          3,
+          [
+            ['p', testTargetPubkey2],
+            ['p', testTargetPubkey2],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+
+        when(() => mockNostrClient.queryEvents(any()))
+            .thenAnswer((_) async => [event]);
+
+        final snapshot = await repository.getOthersFollowing(testTargetPubkey);
+
+        expect(snapshot.pubkeys, hasLength(1));
+        expect(snapshot.count, equals(1));
+      });
+
+      test('ignores tags with wrong type or missing pubkey field', () async {
+        final event = Event(
+          testTargetPubkey,
+          3,
+          [
+            ['e', testTargetPubkey2],
+            ['p'],
+            ['p', testCurrentUserPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+
+        when(() => mockNostrClient.queryEvents(any()))
+            .thenAnswer((_) async => [event]);
+
+        final snapshot = await repository.getOthersFollowing(testTargetPubkey);
+
+        expect(snapshot.pubkeys, hasLength(1));
+        expect(snapshot.pubkeys, contains(testCurrentUserPubkey));
+      });
+    });
+
     group('real-time sync', () {
       late StreamController<Event> realTimeStreamController;
 
