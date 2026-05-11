@@ -41,7 +41,7 @@ void main() {
       await tester.tap(find.text('Email Divine support'));
       await tester.pumpAndSettle();
 
-      expect(sentToEmail, 'contact@divine.video');
+      expect(sentToEmail, 'support@divine.video');
       expect(sentSubject, '13-15 account review help');
       expect(sentBody, contains('I have attached a short private video'));
     });

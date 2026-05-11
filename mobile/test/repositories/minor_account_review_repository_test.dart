@@ -27,7 +27,7 @@ void main() {
             'state': 'restricted_pending_user_response',
             'suspectedAgeBand': 'age_13_15',
             'allowedResolution': 'parent_video_or_email',
-            'supportEmail': 'contact@divine.video',
+            'supportEmail': 'support@divine.video',
             'instructions': {
               'title': 'We need to review this account',
               'body': 'Follow the parental consent steps.',

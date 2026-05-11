@@ -29,7 +29,7 @@ class ZendeskConfig {
   /// Set via: --dart-define=ZENDESK_API_EMAIL=xxx
   static const String apiEmail = String.fromEnvironment(
     'ZENDESK_API_EMAIL',
-    defaultValue: 'contact@divine.video',
+    defaultValue: 'support@divine.video',
   );
 
   /// Check if REST API is configured

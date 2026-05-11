@@ -80,7 +80,7 @@ void main() {
             title: 'Account review required',
             body: 'We need parental consent information.',
           ),
-          supportEmail: 'contact@divine.video',
+          supportEmail: 'support@divine.video',
           moderationConversationPubkey: 'moderation-pubkey',
           moderationConversationId: moderationConversationId,
         ),
