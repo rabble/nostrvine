@@ -271,20 +271,11 @@ void main() {
         expect(find.byType(Divider), findsNothing);
       });
 
-      testWidgets('dispatches mark all read on screen open', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          NotificationFeedState(
-            status: NotificationFeedStatus.loaded,
-            notifications: testNotifications,
-          ),
-        );
-
-        await _pumpView(tester, mockBloc);
-        // addPostFrameCallback fires after first frame.
-        await tester.pump();
-
-        verify(() => mockBloc.add(NotificationFeedMarkAllRead())).called(1);
-      });
+      // The mark-all-read dispatch was removed from
+      // NotificationsView.initState in #4204 — it now fires once at the
+      // page level via NotificationFeedStarted → repository.markAllAsRead.
+      // See inbox_notifications_page_test.dart and notifications_page_test.dart
+      // for the new contract.
 
       testWidgets('dispatches item tapped on notification tap', (tester) async {
         when(() => mockBloc.state).thenReturn(

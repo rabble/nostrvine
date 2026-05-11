@@ -50,21 +50,10 @@ class _NotificationsViewState extends ConsumerState<NotificationsView> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-
-    // Mark all notifications as read in the bloc when the screen is opened.
-    //
-    // The legacy Riverpod cache that powers the bottom-nav badge and inbox
-    // toggle count is synced by the page-level wrapper
-    // ([InboxNotificationsPage] / [NotificationsPage]), not from here, so
-    // the side effect fires once per inbox open instead of once per
-    // [NotificationsView] mount (the inbox mounts five — one per filter
-    // tab).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      context.read<NotificationFeedBloc>().add(
-        const NotificationFeedMarkAllRead(),
-      );
-    });
+    // Mark-all-read fires once at the page level from
+    // `NotificationFeedStarted` → repository.markAllAsRead(). The
+    // resulting snapshot emission updates this view's BLoC state and
+    // the badge cubit atomically — no per-view dispatch needed.
   }
 
   @override

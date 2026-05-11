@@ -10,16 +10,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/invite_status/invite_status_cubit.dart';
 import 'package:openvine/l10n/l10n.dart';
-// Hide the bloc's NotificationFeedState — this file uses the
-// identically-named state from relay_notifications_provider via the
-// Riverpod listener below.
-import 'package:openvine/notifications/bloc/notification_feed_bloc.dart'
-    hide NotificationFeedState;
+import 'package:openvine/notifications/bloc/notification_feed_bloc.dart';
 import 'package:openvine/notifications/providers/notification_repository_provider.dart';
 import 'package:openvine/notifications/view/notifications_view.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart'
-    show NotificationFeedState, relayNotificationsProvider;
 import 'package:openvine/screens/settings/invites_screen.dart';
 
 /// Inbox notifications page — owns the BLoC and tab scaffold.
@@ -55,24 +49,19 @@ class InboxNotificationsPage extends ConsumerWidget {
   }
 }
 
-class _InboxNotificationsScaffold extends ConsumerStatefulWidget {
+class _InboxNotificationsScaffold extends StatefulWidget {
   const _InboxNotificationsScaffold();
 
   @override
-  ConsumerState<_InboxNotificationsScaffold> createState() =>
+  State<_InboxNotificationsScaffold> createState() =>
       _InboxNotificationsScaffoldState();
 }
 
 class _InboxNotificationsScaffoldState
-    extends ConsumerState<_InboxNotificationsScaffold>
+    extends State<_InboxNotificationsScaffold>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   static const _tabCount = 5;
-
-  /// Whether the per-open Riverpod sync has already fired. Guards against
-  /// fan-out across the five [NotificationsView] tab instances and
-  /// across multiple [build] passes while the page is open.
-  bool _relaySynced = false;
 
   @override
   void initState() {
@@ -82,41 +71,12 @@ class _InboxNotificationsScaffoldState
       if (!mounted) return;
       context.read<InviteStatusCubit>().load();
     });
-    // Sync the legacy Riverpod unread cache the first time the provider
-    // yields AsyncData. `fireImmediately: true` covers the warm-cache
-    // case (the bottom-nav already keeps the provider alive); the
-    // listener also covers the cold-start case where the provider is
-    // still resolving on inbox open.
-    ref.listenManual<AsyncValue<NotificationFeedState>>(
-      relayNotificationsProvider,
-      (_, next) => _maybeSyncRelayNotificationsRead(next),
-      fireImmediately: true,
-    );
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  /// Marks all notifications read in the legacy Riverpod cache that powers
-  /// the bottom-nav badge and inbox-toggle count. Fires once per inbox
-  /// open, the first time [relayNotificationsProvider] yields an
-  /// [AsyncData] state — handles both warm-cache opens (provider already
-  /// loaded) and cold-start opens (still resolving) without firing a
-  /// no-op API write when there is nothing unread.
-  void _maybeSyncRelayNotificationsRead(
-    AsyncValue<NotificationFeedState> asyncState,
-  ) {
-    if (_relaySynced) return;
-    final state = asyncState.whenOrNull(data: (s) => s);
-    if (state == null) return;
-    _relaySynced = true;
-    final hasUnread =
-        state.unreadCount > 0 || state.notifications.any((n) => !n.isRead);
-    if (!hasUnread) return;
-    ref.read(relayNotificationsProvider.notifier).markAllAsRead();
   }
 
   @override
